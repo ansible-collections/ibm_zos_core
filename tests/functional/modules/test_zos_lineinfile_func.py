@@ -526,11 +526,10 @@ def test_uss_line_does_not_insert_repeated(ansible_zos_module):
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") == 1
+        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
@@ -967,6 +966,31 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(line='ZOAU_ROOT=/usr/lpp/zoautil/v100', state="present")
+    test_name = "DST15"
+    temp_file = "/tmp/{0}".format(test_name)
+    ds_name = test_name.upper() + "." + ds_type
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_CONTENT
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 #########################
 # Encoding tests

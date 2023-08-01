@@ -791,7 +791,7 @@ class MVSArchive(Archive):
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
         data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
-        #changed = data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
+        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
 

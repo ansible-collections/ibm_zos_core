@@ -283,7 +283,9 @@ EXAMPLES = r'''
 
 RETURN = r"""
 changed:
-  description: Indicates if the source was modified
+  description:
+    Indicates if the source was modified.
+    Value of 1 represents `true`, otherwise `false`.
   returned: success
   type: bool
   sample: 1

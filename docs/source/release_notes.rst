@@ -6,6 +6,61 @@
 Releases
 ========
 
+Version 1.7.0-beta.1
+====================
+
+New Modules
+-----------
+
+- ``zos_archive`` -  archive files, data sets and extend archives on z/OS. Formats include, *bz2*, *gz*, *tar*, *zip*, *terse*, *xmit* and *pax*.
+- ``zos_unarchive`` - unarchive files and data sets in z/OS. Formats include, *bz2*, *gz*, *tar*, *zip*, *terse*, *xmit* and *pax*.
+
+Major Changes
+-------------
+
+-- ``zos_copy`` and ``zos_job_submit`` - supports Jinja2 templating which is essential for handling tasks that require advanced file modifications such as JCL.
+
+Minor Changes
+-------------
+- ``zos_copy``
+
+      - displays the data set attributes when the destination does not exist and was created by the module.
+      - reverts the logic that would automatically create backups in the event of a module failure leaving it up to the user to decide if a backup is needed.
+- ``zos_data_set`` - supports record format *F* (fixed) where one physical block on disk is one logical record and all the blocks and records are the same size.
+- ``zos_job_output`` - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v 1.2.4 or later).
+- ``zos_job_query``
+      - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v 1.2.4 or later).
+      - removes unnecessary queries to find DDs improving the modules performance.
+- ``zos_job_submit`` - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v 1.2.4 or later).
+
+Bugfixes
+--------
+- ``zos_data_set`` - fixes occasionally occurring orphaned VSAM cluster components such as INDEX when `present=absent`.
+- ``zos_fetch`` - fixes the warning that appeared about the use of _play_context.verbosity.
+- ``zos_copy``
+
+      - fixes the warning that appeared about the use of _play_context.verbosity.
+      - fixes an issue where subdirectories would not be encoded.
+      - fixes an issue where when mode was set, the mode was not applied to existing directories and files.
+      - displays a error message when copying into a data set that is being accessed by another process and no longer returns with `changed=true`.
+
+``zos_job_output`` - displays an appropriate error message for a job is not found in the spool.
+``zos_operator`` - fixes the false reports that a command failed when keywords such as *error* were seen, the module now acts as a passthrough.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
+* Supported by IBM `Z Open Automation Utilities 1.2.3`_ (or later) but prior to version 1.3.
+
 Version 1.6.0
 =============
 
@@ -68,7 +123,6 @@ Reference
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
-
 
 Version 1.5.0
 =============
@@ -181,7 +235,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS Version`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
@@ -190,8 +244,7 @@ Version 1.4.1
 =============
 
 Bug fixes
-
---------------------------
+---------
 
 * ``zos_copy``
 
@@ -870,10 +923,14 @@ Reference
    https://www.ibm.com/docs/en/zoau/1.1.1
 .. _Z Open Automation Utilities 1.2.2:
    https://www.ibm.com/docs/en/zoau/1.2.x
+.. _Z Open Automation Utilities 1.2.3:
+   https://www.ibm.com/docs/en/zoau/1.2.x
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
 .. _z/OS V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
+.. _z/OS Version:
+   https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
 

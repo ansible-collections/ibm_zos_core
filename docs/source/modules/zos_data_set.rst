@@ -146,7 +146,7 @@ record_format
   | **required**: False
   | **type**: str
   | **default**: FB
-  | **choices**: FB, VB, FBA, VBA, U
+  | **choices**: FB, VB, FBA, VBA, U, F
 
 
 sms_storage_class
@@ -417,7 +417,7 @@ batch
     | **required**: False
     | **type**: str
     | **default**: FB
-    | **choices**: FB, VB, FBA, VBA, U
+    | **choices**: FB, VB, FBA, VBA, U, F
 
 
   sms_storage_class

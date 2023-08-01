@@ -16,6 +16,7 @@ __metaclass__ = type
 import os
 import stat
 import time
+import shutil
 
 from tempfile import mkstemp, gettempprefix
 
@@ -33,6 +34,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 display = Display()
 
@@ -112,10 +115,17 @@ class ActionModule(ActionBase):
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
+        use_template = _process_boolean(task_args.get("use_template"), default=False)
+        if remote_src and use_template:
+            msg = "Use of Jinja2 templates is only valid for local files, remote_src cannot be set to true."
+            return self._exit_action(result, msg, failed=True)
+
         if not is_uss:
             if mode or owner or group:
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
+
+        template_dir = None
 
         if not remote_src:
             if local_follow and not src:
@@ -150,14 +160,65 @@ class ActionModule(ActionBase):
                             dict(src=src, dest=dest, changed=False, failed=True)
                         )
                         return result
+
+                    if use_template:
+                        template_parameters = task_args.get("template_parameters", dict())
+                        if encoding:
+                            template_encoding = encoding.get("from", None)
+                        else:
+                            template_encoding = None
+
+                        try:
+                            renderer = template.create_template_environment(
+                                template_parameters,
+                                src,
+                                template_encoding
+                            )
+                            template_dir, rendered_dir = renderer.render_dir_template(
+                                task_vars.get("vars", dict())
+                            )
+                        except Exception as err:
+                            if template_dir:
+                                shutil.rmtree(template_dir, ignore_errors=True)
+                            return self._exit_action(result, str(err), failed=True)
+
+                        src = rendered_dir
+
                     task_args["size"] = sum(
-                        os.stat(path + "/" + f).st_size for f in files
+                        os.stat(os.path.join(path, f)).st_size
+                        for path, dirs, files in os.walk(src)
+                        for f in files
                     )
                 else:
                     if mode == "preserve":
                         task_args["mode"] = "0{0:o}".format(
                             stat.S_IMODE(os.stat(src).st_mode)
                         )
+
+                    if use_template:
+                        template_parameters = task_args.get("template_parameters", dict())
+                        if encoding:
+                            template_encoding = encoding.get("from", None)
+                        else:
+                            template_encoding = None
+
+                        try:
+                            renderer = template.create_template_environment(
+                                template_parameters,
+                                src,
+                                template_encoding
+                            )
+                            template_dir, rendered_file = renderer.render_file_template(
+                                os.path.basename(src),
+                                task_vars.get("vars", dict())
+                            )
+                        except Exception as err:
+                            if template_dir:
+                                shutil.rmtree(template_dir, ignore_errors=True)
+                            return self._exit_action(result, str(err), failed=True)
+
+                        src = rendered_file
+
                     task_args["size"] = os.stat(src).st_size
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
@@ -186,6 +247,10 @@ class ActionModule(ActionBase):
             module_args=task_args,
             task_vars=task_vars,
         )
+
+        # Erasing all rendered Jinja2 templates from the controller.
+        if template_dir:
+            shutil.rmtree(template_dir, ignore_errors=True)
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
@@ -347,6 +412,7 @@ def _update_result(is_binary, copy_res, original_args):
     src = copy_res.get("src")
     note = copy_res.get("note")
     backup_name = copy_res.get("backup_name")
+    dest_data_set_attrs = copy_res.get("dest_data_set_attrs")
     updated_result = dict(
         dest=copy_res.get("dest"),
         is_binary=is_binary,
@@ -359,7 +425,6 @@ def _update_result(is_binary, copy_res, original_args):
         updated_result["note"] = note
     if backup_name:
         updated_result["backup_name"] = backup_name
-
     if ds_type == "USS":
         updated_result.update(
             dict(
@@ -375,6 +440,11 @@ def _update_result(is_binary, copy_res, original_args):
         checksum = copy_res.get("checksum")
         if checksum:
             updated_result["checksum"] = checksum
+    if dest_data_set_attrs is not None:
+        if len(dest_data_set_attrs) > 0:
+            dest_data_set_attrs.pop("name")
+            updated_result["dest_created"] = True
+            updated_result["destination_attributes"] = dest_data_set_attrs
 
     return updated_result
 

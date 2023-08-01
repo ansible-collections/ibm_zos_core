@@ -133,19 +133,33 @@ jobs
 
         [
             {
+                "asid": 0,
+                "creation_date": "2023-05-03",
+                "creation_time": "12:13:00",
+                "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
                 "owner": "ADMIN",
-                "ret_code": "null"
+                "priority": 1,
+                "queue_position": 3,
+                "ret_code": "null",
+                "svc_class": "?"
             },
             {
+                "asid": 4,
+                "creation_date": "2023-05-03",
+                "creation_time": "12:14:00",
+                "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
                 "owner": "ADMIN",
+                "priority": 0,
+                "queue_position": 0,
                 "ret_code": {
                     "code": "null",
                     "msg": "CANCELED"
-                }
+                },
+                "svc_class": "E"
             }
         ]
 
@@ -231,6 +245,53 @@ jobs
         | **type**: int
 
 
+
+  job_class
+    Job class for this job.
+
+    | **type**: str
+    | **sample**: A
+
+  svc_class
+    Service class for this job.
+
+    | **type**: str
+    | **sample**: C
+
+  priority
+    A numeric indicator of the job priority assigned through JES.
+
+    | **type**: int
+    | **sample**: 4
+
+  asid
+    The address Space Identifier (ASID) that is a unique descriptor for the job address space. Zero if not active.
+
+    | **type**: int
+
+  creation_date
+    Date, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 2023-05-04
+
+  creation_time
+    Time, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 14:15:00
+
+  queue_position
+    The position within the job queue where the jobs resides.
+
+    | **type**: int
+    | **sample**: 3
+
+  program_name
+    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+
+    | **type**: str
+    | **sample**: IEBGENER
 
 
 message

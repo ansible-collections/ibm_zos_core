@@ -130,6 +130,10 @@ options:
         required: false
         type: str
         default: IBM-1047
+
+extends_documentation_fragment:
+  - ibm.ibm_zos_core.template
+
 notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
@@ -276,6 +280,49 @@ jobs:
             },
           ]
         }
+    job_class:
+      description:
+        Job class for this job.
+      type: str
+      sample: A
+    svc_class:
+      description:
+        Service class for this job.
+      type: str
+      sample: C
+    priority:
+      description:
+        A numeric indicator of the job priority assigned through JES.
+      type: int
+      sample: 4
+    asid:
+      description:
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
+      type: int
+      sample: 0
+    creation_date:
+      description:
+        Date, local to the target system, when the job was created.
+      type: str
+      sample: "2023-05-04"
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: "14:15:00"
+    queue_position:
+      description:
+        The position within the job queue where the jobs resides.
+      type: int
+      sample: 3
+    program_name:
+      description:
+        The name of the program found in the job's last completed step found in the PGM parameter.
+        Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+      type: str
+      sample: "IEBGENER"
+
   sample:
      [
           {
@@ -489,7 +536,16 @@ jobs:
                     }
                   ]
               },
-              "subsystem": "STL1"
+              "job_class": "K",
+              "svc_class": "?",
+              "priority": 1,
+              "program_name": "IEBGENER",
+              "asid": 0,
+              "creation_date": "2023-05-03",
+              "creation_time": "12:13:00",
+              "queue_position": 3,
+              "subsystem": "STL1",
+              "system": "STL1"
           }
      ]
 message:
@@ -760,6 +816,30 @@ def run_module():
         wait_time_s=dict(type="int", default=10),
         max_rc=dict(type="int", required=False),
         temp_file=dict(type="path", required=False),
+        use_template=dict(type='bool', default=False),
+        template_parameters=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                variable_start_string=dict(type='str', default='{{'),
+                variable_end_string=dict(type='str', default='}}'),
+                block_start_string=dict(type='str', default='{%'),
+                block_end_string=dict(type='str', default='%}'),
+                comment_start_string=dict(type='str', default='{#'),
+                comment_end_string=dict(type='str', default='#}'),
+                line_statement_prefix=dict(type='str', required=False),
+                line_comment_prefix=dict(type='str', required=False),
+                lstrip_blocks=dict(type='bool', default=False),
+                trim_blocks=dict(type='bool', default=True),
+                keep_trailing_newline=dict(type='bool', default=False),
+                newline_sequence=dict(
+                    type='str',
+                    default='\n',
+                    choices=['\n', '\r', '\r\n']
+                ),
+                auto_reload=dict(type='bool', default=False),
+            )
+        ),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)

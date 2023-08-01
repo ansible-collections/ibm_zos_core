@@ -364,6 +364,9 @@ options:
         type: str
         required: false
 
+extends_documentation_fragment:
+  - ibm.ibm_zos_core.template
+
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -563,6 +566,61 @@ dest:
     returned: success
     type: str
     sample: SAMPLE.SEQ.DATA.SET
+dest_created:
+    description: Indicates whether the module created the destination.
+    returned: success and if dest was created by the module.
+    type: bool
+    sample: true
+destination_attributes:
+    description: Attributes of a dest created by the module.
+    returned: success and destination was created by the module.
+    type: dict
+    contains:
+      block_size:
+        description:
+          Block size of the dataset.
+        type: int
+        sample: 32760
+      record_format:
+        description:
+          Record format of the dataset.
+        type: str
+        sample: FB
+      record_length:
+        description:
+          Record length of the dataset.
+        type: int
+        sample: 45
+      space_primary:
+        description:
+          Allocated primary space for the dataset.
+        type: int
+        sample: 2
+      space_secondary:
+        description:
+          Allocated secondary space for the dataset.
+        type: int
+        sample: 1
+      space_type:
+        description:
+          Unit of measurement for space.
+        type: str
+        sample: K
+      type:
+        description:
+          Type of dataset allocated.
+        type: str
+        sample: PDSE
+    sample:
+        {
+            "block_size": 32760,
+            "record_format": "FB",
+            "record_length": 45,
+            "space_primary": 2,
+            "space_secondary": 1,
+            "space_type": "K",
+            "type": "PDSE"
+        }
 checksum:
     description: SHA256 checksum of the file after running zos_copy.
     returned: C(validate) is C(true) and if dest is USS
@@ -682,7 +740,7 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, opercmd
 except Exception:
     datasets = MissingZOAUImport()
 
@@ -866,17 +924,17 @@ class CopyHandler(object):
             EncodingConversionError -- When the encoding of a USS file is not
                                        able to be converted
         """
-        path, dirs, files = next(os.walk(dir_path))
         enc_utils = encode.EncodeUtils()
-        for file in files:
-            full_file_path = path + "/" + file
-            rc = enc_utils.uss_convert_encoding(
-                full_file_path, full_file_path, from_code_set, to_code_set
-            )
-            if not rc:
-                raise EncodingConversionError(
-                    full_file_path, from_code_set, to_code_set
+        for path, dirs, files in os.walk(dir_path):
+            for file_path in files:
+                full_file_path = os.path.join(path, file_path)
+                rc = enc_utils.uss_convert_encoding(
+                    full_file_path, full_file_path, from_code_set, to_code_set
                 )
+                if not rc:
+                    raise EncodingConversionError(
+                        full_file_path, from_code_set, to_code_set
+                    )
 
     def _tag_file_encoding(self, file_path, tag, is_dir=False):
         """Tag the file specified by 'file_path' with the given code set.
@@ -1646,123 +1704,6 @@ def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
         )
 
 
-def restore_backup(
-    dest,
-    backup,
-    dest_type,
-    use_backup,
-    volume=None,
-    members_to_restore=None,
-    members_to_delete=None
-):
-    """Restores a destination file/directory/data set by using a given backup.
-
-    Arguments:
-        dest (str) -- Name of the destination data set or path of the file/directory.
-        backup (str) -- Name or path of the backup.
-        dest_type (str) -- Type of the destination.
-        use_backup (bool) -- Whether the destination actually created a backup, sometimes the user
-            tries to use an empty data set, and in that case a new data set is allocated instead
-            of copied.
-        volume (str, optional) -- Volume where the data set should be.
-        members_to_restore (list, optional) -- List of members of a PDS/PDSE that were overwritten
-            and need to be restored.
-        members_to_delete (list, optional) -- List of members of a PDS/PDSE that need to be erased
-            because they were newly added.
-    """
-    volumes = [volume] if volume else None
-
-    if use_backup:
-        if dest_type == "USS":
-            if os.path.isfile(backup):
-                os.remove(dest)
-                shutil.copy(backup, dest)
-            else:
-                shutil.rmtree(dest, ignore_errors=True)
-                shutil.copytree(backup, dest)
-        else:
-            if dest_type in data_set.DataSet.MVS_VSAM:
-                data_set.DataSet.ensure_absent(dest, volumes)
-                repro_cmd = """  REPRO -
-                INDATASET('{0}') -
-                OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
-                idcams(repro_cmd, authorized=True)
-            elif dest_type in data_set.DataSet.MVS_SEQ:
-                response = datasets._copy(backup, dest)
-                if response.rc != 0:
-                    raise CopyOperationError(
-                        "An error ocurred while restoring {0} from {1}".format(dest, backup),
-                        response.rc,
-                        response.stdout_response,
-                        response.stderr_response
-                    )
-            else:
-                if not members_to_restore:
-                    members_to_restore = []
-                if not members_to_delete:
-                    members_to_delete = []
-
-                for i, member in enumerate(members_to_restore):
-                    response = datasets._copy(
-                        "{0}({1})".format(backup, member),
-                        "{0}({1})".format(dest, member)
-                    )
-
-                    if response.rc != 0:
-                        # In case of a failure, we'll assume that all past
-                        # members in the list (with index < i) were restored successfully.
-                        raise CopyOperationError(
-                            "Error ocurred while restoring {0}({1}) from backup {2}.".format(
-                                dest,
-                                member,
-                                backup
-                            ) + " Members restored: {0}. Members that didn't get restored: {1}".format(
-                                members_to_restore[:i],
-                                members_to_restore[i:]
-                            ),
-                            response.rc,
-                            response.stdout_response,
-                            response.stderr_response
-                        )
-
-                for i, member in enumerate(members_to_delete):
-                    response = datasets._delete_members("{0}({1})".format(dest, member))
-
-                    if response.rc != 0:
-                        raise CopyOperationError(
-                            "Error while deleting {0}({1}) after copy failure.".format(dest, member) +
-                            " Members deleted: {0}. Members not able to be deleted: {1}".format(
-                                members_to_delete[:i],
-                                members_to_delete[i:]
-                            ),
-                            response.rc,
-                            response.stdout_response,
-                            response.stderr_response
-                        )
-
-    else:
-        data_set.DataSet.ensure_absent(dest, volumes)
-        data_set.DataSet.allocate_model_data_set(dest, backup, volume)
-
-
-def erase_backup(backup, dest_type, volume=None):
-    """Erases a temporary backup from the system.
-
-    Arguments:
-        backup (str) -- Name or path of the backup.
-        dest_type (str) -- Type of the destination.
-        volume (str, optional) -- Volume where the data set should be.
-    """
-    if dest_type == "USS":
-        if os.path.isfile(backup):
-            os.remove(backup)
-        else:
-            shutil.rmtree(backup, ignore_errors=True)
-    else:
-        volumes = [volume] if volume else None
-        data_set.DataSet.ensure_absent(backup, volumes)
-
-
 def is_compatible(
     src_type,
     dest_type,
@@ -1980,6 +1921,45 @@ def is_member_wildcard(src):
     )
 
 
+def get_attributes_of_any_dataset_created(
+    dest,
+    src_ds_type,
+    src,
+    src_name,
+    is_binary,
+    volume=None
+):
+    """
+    Get the attributes of dataset created by the function allocate_destination_data_set
+    except for VSAM.
+
+    Arguments:
+        dest (str) -- Name of the destination data set.
+        src_ds_type (str) -- Source of the destination data set.
+        src (str) -- Name of the source data set, used as a model when appropiate.
+        src_name (str) -- Extraction of the source name without the member pattern.
+        is_binary (bool) -- Whether the data set will contain binary data.
+        volume (str, optional) -- Volume where the data set should be allocated into.
+
+    Returns:
+        params (dict) -- Parameters used for the dataset created as name, type,
+        space_primary, space_secondary, record_format, record_length, block_size and space_type
+    """
+    params = {}
+    if src_ds_type == "USS":
+        if os.path.isfile(src):
+            size = os.stat(src).st_size
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+        else:
+            size = os.path.getsize(src)
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+    else:
+        src_attributes = datasets.listing(src_name)[0]
+        size = int(src_attributes.total_space)
+        params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+    return params
+
+
 def allocate_destination_data_set(
     src,
     dest,
@@ -2009,6 +1989,9 @@ def allocate_destination_data_set(
 
     Returns:
         bool -- True if the data set was created, False otherwise.
+        dest_params (dict) -- Parameters used for the dataset created as name,
+        block_size, record_format, record_length, space_primary, space_secondary,
+        space_type, type.
     """
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
@@ -2017,8 +2000,11 @@ def allocate_destination_data_set(
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
+    # Create the dict that will contains the values created by the module if it's empty action module will
+    # not display the content.
+    dest_params = {}
     if dest_exists and is_dest_empty:
-        return False
+        return False, dest_params
 
     # Giving more priority to the parameters given by the user.
     if dest_data_set:
@@ -2089,8 +2075,13 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
-
-    return True
+    if dest_ds_type not in data_set.DataSet.MVS_VSAM:
+        dest_params = get_attributes_of_any_dataset_created(dest, src_ds_type, src, src_name, is_binary, volume)
+        dest_attributes = datasets.listing(dest)[0]
+        record_format = dest_attributes.recfm
+        dest_params["type"] = dest_ds_type
+        dest_params["record_format"] = record_format
+    return True, dest_params
 
 
 def normalize_line_endings(src, encoding=None):
@@ -2138,6 +2129,37 @@ def normalize_line_endings(src, encoding=None):
         src = copy_handler.create_temp_with_lf_endings(src)
 
     return src
+
+
+def data_set_locked(dataset_name):
+    """
+    Checks if a data set is in use and therefore locked (DISP=SHR), which
+    is often caused by a long running task. Returns a boolean value to indicate the data set status.
+
+    Arguments:
+        dataset_name (str) - the data set name used to check if there is a lock.
+
+    Returns:
+        bool -- rue if the data set is locked, or False if the data set is not locked.
+    """
+    # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
+    # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
+    # in the result with a length greater than 4.
+    result = dict()
+    result["stdout"] = []
+    command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
+    response = opercmd.execute(command=command_dgrs)
+    stdout = response.stdout_response
+    if stdout is not None:
+        for out in stdout.split("\n"):
+            if out:
+                result["stdout"].append(out)
+    if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
+        return True
+    elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
+        return False
+    else:
+        return False
 
 
 def run_module(module, arg_def):
@@ -2349,6 +2371,16 @@ def run_module(module, arg_def):
         )
 
     # ********************************************************************
+    # To validate the source and dest are not lock in a batch process by
+    # the machine and not generate a false positive check the disposition
+    # for try to write in dest and if both src and dest are in lock.
+    # ********************************************************************
+    if dest_ds_type != "USS":
+        is_dest_lock = data_set_locked(dest_name)
+        if is_dest_lock:
+            module.fail_json(
+                msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
+    # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.
     # ********************************************************************
@@ -2413,32 +2445,6 @@ def run_module(module, arg_def):
             dest=dest
         )
 
-    # Creating an emergency backup or an empty data set to use as a model to
-    # be able to restore the destination in case the copy fails.
-    emergency_backup = ""
-    if dest_exists and not force:
-        if is_uss or not data_set.DataSet.is_empty(dest_name):
-            use_backup = True
-            if is_uss:
-                # When copying a directory without a trailing slash,
-                # appending the source's base name to the backup path to
-                # avoid backing up the whole parent directory that won't
-                # be modified.
-                src_basename = os.path.basename(src) if src else ''
-                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
-                backup_dest = os.path.normpath(backup_dest)
-                emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup, tmphlq)
-            else:
-                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
-                    emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
-        # If dest is an empty data set, instead create a data set to
-        # use as a model when restoring.
-        else:
-            use_backup = False
-            emergency_backup = data_set.DataSet.temp_name()
-            data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
-
     # Here we'll use the normalized source file by shadowing the
     # original one. This change applies only to the
     # allocate_destination_data_set call.
@@ -2452,7 +2458,7 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            res_args["changed"] = allocate_destination_data_set(
+            res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
                 temp_path or src,
                 dest_name, src_ds_type,
                 dest_ds_type,
@@ -2463,9 +2469,6 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists and not force:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
-            erase_backup(emergency_backup, dest_ds_type)
         if converted_src:
             if remote_src:
                 src = original_src
@@ -2495,8 +2498,8 @@ def run_module(module, arg_def):
     try:
         if encoding:
             # 'conv_path' points to the converted src file or directory
-            if is_mvs_dest:
-                encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+            # if is_mvs_dest:
+            #     encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
 
             conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
 
@@ -2594,12 +2597,7 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists and not force:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
-    finally:
-        if dest_exists and not force:
-            erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(
         dict(
@@ -2676,6 +2674,30 @@ def main():
                     sms_management_class=dict(type="str", required=False),
                 )
             ),
+            use_template=dict(type='bool', default=False),
+            template_parameters=dict(
+                type='dict',
+                required=False,
+                options=dict(
+                    variable_start_string=dict(type='str', default='{{'),
+                    variable_end_string=dict(type='str', default='}}'),
+                    block_start_string=dict(type='str', default='{%'),
+                    block_end_string=dict(type='str', default='%}'),
+                    comment_start_string=dict(type='str', default='{#'),
+                    comment_end_string=dict(type='str', default='#}'),
+                    line_statement_prefix=dict(type='str', required=False),
+                    line_comment_prefix=dict(type='str', required=False),
+                    lstrip_blocks=dict(type='bool', default=False),
+                    trim_blocks=dict(type='bool', default=True),
+                    keep_trailing_newline=dict(type='bool', default=False),
+                    newline_sequence=dict(
+                        type='str',
+                        default='\n',
+                        choices=['\n', '\r', '\r\n']
+                    ),
+                    auto_reload=dict(type='bool', default=False),
+                )
+            ),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_src_dir=dict(type='bool'),
@@ -2723,6 +2745,27 @@ def main():
                 sms_storage_class=dict(arg_type="str", required=False),
                 sms_data_class=dict(arg_type="str", required=False),
                 sms_management_class=dict(arg_type="str", required=False),
+            )
+        ),
+
+        use_template=dict(arg_type='bool', required=False),
+        template_parameters=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                variable_start_string=dict(arg_type='str', required=False),
+                variable_end_string=dict(arg_type='str', required=False),
+                block_start_string=dict(arg_type='str', required=False),
+                block_end_string=dict(arg_type='str', required=False),
+                comment_start_string=dict(arg_type='str', required=False),
+                comment_end_string=dict(arg_type='str', required=False),
+                line_statement_prefix=dict(arg_type='str', required=False),
+                line_comment_prefix=dict(arg_type='str', required=False),
+                lstrip_blocks=dict(arg_type='bool', required=False),
+                trim_blocks=dict(arg_type='bool', required=False),
+                keep_trailing_newline=dict(arg_type='bool', required=False),
+                newline_sequence=dict(arg_type='str', required=False),
+                auto_reload=dict(arg_type='bool', required=False),
             )
         ),
     )

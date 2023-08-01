@@ -18,17 +18,36 @@
 # ------------------------------------------------------------------------------
 CURR_SHELL=`echo $0`
 
+# Supporting bash will take added testing, the port on z/OS has enough
+# differences to warrnat temporarily disabliing the function on z/OS. More
+# specifically, when using `vi` in Bash, editing becomes a problem.
 if [ "$CURR_SHELL" = "bash" ]; then
-    # Have not found a good way to exit the bash shell without ending the profile
-	echo "This script can not run in a bash emulator, exiting bash and and thus"\
-	"you must exit this profile again."
-	exit 1
+	if [ "$SYSTEM" = "OS/390" ]; then
+		echo "Script $0 can not run in 'bash', please execute in another shell."
+		exit 1
+	fi
 fi
 
 # ------------------------------------------------------------------------------
 # Source the known mount points
 # ------------------------------------------------------------------------------
-. ./mounts.sh
+mounts_env="mounts.env"
+
+if [ -f "$mounts_env" ]; then
+    . ./$mounts_env
+else
+    echo "Unable to source file: $mounts_env, exiting."
+    exit 1
+fi
+
+mount_sh="mounts.sh"
+
+if [ -f "$mount_sh" ]; then
+    . ./$mount_sh
+else
+    echo "Unable to source file: $mount_sh, exiting."
+    exit 1
+fi
 
 ################################################################################
 # Global vars - since ksh is the default shell and local ksh vars are defined
@@ -46,6 +65,14 @@ PYTHON_PATH=""
 
 BASH_SELECTED=false
 
+# Array where each entry is: "<index>:<version>:<mount>:<data_set>"
+ZOAU_MOUNTS=""
+
+# Array where each entry is: "<mount>:<data_set>"
+PYTHON_MOUNTS=""
+
+# Array where each entry is: "<index>:<version>:<path>"
+PYTHON_MOUNT_PATHS=""
 # ******************************************************************************
 # Search the array `zoau_mount_list` for a matching arg, if it matches set the
 # global zoau_version var to the zoau version.
@@ -58,7 +85,8 @@ get_option_zoau(){
 	unset zoau_version
 	unset zoau_mount
 	unset zoau_data_set
-    for tgt in "${zoau_mount_list[@]}" ; do
+	set_zoau_mounts
+    for tgt in "${ZOAU_MOUNTS[@]}" ; do
 	    zoau_index=`echo "${tgt}" | cut -d ":" -f 1`
         zoau_version=`echo "${tgt}" | cut -d ":" -f 2`
         zoau_mount=`echo "${tgt}" | cut -d ":" -f 3`
@@ -79,7 +107,8 @@ get_option_python(){
 	unset python_index
 	unset python_version
 	unset python_path
-    for tgt in "${python_path_list[@]}" ; do
+	set_python_mount_paths
+    for tgt in "${PYTHON_MOUNT_PATHS[@]}" ; do
 	    python_index=`echo "${tgt}" | cut -d ":" -f 1`
         python_version=`echo "${tgt}" | cut -d ":" -f 2`
         python_path=`echo "${tgt}" | cut -d ":" -f 3`
@@ -110,7 +139,8 @@ help_option_zoau(){
 	unset zoau_data_set
 	echo ""
 	echo "ZOAU Options:"
-    for tgt in "${zoau_mount_list[@]}" ; do
+	set_zoau_mounts
+    for tgt in "${ZOAU_MOUNTS[@]}" ; do
 	    zoau_index=`echo "${tgt}" | cut -d ":" -f 1`
         zoau_version=`echo "${tgt}" | cut -d ":" -f 2`
         zoau_mount=`echo "${tgt}" | cut -d ":" -f 3`
@@ -123,8 +153,9 @@ help_option_python(){
 	unset python_index
 	unset python_version
 	unset python_path
+	set_python_mount_paths
 	echo "Python Options:"
-    for tgt in "${python_path_list[@]}" ; do
+    for tgt in "${PYTHON_MOUNT_PATHS[@]}" ; do
 	    python_index=`echo "${tgt}" | cut -d ":" -f 1`
         python_version=`echo "${tgt}" | cut -d ":" -f 2`
         python_path=`echo "${tgt}" | cut -d ":" -f 3`
@@ -151,8 +182,8 @@ usage () {
 # Message to user
 ################################################################################
 selected_option () {
-	echo "Using ZOAU version `zoaversion`"
-	echo "Using python version `python --version`"
+	echo "Using ZOAU version $ZOAU_VERSION"
+	echo "Using python version $PYTHON_VERSION"
 	if [ "${BASH_SELECTED}" = true ]; then
 		echo "Bash is enabled."
 	fi
@@ -256,7 +287,7 @@ elif [ $# -eq 2 ];then
 	set_bash
 # Default  zoau 1.2.2 and python 3.9
 elif [ $# -eq 0 ]; then
-	get_option_zoau 19
+	get_option_zoau 12
 	get_option_python 2
 	get_option_shell false
 	set_exports
@@ -267,21 +298,3 @@ elif [ "$1" = help]; then
 else
 	usage
 fi
-
-
-# Source should have array mount_list
-xxxx(){
-	unset index
-	unset name
-	unset mount_point
-	unset data_set
-    for tgt in "${zoau_mount_list[@]}" ; do
-	    index=`echo "${tgt}" | cut -d ":" -f 1`
-        name=`echo "${tgt}" | cut -d ":" -f 2`
-        mount_point=`echo "${tgt}" | cut -d ":" -f 3`
-		data_set=`echo "${tgt}" | cut -d ":" -f 4`
-        mkdir -p ${mount_point}
-        echo "Mouting ZOAU ${name} on data set ${data_set} to path ${mount_point}."
-        /usr/sbin/mount -r -t zfs -f ${data_set} ${mount_point}
-    done
-}

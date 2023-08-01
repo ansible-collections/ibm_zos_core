@@ -174,6 +174,49 @@ jobs:
             }
           ]
         }
+    job_class:
+      description:
+        Job class for this job.
+      type: str
+      sample: A
+    svc_class:
+      description:
+        Service class for this job.
+      type: str
+      sample: C
+    priority:
+      description:
+        A numeric indicator of the job priority assigned through JES.
+      type: int
+      sample: 4
+    asid:
+      description:
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
+      type: int
+      sample: 0
+    creation_date:
+      description:
+        Date, local to the target system, when the job was created.
+      type: str
+      sample: "2023-05-04"
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: "14:15:00"
+    queue_position:
+      description:
+        The position within the job queue where the jobs resides.
+      type: int
+      sample: 3
+    program_name:
+      description:
+        The name of the program found in the job's last completed step found in the PGM parameter.
+        Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+      type: str
+      sample: "IEBGENER"
+
   sample:
     [
         {
@@ -181,12 +224,26 @@ jobs:
             "owner": "ADMIN",
             "job_id": "JOB01427",
             "ret_code": "null",
+            "job_class": "K",
+            "svc_class": "?",
+            "priority": 1,
+            "asid": 0,
+            "creation_date": "2023-05-03",
+            "creation_time": "12:13:00",
+            "queue_position": 3,
         },
         {
             "job_name": "LINKCBL",
             "owner": "ADMIN",
             "job_id": "JOB16577",
             "ret_code": { "msg": "CANCELED", "code": "null" },
+            "job_class": "A",
+            "svc_class": "E",
+            "priority": 0,
+            "asid": 4,
+            "creation_date": "2023-05-03",
+            "creation_time": "12:14:00",
+            "queue_position": 0,
         },
     ]
 message:
@@ -235,7 +292,7 @@ def run_module():
     module.exit_json(**result)
 
 
-# validate_arguments rturns a tuple, so we don't have to rebuild the job_name string
+# validate_arguments returns a tuple, so we don't have to rebuild the job_name string
 def validate_arguments(params):
     job_name_in = params.get("job_name")
 
@@ -354,6 +411,14 @@ def parsing_jobs(jobs_raw):
             "system": job.get("system"),
             "subsystem": job.get("subsystem"),
             "ret_code": ret_code,
+            "job_class": job.get("job_class"),
+            "svc_class": job.get("svc_class"),
+            "priority": job.get("priority"),
+            "asid": job.get("asid"),
+            "creation_date": job.get("creation_date"),
+            "creation_time": job.get("creation_time"),
+            "queue_position": job.get("queue_position"),
+            "program_name": job.get("program_name"),
         }
         jobs.append(job_dict)
     return jobs

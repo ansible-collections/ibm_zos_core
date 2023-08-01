@@ -140,6 +140,133 @@ encoding
 
 
 
+use_template
+  Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
+
+  Only valid when ``src`` is a local file or directory.
+
+  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
+
+  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
+
+  | **required**: False
+  | **type**: bool
+
+
+template_parameters
+  Options to set the way Jinja2 will process templates.
+
+  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
+
+  These options are ignored unless ``use_template`` is true.
+
+  | **required**: False
+  | **type**: dict
+
+
+  variable_start_string
+    Marker for the beginning of a statement to print a variable in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: {{
+
+
+  variable_end_string
+    Marker for the end of a statement to print a variable in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: }}
+
+
+  block_start_string
+    Marker for the beginning of a block in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: {%
+
+
+  block_end_string
+    Marker for the end of a block in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: %}
+
+
+  comment_start_string
+    Marker for the beginning of a comment in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: {#
+
+
+  comment_end_string
+    Marker for the end of a comment in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: #}
+
+
+  line_statement_prefix
+    Prefix used by Jinja2 to identify line-based statements.
+
+    | **required**: False
+    | **type**: str
+
+
+  line_comment_prefix
+    Prefix used by Jinja2 to identify comment lines.
+
+    | **required**: False
+    | **type**: str
+
+
+  lstrip_blocks
+    Whether Jinja2 should strip leading spaces from the start of a line to a block.
+
+    | **required**: False
+    | **type**: bool
+
+
+  trim_blocks
+    Whether Jinja2 should remove the first newline after a block is removed.
+
+    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: True
+
+
+  keep_trailing_newline
+    Whether Jinja2 should keep the first trailing newline at the end of a template after rendering.
+
+    | **required**: False
+    | **type**: bool
+
+
+  newline_sequence
+    Sequence that starts a newline in a template.
+
+    | **required**: False
+    | **type**: str
+    | **default**: \\n
+    | **choices**: \\n, \\r, \\r\\n
+
+
+  auto_reload
+    Whether to reload a template file when it has changed after the task has started.
+
+    | **required**: False
+    | **type**: bool
+
+
+
 
 
 Examples
@@ -223,8 +350,11 @@ jobs
 
         [
             {
+                "asid": 0,
                 "class": "K",
                 "content_type": "JOB",
+                "creation_date": "2023-05-03",
+                "creation_time": "12:13:00",
                 "ddnames": [
                     {
                         "byte_count": "677",
@@ -419,9 +549,13 @@ jobs
                         "stepname": "DLORD6"
                     }
                 ],
+                "job_class": "K",
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
                 "owner": "OMVSADM",
+                "priority": 1,
+                "program_name": "IEBGENER",
+                "queue_position": 3,
                 "ret_code": {
                     "code": 0,
                     "msg": "CC 0000",
@@ -434,7 +568,9 @@ jobs
                         }
                     ]
                 },
-                "subsystem": "STL1"
+                "subsystem": "STL1",
+                "svc_class": "?",
+                "system": "STL1"
             }
         ]
 
@@ -587,6 +723,53 @@ jobs
         | **type**: int
 
 
+
+  job_class
+    Job class for this job.
+
+    | **type**: str
+    | **sample**: A
+
+  svc_class
+    Service class for this job.
+
+    | **type**: str
+    | **sample**: C
+
+  priority
+    A numeric indicator of the job priority assigned through JES.
+
+    | **type**: int
+    | **sample**: 4
+
+  asid
+    The address Space Identifier (ASID) that is a unique descriptor for the job address space. Zero if not active.
+
+    | **type**: int
+
+  creation_date
+    Date, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 2023-05-04
+
+  creation_time
+    Time, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 14:15:00
+
+  queue_position
+    The position within the job queue where the jobs resides.
+
+    | **type**: int
+    | **sample**: 3
+
+  program_name
+    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+
+    | **type**: str
+    | **sample**: IEBGENER
 
 
 message

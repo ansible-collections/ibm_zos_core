@@ -1,3 +1,0 @@
-trivial:
-- ac - Adds new mounts, targets and ansible 2.15 requirements.env.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/789)

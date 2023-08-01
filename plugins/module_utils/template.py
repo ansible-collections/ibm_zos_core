@@ -298,9 +298,9 @@ class TemplateRenderer:
                 to_native(err)
             ))
 
-        for path, subdirs, files in os.walk(self.template_dir):
+        for dirpath, subdirs, files in os.walk(self.template_dir):
             for template_file in files:
-                relative_dir = os.path.relpath(path, self.template_dir)
+                relative_dir = os.path.relpath(dirpath, self.template_dir)
                 file_path = os.path.normpath(os.path.join(relative_dir, template_file))
 
                 try:

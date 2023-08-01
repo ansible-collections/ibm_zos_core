@@ -1,5 +1,0 @@
-bugfix:
-- zos_copy - Module returned the dynamic values created with the same dataset type
-  and record format. Fix validate the correct dataset type and record format of 
-  target created.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/824)

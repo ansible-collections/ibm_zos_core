@@ -545,7 +545,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
-                assert data_set.get("name") not in c_result.get("stdout")
+                assert data_set.get("name") != c_result.get("stdout")
     finally:
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")

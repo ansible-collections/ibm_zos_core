@@ -976,7 +976,7 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
     test_name = "DST15"
     temp_file = "/tmp/{0}".format(test_name)
     ds_name = test_name.upper() + "." + ds_type
-    content = TEST_CONTENT
+    content = " "
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["path"] = ds_full_name
@@ -988,7 +988,7 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_CONTENT
+            assert result.get("stdout") == '\nZOAU_ROOT=/usr/lpp/zoautil/v100'
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 

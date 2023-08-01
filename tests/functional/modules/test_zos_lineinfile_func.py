@@ -518,22 +518,23 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
 @pytest.mark.uss
 def test_uss_line_does_not_insert_repeated(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(path="", line='ZOAU_ROOT=/mvsutil-develop_dsed', state="present")
+    params = dict(path="", line='ZOAU_ROOT=/usr/lpp/zoautil/v100', state="present")
     full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
     try:
-        hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
-        hosts.all.file(path=full_path, state="touch")
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
-        results = hosts.all.zos_lineinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == 'ZOAU_ROOT=/mvsutil-develop_dsed'
+            assert result.get("stdout") == TEST_CONTENT
+        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
+        hosts.all.zos_lineinfile(**params)
+        results = hosts.all.shell(cmd="""grep -c 'ZOAU_ROOT=/usr/lpp/zoautil/v10' {0} """.format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == '1'
     finally:
         remove_uss_environment(ansible_zos_module)
 
@@ -976,19 +977,22 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
     test_name = "DST15"
     temp_file = "/tmp/{0}".format(test_name)
     ds_name = test_name.upper() + "." + ds_type
-    content = " "
+    content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["path"] = ds_full_name
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == '\nZOAU_ROOT=/usr/lpp/zoautil/v100'
+            assert result.get("stdout") == TEST_CONTENT
+        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
+        hosts.all.zos_lineinfile(**params)
+        results = hosts.all.shell(cmd="""dgrep -c 'ZOAU_ROOT=/usr/lpp/zoautil/v10' "{0}" """.format(params["path"]))
+        response = params["path"] + " " + "1"
+        for result in results.contacted.values():
+            assert result.get("stdout") == response
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 

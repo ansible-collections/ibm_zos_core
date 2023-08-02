@@ -1,9 +1,0 @@
-bugfixes:
-- zos_copy - Fixes a bug where files not encoded in IBM-1047
-  would trigger an error while computing the record length
-  for a new destination dataset. Issue 664.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/743)
-- zos_copy - Fixes a bug where the code for fixing an issue with
-  newlines in files (issue 599) would use the wrong encoding
-  for normalization. Issue 678.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/743)

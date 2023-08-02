@@ -1,5 +1,0 @@
-trivial:
-- zos_copy - prior, there was no test case for symbols on a volume.
-  This change adds a test case to test a volume which has in it symbols,
-  issue 738.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/740)

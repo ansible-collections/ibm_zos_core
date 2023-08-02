@@ -1,6 +1,0 @@
-trivial:
-- zos_tso_command - Test suite was set up to run sequentially such that
-  certain tests relied on prior test cases. The new changes combine those
-  inter-dependent test cases into a single test case so that each individual
-  test case can now be run stand-alone.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/895)

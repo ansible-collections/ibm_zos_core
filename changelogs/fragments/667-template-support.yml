@@ -1,4 +1,0 @@
-minor_changes:
-  - Add support for Jinja2 templates in zos_copy and zos_job_submit
-    when using local source files.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/667)

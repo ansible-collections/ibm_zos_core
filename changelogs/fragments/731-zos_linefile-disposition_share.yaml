@@ -1,6 +1,0 @@
-minor_changes:
-- zos_lineinfile - would access data sets with exclusive access so no other
-  task can read the data, this enhancement allows for a data set to be opened
-  with a disposition set to share so that other tasks can access the data when
-  option `force` is set to `true`.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/731)

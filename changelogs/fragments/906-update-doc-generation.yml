@@ -1,4 +1,0 @@
-trivial:
-- make - Current doc generation requires manual intervention, this change will
-  allow for doc generation without any manual intervention and removes warnings.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/906)

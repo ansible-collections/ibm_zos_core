@@ -1,6 +1,0 @@
-enhancements:
-- zos_copy - Previously, backups were taken when force was set to false;
-  whether or not a user specified this operation which caused allocation issues
-  with space and permissions. This removes the automatic backup performed and
-  reverts to the original logic in that backups must be initiated by the user.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/896)

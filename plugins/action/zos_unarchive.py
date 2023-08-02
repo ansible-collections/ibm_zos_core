@@ -118,4 +118,6 @@ class ActionModule(ActionBase):
                         task_vars=task_vars,
                     )
                 )
+            else:
+                result.update(dict(failed=True))
         return result

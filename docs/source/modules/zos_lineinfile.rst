@@ -269,7 +269,7 @@ Return Values
 
 
 changed
-  Indicates if the source was modified
+  Indicates if the source was modified. Value of 1 represents `true`, otherwise `false`.
 
   | **returned**: success
   | **type**: bool

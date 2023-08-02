@@ -1,4 +1,0 @@
-trivial:
-- ansible-lint - enabling ansible-lint for 2.15 and Ansible Automation Platform
-  certification.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/812)

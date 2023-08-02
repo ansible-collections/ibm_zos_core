@@ -353,7 +353,8 @@ jobs
                 "asid": 0,
                 "class": "K",
                 "content_type": "JOB",
-                "creation_datetime": "20230503T121300",
+                "creation_date": "2023-05-03",
+                "creation_time": "12:13:00",
                 "ddnames": [
                     {
                         "byte_count": "677",
@@ -553,6 +554,7 @@ jobs
                 "job_name": "DBDGEN00",
                 "owner": "OMVSADM",
                 "priority": 1,
+                "program_name": "IEBGENER",
                 "queue_position": 3,
                 "ret_code": {
                     "code": 0,
@@ -567,7 +569,8 @@ jobs
                     ]
                 },
                 "subsystem": "STL1",
-                "svc_class": "?"
+                "svc_class": "?",
+                "system": "STL1"
             }
         ]
 
@@ -722,13 +725,13 @@ jobs
 
 
   job_class
-    Letter indicating job class for this job.
+    Job class for this job.
 
     | **type**: str
     | **sample**: A
 
   svc_class
-    Character indicating service class for this job.
+    Service class for this job.
 
     | **type**: str
     | **sample**: C
@@ -740,21 +743,33 @@ jobs
     | **sample**: 4
 
   asid
-    An identifier created by JES.
+    The address Space Identifier (ASID) that is a unique descriptor for the job address space. Zero if not active.
 
     | **type**: int
 
-  creation_datetime
-    Date and time, local to the target system, when the job was created.
+  creation_date
+    Date, local to the target system, when the job was created.
 
     | **type**: str
-    | **sample**: 20230504T141500
+    | **sample**: 2023-05-04
+
+  creation_time
+    Time, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 14:15:00
 
   queue_position
-    Integer of the position within the job queue where this jobs resided.
+    The position within the job queue where the jobs resides.
 
     | **type**: int
     | **sample**: 3
+
+  program_name
+    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+
+    | **type**: str
+    | **sample**: IEBGENER
 
 
 message

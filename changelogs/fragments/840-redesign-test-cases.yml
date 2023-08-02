@@ -1,7 +1,0 @@
-trivial:
-- zos_lininfile - Adjust test cases to be in one document and clearer to follow.
-- zos_blockinfile - Adjust test cases to be in one document and clearer to follow.
-bugfix:
-- zos_blockinfile - Test case generate a data set that was not correctly removed.
-  Changes delete the correct data set not only member.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/840)

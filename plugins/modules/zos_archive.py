@@ -117,7 +117,7 @@ options:
       - Remote absolute path, glob, or list of paths, globs or data set name
         patterns for the file, files or data sets to exclude from src list
         and glob expansion.
-      - "Patterns (wildcards) can contain one of the following: ?, *."
+      - "Patterns (wildcards) can contain one of the following, `?`, `*`."
       - "* matches everything."
       - "? matches any single character."
     type: list
@@ -824,7 +824,8 @@ class MVSArchive(Archive):
             name {str} - name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        changed = data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
+        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
 

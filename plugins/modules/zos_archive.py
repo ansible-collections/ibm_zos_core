@@ -496,6 +496,7 @@ class Archive():
         self.expanded_exclude_sources = ""
         self.dest_state = STATE_ABSENT
         self.state = STATE_PRESENT
+        self.xmit_log_data_set = ""
 
     def targets_exist(self):
         return bool(self.targets)
@@ -544,6 +545,7 @@ class Archive():
             'missing': self.not_found,
             'expanded_sources': list(self.expanded_sources),
             'expanded_exclude_sources': list(self.expanded_exclude_sources),
+            'xmit_log_data_set': self.xmit_log_data_set,
         }
 
 
@@ -1016,7 +1018,9 @@ class XMITArchive(MVSArchive):
             archive: {str}
         """
         log_option = "LOGDSNAME({0})".format(self.xmit_log_data_set) if self.xmit_log_data_set else "NOLOG"
-        xmit_cmd = """ XMIT A.B -
+        xmit_cmd = """
+        PROFILE NOPREFIX
+        XMIT A.B -
         FILE(SYSUT1) OUTFILE(SYSUT2) -
         {0} -
         """.format(log_option)

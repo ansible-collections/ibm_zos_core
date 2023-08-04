@@ -174,8 +174,15 @@ options:
     required: false
   executable:
     description:
-      - If set to C(true), indicates that the file or data set to be copied is a
-        executable to ensure permissions of execution.
+      - If C(dest) is a nonexistent data set, the attributes assigned will depend
+        on the type of C(src). If C(src) is a USS file, C(dest) will have a
+        Fixed Block (FB) record format and the remaining attributes will be computed.
+      - If I(is_binary=true), C(dest) will have a Fixed Block (FB) record format
+        with a record length of 80, block size of 32760, and the remaining
+        attributes will be computed.
+      - If I(executable=true),C(dest) will have a Undefined (U)record format
+        with a record length of 0, block size of 32760, and the remaining
+        attributes will be computed.
     type: bool
     default: false
     required: false
@@ -393,6 +400,11 @@ notes:
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
+    - Beginning in version 1.8.x, zos_copy will no longer attempt to autocorrect a copy of a data type member
+      into a PDSE that contains program objects. You can control this behavior using module option
+      is_executable that will signify an executable is being copied into a PDSE with other
+      executables. Mixing data type members with program objects will be responded with a
+      (FSUM8976,./zos_copy.html) error.
 seealso:
 - module: zos_fetch
 - module: zos_data_set
@@ -1431,8 +1443,6 @@ class PDSECopyHandler(CopyHandler):
         dest_members = []
 
         if src_ds_type == "USS":
-            if self.executable:
-                self.is_binary = True
 
             if os.path.isfile(new_src):
                 path = os.path.dirname(new_src)
@@ -1441,7 +1451,7 @@ class PDSECopyHandler(CopyHandler):
                 path, dirs, files = next(os.walk(new_src))
 
             src_members = [
-                os.path.normpath("{0}/{1}".format(path, file)) if self.is_binary
+                os.path.normpath("{0}/{1}".format(path, file)) if (self.is_binary or self.executable)
                 else normalize_line_endings("{0}/{1}".format(path, file), encoding)
                 for file in files
             ]
@@ -2034,9 +2044,6 @@ def allocate_destination_data_set(
     if dest_data_set:
         dest_params = dest_data_set
         dest_params["name"] = dest
-        if executable:
-            dest_params["record_format"] = "U"
-            dest_params["type"] = "LIBRARY"
         data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
@@ -2079,12 +2086,15 @@ def allocate_destination_data_set(
                 size = os.stat(src).st_size
                 record_format = record_length = None
 
-                if not is_binary:
+                if is_binary:
+                    record_format = "FB"
+                    record_length = 80
+                elif executable:
+                    record_format = "U"
+                    record_length = 0
+                else:
                     record_format = "FB"
                     record_length = get_file_record_length(src)
-
-                if executable:
-                    record_format = "U"
 
                 dest_params = get_data_set_attributes(
                     dest,

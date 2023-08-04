@@ -2578,7 +2578,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         )
         for result in exec_res.contacted.values():
             assert result.get("rc") == 0
-
+        # Execute the copy from pdse to another with executable and validate it
         copy_res = hosts.all.zos_copy(
             src="{0}({1})".format(src, member),
             dest="{0}({1})".format(dest, "MEM1"),
@@ -2589,27 +2589,6 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             cmd="mls {0}".format(dest),
             executable=SHELL_EXECUTABLE
         )
-
-        copy_uss_res = hosts.all.zos_copy(
-            src="{0}({1})".format(dest, "MEM1"),
-            dest=uss_dest,
-            remote_src=True,
-            executable=True,
-            force=True
-        )
-
-        verify_exe_uss = hosts.all.shell(
-            cmd="{0}".format(uss_dest)
-        )
-
-        for v_cp_u in verify_exe_uss.contacted.values():
-            assert v_cp_u.get("rc") == 0
-            stdout = v_cp_u.get("stdout")
-            assert  "SIMPLE HELLO WORLD" in str(stdout)
-
-        for result in copy_uss_res.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -2622,6 +2601,26 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             assert stdout is not None
             # number of members
             assert len(stdout.splitlines()) == 2
+        # Copy to a uss file executable from the library execute and validate
+        copy_uss_res = hosts.all.zos_copy(
+            src="{0}({1})".format(dest, "MEM1"),
+            dest=uss_dest,
+            remote_src=True,
+            executable=True,
+            force=True)
+
+        for result in copy_uss_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+        verify_exe_uss = hosts.all.shell(
+            cmd="{0}".format(uss_dest)
+        )
+
+        for v_cp_u in verify_exe_uss.contacted.values():
+            assert v_cp_u.get("rc") == 0
+            stdout = v_cp_u.get("stdout")
+            assert  "SIMPLE HELLO WORLD" in str(stdout)
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")

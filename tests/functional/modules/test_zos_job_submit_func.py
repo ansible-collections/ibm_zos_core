@@ -254,7 +254,7 @@ HELLO, WORLD
 //
 """
 
-JCL_FILE_CONTENTS_FULL_INPUT="""//HLQ0  JOB MSGLEVEL=(1,1),
+JCL_FULL_INPUT="""//HLQ0  JOB MSGLEVEL=(1,1),
 //  MSGCLASS=A,CLASS=A,NOTIFY=&SYSUID
 //STEP1 EXEC PGM=BPXBATCH,PARM='PGM /bin/sleep 5'
 """
@@ -618,32 +618,22 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
 
 
 def test_job_submit_full_input(ansible_zos_module):
-    hosts = ansible_zos_module
     try:
+        hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS_FULL_INPUT.format(DATA_SET_NAME)), TEMP_PATH)
-        )
-        hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="present", type="pds", replace=True
-        )
-        hosts.all.shell(
-            cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FULL_INPUT), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(DATA_SET_NAME), location="DATA_SET"
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
         )
         for result in results.contacted.values():
             print(result)
-            assert 1 == 0
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=DATA_SET_NAME.upper()+".SAMPLE", state="absent")
-        hosts.all.zos_data_set(name=DATA_SET_NAME.upper()+".INPUT", state="absent")
-        hosts.all.zos_data_set(name=DATA_SET_NAME.upper()+".OUTPUT", state="absent")
 
 def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)

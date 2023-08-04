@@ -1,8 +1,0 @@
-bugfixes:
-- zos_lineinfile - Fixed a bug where a Python f-string was used and thus removed
-  to ensure support for Python 2.7 on the controller.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/659)
-trivial:
-- Remove changelog fragments no longer needed as they are already recorded in
-  the prior version of IBM z/OS Core.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/659)

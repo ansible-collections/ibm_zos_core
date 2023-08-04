@@ -1,4 +1,0 @@
-trivial:
-- ac - fixed makefile limitations and monolithic design. Command 'ac' performs
-  similar function only with greater automation and detection and modularity.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/766)

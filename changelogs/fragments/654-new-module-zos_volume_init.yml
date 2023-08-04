@@ -1,2 +1,0 @@
-major_changes: 
-- zos_volume_init - Introduces new module to handle volume (or minidisk) initialization. (https://github.com/ansible-collections/ibm_zos_core/pull/654)

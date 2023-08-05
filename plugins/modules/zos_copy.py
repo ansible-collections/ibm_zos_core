@@ -1741,7 +1741,8 @@ def is_compatible(
     copy_member,
     src_member,
     is_src_dir,
-    is_src_inline
+    is_src_inline,
+    executable
 ):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
@@ -1753,6 +1754,7 @@ def is_compatible(
         src_member {bool} -- Whether src is a data set member.
         is_src_dir {bool} -- Whether the src is a USS directory.
         is_src_inline {bool} -- Whether the src comes from inline content.
+        executable {bool} -- Whether the src is a executable to be copied.
 
     Returns:
         {bool} -- Whether src can be copied to dest.
@@ -1763,6 +1765,14 @@ def is_compatible(
     # ********************************************************************
     if dest_type is None:
         return True
+
+     # ********************************************************************
+    # If source or destination is a sequential data set and executable as true
+    # is incompatible to execute the copy.
+    # ********************************************************************
+    if executable:
+        if src_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_SEQ:
+            return False
 
     # ********************************************************************
     # If source is a sequential data set, then destination must be
@@ -2074,10 +2084,7 @@ def allocate_destination_data_set(
             size = int(src_attributes.total_space)
             record_format = src_attributes.recfm
             record_length = int(src_attributes.lrecl)
-            if executable:
-                dest_params = get_data_set_attributes(dest, size, is_binary, record_format="U", record_length=record_length, type="LIBRARY", volume=volume)
-            else:
-                dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE",
+            dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE",
                                                       volume=volume)
             data_set.DataSet.ensure_present(replace=force, **dest_params)
         elif src_ds_type == "USS":
@@ -2406,7 +2413,8 @@ def run_module(module, arg_def):
         copy_member,
         src_member,
         is_src_dir,
-        (src_ds_type == "USS" and src is None)
+        (src_ds_type == "USS" and src is None),
+        executable
     ):
         module.fail_json(
             msg="Incompatible target type '{0}' for source '{1}'".format(

@@ -1566,8 +1566,7 @@ def test_copy_dest_lock(ansible_zos_module):
         results = hosts.all.zos_copy(
             src = DATASET_2 + "({0})".format(MEMBER_1),
             dest = DATASET_1 + "({0})".format(MEMBER_1),
-            remote_src = True,
-            force = True
+            remote_src = True
         )
         for result in results.contacted.values():
             print(result)

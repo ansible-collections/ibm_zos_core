@@ -1766,7 +1766,7 @@ def is_compatible(
     if dest_type is None:
         return True
 
-     # ********************************************************************
+    # ********************************************************************
     # If source or destination is a sequential data set and executable as true
     # is incompatible to execute the copy.
     # ********************************************************************
@@ -2085,7 +2085,7 @@ def allocate_destination_data_set(
             record_format = src_attributes.recfm
             record_length = int(src_attributes.lrecl)
             dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE",
-                                                      volume=volume)
+                                                  volume=volume)
             data_set.DataSet.ensure_present(replace=force, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):

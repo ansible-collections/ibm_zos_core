@@ -1027,6 +1027,8 @@ class XMITArchive(MVSArchive):
         dds = {"SYSUT1": "{0},shr".format(src), "SYSUT2": archive}
         rc, out, err = mvs_cmd.ikjeft01(cmd=xmit_cmd, authorized=True, dds=dds)
         if rc != 0:
+            # self.get_error_hint handles the raw output of XMIT executed through TSO, contains different
+            # error hints based on the abend code returned.
             error_hint = self.get_error_hint(out)
             self.module.fail_json(
                 msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}.{2}".format(src, archive, error_hint),
@@ -1072,6 +1074,14 @@ class XMITArchive(MVSArchive):
         self.clean_environment(data_sets=self.tmp_data_sets)
 
     def get_error_hint(self, output):
+        """
+        Takes a raw TSO XMIT output and parses the abend code and return code to provide an
+        appropriate error hint for the failure.
+        If parsing is not possible then return an empty string.
+
+        Arguments:
+            output (str): Raw TSO XMIT output returned from ikjeft01 when the command fails.
+        """
         error_messages = dict(D37={"00000004": "There appears to be a space issue. Ensure that there is adequate space and log data sets are not full."})
 
         sys_abend, reason_code, error_hint = "", "", ""

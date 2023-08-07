@@ -1027,8 +1027,9 @@ class XMITArchive(MVSArchive):
         dds = {"SYSUT1": "{0},shr".format(src), "SYSUT2": archive}
         rc, out, err = mvs_cmd.ikjeft01(cmd=xmit_cmd, authorized=True, dds=dds)
         if rc != 0:
+            error_hint = self.get_error_hint(out)
             self.module.fail_json(
-                msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}".format(src, archive),
+                msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}.{2}".format(src, archive, error_hint),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -1069,6 +1070,30 @@ class XMITArchive(MVSArchive):
         self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
+
+    def get_error_hint(self, output):
+        error_messages = dict(D37={"00000004": "There appears to be a space issue. Ensure that there is adequate space and log data sets are not full."})
+
+        sys_abend, reason_code, error_hint = "", "", ""
+        find_abend = re.findall(r"ABEND CODE.*REASON", output)
+        if find_abend:
+            try:
+                sys_abend = find_abend[0].split("ABEND CODE ")[1].split(" ")[0]
+            except IndexError:
+                return ""
+
+        find_reason_code = re.findall(r"REASON CODE.*", output)
+        if find_reason_code:
+            try:
+                reason_code = find_reason_code[0].split("REASON CODE ")[1].split(" ")[0]
+            except IndexError:
+                return ""
+
+        msg = "Operation failed with abend code {0} and reason code {1}. {2}"
+        if sys_abend in error_messages:
+            if reason_code in error_messages[sys_abend]:
+                error_hint = error_messages[sys_abend][reason_code]
+        return msg.format(sys_abend, reason_code, error_hint)
 
 
 def run_module():

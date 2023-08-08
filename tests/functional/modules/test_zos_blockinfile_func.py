@@ -1221,9 +1221,6 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
             if backup_name:
                 backup_ds_name = result.get("backup_name")
                 assert backup_ds_name is not None
-            else:
-                backup_ds_name = result.get("backup_name")
-                assert backup_ds_name is not None
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
@@ -1231,8 +1228,6 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
         remove_ds_environment(ansible_zos_module, ds_name)
         if backup_name:
             ansible_zos_module.all.zos_data_set(name="BLOCKIF.TEST.BACKUP", state="absent")
-            ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
-        else:
             ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
 

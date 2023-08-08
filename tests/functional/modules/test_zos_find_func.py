@@ -36,10 +36,8 @@ VSAM_NAMES = [
 ]
 
 
-def create_vsam_ksds(ds_name, ansible_zos_module, get_volumes):
+def create_vsam_ksds(ds_name, ansible_zos_module, volume_1):
     hosts = ansible_zos_module
-    volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
     alloc_cmd = """     DEFINE CLUSTER (NAME({0})  -
     INDEXED                 -
     RECSZ(80,80)            -
@@ -250,11 +248,13 @@ def test_find_data_sets_in_volume(ansible_zos_module):
         assert val.get('matched') >= 1
 
 
-def test_find_vsam_pattern(ansible_zos_module):
+def test_find_vsam_pattern(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts)
+            create_vsam_ksds(vsam, hosts, volume_1)
         find_res = hosts.all.zos_find(
             patterns=['TEST.FIND.VSAM.*.*'], resource_type='cluster'
         )
@@ -276,8 +276,8 @@ def test_find_vsam_in_volume(ansible_zos_module, get_volumes):
     alternate_vsam = "TEST.FIND.ALTER.VSAM"
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts, volume=volume_2)
-        create_vsam_ksds(alternate_vsam, hosts, volume=volume_1)
+            create_vsam_ksds(vsam, hosts, volume_2)
+        create_vsam_ksds(alternate_vsam, hosts, volume_1)
         find_res = hosts.all.zos_find(
             patterns=['TEST.FIND.*.*.*'], volumes=[volume_2], resource_type='cluster'
         )

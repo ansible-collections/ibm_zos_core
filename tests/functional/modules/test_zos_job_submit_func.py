@@ -260,7 +260,6 @@ HELLO, WORLD
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
-DEFAULT_VOLUME = VOLUMES[0]
 
 def test_job_submit_PDS(ansible_zos_module):
     try:

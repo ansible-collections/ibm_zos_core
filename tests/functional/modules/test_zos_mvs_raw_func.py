@@ -34,7 +34,6 @@ SYSIN_DD = "SYSIN"
 SYSPRINT_DD = "SYSPRINT"
 IDCAMS_STDIN = " LISTCAT ENTRIES('{0}')".format(EXISTING_DATA_SET.upper())
 IDCAMS_INVALID_STDIN = " hello world #$!@%!#$!@``~~^$*%"
-DEFAULT_VOLUME = VOLUMES[0]
 
 
 # ---------------------------------------------------------------------------- #

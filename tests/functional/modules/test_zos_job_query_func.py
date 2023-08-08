@@ -22,9 +22,6 @@ import pytest
 from pprint import pprint
 from shellescape import quote
 import tempfile
-from ibm_zos_core.tests.common.volumes import Volumes
-
-EC_VOLUMES = Volumes.EC_33012
 
 # Make sure job list * returns something
 def test_zos_job_query_func(ansible_zos_module):
@@ -50,7 +47,6 @@ HELLO, WORLD
 TEMP_PATH = "/tmp/jcl"
 JDATA_SET_NAME = "imstestl.ims1.testq1"
 NDATA_SET_NAME = "imstestl.ims1.testq2"
-#DEFAULT_VOLUME = EC_VOLUMES["VOLUME_1"]
 
 # test to show multi wildcard in Job_id query won't crash the search
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):

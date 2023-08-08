@@ -21,6 +21,10 @@ import subprocess
 from pipes import quote
 from pprint import pprint
 
+from ibm_zos_core.tests.volumes import (
+    ls_Volume,
+    get_disposal_vol,
+    free_vol)
 
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
@@ -34,8 +38,6 @@ data_set_types = [
     ("lds"),
 ]
 
-VOLUME_000000 = "000000"
-VOLUME_222222 = "222222"
 DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
 DEFAULT_DATA_SET_NAME_WITH_MEMBER = "USER.PRIVATE.TESTDS(TESTME)"
 TEMP_PATH = "/tmp/jcl"
@@ -148,11 +150,13 @@ def print_results(results):
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
-def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
+def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -178,13 +182,13 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
             assert result.get("changed") is False
         # recatalog the data set
         results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second catalog shows catalog already performed
         results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1
         )
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -192,18 +196,21 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         # clean up
         hosts.all.file(path=TEMP_PATH, state="absent")
         # Added volumes to force a catalog in case they were somehow uncataloged to avoid an duplicate on volume error
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=[VOLUME_000000, VOLUME_222222])
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=volume_1)
+        free_vol(volume_1, volumes)
 
 
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
-def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
+def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -217,7 +224,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # ensure data set present
         results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="present", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="present", volumes=volume_1
         )
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -227,24 +234,27 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
             assert result.get("changed") is True
         # ensure data set present
         results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="present", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="present", volumes=volume_1
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=VOLUME_000000)
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=volume_1)
 
 
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
-def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
+def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -258,7 +268,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # ensure data set present
         results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="present", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="present", volumes=volume_1
         )
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -270,12 +280,13 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME,
             state="present",
-            volumes=VOLUME_000000,
+            volumes=volume_1,
             replace=True,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -288,7 +299,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -306,7 +317,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
             assert result.get("changed") is True
         # ensure data set absent
         results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="absent", volumes=VOLUME_000000
+            name=DEFAULT_DATA_SET_NAME, state="absent", volumes=volume_1
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -319,9 +330,12 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
-def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl):
+def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
+    volume_2 = get_disposal_vol(volumes)
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000)
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1)
 
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -339,7 +353,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
         assert result.get("changed") is True
 
     # Create the same dataset name in different volume
-    jcl = jcl.replace(VOLUME_000000, VOLUME_222222)
+    jcl = jcl.replace(volume_1, volume_2)
 
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
@@ -352,13 +366,16 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     hosts.all.file(path=TEMP_PATH, state="absent")
 
     # ensure data set absent
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=VOLUME_000000)
+    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=volume_1)
     for result in results.contacted.values():
         assert result.get("changed") is True
 
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     for result in results.contacted.values():
         assert result.get("changed") is True
+
+    free_vol(volume_1, volumes)
+    free_vol(volume_2, volumes)
 
 
 @pytest.mark.parametrize("dstype", data_set_types)
@@ -669,7 +686,10 @@ def test_repeated_operations(ansible_zos_module):
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
-def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module):
+def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
+    volume_2 = get_disposal_vol(volumes)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
@@ -679,7 +699,7 @@ def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module)
             space_primary=5,
             space_type="CYL",
             record_length=15,
-            volumes=[VOLUME_000000, VOLUME_222222],
+            volumes=[volume_1, volume_2],
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -693,16 +713,21 @@ def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module)
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME,
             state="cataloged",
-            volumes=[VOLUME_000000, VOLUME_222222],
+            volumes=[volume_1, volume_2],
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
+        free_vol(volume_1, volumes)
+        free_vol(volume_2, volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
-def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module):
+def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
+    volume_2 = get_disposal_vol(volumes)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
@@ -713,7 +738,7 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module):
             key_offset=0,
             space_primary=5,
             space_type="CYL",
-            volumes=[VOLUME_000000, VOLUME_222222],
+            volumes=[volume_1, volume_2],
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -727,16 +752,20 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module):
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME,
             state="cataloged",
-            volumes=[VOLUME_000000, VOLUME_222222],
+            volumes=[volume_1, volume_2],
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
+        free_vol(volume_1, volumes)
+        free_vol(volume_2, volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
-def test_data_set_old_aliases(ansible_zos_module):
+def test_data_set_old_aliases(ansible_zos_module, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
@@ -745,12 +774,13 @@ def test_data_set_old_aliases(ansible_zos_module):
             state="present",
             format="fb",
             size="5m",
-            volume=VOLUME_000000,
+            volume=volume_1,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
@@ -912,7 +942,9 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
     "formats",
     ["F","FB", "VB", "FBA", "VBA", "U"],
 )
-def test_data_set_f_formats(ansible_zos_module, formats):
+def test_data_set_f_formats(ansible_zos_module, formats, get_volumes):
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
@@ -921,10 +953,11 @@ def test_data_set_f_formats(ansible_zos_module, formats):
             state="present",
             format=formats,
             size="5m",
-            volume=VOLUME_000000,
+            volume=volume_1,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        free_vol(volume_1, volumes)

@@ -21,10 +21,11 @@ import time
 import tempfile
 from tempfile import mkstemp
 import subprocess
-from ibm_zos_core.tests.common.volumes import Volumes
 
-EC_VOLUMES = Volumes.EC_33012
-
+from ibm_zos_core.tests.volumes import (
+    ls_Volume,
+    get_disposal_vol,
+    free_vol)
 __metaclass__ = type
 
 
@@ -176,7 +177,6 @@ SH /tmp/disp_shr/pdse-lock '{0}({1})'
 //STDERR DD SYSOUT=*
 //"""
 
-VOLUME=EC_VOLUMES["VOLUME_1"]
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -2567,8 +2567,8 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             assert result.get("rc") == 0
 
         copy_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src, member), 
-            dest="{0}({1})".format(dest, "MEM1"), 
+            src="{0}({1})".format(src, member),
+            dest="{0}({1})".format(dest, "MEM1"),
             remote_src=True)
 
         verify_copy = hosts.all.shell(
@@ -3062,10 +3062,12 @@ def test_backup_pds(ansible_zos_module, args):
 @pytest.mark.seq
 @pytest.mark.pdse
 @pytest.mark.parametrize("src_type", ["seq", "pds", "pdse"])
-def test_copy_data_set_to_volume(ansible_zos_module, src_type):
+def test_copy_data_set_to_volume(ansible_zos_module, get_volumes, src_type):
     hosts = ansible_zos_module
     source = "USER.TEST.FUNCTEST.SRC"
     dest = "USER.TEST.FUNCTEST.DEST"
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
 
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
@@ -3073,7 +3075,7 @@ def test_copy_data_set_to_volume(ansible_zos_module, src_type):
             src=source,
             dest=dest,
             remote_src=True,
-            volume=VOLUME
+            volume=volume_1
         )
 
         for cp in copy_res.contacted.values():
@@ -3088,8 +3090,9 @@ def test_copy_data_set_to_volume(ansible_zos_module, src_type):
 
         for cv in check_vol.contacted.values():
             assert cv.get('rc') == 0
-            assert VOLUME in cv.get('stdout')
+            assert volume_1 in cv.get('stdout')
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=source, state='absent')
         hosts.all.zos_data_set(name=dest, state='absent')
 
@@ -3206,17 +3209,19 @@ def test_backup_ksds(ansible_zos_module, backup):
 
 
 @pytest.mark.vsam
-def test_copy_ksds_to_volume(ansible_zos_module):
+def test_copy_ksds_to_volume(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     src_ds = TEST_VSAM_KSDS
     dest_ds = "USER.TEST.VSAM.KSDS"
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
 
     try:
         copy_res = hosts.all.zos_copy(
             src=src_ds,
             dest=dest_ds,
             remote_src=True,
-            volume=VOLUME
+            volume=volume_1
         )
         verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
 
@@ -3233,14 +3238,16 @@ def test_copy_ksds_to_volume(ansible_zos_module):
             assert re.search(r"\bINDEXED\b", output)
             assert re.search(r"\b000000\b", output)
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=dest_ds, state="absent")
 
 
-def test_dest_data_set_parameters(ansible_zos_module):
+def test_dest_data_set_parameters(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "USER.TEST.DEST"
-    volume = VOLUME
+    volumes = ls_Volume(*get_volumes)
+    volume = get_disposal_vol(volumes)
     space_primary = 3
     space_secondary = 2
     space_type = "K"
@@ -3292,6 +3299,7 @@ def test_dest_data_set_parameters(ansible_zos_module):
             assert data_set_attributes[3] == "PS"
             assert volume in output_lines[4]
     finally:
+        free_vol(volume, volumes)
         hosts.all.zos_data_set(name=dest, state="absent")
 
 

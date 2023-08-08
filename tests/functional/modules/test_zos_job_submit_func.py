@@ -20,8 +20,11 @@ import tempfile
 import pytest
 import re
 import os
-from pprint import pprint
 
+from ibm_zos_core.tests.volumes import (
+    ls_Volume,
+    get_disposal_vol,
+    free_vol)
 
 # ##############################################################################
 # Configure the job card as needed, most common keyword parameters:
@@ -257,7 +260,7 @@ HELLO, WORLD
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
-DEFAULT_VOLUME = "000000"
+DEFAULT_VOLUME = VOLUMES[0]
 
 def test_job_submit_PDS(ansible_zos_module):
     try:
@@ -370,9 +373,11 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
         assert re.search(r'completion code', repr(result.get("msg")))
 
 
-def test_job_submit_PDS_volume(ansible_zos_module):
+def test_job_submit_PDS_volume(ansible_zos_module, get_volumes):
     try:
         hosts = ansible_zos_module
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         hosts.all.file(path=TEMP_PATH, state="directory")
 
         hosts.all.shell(
@@ -380,7 +385,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="present", type="pds", replace=True, volumes=DEFAULT_VOLUME
+            name=DATA_SET_NAME, state="present", type="pds", replace=True, volumes=volume_1
         )
 
         hosts.all.shell(
@@ -391,12 +396,13 @@ def test_job_submit_PDS_volume(ansible_zos_module):
             name=DATA_SET_NAME, state="uncataloged", type="pds"
         )
 
-        results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(SAMPLE)", location="DATA_SET", volume=DEFAULT_VOLUME)
+        results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(SAMPLE)", location="DATA_SET", volume=volume_1)
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get('changed') is True
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 

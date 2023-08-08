@@ -14,9 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ibm_zos_core.tests.common.volumes import Volumes
-
-EC_VOLUMES = Volumes.EC_33012
+from ibm_zos_core.tests.volumes import (
+    ls_Volume,
+    get_disposal_vol,
+    free_vol)
 
 SEQ_NAMES = [
     "TEST.FIND.SEQ.FUNCTEST.FIRST",
@@ -34,11 +35,11 @@ VSAM_NAMES = [
     "TEST.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
-VOLUME_000000 = EC_VOLUMES["VOLUME_1"]
-VOLUME_222222 = EC_VOLUMES["VOLUME_2"]
 
-def create_vsam_ksds(ds_name, ansible_zos_module, volume=VOLUME_000000):
+def create_vsam_ksds(ds_name, ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     alloc_cmd = """     DEFINE CLUSTER (NAME({0})  -
     INDEXED                 -
     RECSZ(80,80)            -
@@ -49,7 +50,7 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume=VOLUME_000000):
     FREESPACE(3,3) )        -
     DATA (NAME({0}.DATA))   -
     INDEX (NAME({0}.INDEX))""".format(
-        ds_name, volume
+        ds_name, volume_1
     )
 
     return hosts.all.shell(
@@ -244,7 +245,6 @@ def test_find_data_sets_in_volume(ansible_zos_module):
     find_res = hosts.all.zos_find(
         patterns=['USER.*'], volumes=['IMSSUN']
     )
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) >= 1
         assert val.get('matched') >= 1
@@ -268,20 +268,25 @@ def test_find_vsam_pattern(ansible_zos_module):
         )
 
 
-def test_find_vsam_in_volume(ansible_zos_module):
+def test_find_vsam_in_volume(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
+    volume_2 = get_disposal_vol(volumes)
     alternate_vsam = "TEST.FIND.ALTER.VSAM"
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts, volume=VOLUME_222222)
-        create_vsam_ksds(alternate_vsam, hosts, volume=VOLUME_000000)
+            create_vsam_ksds(vsam, hosts, volume=volume_2)
+        create_vsam_ksds(alternate_vsam, hosts, volume=volume_1)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=[VOLUME_222222], resource_type='cluster'
+            patterns=['TEST.FIND.*.*.*'], volumes=[volume_2], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
+        free_vol(volume_1, volumes)
+        free_vol(volume_2, volumes)
         hosts.all.zos_data_set(
             batch=[dict(name=i, state='absent') for i in VSAM_NAMES]
         )

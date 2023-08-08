@@ -18,6 +18,11 @@ __metaclass__ = type
 import pytest
 from pprint import pprint
 
+from ibm_zos_core.tests.volumes import (
+    ls_Volume,
+    get_disposal_vol,
+    free_vol)
+
 EXISTING_DATA_SET = "user.private.proclib"
 DEFAULT_DATA_SET = "user.private.rawds"
 DEFAULT_DATA_SET_2 = "user.private.rawds2"
@@ -29,7 +34,7 @@ SYSIN_DD = "SYSIN"
 SYSPRINT_DD = "SYSPRINT"
 IDCAMS_STDIN = " LISTCAT ENTRIES('{0}')".format(EXISTING_DATA_SET.upper())
 IDCAMS_INVALID_STDIN = " hello world #$!@%!#$!@``~~^$*%"
-DEFAULT_VOLUME = "000000"
+DEFAULT_VOLUME = VOLUMES[0]
 
 
 # ---------------------------------------------------------------------------- #
@@ -109,8 +114,10 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
-def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module):
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     tmphlq = "TMPHLQ"
     hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
@@ -132,7 +139,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module):
                     space_primary=5,
                     space_secondary=1,
                     space_type="m",
-                    volumes=DEFAULT_VOLUME,
+                    volumes=volume_1,
                     record_format="fb"
                 ),
             ),
@@ -140,15 +147,14 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module):
         ],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 0
         assert len(result.get("dd_names", [])) > 0
         for backup in result.get("backups"):
             backup.get("backup_name")[:6] == tmphlq
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("changed", False) is True
+    free_vol(volume_1, volumes)
 
 
 # * new data set and append to member in one step not currently supported
@@ -217,15 +223,17 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
     "normal_disposition,changed",
     [("keep", True), ("delete", True), ("catalog", True), ("uncatalog", True)],
 )
-def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, changed):
+def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, changed, get_volumes):
     try:
         hosts = ansible_zos_module
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET,
             type="seq",
             state="present",
             replace=True,
-            volumes=[DEFAULT_VOLUME],
+            volumes=[volume_1],
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -237,7 +245,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
                         data_set_name=DEFAULT_DATA_SET,
                         disposition="shr",
                         disposition_normal=normal_disposition,
-                        volumes=[DEFAULT_VOLUME],
+                        volumes=[volume_1],
                         return_content=dict(type="text"),
                     ),
                 ),
@@ -249,6 +257,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
+        free_vol(volume_1, volumes)
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -304,9 +313,11 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
     "data_set_type",
     ["pds", "pdse", "large", "basic", "seq"],
 )
-def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
+def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, get_volumes):
     try:
         hosts = ansible_zos_module
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -318,7 +329,7 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
                         data_set_name=DEFAULT_DATA_SET,
                         disposition="new",
                         type=data_set_type,
-                        volumes=[DEFAULT_VOLUME],
+                        volumes=[volume_1],
                     ),
                 ),
                 dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
@@ -330,6 +341,7 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
             pprint(result)
             assert "BGYSC1103E" not in result.get("stderr", "")
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -337,9 +349,11 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
     "data_set_type",
     ["ksds", "rrds", "lds", "esds"],
 )
-def test_data_set_types_vsam(ansible_zos_module, data_set_type):
+def test_data_set_types_vsam(ansible_zos_module, data_set_type, get_volumes):
     try:
         hosts = ansible_zos_module
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -352,7 +366,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
                         data_set_name=DEFAULT_DATA_SET,
                         disposition="new",
                         type=data_set_type,
-                        volumes=[DEFAULT_VOLUME],
+                        volumes=[volume_1],
                     ),
                 )
                 if data_set_type != "ksds"
@@ -364,7 +378,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
                         type=data_set_type,
                         key_length=5,
                         key_offset=0,
-                        volumes=[DEFAULT_VOLUME],
+                        volumes=[volume_1],
                     ),
                 ),
                 dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
@@ -377,6 +391,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
             pprint(result)
             assert "EDC5041I" in result.get("stderr", "")
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -384,9 +399,11 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
     "record_format",
     ["u", "vb", "vba", "fb", "fba"],
 )
-def test_record_formats(ansible_zos_module, record_format):
+def test_record_formats(ansible_zos_module, record_format, get_volumes):
     try:
         hosts = ansible_zos_module
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -398,7 +415,7 @@ def test_record_formats(ansible_zos_module, record_format):
                         data_set_name=DEFAULT_DATA_SET,
                         disposition="new",
                         record_format=record_format,
-                        volumes=[DEFAULT_VOLUME],
+                        volumes=[volume_1],
                     ),
                 ),
                 dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
@@ -411,6 +428,7 @@ def test_record_formats(ansible_zos_module, record_format):
             pprint(result)
             assert str(" {0} ".format(record_format.upper())) in result.get("stdout", "")
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -424,15 +442,17 @@ def test_record_formats(ansible_zos_module, record_format):
         ),
     ],
 )
-def test_return_content_type(ansible_zos_module, return_content_type, expected):
+def test_return_content_type(ansible_zos_module, return_content_type, expected, get_volumes):
     try:
         hosts = ansible_zos_module
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET,
             type="seq",
             state="present",
             replace=True,
-            volumes=[DEFAULT_VOLUME],
+            volumes=[volume_1],
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -443,7 +463,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected):
                         dd_name=SYSPRINT_DD,
                         data_set_name=DEFAULT_DATA_SET,
                         disposition="shr",
-                        volumes=[DEFAULT_VOLUME],
+                        volumes=[volume_1],
                         return_content=dict(type=return_content_type),
                     ),
                 ),
@@ -457,7 +477,8 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected):
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
     finally:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[DEFAULT_VOLUME])
+        free_vol(volume_1, volumes)
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[volume_1])
 
 
 @pytest.mark.parametrize(
@@ -472,16 +493,18 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected):
     ],
 )
 def test_return_text_content_encodings(
-    ansible_zos_module, src_encoding, response_encoding, expected
+    ansible_zos_module, src_encoding, response_encoding, expected, get_volumes
 ):
     try:
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         hosts = ansible_zos_module
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET,
             type="seq",
             state="present",
             replace=True,
-            volumes=[DEFAULT_VOLUME],
+            volumes=[volume_1],
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -492,7 +515,7 @@ def test_return_text_content_encodings(
                         dd_name=SYSPRINT_DD,
                         data_set_name=DEFAULT_DATA_SET,
                         disposition="shr",
-                        volumes=[DEFAULT_VOLUME],
+                        volumes=[volume_1],
                         return_content=dict(
                             type="text",
                             src_encoding=src_encoding,
@@ -509,7 +532,8 @@ def test_return_text_content_encodings(
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
     finally:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[DEFAULT_VOLUME])
+        free_vol(volume_1, volumes)
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[volume_1])
 
 
 def test_reuse_existing_data_set(ansible_zos_module):

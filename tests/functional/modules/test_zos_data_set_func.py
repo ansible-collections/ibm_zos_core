@@ -56,7 +56,7 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
    TRACKS(1,1)                             -
    CISZ(4096)                              -
    FREESPACE(3 3)                          -
-   VOLUMES({0}}) )                       -
+   VOLUMES({0}) )                       -
    DATA (NAME(USER.PRIVATE.TESTDS.DATA))     -
    INDEX (NAME(USER.PRIVATE.TESTDS.INDEX))
 /*
@@ -73,7 +73,7 @@ RRDS_CREATE_JCL = """//CRERRDS    JOB (T043JM,JM00,1,0,0,0),'CREATE RRDS',CLASS=
    TRACKS(1,1)                             -
    REUSE                                   -
    FREESPACE(3 3)                          -
-   VOLUMES({0}}) )                       -
+   VOLUMES({0}) )                       -
    DATA (NAME('USER.PRIVATE.TESTDS.DATA'))
 /*
 """

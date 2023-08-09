@@ -534,6 +534,10 @@ class Archive():
     def remove_targets(self):
         pass
 
+    @abc.abstractmethod
+    def compute_dest_size(self):
+        pass
+
     @property
     def result(self):
         return {

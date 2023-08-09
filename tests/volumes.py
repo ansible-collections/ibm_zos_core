@@ -18,7 +18,8 @@ __metaclass__ = type
 import pytest
 
 class Volume:
-
+# Class volume to save the information with volume name and a flag of use
+# to mange in all test suits
     def __init__(self, name):
         self.name = name
         self.in_use = False
@@ -30,20 +31,23 @@ class Volume:
         self.in_use = False
 
 class ls_Volume:
-
+# Class to call fixture get_volumes and filled the array and manage volumes
+# instances of are in use or not
     def __init__(self, *get_volumes):
         self.volume = get_volumes
 
 
 def get_disposal_vol(ls_vols):
+    # Check in the list of volumes one on disposal if not, send a error
     for volume in ls_vols.volume:
         if not (volume.in_use):
-            volume.in_use = True
+            volume.use()
             return volume.name
-    print("Not more volumes in disposal")
-    return "@@@@@"
+    print("Not more volumes in disposal return volume 00000")
+    return "000000"
 
 def free_vol(vol, ls_vols):
+    # Check from the array the volume is already free for other test to use
     for volume in ls_vols.volume:
         if volume.name == vol:
-            volume.in_use = False
+            volume.free()

@@ -85,13 +85,19 @@ def ansible_zos_module(request, z_python_interpreter):
     except Exception:
         pass
 
+    # Call of the class by the class ls_Volume (volumes.py file) as many times needed
+    # one time the array is filled
 @pytest.fixture(scope="session")
 def get_volumes(ansible_zos_module):
+    # Call the pytest-ansible plugin to execute the command d u,dasd,online
+    # to full an array of volumes on disposal with the priority of of actives (A) and storage
+    # (STRG) first then online (O) and storage and if is needed the privated ones but actives
+    # then to get a flag if is on disposal or not every volumes is a instance of a class to
+    # manage the use
     list_volumes = []
-    all_volumes_w_info = []
     active_storage = []
     storage_online = []
-    private_active = []
+    #private_active = []
     all_volumes = ansible_zos_module.all.zos_operator(cmd="d u,dasd,online,,65536")
     for volume in all_volumes.contacted.values():
         all_volumes = volume.get('content')
@@ -101,14 +107,14 @@ def get_volumes(ansible_zos_module):
             active_storage.append(v_w_i[3])
         if v_w_i[2] == 'O' and v_w_i[4] == "STRG/RSDNT":
             storage_online.append(v_w_i[3])
-        if v_w_i[2] == 'A':
-            private_active.append(v_w_i[3])
+    #    if v_w_i[2] == 'A':
+    #        private_active.append(v_w_i[3])
     for vol in active_storage:
         list_volumes.append(Volume(vol))
     for vol in storage_online:
         list_volumes.append(Volume(vol))
-    for vol in private_active:
-        list_volumes.append(Volume(vol))
+    #for vol in private_active:
+    #    list_volumes.append(Volume(vol))
     return list_volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

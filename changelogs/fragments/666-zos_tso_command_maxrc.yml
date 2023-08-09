@@ -1,4 +1,0 @@
-minor_changes:
-  - zos_tso_command - was enhanced to accept `max_rc` as an option. This option
-    allows a non-zero return code to succeed as a valid return code.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/666)

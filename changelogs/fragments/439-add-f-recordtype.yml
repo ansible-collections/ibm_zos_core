@@ -1,4 +1,0 @@
-minor_changes:
-- zos_data_set - record format = 'F' has been added to support 'fixed' block records.
-  This allows records that can use the entire block.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/821)

@@ -283,7 +283,9 @@ EXAMPLES = r'''
 
 RETURN = r"""
 changed:
-  description: Indicates if the source was modified
+  description:
+    Indicates if the source was modified.
+    Value of 1 represents `true`, otherwise `false`.
   returned: success
   type: bool
   sample: 1
@@ -384,7 +386,7 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, debug=True, options=force)
+    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, options=force, as_json=True)
 
 
 def absent(src, marker, encoding, force):
@@ -400,7 +402,7 @@ def absent(src, marker, encoding, force):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, debug=True, options=force)
+    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, options=force, as_json=True)
 
 
 def quotedString(string):

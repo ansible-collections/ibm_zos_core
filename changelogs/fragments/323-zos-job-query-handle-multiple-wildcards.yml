@@ -1,7 +1,0 @@
-minor_changes:
-- zos_job_query - ansible module does not support positional wild card placement
-  for `job_name1 or `job_id`. This enhancement allows embedded wildcards
-  throughout the `job_name` and `job_id`.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/721)
-- module_utils - job.py utility did not support positional wiled card placement,
-  this enhancement uses `fnmatch` logic to support wild cards.

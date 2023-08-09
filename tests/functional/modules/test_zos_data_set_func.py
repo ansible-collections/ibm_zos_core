@@ -56,7 +56,7 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
    TRACKS(1,1)                             -
    CISZ(4096)                              -
    FREESPACE(3 3)                          -
-   VOLUMES(000000) )                       -
+   VOLUMES({0}}) )                       -
    DATA (NAME(USER.PRIVATE.TESTDS.DATA))     -
    INDEX (NAME(USER.PRIVATE.TESTDS.INDEX))
 /*
@@ -73,7 +73,7 @@ RRDS_CREATE_JCL = """//CRERRDS    JOB (T043JM,JM00,1,0,0,0),'CREATE RRDS',CLASS=
    TRACKS(1,1)                             -
    REUSE                                   -
    FREESPACE(3 3)                          -
-   VOLUMES(000000) )                       -
+   VOLUMES({0}}) )                       -
    DATA (NAME('USER.PRIVATE.TESTDS.DATA'))
 /*
 """
@@ -89,7 +89,7 @@ ESDS_CREATE_JCL = """//CREESDS    JOB (T043JM,JM00,1,0,0,0),'CREATE ESDS',CLASS=
    TRACKS(1,1)                             -
    CISZ(4096)                              -
    FREESPACE(3 3)                          -
-   VOLUMES(000000) )                       -
+   VOLUMES({0}) )                       -
    DATA (NAME('USER.PRIVATE.TESTDS.DATA'))
 /*
 """
@@ -103,7 +103,7 @@ LDS_CREATE_JCL = """//CRELDS    JOB (T043JM,JM00,1,0,0,0),'CREATE LDS',CLASS=R,
    LINEAR                                  -
    TRACKS(1,1)                             -
    CISZ(4096)                              -
-   VOLUMES(000000) )                       -
+   VOLUMES({0}) )                       -
    DATA (NAME(USER.PRIVATE.TESTDS.DATA))
 /*
 """
@@ -117,7 +117,7 @@ PDS_CREATE_JCL = """
      ALLOC -
            DSNAME('USER.PRIVATE.TESTDS') -
            NEW -
-           VOL(000000) -
+           VOL({0}) -
            DSNTYPE(PDS)
 /*
 """
@@ -149,6 +149,7 @@ def print_results(results):
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
+    ids=['PDS_CREATE_JCL', 'KSDS_CREATE_JCL', 'RRDS_CREATE_JCL', 'ESDS_CREATE_JCL', 'LDS_CREATE_JCL']
 )
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, get_volumes):
     volumes = ls_Volume(*get_volumes)
@@ -161,7 +162,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, get_volumes):
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
@@ -203,6 +204,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, get_volumes):
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
+    ids=['PDS_CREATE_JCL', 'KSDS_CREATE_JCL', 'RRDS_CREATE_JCL', 'ESDS_CREATE_JCL', 'LDS_CREATE_JCL']
 )
 def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, get_volumes):
     volumes = ls_Volume(*get_volumes)
@@ -215,7 +217,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, get_volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
@@ -247,6 +249,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, get_volumes)
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
+    ids=['PDS_CREATE_JCL', 'KSDS_CREATE_JCL', 'RRDS_CREATE_JCL', 'ESDS_CREATE_JCL', 'LDS_CREATE_JCL']
 )
 def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, get_volumes):
     volumes = ls_Volume(*get_volumes)
@@ -259,7 +262,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, get_volu
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
@@ -294,9 +297,12 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, get_volu
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
+    ids=['PDS_CREATE_JCL', 'KSDS_CREATE_JCL', 'RRDS_CREATE_JCL', 'ESDS_CREATE_JCL', 'LDS_CREATE_JCL']
 )
-def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
+def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, get_volumes):
     try:
+        volumes = ls_Volume(*get_volumes)
+        volume_1 = get_disposal_vol(volumes)
         hosts = ansible_zos_module
         hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=volume_1
@@ -304,7 +310,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
@@ -329,6 +335,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
+        ids=['PDS_CREATE_JCL', 'KSDS_CREATE_JCL', 'RRDS_CREATE_JCL', 'ESDS_CREATE_JCL', 'LDS_CREATE_JCL']
 )
 def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl, get_volumes):
     volumes = ls_Volume(*get_volumes)
@@ -340,7 +347,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
     hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
     results =hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS", wait=True)
 
     # verify data set creation was successful
@@ -353,10 +360,9 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
         assert result.get("changed") is True
 
     # Create the same dataset name in different volume
-    jcl = jcl.replace(volume_1, volume_2)
 
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_2)), TEMP_PATH))
     results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS", wait=True)
 
     # verify data set creation was successful
@@ -690,6 +696,8 @@ def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module,
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_disposal_vol(volumes)
     volume_2 = get_disposal_vol(volumes)
+    print(volume_2)
+    print(volume_1)
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

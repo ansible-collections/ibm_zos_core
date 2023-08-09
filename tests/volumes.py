@@ -38,6 +38,7 @@ class ls_Volume:
 def get_disposal_vol(ls_vols):
     for volume in ls_vols.volume:
         if not (volume.in_use):
+            volume.in_use = True
             return volume.name
     print("Not more volumes in disposal")
     return "@@@@@"

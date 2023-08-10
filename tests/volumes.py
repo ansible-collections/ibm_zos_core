@@ -43,7 +43,7 @@ def get_disposal_vol(ls_vols):
         if not (volume.in_use):
             volume.use()
             return volume.name
-    print("Not more volumes in disposal return volume 00000")
+    print("Not more volumes in disposal return volume 000000")
     return "000000"
 
 def free_vol(vol, ls_vols):

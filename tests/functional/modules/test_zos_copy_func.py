@@ -3236,7 +3236,7 @@ def test_copy_ksds_to_volume(ansible_zos_module, get_volumes):
             output = "\n".join(dd_names[0]["content"])
             assert "IN-CAT" in output
             assert re.search(r"\bINDEXED\b", output)
-            assert re.search(r"\b000000\b", output)
+            assert re.search(r"\b{0}\b".format(volume_1), output)
     finally:
         free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=dest_ds, state="absent")

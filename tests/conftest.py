@@ -15,7 +15,9 @@ __metaclass__ = type
 
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
-from ibm_zos_core.tests.volumes import Volume
+from ibm_zos_core.tests.volumes import (
+    Volume,
+    validate_volume)
 import sys
 from mock import MagicMock
 import importlib
@@ -110,11 +112,14 @@ def get_volumes(ansible_zos_module):
         if v_w_i[2] == 'A':
             private_active.append(v_w_i[3])
     for vol in active_storage:
-        list_volumes.append(Volume(vol))
+        if validate_volume(vol, ansible_zos_module):
+            list_volumes.append(Volume(vol))
     for vol in storage_online:
-        list_volumes.append(Volume(vol))
+        if validate_volume(vol, ansible_zos_module):
+            list_volumes.append(Volume(vol))
     for vol in private_active:
-        list_volumes.append(Volume(vol))
+        if validate_volume(vol, ansible_zos_module):
+            list_volumes.append(Volume(vol))
     return list_volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

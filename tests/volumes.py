@@ -51,3 +51,13 @@ def free_vol(vol, ls_vols):
     for volume in ls_vols.volume:
         if volume.name == vol:
             volume.free()
+
+def validate_volume(volume, hosts):
+    failed = False
+    results = hosts.all.shell(cmd="vtocls {0}".format(volume))
+    for result in results.contacted.values():
+        if result.get("failed", False) is True:
+            failed = True
+        if result.get("rc", 0) > 0:
+            failed = True
+    return not failed

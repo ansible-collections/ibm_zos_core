@@ -744,34 +744,6 @@ class MVSArchive(Archive):
             else:
                 self.not_found.append(path)
 
-    def _compute_dest_data_set_size(self):
-        """
-        Computes the attributes that the destination data set or temporary destination
-        data set should have in terms of size, record_length, etc.
-        """
-
-        """
-        - Size of temporary DS for archive handling.
-
-        If remote_src then we can get the source_size from archive on the system.
-
-        If not remote_src then we can get the source_size from temporary_ds.
-        Both are named src so no problemo.
-
-        If format is xmit, dest_data_set size is the same as source_size.
-
-        If format is terse, dest_data_set size is different than the source_size, has to be greater,
-        but how much? In this case we can add dest_data_set option.
-
-        Apparently the only problem is when format name is terse.
-        """
-
-        # Get the size from the system
-        default_size = 5
-        dest_space_type = 'M'
-        dest_primary_space = int(default_size)
-        return dest_primary_space, dest_space_type
-
     def _create_dest_data_set(
             self,
             name=None,

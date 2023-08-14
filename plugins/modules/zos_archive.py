@@ -110,6 +110,10 @@ options:
       - If I(dest) has missing parent directories, they will be created.
       - If I(dest) is a nonexistent USS file, it will be created.
       - Destination data set attributes can be set using I(dest_data_set).
+      - Destination data set space will be calculated based on space of
+        source data sets provided and/or found by expanding the pattern name.
+        Calculating space can impact performance, by providing
+        I(dest_data_set), the performance will be improved.
     type: str
     required: true
   exclude:

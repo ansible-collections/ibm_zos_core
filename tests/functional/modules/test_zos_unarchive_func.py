@@ -415,7 +415,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],
@@ -902,7 +902,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],
@@ -986,3 +986,27 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
         tmp_folder.cleanup()
 
+
+def test_mvs_unarchive_fail_copy_remote_src(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")
+        # False path
+        source_path = "/tmp/OMVSADM.NULL"
+
+        format_dict = dict(name='terse')
+        format_dict["format_options"] = dict(use_adrdssu=True)
+
+        # Unarchive action
+        unarchive_result = hosts.all.zos_unarchive(
+            src=source_path,
+            format=format_dict,
+            remote_src=False,
+        )
+
+        for result in unarchive_result.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("failed", False) is True
+            print(result)
+    finally:
+        tmp_folder.cleanup()

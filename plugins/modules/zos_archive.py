@@ -110,12 +110,16 @@ options:
       - If I(dest) has missing parent directories, they will be created.
       - If I(dest) is a nonexistent USS file, it will be created.
       - Destination data set attributes can be set using I(dest_data_set).
+      - Destination data set space will be calculated based on space of
+        source data sets provided and/or found by expanding the pattern name.
+        Calculating space can impact performance, by providing space in
+        I(dest_data_set), the performance will be improved.
     type: str
     required: true
   exclude:
     description:
       - Remote absolute path, glob, or list of paths, globs or data set name
-        patterns for the file, files or data sets to exclude from path list
+        patterns for the file, files or data sets to exclude from src list
         and glob expansion.
       - "Patterns (wildcards) can contain one of the following, `?`, `*`."
       - "* matches everything."
@@ -148,7 +152,7 @@ options:
         (for example, 'u+rwx' or 'u=rw,g=r,o=r') or a special
         string 'preserve'.
       - I(mode=preserve) means that the file will be given the same permissions
-        as the source file.
+        as the src file.
     type: str
     required: false
   owner:
@@ -164,7 +168,7 @@ options:
     description:
       - Remove any added source files , trees or data sets after module
         L(zos_archive,./zos_archive.html) adds them to the archive.
-        Source files, trees and data sets are identified with option I(path).
+        Source files, trees and data sets are identified with option I(src).
     type: bool
     required: false
     default: false
@@ -301,6 +305,10 @@ notes:
     respectively.
   - When packing and using C(use_adrdssu) flag the module will take up to two
     times the space indicated in C(dest_data_set).
+  - tar, zip, bz2 and pax are archived using python C(tarfile) library which
+    uses the latest version available for each format, for compatibility when
+    opening from system make sure to use the latest available version for the
+    intended format.
 
 
 seealso:
@@ -373,7 +381,7 @@ dest_state:
       - C(archive) when the file is an archive.
       - C(compress) when the file is compressed, but not an archive.
       - C(incomplete) when the file is an archive, but some files under
-        I(path) were not found.
+        I(source) were not found.
     type: str
     returned: success
 missing:
@@ -403,6 +411,7 @@ expanded_exclude_sources:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
@@ -416,6 +425,8 @@ import zipfile
 import abc
 import glob
 import re
+import math
+from hashlib import sha256
 
 
 try:
@@ -427,6 +438,7 @@ XMIT_RECORD_LENGTH = 80
 AMATERSE_RECORD_LENGTH = 1024
 
 STATE_ABSENT = 'absent'
+STATE_PRESENT = 'present'
 STATE_ARCHIVE = 'archive'
 STATE_COMPRESSED = 'compressed'
 STATE_INCOMPLETE = 'incomplete'
@@ -488,6 +500,8 @@ class Archive():
         self.expanded_sources = ""
         self.expanded_exclude_sources = ""
         self.dest_state = STATE_ABSENT
+        self.state = STATE_PRESENT
+        self.xmit_log_data_set = ""
 
     def targets_exist(self):
         return bool(self.targets)
@@ -509,7 +523,7 @@ class Archive():
         pass
 
     @abc.abstractmethod
-    def _get_checksums(self, path):
+    def _get_checksums(self, src):
         pass
 
     @abc.abstractmethod
@@ -524,17 +538,23 @@ class Archive():
     def remove_targets(self):
         pass
 
+    @abc.abstractmethod
+    def compute_dest_size(self):
+        pass
+
     @property
     def result(self):
         return {
             'archived': self.archived,
             'dest': self.dest,
+            'state': self.state,
             'arcroot': self.arcroot,
             'dest_state': self.dest_state,
             'changed': self.changed,
             'missing': self.not_found,
             'expanded_sources': list(self.expanded_sources),
             'expanded_exclude_sources': list(self.expanded_exclude_sources),
+            'xmit_log_data_set': self.xmit_log_data_set,
         }
 
 
@@ -569,11 +589,29 @@ class USSArchive(Archive):
             else:
                 self.not_found.append(path)
 
-    def _get_checksums(self, path):
-        md5_cmd = "md5 -r \"{0}\"".format(path)
-        rc, out, err = self.module.run_command(md5_cmd)
-        checksums = out.split(" ")[0]
-        return checksums
+    def _get_checksums(self, src):
+        """Calculate SHA256 hash for a given file
+
+        Arguments:
+            src {str} -- The absolute path of the file
+
+        Returns:
+            str -- The SHA256 hash of the contents of input file
+        """
+        b_src = to_bytes(src)
+        if not os.path.exists(b_src) or os.path.isdir(b_src):
+            return None
+        blksize = 64 * 1024
+        hash_digest = sha256()
+        try:
+            with open(to_bytes(src, errors="surrogate_or_strict"), "rb") as infile:
+                block = infile.read(blksize)
+                while block:
+                    hash_digest.update(block)
+                    block = infile.read(blksize)
+        except Exception:
+            raise
+        return hash_digest.hexdigest()
 
     def dest_checksums(self):
         if self.dest_exists():
@@ -586,11 +624,18 @@ class USSArchive(Archive):
         return True
 
     def remove_targets(self):
+        self.state = STATE_ABSENT
         for target in self.archived:
             if os.path.isdir(target):
-                os.removedirs(target)
+                try:
+                    os.removedirs(target)
+                except Exception:
+                    self.state = STATE_INCOMPLETE
             else:
-                os.remove(target)
+                try:
+                    os.remove(target)
+                except PermissionError:
+                    self.state = STATE_INCOMPLETE
 
     def archive_targets(self):
         self.file = self.open(self.dest)
@@ -699,34 +744,6 @@ class MVSArchive(Archive):
             else:
                 self.not_found.append(path)
 
-    def _compute_dest_data_set_size(self):
-        """
-        Computes the attributes that the destination data set or temporary destination
-        data set should have in terms of size, record_length, etc.
-        """
-
-        """
-        - Size of temporary DS for archive handling.
-
-        If remote_src then we can get the source_size from archive on the system.
-
-        If not remote_src then we can get the source_size from temporary_ds.
-        Both are named src so no problemo.
-
-        If format is xmit, dest_data_set size is the same as source_size.
-
-        If format is terse, dest_data_set size is different than the source_size, has to be greater,
-        but how much? In this case we can add dest_data_set option.
-
-        Apparently the only problem is when format name is terse.
-        """
-
-        # Get the size from the system
-        default_size = 5
-        dest_space_type = 'M'
-        dest_primary_space = int(default_size)
-        return dest_primary_space, dest_space_type
-
     def _create_dest_data_set(
             self,
             name=None,
@@ -833,11 +850,13 @@ class MVSArchive(Archive):
             )
         return rc
 
-    def _get_checksums(self, path):
-        md5_cmd = "md5 -r \"//'{0}'\"".format(path)
-        rc, out, err = self.module.run_command(md5_cmd)
-        checksums = out.split(" ")[0]
-        return checksums
+    def _get_checksums(self, src):
+        sha256_cmd = "sha256 \"//'{0}'\"".format(src)
+        rc, out, err = self.module.run_command(sha256_cmd)
+        checksums = out.split("= ")
+        if len(checksums) > 0:
+            return checksums[1]
+        return None
 
     def dest_checksums(self):
         if self.dest_exists():
@@ -856,8 +875,14 @@ class MVSArchive(Archive):
         return data_set.DataSet.data_set_exists(self.dest)
 
     def remove_targets(self):
+        self.state = STATE_ABSENT
         for target in self.archived:
-            data_set.DataSet.ensure_absent(target)
+            try:
+                changed = data_set.DataSet.ensure_absent(target)
+            except Exception:
+                self.state = STATE_INCOMPLETE
+            if not changed:
+                self.state = STATE_INCOMPLETE
         return
 
     def expand_mvs_paths(self, paths):
@@ -892,10 +917,30 @@ class MVSArchive(Archive):
                 data_set.DataSet.ensure_absent(ds)
         if uss_files is not None:
             for file in uss_files:
-                os.remove(file)
+                try:
+                    os.remove(file)
+                except PermissionError:
+                    self.state = STATE_INCOMPLETE
         if remove_targets:
+            self.remove_targets()
+
+    def compute_dest_size(self):
+        """
+        Calculate the destination data set based on targets found.
+            Arguments:
+
+            Returns:
+                {int} - Destination computed space in kilobytes.
+        """
+        if self.dest_data_set.get("space_primary") is None:
+            dest_space = 0
             for target in self.targets:
-                data_set.DataSet.ensure_absent(target)
+                data_sets = datasets.listing(target)
+                for data_set in data_sets:
+                    dest_space += int(data_set.to_dict().get("total_space"))
+            # space unit returned from listings is bytes
+            dest_space = math.ceil(dest_space / 1024)
+            self.dest_data_set.update(space_primary=dest_space, space_type="K")
 
 
 class AMATerseArchive(MVSArchive):
@@ -972,15 +1017,20 @@ class XMITArchive(MVSArchive):
             archive: {str}
         """
         log_option = "LOGDSNAME({0})".format(self.xmit_log_data_set) if self.xmit_log_data_set else "NOLOG"
-        xmit_cmd = """ XMIT A.B -
+        xmit_cmd = """
+        PROFILE NOPREFIX
+        XMIT A.B -
         FILE(SYSUT1) OUTFILE(SYSUT2) -
         {0} -
         """.format(log_option)
         dds = {"SYSUT1": "{0},shr".format(src), "SYSUT2": archive}
         rc, out, err = mvs_cmd.ikjeft01(cmd=xmit_cmd, authorized=True, dds=dds)
         if rc != 0:
+            # self.get_error_hint handles the raw output of XMIT executed through TSO, contains different
+            # error hints based on the abend code returned.
+            error_hint = self.get_error_hint(out)
             self.module.fail_json(
-                msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}".format(src, archive),
+                msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}.{2}".format(src, archive, error_hint),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -1021,6 +1071,38 @@ class XMITArchive(MVSArchive):
         self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
+
+    def get_error_hint(self, output):
+        """
+        Takes a raw TSO XMIT output and parses the abend code and return code to provide an
+        appropriate error hint for the failure.
+        If parsing is not possible then return an empty string.
+
+        Arguments:
+            output (str): Raw TSO XMIT output returned from ikjeft01 when the command fails.
+        """
+        error_messages = dict(D37={"00000004": "There appears to be a space issue. Ensure that there is adequate space and log data sets are not full."})
+
+        sys_abend, reason_code, error_hint = "", "", ""
+        find_abend = re.findall(r"ABEND CODE.*REASON", output)
+        if find_abend:
+            try:
+                sys_abend = find_abend[0].split("ABEND CODE ")[1].split(" ")[0]
+            except IndexError:
+                return ""
+
+        find_reason_code = re.findall(r"REASON CODE.*", output)
+        if find_reason_code:
+            try:
+                reason_code = find_reason_code[0].split("REASON CODE ")[1].split(" ")[0]
+            except IndexError:
+                return ""
+
+        msg = "Operation failed with abend code {0} and reason code {1}. {2}"
+        if sys_abend in error_messages:
+            if reason_code in error_messages[sys_abend]:
+                error_hint = error_messages[sys_abend][reason_code]
+        return msg.format(sys_abend, reason_code, error_hint)
 
 
 def run_module():
@@ -1196,6 +1278,7 @@ def run_module():
 
     archive.find_targets()
     if archive.targets_exist():
+        archive.compute_dest_size()
         archive.archive_targets()
         if archive.remove:
             archive.remove_targets()

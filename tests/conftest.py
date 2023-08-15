@@ -113,20 +113,17 @@ def get_volumes(ansible_zos_module):
     for info in all_volumes:
         vol_w_info = info.split()
         if vol_w_info[2] == 'A' and vol_w_info[4] == "STRG/RSDNT":
-            active_storage.append(vol_w_info[3])
+            if vol_w_info[3] != "SCR03":
+                active_storage.append(vol_w_info[3])
         if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
-            storage_online.append(vol_w_info[3])
-        #if vol_w_info[2] == 'A':
-        #    private_active.append(vol_w_info[3])
+            if vol_w_info[3] != "SCR03":
+                storage_online.append(vol_w_info[3])
     for vol in active_storage:
         if validate_volume(vol, ansible_zos_module):
             list_volumes.append(Volume(vol))
     for vol in storage_online:
         if validate_volume(vol, ansible_zos_module):
             list_volumes.append(Volume(vol))
-    #for vol in private_active:
-    #    if validate_volume(vol, ansible_zos_module):
-    #        list_volumes.append(Volume(vol))
     return list_volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

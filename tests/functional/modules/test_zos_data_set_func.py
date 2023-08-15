@@ -328,6 +328,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, get_volumes):
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
+        free_vol(volume_1, volumes)
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 

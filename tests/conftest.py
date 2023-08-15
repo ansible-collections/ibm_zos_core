@@ -19,6 +19,7 @@ from ibm_zos_core.tests.volumes import (
     Volume,
     validate_volume)
 import sys
+import time
 from mock import MagicMock
 import importlib
 
@@ -100,26 +101,32 @@ def get_volumes(ansible_zos_module):
     active_storage = []
     storage_online = []
     private_active = []
-    all_volumes = ansible_zos_module.all.zos_operator(cmd="d u,dasd,online,,65536")
-    for volume in all_volumes.contacted.values():
-        all_volumes = volume.get('content')
+    flag = False
+    iteration = 5
+    while not flag or iteration > 0:
+        all_volumes = ansible_zos_module.all.zos_operator(cmd="d u,dasd,online,,65536")
+        time.sleep(1)
+        for volume in all_volumes.contacted.values():
+            all_volumes = volume.get('content')
+        flag = True if len(all_volumes) > 5 else False
+        iteration -= 1
     for info in all_volumes:
-        v_w_i = info.split()
-        if v_w_i[2] == 'A' and v_w_i[4] == "STRG/RSDNT":
-            active_storage.append(v_w_i[3])
-        if v_w_i[2] == 'O' and v_w_i[4] == "STRG/RSDNT":
-            storage_online.append(v_w_i[3])
-        if v_w_i[2] == 'A':
-            private_active.append(v_w_i[3])
+        vol_w_info = info.split()
+        if vol_w_info[2] == 'A' and vol_w_info[4] == "STRG/RSDNT":
+            active_storage.append(vol_w_info[3])
+        if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
+            storage_online.append(vol_w_info[3])
+        #if vol_w_info[2] == 'A':
+        #    private_active.append(vol_w_info[3])
     for vol in active_storage:
         if validate_volume(vol, ansible_zos_module):
             list_volumes.append(Volume(vol))
     for vol in storage_online:
         if validate_volume(vol, ansible_zos_module):
             list_volumes.append(Volume(vol))
-    for vol in private_active:
-        if validate_volume(vol, ansible_zos_module):
-            list_volumes.append(Volume(vol))
+    #for vol in private_active:
+    #    if validate_volume(vol, ansible_zos_module):
+    #        list_volumes.append(Volume(vol))
     return list_volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

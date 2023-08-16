@@ -1,4 +1,3 @@
-
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
@@ -105,6 +104,9 @@ EXAMPLES = r"""
 # """
 
 
+import os
+import stat
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
@@ -156,18 +158,18 @@ def run_module():
                 )
             ),
             # Private parameters (from the action plugin).
-            # script_path=dict(type='str'),
-            # script_args=dict(type='str'),
-            local_charset=dict(type='str'),
+            script_path=dict(type='str'),
+            script_args=dict(type='str'),
+            local_charset=dict(type='str')
         ),
         supports_check_mode=False
     )
 
     args_def = dict(
-        cmd=dict(type='str', required=True),
-        chdir=dict(type='path', required=False),
-        executable=dict(type='path', required=False),
-        remote_src=dict(type='bool', required=False),
+        cmd=dict(arg_type='str', required=True),
+        chdir=dict(arg_type='path', required=False),
+        executable=dict(arg_type='path', required=False),
+        remote_src=dict(arg_type='bool', required=False),
         use_template=dict(arg_type='bool', required=False),
         template_parameters=dict(
             arg_type='dict',
@@ -188,6 +190,8 @@ def run_module():
                 auto_reload=dict(arg_type='bool', required=False),
             )
         ),
+        script_path=dict(arg_type='path', required=True),
+        script_args=dict(arg_type='str', required=True)
     )
 
     if (
@@ -220,8 +224,43 @@ def run_module():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    # TODO: run the script
-    result = dict(changed=True, msg=f"{module.params}")
+    # TODO: only do this for remote scripts. For local ones,
+    # check only that the script can be executable
+    script_path = module.params.get('script_path')
+    script_args = module.params.get('script_args')
+    chdir = module.params.get('chdir')
+    executable = module.params.get('executable')
+
+    os.chmod(
+        script_path,
+        # Setting permissions to: owner can read/execute.
+        stat.S_IRUSR | stat.S_IXUSR
+    )
+
+    cmd_str = "{0} {1}".format(script_path, script_args)
+    if executable:
+        cmd_str = "{0} {1}".format(executable, cmd_str)
+    if chdir:
+        cmd_str = "'cd {0} && {1}'".format(chdir, cmd_str)
+
+    cmd_str = cmd_str.strip()
+    script_rc, stdout, stderr = module.run_command(cmd_str)
+
+    result = dict(
+        changed=True,
+        cmd=module.params.get('cmd'),
+        remote_cmd=cmd_str,
+        rc=script_rc,
+        stdout=stdout,
+        stdout_lines=stdout.split('\n'),
+        stderr=stderr,
+        stderr_lines=stderr.split('\n'),
+    )
+
+    # TODO: check whether changed should be flipped in this case.
+    if script_rc != 0 or stderr:
+        result["failed"] = True
+
     module.exit_json(**result)
 
 

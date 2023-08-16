@@ -31,7 +31,6 @@ class ActionModule(ActionBase):
         if result.get("skipped"):
             return result
 
-        # TODO: use chdir in the tempfile.
         module_args = self._task.args.copy()
 
         # First separating the command into the script path and its args
@@ -47,9 +46,9 @@ class ActionModule(ActionBase):
             return result
 
         # Copying the script when it's a local file.
+        script_path = cmd_parts[0]
         remote_src = self._process_boolean(module_args.get('remote_src'))
         if not remote_src:
-            script_path = cmd_parts[0]
             script_path = path.abspath(path.normpath(script_path))
 
             # Getting a temporary path for the script.
@@ -78,6 +77,8 @@ class ActionModule(ActionBase):
                 ))
                 return result
 
+            module_args['script_path'] = tempfile_result.get('path')
+
             # Letting zos_copy handle the transfer of the script.
             zos_copy_args = dict(
                 src=script_path,
@@ -102,6 +103,22 @@ class ActionModule(ActionBase):
             zos_copy_result = zos_copy_action_plugin.run(task_vars=task_vars)
             result.update(zos_copy_result)
 
+            if not result.get("changed") or result.get("failed"):
+                result.update(dict(
+                    changed=False,
+                    failed=True,
+                    invocation=dict(
+                        module_args=self._task.args,
+                        tempfile_args=tempfile_result.get('invocation', dict()).get('module_args'),
+                        zos_copy_args=zos_copy_result.get('invocation', dict()).get('module_args')
+                    ),
+                    msg="An error ocurred while trying to copy the script to the managed node."
+                ))
+                return result
+        else:
+            module_args['script_path'] = script_path
+
+        module_args['script_args'] = cmd_parts[1] if len(cmd_parts) > 1 else ""
         module_args['local_charset'] = encode.Defaults.get_default_system_charset()
 
         module_result = self._execute_module(
@@ -110,7 +127,7 @@ class ActionModule(ActionBase):
             task_vars=task_vars
         )
 
-        result.update(module_result)
+        result = module_result
         return result
 
     def _process_boolean(arg, default=False):

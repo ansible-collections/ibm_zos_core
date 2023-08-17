@@ -381,7 +381,7 @@ dest_state:
       - C(archive) when the file is an archive.
       - C(compress) when the file is compressed, but not an archive.
       - C(incomplete) when the file is an archive, but some files under
-        I(source) were not found.
+        I(src) were not found.
     type: str
     returned: success
 missing:

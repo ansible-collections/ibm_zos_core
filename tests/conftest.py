@@ -113,11 +113,9 @@ def get_volumes(ansible_zos_module):
     for info in all_volumes:
         vol_w_info = info.split()
         if vol_w_info[2] == 'A' and vol_w_info[4] == "STRG/RSDNT":
-            if vol_w_info[3] != "SCR03":
-                active_storage.append(vol_w_info[3])
+            active_storage.append(vol_w_info[3])
         if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
-            if vol_w_info[3] != "SCR03":
-                storage_online.append(vol_w_info[3])
+            storage_online.append(vol_w_info[3])
     for vol in active_storage:
         if validate_volume(vol, ansible_zos_module):
             list_volumes.append(Volume(vol))

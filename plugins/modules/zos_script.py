@@ -44,6 +44,11 @@ options:
       - TODO
     type: str
     required: false
+  tmp_path:
+    description:
+      - TODO
+    type: str
+    required: false
   remote_src:
     description:
       - TODO
@@ -100,8 +105,48 @@ EXAMPLES = r"""
     cmd: ./scripts/rexx_test "1,2"
 """
 
-# RETURN = r"""
-# """
+RETURN = r"""
+cmd:
+    description:
+    returned:
+    type:
+    sample:
+remote_cmd:
+    description:
+    returned:
+    type:
+    sample:
+rc:
+    description:
+    returned:
+    type:
+    sample:
+msg:
+    description:
+    returned:
+    type:
+    sample:
+stdout:
+    description:
+    returned:
+    type:
+    sample:
+stderr:
+    description:
+    returned:
+    type:
+    sample:
+stdout_lines:
+    description:
+    returned:
+    type:
+    sample:
+stderr_lines:
+    description:
+    returned:
+    type:
+    sample:
+"""
 
 
 import os
@@ -128,6 +173,7 @@ def run_module():
             cmd=dict(type='str', required=True),
             chdir=dict(type='str', required=False),
             executable=dict(type='str', required=False),
+            tmp_path=dict(type='str', required=False),
             remote_src=dict(type='bool', required=False),
             encoding=dict(
                 type='dict',
@@ -169,6 +215,7 @@ def run_module():
         cmd=dict(arg_type='str', required=True),
         chdir=dict(arg_type='path', required=False),
         executable=dict(arg_type='path', required=False),
+        tmp_path=dict(arg_type='path', required=False),
         remote_src=dict(arg_type='bool', required=False),
         use_template=dict(arg_type='bool', required=False),
         template_parameters=dict(
@@ -252,8 +299,8 @@ def run_module():
         remote_cmd=cmd_str,
         rc=script_rc,
         stdout=stdout,
-        stdout_lines=stdout.split('\n'),
         stderr=stderr,
+        stdout_lines=stdout.split('\n'),
         stderr_lines=stderr.split('\n'),
     )
 

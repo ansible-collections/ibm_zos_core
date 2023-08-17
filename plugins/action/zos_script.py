@@ -50,12 +50,15 @@ class ActionModule(ActionBase):
         remote_src = self._process_boolean(module_args.get('remote_src'))
         if not remote_src:
             script_path = path.abspath(path.normpath(script_path))
+            script_name = path.basename(script_path)
+            tmp_path = module_args.get('tmp_path')
 
             # Getting a temporary path for the script.
-            # TODO: maybe add path/prefix as an option to zos_script.
-            # TODO: remove tempfile during cleanup.
             tempfile_args=dict(
-                state="file"
+                state="file",
+                path=tmp_path,
+                prefix="zos_script.",
+                suffix=".{0}".format(script_name)
             )
 
             tempfile_result = self._execute_module(
@@ -77,12 +80,13 @@ class ActionModule(ActionBase):
                 ))
                 return result
 
-            module_args['script_path'] = tempfile_result.get('path')
+            tempfile_path = tempfile_result.get('path')
+            module_args['script_path'] = tempfile_path
 
             # Letting zos_copy handle the transfer of the script.
             zos_copy_args = dict(
                 src=script_path,
-                dest=tempfile_result.get('path'),
+                dest=tempfile_path,
                 force=True,
                 is_binary=False,
                 encoding=module_args.get('encoding'),
@@ -128,7 +132,17 @@ class ActionModule(ActionBase):
         )
 
         result = module_result
+        result['tempfile_path'] = tempfile_path
+
+        if not remote_src:
+            self._remote_cleanup(tempfile_path)
+
         return result
+
+    def _remote_cleanup(self, tempfile_path):
+        """Removes the temporary file in a managed node created for a local
+        script."""
+        self._connection.exec_command("rm -f {0}".format(tempfile_path))
 
     def _process_boolean(arg, default=False):
         try:

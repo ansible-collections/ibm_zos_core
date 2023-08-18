@@ -109,11 +109,16 @@ options:
       - I(dest) can be a USS file or MVS data set name.
       - If I(dest) has missing parent directories, they will be created.
       - If I(dest) is a nonexistent USS file, it will be created.
+      - If I(dest) is an existing file or data set and I(force=true),
+        the existing I(dest) will be deleted and recreated according to the
+        above rules.
+      - If I(dest) is an existing file or data set and I(force=false) or not
+        specified, the module exits with a note to the user.
       - Destination data set attributes can be set using I(dest_data_set).
       - Destination data set space will be calculated based on space of
         source data sets provided and/or found by expanding the pattern name.
-        Calculating space can impact performance, by providing space in
-        I(dest_data_set), the performance will be improved.
+        Calculating space can impact module performance. Specifying space attributes
+        in the I(dest_data_set) option will improve performance.
     type: str
     required: true
   exclude:

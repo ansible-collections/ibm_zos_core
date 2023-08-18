@@ -48,6 +48,7 @@ class ActionModule(ActionBase):
         # Copying the script when it's a local file.
         script_path = cmd_parts[0]
         remote_src = self._process_boolean(module_args.get('remote_src'))
+        tempfile_path = None
         if not remote_src:
             script_path = path.abspath(path.normpath(script_path))
             script_name = path.basename(script_path)
@@ -132,7 +133,8 @@ class ActionModule(ActionBase):
         )
 
         result = module_result
-        result['tempfile_path'] = tempfile_path
+        if tempfile_path:
+            result['tempfile_path'] = tempfile_path
 
         if not remote_src:
             self._remote_cleanup(tempfile_path)

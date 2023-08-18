@@ -110,8 +110,8 @@ options:
       - If I(dest) has missing parent directories, they will be created.
       - If I(dest) is a nonexistent USS file, it will be created.
       - If I(dest) is an existing file or data set and I(force=true),
-        the existing I(dest) will be deleted and recreated according to the
-        above rules.
+        the existing I(dest) will be deleted and recreated with attributes
+        defined in the I(dest_data_set) option or computed by the module.
       - If I(dest) is an existing file or data set and I(force=false) or not
         specified, the module exits with a note to the user.
       - Destination data set attributes can be set using I(dest_data_set).

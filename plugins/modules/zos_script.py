@@ -271,17 +271,16 @@ def run_module():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    # TODO: only do this for remote scripts. For local ones,
-    # check only that the script can be executable
     script_path = module.params.get('script_path')
     script_args = module.params.get('script_args')
     chdir = module.params.get('chdir')
     executable = module.params.get('executable')
 
+    # Adding group execute permissions to the script.
+    script_permissions = os.lstat(script_path).st_mode
     os.chmod(
         script_path,
-        # Setting permissions to: owner can read/execute.
-        stat.S_IRUSR | stat.S_IXUSR
+        script_permissions | stat.S_IXGRP
     )
 
     cmd_str = "{0} {1}".format(script_path, script_args)
@@ -303,6 +302,9 @@ def run_module():
         stdout_lines=stdout.split('\n'),
         stderr_lines=stderr.split('\n'),
     )
+
+    # Reverting script's permissions.
+    os.chmod(script_path, script_permissions)
 
     # TODO: check whether changed should be flipped in this case.
     if script_rc != 0 or stderr:

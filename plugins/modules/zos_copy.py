@@ -2086,6 +2086,7 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
+            size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
             if executable:
                 record_format = "U"
                 record_length = 0

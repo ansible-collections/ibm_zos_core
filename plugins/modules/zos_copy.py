@@ -177,12 +177,14 @@ options:
       - If C(dest) is a nonexistent data set, the attributes assigned will depend
         on the type of C(src). If C(src) is a USS file, C(dest) will have a
         Fixed Block (FB) record format and the remaining attributes will be computed.
-      - If I(is_binary=true), C(dest) will have a Fixed Block (FB) record format
-        with a record length of 80, block size of 32760, and the remaining
-        attributes will be computed.
       - If I(executable=true),C(dest) will have a Undefined (U)record format
         with a record length of 0, block size of 32760, and the remaining
         attributes will be computed.
+      - When C(dest) is a data set, precedence rules apply. If C(dest_data_set)
+        is set, this will take precedence over an existing data set. If C(dest)
+        is an empty data set, the empty data set will be written with the
+        expectation its attributes satisfy the copy.
+      - If C(dest) is a file, execute permission for the user will be added to the file (``u+x``).
     type: bool
     default: false
     required: false
@@ -572,6 +574,13 @@ EXAMPLES = r"""
       space_type: K
       record_format: VB
       record_length: 150
+
+- name: Copy a Program Object on remote system to a new PDSE.
+  zos_copy:
+    src: HLQ.COBOLSRC.PDSE(TESTPGM)
+    dest: HLQ.NEW.PDSE
+    remote_src: true
+    executable: true
 """
 
 RETURN = r"""
@@ -1184,9 +1193,9 @@ class USSCopyHandler(CopyHandler):
                 copy.copy_uss2uss_binary(new_src, dest)
             else:
                 shutil.copy(new_src, dest)
-                if self.executable:
-                    status = os.stat(dest)
-                    os.chmod(dest, status.st_mode | stat.S_IEXEC)
+            if self.executable:
+                status = os.stat(dest)
+                os.chmod(dest, status.st_mode | stat.S_IEXEC)
         except OSError as err:
             raise CopyOperationError(
                 msg="Destination {0} is not writable".format(dest),
@@ -2077,7 +2086,23 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+            if executable:
+                record_format = "U"
+                record_length = 0
+                
+                dest_params = get_data_set_attributes(
+                    dest,
+                    size,
+                    is_binary,
+                    record_format=record_format,
+                    record_length=record_length,
+                    type="PDSE",
+                    volume=volume
+                )
+
+                data_set.DataSet.ensure_present(replace=force, **dest_params)
+            else:
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
@@ -2092,16 +2117,19 @@ def allocate_destination_data_set(
                 # This is almost the same as allocating a sequential dataset.
                 size = os.stat(src).st_size
                 record_format = record_length = None
+                type_ds = "PDSE"
 
                 if is_binary:
                     record_format = "FB"
                     record_length = 80
-                elif executable:
-                    record_format = "U"
-                    record_length = 0
                 else:
                     record_format = "FB"
                     record_length = get_file_record_length(src)
+
+                if executable:
+                    record_format = "U"
+                    record_length = 0
+                    type_ds = "LIBRARY"
 
                 dest_params = get_data_set_attributes(
                     dest,
@@ -2109,7 +2137,7 @@ def allocate_destination_data_set(
                     is_binary,
                     record_format=record_format,
                     record_length=record_length,
-                    type="LIBRARY" if executable else "PDSE",
+                    type=type_ds,
                     volume=volume
                 )
             else:

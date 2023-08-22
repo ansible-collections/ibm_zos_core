@@ -2089,7 +2089,7 @@ def allocate_destination_data_set(
             if executable:
                 record_format = "U"
                 record_length = 0
-                
+
                 dest_params = get_data_set_attributes(
                     dest,
                     size,

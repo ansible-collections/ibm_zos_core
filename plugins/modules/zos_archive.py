@@ -941,8 +941,8 @@ class MVSArchive(Archive):
             dest_space = 0
             for target in self.targets:
                 data_sets = datasets.listing(target)
-                for data_set in data_sets:
-                    dest_space += int(data_set.to_dict().get("total_space"))
+                for ds in data_sets:
+                    dest_space += int(ds.to_dict().get("total_space"))
             # space unit returned from listings is bytes
             dest_space = math.ceil(dest_space / 1024)
             self.dest_data_set.update(space_primary=dest_space, space_type="K")

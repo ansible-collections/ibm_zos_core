@@ -22,7 +22,7 @@ __metaclass__ = type
 SHELL_EXECUTABLE = "/bin/sh"
 USS_TEMP_DIR = "/tmp/archive"
 USS_TEST_FILES = {  f"{USS_TEMP_DIR}/foo.txt" : "foo sample content",
-                    f"{USS_TEMP_DIR}/bar.txt": "bar sample content", 
+                    f"{USS_TEMP_DIR}/bar.txt": "bar sample content",
                     f"{USS_TEMP_DIR}/empty.txt":""}
 USS_EXCLUSION_FILE = f"{USS_TEMP_DIR}/foo.txt"
 TEST_PS = "USER.PRIVATE.TESTDS"

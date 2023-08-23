@@ -1448,7 +1448,7 @@ def test_copy_template_file_with_non_default_markers(ansible_zos_module):
 @pytest.mark.template
 def test_copy_template_file_to_dataset(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_dataset = "USER.TEST.TEMPLATE"
+    dest_dataset = "USER.PRIVATE.TEST.TEMPLATE"
     temp_dir = tempfile.mkdtemp()
 
     try:

@@ -286,11 +286,12 @@ def run_module():
     cmd_str = "{0} {1}".format(script_path, script_args)
     if executable:
         cmd_str = "{0} {1}".format(executable, cmd_str)
-    if chdir:
-        cmd_str = "'cd {0} && {1}'".format(chdir, cmd_str)
 
     cmd_str = cmd_str.strip()
-    script_rc, stdout, stderr = module.run_command(cmd_str)
+    script_rc, stdout, stderr = module.run_command(
+        cmd_str,
+        cwd=chdir
+    )
 
     result = dict(
         changed=True,

@@ -39,6 +39,11 @@ options:
       - TODO
     type: str
     required: false
+  creates:
+    description:
+      - TODO
+    type: str
+    required: false
   executable:
     description:
       - TODO
@@ -53,6 +58,11 @@ options:
     description:
       - TODO
     type: bool
+    required: false
+  removes:
+    description:
+      - TODO
+    type: str
     required: false
   encoding:
     description:
@@ -157,14 +167,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     encode
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-# try:
-#     from zoautil_py import datasets
-# except Exception:
-#     Datasets = MissingZOAUImport()
 
 
 def run_module():
@@ -172,9 +174,11 @@ def run_module():
         argument_spec=dict(
             cmd=dict(type='str', required=True),
             chdir=dict(type='str', required=False),
+            creates=dict(type='str', required=False),
             executable=dict(type='str', required=False),
             tmp_path=dict(type='str', required=False),
             remote_src=dict(type='bool', required=False),
+            removes=dict(type='str', required=False),
             encoding=dict(
                 type='dict',
                 required=False,
@@ -183,7 +187,7 @@ def run_module():
                     'to': dict(type='str', required=True,)
                 }
             ),
-            use_template=dict(arg_type='bool', required=False),
+            use_template=dict(arg_type='bool', default=False),
             template_parameters=dict(
                 arg_type='dict',
                 required=False,
@@ -214,29 +218,31 @@ def run_module():
     args_def = dict(
         cmd=dict(arg_type='str', required=True),
         chdir=dict(arg_type='path', required=False),
+        creates=dict(arg_type='path', required=False),
         executable=dict(arg_type='path', required=False),
         tmp_path=dict(arg_type='path', required=False),
         remote_src=dict(arg_type='bool', required=False),
-        use_template=dict(arg_type='bool', required=False),
-        template_parameters=dict(
-            arg_type='dict',
-            required=False,
-            options=dict(
-                variable_start_string=dict(arg_type='str', required=False),
-                variable_end_string=dict(arg_type='str', required=False),
-                block_start_string=dict(arg_type='str', required=False),
-                block_end_string=dict(arg_type='str', required=False),
-                comment_start_string=dict(arg_type='str', required=False),
-                comment_end_string=dict(arg_type='str', required=False),
-                line_statement_prefix=dict(arg_type='str', required=False),
-                line_comment_prefix=dict(arg_type='str', required=False),
-                lstrip_blocks=dict(arg_type='bool', required=False),
-                trim_blocks=dict(arg_type='bool', required=False),
-                keep_trailing_newline=dict(arg_type='bool', required=False),
-                newline_sequence=dict(arg_type='str', required=False),
-                auto_reload=dict(arg_type='bool', required=False),
-            )
-        ),
+        removes=dict(arg_type='path', required=False),
+        # use_template=dict(arg_type='bool', required=False),
+        # template_parameters=dict(
+        #     arg_type='dict',
+        #     required=False,
+        #     options=dict(
+        #         variable_start_string=dict(arg_type='str', required=False),
+        #         variable_end_string=dict(arg_type='str', required=False),
+        #         block_start_string=dict(arg_type='str', required=False),
+        #         block_end_string=dict(arg_type='str', required=False),
+        #         comment_start_string=dict(arg_type='str', required=False),
+        #         comment_end_string=dict(arg_type='str', required=False),
+        #         line_statement_prefix=dict(arg_type='str', required=False),
+        #         line_comment_prefix=dict(arg_type='str', required=False),
+        #         lstrip_blocks=dict(arg_type='bool', required=False),
+        #         trim_blocks=dict(arg_type='bool', required=False),
+        #         keep_trailing_newline=dict(arg_type='bool', required=False),
+        #         newline_sequence=dict(arg_type='str', required=False),
+        #         auto_reload=dict(arg_type='bool', required=False),
+        #     )
+        # ),
         script_path=dict(arg_type='path', required=True),
         script_args=dict(arg_type='str', required=True)
     )
@@ -269,12 +275,30 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
         module.params = parsed_args
     except ValueError as err:
-        module.fail_json(msg="Parameter verification failed", stderr=str(err))
+        module.fail_json(msg="Parameter verification failed {0}".format(module.params), stderr=str(err))
 
     script_path = module.params.get('script_path')
     script_args = module.params.get('script_args')
     chdir = module.params.get('chdir')
     executable = module.params.get('executable')
+    creates = module.params.get('creates')
+    removes = module.params.get('removes')
+
+    if creates and os.path.exists(creates):
+        result = dict(
+            changed=False,
+            skipped=True,
+            msg='File {0} already exists on the system, skipping script'.format(creates)
+        )
+        module.exit_json(**result)
+
+    if removes and not os.path.exists(removes):
+        result = dict(
+            changed=False,
+            skipped=True,
+            msg='File {0} is already missing on the system, skipping script'.format(removes)
+        )
+        module.exit_json(**result)
 
     # Adding group execute permissions to the script.
     script_permissions = os.lstat(script_path).st_mode

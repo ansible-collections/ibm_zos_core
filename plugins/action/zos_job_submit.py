@@ -178,12 +178,6 @@ class ActionModule(ActionBase):
 
             if rendered_file:
                 os.remove(rendered_file)
-            if os.path.isfile(tmp_src):
-                self._connection.exec_command("rm -rf {0}".format(tmp_src))
-            if os.path.isfile(dest_file):
-                self._connection.exec_command("rm -rf {0}".format(dest_file))
-            if os.path.isfile(source_full):
-                self._connection.exec_command("rm -rf {0}".format(source_full))
 
         else:
             result.update(

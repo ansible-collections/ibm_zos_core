@@ -77,12 +77,13 @@ options:
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
-      - If C(dest) is a nonexistent data set, the attributes assigned will depend
-        on the type of C(src). If C(src) is a USS file, C(dest) will have a
-        Fixed Block (FB) record format and the remaining attributes will be computed.
-        If C(src) is binary, C(dest) will have a Fixed Block (FB) record format
-        with a record length of 80, block size of 32760, and the remaining
-        attributes will be computed.
+      - If C(dest) is a nonexistent data set, the attributes assigned will depend on the type of
+        C(src). If C(src) is a USS file, C(dest) will have a Fixed Block (FB) record format and the 
+        remaining attributes will be computed. If I(is_binary=true), C(dest) will have a Fixed Block 
+        (FB) record format with a record length of 80, block size of 32760, and the remaining 
+        attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record 
+        format with a record length of 0, block size of 32760, and the remaining attributes will be 
+        computed.
       - When C(dest) is a data set, precedence rules apply. If C(dest_data_set)
         is set, this will take precedence over an existing data set. If C(dest)
         is an empty data set, the empty data set will be written with the
@@ -174,16 +175,14 @@ options:
     required: false
   executable:
     description:
-      - If C(dest) is a nonexistent data set, the attributes assigned will depend
-        on the type of C(src). If C(src) is a USS file, C(dest) will have a
-        Fixed Block (FB) record format and the remaining attributes will be computed.
-      - If I(executable=true),C(dest) will have a Undefined (U)record format
-        with a record length of 0, block size of 32760, and the remaining
-        attributes will be computed.
-      - When C(dest) is a data set, precedence rules apply. If C(dest_data_set)
-        is set, this will take precedence over an existing data set. If C(dest)
-        is an empty data set, the empty data set will be written with the
-        expectation its attributes satisfy the copy.
+      - If set to C(true), indicates that the file or library to be copied is an executable.
+      - If the C(src) executable has an alias, the alias information is also copied. If the
+        C(dest) is Unix, the alias is not visible in Unix, even though the information is there and
+        will be visible if copied to a library.
+      - If I(executable=true), and C(dest) is a data set, it must be a PDS or PDSE (library).
+      - If C(dest) is a nonexistent data set, the library attributes assigned will be
+        Undefined (U) record format with a record length of 0, block size of 32760 and the
+        remaining attributes will be computed.
       - If C(dest) is a file, execute permission for the user will be added to the file (``u+x``).
     type: bool
     default: false
@@ -404,7 +403,7 @@ notes:
       to using standard SFTP.
     - Beginning in version 1.8.x, zos_copy will no longer attempt to autocorrect a copy of a data type member
       into a PDSE that contains program objects. You can control this behavior using module option
-      is_executable that will signify an executable is being copied into a PDSE with other
+      executable that will signify an executable is being copied into a PDSE with other
       executables. Mixing data type members with program objects will be responded with a
       (FSUM8976,./zos_copy.html) error.
 seealso:
@@ -575,10 +574,10 @@ EXAMPLES = r"""
       record_format: VB
       record_length: 150
 
-- name: Copy a Program Object on remote system to a new PDSE.
+- name: Copy a Program Object on remote system to a new PDSE member MYCOBOL.
   zos_copy:
     src: HLQ.COBOLSRC.PDSE(TESTPGM)
-    dest: HLQ.NEW.PDSE
+    dest: HLQ.NEW.PDSE(MYCOBOL)
     remote_src: true
     executable: true
 """
@@ -2086,8 +2085,9 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
             if executable:
+                size = os.stat(src_name).st_size
                 record_format = "U"
                 record_length = 0
 
@@ -2097,13 +2097,10 @@ def allocate_destination_data_set(
                     is_binary,
                     record_format=record_format,
                     record_length=record_length,
-                    type="PDSE",
+                    type="LIBRARY",
                     volume=volume
-                )
-
+                    )
                 data_set.DataSet.ensure_present(replace=force, **dest_params)
-            else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.

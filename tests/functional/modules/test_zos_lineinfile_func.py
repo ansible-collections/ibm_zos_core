@@ -515,6 +515,28 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
     finally:
         remove_uss_environment(ansible_zos_module)
 
+@pytest.mark.uss
+def test_uss_line_does_not_insert_repeated(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(path="", line='ZOAU_ROOT=/usr/lpp/zoautil/v100', state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_CONTENT
+        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
+        hosts.all.zos_lineinfile(**params)
+        results = hosts.all.shell(cmd="""grep -c 'ZOAU_ROOT=/usr/lpp/zoautil/v10' {0} """.format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == '1'
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 #########################
 # Dataset test cases

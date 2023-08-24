@@ -78,11 +78,11 @@ options:
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
       - If C(dest) is a nonexistent data set, the attributes assigned will depend on the type of
-        C(src). If C(src) is a USS file, C(dest) will have a Fixed Block (FB) record format and the 
-        remaining attributes will be computed. If I(is_binary=true), C(dest) will have a Fixed Block 
-        (FB) record format with a record length of 80, block size of 32760, and the remaining 
-        attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record 
-        format with a record length of 0, block size of 32760, and the remaining attributes will be 
+        C(src). If C(src) is a USS file, C(dest) will have a Fixed Block (FB) record format and the
+        remaining attributes will be computed. If I(is_binary=true), C(dest) will have a Fixed Block
+        (FB) record format with a record length of 80, block size of 32760, and the remaining
+        attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record
+        format with a record length of 0, block size of 32760, and the remaining attributes will be
         computed.
       - When C(dest) is a data set, precedence rules apply. If C(dest_data_set)
         is set, this will take precedence over an existing data set. If C(dest)
@@ -2099,7 +2099,7 @@ def allocate_destination_data_set(
                     record_length=record_length,
                     type="LIBRARY",
                     volume=volume
-                    )
+                )
                 data_set.DataSet.ensure_present(replace=force, **dest_params)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]

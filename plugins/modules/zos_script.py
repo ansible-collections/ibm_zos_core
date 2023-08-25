@@ -256,18 +256,15 @@ def run_module():
             'to': encode.Defaults.get_default_system_charset(),
         }
 
-    # TODO: check that it actually needs to be defined dynamically when
-    # using a local source.
     if module.params.get('encoding'):
+        module.params.update(dict(
+            from_encoding=module.params.get("encoding").get("from"),
+            to_encoding=module.params.get("encoding").get("to"),
+        ))
+
         args_def.update(dict(
-            encoding=dict(
-                arg_type='dict',
-                required=False,
-                options={
-                    'from': dict(arg_type='encoding', required=True),
-                    'to': dict(arg_type='encoding', required=True)
-                }
-            )
+            from_encoding=dict(arg_type="encoding"),
+            to_encoding=dict(arg_type="encoding"),
         ))
 
     try:
@@ -331,7 +328,6 @@ def run_module():
     # Reverting script's permissions.
     os.chmod(script_path, script_permissions)
 
-    # TODO: check whether changed should be flipped in this case.
     if script_rc != 0 or stderr:
         result["failed"] = True
 

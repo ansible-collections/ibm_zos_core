@@ -22,7 +22,7 @@ module: zos_script
 version_added: '1.8.0'
 author:
   - "Ivan Moreno (@rexemin)"
-short_description: Run local scripts in z/OS
+short_description: Run scripts in z/OS
 description:
   - The L(zos_script,./zos_script.html) module runs a local or remote script
     in the remote machine.
@@ -30,45 +30,65 @@ description:
 options:
   cmd:
     description:
-      - If the script path contains spaces, make sure to enclose the command
-        string in two pairs of quotes.
+      - Path to the local or remote script followed by optional arguments.
+      - If the script path contains spaces, make sure to enclose it in two
+        pairs of quotes.
+      - Arguments may need to be escaped so the shell in the remote machine
+        handles them correctly.
     type: str
     required: true
   chdir:
     description:
-      - TODO
+      - Change the script's working directory to this path.
+      - When not specified, the script will run in the user's
+        home directory on the remote machine.
     type: str
     required: false
   creates:
     description:
-      - TODO
+      - Path to a file in the remote machine. If it exists, the
+        script will not be executed.
     type: str
     required: false
   executable:
     description:
-      - TODO
+      - Path of an executable in the remote machine to invoke the
+        script with.
+      - When not specified, the system will assume the script is
+        interpreted REXX and try to run it as such. Make sure to
+        include a comment identifying the script as REXX at the
+        start of the file in this case.
     type: str
     required: false
   tmp_path:
     description:
-      - TODO
+      - Path in the remote machine where local scripts will be
+        temporarily copied to.
+      - When not specified, the module will copy local scripts to
+        the default temporary path for the user.
+      - If C(tmp_path) does not exist in the remote machine, the
+        module will not create it.
     type: str
     required: false
   remote_src:
     description:
-      - TODO
+      - If set to C(false), the module will search the script in the
+        controller.
+      - If set to C(true), the module will search the script in the
+        remote machine.
     type: bool
     required: false
   removes:
     description:
-      - TODO
+      - Path to a file in the remote machine. If it does not exist, the
+        script will not be executed.
     type: str
     required: false
   encoding:
     description:
       - Specifies which encodings the script should be converted from and to.
-      - If C(encoding) is not provided, the module determines which local and remote
-        charsets to convert the data from and to.
+      - If C(encoding) is not provided, the module determines which local
+        and remote charsets to convert the data from and to.
     type: dict
     required: false
     suboptions:
@@ -87,18 +107,26 @@ extends_documentation_fragment:
   - ibm.ibm_zos_core.template
 
 notes:
-  - When copying local scripts, temporary storage will be used
+  - When executing local scripts, temporary storage will be used
     on the remote z/OS system. The size of the temporary storage will
     correspond to the size of the file being copied.
+  - Execution permissions for the group assigned to the script will be
+    added to remote scripts. The original permissions for the script will
+    be restored by the module before the task ends.
   - If executing REXX scripts, make sure to include a newline character on
     each line of the file. Otherwise, the interpreter may fail and return
-    error BPXW0003I.
+    error C(BPXW0003I).
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-  - L(zos_copy,./zos_copy.html) uses SFTP (Secure File Transfer Protocol) for the underlying
-    transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
-    you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
-    to using standard SFTP.
+  - This module uses L(zos_copy,./zos_copy.html) to copy local scripts to
+    the remote machine.
+  - L(zos_copy,./zos_copy.html) uses SFTP (Secure File Transfer Protocol)
+    for the underlying transfer protocol; Co:Z SFTP is not supported. In
+    the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from
+    using Co:Z thus falling back to using standard SFTP.
+  - This module executes scripts inside z/OS UNIX System Services. For
+    running REXX scripts contained in data sets, consider issuing a TSO
+    command with L(zos_tso_command,./zos_tso_command.html).
 
 seealso:
   - module: zos_copy

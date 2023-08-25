@@ -136,11 +136,38 @@ seealso:
 EXAMPLES = r"""
 - name: Run a local REXX script on the managed z/OS node.
   zos_script:
-    cmd: ./scripts/rexx_hello
+    cmd: ./scripts/HELLO
 
 - name: Run a local REXX script with args on the managed z/OS node.
   zos_script:
-    cmd: ./scripts/rexx_test "1,2"
+    cmd: ./scripts/ARGS "1,2"
+
+- name: Run a remote REXX script while changing its working directory.
+  zos_script:
+    cmd: /u/user/scripts/ARGS "1,2"
+    remote_src: true
+    chdir: /u/user/output_dir
+
+- name: Run a local Python script that uses a custom tmp_path.
+  zos_script:
+    cmd: ./scripts/program.py
+    executable: /usr/bin/python3
+    tmp_path: /usr/tmp/ibm_zos_core
+
+- name: Run a local script made from a template.
+  zos_script:
+    cmd: ./templates/PROGRAM
+    use_template: true
+
+- name: Run a script only when a file is not present.
+  zos_script:
+    cmd: ./scripts/PROGRAM
+    creates: /u/user/pgm_result.txt
+
+- name: Run a script only when a file is already present on the remote machine.
+  zos_script:
+    cmd: ./scripts/PROGRAM
+    removes: /u/user/pgm_input.txt
 """
 
 RETURN = r"""

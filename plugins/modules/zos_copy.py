@@ -2086,7 +2086,7 @@ def allocate_destination_data_set(
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
             if executable:
-                src_attributes = datasets.listing(src_name)
+                src_attributes = datasets.listing(src_name)[0]
                 size = int(src_attributes.total_space)
                 record_format = "U"
                 record_length = 0

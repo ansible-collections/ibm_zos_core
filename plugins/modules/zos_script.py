@@ -172,45 +172,49 @@ EXAMPLES = r"""
 
 RETURN = r"""
 cmd:
-    description:
-    returned:
-    type:
-    sample:
+    description: Original command issued by the user.
+    returned: changed
+    type: str
+    sample: ./scripts/PROGRAM
 remote_cmd:
     description:
-    returned:
-    type:
-    sample:
-rc:
-    description:
-    returned:
-    type:
-    sample:
+      Command executed on the remote machine. Will show the executable
+      path used, and when running local scripts, will also show the
+      temporary file used.
+    returned: changed
+    type: str
+    sample: /tmp/zos_script.jycqqfny.ARGS 1,2
 msg:
-    description:
-    returned:
-    type:
+    description: Failure or skip message returned by the module.
+    returned: failure or skipped
+    type: str
     sample:
+      File /u/user/file.txt is already missing on the system, skipping script
+rc:
+    description: Return code of the script.
+    returned: changed
+    type: int
+    sample: 16
 stdout:
-    description:
-    returned:
-    type:
-    sample:
+    description: The STDOUT from the script, may be empty.
+    returned: changed
+    type: str
+    sample: Allocation to SYSEXEC completed.
 stderr:
-    description:
-    returned:
-    type:
-    sample:
+    description: The STDERR from the script, may be empty.
+    returned: changed
+    type: str
+    sample: An error has ocurred.
 stdout_lines:
-    description:
-    returned:
-    type:
-    sample:
+    description: List of strings containing individual lines from STDOUT.
+    returned: changed
+    type: list
+    sample: ["Allocation to SYSEXEC completed."]
 stderr_lines:
-    description:
-    returned:
-    type:
-    sample:
+    description: List of strings containing individual lines from STDERR.
+    returned: changed
+    type: list
+    sample: ["An error has ocurred"]
 """
 
 

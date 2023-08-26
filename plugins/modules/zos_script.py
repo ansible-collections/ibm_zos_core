@@ -317,13 +317,13 @@ def run_module():
 
     if module.params.get('encoding'):
         module.params.update(dict(
-            from_encoding=module.params.get("encoding").get("from"),
-            to_encoding=module.params.get("encoding").get("to"),
+            from_encoding=module.params.get('encoding').get('from'),
+            to_encoding=module.params.get('encoding').get('to'),
         ))
 
         args_def.update(dict(
-            from_encoding=dict(arg_type="encoding"),
-            to_encoding=dict(arg_type="encoding"),
+            from_encoding=dict(arg_type='encoding'),
+            to_encoding=dict(arg_type='encoding'),
         ))
 
     try:
@@ -331,7 +331,10 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
         module.params = parsed_args
     except ValueError as err:
-        module.fail_json(msg="Parameter verification failed {0}".format(module.params), stderr=str(err))
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
 
     script_path = module.params.get('script_path')
     script_args = module.params.get('script_args')
@@ -355,6 +358,11 @@ def run_module():
             msg='File {0} is already missing on the system, skipping script'.format(removes)
         )
         module.exit_json(**result)
+
+    if chdir and not os.path.exists(chdir):
+        module.fail_json(
+            msg='The given chdir {0} does not exist on the system.'.format(chdir)
+        )
 
     # Adding group execute permissions to the script.
     script_permissions = os.lstat(script_path).st_mode
@@ -388,7 +396,10 @@ def run_module():
     os.chmod(script_path, script_permissions)
 
     if script_rc != 0 or stderr:
-        result["failed"] = True
+        module.fail_json(
+            msg='The script terminated with an error.',
+            **result
+        )
 
     module.exit_json(**result)
 

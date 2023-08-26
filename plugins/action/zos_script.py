@@ -21,6 +21,9 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
+from ansible.utils.display import Display
+display = Display()
+
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
@@ -91,8 +94,8 @@ class ActionModule(ActionBase):
                 force=True,
                 is_binary=False,
                 encoding=module_args.get('encoding'),
-                use_template=module_args.get('use_template'),
-                template_parameters=module_args.get('template_parameters'),
+                # use_template=module_args.get('use_template')
+                # template_parameters=module_args.get('template_parameters'),
             )
             copy_task = copy.deepcopy(self._task)
             copy_task.args = zos_copy_args
@@ -117,7 +120,7 @@ class ActionModule(ActionBase):
                         tempfile_args=tempfile_result.get('invocation', dict()).get('module_args'),
                         zos_copy_args=zos_copy_result.get('invocation', dict()).get('module_args')
                     ),
-                    msg="An error ocurred while trying to copy the script to the managed node."
+                    msg="An error ocurred while trying to copy the script to the managed node: {0}.".format(zos_copy_result.get('msg'))
                 ))
                 return result
         else:
@@ -133,7 +136,7 @@ class ActionModule(ActionBase):
         )
 
         result = module_result
-        if tempfile_path:
+        if result.get('changed') and tempfile_path:
             result['tempfile_path'] = tempfile_path
 
         if not remote_src:

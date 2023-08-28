@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_operator - Reported a failure caused by unrelated error response.
-    Fix now gives a transparent response of the operator to avoid false negatives.   
-    (https://github.com/ansible-collections/ibm_zos_core/pull/762).

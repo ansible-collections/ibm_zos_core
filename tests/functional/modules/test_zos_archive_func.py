@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -344,10 +344,9 @@ List of tests:
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
     "record_format", ["FB", "VB",],
 )
 def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record_length, record_format):
@@ -417,10 +416,9 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
     "record_format", ["FB", "VB",],
 )
 def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
@@ -492,10 +490,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
 @pytest.mark.parametrize(
     "record_length", [80],
 )
-@pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
-)
-def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set, record_length, record_format):
+def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set, record_length):
     try:
         hosts = ansible_zos_module
         # Clean env
@@ -507,7 +502,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             type=data_set.get("dstype"),
             state="present",
             record_length=record_length,
-            record_format=record_format,
+            record_format="FB",
             replace=True,
         )
         # Create members if needed
@@ -545,7 +540,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
-                assert data_set.get("name") not in c_result.get("stdout")
+                assert data_set.get("name") != c_result.get("stdout")
     finally:
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")

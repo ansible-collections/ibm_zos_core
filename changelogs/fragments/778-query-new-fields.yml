@@ -1,5 +1,0 @@
-minor_changes:
-- zos_job_query - Adds new fields job_class, svc_class, priority, asid,
-  creation_datetime, and queue_position to the return output when querying
-  or submitting a job. Available when using ZOAU v1.2.3 or greater.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/778)

@@ -12,8 +12,8 @@ executing operator commands, executing TSO commands, ping,
 querying operator actions, APF authorizing libraries,
 editing textual data in data sets or Unix System Services files,
 finding data sets, backing up and restoring data sets and
-volumes, mounting file systems, running z/OS programs without JCL and
-initializing volumes.
+volumes, mounting file systems, running z/OS programs without JCL,
+initializing volumes, archiving, unarchiving and templating with Jinja.
 
 
 Red Hat Ansible Certified Content for IBM Z

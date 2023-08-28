@@ -112,14 +112,20 @@ dest
 
   If *dest* is a nonexistent USS file, it will be created.
 
+  If *dest* is an existing file or data set and *force=true*, the existing *dest* will be deleted and recreated with attributes defined in the *dest_data_set* option or computed by the module.
+
+  If *dest* is an existing file or data set and *force=false* or not specified, the module exits with a note to the user.
+
   Destination data set attributes can be set using *dest_data_set*.
+
+  Destination data set space will be calculated based on space of source data sets provided and/or found by expanding the pattern name. Calculating space can impact module performance. Specifying space attributes in the *dest_data_set* option will improve performance.
 
   | **required**: True
   | **type**: str
 
 
 exclude
-  Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude from path list and glob expansion.
+  Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude from src list and glob expansion.
 
   Patterns (wildcards) can contain one of the following, `?`, `*`.
 
@@ -152,7 +158,7 @@ mode
 
   The mode may also be specified as a symbolic mode (for example, 'u+rwx' or 'u=rw,g=r,o=r') or a special string 'preserve'.
 
-  *mode=preserve* means that the file will be given the same permissions as the source file.
+  *mode=preserve* means that the file will be given the same permissions as the src file.
 
   | **required**: False
   | **type**: str
@@ -170,7 +176,7 @@ owner
 
 
 remove
-  Remove any added source files , trees or data sets after module `zos_archive <./zos_archive.html>`_ adds them to the archive. Source files, trees and data sets are identified with option *path*.
+  Remove any added source files , trees or data sets after module `zos_archive <./zos_archive.html>`_ adds them to the archive. Source files, trees and data sets are identified with option *src*.
 
   | **required**: False
   | **type**: bool
@@ -387,6 +393,8 @@ Notes
 
    When packing and using ``use_adrdssu`` flag the module will take up to two times the space indicated in ``dest_data_set``.
 
+   tar, zip, bz2 and pax are archived using python ``tarfile`` library which uses the latest version available for each format, for compatibility when opening from system make sure to use the latest available version for the intended format.
+
 
 
 See Also
@@ -425,7 +433,7 @@ dest_state
 
   ``compress`` when the file is compressed, but not an archive.
 
-  ``incomplete`` when the file is an archive, but some files under *path* were not found.
+  ``incomplete`` when the file is an archive, but some files under *src* were not found.
 
   | **returned**: success
   | **type**: str

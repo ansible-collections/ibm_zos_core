@@ -1218,12 +1218,8 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-            if backup_name:
-                backup_ds_name = result.get("backup_name")
-                assert backup_ds_name is not None
-            else:
-                backup_ds_name = result.get("backup_name")
-                assert backup_ds_name is not None
+            backup_ds_name = result.get("backup_name")
+            assert backup_ds_name is not None
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF

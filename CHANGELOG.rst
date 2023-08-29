@@ -5,6 +5,31 @@ ibm.ibm_zos_core Release Notes
 .. contents:: Topics
 
 
+v1.7.0-beta.2
+=============
+
+Release Summary
+---------------
+
+Release Date: '2023-08-21'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_archive - If destination data set space is not provided then the module computes it based on the src list and/or expanded src list based on pattern provided. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+- zos_archive - When xmit faces a space error in xmit operation because of dest or log data set are filled raises an appropriate error hint. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+- zos_unarchive - When copying to remote fails now a proper error message is displayed. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+- zos_unarchive - When copying to remote if space_primary is not defined, then is defaulted to 5M. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+
+Bugfixes
+--------
+
+- zos_archive - Module did not return the proper src state after archiving. Fix now displays the status of the src after the operation. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+
 v1.7.0-beta.1
 =============
 

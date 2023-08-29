@@ -6,6 +6,39 @@
 Releases
 ========
 
+Version 1.7.0-beta.2
+====================
+
+Minor Changes
+-------------
+- ``zos_archive``
+
+      - When xmit faces a space error in xmit operation because of dest or log data set being filled raises an appropriate error hint.
+      - If destination data set space is not provided then the module computes it based on the src list and/or expanded src list based on pattern provided.
+
+- ``zos_unarchive``
+
+      - When copying to remote fails now a proper error message is displayed.
+      - When copying to remote if space_primary is not defined, then is defaulted to 5M.
+
+Bugfixes
+--------
+- ``zos_archive`` - Module did not return the proper src state after archiving. Fix now displays the status of the src after the operation.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
+* Supported by IBM `Z Open Automation Utilities 1.2.3`_ (or later) but prior to version 1.3.
+
 Version 1.7.0-beta.1
 ====================
 
@@ -29,7 +62,6 @@ Minor Changes
 - ``zos_data_set`` - supports record format *F* (fixed) where one physical block on disk is one logical record and all the blocks and records are the same size.
 - ``zos_job_output`` - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v 1.2.4 or later).
 - ``zos_job_query``
-
       - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v 1.2.4 or later).
       - removes unnecessary queries to find DDs improving the modules performance.
 - ``zos_job_submit`` - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v 1.2.4 or later).

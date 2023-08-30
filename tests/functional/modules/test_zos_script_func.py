@@ -109,23 +109,34 @@ def test_rexx_remote_script(ansible_zos_module):
         script_path = '/tmp/zos_script_test_script'
         copy_result = hosts.all.zos_copy(
             src=local_script,
-            dest=script_path
+            dest=script_path,
+            mode='600'
         )
         for result in copy_result.contacted.values():
             assert result.get('changed') is True
+
+        pre_stat_info = hosts.all.stat(path=script_path)
 
         zos_script_result = hosts.all.zos_script(
             cmd=script_path,
             remote_src=True
         )
 
+        post_stat_info = hosts.all.stat(path=script_path)
+
         for result in zos_script_result.contacted.values():
-            print(result)
             assert result.get('changed') is True
             assert result.get('failed', False) is False
             assert result.get('rc') == 0
             assert result.get('stdout', '').strip() == msg
             assert result.get('stderr', '') == ''
+        # Checking that permissions remained unchanged after executing
+        # zos_script.
+        for pre_stat, post_stat in zip(
+            pre_stat_info.contacted.values(),
+            post_stat_info.contacted.values()
+        ):
+            assert pre_stat.get('mode') == post_stat.get('mode')
     finally:
         if os.path.exists(local_script):
             os.remove(local_script)

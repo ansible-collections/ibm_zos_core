@@ -167,15 +167,17 @@ class ActionModule(ActionBase):
                                                          templar=self._templar,
                                                          shared_loader_obj=self._shared_loader_obj)
             result.update(zos_copy_action_module.run(task_vars=task_vars))
-            module_args["src"] = dest_path
-            result.update(
-                self._execute_module(
-                    module_name="ibm.ibm_zos_core.zos_job_submit",
-                    module_args=module_args,
-                    task_vars=task_vars,
+            if result.get("msg") is None:
+                module_args["src"] = dest_path
+                result.update(
+                    self._execute_module(
+                        module_name="ibm.ibm_zos_core.zos_job_submit",
+                        module_args=module_args,
+                        task_vars=task_vars,
+                    )
                 )
-            )
-
+            else:
+                result.update(dict(failed=True))
             if rendered_file:
                 os.remove(rendered_file)
             if os.path.isfile(tmp_src):

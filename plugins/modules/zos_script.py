@@ -28,6 +28,13 @@ description:
     in the remote machine.
 
 options:
+  chdir:
+    description:
+      - Change the script's working directory to this path.
+      - When not specified, the script will run in the user's
+        home directory on the remote machine.
+    type: str
+    required: false
   cmd:
     description:
       - Path to the local or remote script followed by optional arguments.
@@ -37,50 +44,9 @@ options:
         handles them correctly.
     type: str
     required: true
-  chdir:
-    description:
-      - Change the script's working directory to this path.
-      - When not specified, the script will run in the user's
-        home directory on the remote machine.
-    type: str
-    required: false
   creates:
     description:
       - Path to a file in the remote machine. If it exists, the
-        script will not be executed.
-    type: str
-    required: false
-  executable:
-    description:
-      - Path of an executable in the remote machine to invoke the
-        script with.
-      - When not specified, the system will assume the script is
-        interpreted REXX and try to run it as such. Make sure to
-        include a comment identifying the script as REXX at the
-        start of the file in this case.
-    type: str
-    required: false
-  tmp_path:
-    description:
-      - Path in the remote machine where local scripts will be
-        temporarily copied to.
-      - When not specified, the module will copy local scripts to
-        the default temporary path for the user.
-      - If C(tmp_path) does not exist in the remote machine, the
-        module will not create it.
-    type: str
-    required: false
-  remote_src:
-    description:
-      - If set to C(false), the module will search the script in the
-        controller.
-      - If set to C(true), the module will search the script in the
-        remote machine.
-    type: bool
-    required: false
-  removes:
-    description:
-      - Path to a file in the remote machine. If it does not exist, the
         script will not be executed.
     type: str
     required: false
@@ -102,6 +68,40 @@ options:
           - The encoding to be converted to.
         required: true
         type: str
+  executable:
+    description:
+      - Path of an executable in the remote machine to invoke the
+        script with.
+      - When not specified, the system will assume the script is
+        interpreted REXX and try to run it as such. Make sure to
+        include a comment identifying the script as REXX at the
+        start of the file in this case.
+    type: str
+    required: false
+  remote_src:
+    description:
+      - If set to C(false), the module will search the script in the
+        controller.
+      - If set to C(true), the module will search the script in the
+        remote machine.
+    type: bool
+    required: false
+  removes:
+    description:
+      - Path to a file in the remote machine. If it does not exist, the
+        script will not be executed.
+    type: str
+    required: false
+  tmp_path:
+    description:
+      - Path in the remote machine where local scripts will be
+        temporarily copied to.
+      - When not specified, the module will copy local scripts to
+        the default temporary path for the user.
+      - If C(tmp_path) does not exist in the remote machine, the
+        module will not create it.
+    type: str
+    required: false
 
 extends_documentation_fragment:
   - ibm.ibm_zos_core.template
@@ -231,13 +231,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            cmd=dict(type='str', required=True),
             chdir=dict(type='str', required=False),
+            cmd=dict(type='str', required=True),
             creates=dict(type='str', required=False),
-            executable=dict(type='str', required=False),
-            tmp_path=dict(type='str', required=False),
-            remote_src=dict(type='bool', required=False),
-            removes=dict(type='str', required=False),
             encoding=dict(
                 type='dict',
                 required=False,
@@ -246,6 +242,10 @@ def run_module():
                     'to': dict(type='str', required=True,)
                 }
             ),
+            executable=dict(type='str', required=False),
+            remote_src=dict(type='bool', required=False),
+            removes=dict(type='str', required=False),
+            tmp_path=dict(type='str', required=False),
             use_template=dict(arg_type='bool', default=False),
             template_parameters=dict(
                 arg_type='dict',
@@ -275,13 +275,13 @@ def run_module():
     )
 
     args_def = dict(
-        cmd=dict(arg_type='str', required=True),
         chdir=dict(arg_type='path', required=False),
+        cmd=dict(arg_type='str', required=True),
         creates=dict(arg_type='path', required=False),
         executable=dict(arg_type='path', required=False),
-        tmp_path=dict(arg_type='path', required=False),
         remote_src=dict(arg_type='bool', required=False),
         removes=dict(arg_type='path', required=False),
+        tmp_path=dict(arg_type='path', required=False),
         # use_template=dict(arg_type='bool', required=False),
         # template_parameters=dict(
         #     arg_type='dict',

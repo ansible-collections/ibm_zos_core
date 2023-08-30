@@ -394,6 +394,7 @@ def _ddname_pattern(contents, resolve_dependencies):
         )
     return str(contents)
 
+
 def FixDSName( name_in ):
     result = []
     ret_str = ""

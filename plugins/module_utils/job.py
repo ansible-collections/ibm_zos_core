@@ -393,3 +393,109 @@ def _ddname_pattern(contents, resolve_dependencies):
             )
         )
     return str(contents)
+
+def FixDSName( name_in ):
+    result = []
+    ret_str = ""
+    dot_count = 0
+    seg_length = 0
+    prev_dot = False
+    add_paren = False
+    in_paren = False
+
+    # May not exceed 44 characters
+    if len(name_in) > 44:
+        return( None, "length" )
+
+    for c in name_in:
+        # slash become a paren for member section
+        if c == "/":
+            if not in_paren:
+                c = "("
+                add_paren = True
+            else:
+                return( None, "nested parentheses" )
+
+        # discard incoming escapes
+        if c == "\\":
+            continue
+
+        # check for special characters ('national characters') and hyphens
+        # manual testing shows escapes are not needed for # or -
+        if c in "@\$":
+            result.append("/")
+
+        if c == '-':
+            # cannot use hyphen/dash in member segment
+            if in_paren:
+                return( None, "hyphen in member" )
+
+        if prev_dot:
+            # segment names must start with letter or national character
+            if c in "0123456789-":
+                return( None, "Bad segment start" )
+
+        if c == "(":
+            in_paren = True
+            result.append("/")
+
+        if c == ")":
+            in_paren = False
+            result.append("/")
+
+        if c == ".":
+            # '..' is not allowed in a dataset name
+            if prev_dot:
+                return( None, "Double Dot" )
+            else:
+                dot_count += 1
+                seg_length = 0
+                prev_dot = True
+
+                # slash only usable in last segment
+                if add_paren:
+                    return( None, "Slash only in last segment" )
+        else:
+            prev_dot = False
+            seg_length += 1
+            if seg_length > 8:
+                return( None, "Seg too long" )
+
+        result.append(c)
+
+    if add_paren:
+        result.append("/")
+        result.append(")")
+
+    # There must be at least 2 name segments, so at least one '.'
+    if dot_count < 1:
+        return( None, "Too few segments" )
+
+    # DS Name may not end with a period
+    if c == '.':
+        return( None, "Ends with a dot" )
+
+    return (ret_str.join(result), None)
+
+
+def _dsname_fixup(dsname_in):
+    """Takes in a string for dataset name type arguments
+
+    Arguments:
+        dsname_in {str} -- Incoming data set name.
+
+    Raises:
+        ValueError: When contents is invalid argument type
+
+    Returns:
+        str -- escaped string of dsname_in
+    """
+    result, errmsg = FixDSName(test)
+
+    if errmsg:
+        raise ValueError(
+            'Error processing "{0}". as data set name: "{1}"'.format(
+                dsname_in, errmsg
+            )
+        )
+    return str(result)

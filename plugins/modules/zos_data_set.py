@@ -673,6 +673,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import _dsname_escape
+
 from ansible.module_utils.basic import AnsibleModule
 
 import re
@@ -964,25 +966,32 @@ def key_offset(contents, dependencies):
     return contents
 
 
-def perform_data_set_operations(name, state, **extra_args):
+def perform_data_set_operations(origname, state, **extra_args):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made."""
     changed = False
     #  passing in **extra_args forced me to modify the acceptable parameters
     #  for multiple functions in data_set.py including ensure_present, replace
     #  and create where the force parameter has no bearing.
-    if state == "present" and extra_args.get("type") != "MEMBER":
-        changed = DataSet.ensure_present(name, **extra_args)
-    elif state == "present" and extra_args.get("type") == "MEMBER":
-        changed = DataSet.ensure_member_present(name, extra_args.get("replace"))
-    elif state == "absent" and extra_args.get("type") != "MEMBER":
-        changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
-    elif state == "absent" and extra_args.get("type") == "MEMBER":
-        changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
-    elif state == "cataloged":
-        changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
-    elif state == "uncataloged":
-        changed = DataSet.ensure_uncataloged(name)
+
+    # _dsname_escape will make sure origname is properly escaped and follows dsname rules
+    # if origname violates rules, name will be None
+
+    name =  _dsname_escape(origname)
+    if name:
+        if state == "present" and extra_args.get("type") != "MEMBER":
+            changed = DataSet.ensure_present(name, **extra_args)
+        elif state == "present" and extra_args.get("type") == "MEMBER":
+            changed = DataSet.ensure_member_present(name, extra_args.get("replace"))
+        elif state == "absent" and extra_args.get("type") != "MEMBER":
+            changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
+        elif state == "absent" and extra_args.get("type") == "MEMBER":
+            changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
+        elif state == "cataloged":
+            changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
+        elif state == "uncataloged":
+            changed = DataSet.ensure_uncataloged(name)
+
     return changed
 
 

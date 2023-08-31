@@ -1,0 +1,10 @@
+enhancement:
+- job.py: new tool available called _dsname_escape.
+    Routine called _dsname_escape will ensure a dataset is escaped for cmd line compatibility.
+    It will also raise an error if any data set name rules are violated.
+
+bugfix:
+- zos_data_set: Uses new _dsname_escape to make sure data set names are usable.
+
+
+  (https://github.com/ansible-collections/ibm_zos_core/pull/xxxx)

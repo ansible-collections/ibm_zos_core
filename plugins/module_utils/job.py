@@ -479,7 +479,7 @@ def FixDSName( name_in ):
     return (ret_str.join(result), None)
 
 
-def _dsname_fixup(dsname_in):
+def _dsname_escape(dsname_in):
     """Takes in a string for dataset name type arguments
 
     Arguments:

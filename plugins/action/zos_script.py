@@ -94,8 +94,8 @@ class ActionModule(ActionBase):
                 force=True,
                 is_binary=False,
                 encoding=module_args.get('encoding'),
-                # use_template=module_args.get('use_template')
-                # template_parameters=module_args.get('template_parameters'),
+                use_template=module_args.get('use_template'),
+                template_parameters=module_args.get('template_parameters', dict())
             )
             copy_task = copy.deepcopy(self._task)
             copy_task.args = zos_copy_args

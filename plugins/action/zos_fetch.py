@@ -182,7 +182,7 @@ class ActionModule(ActionBase):
             if dest.endswith(os.sep):
                 if fetch_member:
                     base = os.path.dirname(dest)
-                    dest = os.path.join(base, member_name)
+                    dest = os.path.join(os.path.realpath(base), member_name)
                 else:
                     base = os.path.basename(source_local)
                     dest = os.path.join(dest, base)

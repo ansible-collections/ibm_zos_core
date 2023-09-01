@@ -426,10 +426,9 @@ def FixDSName( name_in ):
         if c in "@\$":
             result.append("/")
 
-        if c == '-':
-            # cannot use hyphen/dash in member segment
-            if in_paren:
-                return( None, "hyphen in member" )
+        # There is a rule saying you can't have a - in member name, however,
+        # since we are supporting GDG, where you can pass a negative number,
+        # we are ignoring that rule.
 
         if prev_dot:
             # segment names must start with letter or national character

@@ -26,6 +26,15 @@ Parameters
 ----------
 
 
+chdir
+  Change the script's working directory to this path.
+
+  When not specified, the script will run in the user's home directory on the remote machine.
+
+  | **required**: False
+  | **type**: str
+
+
 cmd
   Path to the local or remote script followed by optional arguments.
 
@@ -37,53 +46,8 @@ cmd
   | **type**: str
 
 
-chdir
-  Change the script's working directory to this path.
-
-  When not specified, the script will run in the user's home directory on the remote machine.
-
-  | **required**: False
-  | **type**: str
-
-
 creates
   Path to a file in the remote machine. If it exists, the script will not be executed.
-
-  | **required**: False
-  | **type**: str
-
-
-executable
-  Path of an executable in the remote machine to invoke the script with.
-
-  When not specified, the system will assume the script is interpreted REXX and try to run it as such. Make sure to include a comment identifying the script as REXX at the start of the file in this case.
-
-  | **required**: False
-  | **type**: str
-
-
-tmp_path
-  Path in the remote machine where local scripts will be temporarily copied to.
-
-  When not specified, the module will copy local scripts to the default temporary path for the user.
-
-  If ``tmp_path`` does not exist in the remote machine, the module will not create it.
-
-  | **required**: False
-  | **type**: str
-
-
-remote_src
-  If set to ``false``, the module will search the script in the controller.
-
-  If set to ``true``, the module will search the script in the remote machine.
-
-  | **required**: False
-  | **type**: bool
-
-
-removes
-  Path to a file in the remote machine. If it does not exist, the script will not be executed.
 
   | **required**: False
   | **type**: str
@@ -109,8 +73,44 @@ encoding
     The encoding to be converted to.
 
     | **required**: True
-    | **type**: str
+  | **type**: str
 
+
+
+executable
+  Path of an executable in the remote machine to invoke the script with.
+
+  When not specified, the system will assume the script is interpreted REXX and try to run it as such. Make sure to include a comment identifying the script as REXX at the start of the file in this case.
+
+  | **required**: False
+  | **type**: str
+
+
+remote_src
+  If set to ``false``, the module will search the script in the controller.
+
+  If set to ``true``, the module will search the script in the remote machine.
+
+  | **required**: False
+  | **type**: bool
+
+
+removes
+  Path to a file in the remote machine. If it does not exist, the script will not be executed.
+
+  | **required**: False
+  | **type**: str
+
+
+tmp_path
+  Path in the remote machine where local scripts will be temporarily copied to.
+
+  When not specified, the module will copy local scripts to the default temporary path for the user.
+
+  If ``tmp_path`` does not exist in the remote machine, the module will not create it.
+
+  | **required**: False
+    | **type**: str
 
 
 use_template

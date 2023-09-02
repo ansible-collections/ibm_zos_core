@@ -246,7 +246,7 @@ def run_module():
             remote_src=dict(type='bool', required=False),
             removes=dict(type='str', required=False),
             tmp_path=dict(type='str', required=False),
-            use_template=dict(type='bool', required=False),
+            use_template=dict(type='bool', default=False),
             template_parameters=dict(
                 type='dict',
                 required=False,

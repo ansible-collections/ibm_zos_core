@@ -58,7 +58,7 @@ class ActionModule(ActionBase):
             tmp_path = module_args.get('tmp_path')
 
             # Getting a temporary path for the script.
-            tempfile_args=dict(
+            tempfile_args = dict(
                 state="file",
                 path=tmp_path,
                 prefix="zos_script.",
@@ -94,7 +94,7 @@ class ActionModule(ActionBase):
                 force=True,
                 is_binary=False,
                 encoding=module_args.get('encoding'),
-                use_template=module_args.get('use_template'),
+                use_template=module_args.get('use_template', False),
                 template_parameters=module_args.get('template_parameters', dict())
             )
             copy_task = copy.deepcopy(self._task)
@@ -149,7 +149,7 @@ class ActionModule(ActionBase):
         script."""
         self._connection.exec_command("rm -f {0}".format(tempfile_path))
 
-    def _process_boolean(arg, default=False):
+    def _process_boolean(self, arg, default=False):
         try:
             return boolean(arg)
         except TypeError:

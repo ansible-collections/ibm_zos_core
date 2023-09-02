@@ -400,8 +400,8 @@ def run_module():
     os.chmod(script_path, script_permissions)
 
     if script_rc != 0 or stderr:
+        result['msg'] = 'The script terminated with an error'
         module.fail_json(
-            msg='The script terminated with an error.',
             **result
         )
 

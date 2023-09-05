@@ -966,7 +966,7 @@ def key_offset(contents, dependencies):
     return contents
 
 
-def perform_data_set_operations(origname, state, **extra_args):
+def perform_data_set_operations(name, state, **extra_args):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made."""
     changed = False
@@ -974,23 +974,24 @@ def perform_data_set_operations(origname, state, **extra_args):
     #  for multiple functions in data_set.py including ensure_present, replace
     #  and create where the force parameter has no bearing.
 
-    # _dsname_escape will make sure origname is properly escaped and follows dsname rules
-    # if origname violates rules, name will be None
+    # _dsname_escape will make sure original_name is properly escaped and follows dsname rules
+    # if original_name violates rules, name will be None
 
-    name =  _dsname_escape(origname)
-    if name:
+    clean_name =  _dsname_escape(name)
+
+    if clean_name:
         if state == "present" and extra_args.get("type") != "MEMBER":
-            changed = DataSet.ensure_present(name, **extra_args)
+            changed = DataSet.ensure_present(clean_name, **extra_args)
         elif state == "present" and extra_args.get("type") == "MEMBER":
-            changed = DataSet.ensure_member_present(name, extra_args.get("replace"))
+            changed = DataSet.ensure_member_present(clean_name, extra_args.get("replace"))
         elif state == "absent" and extra_args.get("type") != "MEMBER":
-            changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
+            changed = DataSet.ensure_absent(clean_name, extra_args.get("volumes"))
         elif state == "absent" and extra_args.get("type") == "MEMBER":
-            changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
+            changed = DataSet.ensure_member_absent(clean_name, extra_args.get("force"))
         elif state == "cataloged":
-            changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
+            changed = DataSet.ensure_cataloged(clean_name, extra_args.get("volumes"))
         elif state == "uncataloged":
-            changed = DataSet.ensure_uncataloged(name)
+            changed = DataSet.ensure_uncataloged(clean_name)
 
     return changed
 

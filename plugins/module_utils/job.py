@@ -424,7 +424,7 @@ def FixDSName( name_in ):
         # check for special characters ('national characters') and hyphens
         # manual testing shows escapes are not needed for # or -
         if c in "@\$":
-            result.append("/")
+            result.append("\\")
 
         # There is a rule saying you can't have a - in member name, however,
         # since we are supporting GDG, where you can pass a negative number,
@@ -437,11 +437,11 @@ def FixDSName( name_in ):
 
         if c == "(":
             in_paren = True
-            result.append("/")
+            result.append("\\")
 
         if c == ")":
             in_paren = False
-            result.append("/")
+            result.append("\\")
 
         if c == ".":
             # '..' is not allowed in a dataset name
@@ -464,7 +464,7 @@ def FixDSName( name_in ):
         result.append(c)
 
     if add_paren:
-        result.append("/")
+        result.append("\\")
         result.append(")")
 
     # There must be at least 2 name segments, so at least one '.'
@@ -490,7 +490,7 @@ def _dsname_escape(dsname_in):
     Returns:
         str -- escaped string of dsname_in
     """
-    result, errmsg = FixDSName(test)
+    result, errmsg = FixDSName(dsname_in)
 
     if errmsg:
         raise ValueError(

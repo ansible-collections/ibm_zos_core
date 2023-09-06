@@ -26,7 +26,7 @@ from ansible.errors import AnsibleError
 from ansible.utils.display import Display
 from ansible import cli
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
 
 SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
 
@@ -182,10 +182,12 @@ class ActionModule(ActionBase):
             if dest.endswith(os.sep):
                 if fetch_member:
                     base = os.path.dirname(dest)
-                    dest = os.path.join(os.path.realpath(base), member_name)
+                    dest = os.path.join(validation.validate_safe_path(base), validation.validate_safe_path(member_name))
+                    display.vvv(u"This is how dest looks {0}".format(dest), host=self._play_context.remote_addr)
                 else:
                     base = os.path.basename(source_local)
-                    dest = os.path.join(dest, base)
+                    dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(base))
+                    display.vvv(u"This is how dest looks {0}".format(dest), host=self._play_context.remote_addr)
             if not dest.startswith("/"):
                 dest = self._loader.path_dwim(dest)
         else:

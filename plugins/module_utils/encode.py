@@ -31,7 +31,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy, system
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy, system, validation
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -327,7 +327,7 @@ class EncodeUtils(object):
         if path.isdir(src):
             for (dir, subdir, files) in walk(src):
                 for file in files:
-                    file_list.append(path.join(dir, file))
+                    file_list.append(path.join(validation.validate_safe_path(dir), validation.validate_safe_path(file)))
             if len(file_list) == 0:
                 raise EncodeError(
                     "Directory {0} is empty. Please check the path.".format(src)
@@ -335,8 +335,8 @@ class EncodeUtils(object):
             elif len(file_list) == 1:
                 if path.isdir(dest):
                     file_name = path.basename(file_list[0])
-                    src_f = path.join(src, file_name)
-                    dest_f = path.join(dest, file_name)
+                    src_f = path.join(validation.validate_safe_path(src), validation.validate_safe_path(file_name))
+                    dest_f = path.join(validation.validate_safe_path(dest), validation.validate_safe_path(file_name))
                 convert_rc = self.uss_convert_encoding(
                     src_f, dest_f, from_code, to_code
                 )
@@ -361,7 +361,7 @@ class EncodeUtils(object):
         else:
             if path.isdir(dest):
                 file_name = path.basename(path.abspath(src))
-                dest = path.join(dest, file_name)
+                dest = path.join(validation.validate_safe_path(dest), validation.validate_safe_path(file_name))
             convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
 
         return convert_rc
@@ -433,7 +433,7 @@ class EncodeUtils(object):
                     elif dest_type == "PO":
                         for (dir, subdir, files) in walk(temp_dest):
                             for file in files:
-                                temp_file = path.join(dir, file)
+                                temp_file = path.join(validation.validate_safe_path(dir), validation.validate_safe_path(file))
                                 rc, out, err = copy.copy_uss2mvs(temp_file, dest, "PO")
                                 convert_rc = True
                     else:

@@ -32,7 +32,7 @@ try:
 except Exception:
     jinja2 = MissingImport("jinja2")
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
 
 
 def _process_boolean(arg, default=False):
@@ -283,7 +283,7 @@ class TemplateRenderer:
         try:
             temp_parent_dir = tempfile.mkdtemp()
             last_dir = os.path.basename(self.template_dir)
-            temp_template_dir = os.path.join(temp_parent_dir, last_dir)
+            temp_template_dir = os.path.join(validation.validate_safe_path(temp_parent_dir), validation.validate_safe_path(last_dir))
             os.makedirs(temp_template_dir, exist_ok=True)
         except FileExistsError as err:
             raise FileExistsError("Unable to create directory for rendered templates: {0}".format(

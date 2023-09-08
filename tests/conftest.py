@@ -12,14 +12,15 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
 from ibm_zos_core.tests.volumes import (
-    Volume,
-    validate_volume)
+    Volume)
 import sys
 import time
+import string
+import random
+import re
 from mock import MagicMock
 import importlib
 
@@ -100,7 +101,6 @@ def get_volumes(ansible_zos_module):
     list_volumes = []
     active_storage = []
     storage_online = []
-    private_active = []
     flag = False
     iteration = 5
     while not flag or iteration > 0:
@@ -117,11 +117,9 @@ def get_volumes(ansible_zos_module):
         if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
             storage_online.append(vol_w_info[3])
     for vol in active_storage:
-        if validate_volume(vol, ansible_zos_module):
-            list_volumes.append(Volume(vol))
+        list_volumes.append(Volume(vol))
     for vol in storage_online:
-        if validate_volume(vol, ansible_zos_module):
-            list_volumes.append(Volume(vol))
+        list_volumes.append(Volume(vol))
     return list_volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock
@@ -148,3 +146,38 @@ def zos_import_mocker(mocker):
         return newimp
 
     yield (mocker, perform_imports)
+
+@pytest.fixture(scope='function')
+def get_dataset(request):
+    def get_dataset(hosts):
+        letters =  string.ascii_uppercase
+        hlq =  ''.join(random.choice(letters)for i in range(8))
+        while not re.fullmatch(
+        r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}$",
+                hlq,
+                re.IGNORECASE,
+            ):
+            hlq =  ''.join(random.choice(letters)for i in range(6))
+        response = hosts.all.command(cmd="mvstmp {0}".format(hlq))
+        for dataset in response.contacted.values():
+            ds = dataset.get("stdout")
+        return ds
+
+    return get_dataset
+
+#def test_show_dynamic_volumes(get_volumes, ansible_zos_module, get_dataset):
+#    hosts = ansible_zos_module
+#    volumes = ls_Volume(*get_volumes)
+#    volume_1 = get_disposal_vol(volumes)
+#    volume_2 = get_disposal_vol(volumes)
+#    volume_3 = get_disposal_vol(volumes)
+#    print(volume_1)
+#    print(volume_2)
+#    print(volume_3)
+#    free_vol(volume_1, volumes)
+#    volume_4 = get_disposal_vol(volumes)
+#    print(volume_4)
+#    print(get_dataset(hosts))
+#    print(get_dataset(hosts))
+#    print(get_dataset(hosts))
+#    assert 1 == 0

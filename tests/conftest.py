@@ -148,36 +148,18 @@ def zos_import_mocker(mocker):
     yield (mocker, perform_imports)
 
 @pytest.fixture(scope='function')
-def get_dataset(request):
-    def get_dataset(hosts):
+def get_dataset():
+    def get_dataset(hosts, hlq_size=8):
         letters =  string.ascii_uppercase
-        hlq =  ''.join(random.choice(letters)for i in range(8))
+        hlq =  ''.join(random.choice(letters)for i in range(hlq_size))
         while not re.fullmatch(
-        r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}$",
+        r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
                 hlq,
                 re.IGNORECASE,
             ):
-            hlq =  ''.join(random.choice(letters)for i in range(6))
+            hlq =  ''.join(random.choice(letters)for i in range(hlq_size))
         response = hosts.all.command(cmd="mvstmp {0}".format(hlq))
         for dataset in response.contacted.values():
             ds = dataset.get("stdout")
         return ds
-
     return get_dataset
-
-#def test_show_dynamic_volumes(get_volumes, ansible_zos_module, get_dataset):
-#    hosts = ansible_zos_module
-#    volumes = ls_Volume(*get_volumes)
-#    volume_1 = get_disposal_vol(volumes)
-#    volume_2 = get_disposal_vol(volumes)
-#    volume_3 = get_disposal_vol(volumes)
-#    print(volume_1)
-#    print(volume_2)
-#    print(volume_3)
-#    free_vol(volume_1, volumes)
-#    volume_4 = get_disposal_vol(volumes)
-#    print(volume_4)
-#    print(get_dataset(hosts))
-#    print(get_dataset(hosts))
-#    print(get_dataset(hosts))
-#    assert 1 == 0

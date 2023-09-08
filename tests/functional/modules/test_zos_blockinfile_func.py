@@ -936,13 +936,12 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
+def test_ds_block_insertafter_regex(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    test_name = "DST1"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -959,13 +958,12 @@ def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
+def test_ds_block_insertbefore_regex(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present")
-    test_name = "DST2"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -982,13 +980,12 @@ def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
+def test_ds_block_insertafter_eof(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
-    test_name = "DST3"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1005,13 +1002,12 @@ def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insertbefore_bof(ansible_zos_module, dstype):
+def test_ds_block_insertbefore_bof(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present")
-    test_name = "DST4"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1028,13 +1024,12 @@ def test_ds_block_insertbefore_bof(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
+def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    test_name = "DST5"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1051,13 +1046,12 @@ def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
+def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present")
-    test_name = "DST6"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1074,13 +1068,12 @@ def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
+def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
-    test_name = "DST7"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1097,13 +1090,12 @@ def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
+def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present")
-    test_name = "DST8"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1120,13 +1112,12 @@ def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_absent(ansible_zos_module, dstype):
+def test_ds_block_absent(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(block="", state="absent")
-    test_name = "DST9"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1142,14 +1133,13 @@ def test_ds_block_absent(ansible_zos_module, dstype):
 
 
 @pytest.mark.ds
-def test_ds_tmp_hlq_option(ansible_zos_module):
+def test_ds_tmp_hlq_option(ansible_zos_module, get_dataset):
     # This TMPHLQ only works with sequential datasets
     hosts = ansible_zos_module
     ds_type = "SEQ"
     params=dict(insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True, tmp_hlq="TMPHLQ")
     kwargs = dict(backup_name=r"TMPHLQ\..")
-    test_name = "DST10"
-    temp_file = "/tmp/zos_lineinfile/" + test_name
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
     content = TEST_CONTENT
     try:
         hosts.all.shell(cmd="mkdir -p {0}".format("/tmp/zos_lineinfile/"))
@@ -1158,7 +1148,7 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
             hlq = result.get("stdout")
         if len(hlq) > 8:
             hlq = hlq[:8]
-        ds_full_name = hlq + "." + test_name.upper() + "." + ds_type
+        ds_full_name = hlq + "." + get_dataset(hosts)
         hosts.all.zos_data_set(name=ds_full_name, type=ds_type, replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
         cmdStr = "cp {0} \"//'{1}'\" ".format(quote(temp_file), ds_full_name)
@@ -1179,13 +1169,12 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype):
+def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", indentation=16)
-    test_name = "DST11"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1203,15 +1192,14 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("backup_name", BACKUP_OPTIONS)
-def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup_name):
+def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup_name, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True)
     if backup_name:
         params["backup_name"] = backup_name
-    test_name = "DST12"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1236,9 +1224,10 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
+def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
+    DEFAULT_DATA_SET_NAME =  get_dataset(hosts)
     params = dict(path="",insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present", force=True)
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
@@ -1323,15 +1312,14 @@ def test_uss_encoding(ansible_zos_module, encoding):
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ["IBM-1047"])
-def test_ds_encoding(ansible_zos_module, encoding, dstype):
+def test_ds_encoding(ansible_zos_module, encoding, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     insert_data = "Insert this string"
     params = dict(insertafter="SIMPLE", block=insert_data, state="present")
     params["encoding"] = encoding
-    test_name = "DST13"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = "SIMPLE LINE TO VERIFY"
     try:
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
@@ -1372,14 +1360,13 @@ def test_not_exist_ds_block_insertafter_regex(ansible_zos_module):
 
 
 @pytest.mark.ds
-def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
+def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
     ds_type = 'SEQ'
     params=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
     params["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
-    test_name = "DST13"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = DEFAULT_HLQ + '.' + test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1407,12 +1394,12 @@ def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", NS_DS_TYPE)
-def test_ds_not_supported(ansible_zos_module, dstype):
+def test_ds_not_supported(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    test_name = "DST14"
-    ds_name = DEFAULT_HLQ + '.' +  test_name.upper() + "." + ds_type
+    temp_file = "/tmp/{0}".format(inspect.stack()[0][3])
+    ds_name = get_dataset(hosts)
     try:
         results = hosts.all.shell(cmd='hlq')
         for result in results.contacted.values():
@@ -1433,9 +1420,10 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ["PDS","PDSE"])
-def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
+def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype, get_dataset):
     hosts = ansible_zos_module
     ds_type = dstype
+    DEFAULT_DATA_SET_NAME = get_dataset(hosts)
     params = dict(path="", insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present", force=False)
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)

@@ -257,6 +257,10 @@ HELLO, WORLD
 //
 """
 
+JCL_FULL_INPUT="""//HLQ0  JOB MSGLEVEL=(1,1),
+//  MSGCLASS=A,CLASS=A,NOTIFY=&SYSUID
+//STEP1 EXEC PGM=BPXBATCH,PARM='PGM /bin/sleep 5'"""
+
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
@@ -616,6 +620,24 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
     finally:
         os.remove(tmp_file.name)
 
+
+def test_job_submit_full_input(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FULL_INPUT), TEMP_PATH)
+        )
+        results = hosts.all.zos_job_submit(
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+        )
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+            assert result.get("jobs")[0].get("ret_code").get("code") == 0
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")
 
 def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)

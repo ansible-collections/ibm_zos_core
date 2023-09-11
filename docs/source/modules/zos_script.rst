@@ -73,7 +73,7 @@ encoding
     The encoding to be converted to.
 
     | **required**: True
-  | **type**: str
+    | **type**: str
 
 
 
@@ -110,7 +110,7 @@ tmp_path
   If ``tmp_path`` does not exist in the remote machine, the module will not create it.
 
   | **required**: False
-    | **type**: str
+  | **type**: str
 
 
 use_template

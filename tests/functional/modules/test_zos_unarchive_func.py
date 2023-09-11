@@ -344,8 +344,12 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
                     type="member",
                     state="present"
                 )
-        # Write some content into src
-        test_line = "this is a test line"
+        # Write some content into src the same size of the record,
+        # need to reduce 4 from V and VB due to RDW
+        if record_format in ["V", "VB"]:
+            test_line = "a" * (record_length - 4)
+        else:
+            test_line = "a" * record_length
         for member in data_set.get("members"):
             if member == "":
                 ds_to_write = f"{data_set.get('name')}"
@@ -442,8 +446,12 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
                     type="member",
                     state="present"
                 )
-        # Write some content into src
-        test_line = "this is a test line"
+        # Write some content into src the same size of the record,
+        # need to reduce 4 from V and VB due to RDW
+        if record_format in ["V", "VB"]:
+            test_line = "a" * (record_length - 4)
+        else:
+            test_line = "a" * record_length
         for member in data_set.get("members"):
             if member == "":
                 ds_to_write = f"{data_set.get('name')}"
@@ -930,8 +938,12 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
                     type="member",
                     state="present"
                 )
-        # Write some content into src
-        test_line = "this is a test line"
+        # Write some content into src the same size of the record,
+        # need to reduce 4 from V and VB due to RDW
+        if record_format in ["V", "VB"]:
+            test_line = "a" * (record_length - 4)
+        else:
+            test_line = "a" * record_length
         for member in data_set.get("members"):
             if member == "":
                 ds_to_write = f"{data_set.get('name')}"

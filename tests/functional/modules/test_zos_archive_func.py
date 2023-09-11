@@ -347,7 +347,7 @@ List of tests:
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
+    "record_format", ["FB", "VB"],
 )
 def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record_length, record_format):
     try:
@@ -423,7 +423,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
+    "record_format", ["FB", "VB"],
 )
 def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:

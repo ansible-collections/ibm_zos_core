@@ -401,6 +401,11 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert data_set.get("name") in c_result.get("stdout")
+
+        # Check data integrity after unarchive
+        cat_result = hosts.all.shell(cmd=f"dcat \"{ds_to_write}\"")
+        for result in cat_result.contacted.values():
+            assert result.get("stdout") == test_line
     finally:
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
@@ -993,6 +998,13 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert data_set.get("name") in c_result.get("stdout")
+
+        # Check data integrity after unarchive
+        cat_result = hosts.all.shell(cmd=f"dcat \"{ds_to_write}\"")
+        for result in cat_result.contacted.values():
+            assert result.get("stdout") == test_line
+
+
     finally:
         hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")

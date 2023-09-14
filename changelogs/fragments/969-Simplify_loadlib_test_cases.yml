@@ -1,0 +1,2 @@
+trivial:
+- zos_copy - Divide large test case for loadlibs and simplify functions.

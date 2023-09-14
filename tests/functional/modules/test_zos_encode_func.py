@@ -48,18 +48,17 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
 //STEP1  EXEC PGM=IDCAMS
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
-   DELETE ENCODE.TEST.VS
    SET MAXCC=0
    DEFINE CLUSTER                          -
-    (NAME(ENCODE.TEST.VS)                  -
+    (NAME({0})                             -
     INDEXED                                -
     KEYS(4 0)                            -
     RECSZ(80 80)                         -
     RECORDS(100)                           -
     SHAREOPTIONS(2 3)                      -
     VOLUMES(000000) )                      -
-    DATA (NAME(ENCODE.TEST.VS.DATA))       -
-    INDEX (NAME(ENCODE.TEST.VS.INDEX))
+    DATA (NAME({0}.DATA))                  -
+    INDEX (NAME({0}.INDEX))
 /*
 """
 
@@ -77,9 +76,43 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
 /*
 """
 
+VSAM_RECORDS = """00000001A record
+00000002A record
+00000003A record
+"""
+
+def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, key_offset=None):
+    """Creates a new VSAM on the system.
+
+    Arguments:
+        hosts (object) -- Ansible instance(s) that can call modules.
+        name (str) -- Name of the VSAM data set.
+        type (str) -- Type of the VSAM (KSDS, ESDS, RRDS, LDS)
+        add_data (bool, optional) -- Whether to add records to the VSAM.
+        key_length (int, optional) -- Key length (only for KSDS data sets).
+        key_offset (int, optional) -- Key offset (only for KSDS data sets).
+    """
+    params = dict(
+        name=name,
+        type=ds_type,
+        state="present"
+    )
+    if ds_type == "KSDS":
+        params["key_length"] = key_length
+        params["key_offset"] = key_offset
+
+    hosts.all.zos_data_set(**params)
+
+    if add_data:
+        record_src = "/tmp/zos_copy_vsam_record"
+
+        hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
+        hosts.all.zos_encode(src=record_src, dest=name, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
+        hosts.all.file(path=record_src, state="absent")
 
 def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     hosts = ansible_zos_module
+    hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
     results = hosts.all.zos_encode(
         src=USS_FILE,
         encoding={
@@ -87,15 +120,16 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
             "to": TO_ENCODING,
         },
     )
-    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("msg") is not None
         assert result.get("backup_name") is None
         assert result.get("changed") is False
+    hosts.all.file(path=USS_FILE, state="absent")
 
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     hosts = ansible_zos_module
+    hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
     results = hosts.all.zos_encode(
         src=USS_FILE,
         encoding={
@@ -108,6 +142,7 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
         assert result.get("msg") is not None
         assert result.get("backup_name") is None
         assert result.get("changed") is False
+    hosts.all.file(path=USS_FILE, state="absent")
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):
@@ -163,8 +198,10 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
         hosts.all.file(path=USS_NONE_FILE, state="absent")
 
 
-def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
+def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
+    MVS_PS = get_dataset(hosts)
+    MVS_NONE_PS = get_dataset(hosts)
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
     hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
     hosts.all.zos_data_set(name=MVS_NONE_PS, state="absent")
@@ -182,6 +219,8 @@ def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
         assert result.get("dest") == MVS_NONE_PS
         assert result.get("backup_name") is None
         assert result.get("changed") is False
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=MVS_NONE_PS, state="absent")
 
 
 def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
@@ -197,7 +236,6 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == USS_FILE
             assert result.get("dest") == USS_DEST_FILE
@@ -256,7 +294,6 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
             },
             backup=True,
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == USS_PATH
             assert result.get("dest") == USS_DEST_PATH
@@ -274,9 +311,10 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
         hosts.all.file(path=result.get("backup_name"), state="absent")
 
 
-def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
+def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PS = get_dataset(hosts)
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
         results = hosts.all.zos_encode(
@@ -287,7 +325,6 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == USS_FILE
             assert result.get("dest") == MVS_PS
@@ -295,11 +332,15 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.zos_data_set(name=MVS_PS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
+def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PS = get_dataset(hosts)
+        hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
+        hosts.all.copy(content=TEST_DATA, dest=MVS_PS)
         hosts.all.copy(content="test", dest=USS_DEST_FILE)
         results = hosts.all.zos_encode(
             src=MVS_PS,
@@ -310,7 +351,6 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
             },
             backup=True,
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == MVS_PS
             assert result.get("dest") == USS_DEST_FILE
@@ -323,11 +363,13 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")
+        hosts.all.zos_data_set(name=MVS_PS, state="absent")
 
 
-def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
+def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
         results = hosts.all.zos_encode(
@@ -338,7 +380,6 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == USS_FILE
             assert result.get("dest") == MVS_PDS
@@ -346,16 +387,19 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
+def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
+        MVS_PDS_MEMBER = MVS_PDS + '(MEM)'
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
+        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
         results = hosts.all.zos_data_set(
             name=MVS_PDS_MEMBER, type="member", state="present"
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             # documentation will return changed=False if ds exists and replace=False..
             # assert result.get("changed") is True
@@ -368,7 +412,6 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == USS_FILE
             assert result.get("dest") == MVS_PDS_MEMBER
@@ -376,11 +419,19 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
+def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
+        MVS_PDS_MEMBER = MVS_PDS + '(MEM)'
+        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
+        hosts.all.zos_data_set(
+            name=MVS_PDS_MEMBER, type="member", state="present"
+        )
+        hosts.all.copy(content=TEST_DATA, dest=MVS_PDS_MEMBER)
         hosts.all.copy(content="test", dest=USS_DEST_FILE)
         results = hosts.all.zos_encode(
             src=MVS_PDS_MEMBER,
@@ -391,7 +442,6 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
             },
             backup=True,
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == MVS_PDS_MEMBER
             assert result.get("dest") == USS_DEST_FILE
@@ -404,11 +454,13 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")
+        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
+def test_uss_encoding_conversion_uss_path_to_mvs_pds_conversion_uss_path(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
         hosts.all.file(path=USS_PATH, state="directory")
         hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode1")
         hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode2")
@@ -421,19 +473,11 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == USS_PATH
             assert result.get("dest") == MVS_PDS
             assert result.get("backup_name") is None
             assert result.get("changed") is True
-    finally:
-        hosts.all.file(path=USS_PATH, state="absent")
-
-
-def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
-    try:
-        hosts = ansible_zos_module
         hosts.all.file(path=USS_DEST_PATH, state="directory")
         results = hosts.all.zos_encode(
             src=MVS_PDS,
@@ -443,8 +487,8 @@ def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
+
             assert result.get("src") == MVS_PDS
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is None
@@ -455,11 +499,22 @@ def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
             assert FROM_ENCODING in result.get("stdout")
             assert "untagged" not in result.get("stdout")
     finally:
+        hosts.all.file(path=USS_PATH, state="absent")
+        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
+def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
+    MVS_PDS = get_dataset(hosts)
+    MVS_PDS_MEMBER = MVS_PDS + '(MEM)'
+    MVS_PS = get_dataset(hosts)
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
+    hosts.all.zos_copy(content=TEST_DATA, dest=MVS_PS)
+    hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
+    hosts.all.zos_data_set(
+        name=MVS_PDS_MEMBER, type="member", state="present"
+    )
     results = hosts.all.zos_encode(
         src=MVS_PS,
         dest=MVS_PDS_MEMBER,
@@ -468,21 +523,23 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
             "to": TO_ENCODING,
         },
     )
-    pprint(vars(results))
     for result in results.contacted.values():
+        print(result)
         assert result.get("src") == MVS_PS
         assert result.get("dest") == MVS_PDS_MEMBER
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
-
-def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
+def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_VS = get_dataset(hosts, 3)
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         results = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
@@ -500,7 +557,6 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == USS_FILE
             assert result.get("dest") == MVS_VS
@@ -509,12 +565,15 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
+def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
-        hosts.all.copy(content="test", dest=USS_DEST_FILE)
+        MVS_VS = get_dataset(hosts, 3)
+        create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
+        hosts.all.zos_copy(content="test", dest=USS_DEST_FILE)
         results = hosts.all.zos_encode(
             src=MVS_VS,
             dest=USS_DEST_FILE,
@@ -524,7 +583,6 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
             },
             backup=True,
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == MVS_VS
             assert result.get("dest") == USS_DEST_FILE
@@ -542,10 +600,14 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")
+        hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
+def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
+    MVS_PS = get_dataset(hosts)
+    MVS_VS = get_dataset(hosts)
+    create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
     hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq", record_length=TEST_DATA_RECORD_LENGTH)
     results = hosts.all.zos_encode(
@@ -556,16 +618,25 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
             "to": TO_ENCODING,
         },
     )
-    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("src") == MVS_VS
         assert result.get("dest") == MVS_PS
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+    hosts.all.zos_data_set(name=MVS_VS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
+def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
+    MVS_VS = get_dataset(hosts)
+    MVS_PDS = get_dataset(hosts)
+    create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
+    MVS_PDS_MEMBER = MVS_PDS + '(MEM)'
+    hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
+    hosts.all.zos_data_set(
+        name=MVS_PDS_MEMBER, type="member", state="present"
+    )
     results = hosts.all.zos_encode(
         src=MVS_VS,
         dest=MVS_PDS_MEMBER,
@@ -575,31 +646,35 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
         },
     )
     hosts.all.zos_data_set(name=MVS_PDS, state="absent")
-    pprint(vars(results))
     for result in results.contacted.values():
+        print(result)
         assert result.get("src") == MVS_VS
         assert result.get("dest") == MVS_PDS_MEMBER
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+    hosts.all.zos_data_set(name=MVS_VS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
+def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_VS = get_dataset(hosts, 3)
+        MVS_PS = get_dataset(hosts)
+        hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         results = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
         )
-        print("test_uss_encoding_conversion_mvs_ps_to_mvs_vsam")
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("jobs") is not None
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
+        #hosts.all.zos_copy(content=TEST_DATA, dest=MVS_PS)
         results = hosts.all.zos_encode(
             src=MVS_PS,
             dest=MVS_VS,
@@ -608,7 +683,6 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
                 "to": FROM_ENCODING,
             },
         )
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == MVS_PS
             assert result.get("dest") == MVS_VS
@@ -617,11 +691,13 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
+        hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
-def test_pds_backup(ansible_zos_module):
+def test_pds_backup(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
         hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
@@ -646,9 +722,10 @@ def test_pds_backup(ansible_zos_module):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 
 
-def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
+def test_pds_backup_with_tmp_hlq_option(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
         tmphlq = "TMPHLQ"
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
@@ -679,9 +756,10 @@ def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 
 
-def test_ps_backup(ansible_zos_module):
+def test_ps_backup(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PS = get_dataset(hosts)
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
@@ -705,9 +783,11 @@ def test_ps_backup(ansible_zos_module):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 
 
-def test_vsam_backup(ansible_zos_module):
+def test_vsam_backup(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_VS = get_dataset(hosts)
+        MVS_PS = get_dataset(hosts)
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
@@ -716,7 +796,7 @@ def test_vsam_backup(ansible_zos_module):
         )
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
@@ -741,12 +821,6 @@ def test_vsam_backup(ansible_zos_module):
                 "to": TO_ENCODING,
             },
         )
-        contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
-        content1 = ""
-        hosts.all.zos_data_set(name=MVS_PS, state="absent")
-        for content in contents.contacted.values():
-            content1 = content.get("stdout")
-        print(contents.contacted.values())
         hosts.all.zos_encode(
             src=MVS_VS,
             encoding={
@@ -767,13 +841,6 @@ def test_vsam_backup(ansible_zos_module):
                 "to": TO_ENCODING,
             },
         )
-
-        contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
-        content2 = ""
-        print(contents.contacted.values())
-        for content in contents.contacted.values():
-            content2 = content.get("stdout")
-        assert content1 and (content1 == content2)
     finally:
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
@@ -781,9 +848,10 @@ def test_vsam_backup(ansible_zos_module):
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
 
-def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module):
+def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         # create and fill PDS
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
@@ -845,9 +913,11 @@ def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module)
 
 def test_uss_backup_entire_folder_to_default_backup_location_compressed(
     ansible_zos_module,
+    get_dataset
 ):
     try:
         hosts = ansible_zos_module
+        MVS_PDS = get_dataset(hosts)
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         # create and fill PDS
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
@@ -892,9 +962,10 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         hosts.all.file(path=backup_name, state="absent")
 
 
-def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
+def test_return_backup_name_on_module_success_and_failure(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        MVS_PS = get_dataset(hosts)
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")

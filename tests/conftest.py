@@ -151,13 +151,13 @@ def zos_import_mocker(mocker):
 def get_dataset():
     def get_dataset(hosts, hlq_size=8):
         letters =  string.ascii_uppercase
-        hlq =  ''.join(random.choice(letters)for i in range(hlq_size))
+        hlq =  ''.join(random.choice(letters)for iteration in range(hlq_size))
         while not re.fullmatch(
         r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
                 hlq,
                 re.IGNORECASE,
             ):
-            hlq =  ''.join(random.choice(letters)for i in range(hlq_size))
+            hlq =  ''.join(random.choice(letters)for iteration in range(hlq_size))
         response = hosts.all.command(cmd="mvstmp {0}".format(hlq))
         for dataset in response.contacted.values():
             ds = dataset.get("stdout")

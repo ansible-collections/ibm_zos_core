@@ -160,7 +160,7 @@ def test_remount(ansible_zos_module):
         hosts.all.file(path="/pythonx/", state="absent")
 
 
-def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
+def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
 
@@ -177,8 +177,8 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         stdin="",
     )
 
-    dest = "USER.TEST.BPX.PDS"
-    dest_path = "USER.TEST.BPX.PDS(AUTO1)"
+    dest = get_dataset(hosts)
+    dest_path = dest + "(AUTO1)"
 
     hosts.all.zos_data_set(
         name=dest,
@@ -229,7 +229,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         )
 
 
-def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
+def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
 
@@ -258,9 +258,9 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
     print("\n====================================================\n")
 
-    dest = "USER.TEST.BPX.PDS"
-    dest_path = "USER.TEST.BPX.PDS(AUTO2)"
-    back_dest_path = "USER.TEST.BPX.PDS(AUTO2BAK)"
+    dest = get_dataset(hosts)
+    dest_path = dest + "(AUTO2)"
+    back_dest_path = dest + "(AUTO2BAK)"
 
     hosts.all.zos_data_set(
         name=dest,
@@ -348,7 +348,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         )
 
 
-def test_basic_mount_with_tmp_hlq_option(ansible_zos_module):
+def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
     try:
@@ -361,7 +361,7 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         tmphlq = "TMPHLQ"
-        persist_data_set = "MTEST.TEST.PERSIST"
+        persist_data_set = get_dataset(hosts)
         hosts.all.zos_data_set(name=persist_data_set, state="present", type="SEQ")
         unmount_result = hosts.all.zos_mount(
             src=srcfn,

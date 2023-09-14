@@ -265,9 +265,10 @@ TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
 
-def test_job_submit_PDS(ansible_zos_module):
+def test_job_submit_PDS(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        DATA_SET_NAME = get_dataset(hosts)
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
@@ -376,9 +377,10 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
         assert re.search(r'completion code', repr(result.get("msg")))
 
 
-def test_job_submit_PDS_volume(ansible_zos_module, get_volumes):
+def test_job_submit_PDS_volume(ansible_zos_module, get_volumes, get_dataset):
     try:
         hosts = ansible_zos_module
+        DATA_SET_NAME = get_dataset(hosts)
         volumes = ls_Volume(*get_volumes)
         volume_1 = get_disposal_vol(volumes)
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -410,9 +412,10 @@ def test_job_submit_PDS_volume(ansible_zos_module, get_volumes):
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
 
-def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
+def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        DATA_SET_NAME = get_dataset(hosts)
         hosts.all.file(path=TEMP_PATH, state="directory")
         wait_time_s = 15
 
@@ -442,9 +445,10 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
 
-def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
+def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
+        DATA_SET_NAME = get_dataset(hosts)
         hosts.all.file(path=TEMP_PATH, state="directory")
         wait_time_s = 60
 
@@ -473,10 +477,11 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
-def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
+def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module, get_dataset):
     """This submits a 30 second job and only waits 10 seconds"""
     try:
         hosts = ansible_zos_module
+        DATA_SET_NAME = get_dataset(hosts)
         hosts.all.file(path=TEMP_PATH, state="directory")
         wait_time_s = 10
 

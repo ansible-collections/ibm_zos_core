@@ -347,7 +347,7 @@ List of tests:
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
+    "record_format", ["FB", "VB"],
 )
 def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record_length, record_format):
     try:
@@ -372,8 +372,12 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
                     type="member",
                     state="present"
                 )
-        # Write some content into src
-        test_line = "this is a test line"
+        # Write some content into src the same size of the record,
+        # need to reduce 4 from V and VB due to RDW
+        if record_format in ["V", "VB"]:
+            test_line = "a" * (record_length - 4)
+        else:
+            test_line = "a" * record_length
         for member in data_set.get("members"):
             if member == "":
                 ds_to_write = f"{data_set.get('name')}"
@@ -419,7 +423,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
+    "record_format", ["FB", "VB"],
 )
 def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:
@@ -444,8 +448,12 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
                     type="member",
                     state="present"
                 )
-        # Write some content into src
-        test_line = "this is a test line"
+        # Write some content into src the same size of the record,
+        # need to reduce 4 from V and VB due to RDW
+        if record_format in ["V", "VB"]:
+            test_line = "a" * (record_length - 4)
+        else:
+            test_line = "a" * record_length
         for member in data_set.get("members"):
             if member == "":
                 ds_to_write = f"{data_set.get('name')}"
@@ -487,10 +495,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
         dict(name=TEST_PDS, dstype="PDSE", members=["MEM1", "MEM2", "MEM3"]),
         ]
 )
-@pytest.mark.parametrize(
-    "record_length", [80],
-)
-def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set, record_length):
+def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         # Clean env
@@ -501,7 +506,6 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             name=data_set.get("name"),
             type=data_set.get("dstype"),
             state="present",
-            record_length=record_length,
             record_format="FB",
             replace=True,
         )

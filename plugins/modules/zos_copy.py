@@ -173,6 +173,12 @@ options:
     type: bool
     default: false
     required: false
+  aliases:
+    description:
+      - TODO
+    type: bool
+    default: false
+    required: false
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
@@ -1397,6 +1403,7 @@ class PDSECopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
+        aliases=False,
         executable=False,
         backup_name=None
     ):
@@ -1418,6 +1425,7 @@ class PDSECopyHandler(CopyHandler):
             executable=executable,
             backup_name=backup_name
         )
+        self.aliases = aliases # aliases not added to CopyHandler object
 
     def copy_to_pdse(
         self,
@@ -1540,6 +1548,10 @@ class PDSECopyHandler(CopyHandler):
 
         if self.is_binary:
             opts["options"] = "-B"
+
+        if self.aliases:
+            # lower case 'i' for text-based copy
+            opts["options"] = "-i"
 
         if self.executable:
             opts["options"] = "-IX"
@@ -2270,6 +2282,7 @@ def run_module(module, arg_def):
     dest = module.params.get('dest')
     remote_src = module.params.get('remote_src')
     is_binary = module.params.get('is_binary')
+    aliases = module.params.get('aliases')
     executable = module.params.get('executable')
     backup = module.params.get('backup')
     backup_name = module.params.get('backup_name')
@@ -2666,7 +2679,7 @@ def run_module(module, arg_def):
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(
-                module, is_binary=is_binary, executable=executable, backup_name=backup_name
+                module, is_binary=is_binary, aliases=aliases, executable=executable, backup_name=backup_name
             )
 
             pdse_copy_handler.copy_to_pdse(
@@ -2711,6 +2724,7 @@ def main():
             src=dict(type='path'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
+            aliases=dict(type='bool', default=False, required=False),
             executable=dict(type='bool', default=False),
             encoding=dict(
                 type='dict',
@@ -2812,6 +2826,7 @@ def main():
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
+        aliases=dict(arg_type='bool', required=False, default=False),
         executable=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),

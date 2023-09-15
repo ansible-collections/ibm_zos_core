@@ -1405,7 +1405,7 @@ def test_ds_not_supported(ansible_zos_module, dstype, get_dataset):
         for result in results.contacted.values():
             hlq = result.get("stdout")
         assert len(hlq) <= 8 or hlq != ''
-        ds_name = test_name.upper() + "." + ds_type
+        ds_name = ds_name.upper() + "." + ds_type
         results = hosts.all.zos_data_set(name=ds_name, type=ds_type, replace='yes')
         for result in results.contacted.values():
             assert result.get("changed") is True

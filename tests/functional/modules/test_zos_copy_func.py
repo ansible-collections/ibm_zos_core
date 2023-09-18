@@ -342,7 +342,7 @@ def generate_executable_ds(hosts, src, dest, cobol):
     assert rc == 0
     exec_res = hosts.all.shell(cmd=cmd.format(member, src))
     for result in exec_res.contacted.values():
-            assert result.get("rc") == 0
+        assert result.get("rc") == 0
 
 def generate_executable_uss(hosts, src, src_jcl_call):
     hosts.all.zos_copy(content=hello_world, dest=src, force=True)

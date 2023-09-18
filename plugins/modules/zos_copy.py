@@ -1293,7 +1293,9 @@ class USSCopyHandler(CopyHandler):
         files_to_change = []
         existing_files = []
         for relative_path in files_to_copy:
-            if os.path.exists(os.path.join(validation.validate_safe_path(dest, parent_dir), validation.validate_safe_path(relative_path))):
+            if os.path.exists(
+                os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(parent_dir), validation.validate_safe_path(relative_path))
+            ):
                 existing_files.append(relative_path)
             else:
                 files_to_change.append(relative_path)

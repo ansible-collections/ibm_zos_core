@@ -30,11 +30,11 @@ def validate_safe_path(path):
     """
     if not os.path.isabs(path):
         real_path = os.path.realpath(path)
-        if not os.path.exists(path) and os.sep not in path:
+        if not os.path.exists(real_path) and not real_path.endswith(os.sep):
             # if path doesn't exist and does not contain separator then is likely a member.
             return path
         if not os.access(path=real_path, mode=os.F_OK):
-            raise DirectoryTraversalError(path, real_path)
+            raise DirectoryTraversalError(f"{real_path} exists {os.path.exists(real_path)} ends with {real_path.endswith(os.sep)}")
     return path
 
 

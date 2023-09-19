@@ -398,6 +398,8 @@ def handle_conditions(list, condition_type, value):
 def execute_command(operator_cmd):
 
     response = opercmd.execute(operator_cmd)
+#     response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response

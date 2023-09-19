@@ -57,14 +57,11 @@ options:
     default: 1
   wait:
     description:
-      - Configuring wait used by the L(zos_operator,./zos_operator.html) module
-        has been deprecated and will be removed in a future ibm.ibm_zos_core
-        collection.
-      - Setting this option will yield no change, it is deprecated.
-      - Review option I(wait_time_s) to instruct operator commands to wait.
+      - Setting this option will tell opercmd to wait the full wait_time, instead
+        of returning on first data received
     type: bool
     required: false
-    default: true
+    default: false
 """
 
 EXAMPLES = r"""
@@ -81,12 +78,13 @@ EXAMPLES = r"""
   zos_operator:
     cmd: "\\$PJ(*)"
 
-- name: Execute operator command to show jobs, waiting up to 5 seconds for response
+- name: Execute operator command to show jobs, always waiting 8 seconds for response
   zos_operator:
     cmd: 'd a,all'
     wait_time_s: 5
+    wait: true
 
-- name: Execute operator command to show jobs, always waiting 7 seconds for response
+- name: Execute operator command to show jobs, waiting up to 7 seconds for response
   zos_operator:
     cmd: 'd a,all'
     wait_time_s: 7
@@ -195,7 +193,7 @@ def run_module():
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
         wait_time_s=dict(type="int", required=False, default=1),
-        wait=dict(type="bool", required=False, default=True),
+        wait=dict(type="bool", required=False, default=False),
     )
 
     result = dict(changed=False)
@@ -266,8 +264,7 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
-        wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
+        wait=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -285,6 +282,9 @@ def run_operator_command(params):
 
     wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
+
+    if params.get("wait"):
+      kwargs.update({"wait_arg": True})
 
     args = []
     rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)

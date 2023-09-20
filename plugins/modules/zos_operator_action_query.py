@@ -288,7 +288,7 @@ def run_module():
 
         kwargs = {}
 
-        wait_s = params.get("wait_time_s")
+        wait_s = new_params.get("wait_time_s")
 
         if new_params.get("wait"):
             kwargs.update({"wait_arg": True})

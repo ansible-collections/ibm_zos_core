@@ -310,7 +310,7 @@ def run_module():
                 cmd="d r,a,s",
             )
 
-        cmdtxt = new_params.get("d r,a,jn")
+        cmdtxt = "d r,a,jn"
 
         cmd_result_b = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
 

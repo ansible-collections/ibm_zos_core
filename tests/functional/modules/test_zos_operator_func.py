@@ -121,7 +121,7 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
 
 def test_response_come_back_complete(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd='$dspl')  # \$ triggers warning
+    results = hosts.all.zos_operator(cmd="\$dspl")
     res = dict()
     res["stdout"] = []
     for result in results.contacted.values():

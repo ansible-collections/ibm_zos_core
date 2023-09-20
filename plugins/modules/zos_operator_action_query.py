@@ -57,6 +57,26 @@ options:
       - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
+  wait_time_s:
+    description:
+      - Set maximum time in seconds to wait for the commands to execute.
+      - When set to 0, the system default is used.
+      - This option is helpful on a busy system requiring more time to execute
+        commands.
+      - Setting I(wait) can instruct if execution should wait the
+        full I(wait_time_s).
+      - Because 2 functions are called, potential time delay is doubled.
+    type: int
+    required: false
+    default: 1
+  wait:
+    description:
+      - Setting this option will tell the system to wait the full wait_time, instead
+        of returning on first data received
+      - Because 2 functions are called, potential time delay is doubled.
+    type: bool
+    required: false
+    default: false
   message_filter:
     description:
       - Return outstanding messages requiring operator action awaiting a
@@ -100,6 +120,19 @@ EXAMPLES = r"""
 - name: Display all outstanding messages whose job name begin with im5
   zos_operator_action_query:
       job_name: im5*
+
+- name: Display all outstanding messages whose job name begin with im7,
+        wait up to 10 seconds per call (20 seconds overall) for data
+  zos_operator_action_query:
+      job_name: im7*
+      wait_time_s: 10
+
+- name: Display all outstanding messages whose job name begin with im9,
+        wait up a full 15 seconds per call (30 seconds overall) for data
+  zos_operator_action_query:
+      job_name: im9*
+      wait_time_s: 15
+      wait: True
 
 - name: Display all outstanding messages whose message id begin with dsi*
   zos_operator_action_query:
@@ -235,6 +268,8 @@ def run_module():
         system=dict(type="str", required=False),
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
+        wait_time_s=dict(type="int", required=False, default=1),
+        wait=dict(type="bool", required=False, default=False),
         message_filter=dict(
             type="dict",
             required=False,
@@ -251,7 +286,19 @@ def run_module():
     try:
         new_params = parse_params(module.params)
 
-        cmd_result_a = execute_command("d r,a,s")
+        kwargs = {}
+
+        wait_s = params.get("wait_time_s")
+
+        if new_params.get("wait"):
+            kwargs.update({"wait_arg": True})
+
+        args = []
+
+        cmdtxt = "d r,a,s"
+
+        cmd_result_a = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+
         if cmd_result_a.rc > 0:
             module.fail_json(
                 msg="A non-zero return code was received while querying the operator.",
@@ -263,7 +310,10 @@ def run_module():
                 cmd="d r,a,s",
             )
 
-        cmd_result_b = execute_command("d r,a,jn")
+        cmdtxt = new_params.get("d r,a,jn")
+
+        cmd_result_b = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+
         if cmd_result_b.rc > 0:
             module.fail_json(
                 msg="A non-zero return code was received while querying the operator.",
@@ -295,6 +345,8 @@ def parse_params(params):
         system=dict(arg_type=system_type, required=False),
         message_id=dict(arg_type=message_id_type, required=False),
         job_name=dict(arg_type=job_name_type, required=False),
+        wait_time_s=dict(arg_type="int", required=False),
+        wait=dict(arg_type="bool", required=False),
         message_filter=dict(arg_type=message_filter_type, required=False)
     )
     parser = BetterArgParser(arg_defs)
@@ -395,10 +447,10 @@ def handle_conditions(list, condition_type, value):
     return newlist
 
 
-def execute_command(operator_cmd):
+def execute_command(operator_cmd, timeout=1, *args, **kwargs):
 
-    response = opercmd.execute(operator_cmd)
-#     response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+    # response = opercmd.execute(operator_cmd)
+    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
 
     rc = response.rc
     stdout = response.stdout_response

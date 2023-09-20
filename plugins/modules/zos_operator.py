@@ -57,7 +57,7 @@ options:
     default: 1
   wait:
     description:
-      - Setting this option will tell opercmd to wait the full wait_time, instead
+      - Setting this option will tell the system to wait the full wait_time, instead
         of returning on first data received
     type: bool
     required: false

@@ -35,7 +35,7 @@ def test_zos_operator_action_query_no_options(ansible_zos_module):
     print( "\n\n=============== in no-options loop 2")
     for result in results.contacted.values():
         print( result )
-        # assert result.get("actions")
+        assert result.get("actions")
 
 def test_zos_operator_action_query_option_message_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -48,7 +48,10 @@ def test_zos_operator_action_query_option_message_id(ansible_zos_module):
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
+
+    print( "\n\n=============== in msgid loop 2")
     for result in results.contacted.values():
+        print( result )
         assert result.get("actions")
 
 def test_zos_operator_action_query_option_message_id_invalid_abbreviation(

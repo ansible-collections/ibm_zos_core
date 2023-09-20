@@ -41,8 +41,6 @@ def test_zos_operator_various_command(ansible_zos_module):
         hosts = ansible_zos_module
         results = hosts.all.zos_operator(cmd=command)
         for result in results.contacted.values():
-            print( "\n\n===result:" )
-            print( result )
             assert result["rc"] == expected_rc
             assert result.get("changed") is changed
 
@@ -114,7 +112,6 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     # assert timediff < 15
 
     for result in results.contacted.values():
-        pprint(result)
         assert result["rc"] == 0
         assert result.get("changed") is True
         assert result.get("content") is not None
@@ -124,7 +121,7 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
 
 def test_response_come_back_complete(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="\$dspl")
+    results = hosts.all.zos_operator(cmd='$dspl')  # \$ triggers warning
     res = dict()
     res["stdout"] = []
     for result in results.contacted.values():

@@ -16,25 +16,21 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-import unittest
+
 
 def test_zos_operator_action_query_no_options(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_operator(cmd="DUMP COMM=('test dump')")
     results = hosts.all.zos_operator_action_query()
     try:
-        print( "\n\n=========== in no-options loop 1")
         for action in results.get("actions"):
-            print( action.get("message_text", "-no-"))
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
 
-    print( "\n\n=============== in no-options loop 2")
     for result in results.contacted.values():
-        print( result )
         assert result.get("actions")
 
 def test_zos_operator_action_query_option_message_id(ansible_zos_module):
@@ -49,9 +45,7 @@ def test_zos_operator_action_query_option_message_id(ansible_zos_module):
     except Exception:
         pass
 
-    print( "\n\n=============== in msgid loop 2")
     for result in results.contacted.values():
-        print( result )
         assert result.get("actions")
 
 def test_zos_operator_action_query_option_message_id_invalid_abbreviation(
@@ -275,7 +269,6 @@ def test_zos_operator_action_query_option_message_filter_multiple_matches(
     except Exception:
         pass
     for result in results.contacted.values():
-        print(result.get("actions"))
         assert result.get("actions")
         assert len(result.get("actions")) > 1
 

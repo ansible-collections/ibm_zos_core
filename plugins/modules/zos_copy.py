@@ -778,6 +778,7 @@ class CopyHandler(object):
         module,
         is_binary=False,
         executable=False,
+        asa_text=False,
         backup_name=None
     ):
         """Utility class to handle copying data between two targets
@@ -797,6 +798,7 @@ class CopyHandler(object):
         self.module = module
         self.is_binary = is_binary
         self.executable = executable
+        self.asa_text = asa_text
         self.backup_name = backup_name
 
     def run_command(self, cmd, **kwargs):
@@ -1069,6 +1071,7 @@ class USSCopyHandler(CopyHandler):
         module,
         is_binary=False,
         executable=False,
+        asa_text=False,
         common_file_args=None,
         backup_name=None,
     ):
@@ -1086,7 +1089,11 @@ class USSCopyHandler(CopyHandler):
             backup_name {str} -- The USS path or data set name of destination backup
         """
         super().__init__(
-            module, is_binary=is_binary, executable=executable, backup_name=backup_name
+            module,
+            is_binary=is_binary,
+            executable=executable,
+            asa_text=asa_text,
+            backup_name=backup_name
         )
         self.common_file_args = common_file_args
 
@@ -1112,12 +1119,13 @@ class USSCopyHandler(CopyHandler):
             src_ds_type {str} -- Type of source
             src_member {bool} -- Whether src is a data set member
             member_name {str} -- The name of the source data set member
-            force {bool} -- Wheter to copy files to an already existing directory
+            force {bool} -- Whether to copy files to an already existing directory
 
         Returns:
             {str} -- Destination where the file was copied to
         """
         if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED):
+            # TODO: add something to fix permissions after copying.
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
@@ -1375,10 +1383,16 @@ class USSCopyHandler(CopyHandler):
 
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
+                # if self.asa_text:
+                #     response = copy.copy_asa_mvs2uss(src, dest)
                 if self.executable:
                     response = datasets._copy(src, dest, None, **opts)
                 else:
+                    # When copying members from an ASA data set, dcp
+                    # (and by extension cp) already preserves control
+                    # chars from the source.
                     response = datasets._copy(src, dest)
+
                 if response.rc != 0:
                     raise CopyOperationError(
                         msg="Error while copying source {0} to {1}".format(src, dest),
@@ -1387,7 +1401,24 @@ class USSCopyHandler(CopyHandler):
                         stderr=response.stderr_response
                     )
             else:
-                copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
+                # if self.asa_text:
+                #     response = copy.copy_asa_pds2uss(src, dest)
+                #     if response.rc != 0:
+                #         raise CopyOperationError(
+                #             msg="Error while copying source {0} to {1}".format(src, dest),
+                #             rc=response.rc,
+                #             stdout=response.stdout_response,
+                #             stderr=response.stderr_response
+                #         )
+                # else:
+                copy.copy_pds2uss(
+                    src,
+                    dest,
+                    is_binary=self.is_binary,
+                    asa_text=self.asa_text
+                )
+        except CopyOperationError as err:
+            raise err
         except Exception as err:
             raise CopyOperationError(msg=str(err))
 
@@ -2261,6 +2292,7 @@ def run_module(module, arg_def):
     remote_src = module.params.get('remote_src')
     is_binary = module.params.get('is_binary')
     executable = module.params.get('executable')
+    asa_text = module.params.get('asa_text')
     backup = module.params.get('backup')
     backup_name = module.params.get('backup_name')
     validate = module.params.get('validate')
@@ -2435,6 +2467,7 @@ def run_module(module, arg_def):
     # to a PDS. Perform these sanity checks.
     # Note: dest_ds_type can also be passed from dest_data_set.type
     # ********************************************************************
+    # TODO: check that an existing dest has record format FBA or VBA when asa_text is True.
     if not is_compatible(
         src_ds_type,
         dest_ds_type,
@@ -2538,6 +2571,7 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
+            # TODO: when asa_text is True, change record format to FBA or VBA.
             res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
                 temp_path or src,
                 dest_name, src_ds_type,
@@ -2589,10 +2623,12 @@ def run_module(module, arg_def):
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
         if is_uss:
+            # TODO: check how we can copy files to USS from USS and mark them as ASA files.
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,
                 executable=executable,
+                asa_text=asa_text,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
                 backup_name=backup_name,
             )
@@ -2696,12 +2732,14 @@ def run_module(module, arg_def):
 
 
 def main():
+    # TODO: either change options or make is_binary and asa_text_file mutually exclusive.
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(type='path'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
+            asa_text=dict(type='bool', default=False),
             encoding=dict(
                 type='dict',
                 required=False,
@@ -2803,6 +2841,7 @@ def main():
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
         executable=dict(arg_type='bool', required=False, default=False),
+        asa_text=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_path', required=False),

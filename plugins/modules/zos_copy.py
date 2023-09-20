@@ -1488,7 +1488,8 @@ class PDSECopyHandler(CopyHandler):
             if src_member:
                 members.append(data_set.extract_member_name(new_src))
             else:
-                members = datasets.list_members(new_src)
+                # Aliases are included in listing unless alias is set to False.
+                members = datasets.list_members(new_src, **{ 'alias': False })
 
             src_members = ["{0}({1})".format(src_data_set_name, member) for member in members]
             dest_members = [
@@ -1497,7 +1498,7 @@ class PDSECopyHandler(CopyHandler):
                 for member in members
             ]
 
-        existing_members = datasets.list_members(dest)
+        existing_members = datasets.list_members(dest) # include aliases in list
         overwritten_members = []
         new_members = []
 
@@ -1550,7 +1551,7 @@ class PDSECopyHandler(CopyHandler):
             opts["options"] = "-B"
 
         if self.aliases:
-            # lower case 'i' for text-based copy
+            # lower case 'i' for text-based copy (dcp)
             opts["options"] = "-i"
 
         if self.executable:

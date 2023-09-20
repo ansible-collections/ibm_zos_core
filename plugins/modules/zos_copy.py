@@ -1489,7 +1489,9 @@ class PDSECopyHandler(CopyHandler):
                 members.append(data_set.extract_member_name(new_src))
             else:
                 # Aliases are included in listing unless alias is set to False.
-                members = datasets.list_members(new_src, **{ 'alias': False })
+                opts = {}
+                opts['options'] = '-H ' # mls option to hide aliases
+                members = datasets.list_members(new_src, **opts)
 
             src_members = ["{0}({1})".format(src_data_set_name, member) for member in members]
             dest_members = [
@@ -1550,12 +1552,14 @@ class PDSECopyHandler(CopyHandler):
         if self.is_binary:
             opts["options"] = "-B"
 
-        if self.aliases:
+        if self.aliases and not self.executable:
             # lower case 'i' for text-based copy (dcp)
             opts["options"] = "-i"
 
         if self.executable:
-            opts["options"] = "-IX"
+            opts["options"] = "-X"
+            if self.aliases:
+                opts["options"] = "-IX"
 
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response

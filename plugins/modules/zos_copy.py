@@ -1436,6 +1436,7 @@ class PDSECopyHandler(CopyHandler):
         module,
         is_binary=False,
         executable=False,
+        asa_text=False,
         backup_name=None
     ):
         """ Utility class to handle copying to partitioned data sets or
@@ -1454,6 +1455,7 @@ class PDSECopyHandler(CopyHandler):
             module,
             is_binary=is_binary,
             executable=executable,
+            asa_text=asa_text,
             backup_name=backup_name
         )
 
@@ -1537,7 +1539,11 @@ class PDSECopyHandler(CopyHandler):
             else:
                 new_members.append(destination_member)
 
-            result = self.copy_to_member(src_member, "{0}({1})".format(dest, destination_member))
+            result = self.copy_to_member(
+                src_member,
+                "{0}({1})".format(dest, destination_member),
+                src_ds_type
+            )
 
             if result["rc"] != 0:
                 msg = "Unable to copy source {0} to data set member {1}({2})".format(
@@ -1557,7 +1563,8 @@ class PDSECopyHandler(CopyHandler):
     def copy_to_member(
         self,
         src,
-        dest
+        dest,
+        src_type
     ):
         """Copy source to a PDS/PDSE member. The only valid sources are:
             - USS files
@@ -1567,6 +1574,7 @@ class PDSECopyHandler(CopyHandler):
         Arguments:
             src {str} -- Path to USS file or data set name.
             dest {str} -- Name of destination data set
+            src_type {str} -- Type of the source.
 
         Returns:
             dict -- Dictionary containing the return code, stdout, and stderr from
@@ -1576,13 +1584,17 @@ class PDSECopyHandler(CopyHandler):
         dest = dest.replace("$", "\\$").upper()
         opts = dict()
 
-        if self.is_binary:
-            opts["options"] = "-B"
+        if src_type == 'USS' and self.asa_text:
+            response = copy.copy_asa_uss2mvs(src, dest)
+        else:
+            if self.is_binary:
+                opts["options"] = "-B"
 
-        if self.executable:
-            opts["options"] = "-IX"
+            if self.executable:
+                opts["options"] = "-IX"
 
-        response = datasets._copy(src, dest, None, **opts)
+            response = datasets._copy(src, dest, None, **opts)
+
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         return dict(
@@ -2701,7 +2713,11 @@ def run_module(module, arg_def):
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(
-                module, is_binary=is_binary, executable=executable, backup_name=backup_name
+                module,
+                is_binary=is_binary,
+                executable=executable,
+                asa_text=asa_text,
+                backup_name=backup_name
             )
 
             pdse_copy_handler.copy_to_pdse(

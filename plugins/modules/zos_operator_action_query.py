@@ -128,7 +128,7 @@ EXAMPLES = r"""
       wait_time_s: 10
 
 - name: Display all outstanding messages whose job name begin with im9,
-        wait up a full 15 seconds per call (30 seconds overall) for data
+        wait a full 15 seconds per call (30 seconds overall) for data
   zos_operator_action_query:
       job_name: im9*
       wait_time_s: 15

@@ -78,7 +78,7 @@ EXAMPLES = r"""
   zos_operator:
     cmd: "\\$PJ(*)"
 
-- name: Execute operator command to show jobs, always waiting 8 seconds for response
+- name: Execute operator command to show jobs, always waiting 5 seconds for response
   zos_operator:
     cmd: 'd a,all'
     wait_time_s: 5

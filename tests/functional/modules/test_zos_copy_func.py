@@ -332,6 +332,32 @@ def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
         hosts.all.file(path=temp_jcl, state="absent")
     return rc
 
+def generate_executable_ds(hosts, src, dest, cobol):
+    member = "HELLOSRC"
+    hosts.all.zos_copy(content=COBOL_SRC, dest=cobol)
+    dest_name = "{0}({1})".format(dest, member)
+    src_name = "{0}({1})".format(src, member)
+    rc = link_loadlib_from_cobol(hosts, dest_name, cobol)
+    assert rc == 0
+    cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
+    hosts.all.shell(cmd=cmd.format(member, dest))
+    rc = link_loadlib_from_cobol(hosts, src_name, cobol)
+    hosts.all.shell(cmd=cmd.format(member, src))
+    assert rc == 0
+    exec_res = hosts.all.shell(cmd=cmd.format(member, src))
+    for result in exec_res.contacted.values():
+        assert result.get("rc") == 0
+
+def generate_executable_uss(hosts, src, src_jcl_call):
+    hosts.all.zos_copy(content=hello_world, dest=src, force=True)
+    hosts.all.zos_copy(content=call_c_hello_jcl, dest=src_jcl_call, force=True)
+    hosts.all.shell(cmd="xlc -o hello_world hello_world.c", chdir="/tmp/c/")
+    hosts.all.shell(cmd="submit {0}".format(src_jcl_call))
+    verify_exe_src = hosts.all.shell(cmd="/tmp/c/hello_world")
+    for res in verify_exe_src.contacted.values():
+        assert res.get("rc") == 0
+        stdout = res.get("stdout")
+        assert  "Hello World" in str(stdout)
 
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
@@ -2533,19 +2559,17 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             space_type="M",
             replace=True
         )
-        if is_created:
-            hosts.all.zos_data_set(
-                name=dest,
-                state="present",
-                type="pdse",
-                record_format="U",
-                record_length=0,
-                block_size=32760,
-                space_primary=2,
-                space_type="M",
-                replace=True
-            )
-
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
         hosts.all.zos_data_set(
             name=cobol_pds,
             state="present",
@@ -2558,61 +2582,94 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         )
         member = "HELLOSRC"
         cobol_pds = "{0}({1})".format(cobol_pds, member)
-        rc = hosts.all.zos_copy(
-            content=COBOL_SRC,
-            dest=cobol_pds
-        )
-        dest_name = "{0}({1})".format(dest, member)
-        src_name = "{0}({1})".format(src, member)
-        # both src and dest need to be a loadlib
-        rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
-        assert rc == 0
-        # make sure is executable
-        cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
-        exec_res = hosts.all.shell(
-            cmd=cmd.format(member, dest)
-        )
-        for result in exec_res.contacted.values():
-            assert result.get("rc") == 0
-        rc = link_loadlib_from_cobol(hosts, src_name, cobol_pds)
-        assert rc == 0
-
-        exec_res = hosts.all.shell(
-            cmd=cmd.format(member, src)
-        )
-        for result in exec_res.contacted.values():
-            assert result.get("rc") == 0
-        # Execute the copy from pdse to another with executable and validate it
+        generate_executable_ds(hosts, src, dest, cobol_pds)
+        if is_created:
+            hosts.all.zos_data_set(
+                name=dest_exe,
+                state="present",
+                type="pdse",
+                record_format="U",
+                record_length=0,
+                block_size=32760,
+                space_primary=2,
+                space_type="M",
+                replace=True
+            )
         copy_res = hosts.all.zos_copy(
             src="{0}({1})".format(src, member),
-            dest="{0}({1})".format(dest, "MEM1"),
+            dest="{0}({1})".format(dest_exe, "MEM1"),
             remote_src=True,
             executable=True)
 
         verify_copy = hosts.all.shell(
-            cmd="mls {0}".format(dest),
+            cmd="mls {0}".format(dest_exe),
             executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}({1})".format(dest, "MEM1")
+            assert result.get("dest") == "{0}({1})".format(dest_exe, "MEM1")
 
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            # number of members
-            assert len(stdout.splitlines()) == 2
-        # Copy to a uss file executable from the library execute and validate
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=cobol_pds, state="absent")
+
+@pytest.mark.pdse
+@pytest.mark.uss
+def test_copy_pds_loadlib_member_to_uss(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "USER.LOAD.SRC"
+    dest = "USER.LOAD.DEST"
+    cobol_pds = "USER.COBOL.SRC"
+    uss_dest = "/tmp/HELLO"
+    try:
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+        hosts.all.zos_data_set(
+            name=cobol_pds,
+            state="present",
+            type="pds",
+            space_primary=2,
+            record_format="FB",
+            record_length=80,
+            block_size=3120,
+            replace=True,
+        )
+        member = "HELLOSRC"
+        cobol_pds = "{0}({1})".format(cobol_pds, member)
+        generate_executable_ds(hosts, src, dest, cobol_pds)
         copy_uss_res = hosts.all.zos_copy(
-            src="{0}({1})".format(dest, "MEM1"),
+            src="{0}({1})".format(src, member),
             dest=uss_dest,
             remote_src=True,
             executable=True,
             force=True)
-
         for result in copy_uss_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
@@ -2620,12 +2677,10 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         verify_exe_uss = hosts.all.shell(
             cmd="{0}".format(uss_dest)
         )
-
         for v_cp_u in verify_exe_uss.contacted.values():
             assert v_cp_u.get("rc") == 0
             stdout = v_cp_u.get("stdout")
             assert  "SIMPLE HELLO WORLD" in str(stdout)
-
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
         hosts.all.zos_data_set(name=src, state="absent")
@@ -2633,26 +2688,14 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         hosts.all.file(name=uss_dest, state="absent")
 
 #Special case to call a program
-@pytest.mark.pdse
 @pytest.mark.uss
-@pytest.mark.parametrize("is_created", ["true", "false"])
-def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
+def test_copy_executables_uss_to_uss(ansible_zos_module):
     hosts= ansible_zos_module
     src= "/tmp/c/hello_world.c"
     src_jcl_call= "/tmp/c/call_hw_pgm.jcl"
     dest_uss="/tmp/c/hello_world_2"
-    dest = "USER.LOAD.DEST"
-    member = "HELLOSRC"
     try:
-        hosts.all.zos_copy(content=hello_world, dest=src, force=True)
-        hosts.all.zos_copy(content=call_c_hello_jcl, dest=src_jcl_call, force=True)
-        hosts.all.shell(cmd="xlc -o hello_world hello_world.c", chdir="/tmp/c/")
-        hosts.all.shell(cmd="submit {0}".format(src_jcl_call))
-        verify_exe_src = hosts.all.shell(cmd="/tmp/c/hello_world")
-        for res in verify_exe_src.contacted.values():
-            assert res.get("rc") == 0
-            stdout = res.get("stdout")
-            assert  "Hello World" in str(stdout)
+        generate_executable_uss(hosts, src, src_jcl_call)
         copy_uss_res = hosts.all.zos_copy(
             src="/tmp/c/hello_world",
             dest=dest_uss,
@@ -2668,6 +2711,21 @@ def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
             assert res.get("rc") == 0
             stdout = res.get("stdout")
             assert  "Hello World" in str(stdout)
+    finally:
+        hosts.all.shell(cmd='rm -r /tmp/c')
+
+
+@pytest.mark.pdse
+@pytest.mark.uss
+@pytest.mark.parametrize("is_created", ["true", "false"])
+def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
+    hosts= ansible_zos_module
+    src= "/tmp/c/hello_world.c"
+    src_jcl_call= "/tmp/c/call_hw_pgm.jcl"
+    dest = "USER.LOAD.DEST"
+    member = "HELLOSRC"
+    try:
+        generate_executable_uss(hosts, src, src_jcl_call)
         if is_created:
             hosts.all.zos_data_set(
                 name=dest,

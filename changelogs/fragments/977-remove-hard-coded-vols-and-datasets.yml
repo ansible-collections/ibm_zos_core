@@ -16,4 +16,4 @@ trivial:
   - zos_tso_command - Remove hard coded volumes and datasets names in test.
   - zos_unarchive - Remove hard coded volumes and datasets names in test.
   - volumes - Class to manage volumes in the system.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/917)
+    (https://github.com/ansible-collections/ibm_zos_core/pull/977)

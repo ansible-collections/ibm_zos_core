@@ -220,8 +220,8 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 def test_fetch_vsam_data_set(ansible_zos_module, get_dataset, get_volumes):
     hosts = ansible_zos_module
     TEMP_JCL_PATH = "/tmp/ansible"
-    dest_path = "/tmp/" + TEST_VSAM
     TEST_VSAM = get_dataset(hosts)
+    dest_path = "/tmp/" + TEST_VSAM
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_disposal_vol(volumes)
     try:

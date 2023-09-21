@@ -2546,7 +2546,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
     src = get_dataset(hosts, hlq_size)
     dest = get_dataset(hosts, hlq_size)
     cobol_pds = get_dataset(hosts, hlq_size)
-    uss_dest = "/tmp/HELLO"
+    dest_exe = get_dataset(hosts, hlq_size)
     try:
         hosts.all.zos_data_set(
             name=src,
@@ -2622,11 +2622,12 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
 
 @pytest.mark.pdse
 @pytest.mark.uss
-def test_copy_pds_loadlib_member_to_uss(ansible_zos_module):
+def test_copy_pds_loadlib_member_to_uss(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
-    src = "USER.LOAD.SRC"
-    dest = "USER.LOAD.DEST"
-    cobol_pds = "USER.COBOL.SRC"
+    hlq_size = 3
+    src = get_dataset(hosts, hlq_size)
+    dest = get_dataset(hosts, hlq_size)
+    cobol_pds = get_dataset(hosts, hlq_size)
     uss_dest = "/tmp/HELLO"
     try:
         hosts.all.zos_data_set(
@@ -2718,11 +2719,12 @@ def test_copy_executables_uss_to_uss(ansible_zos_module):
 @pytest.mark.pdse
 @pytest.mark.uss
 @pytest.mark.parametrize("is_created", ["true", "false"])
-def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
+def test_copy_executables_uss_to_member(ansible_zos_module, is_created, get_dataset):
     hosts= ansible_zos_module
     src= "/tmp/c/hello_world.c"
+    hlq_size = 3
     src_jcl_call= "/tmp/c/call_hw_pgm.jcl"
-    dest = "USER.LOAD.DEST"
+    dest = get_dataset(hosts, hlq_size)
     member = "HELLOSRC"
     try:
         generate_executable_uss(hosts, src, src_jcl_call)

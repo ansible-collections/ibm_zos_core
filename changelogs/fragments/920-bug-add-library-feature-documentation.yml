@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_copy: Add 'LIBRARY' option as a destination dataset suboption.
+      Update documentation to show this option.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/968)

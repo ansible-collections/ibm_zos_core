@@ -19,7 +19,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 
 from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
-    get_disposal_vol,
+    get_available_vol,
     free_vol)
 
 try:
@@ -103,7 +103,7 @@ def create_sourcefile(hosts, volume):
 def test_basic_mount(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     srcfn = create_sourcefile(hosts, volume_1)
     try:
         mount_result = hosts.all.zos_mount(
@@ -127,7 +127,7 @@ def test_basic_mount(ansible_zos_module, get_volumes):
 def test_double_mount(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     srcfn = create_sourcefile(hosts, volume_1)
     try:
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted")
@@ -153,7 +153,7 @@ def test_double_mount(ansible_zos_module, get_volumes):
 def test_remount(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     srcfn = create_sourcefile(hosts, volume_1)
     try:
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted")
@@ -177,7 +177,7 @@ def test_remount(ansible_zos_module, get_volumes):
 def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, get_dataset, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     srcfn = create_sourcefile(hosts, volume_1)
 
     tmp_file_filename = "/tmp/testfile.txt"
@@ -249,7 +249,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, get_dataset
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, get_dataset, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     srcfn = create_sourcefile(hosts, volume_1)
 
     tmp_file_filename = "/tmp/testfile.txt"
@@ -370,7 +370,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, get_dataset, ge
 def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, get_dataset, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     srcfn = create_sourcefile(hosts, volume_1)
     try:
         mount_result = hosts.all.zos_mount(

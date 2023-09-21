@@ -94,15 +94,17 @@ def ansible_zos_module(request, z_python_interpreter):
 @pytest.fixture(scope="session")
 def get_volumes(ansible_zos_module):
     # Call the pytest-ansible plugin to execute the command d u,dasd,online
-    # to full an array of volumes on disposal with the priority of of actives (A) and storage
+    # to full an array of volumes on available with the priority of of actives (A) and storage
     # (STRG) first then online (O) and storage and if is needed the privated ones but actives
-    # then to get a flag if is on disposal or not every volumes is a instance of a class to
+    # then to get a flag if is available or not every volumes is a instance of a class to
     # manage the use
     list_volumes = []
     active_storage = []
     storage_online = []
     flag = False
     iteration = 5
+    # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
+    # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
     while not flag or iteration > 0:
         all_volumes = ansible_zos_module.all.zos_operator(cmd="d u,dasd,online,,65536")
         time.sleep(1)
@@ -110,12 +112,14 @@ def get_volumes(ansible_zos_module):
             all_volumes = volume.get('content')
         flag = True if len(all_volumes) > 5 else False
         iteration -= 1
+    # Check if the volume is of storage and is active on prefer but also online as a correct option
     for info in all_volumes:
         vol_w_info = info.split()
         if vol_w_info[2] == 'A' and vol_w_info[4] == "STRG/RSDNT":
             active_storage.append(vol_w_info[3])
         if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
             storage_online.append(vol_w_info[3])
+    # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in active_storage:
         list_volumes.append(Volume(vol))
     for vol in storage_online:
@@ -147,17 +151,25 @@ def zos_import_mocker(mocker):
 
     yield (mocker, perform_imports)
 
+# Fixture on scope by function or test to ensure random names of datasets
 @pytest.fixture(scope='function')
 def get_dataset():
+    # Functions inside the fixture to call as many times as need in one test
+    # Is need the hosts to call the shell in every test and for some cases of
+    # long datasets names that will generate problems with jcl the hlq size can
+    # change
     def get_dataset(hosts, hlq_size=8):
+        # Generate the first random hlq of size pass as parameter
         letters =  string.ascii_uppercase
         hlq =  ''.join(random.choice(letters)for iteration in range(hlq_size))
+        # Ensure the hlq is correct for the dataset naming conventions, until then continue working
         while not re.fullmatch(
         r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
                 hlq,
                 re.IGNORECASE,
             ):
             hlq =  ''.join(random.choice(letters)for iteration in range(hlq_size))
+        # Get the second part of the name with the ocmand mvstmp by time is give
         response = hosts.all.command(cmd="mvstmp {0}".format(hlq))
         for dataset in response.contacted.values():
             ds = dataset.get("stdout")

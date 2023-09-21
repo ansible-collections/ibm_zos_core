@@ -23,7 +23,7 @@ import os
 
 from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
-    get_disposal_vol,
+    get_available_vol,
     free_vol)
 
 # ##############################################################################
@@ -382,7 +382,7 @@ def test_job_submit_PDS_volume(ansible_zos_module, get_volumes, get_dataset):
         hosts = ansible_zos_module
         DATA_SET_NAME = get_dataset(hosts)
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         hosts.all.file(path=TEMP_PATH, state="directory")
 
         hosts.all.shell(

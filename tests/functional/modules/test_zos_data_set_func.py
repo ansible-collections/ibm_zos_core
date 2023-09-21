@@ -23,7 +23,7 @@ from pprint import pprint
 
 from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
-    get_disposal_vol,
+    get_available_vol,
     free_vol)
 
 # TODO: determine if data set names need to be more generic for testcases
@@ -151,7 +151,7 @@ def print_results(results):
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, get_volumes, get_dataset):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     dataset = get_dataset(hosts)
     try:
         hosts.all.zos_data_set(
@@ -207,7 +207,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, get_volumes, ge
 def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, get_volumes, get_dataset):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     dataset = get_dataset(hosts)
     try:
         hosts.all.zos_data_set(
@@ -253,7 +253,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, get_volumes,
 def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, get_volumes, get_dataset):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     dataset = get_dataset(hosts)
     try:
         hosts.all.zos_data_set(
@@ -302,7 +302,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, get_volu
 def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, get_volumes, get_dataset):
     try:
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         hosts = ansible_zos_module
         dataset = get_dataset(hosts)
         hosts.all.zos_data_set(
@@ -341,8 +341,8 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, get_volumes, 
 )
 def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl, get_volumes, get_dataset):
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
-    volume_2 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
+    volume_2 = get_available_vol(volumes)
     hosts = ansible_zos_module
     dataset = get_dataset(hosts)
     hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)
@@ -707,8 +707,8 @@ def test_repeated_operations(ansible_zos_module, get_dataset):
 
 def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module, get_volumes, get_dataset):
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
-    volume_2 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
+    volume_2 = get_available_vol(volumes)
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_dataset(hosts)
@@ -746,8 +746,8 @@ def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module,
 
 def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, get_volumes, get_dataset):
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
-    volume_2 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
+    volume_2 = get_available_vol(volumes)
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_dataset(hosts)
@@ -786,7 +786,7 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, ge
 
 def test_data_set_old_aliases(ansible_zos_module, get_volumes, get_dataset):
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_dataset(hosts)
@@ -970,7 +970,7 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module, get_dataset):
 )
 def test_data_set_f_formats(ansible_zos_module, formats, get_volumes, get_dataset):
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_dataset(hosts)

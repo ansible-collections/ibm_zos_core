@@ -25,7 +25,7 @@ from shellescape import quote
 
 from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
-    get_disposal_vol,
+    get_available_vol,
     free_vol)
 
 __metaclass__ = type
@@ -223,7 +223,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, get_dataset, get_volumes):
     TEST_VSAM = get_dataset(hosts)
     dest_path = "/tmp/" + TEST_VSAM
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     try:
         # start by creating the vsam dataset (could use a helper instead? )
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")

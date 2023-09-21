@@ -19,7 +19,7 @@ import pytest
 
 class Volume:
 # Class volume to save the information with volume name and a flag of use
-# to mange in all test suits
+# to mange in all test to not harcoded the values of the array.
     def __init__(self, name):
         self.name = name
         self.in_use = False
@@ -37,8 +37,9 @@ class ls_Volume:
         self.volume = get_volumes
 
 
-def get_disposal_vol(ls_vols):
-    # Check in the list of volumes one on disposal if not, send a error
+def get_available_vol(ls_vols):
+    # Check in the list of volumes one on use or not, also send a default
+    # volume 0 as is the one with more tracks available
     for volume in ls_vols.volume:
         if not (volume.in_use):
             volume.use()

@@ -20,7 +20,7 @@ from pprint import pprint
 
 from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
-    get_disposal_vol,
+    get_available_vol,
     free_vol)
 
 DATASET = ""
@@ -116,7 +116,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition, get
 def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, get_volumes,get_dataset):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     DEFAULT_DATA_SET = get_dataset(hosts)
     tmphlq = "TMPHLQ"
     hosts.all.zos_data_set(
@@ -231,7 +231,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
     try:
         hosts = ansible_zos_module
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         DEFAULT_DATA_SET = get_dataset(hosts)
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET,
@@ -323,7 +323,7 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, get_volumes,
     try:
         hosts = ansible_zos_module
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         DEFAULT_DATA_SET = get_dataset(hosts)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(
@@ -360,7 +360,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, get_volumes, get
     try:
         hosts = ansible_zos_module
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         DEFAULT_DATA_SET = get_dataset(hosts)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(
@@ -411,7 +411,7 @@ def test_record_formats(ansible_zos_module, record_format, get_volumes, get_data
     try:
         hosts = ansible_zos_module
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         DEFAULT_DATA_SET = get_dataset(hosts)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(
@@ -455,7 +455,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
     try:
         hosts = ansible_zos_module
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         DEFAULT_DATA_SET = get_dataset(hosts)
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET,
@@ -507,7 +507,7 @@ def test_return_text_content_encodings(
 ):
     try:
         volumes = ls_Volume(*get_volumes)
-        volume_1 = get_disposal_vol(volumes)
+        volume_1 = get_available_vol(volumes)
         hosts = ansible_zos_module
         DEFAULT_DATA_SET = get_dataset(hosts)
         results = hosts.all.zos_data_set(

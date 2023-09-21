@@ -24,7 +24,7 @@ import subprocess
 
 from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
-    get_disposal_vol,
+    get_available_vol,
     free_vol)
 __metaclass__ = type
 
@@ -3236,7 +3236,7 @@ def test_copy_data_set_to_volume(ansible_zos_module, get_volumes, src_type, get_
     source = get_dataset(hosts)
     dest = get_dataset(hosts)
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
 
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
@@ -3383,7 +3383,7 @@ def test_copy_ksds_to_volume(ansible_zos_module, get_volumes, get_dataset):
     src_ds = TEST_VSAM_KSDS
     dest_ds = get_dataset(hosts)
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
 
     try:
         copy_res = hosts.all.zos_copy(
@@ -3416,7 +3416,7 @@ def test_dest_data_set_parameters(ansible_zos_module, get_volumes, get_dataset):
     src = "/etc/profile"
     dest = get_dataset(hosts)
     volumes = ls_Volume(*get_volumes)
-    volume = get_disposal_vol(volumes)
+    volume = get_available_vol(volumes)
     space_primary = 3
     space_secondary = 2
     space_type = "K"

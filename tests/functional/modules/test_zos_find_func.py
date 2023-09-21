@@ -16,7 +16,7 @@ __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
-    get_disposal_vol,
+    get_available_vol,
     free_vol)
 
 PDS_NAMES = [
@@ -257,7 +257,7 @@ def test_find_vsam_pattern(ansible_zos_module, get_volumes, get_dataset):
     VSAM_NAMES = []
     VSAM_NAMES.append(get_dataset(hosts))
     volumes = ls_Volume(*get_volumes)
-    volume_1 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
     try:
         for vsam in VSAM_NAMES:
             create_vsam_ksds(vsam, hosts, volume_1)
@@ -279,8 +279,8 @@ def test_find_vsam_in_volume(ansible_zos_module, get_volumes, get_dataset):
     volumes = ls_Volume(*get_volumes)
     VSAM_NAMES = []
     VSAM_NAMES.append(get_dataset(hosts))
-    volume_1 = get_disposal_vol(volumes)
-    volume_2 = get_disposal_vol(volumes)
+    volume_1 = get_available_vol(volumes)
+    volume_2 = get_available_vol(volumes)
     alternate_vsam = "TEST.FIND.ALTER.VSAM"
     try:
         for vsam in VSAM_NAMES:

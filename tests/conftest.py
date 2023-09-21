@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
-from ibm_zos_core.tests.volumes import (
+from ibm_zos_core.tests.helpers.volumes import (
     Volume)
 import sys
 import time

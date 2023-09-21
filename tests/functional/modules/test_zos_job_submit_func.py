@@ -21,7 +21,7 @@ import pytest
 import re
 import os
 
-from ibm_zos_core.tests.volumes import (
+from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
     get_disposal_vol,
     free_vol)

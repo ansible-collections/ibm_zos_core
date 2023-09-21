@@ -14,25 +14,15 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ibm_zos_core.tests.volumes import (
+from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
     get_disposal_vol,
     free_vol)
-
-SEQ_NAMES = [
-    "TEST.FIND.SEQ.FUNCTEST.FIRST",
-    "TEST.FIND.SEQ.FUNCTEST.SECOND",
-    "TEST.FIND.SEQ.FUNCTEST.THIRD"
-]
 
 PDS_NAMES = [
     "TEST.FIND.PDS.FUNCTEST.FIRST",
     "TEST.FIND.PDS.FUNCTEST.SECOND",
     "TEST.FIND.PDS.FUNCTEST.THIRD"
-]
-
-VSAM_NAMES = [
-    "TEST.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
 
@@ -58,9 +48,14 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume_1):
     )
 
 
-def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
+def test_find_sequential_data_sets_containing_single_string(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
     search_string = "hello"
+    SEQ_NAMES = []
+    for i in range(2):
+        SEQ_NAMES.append(get_dataset(hosts))
+    HLQ = SEQ_NAMES[0][0:10]
+    HLQ = HLQ + '*'
     try:
         hosts.all.zos_data_set(
             batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES]
@@ -85,10 +80,13 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
         )
 
 
-def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
+def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
     search_string = "dummy string"
-    new_ds = "TEST.FIND.SEQ.FUNCTEST.FOURTH"
+    new_ds = get_dataset(hosts)
+    SEQ_NAMES = []
+    for i in range(2):
+        SEQ_NAMES.append(get_dataset(hosts))
     try:
         hosts.all.zos_data_set(
             batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES]
@@ -116,9 +114,12 @@ def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
         )
 
 
-def test_find_pds_members_containing_string(ansible_zos_module):
+def test_find_pds_members_containing_string(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
     search_string = "hello"
+    PDS_NAMES = []
+    for i in range(2):
+        PDS_NAMES.append(get_dataset(hosts))
     try:
         hosts.all.zos_data_set(
             batch=[dict(name=i, type='pds') for i in PDS_NAMES]
@@ -153,8 +154,11 @@ def test_find_pds_members_containing_string(ansible_zos_module):
         )
 
 
-def test_exclude_data_sets_from_matched_list(ansible_zos_module):
+def test_exclude_data_sets_from_matched_list(ansible_zos_module, get_dataset):
     hosts = ansible_zos_module
+    SEQ_NAMES = []
+    for i in range(2):
+        SEQ_NAMES.append(get_dataset(hosts))
     try:
         hosts.all.zos_data_set(
             batch=[
@@ -248,8 +252,10 @@ def test_find_data_sets_in_volume(ansible_zos_module):
         assert val.get('matched') >= 1
 
 
-def test_find_vsam_pattern(ansible_zos_module, get_volumes):
+def test_find_vsam_pattern(ansible_zos_module, get_volumes, get_dataset):
     hosts = ansible_zos_module
+    VSAM_NAMES = []
+    VSAM_NAMES.append(get_dataset(hosts))
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_disposal_vol(volumes)
     try:
@@ -268,9 +274,11 @@ def test_find_vsam_pattern(ansible_zos_module, get_volumes):
         )
 
 
-def test_find_vsam_in_volume(ansible_zos_module, get_volumes):
+def test_find_vsam_in_volume(ansible_zos_module, get_volumes, get_dataset):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
+    VSAM_NAMES = []
+    VSAM_NAMES.append(get_dataset(hosts))
     volume_1 = get_disposal_vol(volumes)
     volume_2 = get_disposal_vol(volumes)
     alternate_vsam = "TEST.FIND.ALTER.VSAM"

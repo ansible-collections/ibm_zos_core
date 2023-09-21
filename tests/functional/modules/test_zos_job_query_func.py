@@ -45,8 +45,8 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/jcl"
-JDATA_SET_NAME = "imstestl.ims1.testq1"
-NDATA_SET_NAME = "imstestl.ims1.testq2"
+#JDATA_SET_NAME = "imstestl.ims1.testq1"
+#NDATA_SET_NAME = "imstestl.ims1.testq2"
 
 # test to show multi wildcard in Job_id query won't crash the search
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module, get_dataset):

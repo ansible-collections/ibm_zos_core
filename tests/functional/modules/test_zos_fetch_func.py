@@ -23,6 +23,11 @@ from hashlib import sha256
 from ansible.utils.hashing import checksum
 from shellescape import quote
 
+from ibm_zos_core.tests.helpers.volumes import (
+    ls_Volume,
+    get_disposal_vol,
+    free_vol)
+
 __metaclass__ = type
 
 
@@ -51,18 +56,17 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
 //STEP1  EXEC PGM=IDCAMS
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
-    DELETE FETCH.TEST.VS
     SET MAXCC=0
     DEFINE CLUSTER                          -
-    (NAME(FETCH.TEST.VS)                  -
+    (NAME({1})                  -
     INDEXED                                -
     KEYS(4 0)                            -
     RECSZ(200 200)                         -
     RECORDS(100)                           -
     SHAREOPTIONS(2 3)                      -
-    VOLUMES(000000) )                      -
-    DATA (NAME(FETCH.TEST.VS.DATA))       -
-    INDEX (NAME(FETCH.TEST.VS.INDEX))
+    VOLUMES({0}) )                      -
+    DATA (NAME({1}.DATA))       -
+    INDEX (NAME({1}.INDEX))
 /*
 """
 KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
@@ -213,15 +217,18 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
             shutil.rmtree(dest_path)
 
 
-def test_fetch_vsam_data_set(ansible_zos_module):
+def test_fetch_vsam_data_set(ansible_zos_module, get_dataset, get_volumes):
     hosts = ansible_zos_module
     TEMP_JCL_PATH = "/tmp/ansible"
     dest_path = "/tmp/" + TEST_VSAM
+    TEST_VSAM = get_dataset(hosts)
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_disposal_vol(volumes)
     try:
         # start by creating the vsam dataset (could use a helper instead? )
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(volume_1, TEST_VSAM)), TEMP_JCL_PATH)
         )
         hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
@@ -255,6 +262,7 @@ def test_fetch_vsam_data_set(ansible_zos_module):
             os.remove(dest_path)
         hosts.all.file(path=USS_FILE, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+        free_vol(volume_1, volumes)
 
 
 def test_fetch_vsam_empty_data_set(ansible_zos_module):

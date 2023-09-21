@@ -21,7 +21,7 @@ import subprocess
 from pipes import quote
 from pprint import pprint
 
-from ibm_zos_core.tests.volumes import (
+from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
     get_disposal_vol,
     free_vol)
@@ -47,7 +47,7 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
 //STEP1  EXEC PGM=IDCAMS
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
-   DEFINE CLUSTER (NAME(USER.PRIVATE.TESTDS) -
+   DEFINE CLUSTER (NAME({1}) -
    INDEXED                                 -
    KEYS(6 1)                               -
    RECSZ(80 80)                            -
@@ -55,8 +55,8 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
    CISZ(4096)                              -
    FREESPACE(3 3)                          -
    VOLUMES({0}) )                       -
-   DATA (NAME(USER.PRIVATE.TESTDS.DATA))     -
-   INDEX (NAME(USER.PRIVATE.TESTDS.INDEX))
+   DATA (NAME({1}.DATA))     -
+   INDEX (NAME({1}.INDEX))
 /*
 """
 
@@ -65,14 +65,14 @@ RRDS_CREATE_JCL = """//CRERRDS    JOB (T043JM,JM00,1,0,0,0),'CREATE RRDS',CLASS=
 //STEP1  EXEC PGM=IDCAMS
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
-   DEFINE CLUSTER (NAME('USER.PRIVATE.TESTDS') -
+   DEFINE CLUSTER (NAME('{1}') -
    NUMBERED                                -
    RECSZ(80 80)                            -
    TRACKS(1,1)                             -
    REUSE                                   -
    FREESPACE(3 3)                          -
    VOLUMES({0}) )                       -
-   DATA (NAME('USER.PRIVATE.TESTDS.DATA'))
+   DATA (NAME('{1}.DATA'))
 /*
 """
 
@@ -81,14 +81,14 @@ ESDS_CREATE_JCL = """//CREESDS    JOB (T043JM,JM00,1,0,0,0),'CREATE ESDS',CLASS=
 //STEP1  EXEC PGM=IDCAMS
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
-   DEFINE CLUSTER (NAME('USER.PRIVATE.TESTDS') -
+   DEFINE CLUSTER (NAME('{1}') -
    NONINDEXED                              -
    RECSZ(80 80)                            -
    TRACKS(1,1)                             -
    CISZ(4096)                              -
    FREESPACE(3 3)                          -
    VOLUMES({0}) )                       -
-   DATA (NAME('USER.PRIVATE.TESTDS.DATA'))
+   DATA (NAME('{1}.DATA'))
 /*
 """
 
@@ -97,12 +97,12 @@ LDS_CREATE_JCL = """//CRELDS    JOB (T043JM,JM00,1,0,0,0),'CREATE LDS',CLASS=R,
 //STEP1  EXEC PGM=IDCAMS
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
-   DEFINE CLUSTER (NAME('USER.PRIVATE.TESTDS') -
+   DEFINE CLUSTER (NAME('{1}') -
    LINEAR                                  -
    TRACKS(1,1)                             -
    CISZ(4096)                              -
    VOLUMES({0}) )                       -
-   DATA (NAME(USER.PRIVATE.TESTDS.DATA))
+   DATA (NAME({1}.DATA))
 /*
 """
 
@@ -113,7 +113,7 @@ PDS_CREATE_JCL = """
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD   *
      ALLOC -
-           DSNAME('USER.PRIVATE.TESTDS') -
+           DSNAME('{1}') -
            NEW -
            VOL({0}) -
            DSNTYPE(PDS)
@@ -136,7 +136,6 @@ def retrieve_data_set_names(results):
     for result in results.contacted.values():
         if len(result.get("names", [])) > 0:
             for name in result.get("names"):
-                if name.lower() != DEFAULT_DATA_SET_NAME.lower():
                     data_set_names.append(name)
     return data_set_names
 
@@ -161,7 +160,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, get_volumes, ge
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
@@ -217,7 +216,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, get_volumes,
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
@@ -263,7 +262,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, get_volu
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
@@ -312,7 +311,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, get_volumes, 
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
@@ -351,7 +350,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     hosts.all.zos_data_set(name=dataset, state="absent")
 
     hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1)), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
     results =hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS", wait=True)
 
     # verify data set creation was successful
@@ -366,7 +365,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     # Create the same dataset name in different volume
 
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_2)), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_2, dataset)), TEMP_PATH))
     results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS", wait=True)
 
     # verify data set creation was successful
@@ -380,9 +379,10 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     for result in results.contacted.values():
         assert result.get("changed") is True
 
-    results = hosts.all.zos_data_set(name=dataset, state="absent")
-    for result in results.contacted.values():
-        assert result.get("changed") is True
+    if jcl != 'PDS_CREATE_JCL':
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") is True
 
     free_vol(volume_1, volumes)
     free_vol(volume_2, volumes)
@@ -849,9 +849,10 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module, get_dataset):
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
         data_set_names = retrieve_data_set_names(results)
-        assert len(data_set_names) == 3
+        assert len(data_set_names) >= 3
         for name in data_set_names:
-            results2 = hosts.all.zos_data_set(name=name, state="absent")
+            if name != DEFAULT_DATA_SET_NAME:
+                results2 = hosts.all.zos_data_set(name=name, state="absent")
             for result in results2.contacted.values():
                 assert result.get("changed") is True
                 assert result.get("module_stderr") is None

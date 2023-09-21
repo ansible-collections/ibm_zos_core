@@ -18,15 +18,13 @@ __metaclass__ = type
 import pytest
 from pprint import pprint
 
-from ibm_zos_core.tests.volumes import (
+from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
     get_disposal_vol,
     free_vol)
 
+DATASET = ""
 EXISTING_DATA_SET = "user.private.proclib"
-DEFAULT_DATA_SET = "user.private.rawds"
-DEFAULT_DATA_SET_2 = "user.private.rawds2"
-DEFAULT_DATA_SET_WITH_MEMBER = "{0}(mem1)".format(DEFAULT_DATA_SET)
 DEFAULT_PATH = "/tmp/testdir"
 DEFAULT_PATH_WITH_FILE = "{0}/testfile".format(DEFAULT_PATH)
 DEFAULT_DD = "MYDD"
@@ -164,6 +162,7 @@ def test_new_disposition_for_data_set_members(ansible_zos_module, get_dataset):
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET = get_dataset(hosts)
+        DEFAULT_DATA_SET_WITH_MEMBER = DEFAULT_DATA_SET + '(MEM)'
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -197,6 +196,7 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET = get_dataset(hosts)
+        DEFAULT_DATA_SET_WITH_MEMBER = DEFAULT_DATA_SET + '(MEM)'
         hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET, type="pds", state="present", replace=True
         )
@@ -1469,6 +1469,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module, get_dataset):
         hosts = ansible_zos_module
         DEFAULT_DATA_SET = get_dataset(hosts)
         DEFAULT_DATA_SET_2 = get_dataset(hosts)
+        DEFAULT_DATA_SET_WITH_MEMBER = DEFAULT_DATA_SET + '(MEM)'
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="pds")
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
         results = hosts.all.zos_mvs_raw(
@@ -1667,7 +1668,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
                             ),
                             dict(
                                 dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET,
+                                    data_set_name="USER.PRIVATE.TEST",
                                     disposition="shr",
                                     return_content=dict(type="text"),
                                 )
@@ -1699,7 +1700,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
                         dds=[
                             dict(
                                 dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET,
+                                    data_set_name="USER.PRIVATE.TEST",
                                     disposition="shr",
                                     return_content=dict(type="text"),
                                 )
@@ -1743,7 +1744,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
                             ),
                             dict(
                                 dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET,
+                                    data_set_name="USER.PRIVATE.TEST",
                                     disposition="shr",
                                     return_content=dict(type="text"),
                                 )
@@ -1772,13 +1773,12 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
 def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_content, get_dataset):
     try:
         hosts = ansible_zos_module
-        DEFAULT_DATA_SET = get_dataset(hosts)
+        DEFAULT_DATA_SET = "USER.PRIVATE.TEST"
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="seq")
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
         results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 2
             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))

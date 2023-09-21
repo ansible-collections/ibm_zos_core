@@ -231,6 +231,26 @@ def copy_vsam_ps(src, dest):
     return rc, out, err
 
 
+def copy_asa_uss2mvs(src, dest):
+    """Copy a file from USS to an ASA sequential data set or PDS/E member.
+
+    Arguments:
+        src: {str} -- Path of the USS file
+        dest: {str} -- The MVS destination data set or member
+
+    Returns:
+        boolean -- The return code after the copy command executed successfully
+        str -- The stdout after the copy command executed successfully
+        str -- The stderr after the copy command executed successfully
+    """
+    module = AnsibleModuleHelper(argument_spec={})
+
+    oget_cmd = 'tsocmd "OGET \'{0}\' \'{1}\'"'.format(src, dest)
+    rc, out, err = module.run_command(oget_cmd)
+
+    return TSOCmdResponse(rc, out, err)
+
+
 def copy_asa_mvs2uss(src, dest):
     """Copy an ASA sequential data set or member to USS.
 

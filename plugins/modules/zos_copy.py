@@ -810,7 +810,8 @@ class CopyHandler(object):
         src,
         temp_path,
         conv_path,
-        dest
+        dest,
+        src_type
     ):
         """Copy source to a sequential data set.
 
@@ -823,14 +824,20 @@ class CopyHandler(object):
                                transferred data to
             conv_path {str} -- Path to the converted source file
             dest {str} -- Name of destination data set
+            src_type {str} -- Type of the source
         """
         new_src = conv_path or temp_path or src
-        copy_args = dict()
 
-        if self.is_binary:
-            copy_args["options"] = "-B"
+        if src_type == 'USS' and self.asa_text:
+            response = copy.copy_asa_uss2mvs(new_src, dest)
+        else:
+            copy_args = dict()
 
-        response = datasets._copy(new_src, dest, None, **copy_args)
+            if self.is_binary:
+                copy_args["options"] = "-B"
+
+            response = datasets._copy(new_src, dest, None, **copy_args)
+
         if response.rc != 0:
             raise CopyOperationError(
                 msg="Unable to copy source {0} to {1}".format(new_src, dest),
@@ -2608,6 +2615,7 @@ def run_module(module, arg_def):
         module,
         is_binary=is_binary,
         executable=executable,
+        asa_text=asa_text,
         backup_name=backup_name
     )
 
@@ -2680,6 +2688,7 @@ def run_module(module, arg_def):
                 temp_path,
                 conv_path,
                 dest,
+                src_ds_type
             )
             res_args["changed"] = True
             dest = dest.upper()

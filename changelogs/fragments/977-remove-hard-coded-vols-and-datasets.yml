@@ -1,0 +1,19 @@
+trivial:
+  - zos_apf - Test suite was hard to follow. Change made easy to follow.
+  - zos_archive - Remove hard coded volumes and datasets names in test.
+  - zos_backup_restore - Remove hard coded volumes in test.
+  - zos_blockinfile - Remove hard coded volumes and datasets names in test.
+  - zos_copy - Remove hard coded volumes in test.
+  - zos_data_set - Remove hard coded volumes and datasets names in test.
+  - zos_encode - Ensure atomicity of test cases and remove hard coded content.
+  - zos_fetch - Remove hard coded volumes and datasets names in test.
+  - zos_find - Remove hard coded volumes in test.
+  - zos_job_query - Remove hard coded volumes and datasets names in test.
+  - zos_job_submit - Remove hard coded volumes and datasets names in test.
+  - zos_lineinfile - Remove hard coded volumes and datasets names in test.
+  - zos_mount - Remove hard coded volumes and datasets names in test.
+  - zos_mvs_raw - Remove hard coded volumes and datasets names in test.
+  - zos_tso_command - Remove hard coded volumes and datasets names in test.
+  - zos_unarchive - Remove hard coded volumes and datasets names in test.
+  - volumes - Class to manage volumes in the system.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/917)

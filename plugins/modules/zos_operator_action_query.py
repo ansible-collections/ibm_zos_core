@@ -74,6 +74,7 @@ options:
       - Setting this option will tell the system to wait the full wait_time, instead
         of returning on first data received
       - Because 2 functions are called, potential time delay is doubled.
+      - This option is only available with zoau 1.2.5 or later
     type: bool
     required: false
     default: false
@@ -262,6 +263,11 @@ try:
 except Exception:
     opercmd = MissingZOAUImport()
 
+try:
+    from zoautil_py import ZOAU_API_VERSION
+except Exception:
+    ZOAU_API_VERSION = "1.2.0"
+
 
 def run_module():
     module_args = dict(
@@ -290,8 +296,22 @@ def run_module():
 
         wait_s = new_params.get("wait_time_s")
 
-        if new_params.get("wait"):
-            kwargs.update({"wait_arg": True})
+        zv = ZOAU_API_VERSION.split(".")
+        getit = False
+        if( zv[0] > "1"):
+            getit = True
+        elif( zv[0] == "1" and zv[1] > "2"):
+            getit = True
+        elif( zv[0] == "1" and zv[1] == "2" and zv[2] > "4"):
+            getit = True
+
+        if getit:
+            if new_params.get("wait"):
+                kwargs.update({"wait_arg": True})
+            else:
+                kwargs.pop("wait_arg", "0")
+        else:
+            kwargs.pop("wait_arg", "0")
 
         args = []
 

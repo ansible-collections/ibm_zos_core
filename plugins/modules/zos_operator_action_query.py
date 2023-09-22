@@ -298,11 +298,11 @@ def run_module():
 
         zv = ZOAU_API_VERSION.split(".")
         getit = False
-        if( zv[0] > "1"):
+        if zv[0] > "1":
             getit = True
-        elif( zv[0] == "1" and zv[1] > "2"):
+        elif zv[0] == "1" and zv[1] > "2":
             getit = True
-        elif( zv[0] == "1" and zv[1] == "2" and zv[2] > "4"):
+        elif zv[0] == "1" and zv[1] == "2" and zv[2] > "4":
             getit = True
 
         if getit:

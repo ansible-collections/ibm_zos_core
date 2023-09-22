@@ -778,7 +778,8 @@ class CopyHandler(object):
         module,
         is_binary=False,
         executable=False,
-        backup_name=None
+        backup_name=None,
+        force=False,
     ):
         """Utility class to handle copying data between two targets
 
@@ -798,6 +799,7 @@ class CopyHandler(object):
         self.is_binary = is_binary
         self.executable = executable
         self.backup_name = backup_name
+        self.force = force
 
     def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
@@ -1398,7 +1400,8 @@ class PDSECopyHandler(CopyHandler):
         module,
         is_binary=False,
         executable=False,
-        backup_name=None
+        backup_name=None,
+        force=False,
     ):
         """ Utility class to handle copying to partitioned data sets or
         partitioned data set members.
@@ -1416,7 +1419,8 @@ class PDSECopyHandler(CopyHandler):
             module,
             is_binary=is_binary,
             executable=executable,
-            backup_name=backup_name
+            backup_name=backup_name,
+            force=force,
         )
 
     def copy_to_pdse(
@@ -1543,6 +1547,9 @@ class PDSECopyHandler(CopyHandler):
 
         if self.executable:
             opts["options"] = "-IX"
+
+        if self.force:
+            opts["options"] = "-f"
 
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
@@ -2228,7 +2235,7 @@ def data_set_locked(dataset_name):
         dataset_name (str) - the data set name used to check if there is a lock.
 
     Returns:
-        bool -- rue if the data set is locked, or False if the data set is not locked.
+        bool -- True if the data set is locked, or False if the data set is not locked.
     """
     # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
     # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
@@ -2467,7 +2474,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_ds_type != "USS":
         is_dest_lock = data_set_locked(dest_name)
-        if is_dest_lock:
+        if is_dest_lock and not force:
             module.fail_json(
                 msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
     # ********************************************************************
@@ -2666,7 +2673,7 @@ def run_module(module, arg_def):
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(
-                module, is_binary=is_binary, executable=executable, backup_name=backup_name
+                module, is_binary=is_binary, executable=executable, backup_name=backup_name, force=force,
             )
 
             pdse_copy_handler.copy_to_pdse(

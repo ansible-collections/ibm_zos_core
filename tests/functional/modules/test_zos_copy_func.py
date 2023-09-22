@@ -1576,7 +1576,7 @@ def test_copy_dest_lock(ansible_zos_module):
         hosts.all.zos_data_set(name=DATASET_1 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
         hosts.all.zos_data_set(name=DATASET_2 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
         # copy text_in source
-        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
+        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
@@ -1592,12 +1592,28 @@ def test_copy_dest_lock(ansible_zos_module):
         results = hosts.all.zos_copy(
             src = DATASET_2 + "({0})".format(MEMBER_1),
             dest = DATASET_1 + "({0})".format(MEMBER_1),
-            remote_src = True
+            remote_src = True,
+            force=True,
         )
         for result in results.contacted.values():
             print(result)
-            assert result.get("changed") == False
-            assert result.get("msg") is not None
+            assert result.get("changed") == True
+            assert result.get("msg") is None
+            # verify that the content is the same
+            verify_copy = hosts.all.shell(
+                cmd="dcat \"{0}\"".format(DATASET_2 + "({0})".format(MEMBER_1)),
+                executable=SHELL_EXECUTABLE,
+            )
+            for vp_result in verify_copy.contacted.values():
+                print(vp_result)
+                verify_copy_2 = hosts.all.shell(
+                    cmd="dcat \"{0}\"".format(DATASET_1 + "({0})".format(MEMBER_1)),
+                    executable=SHELL_EXECUTABLE,
+                )
+                for vp_result_2 in verify_copy_2.contacted.values():
+                    print(vp_result_2)
+                    assert vp_result_2.get("stdout") == vp_result.get("stdout")
+
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")

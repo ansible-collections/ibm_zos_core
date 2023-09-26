@@ -250,7 +250,9 @@ def test_find_data_sets_in_volume(ansible_zos_module, get_volumes):
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) >= 1
         assert val.get('matched') >= 1
-
+    hosts.all.zos_data_set(
+            batch=[dict(name=i, state='absent') for i in SEQ_NAMES]
+        )
 
 def test_find_vsam_pattern(ansible_zos_module):
     hosts = ansible_zos_module

@@ -3237,6 +3237,10 @@ def test_copy_data_set_to_volume(ansible_zos_module, get_volumes, src_type, get_
     dest = get_dataset(hosts)
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_available_vol(volumes)
+    if volume_1 == "SCR03":
+        volume = get_available_vol(volumes)
+        free_vol(volume_1, volumes)
+        volume_1 = volume
 
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')

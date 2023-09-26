@@ -14,6 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ibm_zos_core.tests.helpers.volumes import (
+    ls_Volume,
+    get_available_vol,
+    free_vol)
+
 SEQ_NAMES = [
     "TEST.FIND.SEQ.FUNCTEST.FIRST",
     "TEST.FIND.SEQ.FUNCTEST.SECOND",
@@ -232,13 +237,16 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
         assert val.get('matched') == 1
 
 
-def test_find_data_sets_in_volume(ansible_zos_module):
+def test_find_data_sets_in_volume(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
-
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_available_vol(volumes)
+    hosts.all.zos_data_set(
+            batch=[dict(name=i, type='seq', state='present', volume=volume_1) for i in SEQ_NAMES]
+        )
     find_res = hosts.all.zos_find(
-        patterns=['USER.*'], volumes=['IMSSUN']
+        patterns=['TEST.*'], volumes=[volume_1]
     )
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) >= 1
         assert val.get('matched') >= 1
@@ -262,15 +270,18 @@ def test_find_vsam_pattern(ansible_zos_module):
         )
 
 
-def test_find_vsam_in_volume(ansible_zos_module):
+def test_find_vsam_in_volume(ansible_zos_module, get_volumes, get_dataset):
     hosts = ansible_zos_module
-    alternate_vsam = "TEST.FIND.ALTER.VSAM"
+    volumes = ls_Volume(*get_volumes)
+    volume_1 = get_available_vol(volumes)
+    volume_2 = get_available_vol(volumes)
+    alternate_vsam = "TEST.FIND.VSAM.SECOND"
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts, volume="222222")
-        create_vsam_ksds(alternate_vsam, hosts, volume="000000")
+            create_vsam_ksds(vsam, hosts, volume=volume_1)
+        create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=['222222'], resource_type='cluster'
+            patterns=['TEST.FIND.*.*.*'], volumes=[volume_1], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -280,6 +291,8 @@ def test_find_vsam_in_volume(ansible_zos_module):
             batch=[dict(name=i, state='absent') for i in VSAM_NAMES]
         )
         hosts.all.zos_data_set(name=alternate_vsam, state='absent')
+        free_vol(volume_1, volumes)
+        free_vol(volume_2, volumes)
 
 
 def test_find_invalid_age_indicator_fails(ansible_zos_module):

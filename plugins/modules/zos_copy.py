@@ -148,6 +148,13 @@ options:
         destination does not exist.
       - If set to C(false) and destination exists, the module exits with a note to
         the user.
+      - If set to C(true) and destination is an MVS data set opened by another
+        process with DISP=SHR then zos_copy will copy using DISP=SHR.
+        Use with caution, this can lead to data loss.
+      - If a dataset member has aliases, and is not a program
+	    object, copying that member to a dataset that is in use will result in
+	    the aliases not being preserved in the target dataset. When this scenario
+	    occurs an error message will be produced along with a non-zero return code.
     type: bool
     default: false
     required: false
@@ -826,9 +833,13 @@ class CopyHandler(object):
         """
         new_src = conv_path or temp_path or src
         copy_args = dict()
+        copy_args["options"] = ""
 
         if self.is_binary:
             copy_args["options"] = "-B"
+
+        if self.force:
+            copy_args["options"] += " -f"
 
         response = datasets._copy(new_src, dest, None, **copy_args)
         if response.rc != 0:
@@ -849,10 +860,15 @@ class CopyHandler(object):
             src {str} -- The name of the source VSAM
             dest {str} -- The name of the destination VSAM
         """
+        out_dsp = "shr" if self.force else "old"
+        dds = {"OUT" : "{0},{1}".format(dest.upper(), out_dsp)}
         repro_cmd = """  REPRO -
         INDATASET('{0}') -
-        OUTDATASET('{1}')""".format(src.upper(), dest.upper())
-        rc, out, err = idcams(repro_cmd, authorized=True)
+        OUTFILE(OUT)""".format(src.upper())
+        # repro_cmd = """  REPRO -
+        # INDATASET('{0}') -
+        # OUDATASET('{1}')""".format(dest.upper())
+        rc, out, err = idcams(repro_cmd, dds=dds, authorized=True)
         if rc != 0:
             raise CopyOperationError(
                 msg=("IDCAMS REPRO encountered a problem while "
@@ -1541,6 +1557,7 @@ class PDSECopyHandler(CopyHandler):
         src = src.replace("$", "\\$")
         dest = dest.replace("$", "\\$").upper()
         opts = dict()
+        opts["options"] = ""
 
         if self.is_binary:
             opts["options"] = "-B"
@@ -1549,7 +1566,7 @@ class PDSECopyHandler(CopyHandler):
             opts["options"] = "-IX"
 
         if self.force:
-            opts["options"] = "-f"
+            opts["options"] += " -f"
 
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response

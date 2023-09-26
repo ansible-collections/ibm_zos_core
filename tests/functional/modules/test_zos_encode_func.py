@@ -18,9 +18,9 @@ from os import path
 
 __metaclass__ = type
 
-USS_FILE = "/tmp/encode.data"
+USS_FILE = "/tmp/encode_data"
 USS_NONE_FILE = "/tmp/none"
-USS_DEST_FILE = "/tmp/converted.data"
+USS_DEST_FILE = "/tmp/converted_data"
 USS_PATH = "/tmp/src"
 USS_DEST_PATH = "/tmp/dest"
 MVS_PS = "encode.ps"
@@ -573,7 +573,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module, get_da
         hosts = ansible_zos_module
         MVS_VS = get_dataset(hosts, 3)
         create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
-        hosts.all.zos_copy(content="test", dest=USS_DEST_FILE)
+        hosts.all.file(path=USS_DEST_FILE, state="touch")
         results = hosts.all.zos_encode(
             src=MVS_VS,
             dest=USS_DEST_FILE,

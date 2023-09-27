@@ -152,9 +152,9 @@ options:
         process with DISP=SHR then zos_copy will copy using DISP=SHR.
         Use with caution, this can lead to data loss.
       - If a dataset member has aliases, and is not a program
-	    object, copying that member to a dataset that is in use will result in
-	    the aliases not being preserved in the target dataset. When this scenario
-	    occurs an error message will be produced along with a non-zero return code.
+        object, copying that member to a dataset that is in use will result in
+        the aliases not being preserved in the target dataset. When this scenario
+        occurs an error message will be produced along with a non-zero return code.
     type: bool
     default: false
     required: false

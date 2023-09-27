@@ -1131,8 +1131,9 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the file was copied to
         """
+        changed_files = None
+
         if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED):
-            # TODO: add something to fix permissions after copying.
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
@@ -1390,14 +1391,11 @@ class USSCopyHandler(CopyHandler):
 
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
-                # if self.asa_text:
-                #     response = copy.copy_asa_mvs2uss(src, dest)
-                if self.executable:
+                if self.asa_text:
+                    response = copy.copy_asa_mvs2uss(src, dest)
+                elif self.executable:
                     response = datasets._copy(src, dest, None, **opts)
                 else:
-                    # When copying members from an ASA data set, dcp
-                    # (and by extension cp) already preserves control
-                    # chars from the source.
                     response = datasets._copy(src, dest)
 
                 if response.rc != 0:
@@ -1408,22 +1406,22 @@ class USSCopyHandler(CopyHandler):
                         stderr=response.stderr_response
                     )
             else:
-                # if self.asa_text:
-                #     response = copy.copy_asa_pds2uss(src, dest)
-                #     if response.rc != 0:
-                #         raise CopyOperationError(
-                #             msg="Error while copying source {0} to {1}".format(src, dest),
-                #             rc=response.rc,
-                #             stdout=response.stdout_response,
-                #             stderr=response.stderr_response
-                #         )
-                # else:
-                copy.copy_pds2uss(
-                    src,
-                    dest,
-                    is_binary=self.is_binary,
-                    asa_text=self.asa_text
-                )
+                if self.asa_text:
+                    response = copy.copy_asa_pds2uss(src, dest)
+                    if response.rc != 0:
+                        raise CopyOperationError(
+                            msg="Error while copying source {0} to {1}".format(src, dest),
+                            rc=response.rc,
+                            stdout=response.stdout_response,
+                            stderr=response.stderr_response
+                        )
+                else:
+                    copy.copy_pds2uss(
+                        src,
+                        dest,
+                        is_binary=self.is_binary,
+                        asa_text=self.asa_text
+                    )
         except CopyOperationError as err:
             raise err
         except Exception as err:

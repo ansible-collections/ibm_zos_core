@@ -833,7 +833,9 @@ class CopyHandler(object):
         else:
             copy_args = dict()
 
-            if self.is_binary:
+            # While ASA files are just text files, we do a binary copy
+            # so dcp doesn't introduce any additional blanks or newlines.
+            if self.is_binary or self.asa_text:
                 copy_args["options"] = "-B"
 
             response = datasets._copy(new_src, dest, None, **copy_args)
@@ -2689,6 +2691,7 @@ def run_module(module, arg_def):
         # Copy to sequential data set (PS / SEQ)
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
+            # TODO: check how ASA behaves with this
             if src_ds_type == "USS" and not is_binary:
                 new_src = conv_path or temp_path or src
                 conv_path = normalize_line_endings(new_src, encoding)

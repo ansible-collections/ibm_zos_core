@@ -1587,7 +1587,9 @@ class PDSECopyHandler(CopyHandler):
         if src_type == 'USS' and self.asa_text:
             response = copy.copy_asa_uss2mvs(src, dest)
         else:
-            if self.is_binary:
+            # While ASA files are just text files, we do a binary copy
+            # so dcp doesn't introduce any additional blanks or newlines.
+            if self.is_binary or self.asa_text:
                 opts["options"] = "-B"
 
             if self.executable:

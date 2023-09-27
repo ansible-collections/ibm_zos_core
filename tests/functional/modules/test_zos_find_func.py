@@ -237,19 +237,16 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
         assert val.get('matched') == 1
 
 
-def test_find_data_sets_in_volume(ansible_zos_module, get_volumes):
+def test_find_data_sets_in_volume(ansible_zos_module):
     hosts = ansible_zos_module
-    volumes = ls_Volume(*get_volumes)
-    volume_1 = get_available_vol(volumes)
-    hosts.all.zos_data_set(
-            batch=[dict(name=i, type='seq', state='present', volume=volume_1) for i in SEQ_NAMES]
-        )
+
     find_res = hosts.all.zos_find(
-        patterns=['TEST.*'], volumes=[volume_1]
+        patterns=['USER.*'], volumes=['IMSSUN']
     )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) >= 1
         assert val.get('matched') >= 1
+        
     hosts.all.zos_data_set(
             batch=[dict(name=i, state='absent') for i in SEQ_NAMES]
         )

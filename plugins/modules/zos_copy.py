@@ -861,7 +861,7 @@ class CopyHandler(object):
             dest {str} -- The name of the destination VSAM
         """
         out_dsp = "shr" if self.force else "old"
-        dds = {"OUT" : "{0},{1}".format(dest.upper(), out_dsp)}
+        dds = {"OUT": "{0},{1}".format(dest.upper(), out_dsp)}
         repro_cmd = """  REPRO -
         INDATASET('{0}') -
         OUTFILE(OUT)""".format(src.upper())

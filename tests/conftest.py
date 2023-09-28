@@ -116,9 +116,11 @@ def get_volumes(ansible_zos_module):
     for info in all_volumes:
         vol_w_info = info.split()
         if vol_w_info[2] == 'A' and vol_w_info[4] == "STRG/RSDNT":
-            active_storage.append(vol_w_info[3])
+            if vol_w_info[3] != "SCR03":
+                active_storage.append(vol_w_info[3])
         if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
-            storage_online.append(vol_w_info[3])
+            if vol_w_info[3] != "SCR03":
+                storage_online.append(vol_w_info[3])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in active_storage:
         list_volumes.append(Volume(vol))

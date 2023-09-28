@@ -643,6 +643,7 @@ if PY3:
 else:
     from pipes import quote
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import _dsname_escape
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])
@@ -698,13 +699,15 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        job_submitted = jobs.submit(src, wait, None, **kwargs)
+        clean_name =  _dsname_escape(src)
+        job_submitted = jobs.submit(clean_name, wait, None, **kwargs)
 
-        # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
+        # Introducing a sleep to ensure we have the result of job submit carrying the job id
         while (job_submitted is None and duration <= timeout):
+            sleep(0.5)
             current_time = timer()
             duration = round(current_time - start_time)
-            sleep(0.5)
+            job_submitted = jobs.submit(clean_name, wait, None, **kwargs)  ### Not sure, but think this is needed
 
         # Second sleep is to wait long enough for the job rc to not equal a `?`
         # which is what ZOAU sends back, opitonally we can check the 'status' as

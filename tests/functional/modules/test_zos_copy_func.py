@@ -1601,7 +1601,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
             src = src_data_set,
             dest = dest_data_set,
             remote_src = True,
-            force=True,
+            force_lock=True,
         )
         for result in results.contacted.values():
             print(result)

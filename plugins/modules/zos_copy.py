@@ -1665,6 +1665,7 @@ def get_data_set_attributes(
     name,
     size,
     is_binary,
+    asa_text,
     record_format="VB",
     record_length=1028,
     type="SEQ",
@@ -1688,6 +1689,7 @@ def get_data_set_attributes(
         name (str) -- Name of the new sequential data set.
         size (int) -- Number of bytes needed for the new data set.
         is_binary (bool) -- Whether or not the data set will have binary data.
+        asa_text (bool) -- Whether the data set will have ASA control characters.
         record_format (str, optional) -- Type of record format.
         record_length (int, optional) -- Record length for the data set.
         type (str, optional) -- Type of the new data set.
@@ -1714,6 +1716,11 @@ def get_data_set_attributes(
     else:
         block_size = max_block_size
 
+    if asa_text:
+        record_format = "FBA"
+        block_size = 27920
+
+
     parms = dict(
         name=name,
         type=type,
@@ -1736,6 +1743,8 @@ def create_seq_dataset_from_file(
     dest,
     force,
     is_binary,
+    asa_text,
+    record_length=None,
     volume=None
 ):
     """Creates a new sequential dataset with attributes suitable to copy the
@@ -1746,21 +1755,25 @@ def create_seq_dataset_from_file(
         dest (str) -- Name of the data set.
         force (bool) -- Whether to replace an existing data set.
         is_binary (bool) -- Whether the file has binary data.
+        asa_text (bool) -- Whether the file has ASA control characters.
         volume (str, optional) -- Volume where the data set should be.
     """
     src_size = os.stat(file).st_size
-    record_format = record_length = None
+    # record_format = record_length = None
+    record_format = None
 
     # When src is a binary file, the module will use default attributes
     # for the data set, such as a record format of "VB".
     if not is_binary:
         record_format = "FB"
-        record_length = get_file_record_length(file)
+        if not record_length:
+            record_length = get_file_record_length(file)
 
     dest_params = get_data_set_attributes(
         name=dest,
         size=src_size,
         is_binary=is_binary,
+        asa_text=asa_text,
         record_format=record_format,
         record_length=record_length,
         volume=volume
@@ -2028,6 +2041,7 @@ def get_attributes_of_any_dataset_created(
     src,
     src_name,
     is_binary,
+    asa_text,
     volume=None
 ):
     """
@@ -2040,6 +2054,7 @@ def get_attributes_of_any_dataset_created(
         src (str) -- Name of the source data set, used as a model when appropiate.
         src_name (str) -- Extraction of the source name without the member pattern.
         is_binary (bool) -- Whether the data set will contain binary data.
+        asa_text (bool) -- Whether the data set will contain ASA control characters.
         volume (str, optional) -- Volume where the data set should be allocated into.
 
     Returns:
@@ -2050,14 +2065,32 @@ def get_attributes_of_any_dataset_created(
     if src_ds_type == "USS":
         if os.path.isfile(src):
             size = os.stat(src).st_size
-            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+            params = get_data_set_attributes(
+                dest,
+                size=size,
+                is_binary=is_binary,
+                asa_text=asa_text,
+                volume=volume
+            )
         else:
             size = os.path.getsize(src)
-            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+            params = get_data_set_attributes(
+                dest,
+                size=size,
+                is_binary=is_binary,
+                asa_text=asa_text,
+                volume=volume
+            )
     else:
         src_attributes = datasets.listing(src_name)[0]
         size = int(src_attributes.total_space)
-        params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+        params = get_data_set_attributes(
+            dest,
+            size=size,
+            is_binary=is_binary,
+            asa_text=asa_text,
+            volume=volume
+        )
     return params
 
 
@@ -2070,6 +2103,7 @@ def allocate_destination_data_set(
     force,
     is_binary,
     executable,
+    asa_text,
     dest_data_set=None,
     volume=None
 ):
@@ -2086,6 +2120,7 @@ def allocate_destination_data_set(
         force (bool) -- Whether to replace an existent data set.
         is_binary (bool) -- Whether the data set will contain binary data.
         executable (bool) -- Whether the data to copy is an executable dataset or file.
+        asa_text (bool) -- Whether the data to copy has ASA control characters.
         dest_data_set (dict, optional) -- Parameters containing a full definition
             of the new data set; they will take precedence over any other allocation logic.
         volume (str, optional) -- Volume where the data set should be allocated into.
@@ -2121,16 +2156,26 @@ def allocate_destination_data_set(
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
-            create_seq_dataset_from_file(src, dest, force, is_binary, volume=volume)
+            create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
         else:
             temp_dump = None
             try:
                 # Dumping the member into a file in USS to compute the record length and
                 # size for the new data set.
+                src_attributes = datasets.listing(src_name)[0]
+                record_length = int(src_attributes.lrecl)
                 temp_dump = dump_data_set_member_to_file(src, is_binary)
-                create_seq_dataset_from_file(temp_dump, dest, force, is_binary, volume=volume)
+                create_seq_dataset_from_file(
+                    temp_dump,
+                    dest,
+                    force,
+                    is_binary,
+                    asa_text,
+                    record_length=record_length,
+                    volume=volume
+                )
             finally:
                 if temp_dump:
                     os.remove(temp_dump)
@@ -2147,6 +2192,7 @@ def allocate_destination_data_set(
                     dest,
                     size,
                     is_binary,
+                    asa_text,
                     record_format=record_format,
                     record_length=record_length,
                     type="LIBRARY",
@@ -2154,15 +2200,23 @@ def allocate_destination_data_set(
                 )
                 data_set.DataSet.ensure_present(replace=force, **dest_params)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
             size = int(src_attributes.total_space)
             record_format = src_attributes.recfm
             record_length = int(src_attributes.lrecl)
-            dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE",
-                                                  volume=volume)
+            dest_params = get_data_set_attributes(
+                dest,
+                size,
+                is_binary,
+                asa_text,
+                record_format=record_format,
+                record_length=record_length,
+                type="PDSE",
+                volume=volume
+            )
             data_set.DataSet.ensure_present(replace=force, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
@@ -2187,6 +2241,7 @@ def allocate_destination_data_set(
                     dest,
                     size,
                     is_binary,
+                    asa_text,
                     record_format=record_format,
                     record_length=record_length,
                     type=type_ds,
@@ -2196,7 +2251,14 @@ def allocate_destination_data_set(
                 # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
                 size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
                 # This PDSE will be created with record format VB and a record length of 1028.
-                dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
+                dest_params = get_data_set_attributes(
+                    dest,
+                    size,
+                    is_binary,
+                    asa_text,
+                    type="PDSE",
+                    volume=volume
+                )
 
             data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
@@ -2206,7 +2268,15 @@ def allocate_destination_data_set(
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
     if dest_ds_type not in data_set.DataSet.MVS_VSAM:
-        dest_params = get_attributes_of_any_dataset_created(dest, src_ds_type, src, src_name, is_binary, volume)
+        dest_params = get_attributes_of_any_dataset_created(
+            dest,
+            src_ds_type,
+            src,
+            src_name,
+            is_binary,
+            asa_text,
+            volume
+        )
         dest_attributes = datasets.listing(dest)[0]
         record_format = dest_attributes.recfm
         dest_params["type"] = dest_ds_type
@@ -2488,7 +2558,7 @@ def run_module(module, arg_def):
     # to a PDS. Perform these sanity checks.
     # Note: dest_ds_type can also be passed from dest_data_set.type
     # ********************************************************************
-    # TODO: check that an existing dest has record format FBA or VBA when asa_text is True.
+    # TODO: check that either the src or the dest ara ASA-enabled.
     if not is_compatible(
         src_ds_type,
         dest_ds_type,
@@ -2592,7 +2662,6 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            # TODO: when asa_text is True, change record format to FBA or VBA.
             res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
                 temp_path or src,
                 dest_name, src_ds_type,
@@ -2601,6 +2670,7 @@ def run_module(module, arg_def):
                 force,
                 is_binary,
                 executable,
+                asa_text,
                 dest_data_set=dest_data_set,
                 volume=volume
             )
@@ -2645,7 +2715,6 @@ def run_module(module, arg_def):
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
         if is_uss:
-            # TODO: check how we can copy files to USS from USS and mark them as ASA files.
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,

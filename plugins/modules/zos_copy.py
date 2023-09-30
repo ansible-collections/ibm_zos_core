@@ -783,6 +783,7 @@ class CopyHandler(object):
         self,
         module,
         is_binary=False,
+        aliases=False,
         executable=False,
         backup_name=None
     ):
@@ -802,6 +803,7 @@ class CopyHandler(object):
         """
         self.module = module
         self.is_binary = is_binary
+        self.aliases = aliases
         self.executable = executable
         self.backup_name = backup_name
 
@@ -1074,6 +1076,7 @@ class USSCopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
+        aliases=False,
         executable=False,
         common_file_args=None,
         backup_name=None,
@@ -1365,6 +1368,8 @@ class USSCopyHandler(CopyHandler):
         Keyword Arguments:
             member_name {str} -- The name of the source data set member
         """
+
+
         if os.path.isdir(dest):
             # If source is a data set member, destination file should have
             # the same name as the member.
@@ -1375,9 +1380,10 @@ class USSCopyHandler(CopyHandler):
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
+
         opts = dict()
         if self.executable:
-            opts["options"] = "-IX"
+            opts["options"] = "-IX "
 
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
@@ -1393,7 +1399,10 @@ class USSCopyHandler(CopyHandler):
                         stderr=response.stderr_response
                     )
             else:
-                copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
+                if self.executable:
+                    datasets._copy(src, dest, None, **opts)
+                else:
+                    copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
             raise CopyOperationError(msg=str(err))
 
@@ -2479,7 +2488,7 @@ def run_module(module, arg_def):
         )
 
     # ********************************************************************
-    # To validate the source and dest are not lock in a batch process by
+    # To validate the source and dest are not locked in a batch process by
     # the machine and not generate a false positive check the disposition
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
@@ -2488,6 +2497,16 @@ def run_module(module, arg_def):
         if is_dest_lock:
             module.fail_json(
                 msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
+
+    # ********************************************************************
+    # Alias support is not avaiable to and from USS for text-based data sets.
+    # ********************************************************************
+    if aliases:
+        if (src_ds_type=='USS' or dest_ds_type=='USS' ) and not executable:
+            module.fail_json(
+                msg="Alias support for text-based data sets is not available for USS sources (src) or targets (dest). Try setting executable=True or aliases=False."
+            )
+
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.
@@ -2620,6 +2639,7 @@ def run_module(module, arg_def):
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,
+                aliases=aliases,
                 executable=executable,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
                 backup_name=backup_name,

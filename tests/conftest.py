@@ -105,7 +105,7 @@ def get_volumes(ansible_zos_module):
     iteration = 5
     # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
     # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
-    while not flag or iteration > 0:
+    while not flag and iteration > 0:
         all_volumes = ansible_zos_module.all.zos_operator(cmd="d u,dasd,online,,65536")
         time.sleep(1)
         for volume in all_volumes.contacted.values():

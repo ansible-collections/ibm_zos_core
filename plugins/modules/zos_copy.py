@@ -148,23 +148,16 @@ options:
         destination does not exist.
       - If set to C(false) and destination exists, the module exits with a note to
         the user.
-      - If set to C(true) and destination is an MVS data set opened by another
-        process with DISP=SHR then zos_copy will copy using DISP=SHR.
-        Use with caution, this can lead to data loss.
-      - If a dataset member has aliases, and is not a program
-        object, copying that member to a dataset that is in use will result in
-        the aliases not being preserved in the target dataset. When this scenario
-        occurs an error message will be produced along with a non-zero return code.
     type: bool
     default: false
     required: false
   force_lock:
     description:
       - By default, when c(dest) is a MVS data set and is being used by another
-        process with DISP=SHR or DISP=OLD the module will fail; use C(force_lock)
+        process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
         to bypass this check and continue with copy.
       - If set to C(true) and destination is a MVS data set opened by another
-        process with DISP=SHR then zos_copy will copy using DISP=SHR.
+        process then zos_copy will try to copy using DISP=SHR.
       - Using C(force_lock) uses operations that are subject to race conditions
         and can lead to data loss, use with caution.
       - If a dataset member has aliases, and is not a program

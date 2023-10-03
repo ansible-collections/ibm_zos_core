@@ -810,6 +810,9 @@ class CopyHandler(object):
                                 is executable
             backup_name {str} -- The USS path or data set name of destination
                                  backup
+            force_lock {str} -- Whether the dest data set should be copied into
+                                using disp=shr when is opened by another
+                                process.
         """
         self.module = module
         self.is_binary = is_binary

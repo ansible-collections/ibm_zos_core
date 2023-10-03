@@ -1,5 +1,6 @@
 minor_changes:
-- zos_copy - module can now copy into data sets that are already in use by
-   other processes (DSP=SHR) using option `force`. User needs to bare in mind
-   that using this when DIS=SHR can lead to data loss.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/804).
+- zos_copy - Add new option `force_lock` that can copy into data sets that are
+   already in use by other processes (DSP=SHR). User
+   needs to use with caution because this is subject to race conditions and
+   can lead to data loss.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/980).

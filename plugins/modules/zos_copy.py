@@ -1619,8 +1619,8 @@ def get_data_set_attributes(
     name,
     size,
     is_binary,
-    record_format="VB",
-    record_length=1028,
+    record_format=None,
+    record_length=None,
     type="SEQ",
     volume=None
 ):
@@ -1655,11 +1655,21 @@ def get_data_set_attributes(
     space_primary = space_primary + int(math.ceil(space_primary * 0.05))
     space_secondary = int(math.ceil(space_primary * 0.10))
 
-    # Overwriting record_format and record_length when the data set has binary data.
-    if is_binary:
-        record_format = "FB"
-        record_length = 80
+    # set default value - record_format
+    if record_format is None:
+        if is_binary:
+            record_format = "FB"
+        else:
+            record_format = "VB"
 
+    # set default value - record_length
+    if record_length is None:
+        if is_binary:
+            record_length = 80
+        else:
+            record_length = 1028
+
+    # compute block size
     max_block_size = 32760
     if record_format == "FB":
         # Computing the biggest possible block size that doesn't exceed

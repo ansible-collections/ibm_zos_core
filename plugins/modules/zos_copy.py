@@ -874,9 +874,6 @@ class CopyHandler(object):
         repro_cmd = """  REPRO -
         INDATASET('{0}') -
         OUTFILE(OUT)""".format(src.upper())
-        # repro_cmd = """  REPRO -
-        # INDATASET('{0}') -
-        # OUDATASET('{1}')""".format(dest.upper())
         rc, out, err = idcams(repro_cmd, dds=dds, authorized=True)
         if rc != 0:
             raise CopyOperationError(

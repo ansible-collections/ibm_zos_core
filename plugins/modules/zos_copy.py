@@ -1184,9 +1184,9 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the file was copied to
         """
+        src_path = os.path.basename(src) if src else "inline_copy"
         if os.path.isdir(dest):
-            dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(os.path.basename(src))
-                                if src else "inline_copy")
+            dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_path))
 
         new_src = temp_path or conv_path or src
         try:

@@ -1584,7 +1584,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
             hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
             hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
         # copy text_in source
-        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
+        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(

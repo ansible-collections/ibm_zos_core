@@ -1130,6 +1130,7 @@ class USSCopyHandler(CopyHandler):
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
+
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
@@ -1400,7 +1401,14 @@ class USSCopyHandler(CopyHandler):
                     )
             else:
                 if self.executable:
-                    datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, None, **opts)
+                    if response.rc != 0:
+                        raise CopyOperationError(
+                            msg="Error while copying source {0} to {1}".format(src, dest),
+                            rc=response.rc,
+                            stdout=response.stdout_response,
+                            stderr=response.stderr_response
+                        )
                 else:
                     copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
@@ -1803,6 +1811,7 @@ def is_compatible(
     Returns:
         {bool} -- Whether src can be copied to dest.
     """
+
     # ********************************************************************
     # If the destination does not exist, then obviously it will need
     # to be created. As a result, target is compatible.
@@ -2180,7 +2189,17 @@ def allocate_destination_data_set(
                 # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
                 size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
                 # This PDSE will be created with record format VB and a record length of 1028.
-                dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
+
+                if executable:
+                    dest_params = get_data_set_attributes(
+                        dest, size, is_binary,
+                        record_format='U',
+                        record_length=0,
+                        type="LIBRARY",
+                        volume=volume
+                    )
+                else:
+                    dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
 
             data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
@@ -2506,6 +2525,17 @@ def run_module(module, arg_def):
             module.fail_json(
                 msg="Alias support for text-based data sets is not available for USS sources (src) or targets (dest). Try setting executable=True or aliases=False."
             )
+
+    # ********************************************************************
+    # Attempt to write PDS (not member) to USS file (i.e. a non-directory)
+    # ********************************************************************
+    if (
+        src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
+        and dest_ds_type=='USS' and not os.path.isdir(dest)
+    ):
+        module.fail_json(
+            msg="Cannot write a partitioned data set (PDS) to a USS file.".format(src_ds_type)
+        )
 
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or

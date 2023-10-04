@@ -2619,7 +2619,8 @@ def run_module(module, arg_def):
         module,
         is_binary=is_binary,
         executable=executable,
-        backup_name=backup_name
+        backup_name=backup_name,
+        force_lock=force_lock,
     )
 
     try:

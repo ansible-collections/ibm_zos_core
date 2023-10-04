@@ -1095,7 +1095,7 @@ class USSCopyHandler(CopyHandler):
             backup_name {str} -- The USS path or data set name of destination backup
         """
         super().__init__(
-            module, is_binary=is_binary, executable=executable, backup_name=backup_name
+            module, is_binary=is_binary, aliases=aliases, executable=executable, backup_name=backup_name
         )
         self.common_file_args = common_file_args
 
@@ -1439,10 +1439,10 @@ class PDSECopyHandler(CopyHandler):
         super().__init__(
             module,
             is_binary=is_binary,
+            aliases=aliases,
             executable=executable,
             backup_name=backup_name
         )
-        self.aliases = aliases # aliases not added to CopyHandler object
 
     def copy_to_pdse(
         self,
@@ -2523,7 +2523,9 @@ def run_module(module, arg_def):
     if aliases:
         if (src_ds_type=='USS' or dest_ds_type=='USS' ) and not executable:
             module.fail_json(
-                msg="Alias support for text-based data sets is not available for USS sources (src) or targets (dest). Try setting executable=True or aliases=False."
+                msg="Alias support for text-based data sets is not available "
+                    + "for USS sources (src) or targets (dest). "
+                    + "Try setting executable=True or aliases=False."
             )
 
     # ********************************************************************

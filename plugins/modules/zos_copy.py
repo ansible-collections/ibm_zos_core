@@ -1815,7 +1815,10 @@ def is_compatible(
     src_member,
     is_src_dir,
     is_src_inline,
-    executable
+    executable,
+    asa_text,
+    src_has_asa_chars,
+    dest_has_asa_chars
 ):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
@@ -1828,6 +1831,9 @@ def is_compatible(
         is_src_dir {bool} -- Whether the src is a USS directory.
         is_src_inline {bool} -- Whether the src comes from inline content.
         executable {bool} -- Whether the src is a executable to be copied.
+        asa_text {bool} -- Whether the copy operation will handle ASA control characters.
+        src_has_asa_chars {bool} -- Whether the src contains ASA control characters.
+        dest_has_asa_chars {bool} -- Whether the dest contains ASA control characters.
 
     Returns:
         {bool} -- Whether src can be copied to dest.
@@ -1846,6 +1852,13 @@ def is_compatible(
     if executable:
         if src_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_SEQ:
             return False
+
+    # ********************************************************************
+    # For copy operations involving ASA control characters, at least one
+    # of the files/data sets has got to have ASA characters.
+    # ********************************************************************
+    if asa_text:
+        return src_has_asa_chars or dest_has_asa_chars
 
     # ********************************************************************
     # If source is a sequential data set, then destination must be
@@ -2447,6 +2460,10 @@ def run_module(module, arg_def):
     # ********************************************************************
     dest_member_exists = False
     converted_src = None
+    # By default, we'll assume that src and dest don't have ASA control
+    # characters. We'll only update these variables when they are
+    # data sets with record format 'FBA' or 'VBA'.
+    src_has_asa_chars = dest_has_asa_chars = False
     try:
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
@@ -2492,6 +2509,9 @@ def run_module(module, arg_def):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
 
+                src_attributes = datasets.listing(src_name)[0]
+                if src_attributes.recfm == 'FBA' or src_attributes.recfm == 'VBA':
+                    src_has_asa_chars = True
             else:
                 raise NonExistentSourceError(src)
 
@@ -2533,6 +2553,15 @@ def run_module(module, arg_def):
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type")
 
+            if dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA':
+                dest_has_asa_chars = True
+            elif not dest_exists and asa_text:
+                dest_has_asa_chars = True
+            elif dest_exists:
+                dest_attributes = datasets.listing(dest_name)[0]
+                if dest_attributes.recfm == 'FBA' or dest_attributes.recfm == 'VBA':
+                    dest_has_asa_chars = True
+
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
                 # Checking if the members that would be created from the directory files
                 # are already present on the system.
@@ -2558,7 +2587,6 @@ def run_module(module, arg_def):
     # to a PDS. Perform these sanity checks.
     # Note: dest_ds_type can also be passed from dest_data_set.type
     # ********************************************************************
-    # TODO: check that either the src or the dest ara ASA-enabled.
     if not is_compatible(
         src_ds_type,
         dest_ds_type,
@@ -2566,7 +2594,10 @@ def run_module(module, arg_def):
         src_member,
         is_src_dir,
         (src_ds_type == "USS" and src is None),
-        executable
+        executable,
+        asa_text,
+        src_has_asa_chars,
+        dest_has_asa_chars
     ):
         module.fail_json(
             msg="Incompatible target type '{0}' for source '{1}'".format(

@@ -348,13 +348,13 @@ def link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, lo
         hosts.all.file(path=temp_jcl_uss_path, state="absent")
     return rc
 
-def generate_executable_ds(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem):
+def generate_executable_ds(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem="ALIAS1"):
 
     # copy COBOL src string to pds.
     hosts.all.zos_copy(content=COBOL_SRC, dest='{0}({1})'.format(cobol_src_pds, cobol_src_mem))
 
     # run link-edit to create loadlib.
-    link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem="ALIAS1")
+    link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem)
     assert link_rc == 0
 
     # execute pgm to test loadlib
@@ -2568,7 +2568,6 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
 @pytest.mark.parametrize("is_created", ["true", "false"])
 def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_created):
     hosts = ansible_zos_module
-    # The volume for this dataset should use a system symbol.
     # This dataset and member should be available on any z/OS system.
     cobol_src_pds = "USER.COBOL.SRC"
     cobol_src_mem = "HELLOCBL"
@@ -2722,15 +2721,23 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
 
 @pytest.mark.pdse
 @pytest.mark.uss
-def test_copy_pds_loadlib_member_to_uss(ansible_zos_module):
+def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
     hosts = ansible_zos_module
-    src = "USER.LOAD.SRC"
-    dest = "USER.LOAD.DEST"
-    cobol_pds = "USER.COBOL.SRC"
+
+    cobol_src_pds = "USER.COBOL.SRC"
+    cobol_src_mem = "HELLOCBL"
+    src_lib = "USER.LOAD.SRC"
+    dest_lib = "USER.LOAD.DEST"
+    pgm_mem = "HELLO"
+
+    dest_lib_aliases = "USER.LOAD.DEST.ALIASES"
+    pgm_mem_alias = "ALIAS1"
+
     uss_dest = "/tmp/HELLO"
     try:
+        # allocate data sets
         hosts.all.zos_data_set(
-            name=src,
+            name=src_lib,
             state="present",
             type="pdse",
             record_format="U",
@@ -2741,18 +2748,7 @@ def test_copy_pds_loadlib_member_to_uss(ansible_zos_module):
             replace=True
         )
         hosts.all.zos_data_set(
-            name=dest,
-            state="present",
-            type="pdse",
-            record_format="U",
-            record_length=0,
-            block_size=32760,
-            space_primary=2,
-            space_type="M",
-            replace=True
-        )
-        hosts.all.zos_data_set(
-            name=cobol_pds,
+            name=cobol_src_pds,
             state="present",
             type="pds",
             space_primary=2,
@@ -2761,30 +2757,135 @@ def test_copy_pds_loadlib_member_to_uss(ansible_zos_module):
             block_size=3120,
             replace=True,
         )
-        member = "HELLOSRC"
-        cobol_pds = "{0}({1})".format(cobol_pds, member)
-        generate_executable_ds(hosts, src, dest, cobol_pds)
+        hosts.all.zos_data_set(
+            name=dest_lib,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+        hosts.all.zos_data_set(
+            name=dest_lib_aliases,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        # generate loadlib into src_pds
+        generate_executable_ds(hosts, cobol_src_pds, cobol_src_mem, src_lib, pgm_mem, pgm_mem_alias)
         copy_uss_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src, member),
+            src="{0}({1})".format(src_lib, pgm_mem),
             dest=uss_dest,
             remote_src=True,
             executable=True,
             force=True)
+
+        # zos_copy an executable to USS file:
         for result in copy_uss_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
+        # run executable on USS
         verify_exe_uss = hosts.all.shell(
             cmd="{0}".format(uss_dest)
         )
         for v_cp_u in verify_exe_uss.contacted.values():
             assert v_cp_u.get("rc") == 0
-            stdout = v_cp_u.get("stdout")
-            assert  "SIMPLE HELLO WORLD" in str(stdout)
+            assert COBOL_PRINT_STR == v_cp_u.get("stdout").strip()
+
+
+        # zos_copy from USS file w an executable:
+        copy_res = hosts.all.zos_copy(
+            src="{0}".format(uss_dest),
+            dest="{0}({1})".format(dest_lib, pgm_mem),
+            remote_src=True,
+            executable=True,
+            aliases=False
+        )
+        # zos_copy from USS file w an executables and its alias:
+        copy_res_aliases = hosts.all.zos_copy(
+            src="{0}".format(uss_dest),
+            dest="{0}({1})".format(dest_lib_aliases, pgm_mem),
+            remote_src=True,
+            executable=True,
+            aliases=True
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}({1})".format(dest_lib, pgm_mem)
+        for result in copy_res_aliases.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}({1})".format(dest_lib_aliases, pgm_mem)
+
+        # check ALIAS keyword and name in mls output
+        verify_copy_mls = hosts.all.shell(
+            cmd="mls {0}".format(dest_lib),
+            executable=SHELL_EXECUTABLE
+        )
+        verify_copy_mls_aliases = hosts.all.shell(
+            cmd="mls {0}".format(dest_lib_aliases),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for v_cp in verify_copy_mls.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            mls_alias_str = "ALIAS({0})".format(pgm_mem_alias)
+            assert mls_alias_str not in stdout
+
+        for v_cp in verify_copy_mls_aliases.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+            assert expected_mls_str in stdout
+
+        # execute pgms to validate copy
+        mvscmd_str = "mvscmd --steplib='{0}' --pgm='{1}' --sysout='*' --sysprint='*'"
+
+        verify_copy_exec_pgm = hosts.all.shell(
+            cmd=mvscmd_str.format(dest_lib, pgm_mem)
+        )
+        verify_copy_exec_pgm_alias = hosts.all.shell(
+            cmd=mvscmd_str.format(dest_lib_aliases, pgm_mem)
+        )
+        verify_copy_exec_pgm_alias_1 = hosts.all.shell(
+            cmd=mvscmd_str.format(dest_lib_aliases, pgm_mem_alias)
+        )
+
+        for v_cp_pgm in verify_copy_exec_pgm.contacted.values():
+            assert v_cp_pgm.get("rc") == 0
+            print(v_cp_pgm.get("stdout"))
+            assert v_cp_pgm.get("stdout").strip() == COBOL_PRINT_STR
+
+        for v_cp_pgm in verify_copy_exec_pgm_alias.contacted.values():
+            assert v_cp_pgm.get("rc") == 0
+            print(v_cp_pgm.get("stdout"))
+            assert v_cp_pgm.get("stdout").strip() == COBOL_PRINT_STR
+
+        for v_cp_pgm in verify_copy_exec_pgm_alias_1.contacted.values():
+            assert v_cp_pgm.get("rc") == 0
+            print(v_cp_pgm.get("stdout"))
+            assert v_cp_pgm.get("stdout").strip() == COBOL_PRINT_STR
+
     finally:
-        hosts.all.zos_data_set(name=dest, state="absent")
-        hosts.all.zos_data_set(name=src, state="absent")
-        hosts.all.zos_data_set(name=cobol_pds, state="absent")
+        hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
+        hosts.all.zos_data_set(name=src_lib, state="absent")
+        hosts.all.zos_data_set(name=dest_lib, state="absent")
+        hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
         hosts.all.file(name=uss_dest, state="absent")
 
 

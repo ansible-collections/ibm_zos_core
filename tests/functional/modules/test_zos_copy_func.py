@@ -2782,14 +2782,14 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
 
         # generate loadlib into src_pds
         generate_executable_ds(hosts, cobol_src_pds, cobol_src_mem, src_lib, pgm_mem, pgm_mem_alias)
+
+        # zos_copy an executable to USS file:
         copy_uss_res = hosts.all.zos_copy(
             src="{0}({1})".format(src_lib, pgm_mem),
             dest=uss_dest,
             remote_src=True,
             executable=True,
             force=True)
-
-        # zos_copy an executable to USS file:
         for result in copy_uss_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
@@ -3200,6 +3200,14 @@ def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
             )
 
         hosts.all.file(path=dest_path, state="directory")
+
+        # ensure aliases:True errors out for non-text member copy
+        copy_aliases_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, aliases=True)
+        for result in copy_aliases_res.contacted.values():
+            error_msg = "Alias support for text-based data sets is not available"
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            assert error_msg in result.get("msg")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)

@@ -3241,6 +3241,14 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
             executable=SHELL_EXECUTABLE
         )
 
+        # ensure aliases:True errors out for non-text member copy
+        copy_aliases_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, aliases=True)
+        for result in copy_aliases_res.contacted.values():
+            error_msg = "Alias support for text-based data sets is not available"
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            assert error_msg in result.get("msg")
+
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(

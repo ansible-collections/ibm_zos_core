@@ -173,12 +173,6 @@ options:
     type: bool
     default: false
     required: false
-  aliases:
-    description:
-      - TODO
-    type: bool
-    default: false
-    required: false
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
@@ -190,6 +184,12 @@ options:
         Undefined (U) record format with a record length of 0, block size of 32760 and the
         remaining attributes will be computed.
       - If C(dest) is a file, execute permission for the user will be added to the file (``u+x``).
+    type: bool
+    default: false
+    required: false
+  aliases:
+    description:
+      - TODO
     type: bool
     default: false
     required: false
@@ -784,8 +784,8 @@ class CopyHandler(object):
         self,
         module,
         is_binary=False,
-        aliases=False,
         executable=False,
+        aliases=False,
         backup_name=None
     ):
         """Utility class to handle copying data between two targets
@@ -804,8 +804,8 @@ class CopyHandler(object):
         """
         self.module = module
         self.is_binary = is_binary
-        self.aliases = aliases
         self.executable = executable
+        self.aliases = aliases
         self.backup_name = backup_name
 
     def run_command(self, cmd, **kwargs):
@@ -1077,8 +1077,8 @@ class USSCopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
-        aliases=False,
         executable=False,
+        aliases=False,
         common_file_args=None,
         backup_name=None,
     ):
@@ -1096,7 +1096,7 @@ class USSCopyHandler(CopyHandler):
             backup_name {str} -- The USS path or data set name of destination backup
         """
         super().__init__(
-            module, is_binary=is_binary, aliases=aliases, executable=executable, backup_name=backup_name
+            module, is_binary=is_binary, executable=executable, aliases=aliases, backup_name=backup_name
         )
         self.common_file_args = common_file_args
 
@@ -1427,8 +1427,8 @@ class PDSECopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
-        aliases=False,
         executable=False,
+        aliases=False,
         backup_name=None
     ):
         """ Utility class to handle copying to partitioned data sets or
@@ -1446,8 +1446,8 @@ class PDSECopyHandler(CopyHandler):
         super().__init__(
             module,
             is_binary=is_binary,
-            aliases=aliases,
             executable=executable,
+            aliases=aliases,
             backup_name=backup_name
         )
 
@@ -2322,8 +2322,8 @@ def run_module(module, arg_def):
     dest = module.params.get('dest')
     remote_src = module.params.get('remote_src')
     is_binary = module.params.get('is_binary')
-    aliases = module.params.get('aliases')
     executable = module.params.get('executable')
+    aliases = module.params.get('aliases')
     backup = module.params.get('backup')
     backup_name = module.params.get('backup_name')
     validate = module.params.get('validate')
@@ -2678,8 +2678,8 @@ def run_module(module, arg_def):
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,
-                aliases=aliases,
                 executable=executable,
+                aliases=aliases,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
                 backup_name=backup_name,
             )
@@ -2743,7 +2743,7 @@ def run_module(module, arg_def):
                 temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
             pdse_copy_handler = PDSECopyHandler(
-                module, is_binary=is_binary, aliases=aliases, executable=executable, backup_name=backup_name
+                module, is_binary=is_binary, executable=executable, aliases=aliases, backup_name=backup_name
             )
 
             pdse_copy_handler.copy_to_pdse(
@@ -2788,8 +2788,8 @@ def main():
             src=dict(type='path'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
-            aliases=dict(type='bool', default=False, required=False),
             executable=dict(type='bool', default=False),
+            aliases=dict(type='bool', default=False, required=False),
             encoding=dict(
                 type='dict',
                 required=False,
@@ -2890,8 +2890,8 @@ def main():
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
-        aliases=dict(arg_type='bool', required=False, default=False),
         executable=dict(arg_type='bool', required=False, default=False),
+        aliases=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_path', required=False),

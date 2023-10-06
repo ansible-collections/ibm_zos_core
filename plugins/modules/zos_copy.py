@@ -749,7 +749,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
     idcams
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, backup, copy
+    better_arg_parser, data_set, encode, backup, copy, validation,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -966,7 +966,7 @@ class CopyHandler(object):
         enc_utils = encode.EncodeUtils()
         for path, dirs, files in os.walk(dir_path):
             for file_path in files:
-                full_file_path = os.path.join(path, file_path)
+                full_file_path = os.path.join(validation.validate_safe_path(path), validation.validate_safe_path(file_path))
                 rc = enc_utils.uss_convert_encoding(
                     full_file_path, full_file_path, from_code_set, to_code_set
                 )
@@ -1169,7 +1169,9 @@ class USSCopyHandler(CopyHandler):
                     self.module.set_mode_if_different(dest, mode, False)
                 if changed_files:
                     for filepath in changed_files:
-                        self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
+                        self.module.set_mode_if_different(
+                            os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False
+                        )
             if group is not None:
                 self.module.set_group_if_different(dest, group, False)
             if owner is not None:
@@ -1192,9 +1194,9 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the file was copied to
         """
+        src_path = os.path.basename(src) if src else "inline_copy"
         if os.path.isdir(dest):
-            dest = os.path.join(dest, os.path.basename(src)
-                                if src else "inline_copy")
+            dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_path))
 
         new_src = temp_path or conv_path or src
         try:
@@ -1260,13 +1262,13 @@ class USSCopyHandler(CopyHandler):
 
         try:
             if copy_directory:
-                dest = os.path.join(dest_dir, os.path.basename(os.path.normpath(src_dir)))
+                dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
             dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1301,7 +1303,9 @@ class USSCopyHandler(CopyHandler):
         files_to_change = []
         existing_files = []
         for relative_path in files_to_copy:
-            if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
+            if os.path.exists(
+                os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(parent_dir), validation.validate_safe_path(relative_path))
+            ):
                 existing_files.append(relative_path)
             else:
                 files_to_change.append(relative_path)
@@ -1311,7 +1315,9 @@ class USSCopyHandler(CopyHandler):
         files_to_change.extend(existing_files)
         # Creating tuples with (filename, permissions).
         original_permissions = [
-            (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
+            (filepath, os.stat(
+                os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(parent_dir), validation.validate_safe_path(filepath))
+            ).st_mode)
             for filepath in existing_files
         ]
 
@@ -1333,11 +1339,11 @@ class USSCopyHandler(CopyHandler):
 
         for dirpath, subdirs, files in os.walk(".", True):
             paths += [
-                os.path.join(dirpath, subdir).replace("./", "")
+                os.path.join(validation.validate_safe_path(dirpath), validation.validate_safe_path(subdir)).replace("./", "")
                 for subdir in subdirs
             ]
             paths += [
-                os.path.join(dirpath, filepath).replace("./", "")
+                os.path.join(validation.validate_safe_path(dirpath), validation.validate_safe_path(filepath)).replace("./", "")
                 for filepath in files
             ]
 
@@ -2733,7 +2739,7 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
             if not remote_src and not copy_member and os.path.isdir(temp_path):
-                temp_path = os.path.join(temp_path, os.path.basename(src))
+                temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
             pdse_copy_handler = PDSECopyHandler(
                 module, is_binary=is_binary, aliases=aliases, executable=executable, backup_name=backup_name

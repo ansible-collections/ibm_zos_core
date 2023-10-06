@@ -33,7 +33,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_data_set
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
@@ -186,7 +186,7 @@ class ActionModule(ActionBase):
                         src = rendered_dir
 
                     task_args["size"] = sum(
-                        os.stat(os.path.join(path, f)).st_size
+                        os.stat(os.path.join(validation.validate_safe_path(path), validation.validate_safe_path(f))).st_size
                         for path, dirs, files in os.walk(src)
                         for f in files
                     )

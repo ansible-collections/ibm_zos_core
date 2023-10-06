@@ -2582,6 +2582,8 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
 
 
 @pytest.mark.pdse
+@pytest.mark.loadlib
+@pytest.mark.aliases
 @pytest.mark.parametrize("is_created", ["true", "false"])
 def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_created):
     hosts = ansible_zos_module
@@ -2715,6 +2717,8 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
 
 @pytest.mark.pdse
+@pytest.mark.loadlib
+@pytest.mark.aliases
 @pytest.mark.uss
 def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
     hosts = ansible_zos_module
@@ -2862,6 +2866,8 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
 
 
 @pytest.mark.pdse
+@pytest.mark.loadlib
+@pytest.mark.aliases
 def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module):
 
     hosts = ansible_zos_module
@@ -3012,6 +3018,8 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
 
 @pytest.mark.pdse
+@pytest.mark.loadlib
+@pytest.mark.aliases
 @pytest.mark.uss
 def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
 
@@ -3202,7 +3210,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(name=src_lib, state="absent")
         hosts.all.zos_data_set(name=dest_lib, state="absent")
         hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
-        hosts.all.file(path=uss_dir_path, state="directory")
+        hosts.all.file(path=uss_dir_path, state="absent")
 
 
 @pytest.mark.uss
@@ -3498,6 +3506,7 @@ def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
 
 @pytest.mark.uss
 @pytest.mark.pdse
+@pytest.mark.aliases
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
@@ -3542,6 +3551,7 @@ def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
 
 @pytest.mark.uss
 @pytest.mark.pdse
+@pytest.mark.aliases
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module

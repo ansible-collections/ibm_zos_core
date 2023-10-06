@@ -55,14 +55,6 @@ options:
     type: int
     required: false
     default: 1
-  wait:
-    description:
-      - Setting this option will tell the system to wait the full wait_time, instead
-        of returning on first data received
-      - This option is only available with zoau 1.2.5 or later
-    type: bool
-    required: false
-    default: false
 """
 
 EXAMPLES = r"""
@@ -83,12 +75,6 @@ EXAMPLES = r"""
   zos_operator:
     cmd: 'd a,all'
     wait_time_s: 5
-    wait: true
-
-- name: Execute operator command to show jobs, waiting up to 7 seconds for response
-  zos_operator:
-    cmd: 'd a,all'
-    wait_time_s: 7
 
 - name: Display the system symbols and associated substitution texts.
   zos_operator:
@@ -199,7 +185,6 @@ def run_module():
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
         wait_time_s=dict(type="int", required=False, default=1),
-        wait=dict(type="bool", required=False, default=False),
     )
 
     result = dict(changed=False)
@@ -270,7 +255,6 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
-        wait=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -299,12 +283,7 @@ def run_operator_command(params):
         getit = True
 
     if getit:
-        if params.get("wait"):
-            kwargs.update({"wait_arg": True})
-        else:
-            kwargs.pop("wait_arg", "0")
-    else:
-        kwargs.pop("wait_arg", "0")
+        kwargs.update({"wait_arg": True})
 
     args = []
     rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)

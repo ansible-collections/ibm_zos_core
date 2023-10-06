@@ -63,21 +63,10 @@ options:
       - When set to 0, the system default is used.
       - This option is helpful on a busy system requiring more time to execute
         commands.
-      - Setting I(wait) can instruct if execution should wait the
-        full I(wait_time_s).
       - Because 2 functions are called, potential time delay is doubled.
     type: int
     required: false
     default: 1
-  wait:
-    description:
-      - Setting this option will tell the system to wait the full wait_time, instead
-        of returning on first data received
-      - Because 2 functions are called, potential time delay is doubled.
-      - This option is only available with zoau 1.2.5 or later
-    type: bool
-    required: false
-    default: false
   message_filter:
     description:
       - Return outstanding messages requiring operator action awaiting a
@@ -123,7 +112,7 @@ EXAMPLES = r"""
       job_name: im5*
 
 - name: Display all outstanding messages whose job name begin with im7,
-        wait up to 10 seconds per call (20 seconds overall) for data
+        waiting 10 seconds per call (20 seconds overall) for data
   zos_operator_action_query:
       job_name: im7*
       wait_time_s: 10
@@ -133,7 +122,6 @@ EXAMPLES = r"""
   zos_operator_action_query:
       job_name: im9*
       wait_time_s: 15
-      wait: True
 
 - name: Display all outstanding messages whose message id begin with dsi*
   zos_operator_action_query:
@@ -275,7 +263,6 @@ def run_module():
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         wait_time_s=dict(type="int", required=False, default=1),
-        wait=dict(type="bool", required=False, default=False),
         message_filter=dict(
             type="dict",
             required=False,
@@ -306,12 +293,7 @@ def run_module():
             getit = True
 
         if getit:
-            if new_params.get("wait"):
-                kwargs.update({"wait_arg": True})
-            else:
-                kwargs.pop("wait_arg", "0")
-        else:
-            kwargs.pop("wait_arg", "0")
+            kwargs.update({"wait_arg": True})
 
         args = []
 
@@ -366,7 +348,6 @@ def parse_params(params):
         message_id=dict(arg_type=message_id_type, required=False),
         job_name=dict(arg_type=job_name_type, required=False),
         wait_time_s=dict(arg_type="int", required=False),
-        wait=dict(arg_type="bool", required=False),
         message_filter=dict(arg_type=message_filter_type, required=False)
     )
     parser = BetterArgParser(arg_defs)

@@ -1,6 +1,6 @@
 minor_changes:
-  - zos_operator: Added the 'wait' parameter back in to use the new -w operator.
+  - zos_operator: Changed system to call 'wait=true' parameter to zoau call.
       (https://github.com/ansible-collections/ibm_zos_core/pull/976)
-  - zos_operator_action_query: Add wait_time_s and 'wait' parameters in the operator_action_query.
+  - zos_operator_action_query: Add wait_time_s parameter in the operator_action_query.
       (https://github.com/ansible-collections/ibm_zos_core/pull/976)
 

@@ -2868,7 +2868,8 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
 @pytest.mark.pdse
 @pytest.mark.loadlib
 @pytest.mark.aliases
-def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module):
+@pytest.mark.parametrize("is_created", ["false", "true"])
+def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
 
     hosts = ansible_zos_module
 
@@ -2919,47 +2920,88 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module):
             loadlib_alias_mems=[pgm_mem_alias, pgm2_mem_alias]
         )
 
-        # allocate dest loadlib to copy over without an alias.
-        hosts.all.zos_data_set(
-            name=dest_lib,
-            state="present",
-            type="pdse",
-            record_format="U",
-            record_length=0,
-            block_size=32760,
-            space_primary=2,
-            space_type="M",
-            replace=True
-        )
-        # allocate dest loadlib to copy over with an alias.
-        hosts.all.zos_data_set(
-            name=dest_lib_aliases,
-            state="present",
-            type="pdse",
-            record_format="U",
-            record_length=0,
-            block_size=32760,
-            space_primary=2,
-            space_type="M",
-            replace=True
-        )
+        if not is_created:
+            # ensure dest data sets absent for this variation of the test case.
+            hosts.all.zos_data_set(name=dest_lib, state="absent")
+            hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
+        else:
+            # allocate dest loadlib to copy over without an alias.
+            hosts.all.zos_data_set(
+                name=dest_lib,
+                state="present",
+                type="pdse",
+                record_format="U",
+                record_length=0,
+                block_size=32760,
+                space_primary=2,
+                space_type="M",
+                replace=True
+            )
+            # allocate dest loadlib to copy over with an alias.
+            hosts.all.zos_data_set(
+                name=dest_lib_aliases,
+                state="present",
+                type="pdse",
+                record_format="U",
+                record_length=0,
+                block_size=32760,
+                space_primary=2,
+                space_type="M",
+                replace=True
+            )
 
-        # copy src loadlib to dest library pds w/o aliases
-        copy_res = hosts.all.zos_copy(
-            src="{0}".format(src_lib),
-            dest="{0}".format(dest_lib),
-            remote_src=True,
-            executable=True,
-            aliases=False
-        )
-        # copy src loadlib to dest library pds w aliases
-        copy_res_aliases = hosts.all.zos_copy(
-            src="{0}".format(src_lib),
-            dest="{0}".format(dest_lib_aliases),
-            remote_src=True,
-            executable=True,
-            aliases=True
-        )
+        if not is_created:
+            # dest data set does not exist, specify it in dest_dataset param.
+            # copy src loadlib to dest library pds w/o aliases
+            copy_res = hosts.all.zos_copy(
+                src="{0}".format(src_lib),
+                dest="{0}".format(dest_lib),
+                remote_src=True,
+                executable=True,
+                aliases=False,
+                dest_data_set={
+                    'type': "LIBRARY",
+                    'record_format': "U",
+                    'record_length': 0,
+                    'block_size': 32760,
+                    'space_primary': 2,
+                    'space_type': "M",
+                }
+            )
+            # copy src loadlib to dest library pds w aliases
+            copy_res_aliases = hosts.all.zos_copy(
+                src="{0}".format(src_lib),
+                dest="{0}".format(dest_lib_aliases),
+                remote_src=True,
+                executable=True,
+                aliases=True,
+                dest_data_set={
+                    'type': "LIBRARY",
+                    'record_format': "U",
+                    'record_length': 0,
+                    'block_size': 32760,
+                    'space_primary': 2,
+                    'space_type': "M",
+                }
+            )
+
+        else:
+            # copy src loadlib to dest library pds w/o aliases
+            copy_res = hosts.all.zos_copy(
+                src="{0}".format(src_lib),
+                dest="{0}".format(dest_lib),
+                remote_src=True,
+                executable=True,
+                aliases=False
+            )
+            # copy src loadlib to dest library pds w aliases
+            copy_res_aliases = hosts.all.zos_copy(
+                src="{0}".format(src_lib),
+                dest="{0}".format(dest_lib_aliases),
+                remote_src=True,
+                executable=True,
+                aliases=True
+            )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None

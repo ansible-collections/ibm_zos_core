@@ -289,6 +289,7 @@ options:
           - PDSE
           - MEMBER
           - BASIC
+          - LIBRARY
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -2818,7 +2819,7 @@ def main():
                     type=dict(
                         type='str',
                         choices=['BASIC', 'KSDS', 'ESDS', 'RRDS',
-                                 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                                 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER', 'LIBRARY'],
                         required=True,
                     ),
                     space_primary=dict(

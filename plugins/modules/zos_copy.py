@@ -189,7 +189,10 @@ options:
     required: false
   aliases:
     description:
-      - TODO
+      - If set to C(true), indicates that any aliases found in the src file or library are to be preserved.
+      - Aliases are implicitly preserved when libraries are copied over to USS.
+        That is, when C(executable=True) and C(dest) is a USS file or directory, this option will be ignored.
+      - Copying of aliases for text-based data sets to USS destinations or from USS sources is not currently supported.
     type: bool
     default: false
     required: false
@@ -581,12 +584,21 @@ EXAMPLES = r"""
       record_format: VB
       record_length: 150
 
-- name: Copy a Program Object on remote system to a new PDSE member MYCOBOL.
+- name: Copy a Program Object and its aliases on a remote system to a new PDSE member MYCOBOL
   zos_copy:
     src: HLQ.COBOLSRC.PDSE(TESTPGM)
     dest: HLQ.NEW.PDSE(MYCOBOL)
     remote_src: true
     executable: true
+    aliases: true
+
+    - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE.
+  zos_copy:
+    src: '/home/loadlib/'
+    dest: HLQ.LOADLIB.NEW
+    remote_src: true
+    executable: true
+    aliases: true
 """
 
 RETURN = r"""

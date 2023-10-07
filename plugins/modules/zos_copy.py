@@ -593,7 +593,7 @@ EXAMPLES = r"""
     executable: true
     aliases: true
 
-    - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE.
+    - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
   zos_copy:
     src: '/home/loadlib/'
     dest: HLQ.LOADLIB.NEW

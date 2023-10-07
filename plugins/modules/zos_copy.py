@@ -160,7 +160,7 @@ options:
         process then zos_copy will try to copy using DISP=SHR.
       - Using C(force_lock) uses operations that are subject to race conditions
         and can lead to data loss, use with caution.
-      - If a dataset member has aliases, and is not a program
+      - If a data set member has aliases, and is not a program
         object, copying that member to a dataset that is in use will result in
         the aliases not being preserved in the target dataset. When this scenario
         occurs the module will fail.

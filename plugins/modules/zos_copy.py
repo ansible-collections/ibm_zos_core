@@ -189,10 +189,11 @@ options:
     required: false
   aliases:
     description:
-      - If set to C(true), indicates that any aliases found in the src file or library are to be preserved.
-      - Aliases are implicitly preserved when libraries are copied over to USS.
+      - If set to C(true), indicates that any aliases found in the source
+        (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
+      - Aliases are implicitly preserved when libraries are copied over to USS destinations.
         That is, when C(executable=True) and C(dest) is a USS file or directory, this option will be ignored.
-      - Copying of aliases for text-based data sets to USS destinations or from USS sources is not currently supported.
+      - Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
     type: bool
     default: false
     required: false

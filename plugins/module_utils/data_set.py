@@ -1741,6 +1741,7 @@ def temp_member_name():
     rest_char_set = ascii_uppercase + digits + "#@$"
     temp_name = sample(first_char_set, k=1)
     temp_name += sample(rest_char_set, k=7)
+    temp_name = "".join(temp_name)
     return temp_name
 
 

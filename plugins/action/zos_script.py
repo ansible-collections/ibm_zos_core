@@ -127,7 +127,6 @@ class ActionModule(ActionBase):
             module_args['script_path'] = script_path
 
         module_args['script_args'] = cmd_parts[1] if len(cmd_parts) > 1 else ""
-        module_args['local_charset'] = encode.Defaults.get_default_system_charset()
 
         module_result = self._execute_module(
             module_name='ibm.ibm_zos_core.zos_script',

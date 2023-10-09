@@ -276,7 +276,7 @@ def run_module():
             # Private parameters (from the action plugin).
             script_path=dict(type='str'),
             script_args=dict(type='str'),
-            local_charset=dict(type='str')
+            # local_charset=dict(type='str')
         ),
         supports_check_mode=False
     )
@@ -312,26 +312,6 @@ def run_module():
         script_path=dict(arg_type='path', required=True),
         script_args=dict(arg_type='str', required=True)
     )
-
-    if (
-        not module.params.get('encoding')
-        and not module.params.get('remote_src')
-    ):
-        module.params['encoding'] = {
-            'from': module.params.get('local_charset'),
-            'to': encode.Defaults.get_default_system_charset(),
-        }
-
-    if module.params.get('encoding'):
-        module.params.update(dict(
-            from_encoding=module.params.get('encoding').get('from'),
-            to_encoding=module.params.get('encoding').get('to'),
-        ))
-
-        args_def.update(dict(
-            from_encoding=dict(arg_type='encoding'),
-            to_encoding=dict(arg_type='encoding'),
-        ))
 
     try:
         parser = better_arg_parser.BetterArgParser(args_def)

@@ -274,15 +274,15 @@ def run_operator_command(params):
     cmdtxt = params.get("cmd")
 
     zv = ZOAU_API_VERSION.split(".")
-    getit = False
+    use_wait_arg = False
     if zv[0] > "1":
-        getit = True
+        use_wait_arg = True
     elif zv[0] == "1" and zv[1] > "2":
-        getit = True
+        use_wait_arg = True
     elif zv[0] == "1" and zv[1] == "2" and zv[2] > "4":
-        getit = True
+        use_wait_arg = True
 
-    if getit:
+    if use_wait_arg:
         kwargs.update({"wait_arg": True})
 
     args = []

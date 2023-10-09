@@ -29,6 +29,8 @@ author:
   - "Ping Xiao (@xiaoping8385)"
   - "Demetrios Dimatos (@ddimatos)"
   - "Ivan Moreno (@rexemin)"
+  - "Rich Parker (@richp405)"
+
 options:
   system:
     description:
@@ -57,16 +59,6 @@ options:
       - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
-  wait_time_s:
-    description:
-      - Set maximum time in seconds to wait for the commands to execute.
-      - When set to 0, the system default is used.
-      - This option is helpful on a busy system requiring more time to execute
-        commands.
-      - Because 2 functions are called, potential time delay is doubled.
-    type: int
-    required: false
-    default: 1
   message_filter:
     description:
       - Return outstanding messages requiring operator action awaiting a
@@ -110,18 +102,6 @@ EXAMPLES = r"""
 - name: Display all outstanding messages whose job name begin with im5
   zos_operator_action_query:
       job_name: im5*
-
-- name: Display all outstanding messages whose job name begin with im7,
-        waiting 10 seconds per call (20 seconds overall) for data
-  zos_operator_action_query:
-      job_name: im7*
-      wait_time_s: 10
-
-- name: Display all outstanding messages whose job name begin with im9,
-        wait a full 15 seconds per call (30 seconds overall) for data
-  zos_operator_action_query:
-      job_name: im9*
-      wait_time_s: 15
 
 - name: Display all outstanding messages whose message id begin with dsi*
   zos_operator_action_query:
@@ -262,7 +242,6 @@ def run_module():
         system=dict(type="str", required=False),
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
-        wait_time_s=dict(type="int", required=False, default=1),
         message_filter=dict(
             type="dict",
             required=False,
@@ -281,19 +260,19 @@ def run_module():
 
         kwargs = {}
 
-        wait_s = new_params.get("wait_time_s")
+        wait_s = 5
 
         zv = ZOAU_API_VERSION.split(".")
-        getit = False
+        use_wait_arg = False
         if zv[0] > "1":
-            getit = True
+            use_wait_arg = True
         elif zv[0] == "1" and zv[1] > "2":
-            getit = True
+            use_wait_arg = True
         elif zv[0] == "1" and zv[1] == "2" and zv[2] > "4":
-            getit = True
+            use_wait_arg = True
 
-        if getit:
-            kwargs.update({"wait_arg": True})
+        if use_wait_arg:
+            kwargs.update({"wait_arg": False})
 
         args = []
 
@@ -347,7 +326,6 @@ def parse_params(params):
         system=dict(arg_type=system_type, required=False),
         message_id=dict(arg_type=message_id_type, required=False),
         job_name=dict(arg_type=job_name_type, required=False),
-        wait_time_s=dict(arg_type="int", required=False),
         message_filter=dict(arg_type=message_filter_type, required=False)
     )
     parser = BetterArgParser(arg_defs)

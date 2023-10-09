@@ -111,7 +111,7 @@ notes:
     on the remote z/OS system. The size of the temporary storage will
     correspond to the size of the file being copied.
   - Execution permissions for the group assigned to the script will be
-    added to remote scripts. The original permissions for the script will
+    added to remote scripts. The original permissions for remote scripts will
     be restored by the module before the task ends.
   - If executing REXX scripts, make sure to include a newline character on
     each line of the file. Otherwise, the interpreter may fail and return
@@ -127,6 +127,9 @@ notes:
   - This module executes scripts inside z/OS UNIX System Services. For
     running REXX scripts contained in data sets, consider issuing a TSO
     command with L(zos_tso_command,./zos_tso_command.html).
+  - The community script module does not rely on Python to execute scripts on a
+    managed node, while this module does. Python must be present on the
+    remote machine.
 
 seealso:
   - module: zos_copy

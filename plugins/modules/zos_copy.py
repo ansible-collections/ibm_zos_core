@@ -2556,7 +2556,7 @@ def run_module(module, arg_def):
         and dest_ds_type=='USS' and not os.path.isdir(dest)
     ):
         module.fail_json(
-            msg="Cannot write a partitioned data set (PDS) to a USS file.".format(src_ds_type)
+            msg="Cannot write a partitioned data set (PDS) to a USS file."
         )
 
     # ********************************************************************

@@ -94,7 +94,7 @@ options:
     required: false
   tmp_path:
     description:
-      - Path in the remote machine where local scripts will be
+      - Directory path in the remote machine where local scripts will be
         temporarily copied to.
       - When not specified, the module will copy local scripts to
         the default temporary path for the user.

@@ -814,13 +814,9 @@ class CopyHandler(object):
         module,
         is_binary=False,
         executable=False,
-<<<<<<< HEAD
         aliases=False,
-        backup_name=None
-=======
         backup_name=None,
         force_lock=False,
->>>>>>> dev
     ):
         """Utility class to handle copying data between two targets
 
@@ -1472,13 +1468,9 @@ class PDSECopyHandler(CopyHandler):
         module,
         is_binary=False,
         executable=False,
-<<<<<<< HEAD
         aliases=False,
-        backup_name=None
-=======
         backup_name=None,
         force_lock=False,
->>>>>>> dev
     ):
         """ Utility class to handle copying to partitioned data sets or
         partitioned data set members.
@@ -1496,13 +1488,9 @@ class PDSECopyHandler(CopyHandler):
             module,
             is_binary=is_binary,
             executable=executable,
-<<<<<<< HEAD
             aliases=aliases,
-            backup_name=backup_name
-=======
             backup_name=backup_name,
             force_lock=force_lock,
->>>>>>> dev
         )
 
     def copy_to_pdse(
@@ -2805,15 +2793,12 @@ def run_module(module, arg_def):
                 temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
             pdse_copy_handler = PDSECopyHandler(
-<<<<<<< HEAD
-                module, is_binary=is_binary, executable=executable, aliases=aliases, backup_name=backup_name
-=======
                 module,
                 is_binary=is_binary,
                 executable=executable,
+                aliases=aliases,
                 backup_name=backup_name,
                 force_lock=force_lock,
->>>>>>> dev
             )
 
             pdse_copy_handler.copy_to_pdse(

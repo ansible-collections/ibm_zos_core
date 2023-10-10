@@ -113,6 +113,7 @@ notes:
   - Execution permissions for the group assigned to the script will be
     added to remote scripts. The original permissions for remote scripts will
     be restored by the module before the task ends.
+  - The module will only add execution permissions for the file owner.
   - If executing REXX scripts, make sure to include a newline character on
     each line of the file. Otherwise, the interpreter may fail and return
     error C(BPXW0003I).
@@ -346,11 +347,12 @@ def run_module():
             msg='The given chdir {0} does not exist on the system.'.format(chdir)
         )
 
-    # Adding group execute permissions to the script.
+    # Adding owner execute permissions to the script.
+    # The module will fail if the Ansible user is not the owner!
     script_permissions = os.lstat(script_path).st_mode
     os.chmod(
         script_path,
-        script_permissions | stat.S_IXGRP
+        script_permissions | stat.S_IXUSR
     )
 
     if executable:

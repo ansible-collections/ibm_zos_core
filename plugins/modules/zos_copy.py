@@ -1417,7 +1417,6 @@ class USSCopyHandler(CopyHandler):
             member_name {str} -- The name of the source data set member
         """
 
-
         if os.path.isdir(dest):
             # If source is a data set member, destination file should have
             # the same name as the member.
@@ -1556,7 +1555,7 @@ class PDSECopyHandler(CopyHandler):
             else:
                 # Aliases are included in listing unless alias is set to False.
                 opts = {}
-                opts['options'] = '-H ' # mls option to hide aliases
+                opts['options'] = '-H '  # mls option to hide aliases
                 members = datasets.list_members(new_src, **opts)
 
             src_members = ["{0}({1})".format(src_data_set_name, member) for member in members]
@@ -1566,7 +1565,7 @@ class PDSECopyHandler(CopyHandler):
                 for member in members
             ]
 
-        existing_members = datasets.list_members(dest) # include aliases in list
+        existing_members = datasets.list_members(dest)  # include aliases in list
         overwritten_members = []
         new_members = []
 
@@ -2576,7 +2575,7 @@ def run_module(module, arg_def):
     # Alias support is not avaiable to and from USS for text-based data sets.
     # ********************************************************************
     if aliases:
-        if (src_ds_type=='USS' or dest_ds_type=='USS' ) and not executable:
+        if (src_ds_type == 'USS' or dest_ds_type == 'USS') and not executable:
             module.fail_json(
                 msg="Alias support for text-based data sets is not available "
                     + "for USS sources (src) or targets (dest). "
@@ -2588,7 +2587,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if (
         src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
-        and dest_ds_type=='USS' and not os.path.isdir(dest)
+        and dest_ds_type == 'USS' and not os.path.isdir(dest)
     ):
         module.fail_json(
             msg="Cannot write a partitioned data set (PDS) to a USS file."

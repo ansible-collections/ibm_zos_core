@@ -59,6 +59,7 @@ class ActionModule(ActionBase):
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
         is_binary = _process_boolean(task_args.get('is_binary'), default=False)
+        force_lock = _process_boolean(task_args.get('force_lock'), default=False)
         executable = _process_boolean(task_args.get('executable'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
         backup_name = task_args.get("backup_name", None)
@@ -126,6 +127,9 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
+        if force_lock:
+            display.warning(
+                msg="Using force_lock uses operations that are subject to race conditions and can lead to data loss, use with caution.")
         template_dir = None
 
         if not remote_src:

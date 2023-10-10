@@ -200,7 +200,7 @@ int main(int argc, char** argv)
 call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
 //STDPARM DD *
-SH /tmp/disp_shr/pdse-lock '{0}({1})'
+SH /tmp/disp_shr/pdse-lock '{0}'
 //STDIN  DD DUMMY
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
@@ -1614,22 +1614,30 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
 
 @pytest.mark.seq
-def test_copy_dest_lock(ansible_zos_module):
+@pytest.mark.parametrize("ds_type", ["PDS", "PDSE", "SEQ"])
+def test_copy_dest_lock(ansible_zos_module, ds_type):
     DATASET_1 = "USER.PRIVATE.TESTDS"
     DATASET_2 = "ADMI.PRIVATE.TESTDS"
     MEMBER_1 = "MEM1"
+    if ds_type == "PDS" or ds_type == "PDSE":
+        src_data_set = DATASET_1 + "({0})".format(MEMBER_1)
+        dest_data_set = DATASET_2 + "({0})".format(MEMBER_1)
+    else:
+        src_data_set = DATASET_1
+        dest_data_set = DATASET_2
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DATASET_1, state="present", type="pdse", replace=True)
         hosts.all.zos_data_set(name=DATASET_2, state="present", type="pdse", replace=True)
-        hosts.all.zos_data_set(name=DATASET_1 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
-        hosts.all.zos_data_set(name=DATASET_2 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        if ds_type == "PDS" or ds_type == "PDSE":
+            hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
+            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
         # copy text_in source
-        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
+        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
-            content=call_c_jcl.format(DATASET_1, MEMBER_1),
+            content=call_c_jcl.format(dest_data_set),
             dest='/tmp/disp_shr/call_c_pgm.jcl',
             force=True
         )
@@ -1639,14 +1647,31 @@ def test_copy_dest_lock(ansible_zos_module):
         # pause to ensure c code acquires lock
         time.sleep(5)
         results = hosts.all.zos_copy(
-            src = DATASET_2 + "({0})".format(MEMBER_1),
-            dest = DATASET_1 + "({0})".format(MEMBER_1),
-            remote_src = True
+            src = src_data_set,
+            dest = dest_data_set,
+            remote_src = True,
+            force=True,
+            force_lock=True,
         )
         for result in results.contacted.values():
             print(result)
-            assert result.get("changed") == False
-            assert result.get("msg") is not None
+            assert result.get("changed") == True
+            assert result.get("msg") is None
+            # verify that the content is the same
+            verify_copy = hosts.all.shell(
+                cmd="dcat \"{0}\"".format(dest_data_set),
+                executable=SHELL_EXECUTABLE,
+            )
+            for vp_result in verify_copy.contacted.values():
+                print(vp_result)
+                verify_copy_2 = hosts.all.shell(
+                    cmd="dcat \"{0}\"".format(src_data_set),
+                    executable=SHELL_EXECUTABLE,
+                )
+                for vp_result_2 in verify_copy_2.contacted.values():
+                    print(vp_result_2)
+                    assert vp_result_2.get("stdout") == vp_result.get("stdout")
+
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")

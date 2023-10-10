@@ -151,6 +151,22 @@ options:
     type: bool
     default: false
     required: false
+  force_lock:
+    description:
+      - By default, when c(dest) is a MVS data set and is being used by another
+        process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
+        to bypass this check and continue with copy.
+      - If set to C(true) and destination is a MVS data set opened by another
+        process then zos_copy will try to copy using DISP=SHR.
+      - Using C(force_lock) uses operations that are subject to race conditions
+        and can lead to data loss, use with caution.
+      - If a data set member has aliases, and is not a program
+        object, copying that member to a dataset that is in use will result in
+        the aliases not being preserved in the target dataset. When this scenario
+        occurs the module will fail.
+    type: bool
+    default: false
+    required: false
   ignore_sftp_stderr:
     description:
       - During data transfer through SFTP, the module fails if the SFTP command
@@ -798,8 +814,13 @@ class CopyHandler(object):
         module,
         is_binary=False,
         executable=False,
+<<<<<<< HEAD
         aliases=False,
         backup_name=None
+=======
+        backup_name=None,
+        force_lock=False,
+>>>>>>> dev
     ):
         """Utility class to handle copying data between two targets
 
@@ -814,12 +835,16 @@ class CopyHandler(object):
                                 is executable
             backup_name {str} -- The USS path or data set name of destination
                                  backup
+            force_lock {str} -- Whether the dest data set should be copied into
+                                using disp=shr when is opened by another
+                                process.
         """
         self.module = module
         self.is_binary = is_binary
         self.executable = executable
         self.aliases = aliases
         self.backup_name = backup_name
+        self.force_lock = force_lock
 
     def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
@@ -846,9 +871,13 @@ class CopyHandler(object):
         """
         new_src = conv_path or temp_path or src
         copy_args = dict()
+        copy_args["options"] = ""
 
         if self.is_binary:
             copy_args["options"] = "-B"
+
+        if self.force_lock:
+            copy_args["options"] += " -f"
 
         response = datasets._copy(new_src, dest, None, **copy_args)
         if response.rc != 0:
@@ -869,10 +898,12 @@ class CopyHandler(object):
             src {str} -- The name of the source VSAM
             dest {str} -- The name of the destination VSAM
         """
+        out_dsp = "shr" if self.force_lock else "old"
+        dds = {"OUT": "{0},{1}".format(dest.upper(), out_dsp)}
         repro_cmd = """  REPRO -
         INDATASET('{0}') -
-        OUTDATASET('{1}')""".format(src.upper(), dest.upper())
-        rc, out, err = idcams(repro_cmd, authorized=True)
+        OUTFILE(OUT)""".format(src.upper())
+        rc, out, err = idcams(repro_cmd, dds=dds, authorized=True)
         if rc != 0:
             raise CopyOperationError(
                 msg=("IDCAMS REPRO encountered a problem while "
@@ -1441,8 +1472,13 @@ class PDSECopyHandler(CopyHandler):
         module,
         is_binary=False,
         executable=False,
+<<<<<<< HEAD
         aliases=False,
         backup_name=None
+=======
+        backup_name=None,
+        force_lock=False,
+>>>>>>> dev
     ):
         """ Utility class to handle copying to partitioned data sets or
         partitioned data set members.
@@ -1460,8 +1496,13 @@ class PDSECopyHandler(CopyHandler):
             module,
             is_binary=is_binary,
             executable=executable,
+<<<<<<< HEAD
             aliases=aliases,
             backup_name=backup_name
+=======
+            backup_name=backup_name,
+            force_lock=force_lock,
+>>>>>>> dev
         )
 
     def copy_to_pdse(
@@ -1585,6 +1626,7 @@ class PDSECopyHandler(CopyHandler):
         src = src.replace("$", "\\$")
         dest = dest.replace("$", "\\$").upper()
         opts = dict()
+        opts["options"] = ""
 
         if self.is_binary:
             opts["options"] = "-B"
@@ -1597,6 +1639,9 @@ class PDSECopyHandler(CopyHandler):
             opts["options"] = "-X"
             if self.aliases:
                 opts["options"] = "-IX"
+
+        if self.force_lock:
+            opts["options"] += " -f"
 
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
@@ -2293,7 +2338,7 @@ def data_set_locked(dataset_name):
         dataset_name (str) - the data set name used to check if there is a lock.
 
     Returns:
-        bool -- rue if the data set is locked, or False if the data set is not locked.
+        bool -- True if the data set is locked, or False if the data set is not locked.
     """
     # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
     # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
@@ -2354,6 +2399,7 @@ def run_module(module, arg_def):
     copy_member = module.params.get('copy_member')
     tmphlq = module.params.get('tmp_hlq')
     force = module.params.get('force')
+    force_lock = module.params.get('force_lock')
 
     dest_data_set = module.params.get('dest_data_set')
     if dest_data_set:
@@ -2532,10 +2578,11 @@ def run_module(module, arg_def):
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
     if dest_ds_type != "USS":
-        is_dest_lock = data_set_locked(dest_name)
-        if is_dest_lock:
-            module.fail_json(
-                msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
+        if not force_lock:
+            is_dest_lock = data_set_locked(dest_name)
+            if is_dest_lock:
+                module.fail_json(
+                    msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
 
     # ********************************************************************
     # Alias support is not avaiable to and from USS for text-based data sets.
@@ -2570,6 +2617,7 @@ def run_module(module, arg_def):
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
+
     # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks
@@ -2673,7 +2721,8 @@ def run_module(module, arg_def):
         module,
         is_binary=is_binary,
         executable=executable,
-        backup_name=backup_name
+        backup_name=backup_name,
+        force_lock=force_lock,
     )
 
     try:
@@ -2756,7 +2805,15 @@ def run_module(module, arg_def):
                 temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
             pdse_copy_handler = PDSECopyHandler(
+<<<<<<< HEAD
                 module, is_binary=is_binary, executable=executable, aliases=aliases, backup_name=backup_name
+=======
+                module,
+                is_binary=is_binary,
+                executable=executable,
+                backup_name=backup_name,
+                force_lock=force_lock,
+>>>>>>> dev
             )
 
             pdse_copy_handler.copy_to_pdse(
@@ -2893,6 +2950,7 @@ def main():
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
             force=dict(type='bool', default=False),
+            force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
@@ -2913,6 +2971,7 @@ def main():
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
         volume=dict(arg_type='str', required=False),
+        force_lock=dict(type='bool', default=False),
 
         dest_data_set=dict(
             arg_type='dict',

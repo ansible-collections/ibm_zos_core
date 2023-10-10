@@ -223,11 +223,11 @@ stderr_lines:
 
 import os
 import stat
+import shlex
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    encode
+    better_arg_parser
 )
 
 
@@ -273,10 +273,6 @@ def run_module():
                     auto_reload=dict(type='bool', default=False),
                 )
             ),
-            # Private parameters (from the action plugin).
-            script_path=dict(type='str'),
-            script_args=dict(type='str'),
-            # local_charset=dict(type='str')
         ),
         supports_check_mode=False
     )
@@ -309,8 +305,6 @@ def run_module():
                 auto_reload=dict(arg_type='bool', required=False),
             )
         ),
-        script_path=dict(arg_type='path', required=True),
-        script_args=dict(arg_type='str', required=True)
     )
 
     try:
@@ -323,8 +317,9 @@ def run_module():
             stderr=str(err)
         )
 
-    script_path = module.params.get('script_path')
-    script_args = module.params.get('script_args')
+    cmd_str = module.params.get('cmd')
+    cmd_parts = shlex.split(cmd_str)
+    script_path = cmd_parts[0]
     chdir = module.params.get('chdir')
     executable = module.params.get('executable')
     creates = module.params.get('creates')
@@ -358,7 +353,6 @@ def run_module():
         script_permissions | stat.S_IXGRP
     )
 
-    cmd_str = "{0} {1}".format(script_path, script_args)
     if executable:
         cmd_str = "{0} {1}".format(executable, cmd_str)
 

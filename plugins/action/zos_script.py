@@ -18,7 +18,6 @@ from os import path
 
 from ansible.plugins.action import ActionBase
 from ansible.module_utils.parsing.convert_bool import boolean
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
 from ansible.utils.display import Display
@@ -48,10 +47,12 @@ class ActionModule(ActionBase):
             ))
             return result
 
-        # Copying the script when it's a local file.
         script_path = cmd_parts[0]
+        script_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
         remote_src = self._process_boolean(module_args.get('remote_src'))
-        tempfile_path = None
+        user_cmd = tempfile_path = None
+
+        # Copying the script when it's a local file.
         if not remote_src:
             script_path = path.abspath(path.normpath(script_path))
             script_name = path.basename(script_path)
@@ -85,7 +86,6 @@ class ActionModule(ActionBase):
                 return result
 
             tempfile_path = tempfile_result.get('path')
-            module_args['script_path'] = tempfile_path
 
             # Letting zos_copy handle the transfer of the script.
             zos_copy_args = dict(
@@ -120,13 +120,16 @@ class ActionModule(ActionBase):
                         tempfile_args=tempfile_result.get('invocation', dict()).get('module_args'),
                         zos_copy_args=zos_copy_result.get('invocation', dict()).get('module_args')
                     ),
-                    msg="An error ocurred while trying to copy the script to the managed node: {0}.".format(zos_copy_result.get('msg'))
+                    msg="An error ocurred while trying to copy the script to the managed node: {0}.".format(
+                        zos_copy_result.get('msg')
+                    )
                 ))
                 return result
-        else:
-            module_args['script_path'] = script_path
 
-        module_args['script_args'] = cmd_parts[1] if len(cmd_parts) > 1 else ""
+            # We're going to shadow the command supplied by the user with the remote
+            # tempfile we just created.
+            user_cmd = module_args.get('cmd')
+            module_args['cmd'] = '{0} {1}'.format(tempfile_path, script_args)
 
         module_result = self._execute_module(
             module_name='ibm.ibm_zos_core.zos_script',
@@ -137,6 +140,9 @@ class ActionModule(ActionBase):
         result = module_result
         if result.get('changed') and tempfile_path:
             result['tempfile_path'] = tempfile_path
+            # The cmd field will return using the tempfile created, so we
+            # restore it to what the user supplied.
+            result['cmd'] = user_cmd
 
         if not remote_src:
             self._remote_cleanup(tempfile_path)

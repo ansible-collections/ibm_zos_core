@@ -23,8 +23,6 @@ DOCUMENTATION = r"""
 module: zos_gather_facts
 short_description: Gather z/OS system facts.
 version_added: '1.5.0'
-requirements:
-    - ZOAU 1.2.1 or later.
 author:
     - "Ketan Kelkar (@ketankelkar)"
 description:

@@ -1553,7 +1553,10 @@ class PDSECopyHandler(CopyHandler):
             if src_member:
                 members.append(data_set.extract_member_name(new_src))
             else:
-                # Aliases are included in listing unless alias is set to False.
+                # The 'members' variable below is used to store a list of members in the src PDS/E.
+                # Items in the list are passed to the copy_to_member function.
+                # Aliases are included in the output by list_members unless the alias option is disabled.
+                # The logic for preserving/copying aliases is contained in the copy_to_member function.
                 opts = {}
                 opts['options'] = '-H '  # mls option to hide aliases
                 members = datasets.list_members(new_src, **opts)
@@ -1565,7 +1568,7 @@ class PDSECopyHandler(CopyHandler):
                 for member in members
             ]
 
-        existing_members = datasets.list_members(dest)  # include aliases in list
+        existing_members = datasets.list_members(dest)  # fyi - this list includes aliases
         overwritten_members = []
         new_members = []
 

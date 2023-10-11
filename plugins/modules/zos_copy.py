@@ -2553,7 +2553,7 @@ def run_module(module, arg_def):
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type")
 
-            if dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA':
+            if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
@@ -2599,10 +2599,15 @@ def run_module(module, arg_def):
         src_has_asa_chars,
         dest_has_asa_chars
     ):
+        error_msg = "Incompatible target type '{0}' for source '{1}'".format(
+            dest_ds_type, src_ds_type
+        )
+
+        if asa_text:
+            error_msg = "{0}. Neither the source or the destination are ASA text files.".format(error_msg)
+
         module.fail_json(
-            msg="Incompatible target type '{0}' for source '{1}'".format(
-                dest_ds_type, src_ds_type
-            )
+            msg=error_msg
         )
 
     # ********************************************************************

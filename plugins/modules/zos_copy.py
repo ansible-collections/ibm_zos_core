@@ -1738,7 +1738,9 @@ def get_data_set_attributes(
     if asa_text:
         record_format = "FBA"
         block_size = 27920
-
+        # Adding one byte more to the record length to account for the
+        # control character at the start of each line.
+        record_length += 1
 
     parms = dict(
         name=name,

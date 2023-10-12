@@ -30,6 +30,25 @@ author:
   - "Demetrios Dimatos (@ddimatos)"
   - "Ivan Moreno (@rexemin)"
 options:
+  asa_text:
+    description:
+      - If set to C(true), indicates that either C(src) or C(dest) or both
+        contain ASA control characters.
+      - When C(src) is a USS file and C(dest) is a data set, the copy will
+        preserve ASA control characters in the destination.
+      - When C(src) is a data set containing ASA control characters and
+        C(dest) is a USS file, the copy will put all control characters as
+        plain text in the destination.
+      - If C(dest) is a non-existent data set, it will be created with record
+        format Fixed Block with ANSI format (FBA).
+      - If neither C(src) or C(dest) have record format Fixed Block with ANSI
+        format (FBA) or Variable Block with ANSI format (VBA), the module
+        will fail.
+      - This option is only valid for text files. If C(is_binary) is C(true)
+        as well, the module will fail.
+    type: bool
+    default: false
+    required: false
   backup:
     description:
       - Specifies whether a backup of the destination should be created before

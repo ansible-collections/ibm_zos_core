@@ -23,6 +23,9 @@ from pprint import pprint
 from shellescape import quote
 import tempfile
 
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
+
 # Make sure job list * returns something
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
@@ -49,7 +52,7 @@ TEMP_PATH = "/tmp/jcl"
 #NDATA_SET_NAME = "imstestl.ims1.testq2"
 
 # test to show multi wildcard in Job_id query won't crash the search
-def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module, get_dataset):
+def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         JDATA_SET_NAME = get_dataset(hosts)
@@ -82,7 +85,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module, get_dataset):
 
 
 # test to show multi wildcard in Job_name query won't crash the search
-def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module, get_dataset):
+def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         NDATA_SET_NAME = get_dataset(hosts)

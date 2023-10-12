@@ -25,6 +25,8 @@ from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
     get_available_vol,
     free_vol)
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 
 # ##############################################################################
 # Configure the job card as needed, most common keyword parameters:
@@ -265,7 +267,7 @@ TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
 
-def test_job_submit_PDS(ansible_zos_module, get_dataset):
+def test_job_submit_PDS(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         DATA_SET_NAME = get_dataset(hosts)
@@ -377,7 +379,7 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
         assert re.search(r'completion code', repr(result.get("msg")))
 
 
-def test_job_submit_PDS_volume(ansible_zos_module, get_volumes, get_dataset):
+def test_job_submit_PDS_volume(ansible_zos_module, get_volumes):
     try:
         hosts = ansible_zos_module
         DATA_SET_NAME = get_dataset(hosts)
@@ -412,7 +414,7 @@ def test_job_submit_PDS_volume(ansible_zos_module, get_volumes, get_dataset):
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
 
-def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module, get_dataset):
+def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         DATA_SET_NAME = get_dataset(hosts)
@@ -445,7 +447,7 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module, get_dataset):
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
 
-def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module, get_dataset):
+def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         DATA_SET_NAME = get_dataset(hosts)
@@ -477,7 +479,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module, get_dataset):
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
-def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module, get_dataset):
+def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
     """This submits a 30 second job and only waits 10 seconds"""
     try:
         hosts = ansible_zos_module

@@ -24,6 +24,9 @@ class Volume:
         self.name = name
         self.in_use = False
 
+    def __str__(self):
+        return f'The volume {self.name} is in {self.in_use} in use'
+
     def use(self):
         self.in_use = True
 

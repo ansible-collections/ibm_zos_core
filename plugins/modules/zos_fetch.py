@@ -282,6 +282,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     encode,
+    validation,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -511,7 +512,7 @@ class FetchHandler:
             root, dirs, files = next(os.walk(dir_path))
             try:
                 for file in files:
-                    file_path = os.path.join(root, file)
+                    file_path = os.path.join(validation.validate_safe_path(root), validation.validate_safe_path(file))
                     enc_utils.uss_convert_encoding(
                         file_path, file_path, from_code_set, to_code_set
                     )

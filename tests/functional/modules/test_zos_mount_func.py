@@ -21,6 +21,8 @@ from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
     get_available_vol,
     free_vol)
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 
 try:
     from zoautil_py import Datasets
@@ -174,7 +176,7 @@ def test_remount(ansible_zos_module, get_volumes):
         free_vol(volume_1, volumes)
 
 
-def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, get_dataset, get_volumes):
+def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_available_vol(volumes)
@@ -246,7 +248,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, get_dataset
         free_vol(volume_1, volumes)
 
 
-def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, get_dataset, get_volumes):
+def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_available_vol(volumes)
@@ -367,7 +369,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, get_dataset, ge
         )
         free_vol(volume_1, volumes)
 
-def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, get_dataset, get_volumes):
+def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_available_vol(volumes)

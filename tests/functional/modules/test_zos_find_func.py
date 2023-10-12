@@ -269,7 +269,7 @@ def test_find_vsam_pattern(ansible_zos_module):
         )
 
 
-def test_find_vsam_in_volume(ansible_zos_module, get_volumes, get_dataset):
+def test_find_vsam_in_volume(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     volumes = ls_Volume(*get_volumes)
     volume_1 = get_available_vol(volumes)

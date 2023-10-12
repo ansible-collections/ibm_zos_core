@@ -27,6 +27,8 @@ from ibm_zos_core.tests.helpers.volumes import (
     ls_Volume,
     get_available_vol,
     free_vol)
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 
 __metaclass__ = type
 
@@ -217,7 +219,7 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
             shutil.rmtree(dest_path)
 
 
-def test_fetch_vsam_data_set(ansible_zos_module, get_dataset, get_volumes):
+def test_fetch_vsam_data_set(ansible_zos_module, get_volumes):
     hosts = ansible_zos_module
     TEMP_JCL_PATH = "/tmp/ansible"
     TEST_VSAM = get_dataset(hosts)

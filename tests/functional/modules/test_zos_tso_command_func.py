@@ -18,6 +18,8 @@ __metaclass__ = type
 import ansible.constants
 import ansible.errors
 import ansible.utils
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 
 #DEFAULT_TEMP_DATASET="imstestl.ims1.temp.ps"
 
@@ -47,7 +49,7 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
         assert result.get("changed") is True
 
 
-def test_zos_tso_command_allocate_listing_delete(ansible_zos_module, get_dataset):
+def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
     hosts = ansible_zos_module
     DEFAULT_TEMP_DATASET = get_dataset(hosts)
     command_string = [

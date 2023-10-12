@@ -18,6 +18,9 @@ import re
 import pytest
 import inspect
 
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
+
 __metaclass__ = type
 
 DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
@@ -546,7 +549,7 @@ def test_uss_line_does_not_insert_repeated(ansible_zos_module):
 # without change the original description or the other option is that at the end of the test get back to original one.
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertafter_regex(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
@@ -568,7 +571,7 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype, get_dataset):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_insertbefore_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
@@ -590,7 +593,7 @@ def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, get_dataset):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertafter_eof(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_insertafter_eof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", line="export 'ZOAU_ROOT'", state="present")
@@ -611,7 +614,7 @@ def test_ds_line_insertafter_eof(ansible_zos_module, dstype, get_dataset):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertbefore_bof(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_insertbefore_bof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present")
@@ -633,7 +636,7 @@ def test_ds_line_insertbefore_bof(ansible_zos_module, dstype, get_dataset):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
@@ -655,7 +658,7 @@ def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype, ge
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present")
@@ -677,7 +680,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype, g
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
@@ -699,7 +702,7 @@ def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype, g
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
@@ -721,7 +724,7 @@ def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype, 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
@@ -743,7 +746,7 @@ def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype,
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
@@ -765,7 +768,7 @@ def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_absent(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_absent(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
@@ -786,7 +789,7 @@ def test_ds_line_absent(ansible_zos_module, dstype, get_dataset):
 
 
 @pytest.mark.ds
-def test_ds_tmp_hlq_option(ansible_zos_module, get_dataset):
+def test_ds_tmp_hlq_option(ansible_zos_module):
     # This TMPHLQ only works with sequential datasets
     hosts = ansible_zos_module
     ds_type = "SEQ"
@@ -822,7 +825,7 @@ def test_ds_tmp_hlq_option(ansible_zos_module, get_dataset):
 ## Non supported test cases
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", NS_DS_TYPE)
-def test_ds_not_supported(ansible_zos_module, dstype, get_dataset):
+def test_ds_not_supported(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
@@ -847,7 +850,7 @@ def test_ds_not_supported(ansible_zos_module, dstype, get_dataset):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_force(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     DEFAULT_DATA_SET_NAME = get_dataset(hosts)
@@ -908,7 +911,7 @@ def test_ds_line_force(ansible_zos_module, dstype, get_dataset):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ["PDS","PDSE"])
-def test_ds_line_force_fail(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_force_fail(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     DEFAULT_DATA_SET_NAME = get_dataset(hosts)
@@ -959,7 +962,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype, get_dataset):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype, get_dataset):
+def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(line='ZOAU_ROOT=/usr/lpp/zoautil/v100', state="present")
@@ -1016,7 +1019,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ["IBM-1047"])
-def test_ds_encoding(ansible_zos_module, encoding, dstype, get_dataset):
+def test_ds_encoding(ansible_zos_module, encoding, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     insert_data = "Insert this string"

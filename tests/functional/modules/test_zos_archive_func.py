@@ -14,6 +14,8 @@
 
 
 from __future__ import absolute_import, division, print_function
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 import time
 
 import pytest
@@ -346,7 +348,7 @@ List of tests:
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB"],
 )
-def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record_length, record_format, get_dataset):
+def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         DATASET = get_dataset(hosts)
@@ -425,7 +427,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB"],
 )
-def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format, get_dataset):
+def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -499,7 +501,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
         dict(dstype="PDSE", members=["MEM1", "MEM2", "MEM3"]),
         ]
 )
-def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -570,7 +572,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -633,7 +635,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set, ge
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -701,7 +703,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -766,7 +768,7 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -840,7 +842,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
         dict(dstype="PDSE", members=["MEM1", "MEM2"]),
         ]
 )
-def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)

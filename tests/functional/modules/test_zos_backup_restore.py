@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
@@ -192,7 +194,7 @@ def assert_file_does_not_exist(hosts, path):
         (UNIX_BACKUP_LOCATION, True, False),
     ],
 )
-def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover, get_dataset):
+def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
     try:
@@ -226,7 +228,7 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover,
     ],
 )
 def test_backup_of_data_set_when_backup_dest_exists(
-    ansible_zos_module, backup_name, overwrite, get_dataset
+    ansible_zos_module, backup_name, overwrite
 ):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
@@ -266,7 +268,7 @@ def test_backup_of_data_set_when_backup_dest_exists(
     ],
 )
 def test_backup_and_restore_of_data_set(
-    ansible_zos_module, backup_name, overwrite, recover, get_dataset
+    ansible_zos_module, backup_name, overwrite, recover
 ):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
@@ -314,7 +316,7 @@ def test_backup_and_restore_of_data_set(
     ],
 )
 def test_backup_and_restore_of_data_set_various_space_measurements(
-    ansible_zos_module, backup_name, space, space_type, get_dataset
+    ansible_zos_module, backup_name, space, space_type
 ):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
@@ -363,7 +365,7 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
     ],
 )
 def test_backup_and_restore_of_data_set_when_restore_location_exists(
-    ansible_zos_module, backup_name, overwrite, get_dataset
+    ansible_zos_module, backup_name, overwrite
 ):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
@@ -446,7 +448,7 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_i
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
 
 
-def test_backup_and_restore_exclude_from_pattern(ansible_zos_module, get_dataset):
+def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
     DATA_SET_NAME2 = get_dataset(hosts)
@@ -521,7 +523,7 @@ def test_restore_of_data_set_when_backup_does_not_exist(
     ],
 )
 def test_backup_of_data_set_when_data_set_does_not_exist(
-    ansible_zos_module, backup_name, get_dataset
+    ansible_zos_module, backup_name
 ):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
@@ -540,7 +542,7 @@ def test_backup_of_data_set_when_data_set_does_not_exist(
         delete_data_set_or_file(hosts, backup_name)
 
 
-def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module, get_dataset):
+def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
     try:
@@ -563,7 +565,7 @@ def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module, get_d
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
 
 
-def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module, get_dataset):
+def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
     DATA_SET_NAME = get_dataset(hosts)
     try:

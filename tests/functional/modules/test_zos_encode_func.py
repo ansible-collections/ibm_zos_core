@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 from shellescape import quote
 from pprint import pprint
 from os import path
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 
 __metaclass__ = type
 
@@ -198,7 +200,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
         hosts.all.file(path=USS_NONE_FILE, state="absent")
 
 
-def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
     hosts = ansible_zos_module
     MVS_PS = get_dataset(hosts)
     MVS_NONE_PS = get_dataset(hosts)
@@ -311,7 +313,7 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
         hosts.all.file(path=result.get("backup_name"), state="absent")
 
 
-def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PS = get_dataset(hosts)
@@ -335,7 +337,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module, get_data
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PS = get_dataset(hosts)
@@ -366,7 +368,7 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module, get_data
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
 
 
-def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PDS = get_dataset(hosts)
@@ -390,7 +392,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module, get_dat
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PDS = get_dataset(hosts)
@@ -422,7 +424,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module, 
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PDS = get_dataset(hosts)
@@ -457,7 +459,7 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module, 
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_uss_path_to_mvs_pds_conversion_uss_path(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_uss_path_to_mvs_pds_conversion_uss_path(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PDS = get_dataset(hosts)
@@ -504,7 +506,7 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds_conversion_uss_path(ansible
         hosts.all.file(path=USS_DEST_PATH, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
     MVS_PDS = get_dataset(hosts)
     MVS_PDS_MEMBER = MVS_PDS + '(MEM)'
@@ -532,7 +534,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module, ge
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
     hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
-def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_VS = get_dataset(hosts, 3)
@@ -568,7 +570,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module, get_da
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_VS = get_dataset(hosts, 3)
@@ -603,7 +605,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module, get_da
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
     hosts = ansible_zos_module
     MVS_PS = get_dataset(hosts)
     MVS_VS = get_dataset(hosts)
@@ -627,7 +629,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module, get_data
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
     MVS_VS = get_dataset(hosts)
     MVS_PDS = get_dataset(hosts)
@@ -656,7 +658,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module, 
     hosts.all.zos_data_set(name=MVS_PDS, state="absent")
 
 
-def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module, get_dataset):
+def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_VS = get_dataset(hosts, 3)
@@ -694,7 +696,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module, get_data
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
-def test_pds_backup(ansible_zos_module, get_dataset):
+def test_pds_backup(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PDS = get_dataset(hosts)
@@ -722,7 +724,7 @@ def test_pds_backup(ansible_zos_module, get_dataset):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 
 
-def test_pds_backup_with_tmp_hlq_option(ansible_zos_module, get_dataset):
+def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PDS = get_dataset(hosts)
@@ -756,7 +758,7 @@ def test_pds_backup_with_tmp_hlq_option(ansible_zos_module, get_dataset):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 
 
-def test_ps_backup(ansible_zos_module, get_dataset):
+def test_ps_backup(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PS = get_dataset(hosts)
@@ -783,7 +785,7 @@ def test_ps_backup(ansible_zos_module, get_dataset):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 
 
-def test_vsam_backup(ansible_zos_module, get_dataset):
+def test_vsam_backup(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_VS = get_dataset(hosts)
@@ -848,7 +850,7 @@ def test_vsam_backup(ansible_zos_module, get_dataset):
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
 
-def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module, get_dataset):
+def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PDS = get_dataset(hosts)
@@ -912,8 +914,7 @@ def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module,
 
 
 def test_uss_backup_entire_folder_to_default_backup_location_compressed(
-    ansible_zos_module,
-    get_dataset
+    ansible_zos_module
 ):
     try:
         hosts = ansible_zos_module
@@ -962,7 +963,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         hosts.all.file(path=backup_name, state="absent")
 
 
-def test_return_backup_name_on_module_success_and_failure(ansible_zos_module, get_dataset):
+def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         MVS_PS = get_dataset(hosts)

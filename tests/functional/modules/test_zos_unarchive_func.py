@@ -18,6 +18,8 @@ from __future__ import absolute_import, division, print_function
 import pytest
 import tempfile
 from tempfile import mkstemp
+from ibm_zos_core.tests.helpers.dataset import (
+    get_dataset)
 
 __metaclass__ = type
 
@@ -318,7 +320,7 @@ List of tests:
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],
 )
-def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, record_length, record_format, get_dataset):
+def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -429,7 +431,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],
 )
-def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format, get_dataset):
+def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -523,7 +525,7 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -600,7 +602,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -686,7 +688,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -768,7 +770,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
         dict(dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_set, get_dataset):
+def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)
@@ -850,7 +852,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
         True,
         False,
         ])
-def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, format, data_set, force, get_dataset):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, format, data_set, force):
     """
     This force test creates some data sets and attempt to extract using force flag as
     True and False, when True no issues are expected, as False proper error message should
@@ -939,7 +941,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],
 )
-def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, data_set, record_length, record_format, get_dataset):
+def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_dataset(hosts)

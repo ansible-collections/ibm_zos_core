@@ -765,8 +765,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member,
-    is_data_set
+    is_member
 )
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule

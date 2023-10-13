@@ -1738,9 +1738,6 @@ def get_data_set_attributes(
     if asa_text:
         record_format = "FBA"
         block_size = 27920
-        # Adding one byte more to the record length to account for the
-        # control character at the start of each line.
-        record_length += 1
 
     parms = dict(
         name=name,
@@ -1782,6 +1779,12 @@ def create_seq_dataset_from_file(
     src_size = os.stat(file).st_size
     # record_format = record_length = None
     record_format = None
+    # When dealing with ASA files, if copying from USS,
+    # the record length will need to be adjusted (we know it
+    # comes from USS because those flows don't send a
+    # value for record_length, while flows from source data
+    # sets do).
+    adjust_record_format = False
 
     # When src is a binary file, the module will use default attributes
     # for the data set, such as a record format of "VB".
@@ -1789,6 +1792,12 @@ def create_seq_dataset_from_file(
         record_format = "FB"
         if not record_length:
             record_length = get_file_record_length(file)
+            adjust_record_format = True
+
+    if asa_text and adjust_record_format:
+        # Adding one byte more to the record length to account for the
+        # control character at the start of each line.
+        record_length += 1
 
     dest_params = get_data_set_attributes(
         name=dest,

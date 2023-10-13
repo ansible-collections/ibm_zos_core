@@ -126,7 +126,7 @@ notes:
     the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from
     using Co:Z thus falling back to using standard SFTP.
   - This module executes scripts inside z/OS UNIX System Services. For
-    running REXX scripts contained in data sets, consider issuing a TSO
+    running REXX scripts contained in data sets or CLISTs, consider issuing a TSO
     command with L(zos_tso_command,./zos_tso_command.html).
   - The community script module does not rely on Python to execute scripts on a
     managed node, while this module does. Python must be present on the

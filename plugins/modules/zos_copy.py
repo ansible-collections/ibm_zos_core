@@ -599,6 +599,12 @@ EXAMPLES = r"""
     dest: HLQ.NEW.PDSE(MYCOBOL)
     remote_src: true
     executable: true
+
+- name: Copy a file with ASA characters to a new sequential data set.
+  zos_copy:
+    src: ./files/print.txt
+    dest: HLQ.PRINT.NEW
+    asa_text: true
 """
 
 RETURN = r"""

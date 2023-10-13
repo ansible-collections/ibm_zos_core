@@ -100,6 +100,8 @@ options:
         the default temporary path for the user.
       - If C(tmp_path) does not exist in the remote machine, the
         module will not create it.
+      - All scripts copied to C(tmp_path) will be removed from the managed
+        node before the module finishes executing.
     type: str
     required: false
 

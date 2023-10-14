@@ -192,7 +192,7 @@ options:
       - When I(is_binary=true), no encoding conversion is applied to the content,
         all content transferred retains the original state.
       - Use I(is_binary=true) when copying a Database Request Module (DBRM) to
-        retain the original state of the  serialized SQL statements of a program.
+        retain the original state of the serialized SQL statements of a program.
     type: bool
     default: false
     required: false

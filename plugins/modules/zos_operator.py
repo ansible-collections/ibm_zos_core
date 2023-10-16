@@ -55,16 +55,6 @@ options:
     type: int
     required: false
     default: 1
-  wait:
-    description:
-      - Configuring wait used by the L(zos_operator,./zos_operator.html) module
-        has been deprecated and will be removed in a future ibm.ibm_zos_core
-        collection.
-      - Setting this option will yield no change, it is deprecated.
-      - Review option I(wait_time_s) to instruct operator commands to wait.
-    type: bool
-    required: false
-    default: true
 """
 
 EXAMPLES = r"""
@@ -81,15 +71,10 @@ EXAMPLES = r"""
   zos_operator:
     cmd: "\\$PJ(*)"
 
-- name: Execute operator command to show jobs, waiting up to 5 seconds for response
+- name: Execute operator command to show jobs, always waiting 5 seconds for response
   zos_operator:
     cmd: 'd a,all'
     wait_time_s: 5
-
-- name: Execute operator command to show jobs, always waiting 7 seconds for response
-  zos_operator:
-    cmd: 'd a,all'
-    wait_time_s: 7
 
 - name: Display the system symbols and associated substitution texts.
   zos_operator:
@@ -178,6 +163,11 @@ try:
 except Exception:
     opercmd = MissingZOAUImport()
 
+try:
+    from zoautil_py import ZOAU_API_VERSION
+except Exception:
+    ZOAU_API_VERSION = "1.2.0"
+
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
     start = timer()
@@ -195,7 +185,6 @@ def run_module():
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
         wait_time_s=dict(type="int", required=False, default=1),
-        wait=dict(type="bool", required=False, default=True),
     )
 
     result = dict(changed=False)
@@ -266,8 +255,6 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
-        wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -285,6 +272,18 @@ def run_operator_command(params):
 
     wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
+
+    zv = ZOAU_API_VERSION.split(".")
+    use_wait_arg = False
+    if zv[0] > "1":
+        use_wait_arg = True
+    elif zv[0] == "1" and zv[1] > "2":
+        use_wait_arg = True
+    elif zv[0] == "1" and zv[1] == "2" and zv[2] > "4":
+        use_wait_arg = True
+
+    if use_wait_arg:
+        kwargs.update({"wait_arg": True})
 
     args = []
     rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)

@@ -102,19 +102,6 @@ def get_zoau_version_str():
                                provision for a 4th level eg "v1.2.0.1".
 
     """
-    # zoaversion_out = subprocess.run(
-    #    'zoaversion', shell=True, capture_output=True, check=False
-    # )
-    # version_list = (
-    #    zoaversion_out
-    #    .stdout
-    #    .decode('UTF-8')
-    #    .strip()
-    #    .split(' ')[3][1:]
-    #    .split('.')
-    #)
-    zoaversion_out = ZOAU_API_VERSION.split('.')
-
     version_list = (
         ZOAU_API_VERSION.split('.')
     )

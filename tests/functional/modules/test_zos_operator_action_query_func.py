@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-import unittest
+
 
 def test_zos_operator_action_query_no_options(ansible_zos_module):
     hosts = ansible_zos_module
@@ -29,6 +29,7 @@ def test_zos_operator_action_query_no_options(ansible_zos_module):
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
+
     for result in results.contacted.values():
         assert result.get("actions")
 
@@ -43,6 +44,7 @@ def test_zos_operator_action_query_option_message_id(ansible_zos_module):
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
+
     for result in results.contacted.values():
         assert result.get("actions")
 
@@ -267,7 +269,6 @@ def test_zos_operator_action_query_option_message_filter_multiple_matches(
     except Exception:
         pass
     for result in results.contacted.values():
-        print(result.get("actions"))
         assert result.get("actions")
         assert len(result.get("actions")) > 1
 

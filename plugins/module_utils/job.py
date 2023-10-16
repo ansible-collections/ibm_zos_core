@@ -271,6 +271,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["content_type"] = ""
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
+            job["duration"] = duration
 
             if dd_scan:
                 list_of_dds = list_dds(entry.id)

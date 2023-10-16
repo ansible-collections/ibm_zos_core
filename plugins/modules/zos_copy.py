@@ -2281,6 +2281,11 @@ def allocate_destination_data_set(
                     record_format = "FB"
                     record_length = get_file_record_length(src)
 
+                    # Adding 1 byte to the record length to accommodate
+                    # ASA control chars.
+                    if asa_text:
+                        record_length += 1
+
                 if executable:
                     record_format = "U"
                     record_length = 0

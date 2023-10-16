@@ -112,7 +112,6 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     # assert timediff < 15
 
     for result in results.contacted.values():
-        pprint(result)
         assert result["rc"] == 0
         assert result.get("changed") is True
         assert result.get("content") is not None

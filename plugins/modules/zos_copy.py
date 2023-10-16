@@ -203,6 +203,16 @@ options:
     type: bool
     default: false
     required: false
+  aliases:
+    description:
+      - If set to C(true), indicates that any aliases found in the source
+        (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
+      - Aliases are implicitly preserved when libraries are copied over to USS destinations.
+        That is, when C(executable=True) and C(dest) is a USS file or directory, this option will be ignored.
+      - Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
+    type: bool
+    default: false
+    required: false
   local_follow:
     description:
       - This flag indicates that any existing filesystem links in the source tree
@@ -591,12 +601,21 @@ EXAMPLES = r"""
       record_format: VB
       record_length: 150
 
-- name: Copy a Program Object on remote system to a new PDSE member MYCOBOL.
+- name: Copy a Program Object and its aliases on a remote system to a new PDSE member MYCOBOL
   zos_copy:
     src: HLQ.COBOLSRC.PDSE(TESTPGM)
     dest: HLQ.NEW.PDSE(MYCOBOL)
     remote_src: true
     executable: true
+    aliases: true
+
+- name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
+  zos_copy:
+    src: '/home/loadlib/'
+    dest: HLQ.LOADLIB.NEW
+    remote_src: true
+    executable: true
+    aliases: true
 """
 
 RETURN = r"""
@@ -795,6 +814,7 @@ class CopyHandler(object):
         module,
         is_binary=False,
         executable=False,
+        aliases=False,
         backup_name=None,
         force_lock=False,
     ):
@@ -818,6 +838,7 @@ class CopyHandler(object):
         self.module = module
         self.is_binary = is_binary
         self.executable = executable
+        self.aliases = aliases
         self.backup_name = backup_name
         self.force_lock = force_lock
 
@@ -1097,6 +1118,7 @@ class USSCopyHandler(CopyHandler):
         module,
         is_binary=False,
         executable=False,
+        aliases=False,
         common_file_args=None,
         backup_name=None,
     ):
@@ -1114,7 +1136,7 @@ class USSCopyHandler(CopyHandler):
             backup_name {str} -- The USS path or data set name of destination backup
         """
         super().__init__(
-            module, is_binary=is_binary, executable=executable, backup_name=backup_name
+            module, is_binary=is_binary, executable=executable, aliases=aliases, backup_name=backup_name
         )
         self.common_file_args = common_file_args
 
@@ -1149,6 +1171,7 @@ class USSCopyHandler(CopyHandler):
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
+
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
@@ -1393,6 +1416,7 @@ class USSCopyHandler(CopyHandler):
         Keyword Arguments:
             member_name {str} -- The name of the source data set member
         """
+
         if os.path.isdir(dest):
             # If source is a data set member, destination file should have
             # the same name as the member.
@@ -1403,9 +1427,10 @@ class USSCopyHandler(CopyHandler):
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
+
         opts = dict()
         if self.executable:
-            opts["options"] = "-IX"
+            opts["options"] = "-IX "
 
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
@@ -1421,7 +1446,17 @@ class USSCopyHandler(CopyHandler):
                         stderr=response.stderr_response
                     )
             else:
-                copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
+                if self.executable:
+                    response = datasets._copy(src, dest, None, **opts)
+                    if response.rc != 0:
+                        raise CopyOperationError(
+                            msg="Error while copying source {0} to {1}".format(src, dest),
+                            rc=response.rc,
+                            stdout=response.stdout_response,
+                            stderr=response.stderr_response
+                        )
+                else:
+                    copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
             raise CopyOperationError(msg=str(err))
 
@@ -1432,6 +1467,7 @@ class PDSECopyHandler(CopyHandler):
         module,
         is_binary=False,
         executable=False,
+        aliases=False,
         backup_name=None,
         force_lock=False,
     ):
@@ -1451,6 +1487,7 @@ class PDSECopyHandler(CopyHandler):
             module,
             is_binary=is_binary,
             executable=executable,
+            aliases=aliases,
             backup_name=backup_name,
             force_lock=force_lock,
         )
@@ -1516,7 +1553,13 @@ class PDSECopyHandler(CopyHandler):
             if src_member:
                 members.append(data_set.extract_member_name(new_src))
             else:
-                members = datasets.list_members(new_src)
+                # The 'members' variable below is used to store a list of members in the src PDS/E.
+                # Items in the list are passed to the copy_to_member function.
+                # Aliases are included in the output by list_members unless the alias option is disabled.
+                # The logic for preserving/copying aliases is contained in the copy_to_member function.
+                opts = {}
+                opts['options'] = '-H '  # mls option to hide aliases
+                members = datasets.list_members(new_src, **opts)
 
             src_members = ["{0}({1})".format(src_data_set_name, member) for member in members]
             dest_members = [
@@ -1525,7 +1568,7 @@ class PDSECopyHandler(CopyHandler):
                 for member in members
             ]
 
-        existing_members = datasets.list_members(dest)
+        existing_members = datasets.list_members(dest)  # fyi - this list includes aliases
         overwritten_members = []
         new_members = []
 
@@ -1578,8 +1621,14 @@ class PDSECopyHandler(CopyHandler):
         if self.is_binary:
             opts["options"] = "-B"
 
+        if self.aliases and not self.executable:
+            # lower case 'i' for text-based copy (dcp)
+            opts["options"] = "-i"
+
         if self.executable:
-            opts["options"] = "-IX"
+            opts["options"] = "-X"
+            if self.aliases:
+                opts["options"] = "-IX"
 
         if self.force_lock:
             opts["options"] += " -f"
@@ -1817,6 +1866,7 @@ def is_compatible(
     Returns:
         {bool} -- Whether src can be copied to dest.
     """
+
     # ********************************************************************
     # If the destination does not exist, then obviously it will need
     # to be created. As a result, target is compatible.
@@ -2194,7 +2244,17 @@ def allocate_destination_data_set(
                 # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
                 size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
                 # This PDSE will be created with record format VB and a record length of 1028.
-                dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
+
+                if executable:
+                    dest_params = get_data_set_attributes(
+                        dest, size, is_binary,
+                        record_format='U',
+                        record_length=0,
+                        type="LIBRARY",
+                        volume=volume
+                    )
+                else:
+                    dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
 
             data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
@@ -2311,6 +2371,7 @@ def run_module(module, arg_def):
     remote_src = module.params.get('remote_src')
     is_binary = module.params.get('is_binary')
     executable = module.params.get('executable')
+    aliases = module.params.get('aliases')
     backup = module.params.get('backup')
     backup_name = module.params.get('backup_name')
     validate = module.params.get('validate')
@@ -2502,7 +2563,7 @@ def run_module(module, arg_def):
         )
 
     # ********************************************************************
-    # To validate the source and dest are not lock in a batch process by
+    # To validate the source and dest are not locked in a batch process by
     # the machine and not generate a false positive check the disposition
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
@@ -2512,6 +2573,29 @@ def run_module(module, arg_def):
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
+
+    # ********************************************************************
+    # Alias support is not avaiable to and from USS for text-based data sets.
+    # ********************************************************************
+    if aliases:
+        if (src_ds_type == 'USS' or dest_ds_type == 'USS') and not executable:
+            module.fail_json(
+                msg="Alias support for text-based data sets is not available "
+                    + "for USS sources (src) or targets (dest). "
+                    + "Try setting executable=True or aliases=False."
+            )
+
+    # ********************************************************************
+    # Attempt to write PDS (not member) to USS file (i.e. a non-directory)
+    # ********************************************************************
+    if (
+        src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
+        and dest_ds_type == 'USS' and not os.path.isdir(dest)
+    ):
+        module.fail_json(
+            msg="Cannot write a partitioned data set (PDS) to a USS file."
+        )
+
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.
@@ -2523,6 +2607,7 @@ def run_module(module, arg_def):
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
+
     # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks
@@ -2646,6 +2731,7 @@ def run_module(module, arg_def):
                 module,
                 is_binary=is_binary,
                 executable=executable,
+                aliases=aliases,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
                 backup_name=backup_name,
             )
@@ -2712,6 +2798,7 @@ def run_module(module, arg_def):
                 module,
                 is_binary=is_binary,
                 executable=executable,
+                aliases=aliases,
                 backup_name=backup_name,
                 force_lock=force_lock,
             )
@@ -2759,6 +2846,7 @@ def main():
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
+            aliases=dict(type='bool', default=False, required=False),
             encoding=dict(
                 type='dict',
                 required=False,
@@ -2861,6 +2949,7 @@ def main():
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
         executable=dict(arg_type='bool', required=False, default=False),
+        aliases=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_path', required=False),

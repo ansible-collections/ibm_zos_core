@@ -45,8 +45,6 @@ body:
       description: Which version of IBM Enterprise Python are you using?
       multiple: false
       options:
-        - v3.14.x
-        - v3.13.x
         - v3.12.x
         - v3.11.x
         - v3.10.x
@@ -61,9 +59,6 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
       multiple: false
       options:
-        - v1.9.0
-        - v1.9.0-beta.1
-        - v1.8.0
         - v1.8.0-beta.1
         - v1.7.0
         - v1.7.0-beta.1
@@ -132,6 +127,7 @@ body:
         - zos_operator
         - zos_operator_action_query
         - zos_ping
+        - zos_script
         - zos_tso_command
     validations:
       required: false

@@ -192,6 +192,17 @@ executable
   | **type**: bool
 
 
+aliases
+  If set to ``true``, indicates that any aliases found in the source (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
+
+  Aliases are implicitly preserved when libraries are copied over to USS destinations. That is, when ``executable=True`` and ``dest`` is a USS file or directory, this option will be ignored.
+
+  Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
+
+  | **required**: False
+  | **type**: bool
+
+
 local_follow
   This flag indicates that any existing filesystem links in the source tree should be followed.
 
@@ -283,7 +294,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC
+    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC, LIBRARY
 
 
   space_primary
@@ -708,12 +719,21 @@ Examples
          record_format: VB
          record_length: 150
 
-   - name: Copy a Program Object on remote system to a new PDSE member MYCOBOL.
+   - name: Copy a Program Object and its aliases on a remote system to a new PDSE member MYCOBOL
      zos_copy:
        src: HLQ.COBOLSRC.PDSE(TESTPGM)
        dest: HLQ.NEW.PDSE(MYCOBOL)
        remote_src: true
        executable: true
+       aliases: true
+
+       - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
+     zos_copy:
+       src: '/home/loadlib/'
+       dest: HLQ.LOADLIB.NEW
+       remote_src: true
+       executable: true
+       aliases: true
 
    - name: Copy a file with ASA characters to a new sequential data set.
      zos_copy:

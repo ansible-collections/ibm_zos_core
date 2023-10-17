@@ -910,10 +910,10 @@ class CopyHandler(object):
             if self.is_binary or self.asa_text:
                 copy_args["options"] = "-B"
 
-        if self.force_lock:
-            copy_args["options"] += " -f"
+            if self.force_lock:
+                copy_args["options"] += " -f"
 
-        response = datasets._copy(new_src, dest, None, **copy_args)
+            response = datasets._copy(new_src, dest, None, **copy_args)
         if response.rc != 0:
             raise CopyOperationError(
                 msg="Unable to copy source {0} to {1}".format(new_src, dest),

@@ -1605,6 +1605,7 @@ def test_copy_template_file_to_dataset(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.seq
+@pytest.mark.asa
 def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -1638,6 +1639,7 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.pdse
+@pytest.mark.asa
 def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -1671,6 +1673,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
 
 
 @pytest.mark.seq
+@pytest.mark.asa
 def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -1719,6 +1722,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
 
 @pytest.mark.seq
 @pytest.mark.pdse
+@pytest.mark.asa
 def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -1768,6 +1772,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
 
 @pytest.mark.seq
 @pytest.mark.pdse
+@pytest.mark.asa
 def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -1817,6 +1822,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
 
 @pytest.mark.seq
 @pytest.mark.pdse
+@pytest.mark.asa
 def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -1867,6 +1873,7 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.seq
+@pytest.mark.asa
 def test_copy_asa_data_set_to_text_file(ansible_zos_module):
     hosts = ansible_zos_module
 

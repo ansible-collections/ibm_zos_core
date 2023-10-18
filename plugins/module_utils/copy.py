@@ -22,6 +22,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
+    ikjeft01
+)
 
 if PY3:
     from shlex import quote
@@ -240,10 +243,8 @@ def copy_asa_uss2mvs(src, dest):
         str -- The stdout after the copy command executed successfully
         str -- The stderr after the copy command executed successfully
     """
-    module = AnsibleModuleHelper(argument_spec={})
-
-    oget_cmd = 'tsocmd "OGET \'{0}\' \'{1}\'"'.format(src, dest)
-    rc, out, err = module.run_command(oget_cmd)
+    oget_cmd = "OGET '{0}' '{1}'".format(src, dest)
+    rc, out, err = ikjeft01(oget_cmd, authorized=True)
 
     return TSOCmdResponse(rc, out, err)
 
@@ -260,12 +261,11 @@ def copy_asa_mvs2uss(src, dest):
         str -- The stdout after the copy command executed successfully
         str -- The stderr after the copy command executed successfully
     """
-    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
 
-    oput_cmd = 'tsocmd "OPUT \'{0}\' \'{1}\'"'.format(src, dest)
-    rc, out, err = module.run_command(oput_cmd)
+    oput_cmd = "OPUT '{0}' '{1}'".format(src, dest)
+    rc, out, err = ikjeft01(oput_cmd, authorized=True)
 
     return TSOCmdResponse(rc, out, err)
 
@@ -285,7 +285,6 @@ def copy_asa_pds2uss(src, dest):
     from os import path
     from zoautil_py import datasets
 
-    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
 
@@ -293,8 +292,8 @@ def copy_asa_pds2uss(src, dest):
         src_member = '{0}({1})'.format(src, member)
         dest_path = path.join(dest, member)
 
-        oput_cmd = 'tsocmd "OPUT \'{0}\' \'{1}\'"'.format(src_member, dest_path)
-        rc, out, err = module.run_command(oput_cmd)
+        oput_cmd = "OPUT '{0}' '{1}'".format(src_member, dest_path)
+        rc, out, err = ikjeft01(oput_cmd, authorized=True)
 
         if rc != 0:
             return TSOCmdResponse(rc, out, err)

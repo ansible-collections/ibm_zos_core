@@ -18,6 +18,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 import tempfile
 from tempfile import mkstemp
+import tarfile
 
 __metaclass__ = type
 
@@ -87,6 +88,7 @@ List of tests:
 - test_uss_unarchive_include
 - test_uss_unarchive_exclude
 - test_uss_unarchive_list
+- test_uss_unarchive_copy_to_remote
 """
 
 
@@ -248,7 +250,7 @@ def test_uss_unarchive_list(ansible_zos_module, format):
 
 @pytest.mark.uss
 @pytest.mark.parametrize("format", USS_FORMATS)
-def test_uss_single_archive_with_mode(ansible_zos_module, format):
+def test_uss_single_unarchive_with_mode(ansible_zos_module, format):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
@@ -283,6 +285,48 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
+@pytest.mark.uss
+@pytest.mark.parametrize("format", ["tar"])
+def test_uss_unarchive_copy_to_remote(ansible_zos_module, format):
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+        hosts.all.file(path=USS_TEMP_DIR, state="directory")
+        set_uss_test_env(hosts, USS_TEST_FILES)
+        dest = f"{USS_TEMP_DIR}/archive.{format}"
+        # create local tmp dir
+        tmp_dir = tempfile.TemporaryDirectory()
+        tmp_file = tmp_dir.name + "/tmpfile"
+        tar_file = tmp_dir.name + "/tmpfile.tar"
+        # create local file
+        with open(tmp_file) as f:
+            f.write("This is a sample text for the file")
+        # archive using different formats
+        with tarfile.open(tar_file) as tar:
+            tar.add(tmp_file)
+
+        # remove files
+        for file in USS_TEST_FILES.keys():
+            hosts.all.file(path=file, state="absent")
+        unarchive_result = hosts.all.zos_unarchive(
+            src=tar_file,
+            dest=USS_TEMP_DIR,
+            format=dict(
+                name=format
+            ),
+        )
+        hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
+
+        for result in unarchive_result.contacted.values():
+            assert result.get("failed", False) is False
+            assert result.get("changed") is True
+            # Command to assert the file is in place
+            cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
+            for c_result in cmd_result.contacted.values():
+                for file in USS_TEST_FILES.keys():
+                    assert "tmpfile" in c_result.get("stdout")
+    finally:
+        hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
 ######################################################################
 #

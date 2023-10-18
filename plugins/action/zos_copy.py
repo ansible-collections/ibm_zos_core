@@ -122,6 +122,10 @@ class ActionModule(ActionBase):
             msg = "Both 'is_binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
             return self._exit_action(result, msg, failed=True)
 
+        if executable and asa_text:
+            msg = "Both 'executable' and 'asa_text' are True. Unable to copy an executable as an ASA text file."
+            return self._exit_action(result, msg, failed=True)
+
         use_template = _process_boolean(task_args.get("use_template"), default=False)
         if remote_src and use_template:
             msg = "Use of Jinja2 templates is only valid for local files, remote_src cannot be set to true."

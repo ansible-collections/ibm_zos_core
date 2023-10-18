@@ -45,7 +45,7 @@ options:
         format (FBA) or Variable Block with ANSI format (VBA), the module
         will fail.
       - This option is only valid for text files. If C(is_binary) is C(true)
-        as well, the module will fail.
+        or C(executable) is C(true) as well, the module will fail.
     type: bool
     default: false
     required: false

@@ -5,7 +5,7 @@ known_issues:
      These include modules `zos_job_submit`, `zos_job_output`,
      `zos_operator_action_query` but are not limited to this list.
      This will be addressed in `ibm_zos_core` version 1.10.0-beta.1.
-     Each case is unique, some options to work around the error have been to:
+     Each case is unique, some options to work around the error are below.
      - Specify that the ASA assembler option be enabled to instruct the assembler
        to use ANSI control characters instead of machine code control characters.
      - Add `ignore_errors:true` to the playbook task so the task error will not

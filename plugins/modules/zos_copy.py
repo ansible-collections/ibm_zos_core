@@ -2665,9 +2665,10 @@ def run_module(module, arg_def):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
 
-                src_attributes = datasets.listing(src_name)[0]
-                if src_attributes.recfm == 'FBA' or src_attributes.recfm == 'VBA':
-                    src_has_asa_chars = True
+                if src_ds_type not in data_set.DataSet.MVS_VSAM:
+                    src_attributes = datasets.listing(src_name)[0]
+                    if src_attributes.recfm == 'FBA' or src_attributes.recfm == 'VBA':
+                        src_has_asa_chars = True
             else:
                 raise NonExistentSourceError(src)
 

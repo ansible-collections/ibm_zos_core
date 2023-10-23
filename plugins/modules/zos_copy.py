@@ -1495,8 +1495,19 @@ class USSCopyHandler(CopyHandler):
                         stderr=response.stderr_response
                     )
             else:
-                if self.asa_text:
+                if self.executable:
+                    response = datasets._copy(src, dest, None, **opts)
+
+                    if response.rc != 0:
+                        raise CopyOperationError(
+                            msg="Error while copying source {0} to {1}".format(src, dest),
+                            rc=response.rc,
+                            stdout=response.stdout_response,
+                            stderr=response.stderr_response
+                        )
+                elif self.asa_text:
                     response = copy.copy_asa_pds2uss(src, dest)
+
                     if response.rc != 0:
                         raise CopyOperationError(
                             msg="Error while copying source {0} to {1}".format(src, dest),
@@ -3039,7 +3050,6 @@ def run_module(module, arg_def):
 
 
 def main():
-    # TODO: either change options or make is_binary and asa_text_file mutually exclusive.
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(type='path'),

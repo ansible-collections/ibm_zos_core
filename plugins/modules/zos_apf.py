@@ -522,6 +522,10 @@ def main():
     result['rc'] = operRc
     result['stdout'] = operOut
     if operation == 'list':
+        if not library:
+            library = ""
+        if not volume:
+            volume = ""
         if sms:
             sms = "*SMS*"
         if library or volume or sms:

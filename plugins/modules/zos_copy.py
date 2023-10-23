@@ -2714,7 +2714,7 @@ def run_module(module, arg_def):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
-            elif dest_exists:
+            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
                 dest_attributes = datasets.listing(dest_name)[0]
                 if dest_attributes.recfm == 'FBA' or dest_attributes.recfm == 'VBA':
                     dest_has_asa_chars = True

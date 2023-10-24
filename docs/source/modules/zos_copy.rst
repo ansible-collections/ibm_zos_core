@@ -26,6 +26,23 @@ Parameters
 ----------
 
 
+asa_text
+  If set to ``true``, indicates that either ``src`` or ``dest`` or both contain ASA control characters.
+
+  When ``src`` is a USS file and ``dest`` is a data set, the copy will preserve ASA control characters in the destination.
+
+  When ``src`` is a data set containing ASA control characters and ``dest`` is a USS file, the copy will put all control characters as plain text in the destination.
+
+  If ``dest`` is a non-existent data set, it will be created with record format Fixed Block with ANSI format (FBA).
+
+  If neither ``src`` or ``dest`` have record format Fixed Block with ANSI format (FBA) or Variable Block with ANSI format (VBA), the module will fail.
+
+  This option is only valid for text files. If ``is_binary`` is ``true`` or ``executable`` is ``true`` as well, the module will fail.
+
+  | **required**: False
+  | **type**: bool
+
+
 backup
   Specifies whether a backup of the destination should be created before copying data.
 
@@ -140,6 +157,19 @@ force
   | **type**: bool
 
 
+force_lock
+  By default, when c(dest) is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force_lock`` to bypass this check and continue with copy.
+
+  If set to ``true`` and destination is a MVS data set opened by another process then zos_copy will try to copy using DISP=SHR.
+
+  Using ``force_lock`` uses operations that are subject to race conditions and can lead to data loss, use with caution.
+
+  If a data set member has aliases, and is not a program object, copying that member to a dataset that is in use will result in the aliases not being preserved in the target dataset. When this scenario occurs the module will fail.
+
+  | **required**: False
+  | **type**: bool
+
+
 ignore_sftp_stderr
   During data transfer through SFTP, the module fails if the SFTP command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by SFTP and continue execution.
 
@@ -150,7 +180,11 @@ ignore_sftp_stderr
 
 
 is_binary
-  If set to ``true``, indicates that the file or data set to be copied is a binary file/data set.
+  If set to ``true``, indicates that the file or data set to be copied is a binary file or data set.
+
+  When *is_binary=true*, no encoding conversion is applied to the content, all content transferred retains the original state.
+
+  Use *is_binary=true* when copying a Database Request Module (DBRM) to retain the original state of the serialized SQL statements of a program.
 
   | **required**: False
   | **type**: bool
@@ -706,13 +740,19 @@ Examples
        executable: true
        aliases: true
 
-       - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
+   - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
      zos_copy:
        src: '/home/loadlib/'
        dest: HLQ.LOADLIB.NEW
        remote_src: true
        executable: true
        aliases: true
+
+   - name: Copy a file with ASA characters to a new sequential data set.
+     zos_copy:
+       src: ./files/print.txt
+       dest: HLQ.PRINT.NEW
+       asa_text: true
 
 
 

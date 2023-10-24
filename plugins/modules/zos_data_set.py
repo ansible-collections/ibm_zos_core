@@ -134,6 +134,8 @@ options:
     type: int
     required: false
     default: 5
+    aliases:
+      - size
   space_secondary:
     description:
       - The amount of secondary space to allocate for the dataset.
@@ -171,6 +173,8 @@ options:
       - F
     type: str
     default: FB
+    aliases:
+      - format
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -179,6 +183,8 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
+    aliases:
+      - data_class
   sms_data_class:
     description:
       - The data class for an SMS-managed dataset.
@@ -395,6 +401,8 @@ options:
         type: int
         required: false
         default: 5
+        aliases:
+          - size
       space_secondary:
         description:
           - The amount of secondary space to allocate for the dataset.
@@ -432,6 +440,8 @@ options:
           - F
         type: str
         default: FB
+        aliases:
+          - format
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -440,6 +450,8 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
+        aliases:
+          - data_class
       sms_data_class:
         description:
           - The data class for an SMS-managed dataset.
@@ -1030,9 +1042,17 @@ def parse_and_validate_args(params):
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type=data_set_type, required=False, dependencies=["state"]),
+                type=dict(
+                    type=data_set_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+                ),
                 space_type=dict(
-                    type=space_type, required=False, dependencies=["state"]
+                    type=space_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1114,7 +1134,12 @@ def parse_and_validate_args(params):
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
         type=dict(type=data_set_type, required=False, dependencies=["state"]),
-        space_type=dict(type=space_type, required=False, dependencies=["state"]),
+        space_type=dict(
+            type=space_type,
+            required=False,
+            dependencies=["state"],
+            choices=['K', 'M', 'G', 'CYL', 'TRK'],
+        ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
         record_format=dict(
@@ -1218,11 +1243,27 @@ def run_module():
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type="str", required=False, default="PDS"),
-                space_type=dict(type="str", required=False, default="M"),
+                type=dict(
+                    type="str",
+                    required=False,
+                    default="PDS",
+                    choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+                ),
+                space_type=dict(
+                    type="str",
+                    required=False,
+                    default="M",
+                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                ),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+                record_format=dict(
+                    type="str",
+                    required=False,
+                    aliases=["format"],
+                    default="FB",
+                    choices=['FB', 'VB', 'FBA', 'VBA', 'U', 'F']
+                ),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1267,11 +1308,26 @@ def run_module():
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
-        type=dict(type="str", required=False, default="PDS"),
-        space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        type=dict(
+            type="str",
+            required=False,
+            default="PDS",
+            choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+        ),
+        space_type=dict(
+            type="str",
+            required=False,
+            default="M",
+            choices=['K', 'M', 'G', 'CYL', 'TRK']
+        ),
+        space_primary=dict(type="int", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+        record_format=dict(
+            type="str",
+            required=False,
+            aliases=["format"],
+            default="FB",
+            choices=['FB', 'VB', 'FBA', 'VBA', 'U', 'F']),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class

@@ -31,10 +31,9 @@ except Exception:
     list_dds = MissingZOAUImport()
     listing = MissingZOAUImport()
 
-try:
-    from zoautil_py import ZOAU_API_VERSION
-except Exception:
-    ZOAU_API_VERSION = "1.2.0"
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
 
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0, timeout=0, start_time=timer()):
@@ -255,7 +254,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
             # this section only works on zoau 1.2.3/+ vvv
 
-            if ZOAU_API_VERSION > "1.2.2":
+            if zoau_version_checker.is_zoau_version_higher_than("1.2.2"):
                 job["job_class"] = entry.job_class
                 job["svc_class"] = entry.svc_class
                 job["priority"] = entry.priority
@@ -263,7 +262,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 job["creation_date"] = str(entry.creation_datetime)[0:10]
                 job["creation_time"] = str(entry.creation_datetime)[12:]
                 job["queue_position"] = entry.queue_position
-            if ZOAU_API_VERSION >= "1.2.4":
+            if zoau_version_checker.is_zoau_version_higher_than("1.2.3"):
                 job["program_name"] = entry.program_name
 
             # this section only works on zoau 1.2.3/+ ^^^
@@ -272,6 +271,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["content_type"] = ""
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
+            job["duration"] = duration
 
             if dd_scan:
                 list_of_dds = list_dds(entry.id)
@@ -280,6 +280,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     duration = round(current_time - start_time)
                     sleep(1)
                     list_of_dds = list_dds(entry.id)
+
+                job["duration"] = duration
 
                 for single_dd in list_of_dds:
                     dd = {}
@@ -355,11 +357,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                             job["ret_code"]["msg"] = tmptext.strip()
                             job["ret_code"]["msg_code"] = None
                             job["ret_code"]["code"] = None
-                if len(list_of_dds) > 0:
+
+                # if len(list_of_dds) > 0:
                     # The duration should really only be returned for job submit but the code
                     # is used job_output as well, for now we can ignore this point unless
                     # we want to offer a wait_time_s for job output which might be reasonable.
-                    job["duration"] = duration
+                    # Note: Moved this to the upper time loop, so it should always be populated.
+                    # job["duration"] = duration
 
             final_entries.append(job)
     if not final_entries:

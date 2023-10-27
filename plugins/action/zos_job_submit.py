@@ -28,6 +28,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionM
 
 display = Display()
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
+
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):

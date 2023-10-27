@@ -26,6 +26,23 @@ Parameters
 ----------
 
 
+asa_text
+  If set to ``true``, indicates that either ``src`` or ``dest`` or both contain ASA control characters.
+
+  When ``src`` is a USS file and ``dest`` is a data set, the copy will preserve ASA control characters in the destination.
+
+  When ``src`` is a data set containing ASA control characters and ``dest`` is a USS file, the copy will put all control characters as plain text in the destination.
+
+  If ``dest`` is a non-existent data set, it will be created with record format Fixed Block with ANSI format (FBA).
+
+  If neither ``src`` or ``dest`` have record format Fixed Block with ANSI format (FBA) or Variable Block with ANSI format (VBA), the module will fail.
+
+  This option is only valid for text files. If ``is_binary`` is ``true`` or ``executable`` is ``true`` as well, the module will fail.
+
+  | **required**: False
+  | **type**: bool
+
+
 backup
   Specifies whether a backup of the destination should be created before copying data.
 
@@ -163,7 +180,11 @@ ignore_sftp_stderr
 
 
 is_binary
-  If set to ``true``, indicates that the file or data set to be copied is a binary file/data set.
+  If set to ``true``, indicates that the file or data set to be copied is a binary file or data set.
+
+  When *is_binary=true*, no encoding conversion is applied to the content, all content transferred retains the original state.
+
+  Use *is_binary=true* when copying a Database Request Module (DBRM) to retain the original state of the serialized SQL statements of a program.
 
   | **required**: False
   | **type**: bool
@@ -726,6 +747,12 @@ Examples
        remote_src: true
        executable: true
        aliases: true
+
+   - name: Copy a file with ASA characters to a new sequential data set.
+     zos_copy:
+       src: ./files/print.txt
+       dest: HLQ.PRINT.NEW
+       asa_text: true
 
 
 

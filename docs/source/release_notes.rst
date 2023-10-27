@@ -54,7 +54,6 @@ Known Issues
 Availability
 ------------
 
-* `Automation Hub`_
 * `Galaxy`_
 * `GitHub`_
 

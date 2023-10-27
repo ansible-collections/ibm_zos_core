@@ -60,7 +60,6 @@ class ActionModule(ActionBase):
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
         is_binary = _process_boolean(task_args.get('is_binary'), default=False)
         force_lock = _process_boolean(task_args.get('force_lock'), default=False)
-        executable = _process_boolean(task_args.get('executable'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
         backup_name = task_args.get("backup_name", None)
         encoding = task_args.get("encoding", None)

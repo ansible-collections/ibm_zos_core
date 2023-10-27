@@ -1,7 +1,0 @@
-minor_changes:
-  - zos_archive - Add validation into path joins to detect unauthorized path traversals.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
-  - zos_unarchive -  Add validation into path joins to detect unauthorized path traversals.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
-  - module_utils/template - Add validation into path joins to detect unauthorized path traversals.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1029)

@@ -1,7 +1,0 @@
-bugfixes:
-  - zos_job_submit - Temporary files were created in tmp directory.
-      Fix now ensures the deletion of files every time the module run.
-        (https://github.com/ansible-collections/ibm_zos_core/pull/951)
-minor_changes:
-  - zos_job_submit - Change action plugin call from copy to zos_copy.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/951)

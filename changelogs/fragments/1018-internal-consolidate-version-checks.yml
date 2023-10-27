@@ -1,9 +1,0 @@
-trivial:
-- zoau_version_check - Change shell call to include call, for higher responsivity.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1027)
-- zos_operator - Use new version check
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1027)
-- zos_operator_action_query - Use new version check
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1027)
-- utils/job.py - Use new version check
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1027)

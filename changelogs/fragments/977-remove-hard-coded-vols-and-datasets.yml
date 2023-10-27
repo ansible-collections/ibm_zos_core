@@ -1,5 +1,5 @@
 trivial:
-  - zos_apf - Test suite was hard to follow. Change made easy to follow.
+  - zos_apf - Adjust test cases to include almost all process in every test case.
   - zos_archive - Remove hard coded volumes and datasets names in test.
     Now tests will generate random data set names and will use an available
     volume taken from a volume handler class, removing system specific

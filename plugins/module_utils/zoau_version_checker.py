@@ -13,8 +13,12 @@
 
 from __future__ import absolute_import, division, print_function
 
-import subprocess
+# import subprocess
 
+try:
+    from zoautil_py import ZOAU_API_VERSION
+except Exception:
+    ZOAU_API_VERSION = "1.2.0"
 
 __metaclass__ = type
 
@@ -96,16 +100,10 @@ def get_zoau_version_str():
     Returns:
         { [int, int, int] } -- ZOAU version found in format [#,#,#]. There is a
                                provision for a 4th level eg "v1.2.0.1".
+
     """
-    zoaversion_out = subprocess.run(
-        'zoaversion', shell=True, capture_output=True, check=False
-    )
     version_list = (
-        zoaversion_out
-        .stdout
-        .decode('UTF-8')
-        .strip()
-        .split(' ')[3][1:]
-        .split('.')
+        ZOAU_API_VERSION.split('.')
     )
+
     return version_list

@@ -58,18 +58,6 @@ wait_time_s
   | **default**: 1
 
 
-wait
-  Configuring wait used by the `zos_operator <./zos_operator.html>`_ module has been deprecated and will be removed in a future ibm.ibm_zos_core collection.
-
-  Setting this option will yield no change, it is deprecated.
-
-  Review option *wait_time_s* to instruct operator commands to wait.
-
-  | **required**: False
-  | **type**: bool
-  | **default**: True
-
-
 
 
 Examples
@@ -91,15 +79,10 @@ Examples
      zos_operator:
        cmd: "\\$PJ(*)"
 
-   - name: Execute operator command to show jobs, waiting up to 5 seconds for response
+   - name: Execute operator command to show jobs, always waiting 5 seconds for response
      zos_operator:
        cmd: 'd a,all'
        wait_time_s: 5
-
-   - name: Execute operator command to show jobs, always waiting 7 seconds for response
-     zos_operator:
-       cmd: 'd a,all'
-       wait_time_s: 7
 
    - name: Display the system symbols and associated substitution texts.
      zos_operator:

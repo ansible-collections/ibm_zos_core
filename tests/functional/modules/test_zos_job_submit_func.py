@@ -541,7 +541,12 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 #Expecting: - "The job return code 8 was non-zero in the job output, this job has failed"
                 #           - Consider using module zos_job_query to poll for a long running job or
                 #             increase option \\'wait_times_s` to a value greater than 10.",
-                if result.get('duration') >= args["wait_time_s"]:
+                if result.get('duration'):
+                    duration = result.get('duration')
+                else:
+                    duration = 0
+
+                if duration >= args["wait_time_s"]:
                     re.search(r'long running job', repr(result.get("msg")))
                 else:
                     assert re.search(r'non-zero', repr(result.get("msg")))

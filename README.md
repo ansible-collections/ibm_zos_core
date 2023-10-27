@@ -50,14 +50,14 @@ and ansible-doc to automate tasks on z/OS.
 
 Ansible version compatibility
 =============================
-This collection has been tested against **Ansible** and **Ansible Core** versions >=2.9,<2.16.
-The Ansible and Ansible Core versions supported for this collection align to the
+This collection has been tested against **Ansible Core** versions >=2.14.
+The Ansible Core versions supported for this collection align to the
 [ansible-core support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix). Review the
 [Ansible community changelogs](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs) for corresponding **Ansible community packages**
 and **ansible-core**.
 
 For **Ansible Automation Platform** (AAP) users, review the
-[Ansible Automation Platform Certified Content](https://access.redhat.com/articles/3642632)
+[Ansible Automation Platform Certified Content](https://access.redhat.com/support/articles/ansible-automation-platform-certified-content)
 and [AAP Life Cycle](https://access.redhat.com/support/policy/updates/ansible-automation-platform)
 for more more information on supported versions of Ansible.
 

@@ -30,11 +30,8 @@ Minor Changes
 - ``zos_operator_action_query`` - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
 - ``zos_unarchive`` -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
 - ``zos_unarchive`` - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
+- ``zos_copy`` - add support in zos_copy for text files and data sets containing ASA control characters. (https://github.com/ansible-collections/ibm_zos_core/pull/1028)
 
-Deprecated Features
--------------------
-
-- ``zos_blockinfile`` - debug is deprecated in favor of 'as_json' (https://github.com/ansible-collections/ibm_zos_core/pull/904).
 
 Bugfixes
 --------

@@ -7,7 +7,7 @@ Releases
 ========
 
 Version 1.8.0-beta.1
-=============
+====================
 
 New Modules
 -----------
@@ -16,22 +16,26 @@ New Modules
 
 Minor Changes
 -------------
+- ``zos_archive``
 
-- ``module_utils/template`` - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
-- ``zos_archive`` - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
-- ``zos_archive`` - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
-- ``zos_copy`` -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/962)
-- ``zos_copy`` - Add new option `force_lock` that can copy into data sets that are already in use by other processes (DISP=SHR). User needs to use with caution because this is subject to race conditions and can lead to data loss. (https://github.com/ansible-collections/ibm_zos_core/pull/980).
-- ``zos_copy`` - includes a new option `executable` that enables copying of executables such as load modules or program objects to both USS and partitioned data sets. When the `dest` option contains a non-existent data set, `zos_copy` will create a data set with the appropriate attributes for an executable. (https://github.com/ansible-collections/ibm_zos_core/pull/804)
-- ``zos_copy`` - introduces a new option 'aliases' to enable preservation of member aliases when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources. Copying aliases of text based members to/from USS is not supported. (https://github.com/ansible-collections/ibm_zos_core/pull/1014)
+    - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+    - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
+- ``zos_copy``
+
+    -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/962)
+    - Add new option `force_lock` that can copy into data sets that are already in use by other processes (DISP=SHR). User needs to use with caution because this is subject to race conditions and can lead to data loss. (https://github.com/ansible-collections/ibm_zos_core/pull/980).
+    - includes a new option `executable` that enables copying of executables such as load modules or program objects to both USS and partitioned data sets. When the `dest` option contains a non-existent data set, `zos_copy` will create a data set with the appropriate attributes for an executable. (https://github.com/ansible-collections/ibm_zos_core/pull/804)
+    - introduces a new option 'aliases' to enable preservation of member aliases when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources. Copying aliases of text based members to/from USS is not supported. (https://github.com/ansible-collections/ibm_zos_core/pull/1014)
+    - add support in zos_copy for text files and data sets containing ASA control characters. (https://github.com/ansible-collections/ibm_zos_core/pull/1028)
 - ``zos_fetch`` - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/962)
 - ``zos_job_submit`` - Change action plugin call from copy to zos_copy. (https://github.com/ansible-collections/ibm_zos_core/pull/951)
 - ``zos_operator`` - Changed system to call 'wait=true' parameter to zoau call. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
 - ``zos_operator_action_query`` - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
-- ``zos_unarchive`` -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
-- ``zos_unarchive`` - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
-- ``zos_copy`` - add support in zos_copy for text files and data sets containing ASA control characters. (https://github.com/ansible-collections/ibm_zos_core/pull/1028)
+- ``zos_unarchive``
 
+    -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+    - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
+- ``module_utils/template`` - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
 
 Bugfixes
 --------
@@ -883,6 +887,8 @@ Known issues
 .. _Z Open Automation Utilities 1.2.2:
    https://www.ibm.com/docs/en/zoau/1.2.x
 .. _Z Open Automation Utilities 1.2.3:
+   https://www.ibm.com/docs/en/zoau/1.2.x
+.. _Z Open Automation Utilities 1.2.4:
    https://www.ibm.com/docs/en/zoau/1.2.x
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm

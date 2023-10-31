@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_operator - The last line of the operator was missing in the response of
-    the module. The fix now ensures the presence of the full output of the operator.
-    https://github.com/ansible-collections/ibm_zos_core/pull/918)

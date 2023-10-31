@@ -172,7 +172,7 @@ options:
     required: false
   force_lock:
     description:
-      - By default, when c(dest) is a MVS data set and is being used by another
+      - By default, when C(dest) is a MVS data set and is being used by another
         process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
         to bypass this check and continue with copy.
       - If set to C(true) and destination is a MVS data set opened by another
@@ -715,7 +715,7 @@ destination_attributes:
         }
 checksum:
     description: SHA256 checksum of the file after running zos_copy.
-    returned: C(validate) is C(true) and if dest is USS
+    returned: When ``validate=true`` and if ``dest`` is USS
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 backup_name:
@@ -760,7 +760,7 @@ state:
     sample: file
 note:
     description: A note to the user after module terminates.
-    returned: C(force) is C(false) and dest exists
+    returned: When ``force=true`` and ``dest`` exists
     type: str
     sample: No data was copied
 msg:

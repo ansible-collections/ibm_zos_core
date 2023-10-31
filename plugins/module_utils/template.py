@@ -32,7 +32,7 @@ try:
 except Exception:
     jinja2 = MissingImport("jinja2")
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
 
 
 def _process_boolean(arg, default=False):
@@ -238,7 +238,7 @@ class TemplateRenderer:
             ))
 
         try:
-            template_file_path = path.join(temp_template_dir, file_path)
+            template_file_path = path.join(validation.validate_safe_path(temp_template_dir), validation.validate_safe_path(file_path))
             with open(template_file_path, mode="w", encoding=self.encoding) as template:
                 template.write(rendered_contents)
         # There could be encoding errors.
@@ -283,7 +283,7 @@ class TemplateRenderer:
         try:
             temp_parent_dir = tempfile.mkdtemp()
             last_dir = os.path.basename(self.template_dir)
-            temp_template_dir = os.path.join(temp_parent_dir, last_dir)
+            temp_template_dir = os.path.join(validation.validate_safe_path(temp_parent_dir), validation.validate_safe_path(last_dir))
             os.makedirs(temp_template_dir, exist_ok=True)
         except FileExistsError as err:
             raise FileExistsError("Unable to create directory for rendered templates: {0}".format(
@@ -300,9 +300,16 @@ class TemplateRenderer:
 
         for dirpath, subdirs, files in os.walk(self.template_dir):
             for template_file in files:
-                relative_dir = os.path.relpath(dirpath, self.template_dir)
-                file_path = os.path.normpath(os.path.join(relative_dir, template_file))
-
+                relative_dir = os.path.relpath(
+                    validation.validate_safe_path(dirpath),
+                    validation.validate_safe_path(self.template_dir)
+                )
+                file_path = os.path.normpath(
+                    os.path.join(
+                        validation.validate_safe_path(relative_dir),
+                        validation.validate_safe_path(template_file)
+                    )
+                )
                 try:
                     template = self.templating_env.get_template(file_path)
                     rendered_contents = template.render(variables)
@@ -318,7 +325,10 @@ class TemplateRenderer:
                     ))
 
                 try:
-                    template_file_path = os.path.join(temp_template_dir, file_path)
+                    template_file_path = os.path.join(
+                        validation.validate_safe_path(temp_template_dir),
+                        validation.validate_safe_path(file_path)
+                    )
                     os.makedirs(os.path.dirname(template_file_path), exist_ok=True)
                     with open(template_file_path, mode="w", encoding=self.encoding) as temp:
                         temp.write(rendered_contents)

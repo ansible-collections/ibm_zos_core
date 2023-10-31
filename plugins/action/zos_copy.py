@@ -33,7 +33,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_data_set
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
@@ -59,6 +59,9 @@ class ActionModule(ActionBase):
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
         is_binary = _process_boolean(task_args.get('is_binary'), default=False)
+        force_lock = _process_boolean(task_args.get('force_lock'), default=False)
+        executable = _process_boolean(task_args.get('executable'), default=False)
+        asa_text = _process_boolean(task_args.get('asa_text'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
         backup_name = task_args.get("backup_name", None)
         encoding = task_args.get("encoding", None)
@@ -115,6 +118,14 @@ class ActionModule(ActionBase):
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
+        if is_binary and asa_text:
+            msg = "Both 'is_binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
+            return self._exit_action(result, msg, failed=True)
+
+        if executable and asa_text:
+            msg = "Both 'executable' and 'asa_text' are True. Unable to copy an executable as an ASA text file."
+            return self._exit_action(result, msg, failed=True)
+
         use_template = _process_boolean(task_args.get("use_template"), default=False)
         if remote_src and use_template:
             msg = "Use of Jinja2 templates is only valid for local files, remote_src cannot be set to true."
@@ -125,6 +136,9 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
+        if force_lock:
+            display.warning(
+                msg="Using force_lock uses operations that are subject to race conditions and can lead to data loss, use with caution.")
         template_dir = None
 
         if not remote_src:
@@ -185,7 +199,7 @@ class ActionModule(ActionBase):
                         src = rendered_dir
 
                     task_args["size"] = sum(
-                        os.stat(os.path.join(path, f)).st_size
+                        os.stat(os.path.join(validation.validate_safe_path(path), validation.validate_safe_path(f))).st_size
                         for path, dirs, files in os.walk(src)
                         for f in files
                     )

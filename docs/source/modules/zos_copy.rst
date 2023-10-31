@@ -26,6 +26,23 @@ Parameters
 ----------
 
 
+asa_text
+  If set to ``true``, indicates that either ``src`` or ``dest`` or both contain ASA control characters.
+
+  When ``src`` is a USS file and ``dest`` is a data set, the copy will preserve ASA control characters in the destination.
+
+  When ``src`` is a data set containing ASA control characters and ``dest`` is a USS file, the copy will put all control characters as plain text in the destination.
+
+  If ``dest`` is a non-existent data set, it will be created with record format Fixed Block with ANSI format (FBA).
+
+  If neither ``src`` or ``dest`` have record format Fixed Block with ANSI format (FBA) or Variable Block with ANSI format (VBA), the module will fail.
+
+  This option is only valid for text files. If ``is_binary`` is ``true`` or ``executable`` is ``true`` as well, the module will fail.
+
+  | **required**: False
+  | **type**: bool
+
+
 backup
   Specifies whether a backup of the destination should be created before copying data.
 
@@ -74,7 +91,7 @@ dest
 
   If ``dest`` is a nonexistent data set, it will be created following the process outlined here and in the ``volume`` option.
 
-  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If ``src`` is binary, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed.
+  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
 
   When ``dest`` is a data set, precedence rules apply. If ``dest_data_set`` is set, this will take precedence over an existing data set. If ``dest`` is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. Lastly, if no precendent rule has been exercised, ``dest`` will be created with the same attributes of ``src``.
 
@@ -140,6 +157,19 @@ force
   | **type**: bool
 
 
+force_lock
+  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force_lock`` to bypass this check and continue with copy.
+
+  If set to ``true`` and destination is a MVS data set opened by another process then zos_copy will try to copy using DISP=SHR.
+
+  Using ``force_lock`` uses operations that are subject to race conditions and can lead to data loss, use with caution.
+
+  If a data set member has aliases, and is not a program object, copying that member to a dataset that is in use will result in the aliases not being preserved in the target dataset. When this scenario occurs the module will fail.
+
+  | **required**: False
+  | **type**: bool
+
+
 ignore_sftp_stderr
   During data transfer through SFTP, the module fails if the SFTP command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by SFTP and continue execution.
 
@@ -150,7 +180,37 @@ ignore_sftp_stderr
 
 
 is_binary
-  If set to ``true``, indicates that the file or data set to be copied is a binary file/data set.
+  If set to ``true``, indicates that the file or data set to be copied is a binary file or data set.
+
+  When *is_binary=true*, no encoding conversion is applied to the content, all content transferred retains the original state.
+
+  Use *is_binary=true* when copying a Database Request Module (DBRM) to retain the original state of the serialized SQL statements of a program.
+
+  | **required**: False
+  | **type**: bool
+
+
+executable
+  If set to ``true``, indicates that the file or library to be copied is an executable.
+
+  If the ``src`` executable has an alias, the alias information is also copied. If the ``dest`` is Unix, the alias is not visible in Unix, even though the information is there and will be visible if copied to a library.
+
+  If *executable=true*, and ``dest`` is a data set, it must be a PDS or PDSE (library).
+
+  If ``dest`` is a nonexistent data set, the library attributes assigned will be Undefined (U) record format with a record length of 0, block size of 32760 and the remaining attributes will be computed.
+
+  If ``dest`` is a file, execute permission for the user will be added to the file (``u+x``).
+
+  | **required**: False
+  | **type**: bool
+
+
+aliases
+  If set to ``true``, indicates that any aliases found in the source (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
+
+  Aliases are implicitly preserved when libraries are copied over to USS destinations. That is, when ``executable=True`` and ``dest`` is a USS file or directory, this option will be ignored.
+
+  Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
 
   | **required**: False
   | **type**: bool
@@ -247,7 +307,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC
+    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC, LIBRARY
 
 
   space_primary
@@ -672,6 +732,28 @@ Examples
          record_format: VB
          record_length: 150
 
+   - name: Copy a Program Object and its aliases on a remote system to a new PDSE member MYCOBOL
+     zos_copy:
+       src: HLQ.COBOLSRC.PDSE(TESTPGM)
+       dest: HLQ.NEW.PDSE(MYCOBOL)
+       remote_src: true
+       executable: true
+       aliases: true
+
+   - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
+     zos_copy:
+       src: '/home/loadlib/'
+       dest: HLQ.LOADLIB.NEW
+       remote_src: true
+       executable: true
+       aliases: true
+
+   - name: Copy a file with ASA characters to a new sequential data set.
+     zos_copy:
+       src: ./files/print.txt
+       dest: HLQ.PRINT.NEW
+       asa_text: true
+
 
 
 
@@ -690,6 +772,8 @@ Notes
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
    `zos_copy <./zos_copy.html>`_ uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
+
+   Beginning in version 1.8.x, zos_copy will no longer attempt to autocorrect a copy of a data type member into a PDSE that contains program objects. You can control this behavior using module option executable that will signify an executable is being copied into a PDSE with other executables. Mixing data type members with program objects will be responded with a (FSUM8976,./zos_copy.html) error.
 
 
 
@@ -798,7 +882,7 @@ destination_attributes
 checksum
   SHA256 checksum of the file after running zos_copy.
 
-  | **returned**: C(validate) is C(true) and if dest is USS
+  | **returned**: When ``validate=true`` and if ``dest`` is USS
   | **type**: str
   | **sample**: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 
@@ -861,7 +945,7 @@ state
 note
   A note to the user after module terminates.
 
-  | **returned**: C(force) is C(false) and dest exists
+  | **returned**: When ``force=true`` and ``dest`` exists
   | **type**: str
   | **sample**: No data was copied
 

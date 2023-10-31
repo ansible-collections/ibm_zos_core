@@ -420,7 +420,9 @@ from ansible.module_utils._text import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    mvs_cmd)
+    validation,
+    mvs_cmd,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
@@ -650,11 +652,17 @@ class USSArchive(Archive):
                 if os.path.isdir(target):
                     for directory_path, directory_names, file_names in os.walk(target, topdown=True):
                         for directory_name in directory_names:
-                            full_path = os.path.join(directory_path, directory_name)
+                            full_path = os.path.join(
+                                validation.validate_safe_path(directory_path),
+                                validation.validate_safe_path(directory_name)
+                            )
                             self.add(full_path, strip_prefix(self.arcroot, full_path))
 
                         for file_name in file_names:
-                            full_path = os.path.join(directory_path, file_name)
+                            full_path = os.path.join(
+                                validation.validate_safe_path(directory_path),
+                                validation.validate_safe_path(file_name)
+                            )
                             self.add(full_path, strip_prefix(self.arcroot, full_path))
                 else:
                     self.add(target, strip_prefix(self.arcroot, target))

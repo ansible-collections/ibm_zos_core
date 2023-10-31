@@ -15,12 +15,18 @@ __metaclass__ = type
 
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError, AnsibleFileNotFound
+from ansible.utils.display import Display
 # from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
+import copy
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
+from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
+
+
+display = Display()
 
 
 class ActionModule(ActionBase):
@@ -84,7 +90,7 @@ class ActionModule(ActionBase):
             source_full = None
             try:
                 source_full = self._loader.get_real_file(source)
-                source_rel = os.path.basename(source)
+                # source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
                 result["msg"] = "could not find src=%s, %s" % (source_full, e)
@@ -148,26 +154,38 @@ class ActionModule(ActionBase):
                     src=tmp_src,
                     dest=dest_path,
                     mode="0600",
-                    _original_basename=source_rel,
+                    force=True,
+                    remote_src=True,
                 )
             )
-            result.update(
-                self._execute_module(
-                    module_name="copy",
-                    module_args=copy_module_args,
-                    task_vars=task_vars,
+            copy_task = copy.deepcopy(self._task)
+            copy_task.args = copy_module_args
+            zos_copy_action_module = ZosCopyActionModule(task=copy_task,
+                                                         connection=self._connection,
+                                                         play_context=self._play_context,
+                                                         loader=self._loader,
+                                                         templar=self._templar,
+                                                         shared_loader_obj=self._shared_loader_obj)
+            result.update(zos_copy_action_module.run(task_vars=task_vars))
+            if result.get("msg") is None:
+                module_args["src"] = dest_path
+                result.update(
+                    self._execute_module(
+                        module_name="ibm.ibm_zos_core.zos_job_submit",
+                        module_args=module_args,
+                        task_vars=task_vars,
+                    )
                 )
-            )
-            result.update(
-                self._execute_module(
-                    module_name="ibm.ibm_zos_core.zos_job_submit",
-                    module_args=module_args,
-                    task_vars=task_vars,
-                )
-            )
-
+            else:
+                result.update(dict(failed=True))
             if rendered_file:
                 os.remove(rendered_file)
+            if os.path.isfile(tmp_src):
+                self._connection.exec_command("rm -rf {0}".format(tmp_src))
+            if os.path.isfile(dest_file):
+                self._connection.exec_command("rm -rf {0}".format(dest_file))
+            if os.path.isfile(source_full):
+                self._connection.exec_command("rm -rf {0}".format(source_full))
 
         else:
             result.update(

@@ -1,2 +1,0 @@
-trivial:
-  - zos_blockinfile - remove test conditional unnecessary (https://github.com/ansible-collections/ibm_zos_core/pull/934).

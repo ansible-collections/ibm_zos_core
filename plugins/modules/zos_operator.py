@@ -144,14 +144,17 @@ changed:
     sample: true
 """
 
+import traceback
 from timeit import default_timer as timer
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    # MissingZOAUImport,
+    ZOAUImportError
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -161,7 +164,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 try:
     from zoautil_py import opercmd
 except Exception:
-    opercmd = MissingZOAUImport()
+    opercmd = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import ZOAU_API_VERSION
@@ -241,10 +244,10 @@ def run_module():
                              stderr_lines=str(error).splitlines() if error is not None else result["content"],
                              changed=result["changed"],)
     except Error as e:
-        module.fail_json(msg=repr(e), **result)
+        module.fail_json(msg=to_text(e), **result)
     except Exception as e:
         module.fail_json(
-            msg="An unexpected error occurred: {0}".format(repr(e)), **result
+            msg="An unexpected error occurred: {0}".format(to_text(e)), **result
         )
 
     module.exit_json(**result)

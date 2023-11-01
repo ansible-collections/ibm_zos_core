@@ -1262,7 +1262,7 @@ def run_module():
                     required=False,
                     aliases=["format"],
                     default="FB",
-                    choices=['FB', 'VB', 'FBA', 'VBA', 'U', 'F']
+                    choices=['FB', 'VB', 'FBA', 'VBA', 'U', 'F'],
                 ),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
@@ -1318,7 +1318,7 @@ def run_module():
             type="str",
             required=False,
             default="M",
-            choices=['K', 'M', 'G', 'CYL', 'TRK']
+            choices=['K', 'M', 'G', 'CYL', 'TRK'],
         ),
         space_primary=dict(type="int", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),

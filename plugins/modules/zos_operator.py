@@ -193,6 +193,10 @@ def run_module():
     result = dict(changed=False)
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
 
+    # Checking that we can actually use ZOAU.
+    if type(opercmd) == ZOAUImportError:
+        module.fail_json(msg="An error ocurred while importing ZOAU: {0}".format(opercmd.traceback))
+
     try:
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)

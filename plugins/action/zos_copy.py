@@ -61,6 +61,7 @@ class ActionModule(ActionBase):
         is_binary = _process_boolean(task_args.get('is_binary'), default=False)
         force_lock = _process_boolean(task_args.get('force_lock'), default=False)
         executable = _process_boolean(task_args.get('executable'), default=False)
+        asa_text = _process_boolean(task_args.get('asa_text'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
         backup_name = task_args.get("backup_name", None)
         encoding = task_args.get("encoding", None)
@@ -115,6 +116,14 @@ class ActionModule(ActionBase):
 
         if (not backup) and backup_name is not None:
             msg = "Backup file provided but 'backup' parameter is False"
+            return self._exit_action(result, msg, failed=True)
+
+        if is_binary and asa_text:
+            msg = "Both 'is_binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
+            return self._exit_action(result, msg, failed=True)
+
+        if executable and asa_text:
+            msg = "Both 'executable' and 'asa_text' are True. Unable to copy an executable as an ASA text file."
             return self._exit_action(result, msg, failed=True)
 
         use_template = _process_boolean(task_args.get("use_template"), default=False)

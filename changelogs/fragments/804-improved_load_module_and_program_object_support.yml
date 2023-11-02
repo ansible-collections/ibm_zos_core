@@ -1,6 +1,0 @@
-minor_changes:
-- zos_copy - includes a new option `executable` that enables copying of executables such
-   as load modules or program objects to both USS and partitioned data sets. When
-   the `dest` option contains a non-existent data set, `zos_copy` will create a data set with
-   the appropriate attributes for an executable.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/804)

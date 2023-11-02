@@ -1,4 +1,0 @@
-bugfixes:
-- zos_lineinfile - A duplicate entry was made even if line was already present in the target file.
-  Fix now prevents a duplicate entry if the line already exists in the target file.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/916)

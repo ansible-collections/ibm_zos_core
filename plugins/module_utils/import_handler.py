@@ -41,7 +41,7 @@ class ZOAUImportError(object):
     and the moment ANY method gets called, we finally raise an exception.
     """
 
-    def __init__(self, exception_traceback: str):
+    def __init__(self, exception_traceback):
         """When creating a new instance of this class, we save the traceback
         from the original exception so that users have more context when their
         task/code fails. The expected traceback is a string representation of

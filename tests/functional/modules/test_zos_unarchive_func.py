@@ -286,13 +286,12 @@ def test_uss_single_unarchive_with_mode(ansible_zos_module, format):
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
 @pytest.mark.uss
-def test_uss_unarchive_copy_to_remote(ansible_zos_module, format):
+def test_uss_unarchive_copy_to_remote(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
-        dest = f"{USS_TEMP_DIR}/archive.{format}"
         # create local tmp dir
         tmp_dir = tempfile.TemporaryDirectory()
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
@@ -311,7 +310,7 @@ def test_uss_unarchive_copy_to_remote(ansible_zos_module, format):
             src=tar_file,
             dest=USS_TEMP_DIR,
             format=dict(
-                name=format
+                name="tar"
             ),
             force=True,
         )

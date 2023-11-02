@@ -1,0 +1,7 @@
+bugfixes:
+  - zos_operator - Corrected variable passed from wait_arg to wait in kwargs to zoau.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1043).
+
+  - zos_operator_action_query - Corrected variable passed from wait_arg to wait in kwargs to zoau.
+    Switched wait to true on subordinated calls.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1043).

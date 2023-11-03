@@ -881,6 +881,7 @@ class XMITUnarchive(MVSUnarchive):
         """.format(src, dest)
         rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True)
         if rc != 0:
+            self.clean_environment(data_sets=[dest], uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(src, dest),
                 stdout=out,

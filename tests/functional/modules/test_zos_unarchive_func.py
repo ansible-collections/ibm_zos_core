@@ -18,7 +18,6 @@ from __future__ import absolute_import, division, print_function
 import pytest
 import tempfile
 from tempfile import mkstemp
-import tarfile
 
 __metaclass__ = type
 
@@ -288,6 +287,8 @@ def test_uss_single_unarchive_with_mode(ansible_zos_module, format):
 @pytest.mark.uss
 def test_uss_unarchive_copy_to_remote(ansible_zos_module):
     try:
+        import os
+        import tarfile
         hosts = ansible_zos_module
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
@@ -325,6 +326,7 @@ def test_uss_unarchive_copy_to_remote(ansible_zos_module):
                     assert tmp_file.name in c_result.get("stdout")
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+        os.remove(tmp_file.name)
 
 ######################################################################
 #

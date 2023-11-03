@@ -233,15 +233,22 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
 
 
 def test_find_data_sets_in_volume(ansible_zos_module):
-    hosts = ansible_zos_module
+    try:
+        hosts = ansible_zos_module
+        data_set_name = "TEST.FIND.SEQ"
+        volume = "000000"
+        # Create temp data set
+        hosts.all.zos_data_set(name=data_set_name, type="seq", state="present", volumes=[volume])
+        find_res = hosts.all.zos_find(
+            patterns=[data_set_name], volumes=[volume]
+        )
+        print(vars(find_res))
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) >= 1
+            assert val.get('matched') >= 1
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent")
 
-    find_res = hosts.all.zos_find(
-        patterns=['USER.*'], volumes=['IMSSUN']
-    )
-    print(vars(find_res))
-    for val in find_res.contacted.values():
-        assert len(val.get('data_sets')) >= 1
-        assert val.get('matched') >= 1
 
 
 def test_find_vsam_pattern(ansible_zos_module):

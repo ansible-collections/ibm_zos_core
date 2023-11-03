@@ -1,5 +1,0 @@
-minor_changes:
-  - zos_archive - Enhanced test cases to use test lines the same length of the record length.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/965)
-  - zos_unarchive - Enhanced test cases to use test lines the same length of the record length.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/965)

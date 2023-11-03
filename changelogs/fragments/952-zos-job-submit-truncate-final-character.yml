@@ -1,4 +1,0 @@
-bugfixes:
-- zos_job_submit - The last line of the jcl was missing in the input.
-    Fix now ensures the presence of the full input in job_submit.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/952)

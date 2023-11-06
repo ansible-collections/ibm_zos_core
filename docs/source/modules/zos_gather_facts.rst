@@ -22,11 +22,6 @@ Synopsis
 - Note, the module will fail fast if any unsupported options are provided. This is done to raise awareness of a failure in an automation setting.
 
 
-Requirements
-------------
-
-- ZOAU 1.2.1 or later.
-
 
 
 

@@ -166,10 +166,10 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
             if(result.get("jobs")[0].get("ret_code") is None):
                 submitted_job_id = result.get("jobs")[0].get("job_id")
                 assert submitted_job_id is not None
-                print( "\n======= Job {}".format(submitted_job_id))
-                print_results(result)
-                print( "\n======= Job {} =======\n".format(submitted_job_id))
                 results = hosts.all.zos_job_output(job_id=submitted_job_id)
+            print( "\n======= Job {}".format(submitted_job_id))
+            print_results(result)
+            print( "\n======= Job {} =======\n".format(submitted_job_id))
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")

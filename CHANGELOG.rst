@@ -5,6 +5,56 @@ ibm.ibm_zos_core Release Notes
 .. contents:: Topics
 
 
+v1.8.0-beta.1
+=============
+
+Release Summary
+---------------
+
+Release Date: '2023-10-24'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- module_utils/template - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+- zos_archive - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+- zos_archive - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
+- zos_copy -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/962)
+- zos_copy - Add new option `force_lock` that can copy into data sets that are already in use by other processes (DISP=SHR). User needs to use with caution because this is subject to race conditions and can lead to data loss. (https://github.com/ansible-collections/ibm_zos_core/pull/980).
+- zos_copy - includes a new option `executable` that enables copying of executables such as load modules or program objects to both USS and partitioned data sets. When the `dest` option contains a non-existent data set, `zos_copy` will create a data set with the appropriate attributes for an executable. (https://github.com/ansible-collections/ibm_zos_core/pull/804)
+- zos_copy - introduces a new option 'aliases' to enable preservation of member aliases when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources. Copying aliases of text based members to/from USS is not supported. (https://github.com/ansible-collections/ibm_zos_core/pull/1014)
+- zos_fetch - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/962)
+- zos_job_submit - Change action plugin call from copy to zos_copy. (https://github.com/ansible-collections/ibm_zos_core/pull/951)
+- zos_operator - Changed system to call 'wait=true' parameter to zoau call. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
+- zos_operator_action_query - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
+- zos_unarchive -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+- zos_unarchive - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
+- zos_copy - add support in zos_copy for text files and data sets containing ASA control characters. (https://github.com/ansible-collections/ibm_zos_core/pull/1028)
+
+Bugfixes
+--------
+
+- zos_copy - Update option limit to include LIBRARY as dest_dataset/suboption value. Documentation updated to reflect this change. (https://github.com/ansible-collections/ibm_zos_core/pull/968).
+- zos_job_submit - Temporary files were created in tmp directory. Fix now ensures the deletion of files every time the module run. (https://github.com/ansible-collections/ibm_zos_core/pull/951)
+- zos_job_submit - The last line of the jcl was missing in the input. Fix now ensures the presence of the full input in job_submit. (https://github.com/ansible-collections/ibm_zos_core/pull/952)
+- zos_lineinfile - A duplicate entry was made even if line was already present in the target file. Fix now prevents a duplicate entry if the line already exists in the target file. (https://github.com/ansible-collections/ibm_zos_core/pull/916)
+- zos_operator - The last line of the operator was missing in the response of the module. The fix now ensures the presence of the full output of the operator. https://github.com/ansible-collections/ibm_zos_core/pull/918)
+
+Known Issues
+------------
+
+- Several modules have reported UTF8 decoding errors when interacting with results that contain non-printable UTF8 characters in the response. This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules `zos_job_submit`, `zos_job_output`, `zos_operator_action_query` but are not limited to this list. This will be addressed in `ibm_zos_core` version 1.10.0-beta.1. Each case is unique, some options to work around the error are below. - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters. - Add `ignore_errors:true` to the playbook task so the task error will not fail the playbook. - If the error is resulting from a batch job, add `ignore_errors:true` to the task and capture the output into a variable and extract the job ID with a regular expression and then use `zos_job_output` to display the DD without the non-printable character such as the DD `JESMSGLG`. (https://github.com/ansible-collections/ibm_zos_core/issues/677) (https://github.com/ansible-collections/ibm_zos_core/issues/776) (https://github.com/ansible-collections/ibm_zos_core/issues/972)
+- With later versions of `ansible-core` used with `ibm_zos_core` collection a warning has started to appear "Module "ansible.builtin.command" returned non UTF-8 data in the JSON response" that is currently being reviewed. There are no recommendations at this point. (https://github.com/ansible-collections/ibm_zos_core/issues/983)
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_script - Run scripts in z/OS
+
 v1.7.0
 ======
 

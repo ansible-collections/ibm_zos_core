@@ -1,4 +1,0 @@
-bugfixes:
-- zos_copy - Update option limit to include LIBRARY as dest_dataset/suboption value.
-    Documentation updated to reflect this change.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/968).

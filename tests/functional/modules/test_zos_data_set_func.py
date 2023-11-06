@@ -163,8 +163,9 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         )
         # verify data set creation was successful
         for result in results.contacted.values():
+            submitted_job_id = result.get("jobs")[0].get("job_id")
             if(result.get("jobs")[0].get("ret_code") is None):
-                submitted_job_id = result.get("jobs")[0].get("job_id")
+                # submitted_job_id = result.get("jobs")[0].get("job_id")
                 assert submitted_job_id is not None
                 results = hosts.all.zos_job_output(job_id=submitted_job_id)
             print( "\n======= Job {}".format(submitted_job_id))

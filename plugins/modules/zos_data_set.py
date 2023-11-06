@@ -814,7 +814,8 @@ def space_type(contents, dependencies):
         return None
     if contents is None:
         return None
-    match = re.fullmatch(r"(M|G|K|TRK|CYL)", contents, re.IGNORECASE)
+
+    match = re.fullmatch(r"(M|G|K|TRK|CYL|None)", contents, re.IGNORECASE)
     if not match:
         raise ValueError(
             'Value {0} is invalid for space_type argument. Valid space types are "K", "M", "G", "TRK" or "CYL".'.format(

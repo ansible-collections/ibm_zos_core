@@ -661,7 +661,7 @@ class VIODefinition(DataDefinition):
         """
         try:
             DataSet.delete(self.name)
-        except Exception:
+        except DataSet.DatasetDeleteError:
             pass
 
     def _build_arg_string(self):

@@ -2767,6 +2767,7 @@ def data_set_exists(name, volumes=None):
         exists = present
     except Exception:
         # Failure locating or cataloging the data set. Go ahead assumming it does not exist.
+        # exists = False to avoid using pass clause which results in bandit warning.
         exists = False
     return exists
 

@@ -2766,7 +2766,8 @@ def data_set_exists(name, volumes=None):
         present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
         exists = present
     except Exception:
-        pass
+        # Failure locating or cataloging the data set. Go ahead assumming it does not exist.
+        exists = False
     return exists
 
 

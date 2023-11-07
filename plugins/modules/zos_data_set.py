@@ -815,7 +815,7 @@ def space_type(contents, dependencies):
     if contents is None:
         return None
 
-    match = re.fullmatch(r"(M|G|K|TRK|CYL|None)", contents, re.IGNORECASE)
+    match = re.fullmatch(r"(M|G|K|TRK|CYL)", contents, re.IGNORECASE)
     if not match:
         raise ValueError(
             'Value {0} is invalid for space_type argument. Valid space types are "K", "M", "G", "TRK" or "CYL".'.format(
@@ -1053,7 +1053,7 @@ def parse_and_validate_args(params):
                     type=space_type,
                     required=False,
                     dependencies=["state"],
-                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                    # choices=['K', 'M', 'G', 'CYL', 'TRK'],
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1139,7 +1139,7 @@ def parse_and_validate_args(params):
             type=space_type,
             required=False,
             dependencies=["state"],
-            choices=['K', 'M', 'G', 'CYL', 'TRK'],
+            # choices=['K', 'M', 'G', 'CYL', 'TRK'],
         ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
@@ -1254,7 +1254,7 @@ def run_module():
                     type="str",
                     required=False,
                     default="M",
-                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                    # choices=['K', 'M', 'G', 'CYL', 'TRK'],
                 ),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
@@ -1319,7 +1319,7 @@ def run_module():
             type="str",
             required=False,
             default="M",
-            choices=['K', 'M', 'G', 'CYL', 'TRK'],
+            # choices=['K', 'M', 'G', 'CYL', 'TRK'],
         ),
         space_primary=dict(type="int", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),

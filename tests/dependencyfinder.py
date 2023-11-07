@@ -446,7 +446,6 @@ def build_artifacts_from_collection(collection_root):
     artifacts = []
     for file in files:
         if file.endswith(".py"):
-            file = file.replace("..","")
             artifacts.append(Artifact.from_path(file))
     return artifacts
 
@@ -710,6 +709,9 @@ if __name__ == "__main__":
     )
 
     tests_to_run = list(set(tests_to_run))
+    for test in tests_to_run:
+        print(test)
+        print(test.replace("..",""))
 
     skip_pattern = ""
     if args.skip:

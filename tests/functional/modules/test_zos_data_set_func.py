@@ -390,9 +390,6 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME, state="present", type=dstype, replace=True
         )
-        print( "\n===== create/replace result =====\n")
-        print_results(results)
-        print( "\n^^^== create/replace result =====\n")
 
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -444,10 +441,14 @@ def test_batch_data_set_creation_and_deletion(ansible_zos_module):
         results = hosts.all.zos_data_set(
             batch=[
                 {"name": DEFAULT_DATA_SET_NAME, "state": "absent"},
-                {"name": DEFAULT_DATA_SET_NAME, "type": "pds", "state": "present"},
+                {"name": DEFAULT_DATA_SET_NAME, "type": "PDS", "state": "present"},
                 {"name": DEFAULT_DATA_SET_NAME, "state": "absent"},
             ]
         )
+        print( "\n===== ds create/delete result =====\n")
+        print_results(results)
+        print( "\n^^^== ds create/delete result =====\n")
+
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

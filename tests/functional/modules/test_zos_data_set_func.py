@@ -155,9 +155,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         #     name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
         # )
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent",volumes=VOLUME_000000)
-        print( "\n===== deletion result =====\n")
-        print_results(results)
-        print( "\n^^^== deletion result =====\n")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
@@ -392,7 +389,12 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME, state="present", type=dstype, replace=True
         )
+        print( "\n===== create/replace result =====\n")
+        print_results(results)
+        print( "\n^^^== create/replace result =====\n")
+
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

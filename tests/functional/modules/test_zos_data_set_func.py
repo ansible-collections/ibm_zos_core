@@ -154,7 +154,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
         )
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent",volumes=VOLUME_000000)
 
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
@@ -165,12 +165,8 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         for result in results.contacted.values():
             submitted_job_id = result.get("jobs")[0].get("job_id")
             if(result.get("jobs")[0].get("ret_code") is None):
-                # submitted_job_id = result.get("jobs")[0].get("job_id")
                 assert submitted_job_id is not None
                 results = hosts.all.zos_job_output(job_id=submitted_job_id)
-            print( "\n======= Job {}".format(submitted_job_id))
-            print_results(results)
-            print( "\n======= Job {} =======\n".format(submitted_job_id))
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")

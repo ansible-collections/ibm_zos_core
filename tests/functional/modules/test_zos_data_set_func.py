@@ -461,7 +461,7 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
         hosts = ansible_zos_module
         results = hosts.all.zos_data_set(
             batch=[
-                {"name": DEFAULT_DATA_SET_NAME, "type": "pds", "directory_blocks": 5},
+                {"name": DEFAULT_DATA_SET_NAME, "type": "PDS", "directory_blocks": 5},
                 {"name": DEFAULT_DATA_SET_NAME + "(newmem1)", "type": "member"},
                 {
                     "name": DEFAULT_DATA_SET_NAME + "(newmem2)",

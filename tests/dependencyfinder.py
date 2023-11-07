@@ -446,6 +446,7 @@ def build_artifacts_from_collection(collection_root):
     artifacts = []
     for file in files:
         if file.endswith(".py"):
+            file = file.replace("..","")
             artifacts.append(Artifact.from_path(file))
     return artifacts
 

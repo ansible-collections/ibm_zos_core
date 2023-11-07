@@ -148,12 +148,12 @@ options:
       - The unit of measurement to use when defining primary and secondary space.
       - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
     type: str
-    choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+    # choices:
+    #   - K
+    #   - M
+    #   - G
+    #   - CYL
+    #   - TRK
     required: false
     default: M
   record_format:
@@ -415,12 +415,12 @@ options:
           - The unit of measurement to use when defining primary and secondary space.
           - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
         type: str
-        choices:
-          - K
-          - M
-          - G
-          - CYL
-          - TRK
+        # choices:
+        #   - K
+        #   - M
+        #   - G
+        #   - CYL
+        #   - TRK
         required: false
         default: M
       record_format:

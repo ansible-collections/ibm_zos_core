@@ -24,14 +24,15 @@ from pprint import pprint
 
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
+# TODO: d_s_t glitched in lowercase... a choice mismatch occurred
 
 data_set_types = [
-    ("pds"),
-    ("seq"),
-    ("pdse"),
-    ("esds"),
-    ("rrds"),
-    ("lds"),
+    ("PDS"),
+    ("SEQ"),
+    ("PDSE"),
+    ("ESDS"),
+    ("RRDS"),
+    ("LDS"),
 ]
 
 VOLUME_000000 = "000000"

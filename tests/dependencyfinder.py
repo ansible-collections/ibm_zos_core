@@ -709,9 +709,6 @@ if __name__ == "__main__":
     )
 
     tests_to_run = list(set(tests_to_run))
-    for test in tests_to_run:
-        print(test)
-        print(test.replace("..",""))
 
     skip_pattern = ""
     if args.skip:

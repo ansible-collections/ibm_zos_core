@@ -151,10 +151,13 @@ def print_results(results):
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
     try:
         hosts = ansible_zos_module
-        hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
-        )
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent",volumes=VOLUME_000000)
+        # hosts.all.zos_data_set(
+        #     name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
+        # )
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent",volumes=VOLUME_000000)
+        print( "\n===== deletion result =====\n")
+        print_results(results)
+        print( "\n^^^== deletion result =====\n")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))

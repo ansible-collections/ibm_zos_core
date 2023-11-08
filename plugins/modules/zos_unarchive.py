@@ -853,7 +853,8 @@ class AMATerseUnarchive(MVSUnarchive):
         dds = {'args': 'UNPACK', 'sysut1': src, 'sysut2': dest}
         rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
         if rc != 0:
-            self.clean_environment(data_sets=[dest], uss_files=[], remove_targets=True)
+            ds_remove_list = [dest, src] if not self.remote_src else [dest]
+            self.clean_environment(data_sets=ds_remove_list, uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing AMATERSE to restore {0} into {1}".format(src, dest),
                 stdout=out,
@@ -881,6 +882,8 @@ class XMITUnarchive(MVSUnarchive):
         """.format(src, dest)
         rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True)
         if rc != 0:
+            ds_remove_list = [dest, src] if not self.remote_src else [dest]
+            self.clean_environment(data_sets=ds_remove_list, uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(src, dest),
                 stdout=out,

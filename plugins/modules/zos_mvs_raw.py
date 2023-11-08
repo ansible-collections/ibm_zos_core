@@ -1550,6 +1550,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper,
 )
 import re
+import os
+from tempfile import mkstemp
 from ansible.module_utils.six import PY3
 
 if PY3:
@@ -3087,6 +3089,15 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
     else:
         return stdout
 
+def _write_content_to_temp_file(content):
+    """Write given content to a temp file and return its path """
+    fd, path = mkstemp()
+    try:
+        with os.fdopen(fd, "w") as infile:
+            infile.write(content)
+    except (OSError, IOError) as err:
+        os.remove(path)
+    return path
 
 class ZOSRawError(Exception):
     def __init__(self, program="", error=""):

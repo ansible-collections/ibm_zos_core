@@ -134,8 +134,6 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
             assert result.get("content") is not None
             # Account for slower network
             assert result.get('elapsed') >= wait_time_s
-    else:
-        assert true
 
 
 

@@ -1550,8 +1550,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper,
 )
 import re
-import os
-from tempfile import mkstemp
 from ansible.module_utils.six import PY3
 
 if PY3:
@@ -2168,8 +2166,22 @@ def dd_content(contents, dependencies):
     """
     if contents is None:
         return None
+    # Validation of content string as various types of yaml could came
+    if contents is not None:
+        # If is seen as a list required to be join
+        if isinstance(contents, list):
+          contents =  "\n".join(contents)
+        else:
+          # A jcl just accept a white space or dash at the beginning that's
+          # why we check that and put a withe space at the beginning
+          if contents[0] != " " or contents[0] != "-":
+              contents = " {0}".format(contents)
+          contents = list(contents.split("\n"))
+          contents =  "\n".join(contents)
+        return contents
     if isinstance(contents, list):
-        return "\n".join(contents)
+        contents =  "\n".join(contents)
+        return contents
     return contents
 
 
@@ -3088,16 +3100,6 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         return ""
     else:
         return stdout
-
-def _write_content_to_temp_file(content):
-    """Write given content to a temp file and return its path """
-    fd, path = mkstemp()
-    try:
-        with os.fdopen(fd, "w") as infile:
-            infile.write(content)
-    except (OSError, IOError) as err:
-        os.remove(path)
-    return path
 
 class ZOSRawError(Exception):
     def __init__(self, program="", error=""):

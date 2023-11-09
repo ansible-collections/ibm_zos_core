@@ -2168,6 +2168,8 @@ def dd_content(contents, dependencies):
         return None
     # Validation of content string as various types of yaml could came
     if contents is not None:
+        if len(contents) <= 0:
+            return contents
         # If is seen as a list required to be join
         if isinstance(contents, list):
             contents = "\n".join(contents)

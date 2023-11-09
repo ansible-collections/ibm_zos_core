@@ -2177,7 +2177,7 @@ def dd_content(contents, dependencies):
             if contents[0] != " " or contents[0] != "-":
                 contents = " {0}".format(contents)
             contents = list(contents.split("\n"))
-            contents ="\n".join(contents)
+            contents = "\n".join(contents)
         return contents
     if isinstance(contents, list):
         contents = "\n".join(contents)
@@ -3100,6 +3100,7 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         return ""
     else:
         return stdout
+
 
 class ZOSRawError(Exception):
     def __init__(self, program="", error=""):

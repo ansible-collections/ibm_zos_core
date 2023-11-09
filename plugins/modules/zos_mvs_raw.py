@@ -2170,17 +2170,17 @@ def dd_content(contents, dependencies):
     if contents is not None:
         # If is seen as a list required to be join
         if isinstance(contents, list):
-          contents =  "\n".join(contents)
+            contents = "\n".join(contents)
         else:
-          # A jcl just accept a white space or dash at the beginning that's
-          # why we check that and put a withe space at the beginning
-          if contents[0] != " " or contents[0] != "-":
-              contents = " {0}".format(contents)
-          contents = list(contents.split("\n"))
-          contents =  "\n".join(contents)
+            # A jcl just accept a white space or dash at the beginning that's
+            # why we check that and put a withe space at the beginning
+            if contents[0] != " " or contents[0] != "-":
+                contents = " {0}".format(contents)
+            contents = list(contents.split("\n"))
+            contents ="\n".join(contents)
         return contents
     if isinstance(contents, list):
-        contents =  "\n".join(contents)
+        contents = "\n".join(contents)
         return contents
     return contents
 

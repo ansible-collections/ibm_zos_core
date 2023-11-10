@@ -1,0 +1,8 @@
+trivial:
+  - zos_copy - change data type of parameter src from path to str inside AnsibleModule util.
+  - zos_copy - deprecate add_file_common_args argument.
+  - zos_copy - add owner and group to parameters inside AnsibleModule util.
+  - zos_copy - remove copy_member of AnsibleModule util as parameter and add to code logic.
+  - zos_copy - remove doc-default-does-not-match-spec ignore to ignore 2.14.
+  - zos_copy - remove doc-type-does-not-match-spec ignore to ignore 2.14.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1048).

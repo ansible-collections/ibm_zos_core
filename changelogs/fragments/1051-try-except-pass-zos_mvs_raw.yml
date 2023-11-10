@@ -1,0 +1,4 @@
+trivial:
+  - zos_mvs_raw - Removed Try, Except, Pass from the code, try block is in place to ignore any errors,
+    pass statement was changed to a variable assignment. This does not change any behavior.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1051).

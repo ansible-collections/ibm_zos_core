@@ -70,7 +70,7 @@ class ActionModule(ActionBase):
         group = task_args.get("group", None)
 
         is_pds = is_src_dir = False
-        temp_path = is_uss = is_mvs_dest = copy_member = src_member = None
+        temp_path = is_uss = is_mvs_dest = src_member = None
 
         if dest:
             if not isinstance(dest, string_types):
@@ -103,8 +103,6 @@ class ActionModule(ActionBase):
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
                     is_pds = is_src_dir and is_mvs_dest
-
-        copy_member = is_member(dest)
 
         if not src and not content:
             msg = "'src' or 'content' is required"
@@ -249,7 +247,6 @@ class ActionModule(ActionBase):
                 is_uss=is_uss,
                 is_pds=is_pds,
                 is_src_dir=is_src_dir,
-                copy_member=copy_member,
                 src_member=src_member,
                 temp_path=temp_path,
                 is_mvs_dest=is_mvs_dest,

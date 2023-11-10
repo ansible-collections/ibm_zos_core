@@ -36,7 +36,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 
 
-def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0, timeout=0, start_time=timer()):
+def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Arguments:
@@ -70,7 +70,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
     dd_name = parsed_args.get("dd_name") or ""
 
     job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
-                                 dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
+                                 dd_name=dd_name, duration=duration, dd_scan=dd_scan, timeout=timeout, start_time=start_time)
 
     # while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
     #     current_time = timer()
@@ -83,7 +83,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
         job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
-                                     dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
+                                     dd_name=dd_name, dd_scan=dd_scan, duration=duration, timeout=timeout, start_time=start_time)
     return job_detail
 
 

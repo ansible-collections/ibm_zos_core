@@ -1,4 +1,4 @@
 minor_changes:
-  - zos_apf - Modifies Try Except Pass block when operation = list so that now the module
+  - zos_apf - Modifies Try Except Pass block when list is selected as operation so that now the module
     handles expected exceptions and performs an specific action.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1036).

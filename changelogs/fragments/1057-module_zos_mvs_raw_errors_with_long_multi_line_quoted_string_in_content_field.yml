@@ -1,0 +1,5 @@
+bugfixes:
+  zos_mvs_raw:
+  - module wasn't able to wrote properly a JCL with multi-line | or |1-9.
+    Change now validate the length of lines and allow multi-line declaration with | or |1-9.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1057).

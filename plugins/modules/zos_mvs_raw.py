@@ -2166,20 +2166,11 @@ def dd_content(contents, dependencies):
     """
     if contents is None:
         return None
-    # Validation of content string as various types of yaml could came
     if contents is not None:
+        # Empty string can be passed for content but not modify to ensure proper entry
         if len(contents) <= 0:
             return contents
-        # If is seen as a list required to be join
-        if isinstance(contents, list):
-            contents = "\n".join(contents)
-        else:
-            # A jcl just accept a white space or dash at the beginning that's
-            # why we check that and put a withe space at the beginning
-            if contents[0] != " " or contents[0] != "-":
-                contents = " {0}".format(contents)
-            contents = list(contents.split("\n"))
-            contents = "\n".join(contents)
+        contents = modify_contents(contents)
         return contents
     if isinstance(contents, list):
         contents = "\n".join(contents)
@@ -2470,7 +2461,7 @@ class RawDatasetDefinition(DatasetDefinition):
         disposition_abnormal=None,
         block_size=None,
         directory_blocks=None,
-        record_format=None,
+        record_format='FB',
         record_length=None,
         sms_storage_class=None,
         sms_data_class=None,
@@ -3102,6 +3093,49 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         return ""
     else:
         return stdout
+
+
+def modify_contents(contents):
+    """Return the content of dd_input to a valid form for a JCL program.
+
+    Args:
+        contents (str or list): The string or list with the program.
+
+    Returns:
+        contents: The content in a proper multi line str.
+    """
+    if isinstance(contents, list):
+        contents = "\n".join(contents)
+        contents = add_space(contents)
+    else:
+        if contents[0] != " " or contents[0] != "-":
+            contents = "  {0}".format(contents)
+        contents = list(contents.split("\n"))
+        contents = add_space(contents)
+        contents = "\n".join(contents)
+    return contents
+
+
+def add_space(lines):
+    """Return the array with two spaces at the beggining.
+
+    Args:
+        lines (list): The list with a line of a program.
+
+    Returns:
+        lines: The list in a proper two spaces and the code.
+    """
+    module = AnsibleModule
+    for line in lines:
+        if len(line) == 0:
+            pass
+        else:
+            if line[0] != " " or line[0] != "-":
+                if len(line) > 78:
+                  module.fail_json(msg="Length of the line {0} over 80, dataset can not be written".format(line))
+                else:
+                  line = "  {0}".format(line)
+    return lines
 
 
 class ZOSRawError(Exception):

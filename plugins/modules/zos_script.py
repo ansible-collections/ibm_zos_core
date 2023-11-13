@@ -100,6 +100,12 @@ notes:
   - When executing local scripts, temporary storage will be used
     on the remote z/OS system. The size of the temporary storage will
     correspond to the size of the file being copied.
+  - The location in the z/OS system where local scripts will be copied to can be
+    configured through Ansible's C(remote_tmp) option. Refer to
+    L(Ansible's documentation,https://docs.ansible.com/ansible/latest/collections/ansible/builtin/sh_shell.html#parameter-remote_tmp)
+    for more information.
+  - All local scripts copied to a remote z/OS system  will be removed from the
+    managed node before the module finishes executing.
   - Execution permissions for the group assigned to the script will be
     added to remote scripts. The original permissions for remote scripts will
     be restored by the module before the task ends.

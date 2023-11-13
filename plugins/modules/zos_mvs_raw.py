@@ -541,7 +541,8 @@ options:
       dd_input:
         description:
           - I(dd_input) is used to specify an in-stream data set.
-          - Input will be saved to a temporary data set with a record length of 80.
+          - Input will be saved to a temporary data set with a record length of 80
+          include spaces required at the beginning.
         required: false
         type: dict
         suboptions:
@@ -554,8 +555,8 @@ options:
             description:
               - The input contents for the DD.
               - I(dd_input) supports single or multiple lines of input.
-              - Multi-line input can be provided as a multi-line string
-                or a list of strings with 1 line per list item.
+              - Multi-line input can be provided as a list of strings
+              with 1 line per list item.
               - If a multi-line string is provided make sure to use the
                 proper literal block style indicator "|".
               - If a list of strings is provided, newlines will be
@@ -3106,14 +3107,11 @@ def modify_contents(contents):
         contents: The content in a proper multi line str.
     """
     if not isinstance(contents, list):
-        if contents[0] != " " or contents[1] != " ":
+        if len(contents) > 1 and contents[0] != " " and contents[1] != " ":
             contents = "  {0}".format(contents)
         contents = list(contents.split("\n"))
-        contents = prepend_spaces(contents)
-        contents = "\n".join(contents)
-    else:
-        contents = "\n".join(contents)
-        contents = prepend_spaces(contents)
+    contents = prepend_spaces(contents)
+    contents = "\n".join(contents)
     return contents
 
 
@@ -3126,14 +3124,13 @@ def prepend_spaces(lines):
     Returns:
         lines: The list in a proper two spaces and the code.
     """
-    module = AnsibleModuleHelper()
+    module = AnsibleModuleHelper(argument_spec={})
     for line in lines:
         if len(line) > 0:
-            if line[0] != " " or line[1] != " ":
-                if len(line) > 78:
-                  module.fail_json(msg="Length of the line {0} over 80, dataset can not be written".format(line))
-                else:
-                  line = "  {0}".format(line)
+            if len(line) > 78:
+                module.fail_json(msg="Length of the line {0} over 80, dataset can not be written".format(line))
+            if len(line) > 1 and line[0] != " " and line[1] != " ":
+                line = "  {0}".format(line)
     return lines
 
 

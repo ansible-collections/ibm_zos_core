@@ -87,6 +87,29 @@ Current element: (( i ))
 {% endfor %}
 """
 
+# Text that will be used for the ASA control chars tests.
+# It contains at least one instance of each control char.
+ASA_SAMPLE_CONTENT = """ Space, do not advance.
+0Newline before printing this line.
+ This line is not going to be seen.
++This line will overwrite the previous one.
+ This line will be partially seen because it will be longer than the next line.
++This line will partially overwrite the previous line.
+-Three newlines before this one.
+1This is a new page.
+"""
+
+ASA_SAMPLE_RETURN = "\nSpace, do not advance.\n\nNewline before printing this line.\nThis line is not going to be seen.\rThis line will overwrite the previous one.\nThis line will be partially seen because it will be longer than the next line.\rThis line will partially overwrite the previous line.\n\n\nThree newlines before this one.\fThis is a new page."
+
+ASA_COPY_CONTENT = """  Space, do not advance.
+ 0Newline before printing this line.
+  This line is not going to be seen.
+ +This line will overwrite the previous one.
+  This line will be partially seen because it will be longer than the next line.
+ +This line will partially overwrite the previous line.
+ -Three newlines before this one.
+ 1This is a new page."""
+
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
 TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
@@ -1578,6 +1601,327 @@ def test_copy_template_file_to_dataset(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=dest_dataset, state="absent")
         shutil.rmtree(temp_dir)
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+@pytest.mark.asa
+def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        dest = "USER.ASA.SEQ"
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        copy_result = hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=dest,
+            remote_src=False,
+            asa_text=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.pdse
+@pytest.mark.asa
+def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        dest = "USER.ASA.PDSE"
+        hosts.all.zos_data_set(name=dest, state="absent")
+        full_dest = "{0}(TEST)".format(dest)
+
+        copy_result = hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=full_dest,
+            remote_src=False,
+            asa_text=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(full_dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == full_dest
+            assert cp_res.get("dest_created") is True
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.seq
+@pytest.mark.asa
+def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src = "USER.SRC.SEQ"
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="seq",
+            replace=True
+        )
+
+        dest = "USER.ASA.SEQ"
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=src,
+            remote_src=False
+        )
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=True,
+            asa_text=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.asa
+def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src = "USER.SRC.SEQ"
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="seq",
+            replace=True
+        )
+
+        dest = "USER.ASA.PDSE"
+        full_dest = "{0}(MEMBER)".format(dest)
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=src,
+            remote_src=False
+        )
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=full_dest,
+            remote_src=True,
+            asa_text=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(full_dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == full_dest
+            assert cp_res.get("dest_created") is True
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.asa
+def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src = "USER.SRC.PDSE"
+        full_src = "{0}(MEMBER)".format(src)
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            replace=True
+        )
+
+        dest = "USER.ASA.SEQ"
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=full_src,
+            remote_src=False
+        )
+
+        copy_result = hosts.all.zos_copy(
+            src=full_src,
+            dest=dest,
+            remote_src=True,
+            asa_text=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.asa
+def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src = "USER.SRC.PDSE"
+        full_src = "{0}(MEMBER)".format(src)
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            replace=True
+        )
+
+        dest = "USER.ASA.PDSE"
+        full_dest = "{0}(MEMBER)".format(dest)
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=full_src,
+            remote_src=False
+        )
+
+        copy_result = hosts.all.zos_copy(
+            src=full_src,
+            dest=full_dest,
+            remote_src=True,
+            asa_text=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(full_dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == full_dest
+            assert cp_res.get("dest_created") is True
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+@pytest.mark.asa
+def test_copy_asa_data_set_to_text_file(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src = "USER.ASA.SRC"
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="seq",
+            record_format="FBA",
+            record_length=80,
+            block_size=27920,
+            replace=True
+        )
+        hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=src,
+            remote_src=False
+        )
+
+        dest = "/tmp/zos_copy_asa_test.txt"
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=True,
+            asa_text=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat {0}".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Since OPUT preserves all blank spaces associated
+            # with a record, we strip them before comparing to
+            # what we expect.
+            for cp_line, content_line in zip(v_cp.get("stdout_lines"), ASA_COPY_CONTENT.splitlines()):
+                assert cp_line.rstrip() == content_line
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.file(path=dest, state="absent")
 
 
 @pytest.mark.parametrize("src", [

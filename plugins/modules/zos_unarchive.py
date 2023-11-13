@@ -386,6 +386,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
+    validation,
     mvs_cmd)
 import re
 import os
@@ -447,7 +448,7 @@ class Unarchive():
         Update permissions in unarchived files.
         """
         for target in self.targets:
-            file_name = os.path.join(self.dest, target)
+            file_name = os.path.join(validation.validate_safe_path(self.dest), validation.validate_safe_path(target))
             file_args = self.module.load_file_common_arguments(self.module.params, path=file_name)
             self.module.set_fs_attributes_if_different(file_args, self.changed)
 
@@ -852,7 +853,8 @@ class AMATerseUnarchive(MVSUnarchive):
         dds = {'args': 'UNPACK', 'sysut1': src, 'sysut2': dest}
         rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
         if rc != 0:
-            self.clean_environment(data_sets=[dest], uss_files=[], remove_targets=True)
+            ds_remove_list = [dest, src] if not self.remote_src else [dest]
+            self.clean_environment(data_sets=ds_remove_list, uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing AMATERSE to restore {0} into {1}".format(src, dest),
                 stdout=out,
@@ -880,6 +882,8 @@ class XMITUnarchive(MVSUnarchive):
         """.format(src, dest)
         rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True)
         if rc != 0:
+            ds_remove_list = [dest, src] if not self.remote_src else [dest]
+            self.clean_environment(data_sets=ds_remove_list, uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(src, dest),
                 stdout=out,
@@ -906,13 +910,13 @@ def tar_filter(member, dest_path):
         name = member.path.lstrip('/' + os.sep)
     if os.path.isabs(name):
         raise AbsolutePathError
-    target_path = os.path.realpath(os.path.join(dest_path, name))
+    target_path = os.path.realpath(os.path.join(validation.validate_safe_path(dest_path), validation.validate_safe_path(name)))
     if os.path.commonpath([target_path, dest_path]) != dest_path:
         raise OutsideDestinationError(member, target_path)
     if member.islnk() or member.issym():
         if os.path.isabs(member.linkname):
             raise AbsoluteLinkError(member)
-        target_path = os.path.realpath(os.path.join(dest_path, member.linkname))
+        target_path = os.path.realpath(os.path.join(validation.validate_safe_path(dest_path), validation.validate_safe_path(member.linkname)))
         if os.path.commonpath([target_path, dest_path]) != dest_path:
             raise LinkOutsideDestinationError(member, target_path)
 
@@ -923,7 +927,7 @@ def zip_filter(member, dest_path):
         name = name.lstrip('/' + os.sep)
     if os.path.isabs(name):
         raise AbsolutePathError
-    target_path = os.path.realpath(os.path.join(dest_path, name))
+    target_path = os.path.realpath(os.path.join(validation.validate_safe_path(dest_path), validation.validate_safe_path(name)))
     if os.path.commonpath([target_path, dest_path]) != dest_path:
         raise OutsideDestinationError(member, target_path)
 

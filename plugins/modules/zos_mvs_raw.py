@@ -2173,8 +2173,7 @@ def dd_content(contents, dependencies):
         contents = modify_contents(contents)
         return contents
     if isinstance(contents, list):
-        contents = "\n".join(contents)
-        return contents
+        return "\n".join(contents)
     return contents
 
 

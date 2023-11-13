@@ -1,7 +1,6 @@
 bugfixes:
-  - zos_operator - Corrected variable passed from wait_arg to wait in kwargs to zoau.
+  - zos_operator - The module was ignoring the wait time argument. The module now passes the wait time argument to zoau.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1044).
 
-  - zos_operator_action_query - Corrected variable passed from wait_arg to wait in kwargs to zoau.
-    Switched wait to true on subordinated calls.
+  - zos_operator_action_query - The module was ignoring the wait time argument. The module now passes the wait time argument to zoau.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1044).

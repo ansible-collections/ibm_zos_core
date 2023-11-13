@@ -2461,7 +2461,7 @@ class RawDatasetDefinition(DatasetDefinition):
         disposition_abnormal=None,
         block_size=None,
         directory_blocks=None,
-        record_format='FB',
+        record_format=None,
         record_length=None,
         sms_storage_class=None,
         sms_data_class=None,
@@ -3106,19 +3106,19 @@ def modify_contents(contents):
     Returns:
         contents: The content in a proper multi line str.
     """
-    if isinstance(contents, list):
-        contents = "\n".join(contents)
-        contents = add_space(contents)
-    else:
-        if contents[0] != " " or contents[0] != "-":
+    if not isinstance(contents, list):
+        if contents[0] != " " or contents[1] != " ":
             contents = "  {0}".format(contents)
         contents = list(contents.split("\n"))
-        contents = add_space(contents)
+        contents = prepend_spaces(contents)
         contents = "\n".join(contents)
+    else:
+        contents = "\n".join(contents)
+        contents = prepend_spaces(contents)
     return contents
 
 
-def add_space(lines):
+def prepend_spaces(lines):
     """Return the array with two spaces at the beggining.
 
     Args:
@@ -3127,12 +3127,10 @@ def add_space(lines):
     Returns:
         lines: The list in a proper two spaces and the code.
     """
-    module = AnsibleModule
+    module = AnsibleModuleHelper()
     for line in lines:
-        if len(line) == 0:
-            pass
-        else:
-            if line[0] != " " or line[0] != "-":
+        if len(line) > 0:
+            if line[0] != " " or line[1] != " ":
                 if len(line) > 78:
                   module.fail_json(msg="Length of the line {0} over 80, dataset can not be written".format(line))
                 else:

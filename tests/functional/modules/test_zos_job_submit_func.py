@@ -537,6 +537,10 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 if duration >= args["wait_time_s"]:
                     re.search(r'long running job', repr(result.get("msg")))
                 else:
+                    print( "\n================\n")
+                    pprint( result )
+                    print( "\n================\n")
+
                     assert re.search(r'non-zero', repr(result.get("msg")))
 
             # Should fail with normally as well, job fails with an RC 8 yet max is set to 4

@@ -569,6 +569,10 @@ def test_data_member_force_delete(ansible_zos_module):
             name="{0}({1})".format(DEFAULT_DATA_SET_NAME, MEMBER_3), state="absent", type="MEMBER", force=True
         )
         for result in results.contacted.values():
+            if not result.get("changed"):
+                print( "\n================\n")
+                print_results( results )
+                print( "\n================\n")
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
 

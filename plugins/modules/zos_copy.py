@@ -1293,7 +1293,12 @@ class USSCopyHandler(CopyHandler):
             if self.is_binary:
                 copy.copy_uss2uss_binary(new_src, dest)
             else:
-                shutil.copy(new_src, dest)
+                opts = dict()
+                opts["options"] = ""
+                response = datasets._copy(new_src, dest, None, **opts)
+                if response.rc > 0:
+                    raise Exception(response.stderr_response)
+                # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)

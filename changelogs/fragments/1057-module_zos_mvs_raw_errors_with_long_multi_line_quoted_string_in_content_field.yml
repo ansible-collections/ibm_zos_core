@@ -1,6 +1,6 @@
 bugfixes:
-  - zos_mvs_raw - module wasn't able to wrote properly a JCL with multi-line because truncated
-    the first one or two characters writing an syntactically incorrect JCL.
-    Change now validate the length of lines and allow multi-line declaration with | or |1-9 by added
+  - zos_mvs_raw - module wasn't able to wrIte a multi-line JCL because it truncated
+    the first one or two characters, resulting in syntactically incorrect JCL.
+    Change now validates the length of lines and allow multi-line declaration with | or |1-9 by adding
     two spaces to be syntactically corrects.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1057).

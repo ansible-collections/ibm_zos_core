@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_apf - Improves exception handling if there is a failure
+    parsing the command response when operation selected is list.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1036).

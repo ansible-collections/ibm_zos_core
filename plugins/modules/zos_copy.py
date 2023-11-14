@@ -114,7 +114,7 @@ options:
         be deleted and recreated following the process outlined in the C(volume) option.
       - When the C(dest) is an existing VSAM (RRDS), then the source must be an RRDS.
         The VSAM (RRDS) will be deleted and recreated following the process outlined
-        in the C(volume) option.
+       in the C(volume) option.
       - When C(dest) is and existing VSAM (LDS), then source must be an LDS. The
         VSAM (LDS) will be deleted and recreated following the process outlined
         in the C(volume) option.
@@ -812,6 +812,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    is_member
 )
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
@@ -2566,7 +2569,6 @@ def run_module(module, arg_def):
     is_mvs_dest = module.params.get('is_mvs_dest')
     temp_path = module.params.get('temp_path')
     src_member = module.params.get('src_member')
-    copy_member = module.params.get('copy_member')
     tmphlq = module.params.get('tmp_hlq')
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
@@ -2575,6 +2577,8 @@ def run_module(module, arg_def):
     if dest_data_set:
         if volume:
             dest_data_set["volumes"] = [volume]
+
+    copy_member = is_member(dest)
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -3053,7 +3057,7 @@ def run_module(module, arg_def):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(type='path'),
+            src=dict(type='str'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
@@ -3145,15 +3149,15 @@ def main():
             is_mvs_dest=dict(type='bool'),
             size=dict(type='int'),
             temp_path=dict(type='str'),
-            copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
             force=dict(type='bool', default=False),
             force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
+            owner=dict(type='str', required=False),
+            group=dict(type='str', required=False),
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
-        add_file_common_args=True,
     )
 
     arg_def = dict(

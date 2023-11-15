@@ -561,8 +561,8 @@ options:
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
               - The maximum length of the line is 80 columns including 2 spaces at the beginning.
-                If the two spaces aren't introduces the module will added to be syntactically correct
-                in a JCL (more information in Notes).
+                If the two spaces aren't present, the module will add them to form syntactically
+                correct JCL (more information in the Notes section).
             required: true
             type: raw
           return_content:
@@ -1213,7 +1213,7 @@ notes:
       addressed by APAR PH28089.
     - 3. For syntactically correct JCL programs see the
       L(JCL reference,https://www.ibm.com/docs/en/zos-basic-skills?topic=collection-coding-your-own-jcl).
-    - 4. For continue a line of dd_input see reference of symbols (+/-) for extended lines
+    - 4. For continuing a line of C(dd_input) see the reference for symbols (+/-) for extended lines
       L(in the official documentation,https://www.ibm.com/docs/en/abo/2.1?topic=modules-line-continuation).
 seealso:
 - module: zos_data_set
@@ -3132,8 +3132,8 @@ def prepend_spaces(lines):
     for index, line in enumerate(lines):
         if len(line) > 0:
             if len(line) > 78:
-                module.fail_json(msg="""Length of the line {0} over 80. The maximum length of the line is 80 columns including 2 spaces at the beginning.
-                If the two spaces are not introduces the module will added to be syntactically correct in a JCL. """.format(line))
+                module.fail_json(msg="""Length of line {0} is over 80. The maximum length allowed is 80 columns, including 2 spaces at the beginning.
+                                 If the two spaces are not present, the module will add them to form syntactically correct JCL. """.format(line))
             if len(line) > 1 and line[0] != " " and line[1] != " ":
                 lines[index] = "  {0}".format(line)
     return lines

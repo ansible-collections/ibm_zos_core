@@ -953,6 +953,73 @@ class CopyHandler(object):
                 cmd=repro_cmd,
             )
 
+    def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
+        """Recursively copy USS directory to another USS directory.
+        This function was created to circumvent using shutil.copytree
+        as it presented the issue of corrupting files after second copy
+        because the use of shutil.copy2. This issue is only present in
+        Python 3.11 and 3.12.
+
+        Arguments:
+            src_dir {str} -- USS source directory
+            dest_dir {str} -- USS dest directory
+            dir_exists_ok {bool} -- Whether to copy files to an already existing directory
+
+        Raises:
+            CopyOperationError -- When copying into the directory fails.
+
+        Returns:
+            {tuple} -- Destination where the directory was copied to, and
+                       a list of paths for all subdirectories and files
+                       that got copied.
+        """
+        os.makedirs(dest, exist_ok=dirs_exist_ok)
+        for src_entry in entries:
+            src_name = os.path.join(validation.validate_safe_path(src), validation.validate_safe_path(src_entry.name))
+            dest_name = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_entry.name))
+            try:
+                is_symlink = src_entry.is_symlink()
+                if is_symlink:
+                    link_to = os.readlink(src_name)
+                    os.symlink(link_to, dest_name)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
+                elif src_entry.is_dir():
+                    self.copy_tree(src_name, dest_name, dirs_exist_ok=dirs_exist_ok)
+                else:
+                    opts = dict()
+                    opts["options"] = ""
+                    response = datasets._copy(src_name, dest, None, **opts)
+                    if response.rc > 0:
+                        raise Exception(response.stderr_response)
+            except Exception as err:
+                raise err
+
+        return
+
+    def copy_tree(self, src_dir, dest_dir, dirs_exist_ok=False):
+        """Recursively copy USS directory to another USS directory.
+        This function was created to circumvent using shutil.copytree
+        as it presented the issue of corrupting files after second copy
+        because the use of shutil.copy2. This issue is only present in
+        Python 3.11 and 3.12.
+
+        Arguments:
+            src_dir {str} -- USS source directory
+            dest_dir {str} -- USS dest directory
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory
+
+        Raises:
+            CopyOperationError -- When copying into the directory fails.
+
+        Returns:
+            {tuple} -- Destination where the directory was copied to, and
+                       a list of paths for all subdirectories and files
+                       that got copied.
+        """
+        with os.scandir(src_dir) as itr:
+            entries = list(itr)
+        return self._copy_tree(entries, dest_dir, dirs_exist_ok=dirs_exist_ok)
+
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
 

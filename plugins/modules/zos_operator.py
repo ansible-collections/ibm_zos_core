@@ -283,7 +283,7 @@ def run_operator_command(params):
         use_wait_arg = True
 
     if use_wait_arg:
-        kwargs.update({"wait_arg": True})
+        kwargs.update({"wait": True})
 
     args = []
     rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)

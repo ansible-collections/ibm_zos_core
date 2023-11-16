@@ -2175,9 +2175,8 @@ def dd_content(contents, dependencies):
         return None
     if contents is not None:
         # Empty string can be passed for content but not modify to ensure proper entry
-        if len(contents) <= 0:
-            return contents
-        contents = modify_contents(contents)
+        if len(contents) > 0:
+            contents = modify_contents(contents)
         return contents
     if isinstance(contents, list):
         return "\n".join(contents)

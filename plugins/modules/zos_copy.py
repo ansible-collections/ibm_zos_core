@@ -956,30 +956,28 @@ class CopyHandler(object):
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
         """Recursively copy USS directory to another USS directory.
         This function was created to circumvent using shutil.copytree
-        as it presented the issue of corrupting files after second copy
+        as it presented the issue of corrupting file contents after second copy
         because the use of shutil.copy2. This issue is only present in
         Python 3.11 and 3.12.
 
         Arguments:
-            src_dir {str} -- USS source directory
-            dest_dir {str} -- USS dest directory
-            dir_exists_ok {bool} -- Whether to copy files to an already existing directory
+            entries {list} -- List of files under src directory.
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
 
         Raises:
-            CopyOperationError -- When copying into the directory fails.
+            Exception -- When copying into the directory fails.
 
         Returns:
-            {tuple} -- Destination where the directory was copied to, and
-                       a list of paths for all subdirectories and files
-                       that got copied.
+            {str } -- Destination directory that was copied.
         """
         os.makedirs(dest, exist_ok=dirs_exist_ok)
         for src_entry in entries:
             src_name = os.path.join(validation.validate_safe_path(src), validation.validate_safe_path(src_entry.name))
             dest_name = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_entry.name))
             try:
-                is_symlink = src_entry.is_symlink()
-                if is_symlink:
+                if src_entry.is_symlink():
                     link_to = os.readlink(src_name)
                     os.symlink(link_to, dest_name)
                     shutil.copystat(src_name, dest_name, follow_symlinks=True)
@@ -994,31 +992,23 @@ class CopyHandler(object):
             except Exception as err:
                 raise err
 
-        return
+        return dest
 
     def copy_tree(self, src_dir, dest_dir, dirs_exist_ok=False):
-        """Recursively copy USS directory to another USS directory.
-        This function was created to circumvent using shutil.copytree
-        as it presented the issue of corrupting files after second copy
-        because the use of shutil.copy2. This issue is only present in
-        Python 3.11 and 3.12.
+        """
+        Copies a USS directory into another USS directory.
 
         Arguments:
             src_dir {str} -- USS source directory
             dest_dir {str} -- USS dest directory
             dirs_exist_ok {bool} -- Whether to copy files to an already existing directory
 
-        Raises:
-            CopyOperationError -- When copying into the directory fails.
-
         Returns:
-            {tuple} -- Destination where the directory was copied to, and
-                       a list of paths for all subdirectories and files
-                       that got copied.
+            {str} -- Destination directory that was copied.
         """
         with os.scandir(src_dir) as itr:
             entries = list(itr)
-        return self._copy_tree(entries, dest_dir, dirs_exist_ok=dirs_exist_ok)
+        return self._copy_tree(entries, src_dir, dest_dir, dirs_exist_ok=dirs_exist_ok)
 
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
@@ -1425,7 +1415,8 @@ class USSCopyHandler(CopyHandler):
         try:
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
-            dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:

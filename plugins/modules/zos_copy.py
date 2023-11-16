@@ -999,9 +999,9 @@ class CopyHandler(object):
         Copies a USS directory into another USS directory.
 
         Arguments:
-            src_dir {str} -- USS source directory
-            dest_dir {str} -- USS dest directory
-            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
 
         Returns:
             {str} -- Destination directory that was copied.

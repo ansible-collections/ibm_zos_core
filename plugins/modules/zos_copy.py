@@ -986,9 +986,10 @@ class CopyHandler(object):
                 else:
                     opts = dict()
                     opts["options"] = ""
-                    response = datasets._copy(src_name, dest, None, **opts)
+                    response = datasets._copy(src_name, dest_name, None, **opts)
                     if response.rc > 0:
                         raise Exception(response.stderr_response)
+                    shutil.copystat(src_name, dest_name)
             except Exception as err:
                 raise err
 
@@ -1355,6 +1356,7 @@ class USSCopyHandler(CopyHandler):
                 response = datasets._copy(new_src, dest, None, **opts)
                 if response.rc > 0:
                     raise Exception(response.stderr_response)
+                shutil.copystat(new_src, dest)
                 # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)

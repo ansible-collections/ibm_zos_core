@@ -272,7 +272,7 @@ def run_module():
             use_wait_arg = True
 
         if use_wait_arg:
-            kwargs.update({"wait_arg": False})
+            kwargs.update({"wait": True})
 
         args = []
 

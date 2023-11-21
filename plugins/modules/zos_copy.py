@@ -989,7 +989,7 @@ class CopyHandler(object):
                     response = datasets._copy(src_name, dest_name, None, **opts)
                     if response.rc > 0:
                         raise Exception(response.stderr_response)
-                    shutil.copystat(src_name, dest_name)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
             except Exception as err:
                 raise err
 
@@ -1316,6 +1316,7 @@ class USSCopyHandler(CopyHandler):
                 if not os.path.isdir(dest):
                     self.module.set_mode_if_different(dest, mode, False)
                 if changed_files:
+                    self.module.set_mode_if_different(dest, mode, False)
                     for filepath in changed_files:
                         self.module.set_mode_if_different(
                             os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False
@@ -1356,7 +1357,7 @@ class USSCopyHandler(CopyHandler):
                 response = datasets._copy(new_src, dest, None, **opts)
                 if response.rc > 0:
                     raise Exception(response.stderr_response)
-                shutil.copystat(new_src, dest)
+                shutil.copystat(new_src, dest, follow_symlinks=True)
                 # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)

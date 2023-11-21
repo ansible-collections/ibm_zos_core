@@ -251,6 +251,11 @@ Examples
        remote_src: true
        chdir: /u/user/output_dir
 
+   - name: Run a local Python script in the temporary directory specified in the Ansible environment variable 'remote_tmp'.
+     zos_script:
+       cmd: ./scripts/program.py
+       executable: /usr/bin/python3
+
    - name: Run a local script made from a template.
      zos_script:
        cmd: ./templates/PROGRAM

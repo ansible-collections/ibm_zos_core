@@ -184,18 +184,6 @@ class ActionModule(ActionBase):
             else:
                 result.update(dict(failed=True))
 
-            # dest_file is the only remote path created in this workflow
-            dest_status = self._execute_remote_stat(
-                dest_file, all_vars=task_vars, follow=False
-            )
-            if dest_status.get("dest_file"):
-                self._connection.exec_command("rm -rf {0}".format(dest_path))
-            if rendered_file and os.path.exists(template_dir):
-                try:
-                    os.rmdir(template_dir)
-                except Exception as e:
-                    display.vvv("Unable to remove temporary directory {0}. {1}".format(template_dir, e))
-
         else:
             result.update(
                 self._execute_module(

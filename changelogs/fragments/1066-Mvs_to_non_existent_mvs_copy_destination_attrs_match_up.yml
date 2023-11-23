@@ -1,5 +1,5 @@
 bugfixes:
-  - zos_copy - Module calculated incorrectly the attributes of the source dataset
-    when making a copy with executables and aliases and the target did not exist.
-    Fix now creates the target dataset with the same attributes as the source.
+  - zos_copy - When copying an executable data set with aliases and destination did not exist,
+    destination data set was created with wrong attributes. Fix now creates destination data set
+    with the same attributes as the source.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1066).

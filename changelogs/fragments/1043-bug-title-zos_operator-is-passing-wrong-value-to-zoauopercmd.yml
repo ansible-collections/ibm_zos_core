@@ -1,0 +1,8 @@
+bugfixes:
+  - zos_operator - The module was ignoring the wait time argument.
+    The module now passes the wait time argument to ZOAU.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1044).
+
+  - zos_operator_action_query - The module was ignoring the wait time argument.
+    The module now passes the wait time argument to ZOAU.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1044).

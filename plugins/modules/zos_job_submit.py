@@ -959,7 +959,7 @@ def run_module():
 
         job_output_txt = job_output(
             job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
-            duration=duration, timeout=wait_time_s, start_time=start_time)
+            dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
 
         result["duration"] = duration
 

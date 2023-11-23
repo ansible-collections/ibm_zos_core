@@ -953,6 +953,64 @@ class CopyHandler(object):
                 cmd=repro_cmd,
             )
 
+    def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
+        """Recursively copy USS directory to another USS directory.
+        This function was created to circumvent using shutil.copytree
+        as it presented the issue of corrupting file contents after second copy
+        because the use of shutil.copy2. This issue is only present in
+        Python 3.11 and 3.12.
+
+        Arguments:
+            entries {list} -- List of files under src directory.
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+
+        Raises:
+            Exception -- When copying into the directory fails.
+
+        Returns:
+            {str } -- Destination directory that was copied.
+        """
+        os.makedirs(dest, exist_ok=dirs_exist_ok)
+        for src_entry in entries:
+            src_name = os.path.join(validation.validate_safe_path(src), validation.validate_safe_path(src_entry.name))
+            dest_name = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_entry.name))
+            try:
+                if src_entry.is_symlink():
+                    link_to = os.readlink(src_name)
+                    os.symlink(link_to, dest_name)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
+                elif src_entry.is_dir():
+                    self.copy_tree(src_name, dest_name, dirs_exist_ok=dirs_exist_ok)
+                else:
+                    opts = dict()
+                    opts["options"] = ""
+                    response = datasets._copy(src_name, dest_name, None, **opts)
+                    if response.rc > 0:
+                        raise Exception(response.stderr_response)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
+            except Exception as err:
+                raise err
+
+        return dest
+
+    def copy_tree(self, src_dir, dest_dir, dirs_exist_ok=False):
+        """
+        Copies a USS directory into another USS directory.
+
+        Arguments:
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+
+        Returns:
+            {str} -- Destination directory that was copied.
+        """
+        with os.scandir(src_dir) as itr:
+            entries = list(itr)
+        return self._copy_tree(entries, src_dir, dest_dir, dirs_exist_ok=dirs_exist_ok)
+
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
 
@@ -1258,6 +1316,7 @@ class USSCopyHandler(CopyHandler):
                 if not os.path.isdir(dest):
                     self.module.set_mode_if_different(dest, mode, False)
                 if changed_files:
+                    self.module.set_mode_if_different(dest, mode, False)
                     for filepath in changed_files:
                         self.module.set_mode_if_different(
                             os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False
@@ -1293,7 +1352,13 @@ class USSCopyHandler(CopyHandler):
             if self.is_binary:
                 copy.copy_uss2uss_binary(new_src, dest)
             else:
-                shutil.copy(new_src, dest)
+                opts = dict()
+                opts["options"] = ""
+                response = datasets._copy(new_src, dest, None, **opts)
+                if response.rc > 0:
+                    raise Exception(response.stderr_response)
+                shutil.copystat(new_src, dest, follow_symlinks=True)
+                # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
@@ -1353,7 +1418,8 @@ class USSCopyHandler(CopyHandler):
         try:
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
-            dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:

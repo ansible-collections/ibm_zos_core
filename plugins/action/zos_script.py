@@ -56,7 +56,9 @@ class ActionModule(ActionBase):
         if not remote_src:
             script_path = path.abspath(path.normpath(script_path))
             script_name = path.basename(script_path)
-            tmp_path = module_args.get('tmp_path')
+            # Accessing the globally-defined temporary directory
+            # that Ansible expects to be used.
+            tmp_path = self._connection._shell._options.get("remote_tmp")
 
             # Getting a temporary path for the script.
             tempfile_args = dict(

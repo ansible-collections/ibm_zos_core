@@ -2403,25 +2403,7 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            if executable:
-                src_attributes = datasets.listing(src_name)[0]
-                size = int(src_attributes.total_space)
-                record_format = "U"
-                record_length = 0
-
-                dest_params = get_data_set_attributes(
-                    dest,
-                    size,
-                    is_binary,
-                    asa_text,
-                    record_format=record_format,
-                    record_length=record_length,
-                    type="LIBRARY",
-                    volume=volume
-                )
-                data_set.DataSet.ensure_present(replace=force, **dest_params)
-            else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.

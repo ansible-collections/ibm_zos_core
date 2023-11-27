@@ -400,7 +400,19 @@ def _ddname_pattern(contents, resolve_dependencies):
     return str(contents)
 
 
-def FixDSName( name_in ):
+def _fix_ds_name( name_in ):
+    """ Make sure ds_name is valid
+    Arguments:
+        name_in: ds_name (or job name) to be tested.
+
+    Raises:
+        nothing, directly.  Returns trigger valueerrors in _dsname_escape
+
+    Returns:
+        str - properly escaped ds_name, None on error
+        errsr - None if name_in is valud, error message otherwise.
+
+    """
     result = []
     ret_str = ""
     dot_count = 0
@@ -420,7 +432,7 @@ def FixDSName( name_in ):
                 c = "("
                 add_paren = True
             else:
-                return( None, "nested parentheses" )
+                return( None, "nested parentheses found" )
 
         # discard incoming escapes
         if c == "\\":
@@ -459,12 +471,12 @@ def FixDSName( name_in ):
 
                 # slash only usable in last segment
                 if add_paren:
-                    return( None, "Slash only in last segment" )
+                    return( None, "Slash only usable in last segment" )
         else:
             prev_dot = False
             seg_length += 1
             if seg_length > 8:
-                return( None, "Seg too long" )
+                return( None, "Segment is too long" )
 
         result.append(c)
 
@@ -483,7 +495,7 @@ def FixDSName( name_in ):
     return (ret_str.join(result), None)
 
 
-def _dsname_escape(dsname_in):
+def dsname_escape(dsname_in):
     """Takes in a string for dataset name type arguments
 
     Arguments:
@@ -495,7 +507,7 @@ def _dsname_escape(dsname_in):
     Returns:
         str -- escaped string of dsname_in
     """
-    result, errmsg = FixDSName(dsname_in)
+    result, errmsg = _fix_ds_name(dsname_in)
 
     if errmsg:
         raise ValueError(

@@ -643,7 +643,7 @@ if PY3:
 else:
     from pipes import quote
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import _dsname_escape
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import dsname_escape
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])
@@ -699,7 +699,10 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        clean_name =  _dsname_escape(src)
+        # dsname_escape will make sure original_name is properly escaped and follows dsname rules
+        # if original_name violates rules, name will be None
+
+        clean_name =  dsname_escape(src)
         job_submitted = jobs.submit(clean_name, wait, None, **kwargs)
 
         # Introducing a sleep to ensure we have the result of job submit carrying the job id

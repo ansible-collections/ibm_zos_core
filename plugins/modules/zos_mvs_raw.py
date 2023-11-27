@@ -3142,11 +3142,16 @@ def prepend_spaces(lines):
     module = AnsibleModuleHelper(argument_spec={})
     for index, line in enumerate(lines):
         if len(line) > 0:
-            if len(line) > 78:
+            if len(line) > 80:
                 module.fail_json(msg="""Length of line {0} is over 80. The maximum length allowed is 80 columns, including 2 spaces at the beginning.
                                  If the two spaces are not present, the module will add them to form syntactically correct JCL. """.format(line))
-            if len(line) > 1 and line[0] != " " and line[1] != " ":
-                lines[index] = "  {0}".format(line)
+            else:
+                if len(line) > 1 and line[0] != " " and line[1] != " ":
+                    if len(line) > 78:
+                        module.fail_json(msg="""Length of line {0} is over 80. The maximum length allowed is 80 columns, including 2 spaces at the beginning.
+                                         If the two spaces are not present, the module will add them to form syntactically correct JCL. """.format(line))
+                    else:
+                        lines[index] = "  {0}".format(line)
     return lines
 
 

@@ -520,29 +520,27 @@ def main():
     operRc = ret.rc
     result['stderr'] = operErr
     result['rc'] = operRc
-    if operation == 'list':
-        try:
-            dsRx = ""
-            volRx = ""
-            if library:
-                dsRx = re.compile(library)
-            if volume:
-                volRx = re.compile(volume)
-            if sms:
-                sms = "*SMS*"
-            if dsRx or volRx or sms:
-                data = json.loads(operOut)
-                operOut = ""
-                for d in data[2:]:
-                    ds = d.get('ds')
-                    vol = d.get('vol')
-                    if (dsRx and dsRx.match(ds)) or (volRx and volRx.match(vol)) or (sms and sms == vol):
-                        operOut = operOut + "{0} {1}\n".format(vol, ds)
-        except Exception:
-            pass
-
     result['stdout'] = operOut
-
+    if operation == 'list':
+        if not library:
+            library = ""
+        if not volume:
+            volume = ""
+        if sms:
+            sms = "*SMS*"
+        if library or volume or sms:
+            try:
+                data = json.loads(operOut)
+            except json.JSONDecodeError:
+                module.exit_json(**result)
+            for d in data[2:]:
+                ds = d.get('ds')
+                vol = d.get('vol')
+                try:
+                    if (library and re.match(library, ds)) or (volume and re.match(volume, vol)) or (sms and sms == vol):
+                        result['stdout'] = "{0} {1}\n".format(vol, ds)
+                except re.error:
+                    module.exit_json(**result)
     module.exit_json(**result)
 
 

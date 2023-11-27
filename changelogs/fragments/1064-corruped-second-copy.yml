@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_copy - When performing a copy operation to an existing file, the copied
+    file resulted in having corrupted contents. Fix now implements a workaround
+    to not use the specific copy routine that corrupts the file contents.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1064).

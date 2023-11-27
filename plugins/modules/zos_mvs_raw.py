@@ -558,7 +558,7 @@ options:
                 or a list of strings with 1 line per list item.
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
-              - If a multi-line string is provided, use the proper block scalar
+              - 'If a multi-line string is provided, use the proper block scalar
                 style. YAML supports both
                 L(literal,https://yaml.org/spec/1.2.2/#literal-style) and
                 L(folded,https://yaml.org/spec/1.2.2/#line-folding) scalars.
@@ -569,7 +569,7 @@ options:
                 preserved. The block indentation range is 1 - 9. While generally
                 unnecessary, YAML does support block
                 L(chomping,https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator)
-                indicators  "+" and "-" as well.
+                indicators  "+" and "-" as well.'
               - When using the I(content) option for instream-data, the module
                 will ensure that all lines contain a blank in columns 1 and 2
                 and add blanks when not present while retaining a maximum length

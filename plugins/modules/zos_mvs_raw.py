@@ -560,14 +560,15 @@ options:
                 added to each of the lines when used as input.
               - If a multi-line string is provided, use the proper block scalar
                 style. YAML supports both
-                L(literal and scalars,https://yaml.org/spec/1.2.2).
+                L(literal,https://yaml.org/spec/1.2.2/#literal-style) and
+                L(folded,https://yaml.org/spec/1.2.2/#line-folding) scalars.
                 It is recommended to use the literal style indicator
                 "|" with an block indentation indicator, for example;
                 I(content: | 2) is a literal block style indicator  with a 2 space
                 indentation, the entire block will be indented and newlines
                 preserved. The block indentation range is 1 - 9. While generally
                 unnecessary, YAML does support block
-                L(chomping,https://yaml.org/spec/1.2.2)
+                L(chomping,https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator)
                 indicators  "+" and "-" as well.
               - When using the I(content) option for instream-data, the module
                 will ensure that all lines contain a blank in columns 1 and 2

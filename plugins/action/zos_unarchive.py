@@ -118,6 +118,13 @@ class ActionModule(ActionBase):
                         task_vars=task_vars,
                     )
                 )
+                if format_name in USS_SUPPORTED_FORMATS:
+                    self._remote_cleanup(dest)
             else:
                 result.update(dict(failed=True))
         return result
+
+    def _remote_cleanup(self, tempfile_path):
+        """Removes the temporary file in a managed node created for a local
+        script."""
+        self._connection.exec_command("rm -f {0}".format(tempfile_path))

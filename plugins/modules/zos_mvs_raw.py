@@ -556,13 +556,25 @@ options:
               - I(dd_input) supports single or multiple lines of input.
               - Multi-line input can be provided as a multi-line string
                 or a list of strings with 1 line per list item.
-              - If a multi-line string is provided make sure to use the
-                proper literal block style indicator "|".
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
-              - The maximum length of the line is 80 columns including 2 spaces at the beginning.
-                If the two spaces aren't present, the module will add them to form syntactically
-                correct JCL (more information in the Notes section).
+              - If a multi-line string is provided, use the proper block scalar
+                style. YAML supports both
+                L(literal,https://yaml.org/spec/1.2.2/#literal-style) and
+                L(folded,https://yaml.org/spec/1.2.2/#line-folding) scalars.
+                It is recommended to use the literal style indicator
+                "|" with an block indentation indicator, for example;
+                I(content: | 2) is a literal block style indicator  with a 2 space
+                indentation, the entire block will be indented and newlines
+                preserved. The block indentation range is 1 - 9. While generally
+                unnecessary, YAML does support block
+                L(chomping,https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator)
+                indicators  "+" and "-" as well.
+              - When using the I(content) option for instream-data, the module
+                will ensure that all lines contain a blank in columns 1 and 2
+                and add blanks when not present while retaining a maximum length
+                of 80 columns for any line. This is true for all I(content) types;
+                string, list of strings and when using a YAML block indicator.
             required: true
             type: raw
           return_content:
@@ -1212,9 +1224,9 @@ notes:
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
     - 3. For syntactically correct JCL programs see the
-      L(JCL reference,https://www.ibm.com/docs/en/zos-basic-skills?topic=collection-coding-your-own-jcl).
+      L(JCL reference,https://www.ibm.com/docs/en/zos/2.2.0?topic=mvs-zos-jcl-reference).
     - 4. For continuing a line of C(dd_input) see the reference for symbols (+/-) for extended lines
-      L(in the official documentation,https://www.ibm.com/docs/en/abo/2.1?topic=modules-line-continuation).
+      L(in the official documentation,https://www.ibm.com/docs/en/zos/2.2.0?topic=mvs-zos-jcl-reference).
 seealso:
 - module: zos_data_set
 """

@@ -410,7 +410,7 @@ def _fix_ds_name(name_in):
 
     Returns:
         str - properly escaped ds_name, None on error
-        errsr - None if name_in is valud, error message otherwise.
+        errstr - None if name_in is value, error message otherwise.
 
     """
     result = []

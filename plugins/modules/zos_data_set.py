@@ -977,7 +977,7 @@ def perform_data_set_operations(name, state, **extra_args):
     # dsname_escape will make sure original_name is properly escaped and follows dsname rules
     # if original_name violates rules, name will be None
 
-    clean_name =  dsname_escape(name)
+    clean_name = dsname_escape(name)
 
     if clean_name:
         if state == "present" and extra_args.get("type") != "MEMBER":

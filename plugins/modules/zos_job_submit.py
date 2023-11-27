@@ -702,7 +702,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
         # dsname_escape will make sure original_name is properly escaped and follows dsname rules
         # if original_name violates rules, name will be None
 
-        clean_name =  dsname_escape(src)
+        clean_name = dsname_escape(src)
         job_submitted = jobs.submit(clean_name, wait, None, **kwargs)
 
         # Introducing a sleep to ensure we have the result of job submit carrying the job id
@@ -710,7 +710,6 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
             sleep(0.5)
             current_time = timer()
             duration = round(current_time - start_time)
-            job_submitted = jobs.submit(clean_name, wait, None, **kwargs)  ### Not sure, but think this is needed
 
         # Second sleep is to wait long enough for the job rc to not equal a `?`
         # which is what ZOAU sends back, opitonally we can check the 'status' as

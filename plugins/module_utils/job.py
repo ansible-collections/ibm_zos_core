@@ -400,7 +400,7 @@ def _ddname_pattern(contents, resolve_dependencies):
     return str(contents)
 
 
-def _fix_ds_name( name_in ):
+def _fix_ds_name(name_in):
     """ Make sure ds_name is valid
     Arguments:
         name_in: ds_name (or job name) to be tested.
@@ -423,7 +423,7 @@ def _fix_ds_name( name_in ):
 
     # May not exceed 44 characters
     if len(name_in) > 44:
-        return( None, "length" )
+        return None, "length"
 
     for c in name_in:
         # slash become a paren for member section
@@ -432,7 +432,7 @@ def _fix_ds_name( name_in ):
                 c = "("
                 add_paren = True
             else:
-                return( None, "nested parentheses found" )
+                return None, "nested parentheses found"
 
         # discard incoming escapes
         if c == "\\":
@@ -440,7 +440,7 @@ def _fix_ds_name( name_in ):
 
         # check for special characters ('national characters') and hyphens
         # manual testing shows escapes are not needed for # or -
-        if c in "@\$":
+        if c in "@$":
             result.append("\\")
 
         # There is a rule saying you can't have a - in member name, however,
@@ -450,7 +450,7 @@ def _fix_ds_name( name_in ):
         if prev_dot:
             # segment names must start with letter or national character
             if c in "0123456789-":
-                return( None, "Bad segment start" )
+                return None, "Bad segment start"
 
         if c == "(":
             in_paren = True
@@ -463,7 +463,7 @@ def _fix_ds_name( name_in ):
         if c == ".":
             # '..' is not allowed in a dataset name
             if prev_dot:
-                return( None, "Double Dot" )
+                return None, "Double Dot"
             else:
                 dot_count += 1
                 seg_length = 0
@@ -471,12 +471,12 @@ def _fix_ds_name( name_in ):
 
                 # slash only usable in last segment
                 if add_paren:
-                    return( None, "Slash only usable in last segment" )
+                    return None, "Slash only usable in last segment"
         else:
             prev_dot = False
             seg_length += 1
             if seg_length > 8:
-                return( None, "Segment is too long" )
+                return None, "Segment is too long"
 
         result.append(c)
 
@@ -486,13 +486,13 @@ def _fix_ds_name( name_in ):
 
     # There must be at least 2 name segments, so at least one '.'
     if dot_count < 1:
-        return( None, "Too few segments" )
+        return None, "Too few segments"
 
     # DS Name may not end with a period
     if c == '.':
-        return( None, "Ends with a dot" )
+        return None, "Ends with a dot"
 
-    return (ret_str.join(result), None)
+    return ret_str.join(result), None
 
 
 def dsname_escape(dsname_in):

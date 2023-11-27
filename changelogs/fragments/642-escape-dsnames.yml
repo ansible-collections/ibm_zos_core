@@ -2,8 +2,8 @@ enhancements:
   - job.py - new routine available called dsname_escape.
     This routine will ensure a dataset name complies to the naming rules, and is escaped for cmd line compatibility.
     It will also raise a value error if any data set name rules are violated.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/xxxx)
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1020)
 
 bugfixes:
   - zos_data_set - Uses new dsname_escape to make sure data set names are usable.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/xxxx)
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1020)

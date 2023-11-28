@@ -701,8 +701,13 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
 
         # dsname_escape will make sure original_name is properly escaped and follows dsname rules
         # if original_name violates rules, name will be None
+        # will not perform if user has indicated a USS path
 
-        clean_name = dsname_escape(src)
+        if hfs:
+            clean_name = src
+        else:
+            clean_name = dsname_escape(src)
+
         job_submitted = jobs.submit(clean_name, wait, None, **kwargs)
 
         # Introducing a sleep to ensure we have the result of job submit carrying the job id

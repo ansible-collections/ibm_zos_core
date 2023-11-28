@@ -280,9 +280,6 @@ def test_job_submit_PDS(ansible_zos_module):
             src="{0}(SAMPLE)".format(DATA_SET_NAME), location="DATA_SET", wait=True
         )
         for result in results.contacted.values():
-            print( "\nGot results =v=v=v=v=v=======\n")
-            pprint( result )
-            print( "\nGot results =^=^=^=^=^=======\n")
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
@@ -311,6 +308,10 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
             location="DATA_SET",
             wait=True,
         )
+        print( "\nGot results =v=v=v=v=v===311\n")
+        pprint( result )
+        print( "\nGot results =^=^=^=^=^=======\n")
+
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0

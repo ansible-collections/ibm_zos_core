@@ -162,9 +162,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
         # verify data set creation was successful
-        print("\n=v=v=v=v=v======\n")
-        print_results(results)
-        print("\n=^=^=^=^=^======\n")
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
                 submitted_job_id = result.get("jobs")[0].get("job_id")
@@ -834,7 +831,7 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
             product_release = sys_info[5].split()[1].strip("'")
             if product_release >= "05" or product_version > "02":
                 fulltest = False
-                print( "skipping HFS test: zOS > 02.04" )
+                # print( "skipping HFS test: zOS > 02.04" )
 
         if fulltest:
             hosts = ansible_zos_module

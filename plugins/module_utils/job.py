@@ -455,11 +455,11 @@ def _fix_ds_name(name_in):
         if c == "(":
             in_paren = True
             seg_length = 0
-            result.append("\\")
+            # result.append("\\")
 
         if c == ")":
             in_paren = False
-            result.append("\\")
+            # result.append("\\")
 
         if c == ".":
             # '..' is not allowed in a dataset name
@@ -482,7 +482,7 @@ def _fix_ds_name(name_in):
         result.append(c)
 
     if add_paren:
-        result.append("\\")
+        # result.append("\\")
         result.append(")")
 
     # There must be at least 2 name segments, so at least one '.'

@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_tso_command - add example for executing explicitly a REXX script from
+    a data set.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1065).

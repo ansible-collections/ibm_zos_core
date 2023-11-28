@@ -278,7 +278,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def allocate_model_data_set(ds_name, model, asa_text=False, vol=None):
+    def allocate_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None):
         """Allocates a data set based on the attributes of a 'model' data set.
         Useful when a data set needs to be created identical to another. Supported
         model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
@@ -291,6 +291,7 @@ class DataSet(object):
             must be used. See extract_dsname(ds_name) in data_set.py
             model {str} -- The name of the data set whose allocation parameters
             should be used to allocate the new data set 'ds_name'
+            executable {bool} -- Whether the new data set should support executables
             asa_text {bool} -- Whether the new data set should support ASA control
             characters (have record format FBA)
             vol {str} -- The volume where data set should be allocated
@@ -326,6 +327,11 @@ class DataSet(object):
         if asa_text:
             alloc_cmd = """{0} -
             RECFM(F,B,A)""".format(alloc_cmd)
+
+        if executable:
+            alloc_cmd = """{0} -
+            RECFM(U) -
+            DSNTYPE(LIBRARY)""".format(alloc_cmd)
 
         rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
         if rc != 0:

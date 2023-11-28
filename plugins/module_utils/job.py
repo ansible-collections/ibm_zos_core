@@ -454,6 +454,7 @@ def _fix_ds_name(name_in):
 
         if c == "(":
             in_paren = True
+            seg_length = 0
             result.append("\\")
 
         if c == ")":

@@ -312,6 +312,10 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
         for result in results:
             pprint( result )
             print( "\n---\n")
+            pprint( result.get("jobs") )
+            print( "\n------\n")
+            pprint( result.get("jobs")[0] )
+            print( "\n---------\n")
         print( "\nGot results =^=^=^=^=^=======\n")
 
         for result in results.contacted.values():

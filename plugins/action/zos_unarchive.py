@@ -46,6 +46,9 @@ class ActionModule(ActionBase):
 
         module_args = self._task.args.copy()
 
+        tmp_files = ""
+        uss_format = None
+
         if module_args.get("remote_src", False):
             result.update(
                 self._execute_module(
@@ -67,9 +70,10 @@ class ActionModule(ActionBase):
             source = os.path.realpath(source)
 
             if format_name in USS_SUPPORTED_FORMATS:
-                dest = self._execute_module(
+                tmp_files = dest = self._execute_module(
                     module_name="tempfile", module_args={}, task_vars=task_vars,
                 ).get("path")
+                uss_format = format_name
             elif format_name in MVS_SUPPORTED_FORMATS:
                 if dest_data_set is None:
                     dest_data_set = dict()
@@ -118,10 +122,12 @@ class ActionModule(ActionBase):
                         task_vars=task_vars,
                     )
                 )
-                if format_name in USS_SUPPORTED_FORMATS:
-                    self._remote_cleanup(dest)
             else:
                 result.update(dict(failed=True))
+
+        if module_args.get("remote_src", False) and uss_format:
+            self._remote_cleanup(tmp_files)
+
         return result
 
     def _remote_cleanup(self, tempfile_path):

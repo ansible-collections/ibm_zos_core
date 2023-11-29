@@ -309,11 +309,9 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
             wait=True,
         )
         print( "\nGot results =v=v=v=v=v===311\n")
-        pprint( results )
-        print( "\nRType: {0}: ".format(type(results)))
+        print( "\nRType: {0}: {1}\n\n".format(type(results), results))
         for result in results:
-            pprint( result )
-            print( "\nrType: {0}: ".format(type(result)))
+            print( "\nrType: {0}: {1}\n\n".format(type(result), result))
             print( "\n---\n")
             pprint( result.get("jobs") )
             print( "\n------\n")

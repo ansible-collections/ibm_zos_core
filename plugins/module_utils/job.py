@@ -455,7 +455,6 @@ def _fix_ds_name(name_in):
 
         if c == "(":
             in_paren = True
-            seg_length = 0
             # result.append("\\")
 
         if c == ")":
@@ -477,6 +476,8 @@ def _fix_ds_name(name_in):
         else:
             prev_dot = False
             seg_length += 1
+            if c in ".()":
+                seg_length = 0
             if seg_length > 8:
                 return None, "Segment is too long"
 

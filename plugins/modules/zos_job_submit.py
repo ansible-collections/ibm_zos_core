@@ -916,7 +916,8 @@ def run_module():
     temp_file_encoded = None
 
     # Default 'changed' is False in case the module is not able to execute
-    result = dict(changed=False)
+    result = {}
+    result["changed"] = False
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
         result["failed"] = True

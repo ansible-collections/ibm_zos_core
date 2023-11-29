@@ -406,7 +406,7 @@ def _fix_ds_name(name_in):
         name_in: ds_name (or job name) to be tested.
 
     Raises:
-        nothing, directly.  Returns trigger valueerrors in _dsname_escape
+        nothing, directly.  Returns trigger value errors in _dsname_escape
 
     Returns:
         str - properly escaped ds_name, None on error

@@ -262,8 +262,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
 from ansible.module_utils.basic import AnsibleModule
-import re
-
 
 def run_module():
 

@@ -40,7 +40,6 @@ options:
        - The asterisk (`*`) wildcard will match zero or more specified characters.
     type: str
     required: False
-    default: "*"
   owner:
     description:
       - Identifies the owner of the job.

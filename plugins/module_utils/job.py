@@ -440,7 +440,8 @@ def _fix_ds_name(name_in):
 
         # check for special characters ('national characters') and hyphens
         # manual testing shows escapes are not needed for # or -
-        if c in "@$":
+        # if c in "@$":
+        if c == "$":
             result.append("\\")
 
         # There is a rule saying you can't have a - in member name, however,

@@ -438,6 +438,17 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(BPXSLEEP)",
                     location="DATA_SET", wait_time_s=wait_time_s)
 
+        print( "\nGot results =v=v=v=v=v===441\n")
+        print( "\nRType: {0}: {1}\n\n".format(type(results), results))
+        for result in results.contacted.values():
+            print( "\nrType: {0}: {1}\n\n".format(type(result), result))
+            print( "\n---\n")
+            pprint( result.get("jobs") )
+            print( "\n------\n")
+            pprint( result.get("jobs")[0] )
+            print( "\n---------\n")
+        print( "\nGot results =^=^=^=^=^=======\n")
+
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0

@@ -40,6 +40,7 @@ options:
        - The asterisk (`*`) wildcard will match zero or more specified characters.
     type: str
     required: False
+    default: "*"
   owner:
     description:
       - Identifies the owner of the job.
@@ -266,7 +267,7 @@ from ansible.module_utils.basic import AnsibleModule
 def run_module():
 
     module_args = dict(
-        job_name=dict(type="str", required=False),
+        job_name=dict(type="str", required=False, default="*"),
         owner=dict(type="str", required=False),
         job_id=dict(type="str", required=False),
     )

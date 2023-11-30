@@ -125,7 +125,7 @@ class ActionModule(ActionBase):
             else:
                 result.update(dict(failed=True))
 
-        if module_args.get("remote_src", False) and uss_format:
+        if not module_args.get("remote_src", False) and uss_format:
             self._remote_cleanup(tmp_files)
 
         return result

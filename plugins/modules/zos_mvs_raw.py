@@ -1239,7 +1239,7 @@ notes:
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
     - 3. When executing a program, refer to the programs documentation as each programs requirments
-      can vary fom DDs, instream-data indentation and continuation characters. 
+      can vary fom DDs, instream-data indentation and continuation characters.
 seealso:
 - module: zos_data_set
 """
@@ -3185,13 +3185,15 @@ def prepend_spaces(lines):
     for index, line in enumerate(lines):
         if len(line) > 0:
             if len(line) > 80:
-                module.fail_json(msg="""Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """.format(line))
+                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
+                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                module.fail_json(msg=msg.format(line))
             else:
                 if len(line) > 1 and line[0] != " " and line[1] != " ":
                     if len(line) > 78:
-                        module.fail_json(msg="""Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """.format(line))
+                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
+                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                        module.fail_json(msg=msg.format(line))
                     else:
                         lines[index] = "  {0}".format(line)
     return lines

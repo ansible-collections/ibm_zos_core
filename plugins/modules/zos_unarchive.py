@@ -532,7 +532,6 @@ class TarUnarchive(Unarchive):
                     self.targets.append(path)
         else:
             self.extract_all(members=sanitize_members(self.file.getmembers(), self.dest, self.format))
-            # self.file.extractall(members=sanitize_members(self.file.getmembers(), self.dest, self.format))
             self.targets = files_in_archive
         self.file.close()
         # Returning the current working directory to what it was before to not
@@ -604,7 +603,6 @@ class ZipUnarchive(Unarchive):
                     self.targets.append(path)
         else:
             self.extract_all(members=sanitize_members(self.file.infolist(), self.dest, self.format))
-            # self.file.extractall(members=sanitize_members(self.file.infolist(), self.dest, self.format))
             self.targets = files_in_archive
         self.file.close()
         # Returning the current working directory to what it was before to not

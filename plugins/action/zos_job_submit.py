@@ -65,10 +65,9 @@ class ActionModule(ActionBase):
             result["failed"] = True
             if source is None:
                 result["msg"] = "Source is required."
-            if dest_path is None:
+            elif dest_path is None:
                 result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
-            if os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
-                result["failed"] = True
+            elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
                 result["msg"] = "Source must be a file."
             else:
                 del result["failed"]
@@ -100,16 +99,6 @@ class ActionModule(ActionBase):
             #     dest_file = self._connection._shell.join_path(dest, source_rel)
             # else:
             dest_file = self._connection._shell.join_path(dest_path)
-
-            # dest_status = self._execute_remote_stat(
-            #     dest_file, all_vars=task_vars, follow=False
-            # )
-
-            # if dest_status["exists"] and dest_status["isdir"]:
-            #     self._remove_tmp_path(tmp)
-            #     result["failed"] = True
-            #     result["msg"] = "can not use content with a dir as dest"
-            #     return result
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 

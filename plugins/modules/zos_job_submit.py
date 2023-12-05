@@ -104,8 +104,8 @@ options:
         and to, before submitting the job.
       - This option is only supported for when I(location=LOCAL).
       - If this parameter is not provided, and the z/OS systems default encoding
-        can not be identified, the JCL file will be converted from UTF-8 to
-        IBM-1047 by default, otherwise the module will detect the z/OS system
+        can not be identified, the JCL file will be converted from UTF8 to
+        IBM1047 by default, otherwise the module will detect the z/OS system
         encoding.
     required: false
     type: dict

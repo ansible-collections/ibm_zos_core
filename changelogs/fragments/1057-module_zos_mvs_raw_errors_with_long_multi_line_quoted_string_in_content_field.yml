@@ -1,0 +1,12 @@
+minor_changes:
+  - zos_mvs_raw - when using the dd_input content option for instream-data, if
+    the content was not properly indented according to the program which is
+    generally a blank in columns 1 & 2, those columns would be truncated. Now,
+    when setting instream-data, the module will ensure that all lines contain
+    a blank in columns 1 and 2 and add blanks when not present while retaining
+    a maximum length of 80 columns for any line. This is true for all content
+    types; string, list of strings and when using a YAML block indicator.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1057).
+   - zos_mvs_raw - no examples were included with the module that demonstrated
+     using a YAML block indicator, this now includes examples using a YAML
+     block indicator.

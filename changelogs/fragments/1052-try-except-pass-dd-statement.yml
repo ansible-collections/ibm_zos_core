@@ -1,0 +1,4 @@
+trivial:
+  - zos_mvs_raw - Removed Try, Except, Pass from the code, instead catching DatasetDeleteError
+    and pass only in that case, any other exception will be raised.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1052).

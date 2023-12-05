@@ -237,41 +237,6 @@ def test_rexx_script_chdir(ansible_zos_module):
         hosts.all.file(path=tmp_remote_dir, state='absent')
 
 
-def test_rexx_script_tmp_path(ansible_zos_module):
-    import os
-
-    hosts = ansible_zos_module
-
-    try:
-        rexx_script = create_script_content('tmp_path test', 'rexx')
-        script_path = create_local_file(rexx_script, 'rexx')
-
-        tmp_remote_dir = '/tmp/zos_script_tests'
-        file_result = hosts.all.file(
-            path=tmp_remote_dir,
-            state='directory'
-        )
-
-        for result in file_result.contacted.values():
-            assert result.get('changed') is True
-
-        zos_script_result = hosts.all.zos_script(
-            cmd=script_path,
-            tmp_path=tmp_remote_dir
-        )
-
-        for result in zos_script_result.contacted.values():
-            assert result.get('changed') is True
-            assert result.get('failed', False) is False
-            assert result.get('rc') == 0
-            assert result.get('stderr', '') == ''
-            assert tmp_remote_dir in result.get('remote_cmd', '')
-    finally:
-        if os.path.exists(script_path):
-            os.remove(script_path)
-        hosts.all.file(path=tmp_remote_dir, state='absent')
-
-
 def test_python_script(ansible_zos_module):
     import os
 

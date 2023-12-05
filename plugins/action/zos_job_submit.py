@@ -90,7 +90,7 @@ class ActionModule(ActionBase):
             source_full = None
             try:
                 source_full = self._loader.get_real_file(source)
-                source_rel = os.path.basename(source)
+                # source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
                 result["msg"] = "could not find src=%s, %s" % (source_full, e)

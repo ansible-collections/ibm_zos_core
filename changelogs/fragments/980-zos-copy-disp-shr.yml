@@ -1,5 +1,0 @@
-minor_changes:
-- zos_copy - Add new option `force_lock` that can copy into data sets that are
-   already in use by other processes (DISP=SHR). User needs to use with caution
-   because this is subject to race conditions and can lead to data loss.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/980).

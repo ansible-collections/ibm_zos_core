@@ -1,4 +1,0 @@
-minor_changes:
-- zos_copy: add support in zos_copy for text files and data sets containing ASA
-   control characters.
-   (https://github.com/ansible-collections/ibm_zos_core/pull/1028)

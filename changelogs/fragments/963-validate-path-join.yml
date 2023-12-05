@@ -1,5 +1,0 @@
-minor_changes:
-  - zos_fetch - Add validation into path joins to detect unauthorized path traversals.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/962)
-  - zos_copy -  Add validation into path joins to detect unauthorized path traversals.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/962)

@@ -1,5 +1,0 @@
-minor_changes:
-- zos_copy - introduces a new option 'aliases' to enable preservation of member aliases
-  when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources.
-  Copying aliases of text based members to/from USS is not supported.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/1014)

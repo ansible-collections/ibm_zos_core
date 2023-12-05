@@ -1,3 +1,0 @@
-trivial:
-- zos_copy - modify get_data_set_attributes helper function to no longer overwrite caller-defined attributes.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/964)

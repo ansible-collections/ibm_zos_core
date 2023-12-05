@@ -1,3 +1,0 @@
-trivial:
-- ac - Add ZOAU 1.2.4 and 1.2.5 mounts.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/959)

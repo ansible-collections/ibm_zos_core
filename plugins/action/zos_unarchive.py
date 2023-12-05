@@ -61,8 +61,6 @@ class ActionModule(ActionBase):
             format_name = format.get("name")
             copy_module_args = dict()
             dest_data_set = format.get("dest_data_set")
-            if dest_data_set is None:
-                dest_data_set = dict()
             dest = ""
             if source.startswith('~'):
                 source = os.path.expanduser(source)
@@ -73,6 +71,8 @@ class ActionModule(ActionBase):
                     module_name="tempfile", module_args={}, task_vars=task_vars,
                 ).get("path")
             elif format_name in MVS_SUPPORTED_FORMATS:
+                if dest_data_set is None:
+                    dest_data_set = dict()
                 tmp_hlq = module_args.get("tmp_hlq") if module_args.get("tmp_hlq") is not None else ""
                 cmd_res = self._execute_module(
                     module_name="command",

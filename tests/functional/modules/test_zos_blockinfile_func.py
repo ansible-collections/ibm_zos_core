@@ -1197,6 +1197,7 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
 def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup_name):
     hosts = ansible_zos_module
     ds_type = dstype
+    backup_ds_name = ""
     params = dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True)
     if backup_name:
         params["backup_name"] = backup_name
@@ -1218,8 +1219,7 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
         remove_ds_environment(ansible_zos_module, ds_name)
         if backup_name:
             ansible_zos_module.all.zos_data_set(name="BLOCKIF.TEST.BACKUP", state="absent")
-            ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
-        else:
+        if backup_ds_name != "":
             ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
 

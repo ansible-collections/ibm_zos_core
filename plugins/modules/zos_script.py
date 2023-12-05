@@ -92,18 +92,6 @@ options:
         script will not be executed.
     type: str
     required: false
-  tmp_path:
-    description:
-      - Directory path in the remote machine where local scripts will be
-        temporarily copied to.
-      - When not specified, the module will copy local scripts to
-        the default temporary path for the user.
-      - If C(tmp_path) does not exist in the remote machine, the
-        module will not create it.
-      - All scripts copied to C(tmp_path) will be removed from the managed
-        node before the module finishes executing.
-    type: str
-    required: false
 
 extends_documentation_fragment:
   - ibm.ibm_zos_core.template
@@ -112,6 +100,12 @@ notes:
   - When executing local scripts, temporary storage will be used
     on the remote z/OS system. The size of the temporary storage will
     correspond to the size of the file being copied.
+  - The location in the z/OS system where local scripts will be copied to can be
+    configured through Ansible's C(remote_tmp) option. Refer to
+    L(Ansible's documentation,https://docs.ansible.com/ansible/latest/collections/ansible/builtin/sh_shell.html#parameter-remote_tmp)
+    for more information.
+  - All local scripts copied to a remote z/OS system  will be removed from the
+    managed node before the module finishes executing.
   - Execution permissions for the group assigned to the script will be
     added to remote scripts. The original permissions for remote scripts will
     be restored by the module before the task ends.
@@ -154,11 +148,10 @@ EXAMPLES = r"""
     remote_src: true
     chdir: /u/user/output_dir
 
-- name: Run a local Python script that uses a custom tmp_path.
+- name: Run a local Python script in the temporary directory specified in the Ansible environment variable 'remote_tmp'.
   zos_script:
     cmd: ./scripts/program.py
     executable: /usr/bin/python3
-    tmp_path: /usr/tmp/ibm_zos_core
 
 - name: Run a local script made from a template.
   zos_script:
@@ -251,7 +244,6 @@ def run_module():
             executable=dict(type='str', required=False),
             remote_src=dict(type='bool', required=False),
             removes=dict(type='str', required=False),
-            tmp_path=dict(type='str', required=False),
             use_template=dict(type='bool', default=False),
             template_parameters=dict(
                 type='dict',
@@ -287,7 +279,6 @@ def run_module():
         executable=dict(arg_type='path', required=False),
         remote_src=dict(arg_type='bool', required=False),
         removes=dict(arg_type='path', required=False),
-        tmp_path=dict(arg_type='path', required=False),
         use_template=dict(arg_type='bool', required=False),
         template_parameters=dict(
             arg_type='dict',

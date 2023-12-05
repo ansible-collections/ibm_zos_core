@@ -1859,3 +1859,124 @@ class DatasetBusyError(Exception):
             "Close the dataset and try again".format(data_set)
         )
         super().__init__(self.msg)
+
+
+def _fix_ds_name(name_in):
+    """ Make sure ds_name is valid
+    Arguments:
+        name_in: ds_name (or job name) to be tested.
+
+    Raises:
+        nothing, directly.  Returns trigger value errors in _dsname_escape
+
+    Returns:
+        str - properly escaped ds_name, None on error
+        errstr - None if name_in is value, error message otherwise.
+
+    """
+    result = []
+    ret_str = ""
+    dot_count = 0
+    seg_length = 0
+    prev_dot = False
+    add_paren = False
+    in_paren = False
+
+    # May not exceed 44 characters
+    if len(name_in) > 44:
+        return None, "length"
+
+    for c in name_in:
+        # slash become a paren for member section
+        if c == "/":
+            if not in_paren:
+                c = "("
+                add_paren = True
+            else:
+                return None, "nested parentheses found"
+
+        # discard incoming escapes
+        if c == "\\":
+            continue
+
+        # check for special characters ('national characters') and hyphens
+        # manual testing shows escapes are not needed for # or -
+        # if c in "@$":
+        if c == "$":
+            result.append("\\")
+
+        # There is a rule saying you can't have a - in member name, however,
+        # since we are supporting GDG, where you can pass a negative number,
+        # we are ignoring that rule.
+
+        if prev_dot:
+            # segment names must start with letter or national character
+            if c in "0123456789-":
+                return None, "Bad segment start"
+
+        if c == "(":
+            in_paren = True
+            # result.append("\\")
+
+        if c == ")":
+            in_paren = False
+            # result.append("\\")
+
+        if c == ".":
+            # '..' is not allowed in a dataset name
+            if prev_dot:
+                return None, "Double Dot"
+            else:
+                dot_count += 1
+                seg_length = 0
+                prev_dot = True
+
+                # slash only usable in last segment
+                if add_paren:
+                    return None, "Slash only usable in last segment"
+        else:
+            prev_dot = False
+            seg_length += 1
+            if c in ".()":
+                seg_length = 0
+            if seg_length > 8:
+                return None, "Segment is too long"
+
+        result.append(c)
+
+    if add_paren:
+        # result.append("\\")
+        result.append(")")
+
+    # There must be at least 2 name segments, so at least one '.'
+    if dot_count < 1:
+        return None, "Too few segments"
+
+    # DS Name may not end with a period
+    if c == '.':
+        return None, "Ends with a dot"
+
+    return ret_str.join(result), None
+
+
+def dsname_escape(dsname_in):
+    """Takes in a string for dataset name type arguments
+
+    Arguments:
+        dsname_in {str} -- Incoming data set name.
+
+    Raises:
+        ValueError: When contents is invalid argument type
+
+    Returns:
+        str -- escaped string of dsname_in
+    """
+    result, errmsg = _fix_ds_name(dsname_in)
+
+    if errmsg:
+        raise ValueError(
+            'Error processing "{0}" as data set name: "{1}"'.format(
+                dsname_in, errmsg
+            )
+        )
+    return str(result)

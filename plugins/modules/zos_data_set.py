@@ -673,7 +673,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import dsname_escape
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import dsname_escape
 
 from ansible.module_utils.basic import AnsibleModule
 

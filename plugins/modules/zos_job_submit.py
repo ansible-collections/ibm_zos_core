@@ -244,7 +244,7 @@ jobs:
              Returns additional information related to the job. Jobs that take
              longer to assign a value can have a value of '?'.
           type: str
-          sample: The job completion code (CC) was not available in the job
+d          sample: The job completion code (CC) was not available in the job
                   output, please review the job log."
         code:
           description:
@@ -643,7 +643,7 @@ if PY3:
 else:
     from pipes import quote
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import dsname_escape
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import dsname_escape
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])

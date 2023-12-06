@@ -1,0 +1,10 @@
+bugfixes:
+  - zos_job_query - The module handling ZOAU import errors obscured the
+    original traceback when an import error ocurred. Fix now passes correctly
+    the context to the user.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1042).
+
+  - zos_operator - The module handling ZOAU import errors obscured the
+    original traceback when an import error ocurred. Fix now passes correctly
+    the context to the user.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1042).

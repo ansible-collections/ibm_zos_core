@@ -51,7 +51,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
         print("\nCompleted test suite TestServicesFunctionalTests")
 
     def tearDown(self):
-        print("Completed FVT tets for services class.")
+        print("Completed FVT tests for services class.")
 
     # --------------------------------------------------------------------------
     # Mock request to use for testing

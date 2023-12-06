@@ -12,9 +12,13 @@
 # limitations under the License.
 
 
+from distutils.util import execute
 from socket import error
+from sqlite3 import connect
+from urllib import request
 from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
     AuthenticationException, SSHException, ssh_exception
+from operations.types import Request
 from operations.exceptions import ServicesConnectionException
 
 
@@ -38,17 +42,17 @@ class Connection:
         self.passphrase = passphrase
         self.environment = environment
 
+        self.os = None
         self.env_str = ""
         if self.environment is not None:
             self.env_str = self.set_environment_variable(**self.environment)
-
 
     def __to_dict(self):
         """
         Method returns constructor agrs to a dictionary, must remain private to
         protect credentials.
         """
-        temp =  {
+        temp = {
             "hostname": self.hostname,
             "port": self.port,
             "username": self.username,
@@ -57,7 +61,7 @@ class Connection:
             "passphrase": self.passphrase,
         }
 
-        for k,v  in dict(temp).items():
+        for k, v in dict(temp).items():
             if v is None:
                 del temp[k]
         return temp
@@ -141,7 +145,7 @@ class Connection:
             response = {'stdout': out,
                         'stderr': error,
                         'command': cmd
-            }
+                        }
 
         except SSHException as e:
             # if there was any other error connecting or establishing an SSH session
@@ -156,7 +160,7 @@ class Connection:
         TODO: Doc this
         """
         env_vars = ""
-        export="export"
+        export = "export"
         if kwargs is not None:
             for key, value in kwargs.items():
                 env_vars = f"{env_vars}{export} {key}=\"{value}\";"

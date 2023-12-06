@@ -36,13 +36,13 @@ proceed to install the IBM z/OS core collection.
       ported ``bash`` shell for further configurations.
 
 .. _Ansible documentation:
-   https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html
+   https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html
 
 .. _Python on z/OS:
    requirements_managed.html#id1
 
 .. _Installing and Configuring ZOA Utilities:
-   https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.1.0/install.html
+   https://www.ibm.com/docs/en/zoau/1.2.x?topic=installing-configuring-zoau
 
 .. _V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
@@ -54,16 +54,16 @@ proceed to install the IBM z/OS core collection.
    requirements_managed.html#zoau
 
 .. _z/OS OpenSSH:
-   https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm
+   https://www.ibm.com/docs/en/zos/3.1.0?topic=zbed-zos-openssh
 
 .. _release notes:
    release_notes.html
 
 .. _playbook configuration:
-   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/zos_core/configuration_guide.md
 
 .. _z/OS® shell:
-   https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
+   https://www.ibm.com/docs/en/zos/3.1.0?topic=guide-zos-shells
 
 .. _Z Open Automation Utilities 1.1.0:
    https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html

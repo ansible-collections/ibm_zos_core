@@ -14,13 +14,8 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
-from ibm_zos_core.tests.helpers.volumes import (
-    Volume)
+from ibm_zos_core.tests.helpers.volumes import get_volumes
 import sys
-import time
-import string
-import random
-import re
 from mock import MagicMock
 import importlib
 
@@ -92,37 +87,10 @@ def ansible_zos_module(request, z_python_interpreter):
     # Call of the class by the class ls_Volume (volumes.py file) as many times needed
     # one time the array is filled
 @pytest.fixture(scope="session")
-def get_volumes(ansible_zos_module):
-    # Call the pytest-ansible plugin to execute the command d u,dasd,online
-    # to full an array of volumes on available with the priority of of actives (A) and storage
-    # (STRG) first then online (O) and storage and if is needed the privated ones but actives
-    # then to get a flag if is available or not every volumes is a instance of a class to
-    # manage the use
-    list_volumes = []
-    active_storage = []
-    storage_online = []
-    flag = False
-    iteration = 5
-    # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
-    # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
-    while not flag and iteration > 0:
-        all_volumes = ansible_zos_module.all.zos_operator(cmd="d u,dasd,online,,65536")
-        time.sleep(1)
-        for volume in all_volumes.contacted.values():
-            all_volumes = volume.get('content')
-        flag = True if len(all_volumes) > 5 else False
-        iteration -= 1
-    # Check if the volume is of storage and is active on prefer but also online as a correct option
-    for info in all_volumes:
-        vol_w_info = info.split()
-        if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
-            storage_online.append(vol_w_info[3])
-    # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
-    for vol in active_storage:
-        list_volumes.append(Volume(vol))
-    for vol in storage_online:
-        list_volumes.append(Volume(vol))
-    return list_volumes
+def volumes_on_systems(ansible_zos_module):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    list_Volumes = get_volumes(ansible_zos_module)
+    yield list_Volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock
 # * because automatic teardown is not performed, leading to mock pollution

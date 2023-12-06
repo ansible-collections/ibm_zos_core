@@ -17,8 +17,9 @@ from socket import error
 from sqlite3 import connect
 from urllib import request
 from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
-    AuthenticationException, SSHException
+    AuthenticationException, SSHException, ssh_exception
 from operations.types import Request
+from operations.exceptions import ServicesConnectionException
 
 
 class Connection:
@@ -84,17 +85,23 @@ class Connection:
         except BadHostKeyException as e:
             #if the server’s host key could not be verified
             print(e)
+            raise ServicesConnectionException('Host key could not be verified.') # parentheses?
         except AuthenticationException as e:
             # authentication failed
             print(e)
-        except SSHException as e:
-            # if there was any other error connecting or establishing an SSH session
+            raise ServicesConnectionException('Authentication failed.')
+        except ssh_exception.SSHException as e:
             print(e)
+            raise ServicesConnectionException('SSH Error.')
+        except FileNotFoundError as e:
+            # Missing key filename
+            print(e)
+            raise ServicesConnectionException('Missing key filename.')
         except error as e:
             # if a socket error occurred while connecting
             print(e)
-        req = Request("uname")
-        self.os = execute(client, req)["stdout"]
+            raise ServicesConnectionException('Socket error occurred.')
+
         return client
 
     def execute(self, client, request):

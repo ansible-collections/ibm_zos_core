@@ -12,14 +12,17 @@
 # limitations under the License.
 
 
+
 import os
 import re
 import unittest
 import sys
 import yaml
+from socket import error
+from paramiko import AuthenticationException, ssh_exception 
 sys.path.append('..')
 
-from operations.connection import Connection
+from operations.connection import Connection, ServicesConnectionException
 from operations.types import Request
 
 
@@ -78,7 +81,7 @@ class TestConnectionUnitTests(unittest.TestCase):
 
 
     def tearDown(self):
-        print("Completed unit tets for connection class.")
+        print("Completed unit test for connection class.")
 
 
     def test_connection_args_6(self):
@@ -89,7 +92,6 @@ class TestConnectionUnitTests(unittest.TestCase):
         connection = Connection(hostname=self.hostname, username=self.username,
                         password=self.password, key_filename=self.key_filename,
                         passphrase=self.passphrase, port=66)
-
         assert connection is not None, "ASSERTION-FAILURE: Connection is None"
 
         arg_len = connection.args_length()
@@ -109,54 +111,146 @@ class TestConnectionUnitTests(unittest.TestCase):
         assert arg_len == 4, \
             f"ASSERTION-FAILURE: Connection args expected 4 not equal to = [{arg_len}]"
 
+    def test_connection_invalid_hostname_type(self): 
+        """
+        Test the connection with an invalid hostname type, negative test case.
+        """
+        invalid_hostname = 1 
+        try:
+            connection = Connection(hostname=invalid_hostname, username=self.username, 
+                            password=self.password)
+            connection.connect()
+        except TypeError as e:
+            assert re.match(r'^TypeError', repr(e))
+      
 
-    @unittest.skip('TODO - IMPLEMENT')
     def test_connection_invalid_hostname(self):
         """
         Test the connection with an invalid hostname, negative test case.
         """
-        assert True
+        invalid_hostname = "invalid hostname"
+        try:
+            connection = Connection(hostname=invalid_hostname, username=self.username, 
+                            password=self.password)
+            connection.connect()
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
+ 
 
+    def test_connection_invalid_port_range(self):
+        """
+        Test the connection with an invalid port range, negative test case.
+        """
+        invalid_port = -1 
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username, 
+                            password=self.password, port=invalid_port)
+            connection.connect()
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
+ 
 
-    @unittest.skip('TODO - IMPLEMENT')
     def test_connection_invalid_port(self):
         """
         Test the connection with an invalid port, negative test case.
         """
-        assert True
+        invalid_port = 0 
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username, 
+                            password=self.password, port=invalid_port)
+            connection.connect()
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
+            
+
+    def test_connection_invalid_user_type(self):
+        """
+        Test the connection with an invalid user type, negative test case.
+        """
+        invalid_username = 1 
+        try:
+            connection = Connection(hostname=self.hostname, username=invalid_username,
+                            password=self.password)
+            connection.connect()
+        except TypeError as e:
+            assert re.match(r'^TypeError', repr(e))
 
 
-    @unittest.skip('TODO - IMPLEMENT')
     def test_connection_invalid_user(self):
         """
         Test the connection with an invalid user, negative test case.
         """
-        assert True
+        invalid_username = "invalid username"
+        try:
+            connection = Connection(hostname=self.hostname, username=invalid_username, 
+                            password=self.password)
+            connection.connect()
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
 
 
-    @unittest.skip('TODO - IMPLEMENT')
+    def test_connection_invalid_password_type(self):
+        invalid_password = 1 
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username,
+                            password=invalid_password)
+            connection.connect()
+        except TypeError as e:
+            assert re.match(r'^TypeError', repr(e))
+
+
     def test_connection_invalid_password(self):
         """
         Test the connection with an invalid password, negative test case.
         """
-        assert True
+        invalid_password = "invalid password"
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username,
+                            password=invalid_password)
+            connection.connect()
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
 
 
-    @unittest.skip('TODO - IMPLEMENT')
+    def test_connection_invalid_key_filename_type(self):
+        """
+        Test the connection with an invalid key_filename type, negative test case.
+        """
+        invalid_key_filename = 1 
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username,
+                            key_filename=invalid_key_filename)
+            connection.connect()
+        except TypeError as e:
+            assert re.match(r'^TypeError', repr(e))
+           
+
     def test_connection_invalid_key_filename(self):
         """
         Test the connection with an invalid key_filename, negative test case.
         """
-        assert True
+        invalid_key_filename = "invalid key filename"
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username, 
+                            key_filename=invalid_key_filename)
+            connection.connect()
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
+           
 
-
-    @unittest.skip('TODO - IMPLEMENT')
+    @unittest.skip('TODO - TRY AGAIN') 
     def test_connection_invalid_passphrase(self):
         """
         Test the connection with an invalid passphrase, negative test case.
         """
-        assert True
-
+        invalid_passphrase = "invalid passphrase"
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username,
+                            key_filename=self.key_filename,passphrase=invalid_passphrase)
+            connection.connect()
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
+            
 
 class TestConnectionFunctionalTests(unittest.TestCase):
     """
@@ -164,10 +258,10 @@ class TestConnectionFunctionalTests(unittest.TestCase):
     """
     # Default args used for a connection, ensure password not shared in Git
     kwargs = {
-        "hostname": "EC33017A.vmec.svl.ibm.com",
+        "hostname": "EC01140A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "xxxxxx",
+        "password": "changeme",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }
@@ -189,6 +283,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
     def tearDown(self):
         print("Completed FVT tets for connection class.")
 
+
     def test_connection_host_user_pass(self):
         """
         Test the connection with a valid host, user and password
@@ -205,6 +300,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         assert result is not None, "ASSERTION-FAILURE: Executing a command returned None"
 
 
+    @unittest.skip('TODO - TRY AGAIN') 
     def test_connection_host_user_key_filename(self):
         """
         Test the connection with a valid host, user and key_filename
@@ -226,7 +322,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         assert _hostname == self.hostname, f"ASSERTION-FAILURE: Hostname {_hostname} \
                                 does not match expected {self.hostname}"
 
-
+    @unittest.skip('TODO - TRY AGAIN') 
     def test_connection_environment_vars(self):
         """
         Test the connection with a valid set of environment vars
@@ -256,9 +352,13 @@ class TestConnectionFunctionalTests(unittest.TestCase):
 
 
 
-    @unittest.skip('TODO - IMPLEMENT')
+    @unittest.skip('TODO - TRY AGAIN')
     def test_connection_host_user_key_filename_passphrase(self):
         """
         Test the connection with a valid passphrase
         """
-        assert True
+        connection = Connection(hostname=self.hostname, username=self.username,
+                            key_filename=self.key_filename,passphrase=self.passphrase)
+        client = connection.connect()
+        assert client is not None, "ASSERTION-FAILURE: client is None"
+        

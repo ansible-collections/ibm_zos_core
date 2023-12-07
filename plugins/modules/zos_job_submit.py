@@ -611,7 +611,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
@@ -624,19 +624,19 @@ from ansible.module_utils.six import PY3
 from timeit import default_timer as timer
 from tempfile import NamedTemporaryFile
 from os import remove
+import traceback
 from time import sleep
 import re
 
 try:
-    from zoautil_py.exceptions import ZOAUException, JobSubmitException
+    from zoautil_py import exceptions
 except ImportError:
-    ZOAUException = MissingZOAUImport()
-    JobSubmitException = MissingZOAUImport()
+    exceptions = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import jobs
 except Exception:
-    jobs = MissingZOAUImport()
+    jobs = ZOAUImportError(traceback.format_exc())
 
 if PY3:
     from shlex import quote
@@ -731,7 +731,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
     # ZOAU throws a ZOAUException when the job sumbission fails thus there is no
     # JCL RC to share with the user, if there is a RC, that will be processed
     # in the job_output parser.
-    except ZOAUException as err:
+    except exceptions.ZOAUException as err:
         result["changed"] = False
         result["failed"] = True
         result["stderr"] = str(err)
@@ -746,7 +746,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
 
     # ZOAU throws a JobSubmitException when timeout has execeeded in that no job_id
     # has been returned within the allocated time.
-    except JobSubmitException as err:
+    except exceptions.JobSubmitException as err:
         result["changed"] = False
         result["failed"] = False
         result["stderr"] = str(err)
@@ -815,7 +815,6 @@ def run_module():
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", default=10),
         max_rc=dict(type="int", required=False),
-        temp_file=dict(type="path", required=False),
         use_template=dict(type='bool', default=False),
         template_parameters=dict(
             type='dict',
@@ -877,7 +876,6 @@ def run_module():
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=10),
         max_rc=dict(arg_type="int", required=False),
-        temp_file=dict(arg_type="path", required=False),
     )
 
     # ********************************************************************
@@ -902,7 +900,7 @@ def run_module():
     from_encoding = parsed_args.get("from_encoding")
     to_encoding = parsed_args.get("to_encoding")
     # temporary file names for copied files when user sets location to LOCAL
-    temp_file = parsed_args.get("temp_file")
+    temp_file = parsed_args.get("src")
     temp_file_encoded = None
 
     # Default 'changed' is False in case the module is not able to execute
@@ -920,7 +918,6 @@ def run_module():
     job_submitted_id = None
     duration = 0
     start_time = timer()
-
     if location == "DATA_SET":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
@@ -1039,7 +1036,7 @@ def run_module():
         module.exit_json(**result)
 
     finally:
-        if temp_file:
+        if location != "DATA_SET" and location != "USS":
             remove(temp_file)
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'

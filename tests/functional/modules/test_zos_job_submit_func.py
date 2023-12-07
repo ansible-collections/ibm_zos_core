@@ -398,16 +398,6 @@ def test_job_submit_PDS_volume(ansible_zos_module):
         )
 
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(SAMPLE)", location="DATA_SET", volume=DEFAULT_VOLUME)
-        print( "\nGot results =v=v=v=v=v===311\n")
-        print( "\nRType: {0}: {1}\n\n".format(type(results), results))
-        for result in results.contacted.values():
-            print( "\nrType: {0}: {1}\n\n".format(type(result), result))
-            print( "\n---\n")
-            pprint( result.get("jobs") )
-            print( "\n------\n")
-            pprint( result.get("jobs")[0] )
-            print( "\n---------\n")
-        print( "\nGot results =^=^=^=^=^=======\n")
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -443,11 +433,8 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
-            # assert result.get('changed') is True
-            # The test systems are running slowly, so the above will trigger (Long running job)
-            # I believe we can ignore the 'changed' if the ret_code returns 0/0
-            # assert result.get('duration') <= wait_time_s
-            # The test systems are running slowly, so the above will trigger (duration issue)
+            assert result.get('changed') is True
+            assert result.get('duration') <= wait_time_s
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")

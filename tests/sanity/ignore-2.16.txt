@@ -2,8 +2,6 @@ plugins/modules/zos_apf.py validate-modules:missing-gplv3-license # Licensed und
 plugins/modules/zos_backup_restore.py validate-modules:doc-choices-do-not-match-spec # We use our own argument parser for advanced conditional and dependent arguments.
 plugins/modules/zos_backup_restore.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_blockinfile.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
-plugins/modules/zos_copy.py validate-modules:doc-default-does-not-match-spec # We use our own argument parser for advanced conditional and dependent arguments.
-plugins/modules/zos_copy.py validate-modules:doc-type-does-not-match-spec # doc type should be str, while spec type is path to allow user path expansion
 plugins/modules/zos_copy.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_copy.py validate-modules:parameter-type-not-in-doc # Passing args from action plugin
 plugins/modules/zos_copy.py validate-modules:undocumented-parameter # Passing args from action plugin
@@ -31,3 +29,5 @@ plugins/modules/zos_script.py validate-modules:missing-gplv3-license # Licensed 
 plugins/modules/zos_tso_command.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_gather_facts.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_volume_init.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
+plugins/modules/zos_archive.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
+plugins/modules/zos_unarchive.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0

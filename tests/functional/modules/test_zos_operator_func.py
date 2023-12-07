@@ -23,6 +23,11 @@ import ansible.utils
 import pytest
 from pprint import pprint
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
+
+
 __metaclass__ = type
 
 
@@ -103,13 +108,9 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
 def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     hosts = ansible_zos_module
     wait_time_s=10
-    #startmod = time.time()
     results = hosts.all.zos_operator(
         cmd="d u,all", verbose=True, wait_time_s=wait_time_s
     )
-    # endmod = time.time()
-    # timediff = endmod - startmod
-    # assert timediff < 15
 
     for result in results.contacted.values():
         assert result["rc"] == 0
@@ -119,9 +120,26 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
         assert result.get('elapsed') <= (2 * wait_time_s)
 
 
+def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
+    if zoau_version_checker.is_zoau_version_higher_than("1.2.4.5"):
+        hosts = ansible_zos_module
+        wait_time_s=5
+        results = hosts.all.zos_operator(
+            cmd="d u,all", verbose=True, wait_time_s=wait_time_s
+        )
+
+        for result in results.contacted.values():
+            assert result["rc"] == 0
+            assert result.get("changed") is True
+            assert result.get("content") is not None
+            # Account for slower network
+            assert result.get('elapsed') >= wait_time_s
+
+
+
 def test_response_come_back_complete(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="\$dspl")
+    results = hosts.all.zos_operator(cmd="\\$dspl")
     res = dict()
     res["stdout"] = []
     for result in results.contacted.values():
@@ -129,3 +147,4 @@ def test_response_come_back_complete(ansible_zos_module):
         # HASP646 Only appears in the last line that before did not appears
         last_line = len(stdout)
         assert "HASP646" in stdout[last_line - 1]
+

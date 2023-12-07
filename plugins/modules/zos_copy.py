@@ -114,7 +114,7 @@ options:
         be deleted and recreated following the process outlined in the C(volume) option.
       - When the C(dest) is an existing VSAM (RRDS), then the source must be an RRDS.
         The VSAM (RRDS) will be deleted and recreated following the process outlined
-        in the C(volume) option.
+       in the C(volume) option.
       - When C(dest) is and existing VSAM (LDS), then source must be an LDS. The
         VSAM (LDS) will be deleted and recreated following the process outlined
         in the C(volume) option.
@@ -813,6 +813,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    is_member
+)
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
@@ -949,6 +952,64 @@ class CopyHandler(object):
                 stderr_lines=err.splitlines(),
                 cmd=repro_cmd,
             )
+
+    def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
+        """Recursively copy USS directory to another USS directory.
+        This function was created to circumvent using shutil.copytree
+        as it presented the issue of corrupting file contents after second copy
+        because the use of shutil.copy2. This issue is only present in
+        Python 3.11 and 3.12.
+
+        Arguments:
+            entries {list} -- List of files under src directory.
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+
+        Raises:
+            Exception -- When copying into the directory fails.
+
+        Returns:
+            {str } -- Destination directory that was copied.
+        """
+        os.makedirs(dest, exist_ok=dirs_exist_ok)
+        for src_entry in entries:
+            src_name = os.path.join(validation.validate_safe_path(src), validation.validate_safe_path(src_entry.name))
+            dest_name = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_entry.name))
+            try:
+                if src_entry.is_symlink():
+                    link_to = os.readlink(src_name)
+                    os.symlink(link_to, dest_name)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
+                elif src_entry.is_dir():
+                    self.copy_tree(src_name, dest_name, dirs_exist_ok=dirs_exist_ok)
+                else:
+                    opts = dict()
+                    opts["options"] = ""
+                    response = datasets._copy(src_name, dest_name, None, **opts)
+                    if response.rc > 0:
+                        raise Exception(response.stderr_response)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
+            except Exception as err:
+                raise err
+
+        return dest
+
+    def copy_tree(self, src_dir, dest_dir, dirs_exist_ok=False):
+        """
+        Copies a USS directory into another USS directory.
+
+        Arguments:
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+
+        Returns:
+            {str} -- Destination directory that was copied.
+        """
+        with os.scandir(src_dir) as itr:
+            entries = list(itr)
+        return self._copy_tree(entries, src_dir, dest_dir, dirs_exist_ok=dirs_exist_ok)
 
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
@@ -1255,6 +1316,7 @@ class USSCopyHandler(CopyHandler):
                 if not os.path.isdir(dest):
                     self.module.set_mode_if_different(dest, mode, False)
                 if changed_files:
+                    self.module.set_mode_if_different(dest, mode, False)
                     for filepath in changed_files:
                         self.module.set_mode_if_different(
                             os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False
@@ -1290,7 +1352,13 @@ class USSCopyHandler(CopyHandler):
             if self.is_binary:
                 copy.copy_uss2uss_binary(new_src, dest)
             else:
-                shutil.copy(new_src, dest)
+                opts = dict()
+                opts["options"] = ""
+                response = datasets._copy(new_src, dest, None, **opts)
+                if response.rc > 0:
+                    raise Exception(response.stderr_response)
+                shutil.copystat(new_src, dest, follow_symlinks=True)
+                # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
@@ -1350,7 +1418,8 @@ class USSCopyHandler(CopyHandler):
         try:
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
-            dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
@@ -2334,25 +2403,7 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            if executable:
-                src_attributes = datasets.listing(src_name)[0]
-                size = int(src_attributes.total_space)
-                record_format = "U"
-                record_length = 0
-
-                dest_params = get_data_set_attributes(
-                    dest,
-                    size,
-                    is_binary,
-                    asa_text,
-                    record_format=record_format,
-                    record_length=record_length,
-                    type="LIBRARY",
-                    volume=volume
-                )
-                data_set.DataSet.ensure_present(replace=force, **dest_params)
-            else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
@@ -2566,7 +2617,6 @@ def run_module(module, arg_def):
     is_mvs_dest = module.params.get('is_mvs_dest')
     temp_path = module.params.get('temp_path')
     src_member = module.params.get('src_member')
-    copy_member = module.params.get('copy_member')
     tmphlq = module.params.get('tmp_hlq')
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
@@ -2575,6 +2625,8 @@ def run_module(module, arg_def):
     if dest_data_set:
         if volume:
             dest_data_set["volumes"] = [volume]
+
+    copy_member = is_member(dest)
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -3053,7 +3105,7 @@ def run_module(module, arg_def):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(type='path'),
+            src=dict(type='str'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
@@ -3145,15 +3197,15 @@ def main():
             is_mvs_dest=dict(type='bool'),
             size=dict(type='int'),
             temp_path=dict(type='str'),
-            copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
             force=dict(type='bool', default=False),
             force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
+            owner=dict(type='str', required=False),
+            group=dict(type='str', required=False),
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
-        add_file_common_args=True,
     )
 
     arg_def = dict(

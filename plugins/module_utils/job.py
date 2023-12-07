@@ -15,28 +15,37 @@ __metaclass__ = type
 
 import fnmatch
 import re
+import traceback
 from time import sleep
 from timeit import default_timer as timer
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    # MissingZOAUImport,
+    ZOAUImportError
 )
 
 try:
-    from zoautil_py.jobs import read_output, list_dds, listing
+    # For files that import individual functions from a ZOAU module,
+    # we'll replace the imports to instead get the module.
+    # This way, we'll always make a call to the module, allowing us
+    # to properly get the exception we need and avoid the issue
+    # described in #837.
+    # from zoautil_py.jobs import read_output, list_dds, listing
+    from zoautil_py import jobs
 except Exception:
-    read_output = MissingZOAUImport()
-    list_dds = MissingZOAUImport()
-    listing = MissingZOAUImport()
+    # read_output = MissingZOAUImport()
+    # list_dds = MissingZOAUImport()
+    # listing = MissingZOAUImport()
+    jobs = ZOAUImportError(traceback.format_exc())
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
 
 
-def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0, timeout=0, start_time=timer()):
+def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Arguments:
@@ -44,6 +53,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
         owner (str) -- The owner of the job (default: {None})
         job_name (str) -- The job name search for (default: {None})
         dd_name (str) -- The data definition to retrieve (default: {None})
+        dd_scan (bool) - Whether or not to pull information from the dd's for this job {default: {True}}
         duration (int) -- The time the submitted job ran for
         timeout (int) - how long to wait in seconds for a job to complete
         start_time (int) - time the JCL started its submission
@@ -70,7 +80,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
     dd_name = parsed_args.get("dd_name") or ""
 
     job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
-                                 dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
+                                 dd_name=dd_name, duration=duration, dd_scan=dd_scan, timeout=timeout, start_time=start_time)
 
     # while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
     #     current_time = timer()
@@ -83,7 +93,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
         job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
-                                     dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
+                                     dd_name=dd_name, dd_scan=dd_scan, duration=duration, timeout=timeout, start_time=start_time)
     return job_detail
 
 
@@ -203,7 +213,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
-    # listing(job_id, owner) in 1.2.0 has owner param, 1.1 does not
+    # jobs.listing(job_id, owner) in 1.2.0 has owner param, 1.1 does not
     # jls output has expanded in zoau 1.2.3 and later: jls -l -v shows headers
     # jobclass=job[5] serviceclass=job[6] priority=job[7] asid=job[8]
     # creationdatetime=job[9] queueposition=job[10]
@@ -216,13 +226,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
     kwargs = {
         "job_id": job_id_temp,
     }
-    entries = listing(**kwargs)
+    entries = jobs.listing(**kwargs)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = listing(**kwargs)
+        entries = jobs.listing(**kwargs)
 
     if entries:
         for entry in entries:
@@ -274,12 +284,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["duration"] = duration
 
             if dd_scan:
-                list_of_dds = list_dds(entry.id)
+                list_of_dds = jobs.list_dds(entry.id)
                 while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
                     current_time = timer()
                     duration = round(current_time - start_time)
                     sleep(1)
-                    list_of_dds = list_dds(entry.id)
+                    list_of_dds = jobs.list_dds(entry.id)
 
                 job["duration"] = duration
 
@@ -324,7 +334,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     tmpcont = None
                     if "stepname" in single_dd:
                         if "dataset" in single_dd:
-                            tmpcont = read_output(
+                            tmpcont = jobs.read_output(
                                 entry.id, single_dd["stepname"], single_dd["dataset"])
 
                     dd["content"] = tmpcont.split("\n")

@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_submit_job - Previous code did not return output, but still requested job data from the target system.
+    This changes to honor return_output=false by not querying the job dd segments at all.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1058).

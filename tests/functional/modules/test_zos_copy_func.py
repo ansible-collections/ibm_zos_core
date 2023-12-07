@@ -2951,7 +2951,7 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
         hosts.all.zos_data_set(name=src, state="absent")
         hosts.all.zos_data_set(name=dest, state="absent")
 
-#Special case for call a program
+
 @pytest.mark.pdse
 @pytest.mark.loadlib
 @pytest.mark.aliases

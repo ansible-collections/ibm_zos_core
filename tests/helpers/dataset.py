@@ -19,25 +19,36 @@ import string
 import random
 import re
 
-def get_tmp_ds_name(hosts, hlq_size=8):
+def get_tmp_ds_name(hosts, hlq_size=8, hlq=None):
     """ Function or test to ensure random names of datasets
+    Is need the hosts to call the shell in every test and for some cases of
+    long datasets names that will generate problems with jcl the hlq size can
+    change."""
+    if not hlq:
+        hlq = get_random_hlq(hlq_size)
+    # Get the second part of the name with the command mvstmp by time is give
+    hlq = hlq.upper()
+    response = hosts.all.command(cmd="mvstmp {0}".format(hlq))
+    for data_set in response.contacted.values():
+        ds = data_set.get("stdout")
+    return ds
+
+
+def get_random_hlq(size=8):
+    """ Function or test to ensure random hlq of datasets
     Is need the hosts to call the shell in every test and for some cases of
     long datasets names that will generate problems with jcl the hlq size can
     change."""
     # Generate the first random hlq of size pass as parameter
     letters =  string.ascii_uppercase
-    hlq =  ''.join(random.choice(letters)for iteration in range(hlq_size))
+    random_hlq =  ''.join(random.choice(letters)for iteration in range(size))
     count = 0
     # Generate a random HLQ and verify if is valid, if not, repeat the process
     while  count < 5 and not re.fullmatch(
     r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
-            hlq,
+            random_hlq,
             re.IGNORECASE,
         ):
-        hlq =  ''.join(random.choice(letters)for iteration in range(hlq_size))
+        random_hlq =  ''.join(random.choice(letters)for iteration in range(size))
         count += 1
-    # Get the second part of the name with the command mvstmp by time is give
-    response = hosts.all.command(cmd="mvstmp {0}".format(hlq))
-    for data_set in response.contacted.values():
-        ds = data_set.get("stdout")
-    return ds
+    return random_hlq

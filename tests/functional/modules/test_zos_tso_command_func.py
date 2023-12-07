@@ -18,10 +18,8 @@ __metaclass__ = type
 import ansible.constants
 import ansible.errors
 import ansible.utils
-from ibm_zos_core.tests.helpers.dataset import (
-    get_dataset)
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
-#DEFAULT_TEMP_DATASET="imstestl.ims1.temp.ps"
 
 def test_zos_tso_command_run_help(ansible_zos_module):
     hosts = ansible_zos_module
@@ -51,7 +49,7 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
 
 def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
     hosts = ansible_zos_module
-    DEFAULT_TEMP_DATASET = get_dataset(hosts)
+    DEFAULT_TEMP_DATASET = get_tmp_ds_name(hosts)
     command_string = [
         "alloc da('{0}') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)".format(DEFAULT_TEMP_DATASET)
     ]

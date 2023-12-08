@@ -15,16 +15,12 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ibm_zos_core.tests.helpers.dataset import (
-    get_dataset)
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
 import random
 
-#DATA_SET_NAME = "USER.PRIVATE.TESTDS"
-#DATA_SET_NAME2 = "USER.PRIVATE.TESTDS2"
-#DATA_SET_PATTERN = "USER.PRIVATE.*"
 DATA_SET_CONTENTS = "HELLO world"
 DATA_SET_QUALIFIER = "{0}.PRIVATE.TESTDS"
 DATA_SET_QUALIFIER2 = "{0}.PRIVATE.TESTDS2"
@@ -196,7 +192,7 @@ def assert_file_does_not_exist(hosts, path):
 )
 def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         if not overwrite:
             delete_data_set_or_file(hosts, backup_name)
@@ -231,7 +227,7 @@ def test_backup_of_data_set_when_backup_dest_exists(
     ansible_zos_module, backup_name, overwrite
 ):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
         assert_data_set_or_file_exists(hosts, backup_name)
@@ -271,7 +267,7 @@ def test_backup_and_restore_of_data_set(
     ansible_zos_module, backup_name, overwrite, recover
 ):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, backup_name)
@@ -319,7 +315,7 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
     ansible_zos_module, backup_name, space, space_type
 ):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, backup_name)
@@ -368,7 +364,7 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
     ansible_zos_module, backup_name, overwrite
 ):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, backup_name)
@@ -450,8 +446,8 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_i
 
 def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
-    DATA_SET_NAME2 = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
+    DATA_SET_NAME2 = get_tmp_ds_name(hosts)
     try:
         delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, DATA_SET_NAME2)
@@ -526,7 +522,7 @@ def test_backup_of_data_set_when_data_set_does_not_exist(
     ansible_zos_module, backup_name
 ):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, backup_name)
@@ -544,7 +540,7 @@ def test_backup_of_data_set_when_data_set_does_not_exist(
 
 def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
@@ -567,7 +563,7 @@ def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 
 def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
-    DATA_SET_NAME = get_dataset(hosts)
+    DATA_SET_NAME = get_tmp_ds_name(hosts)
     try:
         delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)

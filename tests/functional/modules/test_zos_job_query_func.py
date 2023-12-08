@@ -23,8 +23,7 @@ from pprint import pprint
 from shellescape import quote
 import tempfile
 
-from ibm_zos_core.tests.helpers.dataset import (
-    get_dataset)
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 # Make sure job list * returns something
 def test_zos_job_query_func(ansible_zos_module):
@@ -55,7 +54,7 @@ TEMP_PATH = "/tmp/jcl"
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        JDATA_SET_NAME = get_dataset(hosts)
+        JDATA_SET_NAME = get_tmp_ds_name(hosts)
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
@@ -88,7 +87,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
 def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        NDATA_SET_NAME = get_dataset(hosts)
+        NDATA_SET_NAME = get_tmp_ds_name(hosts)
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)

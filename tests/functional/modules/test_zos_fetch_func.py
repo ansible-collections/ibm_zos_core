@@ -23,12 +23,8 @@ from hashlib import sha256
 from ansible.utils.hashing import checksum
 from shellescape import quote
 
-from ibm_zos_core.tests.helpers.volumes import (
-    ls_Volume,
-    get_available_vol,
-    free_vol)
-from ibm_zos_core.tests.helpers.dataset import (
-    get_dataset)
+from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 __metaclass__ = type
 
@@ -219,13 +215,13 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
             shutil.rmtree(dest_path)
 
 
-def test_fetch_vsam_data_set(ansible_zos_module, get_volumes):
+def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     TEMP_JCL_PATH = "/tmp/ansible"
-    TEST_VSAM = get_dataset(hosts)
+    TEST_VSAM = get_tmp_ds_name(hosts)
     dest_path = "/tmp/" + TEST_VSAM
-    volumes = ls_Volume(*get_volumes)
-    volume_1 = get_available_vol(volumes)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
     try:
         # start by creating the vsam dataset (could use a helper instead? )
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
@@ -264,7 +260,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, get_volumes):
             os.remove(dest_path)
         hosts.all.file(path=USS_FILE, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
-        free_vol(volume_1, volumes)
+        volumes.free_vol(volume_1)
 
 
 def test_fetch_vsam_empty_data_set(ansible_zos_module):

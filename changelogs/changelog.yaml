@@ -1023,6 +1023,55 @@ releases:
     - 930-archive-post-beta.yml
     - v1.7.0-beta.2_summary.yml
     release_date: '2023-08-21'
+  1.8.0:
+    changes:
+      bugfixes:
+      - zos_copy - When copying an executable data set from controller to managed
+        node, copy operation failed with an encoding error. Fix now avoids encoding
+        when executable option is selected. (https://github.com/ansible-collections/ibm_zos_core/pull/1079).
+      - zos_copy - When copying an executable data set with aliases and destination
+        did not exist, destination data set was created with wrong attributes. Fix
+        now creates destination data set with the same attributes as the source. (https://github.com/ansible-collections/ibm_zos_core/pull/1067).
+      - zos_copy - When performing a copy operation to an existing file, the copied
+        file resulted in having corrupted contents. Fix now implements a workaround
+        to not use the specific copy routine that corrupts the file contents. (https://github.com/ansible-collections/ibm_zos_core/pull/1069).
+      - zos_operator - The module was ignoring the wait time argument. The module
+        now passes the wait time argument to ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+      - zos_operator_action_query - The module was ignoring the wait time argument.
+        The module now passes the wait time argument to ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+      - zos_unarchive - When zos_unarchive fails during unpack either with xmit or
+        terse it does not clean the temporary data sets created. Fix now removes the
+        temporary data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1054).
+      minor_changes:
+      - zos_script - Add support for remote_tmp from the Ansible configuration to
+        setup where temporary files will be created, replacing the module option tmp_path.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1068).
+      - zos_submit_job - Previous code did not return output, but still requested
+        job data from the target system. This changes to honor return_output=false
+        by not querying the job dd segments at all. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+      - zos_tso_command - Add example for executing explicitly a REXX script from
+        a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1072).
+      release_summary: 'Release Date: ''2023-12-08''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - 1041-bug-zos-submit-job-honor-return-output-literally.yml
+    - 1043-bug-title-zos_operator-is-passing-wrong-value-to-zoauopercmd.yml
+    - 1049-xmit-temporary-data-sets.yml
+    - 1060-remote_tmp_zos_script.yml
+    - 1067-mvs_to_non_existent_mvs_copy_verify_destination_attrs_match.yml
+    - 1069-corrupted-second-copy.yml
+    - 1072-rexx-exec-tso_command.yml
+    - 1079-zos-copy-local-executable.yml
+    - 1089-update-managed_node_doc.yml
+    - v1.8.0-summary.yml
+    release_date: '2023-12-08'
   1.8.0-beta.1:
     changes:
       bugfixes:

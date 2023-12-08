@@ -12,7 +12,7 @@ Requirements
 The **IBM z/OS core collection** requires both a **control node** and
 **managed node** be configured with a minimum set of requirements. The
 control node is often referred to as the **controller** and the
-managed node as the **host**.
+managed node as the **host** or **target**.
 
 Control node
 ============
@@ -20,7 +20,7 @@ The controller is where the Ansible engine that runs the playbook is installed.
 Refer to RedHat Ansible Certified Content documentation for more on the `controllers dependencies`_.
 
 .. _controllers dependencies:
-   https://ibm.github.io/z_ansible_collections_doc/requirements/requirements.html#control-node
+   https://ibm.github.io/z_ansible_collections_doc/requirements/requirements_controller.html
 .. ...........................................................................
 .. © Copyright IBM Corporation 2020                                          .
 .. ...........................................................................
@@ -38,11 +38,12 @@ some dependencies are required to be installed on z/OS such as:
 * `IBM Open Enterprise SDK for Python`_
 * `IBM Z Open Automation Utilities`_
 
-   .. note::
 
-     Each release of the IBM z/OS core collection depends on specific dependency
-     versions. For information on the dependencies or the versions, review the
-     `release notes`_ reference section. 
+.. note::
+
+   Each release of the IBM z/OS core collection depends on specific dependency
+   versions. For information on the dependencies or the versions, review the
+   `release notes`_ reference section. 
 
 z/OS shell
 ----------

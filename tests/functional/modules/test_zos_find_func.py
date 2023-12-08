@@ -14,10 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ibm_zos_core.tests.helpers.volumes import (
-    ls_Volume,
-    get_available_vol,
-    free_vol)
+from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 
 SEQ_NAMES = [
     "TEST.FIND.SEQ.FUNCTEST.FIRST",
@@ -274,11 +271,11 @@ def test_find_vsam_pattern(ansible_zos_module):
         )
 
 
-def test_find_vsam_in_volume(ansible_zos_module, get_volumes):
+def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    volumes = ls_Volume(*get_volumes)
-    volume_1 = get_available_vol(volumes)
-    volume_2 = get_available_vol(volumes)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
     alternate_vsam = "TEST.FIND.VSAM.SECOND"
     try:
         for vsam in VSAM_NAMES:
@@ -295,8 +292,8 @@ def test_find_vsam_in_volume(ansible_zos_module, get_volumes):
             batch=[dict(name=i, state='absent') for i in VSAM_NAMES]
         )
         hosts.all.zos_data_set(name=alternate_vsam, state='absent')
-        free_vol(volume_1, volumes)
-        free_vol(volume_2, volumes)
+        volumes.free_vol(volume_1)
+        volumes.free_vol(volume_2)
 
 
 def test_find_invalid_age_indicator_fails(ansible_zos_module):

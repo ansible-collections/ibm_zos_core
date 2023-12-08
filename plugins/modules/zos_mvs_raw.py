@@ -556,10 +556,25 @@ options:
               - I(dd_input) supports single or multiple lines of input.
               - Multi-line input can be provided as a multi-line string
                 or a list of strings with 1 line per list item.
-              - If a multi-line string is provided make sure to use the
-                proper literal block style indicator "|".
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
+              - 'If a multi-line string is provided, use the proper block scalar
+                style. YAML supports both
+                L(literal,https://yaml.org/spec/1.2.2/#literal-style) and
+                L(folded,https://yaml.org/spec/1.2.2/#line-folding) scalars.
+                It is recommended to use the literal style indicator
+                "|" with a block indentation indicator, for example;
+                I(content: | 2) is a literal block style indicator with a 2 space
+                indentation, the entire block will be indented and newlines
+                preserved. The block indentation range is 1 - 9. While generally
+                unnecessary, YAML does support block
+                L(chomping,https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator)
+                indicators  "+" and "-" as well.'
+              - When using the I(content) option for instream-data, the module
+                will ensure that all lines contain a blank in columns 1 and 2
+                and add blanks when not present while retaining a maximum length
+                of 80 columns for any line. This is true for all I(content) types;
+                string, list of strings and when using a YAML block indicator.
             required: true
             type: raw
           return_content:
@@ -1155,10 +1170,25 @@ options:
                       - I(dd_input) supports single or multiple lines of input.
                       - Multi-line input can be provided as a multi-line string
                         or a list of strings with 1 line per list item.
-                      - If a multi-line string is provided make sure to use the
-                        proper literal block style indicator "|".
                       - If a list of strings is provided, newlines will be
                         added to each of the lines when used as input.
+                      - 'If a multi-line string is provided, use the proper block scalar
+                        style. YAML supports both
+                        L(literal,https://yaml.org/spec/1.2.2/#literal-style) and
+                        L(folded,https://yaml.org/spec/1.2.2/#line-folding) scalars.
+                        It is recommended to use the literal style indicator
+                        "|" with a block indentation indicator, for example;
+                        I(content: | 2) is a literal block style indicator with a 2 space
+                        indentation, the entire block will be indented and newlines
+                        preserved. The block indentation range is 1 - 9. While generally
+                        unnecessary, YAML does support block
+                        L(chomping,https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator)
+                        indicators  "+" and "-" as well.'
+                      - When using the I(content) option for instream-data, the module
+                        will ensure that all lines contain a blank in columns 1 and 2
+                        and add blanks when not present while retaining a maximum length
+                        of 80 columns for any line. This is true for all I(content) types;
+                        string, list of strings and when using a YAML block indicator.
                     required: true
                     type: raw
                   return_content:
@@ -1208,6 +1238,8 @@ notes:
     - 2. L(zos_mvs_raw,./zos_mvs_raw.html) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
+    - 3. When executing a program, refer to the programs documentation as each programs requirments
+      can vary fom DDs, instream-data indentation and continuation characters.
 seealso:
 - module: zos_data_set
 """
@@ -1522,6 +1554,35 @@ EXAMPLES = r"""
         dd_name: sysprint
         return_content:
           type: text
+
+    - name: Define a cluster using a literal block style indicator
+          with a 2 space indentation.
+      zos_mvs_raw:
+        program_name: idcams
+        auth: yes
+        dds:
+          - dd_output:
+              dd_name: sysprint
+              return_content:
+                type: text
+          - dd_input:
+              dd_name: sysin
+              content: |2
+                DEFINE CLUSTER -
+                          (NAME(ANSIBLE.TEST.VSAM) -
+                          CYL(10 10)  -
+                          FREESPACE(20 20) -
+                          INDEXED -
+                          KEYS(32 0) -
+                          NOERASE -
+                          NONSPANNED -
+                          NOREUSE -
+                          SHAREOPTIONS(3 3) -
+                          SPEED -
+                          UNORDERED -
+                          RECORDSIZE(4086 32600) -
+                          VOLUMES(222222) -
+                          UNIQUE)
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -2166,6 +2227,11 @@ def dd_content(contents, dependencies):
     """
     if contents is None:
         return None
+    if contents is not None:
+        # Empty string can be passed for content but not modify to ensure proper entry
+        if len(contents) > 0:
+            contents = modify_contents(contents)
+        return contents
     if isinstance(contents, list):
         return "\n".join(contents)
     return contents
@@ -3088,6 +3154,49 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         return ""
     else:
         return stdout
+
+
+def modify_contents(contents):
+    """Return the content of dd_input to a valid form for a JCL program.
+
+    Args:
+        contents (str or list): The string or list with the program.
+
+    Returns:
+        contents: The content in a proper multi line str.
+    """
+    if not isinstance(contents, list):
+        contents = list(contents.split("\n"))
+    contents = prepend_spaces(contents)
+    contents = "\n".join(contents)
+    return contents
+
+
+def prepend_spaces(lines):
+    """Return the array with two spaces at the beggining.
+
+    Args:
+        lines (list): The list with a line of a program.
+
+    Returns:
+        new_lines: The list in a proper two spaces and the code.
+    """
+    module = AnsibleModuleHelper(argument_spec={})
+    for index, line in enumerate(lines):
+        if len(line) > 0:
+            if len(line) > 80:
+                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
+                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                module.fail_json(msg=msg.format(line))
+            else:
+                if len(line) > 1 and line[0] != " " and line[1] != " ":
+                    if len(line) > 78:
+                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
+                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                        module.fail_json(msg=msg.format(line))
+                    else:
+                        lines[index] = "  {0}".format(line)
+    return lines
 
 
 class ZOSRawError(Exception):

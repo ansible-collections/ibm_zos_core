@@ -262,6 +262,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text
+import re
 
 
 def run_module():
@@ -308,7 +310,7 @@ def run_module():
             jobs = None
 
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=to_text(e), **result)
     result["jobs"] = jobs
     module.exit_json(**result)
 

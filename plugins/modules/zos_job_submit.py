@@ -620,7 +620,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import PY3
 from timeit import default_timer as timer
 from tempfile import NamedTemporaryFile
 from os import remove
@@ -637,12 +636,6 @@ try:
     from zoautil_py import jobs
 except Exception:
     jobs = ZOAUImportError(traceback.format_exc())
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
-
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])
@@ -922,32 +915,11 @@ def run_module():
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
     elif location == "USS":
-        job_submitted_id, duration = submit_src_jcl(module, src, src_name=src, timeout=wait_time_s, hfs=True)
+        job_submitted_id, duration = submit_src_jcl(
+            module, src, src_name=src, timeout=wait_time_s, hfs=True)
     else:
-        # added -c to iconv to prevent '\r' from erroring as invalid chars to EBCDIC
-        conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
-            from_encoding,
-            to_encoding,
-            quote(temp_file),
-            quote(temp_file_encoded.name),
-        )
-
-        conv_rc, stdout, stderr = module.run_command(
-            conv_str,
-            use_unsafe_shell=True,
-        )
-
-        if conv_rc == 0:
-            job_submitted_id, duration = submit_src_jcl(
-                module, temp_file_encoded.name, src_name=src, timeout=wait_time_s, hfs=True)
-        else:
-            result["failed"] = True
-            result["stdout"] = stdout
-            result["stderr"] = stderr
-            result["msg"] = ("Failed to convert the src {0} from encoding {1} to "
-                             "encoding {2}, unable to submit job."
-                             .format(src, from_encoding, to_encoding))
-            module.fail_json(**result)
+        job_submitted_id, duration = submit_src_jcl(
+            module, temp_file_encoded.name, src_name=src, timeout=wait_time_s, hfs=True)
 
     try:
         # Explictly pass None for the unused args else a default of '*' will be

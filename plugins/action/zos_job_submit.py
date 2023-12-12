@@ -142,7 +142,6 @@ class ActionModule(ActionBase):
                     dest=dest_path,
                     mode="0600",
                     force=True,
-                    encoding=module_args.get('encoding'),
                     remote_src=True,
                 )
             )

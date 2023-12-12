@@ -621,7 +621,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 )
 from ansible.module_utils.basic import AnsibleModule
 from timeit import default_timer as timer
-from tempfile import NamedTemporaryFile
 from os import remove
 import traceback
 from time import sleep

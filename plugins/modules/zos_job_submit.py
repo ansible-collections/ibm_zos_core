@@ -620,7 +620,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import PY3
 from timeit import default_timer as timer
 from tempfile import NamedTemporaryFile
 from os import remove
@@ -638,10 +637,6 @@ try:
 except Exception:
     jobs = ZOAUImportError(traceback.format_exc())
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])
@@ -896,11 +891,8 @@ def run_module():
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    from_encoding = parsed_args.get("from_encoding")
-    to_encoding = parsed_args.get("to_encoding")
-    # temporary file names for copied files when user sets location to LOCAL
-    temp_file = parsed_args.get("src")
-    temp_file_encoded = None
+    if location == "LOCAL":
+        temp_file = parsed_args.get("src")
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
@@ -910,9 +902,6 @@ def run_module():
         result["msg"] = ("The value for option `wait_time_s` is not valid, it must "
                          "be greater than 0 and less than {0}.".format(str(MAX_WAIT_TIME_S)))
         module.fail_json(**result)
-
-    if temp_file:
-        temp_file_encoded = NamedTemporaryFile(delete=True)
 
     job_submitted_id = None
     duration = 0
@@ -924,30 +913,8 @@ def run_module():
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, hfs=True)
     else:
-        # added -c to iconv to prevent '\r' from erroring as invalid chars to EBCDIC
-        conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
-            from_encoding,
-            to_encoding,
-            quote(temp_file),
-            quote(temp_file_encoded.name),
-        )
-
-        conv_rc, stdout, stderr = module.run_command(
-            conv_str,
-            use_unsafe_shell=True,
-        )
-
-        if conv_rc == 0:
-            job_submitted_id, duration = submit_src_jcl(
-                module, temp_file_encoded.name, src_name=src, timeout=wait_time_s, hfs=True)
-        else:
-            result["failed"] = True
-            result["stdout"] = stdout
-            result["stderr"] = stderr
-            result["msg"] = ("Failed to convert the src {0} from encoding {1} to "
-                             "encoding {2}, unable to submit job."
-                             .format(src, from_encoding, to_encoding))
-            module.fail_json(**result)
+        job_submitted_id, duration = submit_src_jcl(
+            module, temp_file, src_name=src, timeout=wait_time_s, hfs=True)
 
     try:
         # Explictly pass None for the unused args else a default of '*' will be
@@ -1036,7 +1003,7 @@ def run_module():
         module.exit_json(**result)
 
     finally:
-        if location != "DATA_SET" and location != "USS":
+        if location == "LOCAL":
             remove(temp_file)
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'

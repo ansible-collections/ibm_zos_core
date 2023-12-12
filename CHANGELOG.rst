@@ -40,7 +40,7 @@ Minor Changes
 Deprecated Features
 -------------------
 
-- zos_blockinfile- debug is deprecated in favor of 'as_json' (https://github.com/ansible-collections/ibm_zos_core/pull/904).
+- zos_blockinfile - debug is deprecated in favor of 'as_json' (https://github.com/ansible-collections/ibm_zos_core/pull/904).
 
 Bugfixes
 --------

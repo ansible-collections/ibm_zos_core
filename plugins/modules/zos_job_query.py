@@ -301,8 +301,6 @@ def run_module():
         name = module.params.get("job_name")
         id = module.params.get("job_id")
         owner = module.params.get("owner")
-        if id and owner:
-            raise RuntimeError("Argument Error:job id can not be co-exist with owner")
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)

@@ -756,7 +756,7 @@ class BetterArgHandler(object):
         """Resolver for data_set type arguments.
 
         Arguments:
-            contents {bool} -- The contents of the argument.
+            contents {str} -- The contents of the argument.
 
         Raises:
             ValueError: When contents is invalid argument type

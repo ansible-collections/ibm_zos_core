@@ -263,7 +263,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
-import re
 
 
 def run_module():

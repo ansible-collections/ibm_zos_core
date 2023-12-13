@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -959,7 +959,7 @@ def run_module():
 
         job_output_txt = job_output(
             job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
-            duration=duration, timeout=wait_time_s, start_time=start_time)
+            dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
 
         result["duration"] = duration
 

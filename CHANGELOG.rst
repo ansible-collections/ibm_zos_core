@@ -5,13 +5,13 @@ ibm.ibm_zos_core Release Notes
 .. contents:: Topics
 
 
-v1.8.0-beta.1
-=============
+v1.8.0
+======
 
 Release Summary
 ---------------
 
-Release Date: '2023-10-24'
+Release Date: '2023-12-08'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
@@ -31,18 +31,31 @@ Minor Changes
 - zos_job_submit - Change action plugin call from copy to zos_copy. (https://github.com/ansible-collections/ibm_zos_core/pull/951)
 - zos_operator - Changed system to call 'wait=true' parameter to zoau call. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
 - zos_operator_action_query - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
+- zos_script - add support for remote_tmp from the Ansible configuration to setup where temporary files will be created, replacing the module option tmp_path. (https://github.com/ansible-collections/ibm_zos_core/pull/1068).
+- zos_submit_job - Previous code did not return output, but still requested job data from the target system. This changes to honor return_output=false by not querying the job dd segments at all. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+- zos_tso_command - add example for executing explicitly a REXX script from a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1072).
 - zos_unarchive -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
 - zos_unarchive - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
-- zos_copy - add support in zos_copy for text files and data sets containing ASA control characters. (https://github.com/ansible-collections/ibm_zos_core/pull/1028)
+
+Deprecated Features
+-------------------
+
+- zos_blockinfile - debug is deprecated in favor of 'as_json' (https://github.com/ansible-collections/ibm_zos_core/pull/904).
 
 Bugfixes
 --------
 
 - zos_copy - Update option limit to include LIBRARY as dest_dataset/suboption value. Documentation updated to reflect this change. (https://github.com/ansible-collections/ibm_zos_core/pull/968).
+- zos_copy - When copying an executable data set from controller to managed node, copy operation failed with an encoding error. Fix now avoids encoding when executable option is selected. (https://github.com/ansible-collections/ibm_zos_core/pull/1079).
+- zos_copy - When copying an executable data set with aliases and destination did not exist, destination data set was created with wrong attributes. Fix now creates destination data set with the same attributes as the source. (https://github.com/ansible-collections/ibm_zos_core/pull/1067).
+- zos_copy - When performing a copy operation to an existing file, the copied file resulted in having corrupted contents. Fix now implements a workaround to not use the specific copy routine that corrupts the file contents. (https://github.com/ansible-collections/ibm_zos_core/pull/1069).
 - zos_job_submit - Temporary files were created in tmp directory. Fix now ensures the deletion of files every time the module run. (https://github.com/ansible-collections/ibm_zos_core/pull/951)
 - zos_job_submit - The last line of the jcl was missing in the input. Fix now ensures the presence of the full input in job_submit. (https://github.com/ansible-collections/ibm_zos_core/pull/952)
 - zos_lineinfile - A duplicate entry was made even if line was already present in the target file. Fix now prevents a duplicate entry if the line already exists in the target file. (https://github.com/ansible-collections/ibm_zos_core/pull/916)
 - zos_operator - The last line of the operator was missing in the response of the module. The fix now ensures the presence of the full output of the operator. https://github.com/ansible-collections/ibm_zos_core/pull/918)
+- zos_operator - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+- zos_operator_action_query - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+- zos_unarchive - When zos_unarchive fails during unpack either with xmit or terse it does not clean the temporary data sets created. Fix now removes the temporary data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1054).
 
 Known Issues
 ------------

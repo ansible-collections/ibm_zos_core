@@ -259,6 +259,7 @@ template_parameters
     | **choices**: \\n, \\r, \\r\\n
 
 
+
   auto_reload
     Whether to reload a template file when it has changed after the task has started.
 

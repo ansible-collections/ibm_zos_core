@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -283,7 +283,7 @@ def run_operator_command(params):
         use_wait_arg = True
 
     if use_wait_arg:
-        kwargs.update({"wait_arg": True})
+        kwargs.update({"wait": True})
 
     args = []
     rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)

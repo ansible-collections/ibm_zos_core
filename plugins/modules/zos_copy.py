@@ -950,6 +950,64 @@ class CopyHandler(object):
                 cmd=repro_cmd,
             )
 
+    def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
+        """Recursively copy USS directory to another USS directory.
+        This function was created to circumvent using shutil.copytree
+        as it presented the issue of corrupting file contents after second copy
+        because the use of shutil.copy2. This issue is only present in
+        Python 3.11 and 3.12.
+
+        Arguments:
+            entries {list} -- List of files under src directory.
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+
+        Raises:
+            Exception -- When copying into the directory fails.
+
+        Returns:
+            {str } -- Destination directory that was copied.
+        """
+        os.makedirs(dest, exist_ok=dirs_exist_ok)
+        for src_entry in entries:
+            src_name = os.path.join(validation.validate_safe_path(src), validation.validate_safe_path(src_entry.name))
+            dest_name = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_entry.name))
+            try:
+                if src_entry.is_symlink():
+                    link_to = os.readlink(src_name)
+                    os.symlink(link_to, dest_name)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
+                elif src_entry.is_dir():
+                    self.copy_tree(src_name, dest_name, dirs_exist_ok=dirs_exist_ok)
+                else:
+                    opts = dict()
+                    opts["options"] = ""
+                    response = datasets._copy(src_name, dest_name, None, **opts)
+                    if response.rc > 0:
+                        raise Exception(response.stderr_response)
+                    shutil.copystat(src_name, dest_name, follow_symlinks=True)
+            except Exception as err:
+                raise err
+
+        return dest
+
+    def copy_tree(self, src_dir, dest_dir, dirs_exist_ok=False):
+        """
+        Copies a USS directory into another USS directory.
+
+        Arguments:
+            src_dir {str} -- USS source directory.
+            dest_dir {str} -- USS dest directory.
+            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+
+        Returns:
+            {str} -- Destination directory that was copied.
+        """
+        with os.scandir(src_dir) as itr:
+            entries = list(itr)
+        return self._copy_tree(entries, src_dir, dest_dir, dirs_exist_ok=dirs_exist_ok)
+
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
 
@@ -1255,6 +1313,7 @@ class USSCopyHandler(CopyHandler):
                 if not os.path.isdir(dest):
                     self.module.set_mode_if_different(dest, mode, False)
                 if changed_files:
+                    self.module.set_mode_if_different(dest, mode, False)
                     for filepath in changed_files:
                         self.module.set_mode_if_different(
                             os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False
@@ -1290,7 +1349,13 @@ class USSCopyHandler(CopyHandler):
             if self.is_binary:
                 copy.copy_uss2uss_binary(new_src, dest)
             else:
-                shutil.copy(new_src, dest)
+                opts = dict()
+                opts["options"] = ""
+                response = datasets._copy(new_src, dest, None, **opts)
+                if response.rc > 0:
+                    raise Exception(response.stderr_response)
+                shutil.copystat(new_src, dest, follow_symlinks=True)
+                # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
@@ -1350,7 +1415,8 @@ class USSCopyHandler(CopyHandler):
         try:
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
-            dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
@@ -2334,25 +2400,7 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            if executable:
-                src_attributes = datasets.listing(src_name)[0]
-                size = int(src_attributes.total_space)
-                record_format = "U"
-                record_length = 0
-
-                dest_params = get_data_set_attributes(
-                    dest,
-                    size,
-                    is_binary,
-                    asa_text,
-                    record_format=record_format,
-                    record_length=record_length,
-                    type="LIBRARY",
-                    volume=volume
-                )
-                data_set.DataSet.ensure_present(replace=force, **dest_params)
-            else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
@@ -2631,7 +2679,7 @@ def run_module(module, arg_def):
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
-            if not is_binary and not is_uss:
+            if not is_binary and not is_uss and not executable:
                 new_src = temp_path or src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).
@@ -2709,6 +2757,12 @@ def run_module(module, arg_def):
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type")
+            elif executable:
+                """ When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
+                so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
+                Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
+                and LIBRARY is not in MVS_PARTITIONED frozen set."""
+                dest_ds_type = "PDSE"
 
             if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
                 dest_has_asa_chars = True
@@ -3000,7 +3054,7 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         # Copy to PDS/PDSE
         # ---------------------------------------------------------------------
-        elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
+        elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED or dest_ds_type == "LIBRARY":
             if not remote_src and not copy_member and os.path.isdir(temp_path):
                 temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
@@ -3220,6 +3274,7 @@ def main():
         not module.params.get("encoding")
         and not module.params.get("remote_src")
         and not module.params.get("is_binary")
+        and not module.params.get("executable")
     ):
         module.params["encoding"] = {
             "from": module.params.get("local_charset"),

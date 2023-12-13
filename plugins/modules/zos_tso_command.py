@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -111,6 +111,10 @@ EXAMPLES = r"""
            - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
       max_rc: 4
 
+- name: Execute TSO command to run a REXX script explicitly from a data set.
+  zos_tso_command:
+      commands:
+           - EXEC HLQ.DATASET.REXX exec
 """
 
 from ansible.module_utils.basic import AnsibleModule

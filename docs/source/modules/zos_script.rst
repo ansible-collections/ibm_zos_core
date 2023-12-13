@@ -102,19 +102,6 @@ removes
   | **type**: str
 
 
-tmp_path
-  Directory path in the remote machine where local scripts will be temporarily copied to.
-
-  When not specified, the module will copy local scripts to the default temporary path for the user.
-
-  If ``tmp_path`` does not exist in the remote machine, the module will not create it.
-
-  All scripts copied to ``tmp_path`` will be removed from the managed node before the module finishes executing.
-
-  | **required**: False
-  | **type**: str
-
-
 use_template
   Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
 
@@ -234,6 +221,7 @@ template_parameters
     | **choices**: \\n, \\r, \\r\\n
 
 
+
   auto_reload
     Whether to reload a template file when it has changed after the task has started.
 
@@ -264,11 +252,10 @@ Examples
        remote_src: true
        chdir: /u/user/output_dir
 
-   - name: Run a local Python script that uses a custom tmp_path.
+   - name: Run a local Python script in the temporary directory specified in the Ansible environment variable 'remote_tmp'.
      zos_script:
        cmd: ./scripts/program.py
        executable: /usr/bin/python3
-       tmp_path: /usr/tmp/ibm_zos_core
 
    - name: Run a local script made from a template.
      zos_script:
@@ -293,6 +280,10 @@ Notes
 
 .. note::
    When executing local scripts, temporary storage will be used on the remote z/OS system. The size of the temporary storage will correspond to the size of the file being copied.
+
+   The location in the z/OS system where local scripts will be copied to can be configured through Ansible's ``remote_tmp`` option. Refer to `Ansible's documentation <https://docs.ansible.com/ansible/latest/collections/ansible/builtin/sh_shell.html#parameter-remote_tmp>`_ for more information.
+
+   All local scripts copied to a remote z/OS system  will be removed from the managed node before the module finishes executing.
 
    Execution permissions for the group assigned to the script will be added to remote scripts. The original permissions for remote scripts will be restored by the module before the task ends.
 

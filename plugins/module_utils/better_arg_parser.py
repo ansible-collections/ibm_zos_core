@@ -747,13 +747,13 @@ class BetterArgHandler(object):
     # ---------------------------------------------------------------------------- #
     #                    JOB ID AND JOB NAME NAMING RULES                          #
     # ---------------------------------------------------------------------------- #
-    # A text string of up to 8 characters.
-    # The first character must be a letter or a national (#, $, @) character.
-    # Other characters can be letters, numbers, or national (#, $, @) characters.
-    # If the text string contains #, $, or @, enclose the text string in single or double quotation marks.
 
     def _job_identifier(self, contents, resolve_dependencies):
         """Resolver for data_set type arguments.
+        A text string of up to 8 characters.
+        The first character must be a letter or a national (#, $, @) character.
+        Other characters can be letters, numbers, or national (#, $, @) characters.
+        If the text string contains #, $, or @, enclose the text string in single or double quotation marks.
 
         Arguments:
             contents {str} -- The contents of the argument.

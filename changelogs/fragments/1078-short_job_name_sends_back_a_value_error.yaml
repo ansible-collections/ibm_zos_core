@@ -1,7 +1,7 @@
 bugfixes:
-  - zos_job_output - When passing a job id or name less than 8 characters the module send full stack trace as the msg.
-    Change now allows user to use job id or name with less than 8 characters and wildcards.
+  - zos_job_output - When passing a job ID or name less than 8 characters long, the module sent the full stack trace as the module's message.
+    Change now allows the use of a shorter job ID or name, as well as wildcards.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1078).
-  - zos_job_query - When passing a job id or name less than 8 characters the module send full stack trace as the msg.
-    Change now allows user to use job id or name with less than 8 characters and wildcards.
+  - zos_job_query - When passing a job ID or name less than 8 characters long, the module sent the full stack trace as the module's message.
+    Change now allows the use of a shorter job ID or name, as well as wildcards.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1078).

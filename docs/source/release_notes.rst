@@ -7,7 +7,7 @@ Releases
 ========
 
 Version 1.8.0
-====================
+=============
 
 New Modules
 -----------
@@ -47,7 +47,7 @@ Bugfixes
 
 - ``zos_copy``
 
-    - Update option   to include `LIBRARY` as dest_dataset/suboption value. Documentation updated to reflect this change.
+    - Update option to include `LIBRARY` as dest_dataset/suboption value. Documentation updated to reflect this change.
     - When copying an executable data set from controller to managed node, copy operation failed with an encoding error. Fix now avoids encoding when `executable` option is selected.
     - When copying an executable data set with aliases and destination did not exist, destination data set was created with wrong attributes. Fix now creates destination data set with the same attributes as the source.
     - When performing a copy operation to an existing file, the copied file resulted in having corrupted contents. Fix now implements a workaround to not use the specific copy routine that corrupts the file contents.

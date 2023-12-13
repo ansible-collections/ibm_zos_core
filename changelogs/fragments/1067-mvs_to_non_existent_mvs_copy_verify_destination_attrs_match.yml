@@ -1,5 +1,0 @@
-bugfixes:
-  - zos_copy - When copying an executable data set with aliases and destination did not exist,
-    destination data set was created with wrong attributes. Fix now creates destination data set
-    with the same attributes as the source.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1067).

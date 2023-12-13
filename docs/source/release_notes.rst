@@ -6,8 +6,8 @@
 Releases
 ========
 
-Version 1.8.0-beta.1
-====================
+Version 1.8.0
+=============
 
 New Modules
 -----------
@@ -22,29 +22,46 @@ Minor Changes
     - Enhanced test cases to use test lines the same length of the record length.
 - ``zos_copy``
 
-    -  Add validation into path joins to detect unauthorized path traversals.
+    - Add validation into path joins to detect unauthorized path traversals.
     - Add new option `force_lock` that can copy into data sets that are already in use by other processes (DISP=SHR). User needs to use with caution because this is subject to race conditions and can lead to data loss.
-    - includes a new option `executable` that enables copying of executables such as load modules or program objects to both USS and partitioned data sets. When the `dest` option contains a non-existent data set, `zos_copy` will create a data set with the appropriate attributes for an executable.
-    - introduces a new option 'aliases' to enable preservation of member aliases when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources. Copying aliases of text based members to/from USS is not supported.
-    - add support in zos_copy for text files and data sets containing ASA control characters.
+    - Includes a new option `executable` that enables copying of executables such as load modules or program objects to both USS and partitioned data sets. When the `dest` option contains a non-existent data set, `zos_copy` will create a data set with the appropriate attributes for an executable.
+    - Introduces a new option 'aliases' to enable preservation of member aliases when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources. Copying aliases of text based members to/from USS is not supported.
+    - Add support in zos_copy for text files and data sets containing ASA control characters.
 - ``zos_fetch`` - Add validation into path joins to detect unauthorized path traversals.
-- ``zos_job_submit`` - Change action plugin call from copy to zos_copy.
-- ``zos_operator`` - Changed system to call 'wait=true' parameter to zoau call. Requires zoau 1.2.5 or later.
+- ``zos_job_submit``
+
+    - Change action plugin call from copy to zos_copy.
+    - Previous code did not return output, but still requested job data from the target system. This changes to honor `return_output=false` by not querying the job dd segments at all.
+- ``zos_operator`` - Changed system to call `wait=true` parameter to zoau call. Requires zoau 1.2.5 or later.
 - ``zos_operator_action_query`` - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later.
 - ``zos_unarchive``
 
-    -  Add validation into path joins to detect unauthorized path traversals.
+    - Add validation into path joins to detect unauthorized path traversals.
     - Enhanced test cases to use test lines the same length of the record length.
 - ``module_utils/template`` - Add validation into path joins to detect unauthorized path traversals.
+- ``zos_tso_command`` - Add example for executing explicitly a REXX script from a data set.
+- ``zos_script`` - Add support for remote_tmp from the Ansible configuration to setup where temporary files will be created, replacing the module option tmp_path.
 
 Bugfixes
 --------
 
-- ``zos_copy`` - Update option limit to include LIBRARY as dest_dataset/suboption value. Documentation updated to reflect this change.
-- ``zos_job_submit`` - Temporary files were created in tmp directory. Fix now ensures the deletion of files every time the module run.
-- ``zos_job_submit`` - The last line of the jcl was missing in the input. Fix now ensures the presence of the full input in job_submit.
+- ``zos_copy``
+
+    - Update option to include `LIBRARY` as dest_dataset/suboption value. Documentation updated to reflect this change.
+    - When copying an executable data set from controller to managed node, copy operation failed with an encoding error. Fix now avoids encoding when `executable` option is selected.
+    - When copying an executable data set with aliases and destination did not exist, destination data set was created with wrong attributes. Fix now creates destination data set with the same attributes as the source.
+    - When performing a copy operation to an existing file, the copied file resulted in having corrupted contents. Fix now implements a workaround to not use the specific copy routine that corrupts the file contents.
+- ``zos_job_submit``
+
+    - Temporary files were created in tmp directory. Fix now ensures the deletion of files every time the module run.
+    - The last line of the jcl was missing in the input. Fix now ensures the presence of the full input in job_submit.
 - ``zos_lineinfile`` - A duplicate entry was made even if line was already present in the target file. Fix now prevents a duplicate entry if the line already exists in the target file.
-- ``zos_operator`` - The last line of the operator was missing in the response of the module. The fix now ensures the presence of the full output of the operator.
+- ``zos_operator``
+
+    - The last line of the operator was missing in the response of the module. The fix now ensures the presence of the full output of the operator.
+    - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU.
+- ``zos_operator_action_query`` - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU.
+- ``zos_unarchive`` - When zos_unarchive fails during unpack either with xmit or terse it does not clean the temporary data sets created. Fix now removes the temporary data sets.
 
 Known Issues
 ------------
@@ -55,6 +72,7 @@ Known Issues
 Availability
 ------------
 
+* `Automation Hub`_
 * `Galaxy`_
 * `GitHub`_
 

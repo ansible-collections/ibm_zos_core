@@ -890,6 +890,8 @@ def run_module():
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
+    from_encoding = parsed_args.get("from_encoding")
+    to_encoding = parsed_args.get("to_encoding")
     if location == "LOCAL":
         temp_file = parsed_args.get("src")
 

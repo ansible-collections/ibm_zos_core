@@ -62,7 +62,8 @@ class Defaults:
         """
         system_charset = locale.getdefaultlocale()[1]
         if system_charset is None:
-            rc, out, err = system.run_command("locale -c charmap")
+            module = AnsibleModuleHelper(argument_spec={})
+            rc, out, err = module.run_command("locale -c charmap")
             if rc != 0 or not out or err:
                 if system.is_zos():
                     system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET

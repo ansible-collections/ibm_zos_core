@@ -1,0 +1,4 @@
+trivial:
+  - zos_archive - add missing-gplv3-license ignore to ignore 2.16.
+  - zos_unarchive - add missing-gplv3-license ignore to ignore 2.16.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1053).

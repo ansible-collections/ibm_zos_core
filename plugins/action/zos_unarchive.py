@@ -46,6 +46,9 @@ class ActionModule(ActionBase):
 
         module_args = self._task.args.copy()
 
+        tmp_files = ""
+        uss_format = None
+
         if module_args.get("remote_src", False):
             result.update(
                 self._execute_module(
@@ -61,18 +64,19 @@ class ActionModule(ActionBase):
             format_name = format.get("name")
             copy_module_args = dict()
             dest_data_set = format.get("dest_data_set")
-            if dest_data_set is None:
-                dest_data_set = dict()
             dest = ""
             if source.startswith('~'):
                 source = os.path.expanduser(source)
             source = os.path.realpath(source)
 
             if format_name in USS_SUPPORTED_FORMATS:
-                dest = self._execute_module(
+                tmp_files = dest = self._execute_module(
                     module_name="tempfile", module_args={}, task_vars=task_vars,
                 ).get("path")
+                uss_format = format_name
             elif format_name in MVS_SUPPORTED_FORMATS:
+                if dest_data_set is None:
+                    dest_data_set = dict()
                 tmp_hlq = module_args.get("tmp_hlq") if module_args.get("tmp_hlq") is not None else ""
                 cmd_res = self._execute_module(
                     module_name="command",
@@ -120,4 +124,13 @@ class ActionModule(ActionBase):
                 )
             else:
                 result.update(dict(failed=True))
+
+        if not module_args.get("remote_src", False) and uss_format:
+            self._remote_cleanup(tmp_files)
+
         return result
+
+    def _remote_cleanup(self, tempfile_path):
+        """Removes the temporary file in a managed node created for a local
+        script."""
+        self._connection.exec_command("rm -f {0}".format(tempfile_path))

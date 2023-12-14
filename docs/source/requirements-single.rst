@@ -20,7 +20,7 @@ The controller is where the Ansible engine that runs the playbook is installed.
 Refer to RedHat Ansible Certified Content documentation for more on the `controllers dependencies`_.
 
 .. _controllers dependencies:
-   https://ibm.github.io/z_ansible_collections_doc/requirements/requirements_controller.html
+   https://ibm.github.io/z_ansible_collections_doc/requirements/requirements.html#control-node
 .. ...........................................................................
 .. © Copyright IBM Corporation 2020                                          .
 .. ...........................................................................
@@ -32,6 +32,7 @@ The managed z/OS node is the host that is managed by Ansible, as identified in
 the Ansible inventory. For the **IBM z/OS core collection** to manage the z/OS node,
 some dependencies are required to be installed on z/OS such as:
 
+* `z/OS`_
 * `z/OS`_
 * `z/OS OpenSSH`_
 * `z/OS® shell`_

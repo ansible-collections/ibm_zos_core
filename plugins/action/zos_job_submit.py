@@ -67,10 +67,12 @@ class ActionModule(ActionBase):
                 self._remove_tmp_path(tmpdir)
 
             result["failed"] = True
-            if source is None or dest_path is None:
-                result["msg"] = "src and dest are required"
-            elif source is not None and source.endswith("/"):
-                result["msg"] = "src must be a file"
+            if source is None:
+                result["msg"] = "Source is required."
+            elif dest_path is None:
+                result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
+            elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
+                result["msg"] = "Source must be a file."
             else:
                 del result["failed"]
 
@@ -84,11 +86,6 @@ class ActionModule(ActionBase):
                 result["msg"] = to_text(e)
                 return result
 
-            if os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
-                result["failed"] = True
-                result["msg"] = to_text("NOT SUPPORTING THE DIRECTORY.")
-                return result
-
             if tmp is None or "-tmp-" not in tmp:
                 tmp = self._make_tmp_path()
 
@@ -98,7 +95,7 @@ class ActionModule(ActionBase):
                 # source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
-                result["msg"] = "could not find src=%s, %s" % (source_full, e)
+                result["msg"] = "Source {0} not found. {1}".format(source_full, e)
                 self._remove_tmp_path(tmp)
                 return result
 
@@ -106,16 +103,6 @@ class ActionModule(ActionBase):
             #     dest_file = self._connection._shell.join_path(dest, source_rel)
             # else:
             dest_file = self._connection._shell.join_path(dest_path)
-
-            dest_status = self._execute_remote_stat(
-                dest_file, all_vars=task_vars, follow=False
-            )
-
-            if dest_status["exists"] and dest_status["isdir"]:
-                self._remove_tmp_path(tmp)
-                result["failed"] = True
-                result["msg"] = "can not use content with a dir as dest"
-                return result
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 

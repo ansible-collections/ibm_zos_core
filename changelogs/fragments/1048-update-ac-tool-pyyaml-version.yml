@@ -1,0 +1,8 @@
+trivial:
+  - ac - PyYaml version 5.4.1 was being installed and not having a wheel to go
+    with the python versions 11 and 12. This fixes the issue by freezing the
+    the version to 6.0.1.
+  - ac - would not discover python installations not in PATH. This change
+    extends the search path to include common python installation locations
+    not in path. 
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1083).

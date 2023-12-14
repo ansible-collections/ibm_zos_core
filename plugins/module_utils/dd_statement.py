@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -661,7 +661,7 @@ class VIODefinition(DataDefinition):
         """
         try:
             DataSet.delete(self.name)
-        except Exception:
+        except DataSet.DatasetDeleteError:
             pass
 
     def _build_arg_string(self):

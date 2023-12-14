@@ -1,0 +1,3 @@
+minor_changes:
+  - zos_job_submit - Improve error messages in zos_job_submit to be clearer.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1074).

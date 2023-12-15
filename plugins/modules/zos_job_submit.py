@@ -911,9 +911,9 @@ def run_module():
     elif location == "USS":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, hfs=True)
-    else:
+    elif location == "LOCAL":
         job_submitted_id, duration = submit_src_jcl(
-            module, temp_file, src_name=src, timeout=wait_time_s, hfs=True)
+            module, src, src_name=src, timeout=wait_time_s, hfs=True)
 
     try:
         # Explictly pass None for the unused args else a default of '*' will be
@@ -1002,7 +1002,7 @@ def run_module():
         module.exit_json(**result)
 
     finally:
-        if location == "LOCAL":
+        if temp_file is not None:
             remove(temp_file)
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'

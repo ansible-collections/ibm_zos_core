@@ -890,8 +890,7 @@ def run_module():
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    if location == "LOCAL":
-        temp_file = parsed_args.get("src")
+    temp_file = parsed_args.get("src") if location == "LOCAL" else None
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)

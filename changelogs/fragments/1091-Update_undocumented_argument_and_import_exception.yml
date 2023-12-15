@@ -1,4 +1,4 @@
-trivial:
+minor_changes:
   - zos_job_submit - The module handling ZOAU import errors obscured the
     original traceback when an import error ocurred. Fix now passes correctly
     the context to the user.

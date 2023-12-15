@@ -3428,6 +3428,137 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         hosts.all.zos_data_set(name=dest_lib, state="absent")
         hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
 
+
+@pytest.mark.pdse
+@pytest.mark.loadlib
+@pytest.mark.aliases
+@pytest.mark.parametrize("is_created", [False, True])
+def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
+
+    hosts = ansible_zos_module
+
+    cobol_src_pds = "USER.COBOL.SRC"
+    cobol_src_mem = "HELLOCBL"
+    cobol_src_mem2 = "HICBL2"
+    src_lib = "USER.LOAD.SRC"
+    dest_lib = "USER.LOAD.DEST"
+    pgm_mem = "HELLO"
+    pgm2_mem = "HELLO2"
+
+
+    try:
+        # allocate pds for cobol src code
+        hosts.all.zos_data_set(
+            name=cobol_src_pds,
+            state="present",
+            type="pds",
+            space_primary=2,
+            record_format="FB",
+            record_length=80,
+            block_size=3120,
+            replace=True,
+        )
+        # allocate pds for src loadlib
+        hosts.all.zos_data_set(
+            name=src_lib,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        # copy cobol src
+        hosts.all.zos_copy(content=COBOL_SRC.format(COBOL_PRINT_STR), dest='{0}({1})'.format(cobol_src_pds, cobol_src_mem))
+        # copy cobol2 src
+        hosts.all.zos_copy(content=COBOL_SRC.format(COBOL_PRINT_STR2), dest='{0}({1})'.format(cobol_src_pds, cobol_src_mem2))
+
+        # run link-edit for pgm1
+        link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, src_lib, pgm_mem)
+        assert link_rc == 0
+        # run link-edit for pgm2
+        link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem2, src_lib, pgm2_mem, loadlib_alias_mem="ALIAS2")
+        assert link_rc == 0
+
+        # execute pgm to test pgm1
+        validate_loadlib_pgm(hosts, steplib=src_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
+
+        # fetch loadlib into local
+        tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")
+        # fetch loadlib to local
+        fetch_result = hosts.all.zos_fetch(src=src_lib, dest=tmp_folder.name, is_binary=True)
+        for res in fetch_result.contacted.values():
+            source_path = res.get("dest")
+
+        if not is_created:
+            # ensure dest data sets absent for this variation of the test case.
+            hosts.all.zos_data_set(name=dest_lib, state="absent")
+        else:
+            # allocate dest loadlib to copy over without an alias.
+            hosts.all.zos_data_set(
+                name=dest_lib,
+                state="present",
+                type="pdse",
+                record_format="U",
+                record_length=0,
+                block_size=32760,
+                space_primary=2,
+                space_type="M",
+                replace=True
+            )
+
+        if not is_created:
+            # dest data set does not exist, specify it in dest_dataset param.
+            # copy src loadlib to dest library pds w/o aliases
+            copy_res = hosts.all.zos_copy(
+                src=source_path,
+                dest="{0}".format(dest_lib),
+                executable=True,
+                aliases=False,
+                dest_data_set={
+                    'type': "PDSE",
+                    'record_format': "U",
+                    'record_length': 0,
+                    'block_size': 32760,
+                    'space_primary': 2,
+                    'space_type': "M",
+                }
+            )
+        else:
+            # copy src loadlib to dest library pds w/o aliases
+            copy_res = hosts.all.zos_copy(
+                src=source_path,
+                dest="{0}".format(dest_lib),
+                executable=True,
+                aliases=False
+            )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}".format(dest_lib)
+
+        # check ALIAS keyword and name in mls output
+        verify_copy_mls = hosts.all.shell(
+            cmd="mls {0}".format(dest_lib),
+            executable=SHELL_EXECUTABLE
+        )
+        for v_cp in verify_copy_mls.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            # number of members
+            assert len(stdout.splitlines()) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
+        hosts.all.zos_data_set(name=src_lib, state="absent")
+        hosts.all.zos_data_set(name=dest_lib, state="absent")
+
+
 @pytest.mark.pdse
 @pytest.mark.loadlib
 @pytest.mark.aliases

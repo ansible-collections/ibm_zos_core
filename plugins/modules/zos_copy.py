@@ -1709,33 +1709,54 @@ class PDSECopyHandler(CopyHandler):
         existing_members = datasets.list_members(dest)  # fyi - this list includes aliases
         overwritten_members = []
         new_members = []
+        bulk_src_members = ""
 
         for src_member, destination_member in zip(src_members, dest_members):
             if destination_member in existing_members:
                 overwritten_members.append(destination_member)
             else:
                 new_members.append(destination_member)
+            bulk_src_members += "{0} ".format(src_member)
+            # result = self.copy_to_member(
+            #     src_member,
+            #     "{0}({1})".format(dest, destination_member),
+            #     src_ds_type
+            # )
 
-            result = self.copy_to_member(
-                src_member,
-                "{0}({1})".format(dest, destination_member),
-                src_ds_type
+            # if result["rc"] != 0:
+            #     msg = "Unable to copy source {0} to data set member {1}({2})".format(
+            #         new_src,
+            #         dest,
+            #         destination_member
+            #     )
+            #     raise CopyOperationError(
+            #         msg=msg,
+            #         rc=result["rc"],
+            #         stdout=result["out"],
+            #         stderr=result["err"],
+            #         overwritten_members=overwritten_members,
+            #         new_members=new_members
+            #     )
+        result = self.copy_to_member(
+            bulk_src_members,
+            dest,
+            src_ds_type
+        )
+
+        if result["rc"] != 0:
+            msg = "Unable to copy source {0} to data set member {1}({2})".format(
+                new_src,
+                dest,
+                destination_member
             )
-
-            if result["rc"] != 0:
-                msg = "Unable to copy source {0} to data set member {1}({2})".format(
-                    new_src,
-                    dest,
-                    destination_member
-                )
-                raise CopyOperationError(
-                    msg=msg,
-                    rc=result["rc"],
-                    stdout=result["out"],
-                    stderr=result["err"],
-                    overwritten_members=overwritten_members,
-                    new_members=new_members
-                )
+            raise CopyOperationError(
+                msg=msg,
+                rc=result["rc"],
+                stdout=result["out"],
+                stderr=result["err"],
+                overwritten_members=overwritten_members,
+                new_members=new_members
+            )
 
     def copy_to_member(
         self,

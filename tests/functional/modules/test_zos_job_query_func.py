@@ -68,6 +68,8 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
             src="{0}(SAMPLE)".format(JDATA_SET_NAME), location="DATA_SET", wait=True
         )
         for result in results.contacted.values():
+            print( "\n============Result!!!\n" )
+            pprint( result )
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
 

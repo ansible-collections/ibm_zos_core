@@ -57,9 +57,10 @@ class ActionModule(ActionBase):
             source = self._task.args.get("src", None)
 
             # Get a temporary file on the managed node
-            tempfile = dest_path = self._execute_module(
+            tempfile = self._execute_module(
                 module_name="tempfile", module_args={}, task_vars=task_vars,
-            ).get("path")
+            )
+            dest_path = tempfile.get("path")
             # Calling execute_module from this step with tempfile leaves behind a tmpdir.
             # This is called to ensure the proper removal.
             tmpdir = self._connection._shell.tmpdir

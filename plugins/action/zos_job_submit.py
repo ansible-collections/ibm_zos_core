@@ -70,7 +70,8 @@ class ActionModule(ActionBase):
             if source is None:
                 result["msg"] = "Source is required."
             elif dest_path is None:
-                result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
+                # result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
+                result["msg"] = "Failed copying to remote, destination file was not created."
             elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
                 result["msg"] = "Source must be a file."
             else:

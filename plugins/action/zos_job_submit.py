@@ -57,7 +57,7 @@ class ActionModule(ActionBase):
             source = self._task.args.get("src", None)
 
             # Get a temporary file on the managed node
-            dest_path = self._execute_module(
+            tempfile = dest_path = self._execute_module(
                 module_name="tempfile", module_args={}, task_vars=task_vars,
             ).get("path")
             # Calling execute_module from this step with tempfile leaves behind a tmpdir.
@@ -70,8 +70,7 @@ class ActionModule(ActionBase):
             if source is None:
                 result["msg"] = "Source is required."
             elif dest_path is None:
-                # result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
-                result["msg"] = "Failed copying to remote, destination file was not created."
+                result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
             elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
                 result["msg"] = "Source must be a file."
             else:

@@ -764,7 +764,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not fullmatch(
-            r"(^[a-zA-Z$#@%}]{1}[0-9a-zA-Z$#@%*]{2,7})|(^['\*']{1})",
+            r"(^[a-zA-Z$#@%}]{1}[0-9a-zA-Z$#@%*]{1,7})|(^['\*']{1})",
             str(contents),
             IGNORECASE,
         ):

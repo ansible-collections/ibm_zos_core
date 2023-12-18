@@ -58,9 +58,14 @@ class ActionModule(ActionBase):
 
             # Get a temporary file on the managed node
             tempfile = self._execute_module(
-                module_name="tempfile", module_args=dict(state="file"), task_vars=task_vars,
+                module_name="tempfile", module_args={}, task_vars=task_vars,
             )
             dest_path = tempfile.get("path")
+            # Calling execute_module from this step with tempfile leaves behind a tmpdir.
+            # This is called to ensure the proper removal.
+            tmpdir = self._connection._shell.tmpdir
+            if tmpdir:
+                self._remove_tmp_path(tmpdir)
 
             result["failed"] = True
             if source is None:
@@ -166,14 +171,6 @@ class ActionModule(ActionBase):
                 )
             else:
                 result.update(dict(failed=True))
-            if rendered_file:
-                os.remove(rendered_file)
-            if os.path.isfile(tmp_src):
-                self._connection.exec_command("rm -rf {0}".format(tmp_src))
-            if os.path.isfile(dest_file):
-                self._connection.exec_command("rm -rf {0}".format(dest_file))
-            if os.path.isfile(source_full):
-                self._connection.exec_command("rm -rf {0}".format(source_full))
 
         else:
             result.update(

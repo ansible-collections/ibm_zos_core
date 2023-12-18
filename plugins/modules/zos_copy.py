@@ -1737,11 +1737,18 @@ class PDSECopyHandler(CopyHandler):
             #         overwritten_members=overwritten_members,
             #         new_members=new_members
             #     )
-        result = self.copy_to_member(
-            bulk_src_members,
-            dest,
-            src_ds_type
-        )
+        if len(src_members) > 1:
+            result = self.copy_to_member(
+                bulk_src_members,
+                dest,
+                src_ds_type
+            )
+        else:
+            result = self.copy_to_member(
+                src_member,
+                "{0}({1})".format(dest, destination_member),
+                src_ds_type
+            )
 
         if result["rc"] != 0:
             msg = "Unable to copy source {0} to data set member {1}({2})".format(

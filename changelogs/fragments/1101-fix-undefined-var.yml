@@ -1,0 +1,3 @@
+trivial:
+  - zos_job_submit - Fix undefined variable that got deleted during a conflicting merge.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1101).

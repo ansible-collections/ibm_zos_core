@@ -1544,15 +1544,13 @@ class USSCopyHandler(CopyHandler):
                     pass
 
         opts = dict()
-        if self.executable:
-            opts["options"] = "-IX "
 
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
                 elif self.executable:
-                    response = datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, alias=True, executable=self.executable, **opts)
                 else:
                     response = datasets._copy(src, dest)
 
@@ -1770,19 +1768,10 @@ class PDSECopyHandler(CopyHandler):
             if self.is_binary or self.asa_text:
                 opts["options"] = "-B"
 
-            if self.aliases and not self.executable:
-                # lower case 'i' for text-based copy (dcp)
-                opts["options"] = "-i"
-
-            if self.executable:
-                opts["options"] = "-X"
-                if self.aliases:
-                    opts["options"] = "-IX"
-
             if self.force_lock:
                 opts["options"] += " -f"
 
-            response = datasets._copy(src, dest, None, **opts)
+            response = datasets._copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         return dict(

@@ -1717,44 +1717,26 @@ class PDSECopyHandler(CopyHandler):
             else:
                 new_members.append(destination_member)
             bulk_src_members += "{0} ".format(src_member)
-            # result = self.copy_to_member(
-            #     src_member,
-            #     "{0}({1})".format(dest, destination_member),
-            #     src_ds_type
-            # )
 
-            # if result["rc"] != 0:
-            #     msg = "Unable to copy source {0} to data set member {1}({2})".format(
-            #         new_src,
-            #         dest,
-            #         destination_member
-            #     )
-            #     raise CopyOperationError(
-            #         msg=msg,
-            #         rc=result["rc"],
-            #         stdout=result["out"],
-            #         stderr=result["err"],
-            #         overwritten_members=overwritten_members,
-            #         new_members=new_members
-            #     )
-        if len(src_members) > 1:
-            result = self.copy_to_member(
-                bulk_src_members,
-                dest,
-                src_ds_type
-            )
+        if len(src_members) == 1:
+            destination = "{0}({1})".format(dest, destination_member)
+            source = src_member
         else:
-            result = self.copy_to_member(
-                src_member,
-                "{0}({1})".format(dest, destination_member),
-                src_ds_type
-            )
+            """
+            This means we have to copy more than one member at a time
+            """
+            destination = dest
+            source = bulk_src_members
+        result = self.copy_to_member(
+            source,
+            destination,
+            src_ds_type
+        )
 
         if result["rc"] != 0:
-            msg = "Unable to copy source {0} to data set member {1}({2})".format(
+            msg = "Unable to copy source {0} to {1}".format(
                 new_src,
-                dest,
-                destination_member
+                destination
             )
             raise CopyOperationError(
                 msg=msg,

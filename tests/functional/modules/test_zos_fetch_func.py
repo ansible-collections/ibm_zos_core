@@ -41,10 +41,10 @@ TEST_EMPTY_VSAM = "IMSTESTL.LDS01.WADS0"
 FROM_ENCODING = "IBM-1047"
 TO_ENCODING = "ISO8859-1"
 USS_FILE = "/tmp/fetch.data"
-TEST_DATA = """0001This is for encode conversion testsing
-0002This is for encode conversion testsing
-0003This is for encode conversion testsing
-0004This is for encode conversion testsing
+TEST_DATA = """0001This is for encode conversion testing
+0002This is for encode conversion testing
+0003This is for encode conversion testing
+0004This is for encode conversion testing
 """
 KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=OMVSADM

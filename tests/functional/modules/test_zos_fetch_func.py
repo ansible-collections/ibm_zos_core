@@ -226,7 +226,10 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
         )
-        hosts.all.zos_copy(content=TEST_DATA, dest=USS_FILE)
+        # echo with \c to avoid it adding new line at the end of the file
+        hosts.all.shell(
+            cmd="echo '{0}\c' > {1}".format(TEST_DATA, USS_FILE)
+        )
         hosts.all.zos_encode(
             src=USS_FILE,
             dest=TEST_VSAM,

@@ -161,6 +161,7 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
 
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
     hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=TEST_PS, state="present", size="5m")
     params = dict(src=TEST_PS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PS
     try:
@@ -172,6 +173,7 @@ def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
             assert result.get("dest") == dest_path
             assert os.path.exists(dest_path)
     finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
         if os.path.exists(dest_path):
             os.remove(dest_path)
 

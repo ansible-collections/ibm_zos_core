@@ -12,9 +12,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    extract_member_name
-)
+
 import os
 import shutil
 import stat
@@ -78,6 +76,15 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
  EEXAMPLE RECORD   REMOVE THIS LINE IF EXAMPLES NOT REQUIRED
 /*
 """
+
+def extract_member_name(data_set):
+    start = data_set.find("(")
+    member = ""
+    for i in range(start + 1, len(data_set)):
+        if data_set[i] == ")":
+            break
+        member += data_set[i]
+    return member
 
 def create_and_populate_test_ps_vb(ansible_zos_module):
     params=dict(
@@ -162,6 +169,7 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=TEST_PS, state="present", size="5m")
+    hosts.all.zos_lineinfile(path=TEST_PS, line="unset ZOAU_ROOT", state="present")
     params = dict(src=TEST_PS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PS
     try:
@@ -199,6 +207,8 @@ def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
 
 def test_fetch_partitioned_data_set(ansible_zos_module):
     hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=TEST_PDS, state="present")
+    hosts.all.zos_lineinfile(path=TEST_PDS, line="unset ZOAU_ROOT", state="present")
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PDS
     try:
@@ -211,6 +221,7 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
             assert os.path.exists(dest_path)
             assert os.path.isdir(dest_path)
     finally:
+        hosts.all.zos_data_set(name=TEST_PDS, state="absent")
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
 
@@ -278,6 +289,9 @@ def test_fetch_vsam_empty_data_set(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=TEST_PDS, state="present")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
+    hosts.all.zos_lineinfile(path=TEST_PDS_MEMBER, line="unset ZOAU_ROOT", state="present")
     params = dict(
         src=TEST_PDS_MEMBER, dest="/tmp/", flat=True, is_binary=True
     )
@@ -293,12 +307,15 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
             assert os.path.exists(dest_path)
             assert os.path.isfile(dest_path)
     finally:
+        hosts.all.zos_data_set(name=TEST_PDS, state="absent")
         if os.path.exists(dest_path):
             os.remove(dest_path)
 
 
 def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=TEST_PS, state="present")
+    hosts.all.zos_lineinfile(path=TEST_PS, line="unset ZOAU_ROOT", state="present")
     params = dict(src=TEST_PS, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_PS
     try:
@@ -310,12 +327,15 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
             assert result.get("is_binary") is True
             assert os.path.exists(dest_path)
     finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
         if os.path.exists(dest_path):
             os.remove(dest_path)
 
 
 def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=TEST_PDS, state="present")
+    hosts.all.zos_lineinfile(path=TEST_PDS, line="unset ZOAU_ROOT", state="present")
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_PDS
     try:
@@ -328,6 +348,7 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
             assert os.path.exists(dest_path)
             assert os.path.isdir(dest_path)
     finally:
+        hosts.all.zos_data_set(name=TEST_PDS, state="absent")
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
 
@@ -474,6 +495,8 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
 def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = TEST_PS
+    hosts.all.zos_data_set(name=TEST_PS, state="present")
+    hosts.all.zos_lineinfile(path=TEST_PS, line="unset ZOAU_ROOT", state="present")
     dest_path = "/tmp/" + ds_name
     with open(dest_path, "w") as infile:
         infile.write(DUMMY_DATA)
@@ -487,6 +510,7 @@ def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
             assert result.get("module_stderr") is None
             assert checksum(dest_path, hash_func=sha256) != local_checksum
     finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
         if os.path.exists(dest_path):
             os.remove(dest_path)
 

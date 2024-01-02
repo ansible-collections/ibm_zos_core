@@ -168,8 +168,9 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
 
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=TEST_PS, state="present", size="5m")
-    hosts.all.zos_lineinfile(path=TEST_PS, line="unset ZOAU_ROOT", state="present")
+    TEST_PS = "USER.TEST.FETCH"
+    hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="5m")
+    hosts.all.zos_blockinfile(src=TEST_PS, block=TEST_DATA)
     params = dict(src=TEST_PS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PS
     try:
@@ -207,8 +208,11 @@ def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
 
 def test_fetch_partitioned_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=TEST_PDS, state="present")
-    hosts.all.zos_lineinfile(path=TEST_PDS, line="unset ZOAU_ROOT", state="present")
+    TEST_PDS = "USER.TEST.FETCH"
+    TEST_PDS_MEMBER = TEST_PDS + '(MEM1)'
+    hosts.all.zos_data_set(name=TEST_PDS, state="present", type="PDSE")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
+    hosts.all.zos_blockinfile(src=TEST_PDS, block=TEST_DATA)
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PDS
     try:
@@ -291,7 +295,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=TEST_PDS, state="present")
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
-    hosts.all.zos_lineinfile(path=TEST_PDS_MEMBER, line="unset ZOAU_ROOT", state="present")
+    hosts.all.zos_blockinfile(src=TEST_PDS_MEMBER, block=TEST_DATA)
     params = dict(
         src=TEST_PDS_MEMBER, dest="/tmp/", flat=True, is_binary=True
     )
@@ -314,8 +318,9 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
 
 def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=TEST_PS, state="present")
-    hosts.all.zos_lineinfile(path=TEST_PS, line="unset ZOAU_ROOT", state="present")
+    TEST_PS = "USER.TEST.FETCH"
+    hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="5m")
+    hosts.all.zos_blockinfile(src=TEST_PS, block=TEST_DATA)
     params = dict(src=TEST_PS, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_PS
     try:
@@ -334,8 +339,11 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=TEST_PDS, state="present")
-    hosts.all.zos_lineinfile(path=TEST_PDS, line="unset ZOAU_ROOT", state="present")
+    TEST_PDS = "USER.TEST.FETCH"
+    TEST_PDS_MEMBER = TEST_PDS + '(MEM1)'
+    hosts.all.zos_data_set(name=TEST_PDS, state="present", type="PDSE")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
+    hosts.all.zos_blockinfile(src=TEST_PDS, block=TEST_DATA)
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_PDS
     try:
@@ -494,9 +502,11 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
 
 def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
+    TEST_PS = "USER.TEST.FETCH"
+    hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="5m")
     ds_name = TEST_PS
     hosts.all.zos_data_set(name=TEST_PS, state="present")
-    hosts.all.zos_lineinfile(path=TEST_PS, line="unset ZOAU_ROOT", state="present")
+    hosts.all.zos_blockinfile(src=TEST_PS, block=TEST_DATA)
     dest_path = "/tmp/" + ds_name
     with open(dest_path, "w") as infile:
         infile.write(DUMMY_DATA)

@@ -29,14 +29,13 @@ c_pgm="""#include <stdio.h>
 int main(int argc, char** argv)
 {
     char dsname[ strlen(argv[1]) + 4];
-    sprintf(dsname, "//'%s'", argv[1]);
+    sprintf(dsname, \\\"//'%s'\\\", argv[1]);
     FILE* member;
-    member = fopen(dsname, "rb,type=record");
+    member = fopen(dsname, \\\"rb,type=record\\\");
     sleep(300);
     fclose(member);
     return 0;
-}
-"""
+}"""
 
 call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
@@ -893,12 +892,12 @@ def test_ds_line_force(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
-            content=call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
-            dest='/tmp/disp_shr/call_c_pgm.jcl',
-            force=True
-        )
+        hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
+            call_c_jcl.format(
+                DEFAULT_DATA_SET_NAME,
+                MEMBER_1),
+            '/tmp/disp_shr/call_c_pgm.jcl'))
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
         time.sleep(5)
@@ -946,12 +945,13 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
-            content=call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
-            dest='/tmp/disp_shr/call_c_pgm.jcl',
-            force=True
-        )
+        hosts.all.file(path="/tmp/disp_shr", state='directory')
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
+            call_c_jcl.format(
+                DEFAULT_DATA_SET_NAME,
+                MEMBER_1),
+            '/tmp/disp_shr/call_c_pgm.jcl'))
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
         time.sleep(5)
@@ -964,7 +964,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
-        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        # hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 

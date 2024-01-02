@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -964,7 +964,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
-        # hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 

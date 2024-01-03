@@ -276,6 +276,7 @@ def test_fetch_vsam_data_set(ansible_zos_module):
 
 def test_fetch_vsam_empty_data_set(ansible_zos_module):
     hosts = ansible_zos_module
+    TEST_EMPTY_VSAM = "TEST.VSAM.DATA"
     hosts.all.zos_data_set(name=TEST_EMPTY_VSAM, type="KSDS", state="cataloged", volumes="000000")
     params = dict(src=TEST_EMPTY_VSAM, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_EMPTY_VSAM

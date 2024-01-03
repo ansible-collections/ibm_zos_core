@@ -77,6 +77,11 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
 /*
 """
 
+VSAM_RECORDS = """00000001A record
+00000002A record
+00000003A record
+"""
+
 def extract_member_name(data_set):
     start = data_set.find("(")
     member = ""

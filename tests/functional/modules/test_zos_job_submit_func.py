@@ -277,11 +277,15 @@ def test_job_submit_PDS(ansible_zos_module):
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME)
         )
+        time.sleep(3)
         results = hosts.all.zos_job_submit(
             src="{0}(SAMPLE)".format(DATA_SET_NAME), location="DATA_SET", wait=True
         )
-        time.sleep(3)
         for result in results.contacted.values():
+            print( "\n===vResult:::\n")
+            pprint( result )
+            print( "\n===^Result...\n")
+
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True

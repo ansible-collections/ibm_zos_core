@@ -1,0 +1,10 @@
+minor_changes:
+  - zos_job_submit - The module handling ZOAU import errors obscured the
+    original traceback when an import error ocurred. Fix now passes correctly
+    the context to the user.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1091).
+
+  - zos_job_submit - The module had undocumented parameter and uses as temporary file
+    when the location of the file is LOCAL. Change now uses the same name as the src
+    for the temporary file removing the addition of tmp_file to the arguments.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1091).

@@ -288,6 +288,7 @@ def test_fetch_vsam_empty_data_set(ansible_zos_module):
             assert result.get("dest") == dest_path
             assert os.path.exists(dest_path)
     finally:
+        hosts.all.zos_data_set(name=TEST_EMPTY_VSAM, state="absent")
         if os.path.exists(dest_path):
             os.remove(dest_path)
 

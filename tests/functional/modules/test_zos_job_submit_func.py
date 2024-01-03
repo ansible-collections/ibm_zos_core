@@ -21,6 +21,7 @@ import pytest
 import re
 import os
 from pprint import pprint
+import time
 
 
 # ##############################################################################
@@ -279,6 +280,7 @@ def test_job_submit_PDS(ansible_zos_module):
         results = hosts.all.zos_job_submit(
             src="{0}(SAMPLE)".format(DATA_SET_NAME), location="DATA_SET", wait=True
         )
+        time.sleep(3)
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
@@ -303,6 +305,7 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
                 TEMP_PATH, DATA_SET_NAME_SPECIAL_CHARS
             )
         )
+        time.sleep(3)
         results = hosts.all.zos_job_submit(
             src="{0}(SAMPLE)".format(DATA_SET_NAME_SPECIAL_CHARS),
             location="DATA_SET",
@@ -394,7 +397,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
         hosts.all.zos_data_set(
             name=DATA_SET_NAME, state="uncataloged", type="pds"
         )
-
+        time.sleep(3)
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(SAMPLE)", location="DATA_SET", volume=DEFAULT_VOLUME)
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -422,7 +425,7 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         hosts.all.shell(
             cmd="cp {0}/BPXSLEEP \"//'{1}(BPXSLEEP)'\"".format(TEMP_PATH, DATA_SET_NAME)
         )
-
+        time.sleep(3)
         hosts = ansible_zos_module
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(BPXSLEEP)",
                     location="DATA_SET", wait_time_s=wait_time_s)
@@ -456,6 +459,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         )
 
         hosts = ansible_zos_module
+        time.sleep(3)
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(BPXSLEEP)",
                     location="DATA_SET", wait_time_s=wait_time_s)
 
@@ -486,7 +490,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
         hosts.all.shell(
             cmd="cp {0}/BPXSLEEP \"//'{1}(BPXSLEEP)'\"".format(TEMP_PATH, DATA_SET_NAME)
         )
-
+        time.sleep(3)
         hosts = ansible_zos_module
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(BPXSLEEP)",
                     location="DATA_SET", wait_time_s=wait_time_s)

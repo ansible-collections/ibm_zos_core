@@ -110,6 +110,36 @@ def delete_test_ps_vb(ansible_zos_module):
     ansible_zos_module.all.zos_data_set(**params)
 
 
+def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, key_offset=None):
+    """Creates a new VSAM on the system.
+
+    Arguments:
+        hosts (object) -- Ansible instance(s) that can call modules.
+        name (str) -- Name of the VSAM data set.
+        type (str) -- Type of the VSAM (KSDS, ESDS, RRDS, LDS)
+        add_data (bool, optional) -- Whether to add records to the VSAM.
+        key_length (int, optional) -- Key length (only for KSDS data sets).
+        key_offset (int, optional) -- Key offset (only for KSDS data sets).
+    """
+    params = dict(
+        name=name,
+        type=ds_type,
+        state="present"
+    )
+    if ds_type == "KSDS":
+        params["key_length"] = key_length
+        params["key_offset"] = key_offset
+
+    hosts.all.zos_data_set(**params)
+
+    if add_data:
+        record_src = "/tmp/zos_copy_vsam_record"
+
+        hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
+        hosts.all.zos_encode(src=record_src, dest=name, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
+        hosts.all.file(path=record_src, state="absent")
+
+
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(src="/etc/profile", dest="/tmp/", flat=True)
@@ -276,8 +306,8 @@ def test_fetch_vsam_data_set(ansible_zos_module):
 
 def test_fetch_vsam_empty_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_EMPTY_VSAM = "TEST.VSAM.DATA"
-    hosts.all.zos_data_set(name=TEST_EMPTY_VSAM, type="KSDS", state="cataloged", volumes="000000")
+    src_ds = "TEST.VSAM.DATA"
+    create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
     params = dict(src=TEST_EMPTY_VSAM, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_EMPTY_VSAM
     try:
@@ -289,7 +319,7 @@ def test_fetch_vsam_empty_data_set(ansible_zos_module):
             assert result.get("dest") == dest_path
             assert os.path.exists(dest_path)
     finally:
-        hosts.all.zos_data_set(name=TEST_EMPTY_VSAM, state="absent")
+        hosts.all.zos_data_set(name=src_ds, state="absent")
         if os.path.exists(dest_path):
             os.remove(dest_path)
 

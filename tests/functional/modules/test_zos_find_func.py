@@ -216,20 +216,31 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
 
 def test_find_data_sets_larger_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='100k')
-    print(vars(find_res))
-    for val in find_res.contacted.values():
-        assert len(val.get('data_sets')) == 2
-        assert val.get('matched') == 2
+    TEST_PS1 = 'TEST.PS.ONE'
+    TEST_PS2 = 'TEST.PS.TWO'
+    try:
+        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", size="5m")
+        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", size="5m")
+        find_res = hosts.all.zos_find(patterns=['TEST.PS.*'], size="1k")
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 2
+            assert val.get('matched') == 2
+    finally:
+        hosts.all.zos_data_set(name=TEST_PS1, state="absent")
+        hosts.all.zos_data_set(name=TEST_PS2, state="absent")
 
 
 def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='-1m')
-    print(vars(find_res))
-    for val in find_res.contacted.values():
-        assert len(val.get('data_sets')) == 1
-        assert val.get('matched') == 1
+    TEST_PS = 'IMSTESTL.MQBATCH.PS'
+    try:
+        hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="1k")
+        find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='-1m')
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 1
+            assert val.get('matched') == 1
+    finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
 
 
 def test_find_data_sets_in_volume(ansible_zos_module):

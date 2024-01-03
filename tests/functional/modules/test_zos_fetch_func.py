@@ -319,6 +319,8 @@ def test_fetch_vsam_empty_data_set(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
+    TEST_PDS = "TEST.DATASET.TEST"
+    TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
     hosts.all.zos_data_set(name=TEST_PDS, state="present")
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))

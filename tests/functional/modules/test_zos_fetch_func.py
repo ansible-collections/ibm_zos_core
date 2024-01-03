@@ -312,9 +312,9 @@ def test_fetch_vsam_data_set(ansible_zos_module):
 def test_fetch_vsam_empty_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     src_ds = "TEST.VSAM.DATA"
-    create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
-    params = dict(src=TEST_EMPTY_VSAM, dest="/tmp/", flat=True)
-    dest_path = "/tmp/" + TEST_EMPTY_VSAM
+    create_vsam_data_set(hosts, src_ds, "KSDS", key_length=12, key_offset=0)
+    params = dict(src=src_ds, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + src_ds
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

@@ -361,8 +361,6 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PDS = "USER.TEST.FETCH"
-    TEST_PDS_MEMBER = TEST_PDS + '(MEM1)'
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="PDSE")
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
@@ -524,7 +522,6 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
 
 def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PS = "USER.TEST.FETCH"
     hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="5m")
     ds_name = TEST_PS
     hosts.all.zos_data_set(name=TEST_PS, state="present")

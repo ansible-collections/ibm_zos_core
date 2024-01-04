@@ -275,7 +275,7 @@ def test_job_submit_PDS(ansible_zos_module):
         print( "echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH))
         print( "\n===^Content...\n")
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="present", type="pds", replace=True
+            name=DATA_SET_NAME, state="present", type="PDS", replace=True
         )
         print( "\n===vCmd:::\n")
         print( "cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME))
@@ -308,7 +308,7 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="pds", replace=True
+            name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="PDS", replace=True
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
@@ -397,7 +397,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="present", type="pds", replace=True, volumes=DEFAULT_VOLUME
+            name=DATA_SET_NAME, state="present", type="PDS", replace=True, volumes=DEFAULT_VOLUME
         )
 
         hosts.all.shell(
@@ -405,7 +405,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="uncataloged", type="pds"
+            name=DATA_SET_NAME, state="uncataloged", type="PDS"
         )
         time.sleep(3)
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(SAMPLE)", location="DATA_SET", volume=DEFAULT_VOLUME)
@@ -429,7 +429,7 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="present", type="pds", replace=True
+            name=DATA_SET_NAME, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -461,7 +461,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="present", type="pds", replace=True
+            name=DATA_SET_NAME, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -494,7 +494,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME, state="present", type="pds", replace=True
+            name=DATA_SET_NAME, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(

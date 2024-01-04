@@ -191,7 +191,6 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
 
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PS = "USER.TEST.FETCH"
     hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="5m")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
     params = dict(src=TEST_PS, dest="/tmp/", flat=True)
@@ -231,8 +230,6 @@ def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
 
 def test_fetch_partitioned_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PDS = "USER.TEST.FETCH"
-    TEST_PDS_MEMBER = TEST_PDS + '(MEM1)'
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="PDSE")
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
@@ -319,8 +316,6 @@ def test_fetch_vsam_empty_data_set(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PDS = "TEST.DATASET.TEST"
-    TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
     hosts.all.zos_data_set(name=TEST_PDS, state="present")
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
@@ -346,7 +341,6 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
 
 def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PS = "USER.TEST.FETCH"
     hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="5m")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
     params = dict(src=TEST_PS, dest="/tmp/", flat=True, is_binary=True)

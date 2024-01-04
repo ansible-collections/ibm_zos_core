@@ -232,10 +232,10 @@ def test_find_data_sets_larger_than_size(ansible_zos_module):
 
 def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PS = 'IMSTESTL.MQBATCH.PS'
+    TEST_PS = 'USER.FIND.TEST'
     try:
         hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="1k")
-        find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='-1m')
+        find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == 1

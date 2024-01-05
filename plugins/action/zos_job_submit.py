@@ -140,7 +140,6 @@ class ActionModule(ActionBase):
             result = {}
             copy_module_args = {}
             module_args = self._task.args.copy()
-            module_args["temp_file"] = dest_path
 
             copy_module_args.update(
                 dict(
@@ -148,6 +147,7 @@ class ActionModule(ActionBase):
                     dest=dest_path,
                     mode="0600",
                     force=True,
+                    encoding=module_args.get('encoding'),
                     remote_src=True,
                 )
             )

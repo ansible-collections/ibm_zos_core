@@ -281,7 +281,7 @@ def test_job_submit_PDS(ansible_zos_module):
         print( "cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME))
         print( "\n===^Cmd...\n")
         hosts.all.shell(
-            cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME)
+            cmd="cp -S {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME)
         )
         time.sleep(3)
         results = hosts.all.zos_job_submit(

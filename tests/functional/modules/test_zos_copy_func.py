@@ -112,9 +112,7 @@ ASA_COPY_CONTENT = """  Space, do not advance.
 
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
-TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
-TEST_PDS = "IMSTESTL.COMNUC"
-TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
+TEST_PS = "USER.PRIVATE.TESTSRC"
 TEST_VSAM = "IMSTESTL.LDS01.WADS2"
 TEST_VSAM_KSDS = "SYS1.STGINDEX"
 TEST_PDSE = "SYS1.NFSLIBE"
@@ -2316,6 +2314,8 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
     dest = "/tmp/ddchkpt"
 
     try:
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="present", replace=True)
+        hosts.all.shell(cmd="decho \"{0}\" {1}".format(DUMMY_DATA, src_ds))
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
@@ -2333,6 +2333,7 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
             assert result.get("stdout") != ""
     finally:
         hosts.all.file(path=dest, state="absent")
+        hosts.all.file(path=src_ds, state="absent")
 
 
 @pytest.mark.uss
@@ -2345,6 +2346,8 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
 
     try:
         hosts.all.file(path=dest, state="touch")
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="present", replace=True)
+        hosts.all.shell(cmd="decho \"{0}\" {1}".format(DUMMY_DATA, src_ds))
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         stat_res = hosts.all.stat(path=dest)
@@ -2366,6 +2369,7 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
             assert result.get("rc") == 0
     finally:
         hosts.all.file(path=dest, state="absent")
+        hosts.all.file(path=src_ds, state="absent")
 
 
 @pytest.mark.uss
@@ -2378,6 +2382,8 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
 
     try:
         hosts.all.file(path=dest, state="directory")
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="present", replace=True)
+        hosts.all.shell(cmd="decho \"{0}\" {1}".format(DUMMY_DATA, src_ds))
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(
@@ -2394,6 +2400,7 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
             assert result.get("stdout") != ""
     finally:
         hosts.all.file(path=dest, state="absent")
+        hosts.all.file(path=src_ds, state="absent")
 
 
 @pytest.mark.seq
@@ -2404,6 +2411,8 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
 
     try:
         hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="present", replace=True)
+        hosts.all.shell(cmd="decho \"{0}\" {1}".format(DUMMY_DATA, src_ds))
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
@@ -2419,6 +2428,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
             assert result.get("stdout") != ""
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src_ds, state="absent")
 
 
 @pytest.mark.seq
@@ -2430,6 +2440,9 @@ def test_copy_ps_to_empty_ps(ansible_zos_module, force):
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
+
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="present", replace=True)
+        hosts.all.shell(cmd="decho \"{0}\" {1}".format(DUMMY_DATA, src_ds))
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
@@ -2458,6 +2471,9 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
         hosts.all.zos_data_set(name=dest, type="seq", state="absent")
         hosts.all.zos_copy(content="Inline content", dest=dest)
 
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="present", replace=True)
+        hosts.all.shell(cmd="decho \"{0}\" {1}".format(DUMMY_DATA, src_ds))
+
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
@@ -2476,6 +2492,7 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
             assert result.get("stdout") != ""
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src_ds, state="absent")
 
 
 @pytest.mark.seq
@@ -2489,6 +2506,9 @@ def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
         hosts.all.zos_data_set(name=dest, type="seq", state="absent")
         hosts.all.zos_copy(content=DUMMY_DATA_SPECIAL_CHARS, dest=dest)
 
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="present", replace=True)
+        hosts.all.shell(cmd="decho \"{0}\" {1}".format(DUMMY_DATA_SPECIAL_CHARS, src_ds))
+
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
@@ -2507,6 +2527,7 @@ def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
             assert result.get("stdout") != ""
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src_ds, type="seq", state="absent")
 
 
 @pytest.mark.seq

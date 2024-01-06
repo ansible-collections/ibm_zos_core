@@ -1545,12 +1545,15 @@ class USSCopyHandler(CopyHandler):
 
         opts = dict()
 
+        if self.executable:
+            opts["options"] = "-IX"
+
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
                 elif self.executable:
-                    response = datasets._copy(src, dest, alias=True, executable=self.executable, **opts)
+                    response = datasets._copy(src, dest, None, **opts)
                 else:
                     response = datasets._copy(src, dest)
 

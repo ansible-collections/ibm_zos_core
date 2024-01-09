@@ -1719,9 +1719,9 @@ class PDSECopyHandler(CopyHandler):
 
             if src_ds_type == "USS":
                 result = self.copy_to_member(
-                src_member,
-                "{0}({1})".format(dest, destination_member),
-                src_ds_type
+                    src_member,
+                    "{0}({1})".format(dest, destination_member),
+                    src_ds_type
                 )
             bulk_src_members += "{0} ".format(src_member)
 

@@ -1716,27 +1716,37 @@ class PDSECopyHandler(CopyHandler):
                 overwritten_members.append(destination_member)
             else:
                 new_members.append(destination_member)
+
+            if src_ds_type == "USS":
+                result = self.copy_to_member(
+                src_member,
+                "{0}({1})".format(dest, destination_member),
+                src_ds_type
+                )
             bulk_src_members += "{0} ".format(src_member)
 
-        if len(src_members) == 1:
-            destination = "{0}({1})".format(dest, destination_member)
-            source = src_member
-        else:
-            """
-            This means we have to copy more than one member at a time
-            """
-            destination = dest
-            source = bulk_src_members
-        result = self.copy_to_member(
-            source,
-            destination,
-            src_ds_type
-        )
+        if src_ds_type != "USS":
+            if len(src_members) == 1:
+                destination = "{0}({1})".format(dest, destination_member)
+                source = src_member
+            else:
+                """
+                This means we have to copy more than one member at a time
+                """
+                destination = dest
+                source = bulk_src_members
+                result = self.copy_to_member(
+                    source,
+                    destination,
+                    src_ds_type
+                )
 
         if result["rc"] != 0:
-            msg = "Unable to copy source {0} to {1}".format(
+            msg = "Unable to copy source {0} to {1}. members : {2} destination: {3}".format(
                 new_src,
-                destination
+                destination,
+                source,
+                dest_members
             )
             raise CopyOperationError(
                 msg=msg,

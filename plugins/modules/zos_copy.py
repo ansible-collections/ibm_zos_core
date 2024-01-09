@@ -1543,17 +1543,12 @@ class USSCopyHandler(CopyHandler):
                 except FileExistsError:
                     pass
 
-        opts = dict()
-
-        if self.executable:
-            opts["options"] = "-IX"
-
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
                 elif self.executable:
-                    response = datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, alias=self.aliases, executable=self.executable)
                 else:
                     response = datasets._copy(src, dest)
 
@@ -1566,7 +1561,7 @@ class USSCopyHandler(CopyHandler):
                     )
             else:
                 if self.executable:
-                    response = datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, None, alias=self.aliases, executable=self.executable)
 
                     if response.rc != 0:
                         raise CopyOperationError(

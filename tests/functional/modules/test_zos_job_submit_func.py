@@ -278,11 +278,11 @@ def test_job_submit_PDS(ansible_zos_module):
             name=DATA_SET_NAME, state="present", type="PDS", replace=True
         )
         print( "\n===vCmd:::\n")
-        cmd="cp -S {0}/SAMPLE \"//'{1}('SAMPLE')'\"".format(TEMP_PATH, DATA_SET_NAME)
+        cmd="cp {0}/SAMPLE \"//'{1}('SAMPLE')'\"".format(TEMP_PATH, DATA_SET_NAME)
         print( cmd  )
         print( "\n===^Cmd...\n")
         cress = hosts.all.shell(
-            cmd="cp -S {0}/SAMPLE \"//'{1}('SAMPLE')'\"".format(TEMP_PATH, DATA_SET_NAME)
+            cmd="cp {0}/SAMPLE \"//'{1}('SAMPLE')'\"".format(TEMP_PATH, DATA_SET_NAME)
         )
         for cres in cress.contacted.values():
             print( "\n===vcResult:::\n")

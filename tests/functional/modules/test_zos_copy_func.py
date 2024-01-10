@@ -3694,7 +3694,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         )
         # copy USS dir to dest library pds w aliases
         copy_res_aliases = hosts.all.zos_copy(
-            src="{0}{1}".format(uss_dir_path, src_lib.upper()),
+            src="{0}/{1}".format(uss_dir_path, src_lib.upper()),
             dest="{0}".format(dest_lib_aliases),
             remote_src=True,
             executable=True,

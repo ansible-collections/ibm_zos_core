@@ -1548,7 +1548,7 @@ class USSCopyHandler(CopyHandler):
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
                 elif self.executable:
-                    response = datasets._copy(src, dest, alias=self.aliases, executable=self.executable)
+                    response = datasets._copy(src, dest, alias=True, executable=True)
                 else:
                     response = datasets._copy(src, dest)
 
@@ -1561,7 +1561,7 @@ class USSCopyHandler(CopyHandler):
                     )
             else:
                 if self.executable:
-                    response = datasets._copy(src, dest, None, alias=self.aliases, executable=self.executable)
+                    response = datasets._copy(src, dest, None, alias=True, executable=True)
 
                     if response.rc != 0:
                         raise CopyOperationError(

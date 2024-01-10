@@ -1710,22 +1710,28 @@ class PDSECopyHandler(CopyHandler):
         overwritten_members = []
         new_members = []
         bulk_src_members = ""
+        result = dict()
 
         for src_member, destination_member in zip(src_members, dest_members):
             if destination_member in existing_members:
                 overwritten_members.append(destination_member)
             else:
                 new_members.append(destination_member)
+            bulk_src_members += "{0} ".format(src_member)
 
-            if src_ds_type == "USS":
+        """
+        Copy section:
+        USS -> MVS
+        MVS -> MVS (Except when ASA is True)
+        """
+        if src_ds_type == "USS" or self.asa_text:
+            for src_member, destination_member in zip(src_members, dest_members):
                 result = self.copy_to_member(
                     src_member,
                     "{0}({1})".format(dest, destination_member),
                     src_ds_type
                 )
-            bulk_src_members += "{0} ".format(src_member)
-
-        if src_ds_type != "USS":
+        else:
             if len(src_members) == 1:
                 destination = "{0}({1})".format(dest, destination_member)
                 source = src_member
@@ -1735,11 +1741,11 @@ class PDSECopyHandler(CopyHandler):
                 """
                 destination = dest
                 source = bulk_src_members
-                result = self.copy_to_member(
-                    source,
-                    destination,
-                    src_ds_type
-                )
+            result = self.copy_to_member(
+                source,
+                destination,
+                src_ds_type
+            )
 
         if result["rc"] != 0:
             msg = "Unable to copy source {0} to {1}. members : {2} destination: {3}".format(

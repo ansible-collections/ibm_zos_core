@@ -1000,7 +1000,8 @@ def perform_data_set_operations(name, state, **extra_args):
 
 
 def fix_old_size_arg(params):
-    """ for backwards compatibility with old styled size argument """
+    """ for backwards compatibility with old styled size argument
+        this function has been extended to include case-related issues """
     match = None
     if params.get("size"):
         match = re.fullmatch(
@@ -1021,6 +1022,14 @@ def fix_old_size_arg(params):
     if match:
         params["space_primary"] = int(match.group(1))
         params["space_type"] = match.group(2)
+
+    if params.get("type"):
+        params["type"] = params.get("type").upper()
+
+    if params.get("space_type"):
+        params["space_type"] = params.get("space_type").upper()
+
+
     return params
 
 
@@ -1053,7 +1062,7 @@ def parse_and_validate_args(params):
                     type=space_type,
                     required=False,
                     dependencies=["state"],
-                    # choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(

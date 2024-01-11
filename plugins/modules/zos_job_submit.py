@@ -852,7 +852,8 @@ def run_module():
         )
 
     arg_defs = dict(
-        src=dict(arg_type="data_set_or_path", required=True),
+        # src=dict(arg_type="data_set_or_path", required=True),
+        src=dict(arg_type="str", required=True),
         wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
                   removed_from_collection='ibm.ibm_zos_core'),
         location=dict(

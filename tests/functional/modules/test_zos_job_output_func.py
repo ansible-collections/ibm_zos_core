@@ -141,3 +141,10 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
                 assert job.get("ddnames")[0].get("ddname") == dd_name
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
+
+
+def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
+    for result in results.contacted.values():
+        assert result.get("jobs") is not None

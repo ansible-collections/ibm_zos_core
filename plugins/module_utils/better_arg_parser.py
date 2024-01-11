@@ -148,6 +148,7 @@ class BetterArgHandler(object):
             "data_set_or_path": self._data_set_or_path_type,
             "encoding": self._encoding_type,
             "dd": self._dd_type,
+            "job_identifier": self._job_identifier,
         }
 
     def handle_arg(self):
@@ -742,6 +743,35 @@ class BetterArgHandler(object):
                     arg_function, self.arg_name
                 )
             )
+
+    # ---------------------------------------------------------------------------- #
+    #                    JOB ID AND JOB NAME NAMING RULES                          #
+    # ---------------------------------------------------------------------------- #
+
+    def _job_identifier(self, contents, resolve_dependencies):
+        """Resolver for data_set type arguments.
+        A text string of up to 8 characters.
+        The first character must be a letter or a national (#, $, @) character.
+        Other characters can be letters, numbers, or national (#, $, @) characters.
+        If the text string contains #, $, or @, enclose the text string in single or double quotation marks.
+
+        Arguments:
+            contents {str} -- The contents of the argument.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not fullmatch(
+            r"(^[a-zA-Z$#@%}]{1}[0-9a-zA-Z$#@%*]{1,7})|(^['\*']{1})",
+            str(contents),
+            IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument "{0}" for type "job_id or job_name".'.format(contents)
+            )
+        return str(contents)
 
 
 class BetterArgParser(object):

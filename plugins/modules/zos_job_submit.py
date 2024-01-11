@@ -605,7 +605,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
     Defaults,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
+    BetterArgParser, BetterArgHandler
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
@@ -885,9 +885,15 @@ def run_module():
 
     # Extract values from set module options
     location = parsed_args.get("location")
+    oldsrc = parsed_args.get("src")
+    if location != "DATA_SET":
+        src = BetterArgHandler.fix_local_path(oldsrc)
+    else:
+        src = oldsrc
+
     volume = parsed_args.get("volume")
     parsed_args.get("wait")
-    src = parsed_args.get("src")
+    # src = parsed_args.get("src")
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")

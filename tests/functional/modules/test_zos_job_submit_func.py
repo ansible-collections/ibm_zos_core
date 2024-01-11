@@ -271,23 +271,12 @@ def test_job_submit_PDS(ansible_zos_module):
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
-        print( "\n===vContent:::\n")
-        print( "echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH))
-        print( "\n===^Content...\n")
         hosts.all.zos_data_set(
             name=DATA_SET_NAME, state="present", type="PDS", replace=True
         )
-        print( "\n===vCmd:::\n")
-        cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME)
-        print( cmd  )
-        print( "\n===^Cmd...\n")
         cress = hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, DATA_SET_NAME)
         )
-        for cres in cress.contacted.values():
-            print( "\n===vcResult:::\n")
-            pprint( cres )
-            print( "\n===^cResult...\n")
 
         time.sleep(3)
         results = hosts.all.zos_job_submit(

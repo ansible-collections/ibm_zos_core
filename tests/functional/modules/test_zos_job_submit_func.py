@@ -291,7 +291,7 @@ def test_job_submit_PDS(ansible_zos_module):
 
         time.sleep(3)
         results = hosts.all.zos_job_submit(
-            src="\"//'{0}(SAMPLE)'\"".format(DATA_SET_NAME), location="DATA_SET", wait=True
+            src="\"{0}(SAMPLE)\"".format(DATA_SET_NAME), location="DATA_SET", wait=True
         )
         for result in results.contacted.values():
             print( "\n===vResult:::\n")

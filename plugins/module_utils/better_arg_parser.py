@@ -540,7 +540,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not fullmatch(
-            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([']{0,1}[A-Z$#@]{1}[A-Z0-9$#@]{0,7}[']{0,1}\)){0,1}$",
+            r"^(?:(?:[\/]{0,2}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([']{0,1}[A-Z$#@]{1}[A-Z0-9$#@]{0,7}[']{0,1}\)){0,1}$",
             str(contents),
             IGNORECASE,
         ):

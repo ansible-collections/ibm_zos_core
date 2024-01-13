@@ -37,7 +37,7 @@ TEST_PS = "USER.PRIV.TEST"
 TEST_PS_VB = "USER.PRIV.PSVB"
 TEST_PDS = "USER.PRIV.TESTPDS"
 TEST_PDS_MEMBER = "USER.PRIV.TESTPDS(MEM1)"
-TEST_VSAM = "FETCH.TEST.VS"
+# TEST_VSAM = "FETCH.TEST.VS"
 FROM_ENCODING = "IBM-1047"
 TO_ENCODING = "ISO8859-1"
 USS_FILE = "/tmp/fetch.data"
@@ -254,31 +254,31 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 
 def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    TEMP_JCL_PATH = "/tmp/ansible"
-    TEST_VSAM = get_tmp_ds_name(hosts)
-    dest_path = "/tmp/" + TEST_VSAM
+    temp_jcl_path = "/tmp/ansible"
+    test_vsam = get_tmp_ds_name(hosts)
+    dest_path = "/tmp/" + test_vsam
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     try:
         # start by creating the vsam dataset (could use a helper instead? )
-        hosts.all.file(path=TEMP_JCL_PATH, state="directory")
+        hosts.all.file(path=temp_jcl_path, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(volume_1, TEST_VSAM)), TEMP_JCL_PATH)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(volume_1, test_vsam)), temp_jcl_path)
         )
         hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+            src="{0}/SAMPLE".format(temp_jcl_path), location="USS", wait=True
         )
         hosts.all.zos_copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.zos_encode(
             src=USS_FILE,
-            dest=TEST_VSAM,
+            dest=test_vsam,
             encoding={
                 "from": FROM_ENCODING,
                 "to": TO_ENCODING,
             },
         )
 
-        params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
+        params = dict(src=test_vsam, dest="/tmp/", flat=True, is_binary=True)
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -296,7 +296,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
             None
             os.remove(dest_path)
         hosts.all.file(path=USS_FILE, state="absent")
-        hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+        hosts.all.file(path=temp_jcl_path, state="absent")
         volumes.free_vol(volume_1)
 
 

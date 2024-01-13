@@ -1963,18 +1963,18 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 @pytest.mark.parametrize("ds_type", ["PDS", "PDSE", "SEQ"])
 def test_copy_dest_lock(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
-    DATASET_1 = get_tmp_ds_name(hosts)
-    DATASET_2 = get_tmp_ds_name(hosts)
-    MEMBER_1 = "MEM1"
+    data_set_1 = get_tmp_ds_name(hosts)
+    data_set_2 = get_tmp_ds_name(hosts)
+    member_1 = "MEM1"
     if ds_type == "PDS" or ds_type == "PDSE":
-        src_data_set = DATASET_1 + "({0})".format(MEMBER_1)
-        dest_data_set = DATASET_2 + "({0})".format(MEMBER_1)
+        src_data_set = data_set_1 + "({0})".format(member_1)
+        dest_data_set = data_set_2 + "({0})".format(member_1)
     else:
-        src_data_set = DATASET_1
-        dest_data_set = DATASET_2
+        src_data_set = data_set_1
+        dest_data_set = data_set_2
     try:
-        hosts.all.zos_data_set(name=DATASET_1, state="present", type="pdse", replace=True)
-        hosts.all.zos_data_set(name=DATASET_2, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=data_set_1, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=data_set_2, state="present", type="pdse", replace=True)
         if ds_type == "PDS" or ds_type == "PDSE":
             hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
             hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
@@ -2027,8 +2027,8 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         # clean up c code/object/executable files, jcl
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         # remove pdse
-        hosts.all.zos_data_set(name=DATASET_1, state="absent")
-        hosts.all.zos_data_set(name=DATASET_2, state="absent")
+        hosts.all.zos_data_set(name=data_set_1, state="absent")
+        hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
 @pytest.mark.uss

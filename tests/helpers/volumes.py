@@ -64,9 +64,10 @@ class Volume_Handler:
 
 
 def get_volumes(ansible_zos_module):
-    # Using the command d u,dasd,online to full an array of volumes on available with the priority
-    # of of actives (A) and storage (STRG) first then online (O) and storage and if is needed the
-    # privated ones but actives then to get a flag if is available or not every volumes
+    """Get an array of available volumes"""
+    # Using the command d u,dasd,online to fill an array of available volumes with the priority
+    # of of actives (A) and storage (STRG) first then online (O) and storage and if is needed, the
+    # private ones but actives then to get a flag if is available or not every volumes
     # is a instance of a class to manage the use.
     hosts = ansible_zos_module
     list_volumes = []

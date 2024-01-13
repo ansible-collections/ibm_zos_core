@@ -49,9 +49,9 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
 
 def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
     hosts = ansible_zos_module
-    DEFAULT_TEMP_DATASET = get_tmp_ds_name(hosts)
+    default_temp_dataset = get_tmp_ds_name(hosts)
     command_string = [
-        "alloc da('{0}') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)".format(DEFAULT_TEMP_DATASET)
+        "alloc da('{0}') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)".format(default_temp_dataset)
     ]
     results_allocate = hosts.all.zos_tso_command(commands=command_string)
     # Validate the correct allocation of dataset
@@ -60,34 +60,34 @@ def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
             assert item.get("rc") == 0
         assert result.get("changed") is True
     # Validate listds of datasets and validate LISTDS using alias param 'command' of auth command
-    results = hosts.all.zos_tso_command(commands=["LISTDS '{0}'".format(DEFAULT_TEMP_DATASET)])
+    results = hosts.all.zos_tso_command(commands=["LISTDS '{0}'".format(default_temp_dataset)])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
     # Validate LISTDS using alias param 'command'
-    results = hosts.all.zos_tso_command(command="LISTDS '{0}'".format(DEFAULT_TEMP_DATASET))
+    results = hosts.all.zos_tso_command(command="LISTDS '{0}'".format(default_temp_dataset))
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
     # Validate LISTCAT command and an unauth command
     results = hosts.all.zos_tso_command(
-        commands=["LISTCAT ENT('{0}')".format(DEFAULT_TEMP_DATASET)]
+        commands=["LISTCAT ENT('{0}')".format(default_temp_dataset)]
     )
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
     # Validate remove dataset
-    results = hosts.all.zos_tso_command(commands=["delete '{0}'".format(DEFAULT_TEMP_DATASET)])
+    results = hosts.all.zos_tso_command(commands=["delete '{0}'".format(default_temp_dataset)])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
     # Expect the tso_command to fail here because the previous command will have already deleted the data set
     # Validate data set was removed by previous call
-    results = hosts.all.zos_tso_command(commands=["delete '{0}'".format(DEFAULT_TEMP_DATASET)])
+    results = hosts.all.zos_tso_command(commands=["delete '{0}'".format(default_temp_dataset)])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 8

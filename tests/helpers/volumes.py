@@ -19,8 +19,8 @@ import pytest
 import time
 
 class Volume:
-    """ Class volume to save the information with volume name and a flag of use
-    to mange in all test to not harcoded the values of the array."""
+    """ Volume class represents a volume on the z system, it tracks if the volume name
+    and status of the volume with respect to the current test session."""
     def __init__(self, name):
         self.name = name
         self.in_use = False

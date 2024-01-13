@@ -1543,16 +1543,12 @@ class USSCopyHandler(CopyHandler):
                 except FileExistsError:
                     pass
 
-        opts = dict()
-        if self.executable:
-            opts["options"] = "-IX "
-
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
                 elif self.executable:
-                    response = datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, alias=True, executable=True)
                 else:
                     response = datasets._copy(src, dest)
 
@@ -1565,7 +1561,7 @@ class USSCopyHandler(CopyHandler):
                     )
             else:
                 if self.executable:
-                    response = datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, None, alias=True, executable=True)
 
                     if response.rc != 0:
                         raise CopyOperationError(
@@ -1770,19 +1766,10 @@ class PDSECopyHandler(CopyHandler):
             if self.is_binary or self.asa_text:
                 opts["options"] = "-B"
 
-            if self.aliases and not self.executable:
-                # lower case 'i' for text-based copy (dcp)
-                opts["options"] = "-i"
-
-            if self.executable:
-                opts["options"] = "-X"
-                if self.aliases:
-                    opts["options"] = "-IX"
-
             if self.force_lock:
                 opts["options"] += " -f"
 
-            response = datasets._copy(src, dest, None, **opts)
+            response = datasets._copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         return dict(
@@ -2683,7 +2670,7 @@ def run_module(module, arg_def):
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
-            if not is_binary and not is_uss:
+            if not is_binary and not is_uss and not executable:
                 new_src = temp_path or src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).
@@ -2761,6 +2748,21 @@ def run_module(module, arg_def):
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type")
+            elif executable:
+                """ When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
+                so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
+                Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
+                and LIBRARY is not in MVS_PARTITIONED frozen set."""
+                dest_ds_type = "PDSE"
+
+            if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
+                dest_has_asa_chars = True
+            elif not dest_exists and asa_text:
+                dest_has_asa_chars = True
+            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
+                dest_attributes = datasets.listing(dest_name)[0]
+                if dest_attributes.recfm == 'FBA' or dest_attributes.recfm == 'VBA':
+                    dest_has_asa_chars = True
 
             if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
                 dest_has_asa_chars = True
@@ -3052,7 +3054,7 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         # Copy to PDS/PDSE
         # ---------------------------------------------------------------------
-        elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
+        elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED or dest_ds_type == "LIBRARY":
             if not remote_src and not copy_member and os.path.isdir(temp_path):
                 temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
@@ -3272,6 +3274,7 @@ def main():
         not module.params.get("encoding")
         and not module.params.get("remote_src")
         and not module.params.get("is_binary")
+        and not module.params.get("executable")
     ):
         module.params["encoding"] = {
             "from": module.params.get("local_charset"),

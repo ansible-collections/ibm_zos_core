@@ -258,9 +258,11 @@ message:
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_status,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
 from ansible.module_utils.basic import AnsibleModule
-import re
+from ansible.module_utils._text import to_text
 
 
 def run_module():
@@ -275,11 +277,29 @@ def run_module():
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
+    args_def = dict(
+        job_name=dict(type="job_identifier", required=False),
+        owner=dict(type="str", required=False),
+        job_id=dict(type="job_identifier", required=False),
+    )
+
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
+
     if module.check_mode:
         return result
 
     try:
-        name, id, owner = validate_arguments(module.params)
+        name = module.params.get("job_name")
+        id = module.params.get("job_id")
+        owner = module.params.get("owner")
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)
@@ -287,67 +307,9 @@ def run_module():
             jobs = None
 
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=to_text(e), **result)
     result["jobs"] = jobs
     module.exit_json(**result)
-
-
-# validate_arguments returns a tuple, so we don't have to rebuild the job_name string
-def validate_arguments(params):
-    job_name_in = params.get("job_name")
-
-    job_id = params.get("job_id")
-
-    owner = params.get("owner")
-    if job_name_in or job_id:
-        if job_name_in and job_name_in != "*":
-            job_name_pattern = re.compile(r"^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,7}$")
-            job_name_pattern_with_star = re.compile(
-                r"^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,6}\*$"
-            )
-            test_basic = job_name_pattern.search(job_name_in)
-            test_star = job_name_pattern_with_star.search(job_name_in)
-            # logic twist: test_result should be a non-null value from test_basic or test_star
-            test_result = test_basic
-            if test_star:
-                test_result = test_star
-
-            job_name_short = "unused"
-            # if neither test_basic nor test_star were non-null, check if the string needed to be truncated to the first *
-            if not test_result:
-                ix = job_name_in.find("*")
-                if ix >= 0:
-                    job_name_short = job_name_in[0:ix + 1]
-                    test_result = job_name_pattern.search(job_name_short)
-                    if not test_result:
-                        test_result = job_name_pattern_with_star.search(job_name_short)
-
-            # so now, fail if neither test_basic, test_star or test_base from job_name_short found a match
-            if not test_result:
-                raise RuntimeError("Unable to locate job name {0}.".format(job_name_in))
-
-        if job_id:
-            job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")
-            test_basic = job_id_pattern.search(job_id)
-            test_result = None
-
-            if not test_basic:
-                ix = job_id.find("*")
-                if ix > 0:
-                    # this differs from job_name, in that we'll drop the star for the search
-                    job_id_short = job_id[0:ix]
-
-                    if job_id_short[0:3] in ['JOB', 'TSU', 'STC'] or job_id_short[0:1] in ['J', 'T', 'S']:
-                        test_result = job_id_short
-
-            if not test_basic and not test_result:
-                raise RuntimeError("Failed to validate the job id: " + job_id)
-    else:
-        raise RuntimeError("Argument Error:Either job name(s) or job id is required")
-    if job_id and owner:
-        raise RuntimeError("Argument Error:job id can not be co-exist with owner")
-
-    return job_name_in, job_id, owner
 
 
 def query_jobs(job_name, job_id, owner):

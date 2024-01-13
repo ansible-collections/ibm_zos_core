@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -611,7 +611,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
@@ -620,28 +620,21 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import PY3
 from timeit import default_timer as timer
-from tempfile import NamedTemporaryFile
 from os import remove
+import traceback
 from time import sleep
 import re
 
 try:
-    from zoautil_py.exceptions import ZOAUException, JobSubmitException
+    from zoautil_py import exceptions
 except ImportError:
-    ZOAUException = MissingZOAUImport()
-    JobSubmitException = MissingZOAUImport()
+    exceptions = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import jobs
 except Exception:
-    jobs = MissingZOAUImport()
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+    jobs = ZOAUImportError(traceback.format_exc())
 
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
@@ -731,7 +724,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
     # ZOAU throws a ZOAUException when the job sumbission fails thus there is no
     # JCL RC to share with the user, if there is a RC, that will be processed
     # in the job_output parser.
-    except ZOAUException as err:
+    except exceptions.ZOAUException as err:
         result["changed"] = False
         result["failed"] = True
         result["stderr"] = str(err)
@@ -746,7 +739,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
 
     # ZOAU throws a JobSubmitException when timeout has execeeded in that no job_id
     # has been returned within the allocated time.
-    except JobSubmitException as err:
+    except exceptions.JobSubmitException as err:
         result["changed"] = False
         result["failed"] = False
         result["stderr"] = str(err)
@@ -815,7 +808,6 @@ def run_module():
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", default=10),
         max_rc=dict(type="int", required=False),
-        temp_file=dict(type="path", required=False),
         use_template=dict(type='bool', default=False),
         template_parameters=dict(
             type='dict',
@@ -877,7 +869,6 @@ def run_module():
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=10),
         max_rc=dict(arg_type="int", required=False),
-        temp_file=dict(arg_type="path", required=False),
     )
 
     # ********************************************************************
@@ -899,11 +890,7 @@ def run_module():
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    from_encoding = parsed_args.get("from_encoding")
-    to_encoding = parsed_args.get("to_encoding")
-    # temporary file names for copied files when user sets location to LOCAL
-    temp_file = parsed_args.get("temp_file")
-    temp_file_encoded = None
+    temp_file = parsed_args.get("src") if location == "LOCAL" else None
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
@@ -914,43 +901,18 @@ def run_module():
                          "be greater than 0 and less than {0}.".format(str(MAX_WAIT_TIME_S)))
         module.fail_json(**result)
 
-    if temp_file:
-        temp_file_encoded = NamedTemporaryFile(delete=True)
-
     job_submitted_id = None
     duration = 0
     start_time = timer()
-
     if location == "DATA_SET":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
     elif location == "USS":
-        job_submitted_id, duration = submit_src_jcl(module, src, src_name=src, timeout=wait_time_s, hfs=True)
-    else:
-        # added -c to iconv to prevent '\r' from erroring as invalid chars to EBCDIC
-        conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
-            from_encoding,
-            to_encoding,
-            quote(temp_file),
-            quote(temp_file_encoded.name),
-        )
-
-        conv_rc, stdout, stderr = module.run_command(
-            conv_str,
-            use_unsafe_shell=True,
-        )
-
-        if conv_rc == 0:
-            job_submitted_id, duration = submit_src_jcl(
-                module, temp_file_encoded.name, src_name=src, timeout=wait_time_s, hfs=True)
-        else:
-            result["failed"] = True
-            result["stdout"] = stdout
-            result["stderr"] = stderr
-            result["msg"] = ("Failed to convert the src {0} from encoding {1} to "
-                             "encoding {2}, unable to submit job."
-                             .format(src, from_encoding, to_encoding))
-            module.fail_json(**result)
+        job_submitted_id, duration = submit_src_jcl(
+            module, src, src_name=src, timeout=wait_time_s, hfs=True)
+    elif location == "LOCAL":
+        job_submitted_id, duration = submit_src_jcl(
+            module, src, src_name=src, timeout=wait_time_s, hfs=True)
 
     try:
         # Explictly pass None for the unused args else a default of '*' will be
@@ -1039,7 +1001,7 @@ def run_module():
         module.exit_json(**result)
 
     finally:
-        if temp_file:
+        if temp_file is not None:
             remove(temp_file)
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'

@@ -61,6 +61,7 @@ trivial:
     Now tests will generate random data set names and will use an available
     volume taken from a volume handler class, removing system specific
     name dependencies.
-  - volumes - Introduced a class to manage volume access, availability and status
-    for test cases.
+  - volumes.py - Introduced a new class as part of the functional tests
+    to manage volume access, availability and status for test cases such
+    they no longer need to maintain or author such logic. 
     (https://github.com/ansible-collections/ibm_zos_core/pull/977)

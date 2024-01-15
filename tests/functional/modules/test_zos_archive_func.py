@@ -350,9 +350,9 @@ List of tests:
 def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
-        src_data_set = get_tmp_ds_name(hosts)
-        archive_data_set = get_tmp_ds_name(hosts)
-        HLQ = archive_data_set[0:8]
+        src_data_set = get_tmp_ds_name()
+        archive_data_set = get_tmp_ds_name()
+        HLQ = "ANSIBLE"
         # Clean env
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
@@ -429,9 +429,9 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
 def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name(hosts)
-        src_data_set = get_tmp_ds_name(hosts)
-        HLQ = archive_data_set[0:8]
+        archive_data_set = get_tmp_ds_name()
+        src_data_set = get_tmp_ds_name()
+        HLQ = "ANSIBLE"
         # Clean env
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
@@ -503,9 +503,9 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
 def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name(hosts)
-        src_data_set = get_tmp_ds_name(hosts)
-        HLQ = archive_data_set[0:8]
+        archive_data_set = get_tmp_ds_name()
+        src_data_set = get_tmp_ds_name()
+        HLQ = "ANSIBLE"
         # Clean env
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
@@ -574,9 +574,9 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
 def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name(hosts)
-        src_data_set = get_tmp_ds_name(hosts, 4)[0:29]
-        HLQ = archive_data_set[0:8]
+        archive_data_set = get_tmp_ds_name()
+        src_data_set = get_tmp_ds_name(5, 4)
+        HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                   base_name=src_data_set,
                                   n=3,
@@ -637,9 +637,9 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set):
 def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name(hosts)
-        src_data_set = get_tmp_ds_name(hosts, 4)[0:29]
-        HLQ = archive_data_set[0:8]
+        archive_data_set = get_tmp_ds_name()
+        src_data_set = get_tmp_ds_name(5, 4)
+        HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                   base_name=src_data_set,
                                   n=3,
@@ -705,9 +705,9 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
 def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name(hosts)
-        src_data_set = get_tmp_ds_name(hosts, 4)[0:29]
-        HLQ = archive_data_set[0:8]
+        archive_data_set = get_tmp_ds_name()
+        src_data_set = get_tmp_ds_name(5, 4)
+        HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                   base_name=src_data_set,
                                   n=3,
@@ -770,9 +770,9 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
 def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name(hosts)
-        src_data_set = get_tmp_ds_name(hosts, 4)[0:29]
-        HLQ = archive_data_set[0:8]
+        archive_data_set = get_tmp_ds_name()
+        src_data_set = get_tmp_ds_name(5, 4)
+        HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                   base_name=src_data_set,
                                   n=3,
@@ -844,9 +844,9 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
 def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name(hosts)
-        src_data_set = get_tmp_ds_name(hosts, 4)[0:29]
-        HLQ = archive_data_set[0:8]
+        archive_data_set = get_tmp_ds_name()
+        src_data_set = get_tmp_ds_name(5, 4)
+        HLQ = "ANSIBLE"
         # Clean env
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")

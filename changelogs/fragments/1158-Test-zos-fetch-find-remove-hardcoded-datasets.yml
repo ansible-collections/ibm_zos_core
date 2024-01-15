@@ -1,0 +1,4 @@
+trivial:
+  - zos_fetch - remove hardcoded datasets and dependencies from test cases.
+  - zos_find - remove hardcoded datasets and dependencies from test cases.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1158).

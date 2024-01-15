@@ -417,6 +417,9 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
 
 
 def run_module():
@@ -428,6 +431,23 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
+    args_def = dict(
+        job_id=dict(type="job_identifier", required=False),
+        job_name=dict(type="job_identifier", required=False),
+        owner=dict(type="str", required=False),
+        ddname=dict(type="str", required=False),
+    )
+
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
 
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")

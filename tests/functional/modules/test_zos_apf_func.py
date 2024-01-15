@@ -55,7 +55,7 @@ def clean_test_env(hosts, test_info):
 def test_add_del(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", state="present", force_dynamic=True)
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -88,7 +88,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module):
     tmphlq = "TMPHLQ"
     test_info = dict(library="", state="present", force_dynamic=True, tmp_hlq="", persistent=dict(data_set_name="", backup=True))
     test_info['tmp_hlq'] = tmphlq
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -120,7 +120,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module):
 def test_add_del_volume(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", volume="", state="present", force_dynamic=True)
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -178,7 +178,7 @@ def test_add_del_persist(ansible_zos_module):
 def test_add_del_volume_persist(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", volume="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -227,7 +227,7 @@ def test_batch_add_del(ansible_zos_module):
         batch=[dict(library="", volume=""), dict(library="", volume=""), dict(library="", volume="")],
         persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
     for item in test_info['batch']:
-        ds = get_tmp_ds_name(4,3)
+        ds = get_tmp_ds_name(3,2)
         hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -299,7 +299,7 @@ def test_operation_list_with_filter(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", state="present", force_dynamic=True)
     test_info['state'] = 'present'
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -337,7 +337,7 @@ def test_add_already_present(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", state="present", force_dynamic=True)
     test_info['state'] = 'present'
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -370,7 +370,7 @@ def test_add_already_present(ansible_zos_module):
 def test_del_not_present(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", state="present", force_dynamic=True)
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     hosts.all.shell(cmd=cmdStr)
     test_info['library'] = ds
@@ -411,7 +411,7 @@ def test_add_with_wrong_volume(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", volume="", state="present", force_dynamic=True)
     test_info['state'] = 'present'
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -441,7 +441,7 @@ def test_persist_invalid_ds_format(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
     test_info['state'] = 'present'
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -471,7 +471,7 @@ def test_persist_invalid_marker(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
     test_info['state'] = 'present'
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -500,7 +500,7 @@ def test_persist_invalid_marker_len(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
     test_info['state'] = 'present'
-    ds = get_tmp_ds_name(4,3)
+    ds = get_tmp_ds_name(3,2)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:

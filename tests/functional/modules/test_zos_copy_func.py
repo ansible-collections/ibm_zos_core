@@ -3550,8 +3550,13 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            # number of members
-            assert len(stdout.splitlines()) == 2
+        # verify pgms remain executable
+        pgm_output_map = {
+            (dest_lib, pgm_mem, COBOL_PRINT_STR),
+            (dest_lib, pgm2_mem, COBOL_PRINT_STR2),
+        }
+        for steplib, pgm, output in pgm_output_map:
+            validate_loadlib_pgm(hosts, steplib=steplib, pgm_name=pgm, expected_output_str=output)
 
     finally:
         hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
@@ -3689,7 +3694,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         )
         # copy USS dir to dest library pds w aliases
         copy_res_aliases = hosts.all.zos_copy(
-            src="{0}{1}".format(uss_dir_path, src_lib.upper()),
+            src="{0}/{1}".format(uss_dir_path, src_lib.upper()),
             dest="{0}".format(dest_lib_aliases),
             remote_src=True,
             executable=True,

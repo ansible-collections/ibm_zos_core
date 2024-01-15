@@ -1559,7 +1559,7 @@ def test_copy_template_file_with_non_default_markers(ansible_zos_module):
 @pytest.mark.template
 def test_copy_template_file_to_dataset(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_dataset = get_tmp_ds_name(hosts)
+    dest_dataset = get_tmp_ds_name()
     temp_dir = tempfile.mkdtemp()
 
     try:
@@ -1963,8 +1963,8 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 @pytest.mark.parametrize("ds_type", ["PDS", "PDSE", "SEQ"])
 def test_copy_dest_lock(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
-    data_set_1 = get_tmp_ds_name(hosts)
-    data_set_2 = get_tmp_ds_name(hosts)
+    data_set_1 = get_tmp_ds_name()
+    data_set_2 = get_tmp_ds_name()
     member_1 = "MEM1"
     if ds_type == "PDS" or ds_type == "PDSE":
         src_data_set = data_set_1 + "({0})".format(member_1)
@@ -2035,7 +2035,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
 @pytest.mark.seq
 def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     fd, src = tempfile.mkstemp()
     os.close(fd)
@@ -2088,7 +2088,7 @@ def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
 @pytest.mark.seq
 def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     fd, src = tempfile.mkstemp()
     os.close(fd)
@@ -2143,7 +2143,7 @@ def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
 @pytest.mark.seq
 def test_copy_local_binary_file_without_encoding_conversion(ansible_zos_module):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     fd, src = tempfile.mkstemp()
     os.close(fd)
@@ -2174,7 +2174,7 @@ def test_copy_local_binary_file_without_encoding_conversion(ansible_zos_module):
 def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/tmp/zos_copy_binary_file"
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -2223,7 +2223,7 @@ def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module)
 ])
 def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -2262,7 +2262,7 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
 ])
 def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
@@ -2290,7 +2290,7 @@ def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
 ])
 def test_copy_file_to_non_empty_sequential_data_set(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="absent")
@@ -2402,7 +2402,7 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
 def test_copy_ps_to_non_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
     src_ds = TEST_PS
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -2428,7 +2428,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
 def test_copy_ps_to_empty_ps(ansible_zos_module, force):
     hosts = ansible_zos_module
     src_ds = TEST_PS
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
@@ -2454,7 +2454,7 @@ def test_copy_ps_to_empty_ps(ansible_zos_module, force):
 def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
     hosts = ansible_zos_module
     src_ds = TEST_PS
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="absent")
@@ -2485,7 +2485,7 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
 def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
     hosts = ansible_zos_module
     src_ds = TEST_PS
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="absent")
@@ -2516,7 +2516,7 @@ def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
 def test_backup_sequential_data_set(ansible_zos_module, backup):
     hosts = ansible_zos_module
     src = "/etc/profile"
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
@@ -2558,7 +2558,7 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
 ])
 def test_copy_file_to_non_existing_member(ansible_zos_module, src):
     hosts = ansible_zos_module
-    data_set = get_tmp_ds_name(hosts)
+    data_set = get_tmp_ds_name()
     dest = "{0}(PROFILE)".format(data_set)
 
     try:
@@ -2604,7 +2604,7 @@ def test_copy_file_to_non_existing_member(ansible_zos_module, src):
 ])
 def test_copy_file_to_existing_member(ansible_zos_module, src):
     hosts = ansible_zos_module
-    data_set = get_tmp_ds_name(hosts)
+    data_set = get_tmp_ds_name()
     dest = "{0}(PROFILE)".format(data_set)
 
     try:
@@ -2655,9 +2655,9 @@ def test_copy_file_to_existing_member(ansible_zos_module, src):
 ])
 def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
     hosts = ansible_zos_module
-    src_data_set = get_tmp_ds_name(hosts)
+    src_data_set = get_tmp_ds_name()
     src = src_data_set if args["type"] == "seq" else "{0}(TEST)".format(src_data_set)
-    dest_data_set = get_tmp_ds_name(hosts)
+    dest_data_set = get_tmp_ds_name()
     dest = "{0}(MEMBER)".format(dest_data_set)
 
     try:
@@ -2702,9 +2702,9 @@ def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
 ])
 def test_copy_data_set_to_existing_member(ansible_zos_module, args):
     hosts = ansible_zos_module
-    src_data_set = get_tmp_ds_name(hosts)
+    src_data_set = get_tmp_ds_name()
     src = src_data_set if args["type"] == "seq" else "{0}(TEST)".format(src_data_set)
-    dest_data_set = get_tmp_ds_name(hosts)
+    dest_data_set = get_tmp_ds_name()
     dest = "{0}(MEMBER)".format(dest_data_set)
 
     try:
@@ -2748,7 +2748,7 @@ def test_copy_data_set_to_existing_member(ansible_zos_module, args):
 @pytest.mark.parametrize("is_remote", [False, True])
 def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
     dest_path = "{0}(PROFILE)".format(dest)
     src_file = "/etc/profile"
 
@@ -2777,7 +2777,7 @@ def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
 def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
     hosts = ansible_zos_module
     src_dir = "/tmp/testdir"
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.file(path=src_dir, state="directory")
@@ -2806,7 +2806,7 @@ def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
 @pytest.mark.pdse
 def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     temp_path = tempfile.mkdtemp()
     src_basename = "source/"
@@ -2841,7 +2841,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
 def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_dir = "/tmp/testdir"
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.file(path=src_dir, state="directory")
@@ -2879,9 +2879,9 @@ def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
 @pytest.mark.parametrize("src_type", ["seq", "pds", "pdse"])
 def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
     hosts = ansible_zos_module
-    src_data_set = get_tmp_ds_name(hosts)
+    src_data_set = get_tmp_ds_name()
     src = src_data_set if src_type == "seq" else "{0}(TEST)".format(src_data_set)
-    dest_data_set = get_tmp_ds_name(hosts)
+    dest_data_set = get_tmp_ds_name()
     dest = "{0}(MEMBER)".format(dest_data_set)
 
     try:
@@ -2924,8 +2924,8 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
 ])
 def test_copy_pds_to_existing_pds(ansible_zos_module, args):
     hosts = ansible_zos_module
-    src = get_tmp_ds_name(hosts)
-    dest = get_tmp_ds_name(hosts)
+    src = get_tmp_ds_name()
+    dest = get_tmp_ds_name()
 
     try:
         populate_partitioned_data_set(hosts, src, args["src_type"])
@@ -2959,12 +2959,12 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
 def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_created):
     hosts = ansible_zos_module
     # This dataset and member should be available on any z/OS system.
-    hlq_size = 3
-    cobol_src_pds = get_tmp_ds_name(hosts, hlq_size)
-    cobol_src_mem = get_tmp_ds_name(hosts, hlq_size)
-    src_lib = get_tmp_ds_name(hosts, hlq_size)
-    dest_lib = get_tmp_ds_name(hosts, hlq_size)
-    dest_lib_aliases = get_tmp_ds_name(hosts, hlq_size)
+    mlq_size = 3
+    cobol_src_pds = get_tmp_ds_name(mlq_size)
+    cobol_src_mem = get_tmp_ds_name(mlq_size)
+    src_lib = get_tmp_ds_name(mlq_size)
+    dest_lib = get_tmp_ds_name(mlq_size)
+    dest_lib_aliases = get_tmp_ds_name(mlq_size)
     pgm_mem = "HELLO"
     pgm_mem_alias = "ALIAS1"
     try:
@@ -3244,13 +3244,13 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
 def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
 
     hosts = ansible_zos_module
-    hlq_size = 3
-    cobol_src_pds = get_tmp_ds_name(hosts, hlq_size)
+    mlq_size = 3
+    cobol_src_pds = get_tmp_ds_name(mlq_size)
     cobol_src_mem = "HELLOCBL"
     cobol_src_mem2 = "HICBL2"
-    src_lib = get_tmp_ds_name(hosts, hlq_size)
-    dest_lib = get_tmp_ds_name(hosts, hlq_size)
-    dest_lib_aliases = get_tmp_ds_name(hosts, hlq_size)
+    src_lib = get_tmp_ds_name(mlq_size)
+    dest_lib = get_tmp_ds_name(mlq_size)
+    dest_lib_aliases = get_tmp_ds_name(mlq_size)
     pgm_mem = "HELLO"
     pgm2_mem = "HELLO2"
     pgm_mem_alias = "ALIAS1"
@@ -3794,9 +3794,9 @@ def test_copy_executables_uss_to_uss(ansible_zos_module):
 def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
     hosts= ansible_zos_module
     src= "/tmp/c/hello_world.c"
-    hlq_size = 3
+    mlq_size = 3
     src_jcl_call= "/tmp/c/call_hw_pgm.jcl"
-    dest = get_tmp_ds_name(hosts, hlq_size)
+    dest = get_tmp_ds_name(mlq_size)
     member = "HELLOSRC"
     try:
         generate_executable_uss(hosts, src, src_jcl_call)
@@ -3849,7 +3849,7 @@ def test_copy_pds_member_with_system_symbol(ansible_zos_module):
     # The volume for this dataset should use a system symbol.
     # This dataset and member should be available on any z/OS system.
     src = "SYS1.SAMPLIB(IZUPRM00)"
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(
@@ -3883,7 +3883,7 @@ def test_copy_pds_member_with_system_symbol(ansible_zos_module):
 @pytest.mark.pdse
 def test_copy_multiple_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
-    src = get_tmp_ds_name(hosts)
+    src = get_tmp_ds_name()
     src_wildcard = "{0}(ABC*)".format(src)
 
     dest = "USER.FUNCTEST.DEST.PDS"
@@ -3929,9 +3929,9 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
     issue was discovered in https://github.com/ansible-collections/ibm_zos_core/issues/560.
     """
     hosts = ansible_zos_module
-    src = get_tmp_ds_name(hosts)
+    src = get_tmp_ds_name()
 
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
     member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
     src_ds_list = ["{0}({1})".format(src, member) for member in member_list]
     dest_ds_list = ["{0}({1})".format(dest, member) for member in member_list]
@@ -3974,7 +3974,7 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
 @pytest.mark.parametrize("ds_type", ["pds", "pdse"])
 def test_copy_member_to_non_existing_uss_file(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
-    data_set = get_tmp_ds_name(hosts)
+    data_set = get_tmp_ds_name()
     src = "{0}(MEMBER)".format(data_set)
     dest = "/tmp/member"
 
@@ -4016,7 +4016,7 @@ def test_copy_member_to_non_existing_uss_file(ansible_zos_module, ds_type):
 ])
 def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
     hosts = ansible_zos_module
-    data_set = get_tmp_ds_name(hosts)
+    data_set = get_tmp_ds_name()
     src = "{0}(MEMBER)".format(data_set)
     dest = "/tmp/member"
 
@@ -4059,7 +4059,7 @@ def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
-    src_ds = get_tmp_ds_name(hosts)
+    src_ds = get_tmp_ds_name()
     dest = "/tmp/"
     dest_path = "/tmp/{0}".format(src_ds)
 
@@ -4104,7 +4104,7 @@ def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
-    src_ds = get_tmp_ds_name(hosts)
+    src_ds = get_tmp_ds_name()
     src = "{0}(MEMBER)".format(src_ds)
     dest = "/tmp/"
     dest_path = "/tmp/MEMBER"
@@ -4150,9 +4150,9 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
     hosts = ansible_zos_module
-    src_ds = get_tmp_ds_name(hosts)
+    src_ds = get_tmp_ds_name()
     src = "{0}(MEMBER)".format(src_ds)
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -4190,9 +4190,9 @@ def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
 ])
 def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
     hosts = ansible_zos_module
-    src_ds = get_tmp_ds_name(hosts)
+    src_ds = get_tmp_ds_name()
     src = "{0}(MEMBER)".format(src_ds)
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present", replace=True)
@@ -4232,7 +4232,7 @@ def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
 def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
     hosts = ansible_zos_module
     src = "/etc/profile"
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(
@@ -4279,7 +4279,7 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
 def test_backup_pds(ansible_zos_module, args):
     hosts = ansible_zos_module
     src = tempfile.mkdtemp()
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
     members = ["FILE1", "FILE2", "FILE3", "FILE4", "FILE5"]
     backup_name = None
 
@@ -4323,8 +4323,8 @@ def test_backup_pds(ansible_zos_module, args):
 @pytest.mark.parametrize("src_type", ["seq", "pds", "pdse"])
 def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_type):
     hosts = ansible_zos_module
-    source = get_tmp_ds_name(hosts)
-    dest = get_tmp_ds_name(hosts)
+    source = get_tmp_ds_name()
+    dest = get_tmp_ds_name()
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     if volume_1 == "SCR03":
@@ -4363,7 +4363,7 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
 def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
     hosts = ansible_zos_module
     src_ds = TEST_VSAM_KSDS
-    dest_ds = get_tmp_ds_name(hosts)
+    dest_ds = get_tmp_ds_name()
 
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True)
@@ -4388,8 +4388,8 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = get_tmp_ds_name(hosts)
-    dest_ds = get_tmp_ds_name(hosts)
+    src_ds = get_tmp_ds_name()
+    dest_ds = get_tmp_ds_name()
 
     try:
         create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
@@ -4423,8 +4423,8 @@ def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
 @pytest.mark.parametrize("backup", [None, "USER.TEST.VSAM.KSDS.BACK"])
 def test_backup_ksds(ansible_zos_module, backup):
     hosts = ansible_zos_module
-    src = get_tmp_ds_name(hosts)
-    dest = get_tmp_ds_name(hosts)
+    src = get_tmp_ds_name()
+    dest = get_tmp_ds_name()
     backup_name = None
 
     try:
@@ -4474,7 +4474,7 @@ def test_backup_ksds(ansible_zos_module, backup):
 def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     src_ds = TEST_VSAM_KSDS
-    dest_ds = get_tmp_ds_name(hosts)
+    dest_ds = get_tmp_ds_name()
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
 
@@ -4507,7 +4507,7 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
 def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     src = "/etc/profile"
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
     volumes = Volume_Handler(volumes_on_systems)
     volume = volumes.get_available_vol()
     space_primary = 3
@@ -4602,7 +4602,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(ansible_zos_module, force):
     hosts = ansible_zos_module
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
     src_file = "/etc/profile"
     tmphlq = "TMPHLQ"
     try:

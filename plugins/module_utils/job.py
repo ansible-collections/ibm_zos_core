@@ -71,16 +71,27 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
     )
 
     parser = BetterArgParser(arg_defs)
-    parsed_args = parser.parse_args(
-        {"job_id": job_id, "owner": owner, "job_name": job_name, "dd_name": dd_name}
-    )
+    parsed_args = parser.parse_args({
+        "job_id": job_id,
+        "owner": owner,
+        "job_name": job_name,
+        "dd_name": dd_name
+    })
     job_id = parsed_args.get("job_id") or "*"
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name") or ""
 
-    job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
-                                 dd_name=dd_name, duration=duration, dd_scan=dd_scan, timeout=timeout, start_time=start_time)
+    job_detail = _get_job_status(
+        job_id=job_id,
+        owner=owner,
+        job_name=job_name,
+        dd_name=dd_name,
+        duration=duration,
+        dd_scan=dd_scan,
+        timeout=timeout,
+        start_time=start_time
+    )
 
     # while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
     #     current_time = timer()
@@ -92,13 +103,22 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
         job_id = "" if job_id == "*" else job_id
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
-        job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
-                                     dd_name=dd_name, dd_scan=dd_scan, duration=duration, timeout=timeout, start_time=start_time)
+
+        job_detail = _get_job_status(
+            job_id=job_id,
+            owner=owner,
+            job_name=job_name,
+            dd_name=dd_name,
+            dd_scan=dd_scan,
+            duration=duration,
+            timeout=timeout,
+            start_time=start_time
+        )
     return job_detail
 
 
 def _job_not_found(job_id, owner, job_name, dd_name):
-    # Note that the text in the msg_txt is used in test cases thus sensitive to change
+    # Note that the text in the msg_txt is used in test cases and thus sensitive to change
     jobs = []
     if job_id != '*' and job_name != '*':
         job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
@@ -170,13 +190,24 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
 
-    job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_scan=False)
+    job_status_result = _get_job_status(
+        job_id=job_id,
+        owner=owner,
+        job_name=job_name,
+        dd_scan=False
+    )
 
     if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_scan=False)
+
+        job_status_result = _get_job_status(
+            job_id=job_id,
+            owner=owner,
+            job_name=job_name,
+            dd_scan=False
+        )
 
     return job_status_result
 
@@ -223,16 +254,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
     # This will also help maintain compatibility with 1.2.3
 
     final_entries = []
-    kwargs = {
-        "job_id": job_id_temp,
-    }
-    entries = jobs.listing(**kwargs)
+    entries = jobs.fetch_multiple(job_id=job_id_temp)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = jobs.listing(**kwargs)
+        entries = jobs.fetch_multiple(job_id=job_id_temp)
 
     if entries:
         for entry in entries:
@@ -243,23 +271,23 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 if not fnmatch.fnmatch(entry.name, job_name):
                     continue
             if job_id_temp is not None:
-                if not fnmatch.fnmatch(entry.id, job_id):
+                if not fnmatch.fnmatch(entry.job_id, job_id):
                     continue
 
             job = {}
-            job["job_id"] = entry.id
+            job["job_id"] = entry.job_id
             job["job_name"] = entry.name
             job["subsystem"] = ""
             job["system"] = ""
             job["owner"] = entry.owner
 
             job["ret_code"] = {}
-            job["ret_code"]["msg"] = entry.status + " " + entry.rc
-            job["ret_code"]["msg_code"] = entry.rc
+            job["ret_code"]["msg"] = entry.status + " " + entry.return_code
+            job["ret_code"]["msg_code"] = entry.return_code
             job["ret_code"]["code"] = None
-            if len(entry.rc) > 0:
-                if entry.rc.isdigit():
-                    job["ret_code"]["code"] = int(entry.rc)
+            if len(entry.return_code) > 0:
+                if entry.return_code.isdigit():
+                    job["ret_code"]["code"] = int(entry.return_code)
             job["ret_code"]["msg_text"] = entry.status
 
             # this section only works on zoau 1.2.3/+ vvv
@@ -284,12 +312,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["duration"] = duration
 
             if dd_scan:
-                list_of_dds = jobs.list_dds(entry.id)
+                list_of_dds = jobs.list_dds(entry.job_id)
                 while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
                     current_time = timer()
                     duration = round(current_time - start_time)
                     sleep(1)
-                    list_of_dds = jobs.list_dds(entry.id)
+                    list_of_dds = jobs.list_dds(entry.job_id)
 
                 job["duration"] = duration
 
@@ -335,7 +363,10 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     if "stepname" in single_dd:
                         if "dataset" in single_dd:
                             tmpcont = jobs.read_output(
-                                entry.id, single_dd["stepname"], single_dd["dataset"])
+                                entry.job_id,
+                                single_dd["stepname"],
+                                single_dd["dataset"]
+                            )
 
                     dd["content"] = tmpcont.split("\n")
                     job["ret_code"]["steps"].extend(_parse_steps(tmpcont))

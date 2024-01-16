@@ -237,19 +237,11 @@ def test_batch_add_del(ansible_zos_module):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmdStr = "mvstmp APFTEST.PRST"
-            results = hosts.all.shell(cmd=cmdStr)
-            for result in results.contacted.values():
-                prstds = result.get("stdout")
-            prstds = prstds[:30]
+            prstds = get_tmp_ds_name(1,1)
             cmdStr = "dtouch -tseq {0}".format(prstds)
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
-    cmdStr = "mvstmp APFTEST.PRST"
-    results = hosts.all.shell(cmd=cmdStr)
-    for result in results.contacted.values():
-        prstds = result.get("stdout")[:30]
-    prstds = prstds[:30]
+    prstds = get_tmp_ds_name(1,1)
     cmdStr = "dtouch -tseq {0}".format(prstds)
     hosts.all.shell(cmd=cmdStr)
     test_info['persistent']['data_set_name'] = prstds

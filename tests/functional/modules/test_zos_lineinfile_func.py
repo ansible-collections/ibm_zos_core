@@ -1013,7 +1013,11 @@ def test_uss_encoding(ansible_zos_module, encoding):
         hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
         hosts.all.file(path=full_path, state="touch")
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
-        hosts.all.zos_encode(src=full_path, dest=full_path, from_encoding="IBM-1047", to_encoding=params["encoding"])
+        # hosts.all.shell(cmd=f"echo \"{content}\" | iconv -f IBM-1047 -t {params['encoding']}  > {full_path} ")
+        results = hosts.all.zos_encode(src=full_path, dest=full_path, from_encoding="IBM-1047", to_encoding=params["encoding"])
+        print(results.contacted.values())
+        results = hosts.all.shell(cmd="cat {0}".format(full_path))
+        print(results.contacted.values())
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
@@ -1040,7 +1044,7 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
     content = "SIMPLE LINE TO VERIFY"
     try:
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
-        hosts.all.zos_encode(src=temp_file, dest=temp_file, from_encoding="IBM-1047", to_encoding=params["encoding"])
+        hosts.all.shell(cmd=f"iconv -f IBM-1047 -t {params['encoding']} temp_file > temp_file ")
         hosts.all.zos_data_set(name=ds_name, type=ds_type)
         if ds_type in ["PDS", "PDSE"]:
             ds_full_name = ds_name + "(MEM)"
@@ -1055,7 +1059,8 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        hosts.all.zos_encode(src=ds_full_name, dest=ds_full_name, from_encoding=params["encoding"], to_encoding="IBM-1047")
+        hosts.all.shell(cmd=f"iconv -f {params['encoding']} -t IBM-1047 \"{ds_full_name}\" > \"{ds_full_name}\" ")
+        # hosts.all.zos_encode(src=ds_full_name, dest=ds_full_name, from_encoding=params["encoding"], to_encoding="IBM-1047")
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ENCODING

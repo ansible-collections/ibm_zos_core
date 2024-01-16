@@ -1268,6 +1268,7 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.file(path="/tmp/disp_shr/", state="directory")
         hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
             call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
@@ -1456,6 +1457,7 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.file(path="/tmp/disp_shr/", state="directory")
         hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
             call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),

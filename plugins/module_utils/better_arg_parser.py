@@ -519,7 +519,7 @@ class BetterArgHandler(object):
         elif given_path.startswith(".."):
             pwd = str(path.realpath(".."))
             final_path = pwd + given_path[2:]
-        else: # previously elif given_path.startswith("."):
+        elif given_path.startswith("."):
             wd = str(path.realpath("."))
             final_path = wd + given_path[1:]
 

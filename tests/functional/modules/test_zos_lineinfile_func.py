@@ -1014,6 +1014,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
         hosts.all.file(path=full_path, state="touch")
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
         hosts.all.shell(cmd=f"echo \"{content}\" | iconv -f IBM-1047 -t {params['encoding']}  > {full_path} ")
+        insert_data = 
         results = hosts.all.shell(cmd="cat {0}".format(full_path))
         print(results.contacted.values())
         params["path"] = full_path

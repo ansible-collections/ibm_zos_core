@@ -120,7 +120,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module):
 def test_add_del_volume(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", volume="", state="present", force_dynamic=True)
-    ds = get_tmp_ds_name(3,2)
+    ds = get_tmp_ds_name(1,1)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -178,7 +178,7 @@ def test_add_del_persist(ansible_zos_module):
 def test_add_del_volume_persist(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", volume="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
-    ds = get_tmp_ds_name(3,2)
+    ds = get_tmp_ds_name(1,1)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
     test_info['library'] = ds
     if test_info.get('volume') is not None:
@@ -227,7 +227,7 @@ def test_batch_add_del(ansible_zos_module):
         batch=[dict(library="", volume=""), dict(library="", volume=""), dict(library="", volume="")],
         persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
     for item in test_info['batch']:
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(1,1)
         hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -370,9 +370,8 @@ def test_add_already_present(ansible_zos_module):
 def test_del_not_present(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = dict(library="", state="present", force_dynamic=True)
-    ds = get_tmp_ds_name(3,2)
+    ds = get_tmp_ds_name(1,1)
     hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
-    hosts.all.shell(cmd=cmdStr)
     test_info['library'] = ds
     if test_info.get('volume') is not None:
         cmdStr = "dls -l " + ds + " | awk '{print $5}' "

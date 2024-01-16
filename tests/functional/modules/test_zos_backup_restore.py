@@ -400,15 +400,12 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
         delete_data_set_or_file(hosts, backup_name)
 
 
-def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_include):
+def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
     data_set_name2 = get_tmp_ds_name()
-    hlq = "ANSIBLE.*"
-    data_set_include = [
-        [data_set_name, data_set_name2],
-        hlq,
-    ]
+    data_set_include = [data_set_name, data_set_name2]
+    data_sets_hlq = "ANSIBLE.*"
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
@@ -432,6 +429,13 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_i
             overwrite=True,
             recover=True,
             hlq=NEW_HLQ,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_sets_hlq),
+            backup_name=DATA_SET_BACKUP_LOCATION,
         )
         assert_module_did_not_fail(results)
     finally:

@@ -43,9 +43,9 @@ c_pgm="""#include <stdio.h>
 int main(int argc, char** argv)
 {
     char dsname[ strlen(argv[1]) + 4];
-    sprintf(dsname, "//'%s'", argv[1]);
+    sprintf(dsname, \\\"//'%s'\\\", argv[1]);
     FILE* member;
-    member = fopen(dsname, "rb,type=record");
+    member = fopen(dsname, \\\"rb,type=record\\\");
     sleep(300);
     fclose(member);
     return 0;
@@ -857,12 +857,10 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
             format_dict["format_options"] = dict(terse_pack="SPACK")
 
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
-            content=call_c_jcl.format(ds_to_write),
-            dest='/tmp/disp_shr/call_c_pgm.jcl',
-            force=True
-        )
+        hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
+            call_c_jcl.format(ds_to_write),
+            '/tmp/disp_shr/call_c_pgm.jcl'))
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
 
         # submit jcl

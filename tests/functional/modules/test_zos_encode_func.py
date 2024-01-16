@@ -898,8 +898,7 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
-        hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
-        hosts.all.zos_copy(src=TEMP_JCL_PATH, dest=MVS_PS, remote_src=True)
+        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_FILE_TEXT, MVS_PS))
         enc_ds = hosts.all.zos_encode(
             src=MVS_PS,
             encoding={

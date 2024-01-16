@@ -119,7 +119,7 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
-        volumes.free_vol(volume_1)
+
 
 
 def test_double_mount(ansible_zos_module, volumes_on_systems):
@@ -145,7 +145,6 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
             state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
-        volumes.free_vol(volume_1)
 
 
 def test_remount(ansible_zos_module, volumes_on_systems):
@@ -169,7 +168,6 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
-        volumes.free_vol(volume_1)
 
 
 def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_systems):
@@ -191,7 +189,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
         stdin="",
     )
 
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
     dest_path = dest + "(AUTO1)"
 
     hosts.all.zos_data_set(
@@ -241,7 +239,6 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             record_format="fba",
             record_length=80,
         )
-        volumes.free_vol(volume_1)
 
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_systems):
@@ -275,7 +272,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
 
     print("\n====================================================\n")
 
-    dest = get_tmp_ds_name(hosts)
+    dest = get_tmp_ds_name()
     dest_path = dest + "(AUTO2)"
     back_dest_path = dest + "(AUTO2BAK)"
 
@@ -363,7 +360,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             record_format="fba",
             record_length=80,
         )
-        volumes.free_vol(volume_1)
 
 def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
@@ -380,7 +376,7 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
             assert result.get("changed") is True
     finally:
         tmphlq = "TMPHLQ"
-        persist_data_set = get_tmp_ds_name(hosts)
+        persist_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=persist_data_set, state="present", type="SEQ")
         unmount_result = hosts.all.zos_mount(
             src=srcfn,
@@ -398,4 +394,3 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
             assert result.get("backup_name")[:6] == tmphlq
 
         hosts.all.file(path="/pythonx/", state="absent")
-        volumes.free_vol(volume_1)

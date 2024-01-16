@@ -366,9 +366,9 @@ List of tests:
 def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
-        HLQ = MVS_DEST_ARCHIVE[0:8]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
+        HLQ = "ANSIBLE"
         HLQUA = DATASET[0:4]
         # Clean env
         hosts.all.zos_data_set(name=DATASET, state="absent")
@@ -477,9 +477,9 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
 def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
-        HLQ = MVS_DEST_ARCHIVE[0:8]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
+        HLQ = "ANSIBLE"
         HLQUA = DATASET[0:4]
         # Clean env
         hosts.all.zos_data_set(name=DATASET, state="absent")
@@ -571,8 +571,8 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
 def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
         HLQUA = DATASET[0:4]
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -648,8 +648,8 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
 def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
         HLQUA = DATASET[0:4]
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -734,8 +734,8 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
 def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
         HLQUA = DATASET[0:4]
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -816,8 +816,8 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
 def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
         HLQ = MVS_DEST_ARCHIVE[0:8]
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -903,8 +903,8 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
     """
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
         HLQUA = DATASET[0:4]
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -987,8 +987,8 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
 def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name(hosts)
-        DATASET = get_tmp_ds_name(hosts, 4)[0:29]
+        MVS_DEST_ARCHIVE = get_tmp_ds_name()
+        DATASET = get_tmp_ds_name(3)
         HLQ = MVS_DEST_ARCHIVE[0:8]
         HLQUA = DATASET[0:4]
         tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")

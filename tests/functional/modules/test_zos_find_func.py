@@ -303,8 +303,6 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
             batch=[dict(name=i, state='absent') for i in VSAM_NAMES]
         )
         hosts.all.zos_data_set(name=alternate_vsam, state='absent')
-        volumes.free_vol(volume_1)
-        volumes.free_vol(volume_2)
 
 
 def test_find_invalid_age_indicator_fails(ansible_zos_module):

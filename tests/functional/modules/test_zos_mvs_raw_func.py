@@ -152,7 +152,6 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         assert result.get("changed", False) is True
-    free_vol(volume_1)
 
 
 # * new data set and append to member in one step not currently supported
@@ -260,7 +259,6 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
-        volumes.free_vol(volume_1)
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -346,7 +344,6 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, volumes_on_s
             pprint(result)
             assert "BGYSC1103E" not in result.get("stderr", "")
     finally:
-        volumes.free_vol(volume_1)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -396,7 +393,6 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_syste
         for result in results.contacted.values():
             assert "EDC5041I" in result.get("stderr", "")
     finally:
-        volumes.free_vol(volume_1)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -434,7 +430,6 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
             pprint(result)
             assert str(" {0} ".format(record_format.upper())) in result.get("stdout", "")
     finally:
-        free_vol(volume_1, volumes)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
@@ -484,7 +479,6 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
     finally:
-        volumes.free_vol(volume_1)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[volume_1])
 
 
@@ -540,7 +534,6 @@ def test_return_text_content_encodings(
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
     finally:
-        volumes.free_vol(volume_1)
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[volume_1])
 
 
@@ -1770,10 +1763,11 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
 def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_content):
     try:
         hosts = ansible_zos_module
-        DEFAULT_DATA_SET = "USER.PRIVATE.TEST"
+        DEFAULT_DATA_SET = get_tmp_ds_name()
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="seq")
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+        dds[0]["dd_concat"]["dds"][1]["dd_data_set"]["data_set_name"] = get_tmp_ds_name()
         results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)
         for result in results.contacted.values():
             assert result.get("ret_code", {}).get("code", -1) == 0

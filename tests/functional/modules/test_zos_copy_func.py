@@ -1612,7 +1612,7 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        dest = "USER.ASA.SEQ"
+        dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
 
         copy_result = hosts.all.zos_copy(
@@ -1646,7 +1646,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        dest = "USER.ASA.PDSE"
+        dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
         full_dest = "{0}(TEST)".format(dest)
 
@@ -1680,7 +1680,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = "USER.SRC.SEQ"
+        src = get_tmp_ds_name()
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1688,7 +1688,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = "USER.ASA.SEQ"
+        dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1729,7 +1729,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = "USER.SRC.SEQ"
+        src = get_tmp_ds_name()
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1737,7 +1737,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = "USER.ASA.PDSE"
+        dest = get_tmp_ds_name()
         full_dest = "{0}(MEMBER)".format(dest)
         hosts.all.zos_data_set(name=dest, state="absent")
 
@@ -1779,7 +1779,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = "USER.SRC.PDSE"
+        src = get_tmp_ds_name()
         full_src = "{0}(MEMBER)".format(src)
         hosts.all.zos_data_set(
             name=src,
@@ -1788,7 +1788,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = "USER.ASA.SEQ"
+        dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1829,7 +1829,7 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = "USER.SRC.PDSE"
+        src = get_tmp_ds_name()
         full_src = "{0}(MEMBER)".format(src)
         hosts.all.zos_data_set(
             name=src,
@@ -1838,7 +1838,7 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = "USER.ASA.PDSE"
+        dest = get_tmp_ds_name()
         full_dest = "{0}(MEMBER)".format(dest)
         hosts.all.zos_data_set(name=dest, state="absent")
 
@@ -1880,7 +1880,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = "USER.ASA.SRC"
+        src = get_tmp_ds_name()
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -3094,14 +3094,14 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
 @pytest.mark.uss
 def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
     hosts = ansible_zos_module
-
-    cobol_src_pds = "USER.COBOL.SRC"
+    mlq_s=3
+    cobol_src_pds = get_tmp_ds_name(mlq_s)
     cobol_src_mem = "HELLOCBL"
-    src_lib = "USER.LOAD.SRC"
-    dest_lib = "USER.LOAD.DEST"
+    src_lib = get_tmp_ds_name(mlq_s)
+    dest_lib = get_tmp_ds_name(mlq_s)
     pgm_mem = "HELLO"
 
-    dest_lib_aliases = "USER.LOAD.DEST.ALIASES"
+    dest_lib_aliases = get_tmp_ds_name(mlq_s)
     pgm_mem_alias = "ALIAS1"
 
     uss_dest = "/tmp/HELLO"
@@ -3437,12 +3437,12 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
 def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
 
     hosts = ansible_zos_module
-
-    cobol_src_pds = "USER.COBOL.SRC"
+    mlq_s = 3
+    cobol_src_pds = get_tmp_ds_name(mlq_s)
     cobol_src_mem = "HELLOCBL"
     cobol_src_mem2 = "HICBL2"
-    src_lib = "USER.LOAD.SRC"
-    dest_lib = "USER.LOAD.DEST"
+    src_lib = get_tmp_ds_name(mlq_s)
+    dest_lib = get_tmp_ds_name(mlq_s)
     pgm_mem = "HELLO"
     pgm2_mem = "HELLO2"
 
@@ -3572,13 +3572,13 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
 def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
 
     hosts = ansible_zos_module
-
-    cobol_src_pds = "USER.COBOL.SRC"
+    mlq_s=3
+    cobol_src_pds = get_tmp_ds_name(mlq_s)
     cobol_src_mem = "HELLOCBL"
     cobol_src_mem2 = "HICBL2"
-    src_lib = "USER.LOAD.SRC"
-    dest_lib = "USER.LOAD.DEST"
-    dest_lib_aliases = "USER.LOAD.DEST.ALIASES"
+    src_lib = get_tmp_ds_name(mlq_s)
+    dest_lib = get_tmp_ds_name(mlq_s)
+    dest_lib_aliases = get_tmp_ds_name(mlq_s)
     pgm_mem = "HELLO"
     pgm2_mem = "HELLO2"
     pgm_mem_alias = "ALIAS1"
@@ -4354,7 +4354,6 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
             assert cv.get('rc') == 0
             assert volume_1 in cv.get('stdout')
     finally:
-        volumes.free_vol(volume_1)
         hosts.all.zos_data_set(name=source, state='absent')
         hosts.all.zos_data_set(name=dest, state='absent')
 
@@ -4500,7 +4499,6 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
             assert re.search(r"\bINDEXED\b", output)
             assert re.search(r"\b{0}\b".format(volume_1), output)
     finally:
-        volumes.free_vol(volume_1)
         hosts.all.zos_data_set(name=dest_ds, state="absent")
 
 
@@ -4561,7 +4559,6 @@ def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
             assert data_set_attributes[3] == "PS"
             assert volume in output_lines[4]
     finally:
-        volumes.free_vol(volume)
         hosts.all.zos_data_set(name=dest, state="absent")
 
 

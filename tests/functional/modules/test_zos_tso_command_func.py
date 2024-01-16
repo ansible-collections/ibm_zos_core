@@ -49,7 +49,7 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
 
 def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
     hosts = ansible_zos_module
-    default_temp_dataset = get_tmp_ds_name(hosts)
+    default_temp_dataset = get_tmp_ds_name()
     command_string = [
         "alloc da('{0}') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)".format(default_temp_dataset)
     ]

@@ -34,7 +34,7 @@ def get_tmp_ds_name(mlq_size=7, llq_size=7):
 def get_random_q(size=7):
     """ Function or test to ensure random hlq of datasets"""
     # Generate the first random hlq of size pass as parameter
-    letters =  string.ascii_uppercase + string.digits + "#$@"
+    letters =  string.ascii_uppercase + string.digits
     random_q =  ''.join(random.choice(letters)for iteration in range(size))
     count = 0
     # Generate a random HLQ and verify if is valid, if not, repeat the process

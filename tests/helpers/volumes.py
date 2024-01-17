@@ -82,7 +82,8 @@ def get_volumes(ansible_zos_module):
         time.sleep(1)
         for volume in all_volumes.contacted.values():
             all_volumes = volume.get('content')
-        flag = True if len(all_volumes) > 5 else False
+        if all_volumes:
+            flag = True if len(all_volumes) > 5 else False
         iteration -= 1
     # Check if the volume is of storage and is active on prefer but also online as a correct option
     for info in all_volumes:

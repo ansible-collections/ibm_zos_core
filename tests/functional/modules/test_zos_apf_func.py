@@ -221,49 +221,6 @@ def test_add_del_volume_persist(ansible_zos_module):
     assert actual == del_exptd
     clean_test_env(hosts, test_info)
 
-def run_shell_cmd(hosts, cmdStr):
-    results = hosts.all.shell(cmd=cmdStr)
-    pprint(vars(results))
-    for result in results.contacted.values():
-        out = result.get("stdout")
-    return out
-
-
-def persistds_create(hosts):
-    cmdStr = "mvstmp APFTEST.PRST"
-    prstds = run_shell_cmd(hosts, cmdStr)[:30]
-    cmdStr = "dtouch -tseq {0}".format(prstds)
-    run_shell_cmd(hosts, cmdStr)
-    return prstds
-
-
-def persistds_delele(hosts, ds):
-    cmdStr = "drm {0}".format(ds)
-    run_shell_cmd(hosts, cmdStr)
-
-
-def set_test_env(hosts, test_info):
-    # results = hosts.all.zos_data_set(name=ds, type="SEQ")
-    cmdStr = "mvstmp APFTEST"
-    ds = run_shell_cmd(hosts, cmdStr)[:25]
-    cmdStr = "dtouch -tseq {0}".format(ds)
-    run_shell_cmd(hosts, cmdStr)
-    test_info['library'] = ds
-    if test_info.get('volume'):
-        cmdStr = "dls -l " + ds + " | awk '{print $5}' "
-        vol = run_shell_cmd(hosts, cmdStr)
-        test_info['volume'] = vol
-    if test_info.get('persistent'):
-        test_info['persistent']['data_set_name'] = persistds_create(hosts)
-
-
-def clean_test_env(hosts, test_info):
-    # hosts.all.zos_data_set(name=test_info['library'], state='absent')
-    cmdStr = "drm {0}".format(test_info['library'])
-    run_shell_cmd(hosts, cmdStr)
-    if test_info.get('persistent'):
-        # hosts.all.zos_data_set(name=test_info['persistent']['data_set_name'], state='absent')
-        persistds_delele(hosts, test_info['persistent']['data_set_name'])
 
 def test_batch_add_del(ansible_zos_module):
     hosts = ansible_zos_module
@@ -272,19 +229,45 @@ def test_batch_add_del(ansible_zos_module):
         persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
     )
     for item in test_info['batch']:
-        set_test_env(hosts, item)
-    test_info['persistent']['data_set_name'] = persistds_create(hosts)
+        ds = get_tmp_ds_name(1,1)
+        hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
+        test_info['library'] = ds
+        if test_info.get('volume') is not None:
+            cmdStr = "dls -l " + ds + " | awk '{print $5}' "
+            results = hosts.all.shell(cmd=cmdStr)
+            for result in results.contacted.values():
+                vol = result.get("stdout")
+            test_info['volume'] = vol
+        if test_info.get('persistent'):
+            cmdStr = "mvstmp APFTEST.PRST"
+            results = hosts.all.shell(cmd=cmdStr)
+            for result in results.contacted.values():
+                prstds = result.get("stdout")
+            prstds = prstds[:30]
+            cmdStr = "dtouch -tseq {0}".format(prstds)
+            hosts.all.shell(cmd=cmdStr)
+            test_info['persistent']['data_set_name'] = prstds
+    cmdStr = "mvstmp APFTEST.PRST"
+    results = hosts.all.shell(cmd=cmdStr)
+    for result in results.contacted.values():
+        prstds = result.get("stdout")
+    prstds = prstds[:30]
+    cmdStr = "dtouch -tseq {0}".format(prstds)
+    hosts.all.shell(cmd=cmdStr)
+    test_info['persistent']['data_set_name'] = prstds
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        print(result)
         assert result.get("rc") == 0
     add_exptd = add_batch_expected.format(test_info['batch'][0]['library'], test_info['batch'][0]['volume'],
                                           test_info['batch'][1]['library'], test_info['batch'][1]['volume'],
                                           test_info['batch'][2]['library'], test_info['batch'][2]['volume'])
     add_exptd = add_exptd.replace(" ", "")
     cmdStr = "cat \"//'{0}'\" ".format(test_info['persistent']['data_set_name'])
-    actual = run_shell_cmd(hosts, cmdStr).replace(" ", "")
+    results = hosts.all.shell(cmd=cmdStr)
+    for result in results.contacted.values():
+        actual = result.get("stdout")
+    actual = actual.replace(" ", "")
     assert actual == add_exptd
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
@@ -293,11 +276,15 @@ def test_batch_add_del(ansible_zos_module):
         assert result.get("rc") == 0
     del_exptd = del_expected.replace(" ", "")
     cmdStr = "cat \"//'{0}'\" ".format(test_info['persistent']['data_set_name'])
-    actual = run_shell_cmd(hosts, cmdStr).replace(" ", "")
+    results = hosts.all.shell(cmd=cmdStr)
+    for result in results.contacted.values():
+        actual = result.get("stdout")
+    actual = actual.replace(" ", "")
     assert actual == del_exptd
     for item in test_info['batch']:
         clean_test_env(hosts, item)
-    persistds_delele(hosts, test_info['persistent']['data_set_name'])
+    cmdStr = "drm {0}".format(test_info['persistent']['data_set_name'])
+    hosts.all.shell(cmd=cmdStr)
 
 
 def test_operation_list(ansible_zos_module):

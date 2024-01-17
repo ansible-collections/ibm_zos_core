@@ -242,7 +242,7 @@ DS_TYPE = ['SEQ', 'PDS', 'PDSE']
 # not supported data set types
 NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 # The encoding will be only use on a few test
-ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
+ENCODING = [ 'ISO8859-1', 'UTF-8']
 
 #########################
 # USS test cases
@@ -1005,7 +1005,7 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
 def test_uss_encoding(ansible_zos_module, encoding):
     hosts = ansible_zos_module
     insert_data = "Insert this string"
-    params = dict(insertafter="SIMPLE", line=insert_data, state="present", encoding={"from":encoding, "to":"IBM-1047"})
+    params = dict(insertafter="SIMPLE", line=insert_data, state="present", encoding={"from":"IBM-1047", "to":encoding})
     params["encoding"] = encoding
     full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
     content = "SIMPLE LINE TO VERIFY"
@@ -1013,15 +1013,15 @@ def test_uss_encoding(ansible_zos_module, encoding):
         hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
         hosts.all.file(path=full_path, state="touch")
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
-        hosts.all.shell(cmd=f"echo \"{content}\" | iconv -f IBM-1047 -t {params['encoding']}  > {full_path} ")
-        insert_data = 
         results = hosts.all.shell(cmd="cat {0}".format(full_path))
         print(results.contacted.values())
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        # results = hosts.all.shell(cmd="cat {0}".format())
+        results = hosts.all.shell(cmd=f"iconv -f {encoding} -t IBM-1047 {params['path']} > {full_path}")
+        results = hosts.all.shell(cmd=f"iconv -f IBM-1047 -t UTF-8 {encoding} {full_path}")
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:

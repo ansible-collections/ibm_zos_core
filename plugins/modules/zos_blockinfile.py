@@ -335,7 +335,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 
 # supported data set types

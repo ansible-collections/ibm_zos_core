@@ -1744,11 +1744,12 @@ class PDSECopyHandler(CopyHandler):
             )
 
         if result["rc"] != 0:
-            msg = "Unable to copy source {0} to {1}. members : {2} destination: {3}".format(
+            msg = "Unable to copy source {0} to {1}. members : {2} destination: {3} src_ds_type: {4}".format(
                 new_src,
                 destination,
                 source,
-                dest_members
+                dest_members,
+                src_ds_type
             )
             raise CopyOperationError(
                 msg=msg,

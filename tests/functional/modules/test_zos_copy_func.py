@@ -1958,7 +1958,7 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
 
 @pytest.mark.seq
-@pytest.mark.parametrize("ds_type", ["PDS", "PDSE", "SEQ"])
+@pytest.mark.parametrize("ds_type", [ "PDS", "PDSE", "SEQ"])
 def test_copy_dest_lock(ansible_zos_module, ds_type):
     DATASET_1 = "USER.PRIVATE.TESTDS"
     DATASET_2 = "ADMI.PRIVATE.TESTDS"

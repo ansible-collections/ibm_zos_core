@@ -18,7 +18,7 @@ import time
 import re
 import pytest
 import inspect
-import tempfile
+import os
 
 __metaclass__ = type
 
@@ -940,9 +940,8 @@ def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -963,9 +962,8 @@ def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -986,9 +984,8 @@ def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1009,9 +1006,8 @@ def test_ds_block_insertbefore_bof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1032,9 +1028,8 @@ def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1055,9 +1050,8 @@ def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1078,9 +1072,8 @@ def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1101,9 +1094,8 @@ def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1124,9 +1116,8 @@ def test_ds_block_absent(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(block="", state="absent")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1148,11 +1139,10 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
     ds_type = "SEQ"
     params=dict(insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True, tmp_hlq="TMPHLQ")
     kwargs = dict(backup_name=r"TMPHLQ\..")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     content = TEST_CONTENT
     try:
         ds_full_name = get_tmp_ds_name()
+        temp_file = "/tmp/" + ds_full_name
         hosts.all.zos_data_set(name=ds_full_name, type=ds_type, replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
         cmdStr = "cp {0} \"//'{1}'\" ".format(quote(temp_file), ds_full_name)
@@ -1177,9 +1167,8 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", indentation=16)
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_full_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1204,9 +1193,8 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
     params = dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True)
     if backup_name:
         params["backup_name"] = backup_name
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_full_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1298,7 +1286,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
     insert_data = "Insert this string"
     params = dict(insertafter="SIMPLE", block=insert_data, state="present")
     params["encoding"] = encoding
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = TEST_FOLDER_BLOCKINFILE + ENCODING
     content = "SIMPLE LINE TO VERIFY"
     try:
         hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_BLOCKINFILE))
@@ -1325,9 +1313,8 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
     insert_data = "Insert this string"
     params = dict(insertafter="SIMPLE", block=insert_data, state="present")
     params["encoding"] = encoding
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_full_name
     content = "SIMPLE LINE TO VERIFY"
     try:
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
@@ -1375,9 +1362,8 @@ def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
     ds_type = 'SEQ'
     params=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
     params["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_full_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1409,9 +1395,8 @@ def test_ds_not_supported(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    temp = tempfile.NamedTemporaryFile()
-    temp_file = temp.name
     ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     try:
         ds_name = ds_name.upper() + "." + ds_type
         results = hosts.all.zos_data_set(name=ds_name, type=ds_type, replace='yes')

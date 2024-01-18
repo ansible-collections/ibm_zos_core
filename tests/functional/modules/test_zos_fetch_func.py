@@ -321,7 +321,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PDS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PDS, state="present")
-    TEST_PDS_MEMBER = TEST_PDS_MEMBER + "(MEM)"
+    TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
     params = dict(
@@ -391,7 +391,7 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
 
 def test_fetch_sequential_data_set_empty(ansible_zos_module):
     hosts = ansible_zos_module
-    src = "USER.TEST.EMPTY.SEQ"
+    src = get_tmp_ds_name()
     params = dict(src=src, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + src
     try:
@@ -412,7 +412,7 @@ def test_fetch_sequential_data_set_empty(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    pds_name = "ZOS.FETCH.TEST.PDS"
+    pds_name = get_tmp_ds_name()
     hosts.all.zos_data_set(
         name=pds_name,
         type="pds",
@@ -433,7 +433,7 @@ def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
     hosts = ansible_zos_module
-    pds_name = "ZOS.FETCH.TEST.PDS"
+    pds_name = get_tmp_ds_name()
     hosts.all.zos_data_set(
         name=pds_name,
         type="pds",
@@ -490,8 +490,9 @@ def test_fetch_missing_uss_file_fails(ansible_zos_module):
 
 def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
     hosts = ansible_zos_module
+    src = get_tmp_ds_name()
     params = dict(
-        src="FETCH.TEST.DATA.SET", dest="/tmp/", flat=True, fail_on_missing=False
+        src=src, dest="/tmp/", flat=True, fail_on_missing=False
     )
     try:
         results = hosts.all.zos_fetch(**params)
@@ -519,7 +520,8 @@ def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
 
 def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="ZOS.FETCH.TEST.PDS", dest="/tmp/", flat=True)
+    src = get_tmp_ds_name()
+    params = dict(src=src, dest="/tmp/", flat=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -556,7 +558,7 @@ def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
-    pds_name = "ZOS.FETCH.TEST.PDS"
+    pds_name = get_tmp_ds_name()
     dest_path = "/tmp/" + pds_name
     full_path = dest_path + "/MYDATA"
     hosts.all.zos_data_set(
@@ -623,7 +625,8 @@ def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
 def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
     dest_path = "/tmp/TEST.USER.QUAL"
-    hosts.all.zos_data_set(name="OMVSADM.TEST.USER.QUAL", type="seq", state="present")
+    src = get_tmp_ds_name()
+    hosts.all.zos_data_set(name=src, type="seq", state="present")
     params = dict(src="TEST.USER.QUAL", dest="/tmp/", flat=True, use_qualifier=True)
     try:
         results = hosts.all.zos_fetch(**params)

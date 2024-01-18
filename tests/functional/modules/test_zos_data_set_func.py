@@ -203,7 +203,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 )
 def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
-    volumes = Volume_Handler(*volumes_on_systems)
+    volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
@@ -248,7 +248,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
 )
 def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
-    volumes = Volume_Handler(*volumes_on_systems)
+    volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
@@ -296,7 +296,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
 )
 def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     try:
-        volumes = Volume_Handler(*volumes_on_systems)
+        volumes = Volume_Handler(volumes_on_systems)
         volume_1 = volumes.get_available_vol()
         hosts = ansible_zos_module
         dataset = get_tmp_ds_name(2, 2)
@@ -334,7 +334,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         ids=['PDS_CREATE_JCL', 'KSDS_CREATE_JCL', 'RRDS_CREATE_JCL', 'ESDS_CREATE_JCL', 'LDS_CREATE_JCL']
 )
 def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl, volumes_on_systems):
-    volumes = Volume_Handler(*volumes_on_systems)
+    volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     volume_2 = volumes.get_available_vol()
     hosts = ansible_zos_module
@@ -695,7 +695,7 @@ def test_repeated_operations(ansible_zos_module):
 
 
 def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module, volumes_on_systems):
-    volumes = Volume_Handler(*volumes_on_systems)
+    volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     volume_2 = volumes.get_available_vol()
     try:
@@ -732,7 +732,7 @@ def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module,
 
 
 def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, volumes_on_systems):
-    volumes = Volume_Handler(*volumes_on_systems)
+    volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     volume_2 = volumes.get_available_vol()
     try:
@@ -770,7 +770,7 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, vo
 
 
 def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
-    volumes = Volume_Handler(*volumes_on_systems)
+    volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     try:
         hosts = ansible_zos_module
@@ -953,7 +953,7 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
     ["F","FB", "VB", "FBA", "VBA", "U"],
 )
 def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
-    volumes = Volume_Handler(*volumes_on_systems)
+    volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     try:
         hosts = ansible_zos_module

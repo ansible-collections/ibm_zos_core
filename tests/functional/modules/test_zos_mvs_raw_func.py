@@ -404,7 +404,7 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
     try:
         hosts = ansible_zos_module
         volumes = Volume_Handler(volumes_on_systems)
-        volume_1 = get_available_vol(volumes)
+        volume_1 = volumes.get_available_vol()
         DEFAULT_DATA_SET = get_tmp_ds_name()
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         results = hosts.all.zos_mvs_raw(

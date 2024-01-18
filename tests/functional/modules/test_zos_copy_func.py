@@ -2961,7 +2961,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
     # This dataset and member should be available on any z/OS system.
     mlq_size = 3
     cobol_src_pds = get_tmp_ds_name(mlq_size)
-    cobol_src_mem = get_tmp_ds_name(mlq_size)
+    cobol_src_mem = "HELLOCBL"
     src_lib = get_tmp_ds_name(mlq_size)
     dest_lib = get_tmp_ds_name(mlq_size)
     dest_lib_aliases = get_tmp_ds_name(mlq_size)
@@ -3886,7 +3886,7 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
     src = get_tmp_ds_name()
     src_wildcard = "{0}(ABC*)".format(src)
 
-    dest = "USER.FUNCTEST.DEST.PDS"
+    dest = get_tmp_ds_name()
     member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
     ds_list = ["{0}({1})".format(src, member) for member in member_list]
 

@@ -1013,8 +1013,6 @@ def test_uss_encoding(ansible_zos_module, encoding):
         hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
         hosts.all.file(path=full_path, state="touch")
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
-        results = hosts.all.shell(cmd="cat {0}".format(full_path))
-        print(results.contacted.values())
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():

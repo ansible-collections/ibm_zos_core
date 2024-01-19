@@ -4323,9 +4323,10 @@ def test_copy_data_set_to_volume(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     source = "USER.TEST.FUNCTEST.SRC"
     dest = "USER.TEST.FUNCTEST.DEST"
-
+    source_member = "USER.TEST.FUNCTEST.SRC(MEMBER)"
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
+        hosts.all.zos_data_set(name=source_member, type="member", state='present')
         copy_res = hosts.all.zos_copy(
             src=source,
             dest=dest,

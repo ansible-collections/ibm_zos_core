@@ -1727,16 +1727,20 @@ class PDSECopyHandler(CopyHandler):
                     "{0}({1})".format(dest, destination_member),
                     src_ds_type
                 )
+                operation = "individual member copy"
         else:
             if len(src_members) == 1:
                 destination = "{0}({1})".format(dest, destination_member)
                 source = src_member
-            else:
+                operation = "single member copy"
+            elif len(src_members) > 1:
                 """
-                This means we have to copy more than one member at a time
+                This means we have to copy more than one member at a time,
+                if src_members is 0, then is copy a pds/pdse to a pdse
                 """
                 destination = dest
                 source = bulk_src_members
+                operation = "bulk copy"
             result = self.copy_to_member(
                 source,
                 destination,
@@ -1744,12 +1748,13 @@ class PDSECopyHandler(CopyHandler):
             )
 
         if result["rc"] != 0:
-            msg = "Unable to copy source {0} to {1}. members : {2} destination: {3} src_ds_type: {4}".format(
+            msg = "Unable to copy source {0} to {1}. members : {2} dest_members: {3} src_ds_type: {4}, oper: {5}".format(
                 new_src,
                 destination,
                 source,
                 dest_members,
-                src_ds_type
+                src_ds_type,
+                operation
             )
             raise CopyOperationError(
                 msg=msg,

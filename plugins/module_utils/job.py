@@ -282,19 +282,24 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["owner"] = entry.owner
 
             job["ret_code"] = {}
-            job["ret_code"]["msg"] = entry.status + " " + entry.return_code
+            job["ret_code"]["msg"] = "{0} {1}".format(entry.status, entry.return_code)
             job["ret_code"]["msg_code"] = entry.return_code
             job["ret_code"]["code"] = None
-            if len(entry.return_code) > 0:
+            if entry.return_code and len(entry.return_code) > 0:
                 if entry.return_code.isdigit():
                     job["ret_code"]["code"] = int(entry.return_code)
             job["ret_code"]["msg_text"] = entry.status
 
             # this section only works on zoau 1.2.3/+ vvv
 
+            # Beginning in ZOAU v1.3.0, the Job class changes svc_class to
+            # service_class.
+            if zoau_version_checker.is_zoau_version_higher_than("1.2.5"):
+                job["service_class"] = entry.service_class
+            elif zoau_version_checker.is_zoau_version_higher_than("1.2.2"):
+                job["svc_class"] = entry.svc_class
             if zoau_version_checker.is_zoau_version_higher_than("1.2.2"):
                 job["job_class"] = entry.job_class
-                job["svc_class"] = entry.svc_class
                 job["priority"] = entry.priority
                 job["asid"] = entry.asid
                 job["creation_date"] = str(entry.creation_datetime)[0:10]

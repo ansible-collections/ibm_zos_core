@@ -1363,7 +1363,7 @@ def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
     params=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
     params["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_full_name
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)

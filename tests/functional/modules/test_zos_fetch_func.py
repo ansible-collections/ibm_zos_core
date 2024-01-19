@@ -625,8 +625,8 @@ def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
 
 def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/TEST.USER.QUAL"
     src = get_tmp_ds_name()
+    dest_path = "/tmp/" + src[8:]
     hosts.all.zos_data_set(name=src, type="seq", state="present")
     params = dict(src=src, dest="/tmp/", flat=True, use_qualifier=True)
     try:
@@ -639,7 +639,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
-        hosts.all.zos_data_set(src="OMVSADM.TEST.USER.QUAL", state="absent")
+        hosts.all.zos_data_set(src=src, state="absent")
 
 
 def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):

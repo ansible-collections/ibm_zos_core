@@ -197,9 +197,6 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
         hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET, type="pds", state="present", replace=True
         )
-        hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_WITH_MEMBER, type="member", state="present", replace=True
-        )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,

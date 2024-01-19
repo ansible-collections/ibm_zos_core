@@ -116,7 +116,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     DEFAULT_DATA_SET = get_tmp_ds_name()
-    tmphlq = "TMPHLQ"
+    tmphlq = "ANSIBLE"
     hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
     )
@@ -148,7 +148,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
         assert result.get("ret_code", {}).get("code", -1) == 0
         assert len(result.get("dd_names", [])) > 0
         for backup in result.get("backups"):
-            backup.get("backup_name")[:6] == tmphlq
+            backup.get("backup_name")[:7] == tmphlq
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         assert result.get("changed", False) is True
@@ -196,6 +196,9 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
         DEFAULT_DATA_SET_WITH_MEMBER = DEFAULT_DATA_SET + '(MEM)'
         hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET, type="pds", state="present", replace=True
+        )
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_WITH_MEMBER, type="member", state="present", replace=True
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",

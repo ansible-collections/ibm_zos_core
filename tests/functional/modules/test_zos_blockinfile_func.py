@@ -1286,7 +1286,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
     insert_data = "Insert this string"
     params = dict(insertafter="SIMPLE", block=insert_data, state="present")
     params["encoding"] = encoding
-    full_path = TEST_FOLDER_BLOCKINFILE + ENCODING
+    full_path = TEST_FOLDER_BLOCKINFILE + encoding
     content = "SIMPLE LINE TO VERIFY"
     try:
         hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_BLOCKINFILE))

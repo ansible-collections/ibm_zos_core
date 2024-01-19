@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1715,46 +1715,37 @@ class PDSECopyHandler(CopyHandler):
                 new_members.append(destination_member)
             bulk_src_members += "{0} ".format(src_member)
 
-        """
-        Copy section:
-        USS -> MVS
-        MVS -> MVS (Except when ASA is True)
-        """
+        # Copy section
         if src_ds_type == "USS" or self.asa_text:
+            """
+            USS -> MVS : Was kept on member by member basis bc file names longer that 8
+            characters will throw an error when copying to a PDS, because of the member name
+            character limit.
+            MVS -> MVS (asa only): This has to be copied on member by member basis bc OPUT
+            does not allow for bulk member copy or entire PDS to PDS copy.
+            """
             for src_member, destination_member in zip(src_members, dest_members):
                 result = self.copy_to_member(
                     src_member,
                     "{0}({1})".format(dest, destination_member),
                     src_ds_type
                 )
-                operation = "individual member copy"
         else:
-            if len(src_members) == 1:
-                destination = "{0}({1})".format(dest, destination_member)
-                source = src_member
-                operation = "single member copy"
-            elif len(src_members) > 1:
-                """
-                This means we have to copy more than one member at a time,
-                if src_members is 0, then is copy a pds/pdse to a pdse
-                """
-                destination = dest
-                source = bulk_src_members
-                operation = "bulk copy"
+            """
+            MVS -> MVS
+            Copies a list of members into a PDS, using this list of members greatly
+            enhances performance of datasets_copy.
+            """
             result = self.copy_to_member(
-                source,
-                destination,
+                bulk_src_members,
+                dest,
                 src_ds_type
             )
 
         if result["rc"] != 0:
-            msg = "Unable to copy source {0} to {1}. members : {2} dest_members: {3} src_ds_type: {4}, oper: {5}".format(
+            msg = "Unable to copy source {0} to {1}.".format(
                 new_src,
-                destination,
-                source,
-                dest_members,
-                src_ds_type,
-                operation
+                dest
             )
             raise CopyOperationError(
                 msg=msg,

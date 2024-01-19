@@ -1716,7 +1716,7 @@ class PDSECopyHandler(CopyHandler):
             bulk_src_members += "{0} ".format(src_member)
 
         # Copy section
-        if src_ds_type == "USS" or self.asa_text:
+        if src_ds_type == "USS" or self.asa_text or len(src_members) == 1:
             """
             USS -> MVS : Was kept on member by member basis bc file names longer that 8
             characters will throw an error when copying to a PDS, because of the member name

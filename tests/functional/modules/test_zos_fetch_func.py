@@ -625,13 +625,14 @@ def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
 
 def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
-    src = get_tmp_ds_name()[25:]
+    src = get_tmp_ds_name()[:25]
     dest_path = "/tmp/"+ src
     hosts.all.zos_data_set(name="OMVSADM." + src, type="seq", state="present")
     params = dict(src=src, dest="/tmp/", flat=True, use_qualifier=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") is True
             assert result.get("data_set_type") == "Sequential"
             assert result.get("module_stderr") is None

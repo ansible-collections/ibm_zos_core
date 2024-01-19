@@ -815,7 +815,7 @@ def test_data_set_temp_data_set_name(ansible_zos_module):
 def test_data_set_temp_data_set_name_batch(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
+        DEFAULT_DATA_SET_NAME = get_tmp_ds_name()
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
         results = hosts.all.zos_data_set(
             batch=[
@@ -828,7 +828,10 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
                 dict(
                     state="present",
                 ),
-                dict(name=DEFAULT_DATA_SET_NAME, state="present"),
+                dict(
+                    name=DEFAULT_DATA_SET_NAME,
+                    state="present"
+                ),
             ]
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
@@ -857,7 +860,7 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
 def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
     fulltest = True
     hosts = ansible_zos_module
-    DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
+    DEFAULT_DATA_SET_NAME = get_tmp_ds_name(1, 1)
     try:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
@@ -934,7 +937,7 @@ def test_data_set_creation_zero_values(ansible_zos_module):
 
 def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
     try:
-        tmphlq = "TMPHLQ"
+        tmphlq = "ANSIBLE"
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
         results = hosts.all.zos_data_set(state="present", tmp_hlq=tmphlq)
@@ -943,7 +946,7 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
             for dsname in result.get("names"):
-                assert dsname[:6] == tmphlq
+                assert dsname[:7] == tmphlq
     finally:
         if dsname:
             hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

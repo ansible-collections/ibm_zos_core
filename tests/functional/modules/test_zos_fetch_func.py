@@ -442,8 +442,9 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
         record_format="fba",
         record_length=25,
     )
+    hosts.all.zos_data_set(name=pds_name, type="pds")
     hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="MEMBER", replace="yes")
-    params = dict(src="ZOS.FETCH.TEST.PDS(MYDATA)", dest="/tmp/", flat=True)
+    params = dict(src=pds_name + "(MYDATA)", dest="/tmp/", flat=True)
     dest_path = "/tmp/MYDATA"
     try:
         results = hosts.all.zos_fetch(**params)
@@ -627,7 +628,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     dest_path = "/tmp/TEST.USER.QUAL"
     src = get_tmp_ds_name()
     hosts.all.zos_data_set(name=src, type="seq", state="present")
-    params = dict(src="TEST.USER.QUAL", dest="/tmp/", flat=True, use_qualifier=True)
+    params = dict(src=src, dest="/tmp/", flat=True, use_qualifier=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

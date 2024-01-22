@@ -134,6 +134,8 @@ options:
     type: int
     required: false
     default: 5
+    aliases:
+      - size
   space_secondary:
     description:
       - The amount of secondary space to allocate for the dataset.
@@ -146,12 +148,12 @@ options:
       - The unit of measurement to use when defining primary and secondary space.
       - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
     type: str
-    choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+    # choices:
+    #   - K
+    #   - M
+    #   - G
+    #   - CYL
+    #   - TRK
     required: false
     default: M
   record_format:
@@ -171,6 +173,8 @@ options:
       - F
     type: str
     default: FB
+    aliases:
+      - format
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -179,6 +183,8 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
+    aliases:
+      - data_class
   sms_data_class:
     description:
       - The data class for an SMS-managed dataset.
@@ -395,6 +401,8 @@ options:
         type: int
         required: false
         default: 5
+        aliases:
+          - size
       space_secondary:
         description:
           - The amount of secondary space to allocate for the dataset.
@@ -407,12 +415,12 @@ options:
           - The unit of measurement to use when defining primary and secondary space.
           - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
         type: str
-        choices:
-          - K
-          - M
-          - G
-          - CYL
-          - TRK
+        # choices:
+        #   - K
+        #   - M
+        #   - G
+        #   - CYL
+        #   - TRK
         required: false
         default: M
       record_format:
@@ -432,6 +440,8 @@ options:
           - F
         type: str
         default: FB
+        aliases:
+          - format
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -440,6 +450,8 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
+        aliases:
+          - data_class
       sms_data_class:
         description:
           - The data class for an SMS-managed dataset.
@@ -559,7 +571,7 @@ EXAMPLES = r"""
     space_type: M
     record_format: u
     record_length: 25
-    replace: yes
+    replace: true
 
 - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
   zos_data_set:
@@ -570,7 +582,7 @@ EXAMPLES = r"""
     record_format: u
     record_length: 25
     volumes: "222222"
-    replace: yes
+    replace: true
 
 - name: Create an ESDS data set if it does not exist
   zos_data_set:
@@ -605,7 +617,7 @@ EXAMPLES = r"""
   zos_data_set:
     name: someds.name.here(mydata)
     type: MEMBER
-    replace: yes
+    replace: true
 
 - name: Write a member to an existing PDS; do not replace if member exists
   zos_data_set:
@@ -623,22 +635,22 @@ EXAMPLES = r"""
     name: someds.name.here(mydata)
     state: absent
     type: MEMBER
-    force: yes
+    force: true
 
 - name: Create multiple partitioned data sets and add one or more members to each
   zos_data_set:
     batch:
-      - name:  someds.name.here1
+      - name: someds.name.here1
         type: PDS
         space_primary: 5
         space_type: M
         record_format: fb
-        replace: yes
+        replace: true
       - name: someds.name.here1(member1)
         type: MEMBER
       - name: someds.name.here2(member1)
         type: MEMBER
-        replace: yes
+        replace: true
       - name: someds.name.here2(member2)
         type: MEMBER
 
@@ -802,6 +814,7 @@ def space_type(contents, dependencies):
         return None
     if contents is None:
         return None
+
     match = re.fullmatch(r"(M|G|K|TRK|CYL)", contents, re.IGNORECASE)
     if not match:
         raise ValueError(
@@ -987,7 +1000,8 @@ def perform_data_set_operations(name, state, **extra_args):
 
 
 def fix_old_size_arg(params):
-    """ for backwards compatibility with old styled size argument """
+    """ for backwards compatibility with old styled size argument
+        this function has been extended to include case-related issues """
     match = None
     if params.get("size"):
         match = re.fullmatch(
@@ -1008,6 +1022,13 @@ def fix_old_size_arg(params):
     if match:
         params["space_primary"] = int(match.group(1))
         params["space_type"] = match.group(2)
+
+    if params.get("type"):
+        params["type"] = params.get("type").upper()
+
+    if params.get("space_type"):
+        params["space_type"] = params.get("space_type").upper()
+
     return params
 
 
@@ -1030,9 +1051,17 @@ def parse_and_validate_args(params):
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type=data_set_type, required=False, dependencies=["state"]),
+                type=dict(
+                    type=data_set_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+                ),
                 space_type=dict(
-                    type=space_type, required=False, dependencies=["state"]
+                    type=space_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1114,7 +1143,12 @@ def parse_and_validate_args(params):
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
         type=dict(type=data_set_type, required=False, dependencies=["state"]),
-        space_type=dict(type=space_type, required=False, dependencies=["state"]),
+        space_type=dict(
+            type=space_type,
+            required=False,
+            dependencies=["state"],
+            # choices=['K', 'M', 'G', 'CYL', 'TRK'],
+        ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
         record_format=dict(
@@ -1218,11 +1252,27 @@ def run_module():
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type="str", required=False, default="PDS"),
-                space_type=dict(type="str", required=False, default="M"),
+                type=dict(
+                    type="str",
+                    required=False,
+                    default="PDS",
+                    choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+                ),
+                space_type=dict(
+                    type="str",
+                    required=False,
+                    default="M",
+                    # choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                ),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+                record_format=dict(
+                    type="str",
+                    required=False,
+                    aliases=["format"],
+                    default="FB",
+                    choices=['FB', 'VB', 'FBA', 'VBA', 'U', 'F'],
+                ),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1267,11 +1317,26 @@ def run_module():
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
-        type=dict(type="str", required=False, default="PDS"),
-        space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        type=dict(
+            type="str",
+            required=False,
+            default="PDS",
+            choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+        ),
+        space_type=dict(
+            type="str",
+            required=False,
+            default="M",
+            # choices=['K', 'M', 'G', 'CYL', 'TRK'],
+        ),
+        space_primary=dict(type="int", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+        record_format=dict(
+            type="str",
+            required=False,
+            aliases=["format"],
+            default="FB",
+            choices=['FB', 'VB', 'FBA', 'VBA', 'U', 'F']),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class

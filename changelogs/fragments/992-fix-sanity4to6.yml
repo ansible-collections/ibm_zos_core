@@ -1,0 +1,4 @@
+trivial:
+  - zos_data_set.py - Corrected references to input variable definitions
+    Corrected documentation for boolean variables
+    (https://github.com/ansible-collections/ibm_zos_core/pull/xxxx).

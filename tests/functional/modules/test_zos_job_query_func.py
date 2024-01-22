@@ -28,7 +28,6 @@ import tempfile
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_query(job_name="*", owner="*")
-    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs") is not None
@@ -113,3 +112,17 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=NDATA_SET_NAME, state="absent")
+
+
+def test_zos_job_id_query_short_ids_func(ansible_zos_module):
+    hosts = ansible_zos_module
+    qresults = hosts.all.zos_job_query(job_id="STC003")
+    for qresult in qresults.contacted.values():
+        assert qresult.get("jobs") is not None
+
+
+def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
+    hosts = ansible_zos_module
+    qresults = hosts.all.zos_job_query(job_id="STC00*")
+    for qresult in qresults.contacted.values():
+        assert qresult.get("jobs") is not None

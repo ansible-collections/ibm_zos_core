@@ -173,6 +173,10 @@ except Exception:
 
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
+
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
+    timeout *= 100
+
     start = timer()
     response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
     end = timer()

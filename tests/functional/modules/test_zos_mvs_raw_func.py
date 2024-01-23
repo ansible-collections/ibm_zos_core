@@ -1765,7 +1765,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
 def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_content):
     try:
         hosts = ansible_zos_module
-        DEFAULT_DATA_SET = get_tmp_ds_name()
+        DEFAULT_DATA_SET = "USER.PRIVATE.TEST"
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="seq")
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")

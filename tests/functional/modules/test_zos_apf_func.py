@@ -230,31 +230,18 @@ def test_batch_add_del(ansible_zos_module):
     )
     for item in test_info['batch']:
         ds = get_tmp_ds_name(1,1)
-        hosts.all.shell(cmd="dtouch -tseq {0}".format(ds))
-        test_info['library'] = ds
-        if test_info.get('volume') is not None:
-            cmdStr = "dls -l " + ds + " | awk '{print $5}' "
-            results = hosts.all.shell(cmd=cmdStr)
-            for result in results.contacted.values():
-                vol = result.get("stdout")
-            test_info['volume'] = vol
-        if test_info.get('persistent'):
-            cmdStr = "mvstmp APFTEST.PRST"
-            results = hosts.all.shell(cmd=cmdStr)
-            for result in results.contacted.values():
-                prstds = result.get("stdout")
-            prstds = prstds[:30]
-            cmdStr = "dtouch -tseq {0}".format(prstds)
-            hosts.all.shell(cmd=cmdStr)
-            test_info['persistent']['data_set_name'] = prstds
-    cmdStr = "mvstmp APFTEST.PRST"
-    results = hosts.all.shell(cmd=cmdStr)
-    for result in results.contacted.values():
-        prstds = result.get("stdout")
-    prstds = prstds[:30]
-    cmdStr = "dtouch -tseq {0}".format(prstds)
+        hosts.all.shell(cmd="dtouch {0}".format(ds))
+        item['library'] = ds
+        cmdStr = "dls -l " + ds + " | awk '{print $5}' "
+        results = hosts.all.shell(cmd=cmdStr)
+        for result in results.contacted.values():
+            vol = result.get("stdout")
+        item['volume'] = vol
+    prstds = get_tmp_ds_name(5,5)
+    cmdStr = "dtouch {0}".format(prstds)
     hosts.all.shell(cmd=cmdStr)
     test_info['persistent']['data_set_name'] = prstds
+    hosts.all.shell(cmd="echo \"{0}\" > {1}".format("Hello World, Here's Jhonny", prstds))
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():

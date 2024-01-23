@@ -113,10 +113,10 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
 
 def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    DEFAULT_DATA_SET = get_tmp_ds_name()
     tmphlq = "TMPHLQ"
+    volumes = Volume_Handler(volumes_on_systems)
+    DEFAULT_VOLUME = volumes.get_available_vol()
+    DEFAULT_DATA_SET = get_tmp_ds_name()[:25]
     hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
     )
@@ -137,7 +137,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
                     space_primary=5,
                     space_secondary=1,
                     space_type="m",
-                    volumes=volume_1,
+                    volumes=DEFAULT_VOLUME,
                     record_format="fb"
                 ),
             ),
@@ -145,12 +145,14 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
         ],
     )
     for result in results.contacted.values():
+        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 0
         assert len(result.get("dd_names", [])) > 0
         for backup in result.get("backups"):
             backup.get("backup_name")[:6] == tmphlq
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
+        pprint(result)
         assert result.get("changed", False) is True
 
 
@@ -1767,7 +1769,6 @@ def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_co
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="seq")
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        dds[0]["dd_concat"]["dds"][1]["dd_data_set"]["data_set_name"] = get_tmp_ds_name()
         results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)
         for result in results.contacted.values():
             assert result.get("ret_code", {}).get("code", -1) == 0

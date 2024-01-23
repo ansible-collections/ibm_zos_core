@@ -836,7 +836,7 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
         data_set_names = retrieve_data_set_names(results)
-        assert len(data_set_names) == 3
+        assert len(data_set_names) == 4
         for name in data_set_names:
             if name != DEFAULT_DATA_SET_NAME:
                 results2 = hosts.all.zos_data_set(name=name, state="absent")

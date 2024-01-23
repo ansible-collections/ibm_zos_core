@@ -242,7 +242,7 @@ DS_TYPE = ['SEQ', 'PDS', 'PDSE']
 # not supported data set types
 NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 # The encoding will be only use on a few test
-ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
+ENCODING = [ 'ISO8859-1', 'UTF-8']
 
 #########################
 # USS test cases
@@ -1005,7 +1005,7 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
 def test_uss_encoding(ansible_zos_module, encoding):
     hosts = ansible_zos_module
     insert_data = "Insert this string"
-    params = dict(insertafter="SIMPLE", line=insert_data, state="present")
+    params = dict(insertafter="SIMPLE", line=insert_data, state="present", encoding={"from":"IBM-1047", "to":encoding})
     params["encoding"] = encoding
     full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
     content = "SIMPLE LINE TO VERIFY"
@@ -1013,12 +1013,11 @@ def test_uss_encoding(ansible_zos_module, encoding):
         hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
         hosts.all.file(path=full_path, state="touch")
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
-        hosts.all.zos_encode(src=full_path, dest=full_path, from_encoding="IBM-1047", to_encoding=params["encoding"])
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        results = hosts.all.shell(cmd=f"iconv -f IBM-1047 -t {encoding} {full_path}")
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
@@ -1032,7 +1031,7 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     insert_data = "Insert this string"
-    params = dict(insertafter="SIMPLE", line=insert_data, state="present")
+    params = dict(insertafter="SIMPLE", line=insert_data, state="present", encoding={"from":"IBM-1047", "to":encoding})
     params["encoding"] = encoding
     test_name = "DST13"
     temp_file = "/tmp/{0}".format(test_name)
@@ -1040,7 +1039,7 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
     content = "SIMPLE LINE TO VERIFY"
     try:
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
-        hosts.all.zos_encode(src=temp_file, dest=temp_file, from_encoding="IBM-1047", to_encoding=params["encoding"])
+        hosts.all.shell(cmd=f"iconv -f IBM-1047 -t {params['encoding']} temp_file > temp_file ")
         hosts.all.zos_data_set(name=ds_name, type=ds_type)
         if ds_type in ["PDS", "PDSE"]:
             ds_full_name = ds_name + "(MEM)"
@@ -1055,9 +1054,10 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        hosts.all.zos_encode(src=ds_full_name, dest=ds_full_name, from_encoding=params["encoding"], to_encoding="IBM-1047")
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        hosts.all.shell(cmd=f"iconv -f {encoding} -t IBM-1047 \"{ds_full_name}\" > \"{ds_full_name}\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(ds_full_name))
         for result in results.contacted.values():
+
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)

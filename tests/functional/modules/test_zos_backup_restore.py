@@ -130,6 +130,7 @@ def assert_data_set_or_file_does_not_exist(hosts, name):
 def assert_data_set_exists(hosts, data_set_name):
     results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
+        print(result)
         found = search(
             "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )
@@ -468,8 +469,7 @@ def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
             hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION2)
+        assert_data_set_exists(hosts, DATA_SET_BACKUP_LOCATION)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)

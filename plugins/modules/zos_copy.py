@@ -283,8 +283,8 @@ options:
       - If C(src) is a directory and ends with "/", the contents of it will be copied
         into the root of C(dest). If it doesn't end with "/", the directory itself
         will be copied.
-      - If src is USS, file names will be truncated and/or modified to ensure a valid
-        name for a data set or member.
+      - If C(src) is a directory or file, file names will be truncated and/or modified
+        to ensure a valid name for a data set or member.
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
         PDS/PDSE.

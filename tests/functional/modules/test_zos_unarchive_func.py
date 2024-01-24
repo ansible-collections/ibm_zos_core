@@ -369,7 +369,6 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
         HLQ = "ANSIBLE"
-        HLQUA = DATASET[0:4]
         # Clean env
         hosts.all.zos_data_set(name=DATASET, state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
@@ -419,7 +418,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
             assert result.get("changed") is True
             assert result.get("dest") == MVS_DEST_ARCHIVE
             assert DATASET in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
 
@@ -430,7 +429,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
             src=MVS_DEST_ARCHIVE,
-           format=format_dict,
+            format=format_dict,
             remote_src=True,
             dest_data_set=dict(name=DATASET,
                                type=data_set.get("dstype"),
@@ -443,7 +442,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
             assert result.get("failed", False) is False
             # assert result.get("dest") == MVS_DEST_ARCHIVE
             # assert data_set.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQUA))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert DATASET in c_result.get("stdout")
 
@@ -480,7 +479,6 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
         HLQ = "ANSIBLE"
-        HLQUA = DATASET[0:4]
         # Clean env
         hosts.all.zos_data_set(name=DATASET, state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
@@ -527,7 +525,7 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
             assert result.get("changed") is True
             assert result.get("dest") == MVS_DEST_ARCHIVE
             assert DATASET in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
 
@@ -548,7 +546,7 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
             assert result.get("failed", False) is False
             # assert result.get("dest") == MVS_DEST_ARCHIVE
             # assert data_set.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQUA))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert DATASET in c_result.get("stdout")
     finally:
@@ -573,7 +571,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
-        HLQUA = DATASET[0:4]
+        HLQ ="ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
                                     n=1,
@@ -623,7 +621,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
             assert result.get("failed", False) is False
             assert result.get("src") == MVS_DEST_ARCHIVE
 
-            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQUA))
+            cmd_result = hosts.all.shell(cmd="""dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 for target_ds in target_ds_list:
                     assert target_ds.get("name") in result.get("targets")
@@ -650,7 +648,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
-        HLQUA = DATASET[0:4]
+        HLQUA = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
                                     n=2,
@@ -705,7 +703,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
             assert result.get("failed", False) is False
             assert result.get("src") == MVS_DEST_ARCHIVE
 
-            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQUA))
+            cmd_result = hosts.all.shell(cmd="""dls "{0}.*" """.format(HLQUA))
             for c_result in cmd_result.contacted.values():
                 for target_ds in target_ds_list:
                     if target_ds.get("name") == include_ds:
@@ -736,7 +734,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
-        HLQUA = DATASET[0:4]
+        HLQUA = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
                                     n=2,
@@ -787,7 +785,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
             assert result.get("failed", False) is False
             assert result.get("src") == MVS_DEST_ARCHIVE
 
-            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQUA))
+            cmd_result = hosts.all.shell(cmd=""" dls "{0}.*" """.format(HLQUA))
             for c_result in cmd_result.contacted.values():
                 for target_ds in target_ds_list:
                     if target_ds.get("name") == exclude_ds:
@@ -818,7 +816,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
-        HLQ = MVS_DEST_ARCHIVE[0:8]
+        HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
                                     n=2,
@@ -868,7 +866,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
             assert result.get("failed", False) is False
             assert result.get("src") == MVS_DEST_ARCHIVE
 
-            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd="""dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 for target_ds in target_ds_list:
                     assert target_ds.get("name") in result.get("targets")
@@ -905,7 +903,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
-        HLQUA = DATASET[0:4]
+        HLQUA = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
                                     n=1,
@@ -953,7 +951,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
                 assert result.get("failed", False) is False
                 assert result.get("src") == MVS_DEST_ARCHIVE
 
-                cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQUA))
+                cmd_result = hosts.all.shell(cmd="""dls "{0}.*" """.format(HLQUA))
                 for c_result in cmd_result.contacted.values():
                     for target_ds in target_ds_list:
                         assert target_ds.get("name") in result.get("targets")
@@ -989,8 +987,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
         DATASET = get_tmp_ds_name(3)
-        HLQ = MVS_DEST_ARCHIVE[0:8]
-        HLQUA = DATASET[0:4]
+        HLQ = "ANSIBLE"
         tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")
         # Clean env
         hosts.all.zos_data_set(name=DATASET, state="absent")
@@ -1037,7 +1034,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
             assert result.get("changed") is True
             assert result.get("dest") == MVS_DEST_ARCHIVE
             assert DATASET in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
 
@@ -1063,7 +1060,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
             assert result.get("failed", False) is False
             # assert result.get("dest") == MVS_DEST_ARCHIVE
             # assert data_set.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQUA))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert DATASET in c_result.get("stdout")
 

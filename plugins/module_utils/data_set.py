@@ -15,6 +15,7 @@ __metaclass__ = type
 
 import re
 import tempfile
+import traceback
 from os import path, walk
 from string import ascii_uppercase, digits
 from random import sample

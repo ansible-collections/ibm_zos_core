@@ -570,7 +570,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
-        DATASET = get_tmp_ds_name(3)
+        DATASET = get_tmp_ds_name(3,3)
         HLQ ="ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -598,11 +598,10 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src="{0}*".format(DATASET),
+            src=""" "{0}*" """.format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
-
         # remote data_sets from host
         hosts.all.shell(cmd="drm {0}*".format(DATASET))
 
@@ -627,7 +626,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
                     assert target_ds.get("name") in result.get("targets")
                     assert target_ds.get("name") in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd=""" drm "{0}*" """.format(DATASET))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
 @pytest.mark.ds
@@ -647,7 +646,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
-        DATASET = get_tmp_ds_name(3)
+        DATASET = get_tmp_ds_name(3,3)
         HLQUA = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -675,7 +674,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src="{0}*".format(DATASET),
+            src=""" "{0}*" """.format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -713,7 +712,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
                         assert target_ds.get("name") not in result.get("targets")
                         assert target_ds.get("name") not in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd=""" drm "{0}*" """.format(DATASET))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
 @pytest.mark.ds
@@ -733,7 +732,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
-        DATASET = get_tmp_ds_name(3)
+        DATASET = get_tmp_ds_name(3,3)
         HLQUA = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -761,13 +760,13 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src="{0}*".format(DATASET),
+            src=""" "{0}*" """.format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
 
         # remote data_sets from host
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd=""" drm "{0}*" """.format(DATASET))
 
         if format == "terse":
             del format_dict["format_options"]["terse_pack"]
@@ -795,7 +794,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
                         assert target_ds.get("name") in result.get("targets")
                         assert target_ds.get("name") in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd=""" drm "{0}*" """.format(DATASET))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
 @pytest.mark.ds
@@ -815,7 +814,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
-        DATASET = get_tmp_ds_name(3)
+        DATASET = get_tmp_ds_name(3,3)
         HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -843,7 +842,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src="{0}*".format(DATASET),
+            src=""" "{0}*" """.format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -872,7 +871,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
                     assert target_ds.get("name") in result.get("targets")
                     assert target_ds.get("name") not in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd="""drm "{0}*" """.format(DATASET))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
 @pytest.mark.ds
@@ -902,7 +901,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
     try:
         hosts = ansible_zos_module
         MVS_DEST_ARCHIVE = get_tmp_ds_name()
-        DATASET = get_tmp_ds_name(3)
+        DATASET = get_tmp_ds_name(3,3)
         HLQUA = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -930,7 +929,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         hosts.all.zos_archive(
-            src="{0}*".format(DATASET),
+            src=""" "{0}*" """.format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -960,7 +959,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
                 assert result.get("changed") is False
                 assert result.get("failed", False) is True
     finally:
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd=""" drm "{0}*" """.format(DATASET))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
 @pytest.mark.ds

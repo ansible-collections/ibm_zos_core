@@ -509,7 +509,7 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
             hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
+        assert_data_set_exists(hosts, DATA_SET_BACKUP_LOCATION)
         assert_data_set_does_not_exist(hosts, DATA_SET_RESTORE_LOCATION2)
     finally:
         delete_data_set_or_file(hosts, data_set_name)

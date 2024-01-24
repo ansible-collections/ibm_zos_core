@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021, 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1960,7 +1960,7 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
 
 @pytest.mark.seq
-@pytest.mark.parametrize("ds_type", ["PDS", "PDSE", "SEQ"])
+@pytest.mark.parametrize("ds_type", [ "PDS", "PDSE", "SEQ"])
 def test_copy_dest_lock(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
     data_set_1 = get_tmp_ds_name()
@@ -1973,6 +1973,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         src_data_set = data_set_1
         dest_data_set = data_set_2
     try:
+        hosts = ansible_zos_module
         hosts.all.zos_data_set(name=data_set_1, state="present", type="pdse", replace=True)
         hosts.all.zos_data_set(name=data_set_2, state="present", type="pdse", replace=True)
         if ds_type == "PDS" or ds_type == "PDSE":
@@ -4331,8 +4332,10 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
         volume = volumes.get_available_vol()
         volumes.free_vol(volume_1)
         volume_1 = volume
+    source_member = source + "(MEM)"
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
+        hosts.all.zos_data_set(name=source_member, type="member", state='present')
         copy_res = hosts.all.zos_copy(
             src=source,
             dest=dest,

@@ -1660,7 +1660,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
                             ),
                             dict(
                                 dd_data_set=dict(
-                                    data_set_name="USER.PRIVATE.TEST",
+                                    data_set_name="ANSIBLE.USER.PRIVATE.TEST",
                                     disposition="shr",
                                     return_content=dict(type="text"),
                                 )
@@ -1692,7 +1692,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
                         dds=[
                             dict(
                                 dd_data_set=dict(
-                                    data_set_name="USER.PRIVATE.TEST",
+                                    data_set_name="ANSIBLE.USER.PRIVATE.TEST",
                                     disposition="shr",
                                     return_content=dict(type="text"),
                                 )
@@ -1736,7 +1736,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
                             ),
                             dict(
                                 dd_data_set=dict(
-                                    data_set_name="USER.PRIVATE.TEST",
+                                    data_set_name="ANSIBLE.USER.PRIVATE.TEST",
                                     disposition="shr",
                                     return_content=dict(type="text"),
                                 )
@@ -1765,7 +1765,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
 def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_content):
     try:
         hosts = ansible_zos_module
-        default_data_set = "USER.PRIVATE.TEST"
+        default_data_set = "ANSIBLE.USER.PRIVATE.TEST"
         hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")

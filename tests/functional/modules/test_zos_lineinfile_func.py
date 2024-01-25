@@ -841,22 +841,22 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 def test_ds_line_force(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    DEFAULT_DATA_SET_NAME = get_tmp_ds_name()
+    default_data_set_name = get_tmp_ds_name()
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="True")
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
     content = TEST_CONTENT
     if ds_type == "SEQ":
-        params["path"] = DEFAULT_DATA_SET_NAME+".{0}".format(MEMBER_2)
+        params["path"] = default_data_set_name+".{0}".format(MEMBER_2)
     else:
-        params["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+        params["path"] = default_data_set_name+"({0})".format(MEMBER_2)
     try:
         # set up:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
         hosts.all.zos_data_set(
             batch=[
-                {   "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
+                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
                     "type": "member", "state": "present", "replace": True, },
                 {   "name": params["path"], "type": "member",
                     "state": "present", "replace": True, },
@@ -874,7 +874,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
-            content=call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
+            content=call_c_jcl.format(default_data_set_name, MEMBER_1),
             dest='/tmp/disp_shr/call_c_pgm.jcl',
             force=True
         )
@@ -894,7 +894,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
 
 @pytest.mark.ds
@@ -902,19 +902,19 @@ def test_ds_line_force(ansible_zos_module, dstype):
 def test_ds_line_force_fail(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    DEFAULT_DATA_SET_NAME = get_tmp_ds_name()
+    default_data_set_name = get_tmp_ds_name()
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="False")
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
-    params["path"] = DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2)
+    params["path"] = default_data_set_name + "({0})".format(MEMBER_2)
     content = TEST_CONTENT
     try:
         # set up:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
         hosts.all.zos_data_set(
             batch=[
-                {   "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
+                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
                     "type": "member", "state": "present", "replace": True, },
                 {   "name": params["path"], "type": "member",
                     "state": "present", "replace": True, },
@@ -928,7 +928,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
-            content=call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
+            content=call_c_jcl.format(default_data_set_name, MEMBER_1),
             dest='/tmp/disp_shr/call_c_pgm.jcl',
             force=True
         )
@@ -945,7 +945,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
 
 @pytest.mark.ds

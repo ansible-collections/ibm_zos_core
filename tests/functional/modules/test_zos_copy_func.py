@@ -3444,6 +3444,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
     dest_lib = "USER.LOAD.DEST"
     pgm_mem = "HELLO"
     pgm2_mem = "HELLO2"
+    uss_location = "/tmp/loadlib"
 
 
     try:
@@ -3487,11 +3488,33 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         validate_loadlib_pgm(hosts, steplib=src_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
 
         # fetch loadlib into local
-        tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")
-        # fetch loadlib to local
-        fetch_result = hosts.all.zos_fetch(src=src_lib, dest=tmp_folder.name, is_binary=True)
-        for res in fetch_result.contacted.values():
-            source_path = res.get("dest")
+        # Copying the loadlib to USS.
+        hosts.all.file(name=uss_location, state='directory')
+        hosts.all.shell(
+            cmd=f"cp -B \"//'{src_lib}'\" {uss_location}",
+            executable=SHELL_EXECUTABLE
+        )
+
+        # Copying the remote loadlibs in USS to a local dir.
+        # This section ONLY handles ONE host, so if we ever use multiple hosts to
+        # test, we will need to update this code.
+        remote_user = hosts["options"]["user"]
+        # Removing a trailing comma because the framework saves the hosts list as a
+        # string instead of a list.
+        remote_host = hosts["options"]["inventory"].replace(",", "")
+
+        tmp_folder =  tempfile.TemporaryDirectory(prefix="tmpfetch")
+        cmd = [
+            "scp",
+            "-r",
+            f"{remote_user}@{remote_host}:{uss_location}",
+            f"{tmp_folder.name}"
+        ]
+        with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as scp_proc:
+            result = scp_proc.stdout.read()
+            print(result)
+
+        source_path = os.path.join(tmp_folder.name, os.path.basename(uss_location))
 
         if not is_created:
             # ensure dest data sets absent for this variation of the test case.
@@ -3562,6 +3585,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
         hosts.all.zos_data_set(name=src_lib, state="absent")
         hosts.all.zos_data_set(name=dest_lib, state="absent")
+        hosts.all.file(name=uss_location, state="absent")
 
 
 @pytest.mark.pdse

@@ -17,7 +17,6 @@ import time
 import re
 import pytest
 import inspect
-import os
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 

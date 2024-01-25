@@ -150,12 +150,12 @@ options:
       - The unit of measurement to use when defining primary and secondary space.
       - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
     type: str
-    # choices:
-    #   - K
-    #   - M
-    #   - G
-    #   - CYL
-    #   - TRK
+    choices:
+      - K
+      - M
+      - G
+      - CYL
+      - TRK
     required: false
     default: M
   record_format:
@@ -1264,7 +1264,7 @@ def run_module():
                     type="str",
                     required=False,
                     default="M",
-                    # choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
                 ),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
@@ -1329,7 +1329,7 @@ def run_module():
             type="str",
             required=False,
             default="M",
-            # choices=['K', 'M', 'G', 'CYL', 'TRK'],
+            choices=['K', 'M', 'G', 'CYL', 'TRK'],
         ),
         space_primary=dict(type="int", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),
@@ -1415,13 +1415,9 @@ def run_module():
             # batch keyword after the arg spec is evaluated else you get a lint
             # error 'invalid-ansiblemodule-schema'
             module_args['state']['dependencies'] = ['batch']
-            print( "\r\nPAVA VVVV\r\n")
             params = parse_and_validate_args(module.params)
-            print( "\r\nGIDS VVVV\r\n")
             data_set_param_list = get_individual_data_set_parameters(params)
             result["names"] = [d.get("name", "") for d in data_set_param_list]
-            print( "\r\nnames VVVV\r\n")
-            print( result )
             for data_set_params in data_set_param_list:
                 # remove unnecessary empty batch argument
                 result["changed"] = perform_data_set_operations(

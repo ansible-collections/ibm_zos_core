@@ -249,16 +249,16 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
 def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
+    volume = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
         hosts.all.zos_data_set(
-            name=dataset, state="cataloged", volumes=volume_1
+            name=dataset, state="cataloged", volumes=volume
         )
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
-        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
@@ -267,7 +267,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # ensure data set present
         results = hosts.all.zos_data_set(
-            name=dataset, state="present", volumes=volume_1
+            name=dataset, state="present", volumes=volume
         )
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -279,7 +279,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
         results = hosts.all.zos_data_set(
             name=dataset,
             state="present",
-            volumes=volume_1,
+            volumes=volume,
             replace=True,
         )
         for result in results.contacted.values():

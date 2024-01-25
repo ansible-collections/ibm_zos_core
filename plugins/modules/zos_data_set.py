@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,7 +24,9 @@ short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
-author: "Blake Becker (@blakeinate)"
+author:
+  - "Blake Becker (@blakeinate)"
+  - "Rich Parker (@richp405)"
 options:
   name:
     description:
@@ -415,12 +417,12 @@ options:
           - The unit of measurement to use when defining primary and secondary space.
           - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
         type: str
-        # choices:
-        #   - K
-        #   - M
-        #   - G
-        #   - CYL
-        #   - TRK
+        choices:
+          - K
+          - M
+          - G
+          - CYL
+          - TRK
         required: false
         default: M
       record_format:
@@ -1413,10 +1415,13 @@ def run_module():
             # batch keyword after the arg spec is evaluated else you get a lint
             # error 'invalid-ansiblemodule-schema'
             module_args['state']['dependencies'] = ['batch']
+            print( "\r\nPAVA VVVV\r\n")
             params = parse_and_validate_args(module.params)
+            print( "\r\nGIDS VVVV\r\n")
             data_set_param_list = get_individual_data_set_parameters(params)
             result["names"] = [d.get("name", "") for d in data_set_param_list]
-
+            print( "\r\nnames VVVV\r\n")
+            print( result )
             for data_set_params in data_set_param_list:
                 # remove unnecessary empty batch argument
                 result["changed"] = perform_data_set_operations(

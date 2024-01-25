@@ -107,7 +107,7 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
     if add_data:
         record_src = "/tmp/zos_copy_vsam_record"
 
-        hosts.all.shell(cmd="cp -CM {0} \"//'{1}'\" ").format(VSAM_RECORDS, record_src)
+        hosts.all.shell(cmd="echo {0} >> {1}".format(quote(VSAM_RECORDS), record_src))
         hosts.all.zos_encode(src=record_src, dest=name, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
         hosts.all.file(path=record_src, state="absent")
 

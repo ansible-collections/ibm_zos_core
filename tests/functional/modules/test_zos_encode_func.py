@@ -513,7 +513,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
     MVS_PDS_MEMBER = MVS_PDS + '(MEM)'
     MVS_PS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
-    hosts.all.zos_copy(content=TEST_DATA, dest=MVS_PS)
+    hosts.all.shell(cmd="cp {0} \"//'{1}'\" ".format(quote(TEST_DATA), MVS_PS))
     hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
     hosts.all.zos_data_set(
         name=MVS_PDS_MEMBER, type="member", state="present"

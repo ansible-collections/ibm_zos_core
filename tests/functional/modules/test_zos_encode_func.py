@@ -574,7 +574,8 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
 def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        MVS_VS = get_tmp_ds_name(3)
+        mlq_size = 3
+        MVS_VS = get_tmp_ds_name(mlq_size)
         create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
         hosts.all.file(path=USS_DEST_FILE, state="touch")
         results = hosts.all.zos_encode(

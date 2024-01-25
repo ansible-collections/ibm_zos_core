@@ -1513,7 +1513,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
 
 
-def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
+def test_concatenation_with_unix_dd_and_response_datasets(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_2 = get_tmp_ds_name()
@@ -1563,7 +1563,7 @@ def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
 
 
-def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
+def test_concatenation_with_unix_dd_and_response_uss(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")

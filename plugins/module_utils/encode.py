@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020 - 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,9 +24,10 @@ import errno
 import os
 import re
 import locale
+import traceback
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
@@ -39,7 +40,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 try:
     from zoautil_py import datasets
 except Exception:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 if PY3:
@@ -194,17 +195,15 @@ class EncodeUtils(object):
         if self.tmphlq:
             hlq = self.tmphlq
         else:
-            hlq = datasets.hlq()
-        temp_ps = datasets.tmp_name(hlq)
-        response = datasets._create(
+            hlq = datasets.get_hlq()
+        temp_ps = datasets.tmp_name(high_level_qualifier=hlq)
+        datasets.create(
             name=temp_ps,
             type="SEQ",
             primary_space=size,
             record_format="VB",
             record_length=reclen,
         )
-        if response.rc:
-            raise OSError("Failed when allocating temporary sequential data set!")
         return temp_ps
 
     def get_codeset(self):

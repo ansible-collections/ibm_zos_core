@@ -113,19 +113,21 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
 
 def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
-    results = hosts.all.zos_encode(
-        src=USS_FILE,
-        encoding={
-            "from": INVALID_ENCODING,
-            "to": TO_ENCODING,
-        },
-    )
-    for result in results.contacted.values():
-        assert result.get("msg") is not None
-        assert result.get("backup_name") is None
-        assert result.get("changed") is False
-    hosts.all.file(path=USS_FILE, state="absent")
+    try:
+        hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
+        results = hosts.all.zos_encode(
+            src=USS_FILE,
+            encoding={
+                "from": INVALID_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+        for result in results.contacted.values():
+            assert result.get("msg") is not None
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+    finally:
+        hosts.all.file(path=USS_FILE, state="absent")
 
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):

@@ -144,7 +144,7 @@ def print_results(results):
     for result in results.contacted.values():
         pprint(result)
 
-holdout = """
+
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
@@ -198,7 +198,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         hosts.all.file(path=TEMP_PATH, state="absent")
         # Added volumes to force a catalog in case they were somehow uncataloged to avoid an duplicate on volume error
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=[VOLUME_000000, VOLUME_222222])
-"""
+
 
 @pytest.mark.parametrize(
     "jcl",
@@ -218,6 +218,9 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
         # verify data set creation was successful
+        print( "\nVVVV --- present_when_unc results\n")
+        print_results( results)
+
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # ensure data set present

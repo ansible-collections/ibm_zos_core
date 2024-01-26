@@ -40,8 +40,7 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets
-    from zoautil_py import exceptions
+    from zoautil_py import datasets, exceptions
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())

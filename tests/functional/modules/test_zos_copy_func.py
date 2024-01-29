@@ -3434,6 +3434,7 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
 @pytest.mark.aliases
 @pytest.mark.parametrize("is_created", [False, True])
 def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
+    import time
 
     hosts = ansible_zos_module
 
@@ -3532,6 +3533,8 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 space_type="M",
                 replace=True
             )
+
+        time.sleep(15)
 
         if not is_created:
             # dest data set does not exist, specify it in dest_dataset param.

@@ -357,7 +357,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     # volume_1 = volumes.get_available_vol()
     volume_1 = "000000"
     # volume_2 = volumes.get_available_vol()
-    volume_2 = "000000"
+    volume_2 = "222222"
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name(2, 2)
     # hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)

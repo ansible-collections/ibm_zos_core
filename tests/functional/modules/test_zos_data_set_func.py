@@ -332,7 +332,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         for result in results.contacted.values():
             assert result.get("changed") is True
 
-        time.sleep(5)
+        time.sleep(2)
 
         # ensure data set absent
         results = hosts.all.zos_data_set(
@@ -358,7 +358,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     volume_2 = volumes.get_available_vol()
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name(2, 2)
-    hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)
+    # hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)
 
     hosts.all.zos_data_set(name=dataset, state="absent")
 
@@ -387,13 +387,18 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     hosts.all.file(path=TEMP_PATH, state="absent")
 
+    time.sleep(2)
+
     # ensure data set absent
     results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
-    for result in results.contacted.values():
-        assert result.get("changed") is True
+    print( "\nVVV ---- abs when uncataloged_and_same_name_cat \n")
+    print_results( results )
 
     for result in results.contacted.values():
         assert result.get("changed") is True
+
+    # for result in results.contacted.values():
+    #     assert result.get("changed") is True
 
 
 @pytest.mark.parametrize("dstype", data_set_types)

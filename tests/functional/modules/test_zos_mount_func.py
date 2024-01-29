@@ -17,6 +17,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
+from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+
 try:
     from zoautil_py import Datasets
 except Exception:
@@ -66,7 +69,7 @@ def populate_tmpfile():
     return tmp_file_filename
 
 
-def create_sourcefile(hosts):
+def create_sourcefile(hosts, volume):
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
@@ -83,7 +86,7 @@ def create_sourcefile(hosts):
     hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
-        + " -volumes 222222 -cylinders 200 1",
+        + " -volumes {0} -cylinders 200 1".format(volume),
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
@@ -95,9 +98,11 @@ def create_sourcefile(hosts):
     return thisfile
 
 
-def test_basic_mount(ansible_zos_module):
+def test_basic_mount(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    srcfn = create_sourcefile(hosts)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted"
@@ -116,9 +121,12 @@ def test_basic_mount(ansible_zos_module):
         hosts.all.file(path="/pythonx/", state="absent")
 
 
-def test_double_mount(ansible_zos_module):
+
+def test_double_mount(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    srcfn = create_sourcefile(hosts)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
     try:
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted")
         # The duplication here is intentional... want to make sure it is seen
@@ -139,9 +147,11 @@ def test_double_mount(ansible_zos_module):
         hosts.all.file(path="/pythonx/", state="absent")
 
 
-def test_remount(ansible_zos_module):
+def test_remount(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    srcfn = create_sourcefile(hosts)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
     try:
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted")
         mount_result = hosts.all.zos_mount(
@@ -160,9 +170,11 @@ def test_remount(ansible_zos_module):
         hosts.all.file(path="/pythonx/", state="absent")
 
 
-def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
+def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    srcfn = create_sourcefile(hosts)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
 
     tmp_file_filename = "/tmp/testfile.txt"
 
@@ -177,8 +189,8 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         stdin="",
     )
 
-    dest = "USER.TEST.BPX.PDS"
-    dest_path = "USER.TEST.BPX.PDS(AUTO1)"
+    dest = get_tmp_ds_name()
+    dest_path = dest + "(AUTO1)"
 
     hosts.all.zos_data_set(
         name=dest,
@@ -229,9 +241,11 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         )
 
 
-def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
+def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    srcfn = create_sourcefile(hosts)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
 
     tmp_file_filename = "/tmp/testfile.txt"
 
@@ -258,9 +272,9 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
     print("\n====================================================\n")
 
-    dest = "USER.TEST.BPX.PDS"
-    dest_path = "USER.TEST.BPX.PDS(AUTO2)"
-    back_dest_path = "USER.TEST.BPX.PDS(AUTO2BAK)"
+    dest = get_tmp_ds_name()
+    dest_path = dest + "(AUTO2)"
+    back_dest_path = dest + "(AUTO2BAK)"
 
     hosts.all.zos_data_set(
         name=dest,
@@ -347,10 +361,11 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             record_length=80,
         )
 
-
-def test_basic_mount_with_tmp_hlq_option(ansible_zos_module):
+def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    srcfn = create_sourcefile(hosts)
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted"
@@ -361,7 +376,7 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         tmphlq = "TMPHLQ"
-        persist_data_set = "MTEST.TEST.PERSIST"
+        persist_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=persist_data_set, state="present", type="SEQ")
         unmount_result = hosts.all.zos_mount(
             src=srcfn,

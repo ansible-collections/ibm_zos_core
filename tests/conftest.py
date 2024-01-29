@@ -12,9 +12,9 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
+from ibm_zos_core.tests.helpers.volumes import get_volumes
 import sys
 from mock import MagicMock
 import importlib
@@ -84,6 +84,13 @@ def ansible_zos_module(request, z_python_interpreter):
     except Exception:
         pass
 
+    # Call of the class by the class ls_Volume (volumes.py file) as many times needed
+    # one time the array is filled
+@pytest.fixture(scope="session")
+def volumes_on_systems(ansible_zos_module):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    list_Volumes = get_volumes(ansible_zos_module)
+    yield list_Volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock
 # * because automatic teardown is not performed, leading to mock pollution

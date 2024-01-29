@@ -154,9 +154,9 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
     volume_1 = "000000"
     dataset = get_tmp_ds_name(2, 2)
     try:
-        hosts.all.zos_data_set(
-            name=dataset, state="cataloged", volumes=volume_1
-        )
+        # hosts.all.zos_data_set(
+        #     name=dataset, state="cataloged", volumes=volume_1
+        # )
         hosts.all.zos_data_set(name=dataset, state="absent")
         print( "\nVVVVV -- initial\n")
         print( "vols: {0} \nv1: {1} \nds: {2}\n".format(volumes, volume_1, dataset))

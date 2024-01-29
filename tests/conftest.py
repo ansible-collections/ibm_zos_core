@@ -87,9 +87,10 @@ def ansible_zos_module(request, z_python_interpreter):
     # Call of the class by the class ls_Volume (volumes.py file) as many times needed
     # one time the array is filled
 @pytest.fixture(scope="session")
-def volumes_on_systems(ansible_zos_module):
+def volumes_on_systems(ansible_zos_module, request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
-    list_Volumes = get_volumes(ansible_zos_module)
+    path = request.config.getoption("--zinventory")
+    list_Volumes = get_volumes(ansible_zos_module, path)
     yield list_Volumes
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

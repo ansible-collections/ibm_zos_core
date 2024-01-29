@@ -3434,8 +3434,6 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
 @pytest.mark.aliases
 @pytest.mark.parametrize("is_created", [False, True])
 def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
-    import time
-
     hosts = ansible_zos_module
 
     cobol_src_pds = "USER.COBOL.SRC"
@@ -3492,7 +3490,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         # Copying the loadlib to USS.
         hosts.all.file(name=uss_location, state='directory')
         hosts.all.shell(
-            cmd=f"dcp -XI \"{src_lib}\" {uss_location}",
+            cmd=f"dcp -X -I \"{src_lib}\" {uss_location}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -3533,8 +3531,6 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 space_type="M",
                 replace=True
             )
-
-        time.sleep(15)
 
         if not is_created:
             # dest data set does not exist, specify it in dest_dataset param.

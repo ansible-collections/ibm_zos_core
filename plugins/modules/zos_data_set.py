@@ -813,9 +813,11 @@ def space_type(contents, dependencies):
     """Validates provided data set unit of space is valid.
     Returns the unit of space."""
     if dependencies.get("state") == "absent":
-        return None
+        # return None
+        return "M"
     if contents is None:
-        return None
+        # return None
+        return "M"
 
     match = re.fullmatch(r"(M|G|K|TRK|CYL)", contents, re.IGNORECASE)
     if not match:

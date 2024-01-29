@@ -150,7 +150,8 @@ def print_results(results):
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
+    # volume_1 = volumes.get_available_vol()
+    volume_1 = "000000"
     dataset = get_tmp_ds_name(2, 2)
     try:
         # hosts.all.zos_data_set(

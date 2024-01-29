@@ -157,6 +157,8 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             name=dataset, state="cataloged", volumes=volume_1
         )
         hosts.all.zos_data_set(name=dataset, state="absent")
+        print( "\nVVVVV -- initial\n")
+        print( "vols: {0} \nv1: {1} \nds: {2}\n".format(volumes, volume_1, dataset))
 
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))

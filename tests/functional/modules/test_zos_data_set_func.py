@@ -383,6 +383,11 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_2, dataset)), TEMP_PATH))
     results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS", wait=True)
 
+    # results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
+    hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
+    print( "\nVVV ---- abs when uncataloged_and_same_name_cat: create (commented out delete result) \n")
+    print_results( results )
+
     # verify data set creation was successful
     for result in results.contacted.values():
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -393,7 +398,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     # ensure data set absent
     results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
-    print( "\nVVV ---- abs when uncataloged_and_same_name_cat \n")
+    print( "\nVVV ---- abs when uncataloged_and_same_name_cat: remove \n")
     print_results( results )
 
     for result in results.contacted.values():

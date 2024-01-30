@@ -918,7 +918,7 @@ class DataSet(object):
         volumes = ",".join(volumes) if volumes else None
         kwargs["space_primary"] = primary
         kwargs["space_secondary"] = secondary
-        kwargs["type"] = type
+        kwargs["dataset_type"] = type
         kwargs["volumes"] = volumes
         kwargs.pop("space_type", None)
         renamed_args = {}

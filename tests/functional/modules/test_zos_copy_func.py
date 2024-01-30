@@ -3505,13 +3505,13 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         tmp_folder =  tempfile.mkdtemp(prefix="tmpfetch")
         print(tmp_folder)
         cmd = [
-            "scp",
+            "sftp",
             "-r",
             f"{remote_user}@{remote_host}:{uss_location}",
             f"{tmp_folder}"
         ]
-        with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as scp_proc:
-            result = scp_proc.stdout.read()
+        with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as sftp_proc:
+            result = sftp_proc.stdout.read()
             print(result)
 
         source_path = os.path.join(tmp_folder, os.path.basename(uss_location))

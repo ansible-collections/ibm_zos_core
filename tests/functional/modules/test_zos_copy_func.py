@@ -3511,7 +3511,6 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         ]
         with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as sftp_proc:
             result = sftp_proc.stdout.read()
-            print(result)
 
         source_path = os.path.join(tmp_folder.name, os.path.basename(uss_location))
 

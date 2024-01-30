@@ -3581,10 +3581,11 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             validate_loadlib_pgm(hosts, steplib=steplib, pgm_name=pgm, expected_output_str=output)
 
     finally:
-        hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
-        hosts.all.zos_data_set(name=src_lib, state="absent")
-        hosts.all.zos_data_set(name=dest_lib, state="absent")
-        hosts.all.file(name=uss_location, state="absent")
+        pass
+        # hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
+        # hosts.all.zos_data_set(name=src_lib, state="absent")
+        # hosts.all.zos_data_set(name=dest_lib, state="absent")
+        # hosts.all.file(name=uss_location, state="absent")
 
 
 @pytest.mark.pdse

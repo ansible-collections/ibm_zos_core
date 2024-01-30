@@ -3502,18 +3502,19 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         # string instead of a list.
         remote_host = hosts["options"]["inventory"].replace(",", "")
 
-        tmp_folder =  tempfile.TemporaryDirectory(prefix="tmpfetch")
+        tmp_folder =  tempfile.mkdtemp(prefix="tmpfetch")
+        print(tmp_folder)
         cmd = [
             "scp",
             "-r",
             f"{remote_user}@{remote_host}:{uss_location}",
-            f"{tmp_folder.name}"
+            f"{tmp_folder}"
         ]
         with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as scp_proc:
             result = scp_proc.stdout.read()
             print(result)
 
-        source_path = os.path.join(tmp_folder.name, os.path.basename(uss_location))
+        source_path = os.path.join(tmp_folder, os.path.basename(uss_location))
 
         if not is_created:
             # ensure dest data sets absent for this variation of the test case.

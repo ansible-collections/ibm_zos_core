@@ -3502,19 +3502,18 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         # string instead of a list.
         remote_host = hosts["options"]["inventory"].replace(",", "")
 
-        tmp_folder =  tempfile.mkdtemp(prefix="tmpfetch")
-        print(tmp_folder)
+        tmp_folder =  tempfile.TemporaryDirectory(prefix="tmpfetch")
         cmd = [
             "sftp",
             "-r",
             f"{remote_user}@{remote_host}:{uss_location}",
-            f"{tmp_folder}"
+            f"{tmp_folder.name}"
         ]
         with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as sftp_proc:
             result = sftp_proc.stdout.read()
             print(result)
 
-        source_path = os.path.join(tmp_folder, os.path.basename(uss_location))
+        source_path = os.path.join(tmp_folder.name, os.path.basename(uss_location))
 
         if not is_created:
             # ensure dest data sets absent for this variation of the test case.
@@ -3582,11 +3581,10 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             validate_loadlib_pgm(hosts, steplib=steplib, pgm_name=pgm, expected_output_str=output)
 
     finally:
-        pass
-        # hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
-        # hosts.all.zos_data_set(name=src_lib, state="absent")
-        # hosts.all.zos_data_set(name=dest_lib, state="absent")
-        # hosts.all.file(name=uss_location, state="absent")
+        hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
+        hosts.all.zos_data_set(name=src_lib, state="absent")
+        hosts.all.zos_data_set(name=dest_lib, state="absent")
+        hosts.all.file(name=uss_location, state="absent")
 
 
 @pytest.mark.pdse

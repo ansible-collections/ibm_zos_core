@@ -197,14 +197,14 @@ class EncodeUtils(object):
         else:
             hlq = datasets.get_hlq()
         temp_ps = datasets.tmp_name(high_level_qualifier=hlq)
-        datasets.create(
+        temporary_data_set = datasets.create(
             name=temp_ps,
             type="SEQ",
             primary_space=size,
             record_format="VB",
             record_length=reclen,
         )
-        return temp_ps
+        return temporary_data_set.name
 
     def get_codeset(self):
         """Get the list of supported encodings from the  USS command 'iconv -l'

@@ -1720,7 +1720,7 @@ class PDSECopyHandler(CopyHandler):
         # Copy section
         if src_ds_type == "USS" or self.asa_text or len(src_members) == 1:
             """
-            USS -> MVS : Was kept on member by member basis bc file names longer that 8
+            USS -> MVS : Was kept on member by member basis bc file names longer than 8
             characters will throw an error when copying to a PDS, because of the member name
             character limit.
             MVS -> MVS (asa only): This has to be copied on member by member basis bc OPUT

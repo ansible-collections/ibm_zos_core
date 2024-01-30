@@ -87,11 +87,6 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
                 stdout=copy_exception.response.stdout_response,
                 stderr=copy_exception.response.stderr_response
             )
-        if rc != 0:
-            raise BackupError(
-                "Unable to backup {0} to {1}".format(dsn, bk_dsn),
-                rc=rc
-            )
     else:
         if not bk_dsn:
             if tmphlq:

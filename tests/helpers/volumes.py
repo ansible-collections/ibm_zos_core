@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#-*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -113,6 +113,7 @@ def read_test_config(path):
     with open(p, 'r') as file:
         config = yaml.safe_load(file)
     if "VOLUMES" in config.keys():
-        return config["VOLUMES"]
+        if len(config["VOLUMES"]) > 0:
+            return config["VOLUMES"]
     else:
-        return []
+        return None

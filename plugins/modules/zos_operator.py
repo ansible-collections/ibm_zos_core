@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -172,9 +172,13 @@ except Exception:
     ZOAU_API_VERSION = "1.2.0"
 
 
-def execute_command(operator_cmd, timeout=1, *args, **kwargs):
+def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
+    timeout_c = 100 * timeout_s
+
     start = timer()
-    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+    response = opercmd.execute(operator_cmd, timeout=timeout_c, *args, **kwargs)
     end = timer()
     rc = response.rc
     stdout = response.stdout_response
@@ -293,7 +297,7 @@ def run_operator_command(params):
         kwargs.update({"wait": True})
 
     args = []
-    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
     if rc > 0:
         message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)

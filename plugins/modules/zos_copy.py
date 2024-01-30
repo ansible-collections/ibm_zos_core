@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -283,6 +283,8 @@ options:
       - If C(src) is a directory and ends with "/", the contents of it will be copied
         into the root of C(dest). If it doesn't end with "/", the directory itself
         will be copied.
+      - If C(src) is a directory or a file, file names will be truncated and/or modified
+        to ensure a valid name for a data set or member.
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
         PDS/PDSE.
@@ -1705,33 +1707,56 @@ class PDSECopyHandler(CopyHandler):
         existing_members = datasets.list_members(dest)  # fyi - this list includes aliases
         overwritten_members = []
         new_members = []
+        bulk_src_members = ""
+        result = dict()
 
         for src_member, destination_member in zip(src_members, dest_members):
             if destination_member in existing_members:
                 overwritten_members.append(destination_member)
             else:
                 new_members.append(destination_member)
+            bulk_src_members += "{0} ".format(src_member)
 
+        # Copy section
+        if src_ds_type == "USS" or self.asa_text or len(src_members) == 1:
+            """
+            USS -> MVS : Was kept on member by member basis bc file names longer than 8
+            characters will throw an error when copying to a PDS, because of the member name
+            character limit.
+            MVS -> MVS (asa only): This has to be copied on member by member basis bc OPUT
+            does not allow for bulk member copy or entire PDS to PDS copy.
+            """
+            for src_member, destination_member in zip(src_members, dest_members):
+                result = self.copy_to_member(
+                    src_member,
+                    "{0}({1})".format(dest, destination_member),
+                    src_ds_type
+                )
+        else:
+            """
+            MVS -> MVS
+            Copies a list of members into a PDS, using this list of members greatly
+            enhances performance of datasets_copy.
+            """
             result = self.copy_to_member(
-                src_member,
-                "{0}({1})".format(dest, destination_member),
+                bulk_src_members,
+                dest,
                 src_ds_type
             )
 
-            if result["rc"] != 0:
-                msg = "Unable to copy source {0} to data set member {1}({2})".format(
-                    new_src,
-                    dest,
-                    destination_member
-                )
-                raise CopyOperationError(
-                    msg=msg,
-                    rc=result["rc"],
-                    stdout=result["out"],
-                    stderr=result["err"],
-                    overwritten_members=overwritten_members,
-                    new_members=new_members
-                )
+        if result["rc"] != 0:
+            msg = "Unable to copy source {0} to {1}.".format(
+                new_src,
+                dest
+            )
+            raise CopyOperationError(
+                msg=msg,
+                rc=result["rc"],
+                stdout=result["out"],
+                stderr=result["err"],
+                overwritten_members=overwritten_members,
+                new_members=new_members
+            )
 
     def copy_to_member(
         self,

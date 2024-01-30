@@ -495,6 +495,11 @@ def test_batch_data_set_creation_and_deletion(ansible_zos_module):
                 {"name": dataset, "state": "absent"},
             ]
         )
+
+        print( "\nVVV== batch ds create/delete result =====\n")
+        print_results(results)
+        print( "\n^^^== batch ds create/delete result =====\n")
+
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -518,6 +523,10 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
                 {"name": dataset, "state": "absent"},
             ]
         )
+        print( "\nVVV== batch member create result =====\n")
+        print_results(results)
+        print( "\n^^^== batch member create result =====\n")
+
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

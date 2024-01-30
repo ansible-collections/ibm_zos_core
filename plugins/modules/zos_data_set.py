@@ -1399,7 +1399,7 @@ def run_module():
         if module.params.get("state") is not None:
             module.params["state"] = None
         if module.params.get("space_type") is not None:
-            module.params["space_type"] = None
+            module.params["space_type"] = "M"  # To fix select validation trigger.  Was None.
         if module.params.get("space_primary") is not None:
             module.params["space_primary"] = None
         if module.params.get("space_secondary") is not None:

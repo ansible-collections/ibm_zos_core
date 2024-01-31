@@ -150,8 +150,7 @@ def print_results(results):
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
+    volume_1 = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
         # hosts.all.zos_data_set(
@@ -212,7 +211,9 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
+    volume_1 = volumes.get_available_vol()
+    print( "\n>>>> test 2 volume1={0}\n".format(volume_1))
+
     volume_1 = "000000"
     dataset = get_tmp_ds_name(2, 2)
     try:
@@ -261,8 +262,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
 def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    # volume = volumes.get_available_vol()
-    volume = "000000"
+    volume = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
         # hosts.all.zos_data_set(
@@ -295,6 +295,9 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
             volumes=volume,
             replace=True,
         )
+        print("\nVVV --- test_data_set_replacement_when_uncataloged\n")
+        print_results(results)
+        print( "\n--------\n")
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
@@ -310,8 +313,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
 def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     try:
         volumes = Volume_Handler(volumes_on_systems)
-        # volume_1 = volumes.get_available_vol()
-        volume_1 = "000000"
+        volume_1 = volumes.get_available_vol()
         hosts = ansible_zos_module
         dataset = get_tmp_ds_name(2, 2)
         # hosts.all.zos_data_set(
@@ -354,10 +356,8 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
 )
 def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl, volumes_on_systems):
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
-    # volume_2 = volumes.get_available_vol()
-    volume_2 = "222222"
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name(2, 2)
     # hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)
@@ -385,8 +385,6 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     # results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
     hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
-    print( "\nVVV ---- abs when uncataloged_and_same_name_cat: create (commented out delete result) \n")
-    print_results( results )
 
     # verify data set creation was successful
     for result in results.contacted.values():

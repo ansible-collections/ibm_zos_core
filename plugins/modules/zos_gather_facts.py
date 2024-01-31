@@ -230,7 +230,6 @@ def run_module():
 
     gather_subset = module.params['gather_subset']
 
-
     # build out list of strings to pass to zinfo python api.
     # call this whether or not gather_subsets list is empty/valid/etc
     # rely on the helper function to report back errors. Note the function only
@@ -246,14 +245,14 @@ def run_module():
         zinfo_dict = zsystem.zinfo(json=True, facts=facts_list)
     except ValueError:
         err_msg = 'An invalid subset was detected.'
-        module.fail_json(msg = err_msg)
+        module.fail_json(msg=err_msg)
     except Exception as e:
         err_msg = (
             'An exception has occurred in Z Open Automation Utilities '
             '(ZOAU) utility \'zinfo\'. See \'zinfo_err_msg\' for '
             'additional details.'
         )
-        module.fail_json(msg = err_msg, zinfo_err_msg = e)
+        module.fail_json(msg=err_msg, zinfo_err_msg=e)
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
     flattened_d = flatten_zinfo_json(zinfo_dict)

@@ -118,4 +118,4 @@ def read_test_config(path):
         if len(config["VOLUMES"]) > 0:
             return config["VOLUMES"]
     else:
-        return None 
+        return None

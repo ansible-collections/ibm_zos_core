@@ -113,7 +113,6 @@ def read_test_config(path):
     with open(p, 'r') as file:
         config = yaml.safe_load(file)
     if "VOLUMES" in config.keys():
-        if len(config["VOLUMES"]) > 0:
-            return config["VOLUMES"]
+        return config["VOLUMES"]
     else:
         return None

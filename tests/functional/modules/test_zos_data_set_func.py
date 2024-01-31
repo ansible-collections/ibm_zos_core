@@ -176,6 +176,11 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
                 print( "\nVVVV --- second job info")
                 print_results(results)
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+
+        # force catalog?!?!
+        hosts.all.zos_data_set(name=dataset, state="cataloged")
+        time.sleep(2)
+
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         print( "\nVVVVV -- uncat 1\n")

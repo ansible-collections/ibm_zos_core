@@ -248,11 +248,10 @@ def run_module():
         module.fail_json(msg=err_msg)
     except Exception as e:
         err_msg = (
-            'An exception has occurred in Z Open Automation Utilities '
-            '(ZOAU) utility \'zinfo\'. See \'zinfo_err_msg\' for '
-            'additional details.'
+            'An exception has occurred. Unable to gather facts. '
+            'See stderr for more details.'
         )
-        module.fail_json(msg=err_msg, zinfo_err_msg=e)
+        module.fail_json(msg=err_msg, stderr=str(e))
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
     flattened_d = flatten_zinfo_json(zinfo_dict)

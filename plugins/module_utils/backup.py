@@ -79,7 +79,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
 
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         try:
-            rc = datasets.copy(dsn, bk_dsn)
+            datasets.copy(dsn, bk_dsn)
         except exceptions.ZOAUException as copy_exception:
             raise BackupError(
                 "Unable to backup {0} to {1}".format(dsn, bk_dsn),

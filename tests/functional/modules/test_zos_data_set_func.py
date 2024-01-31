@@ -27,13 +27,13 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
 
-data_set_types = [
-    ("pds"),
-    ("seq"),
-    ("pdse"),
-    ("esds"),
-    ("rrds"),
-    ("lds"),
+data_set_types = [      # NOTE THESE WERE LOWERCASE BEFORE
+    ("PDS"),
+    ("SEQ"),
+    ("PDSE"),
+    ("ESDS"),
+    ("RRDS"),
+    ("LDS"),
 ]
 
 TEMP_PATH = "/tmp/jcl"

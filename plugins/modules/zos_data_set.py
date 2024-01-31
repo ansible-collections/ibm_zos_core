@@ -1029,11 +1029,11 @@ def fix_old_size_arg(params):
 
     if params.get("type"):
         # params["type"] = params.get("type").upper()
-        params.update( {"type": params.get("type").upper()} )
+        params.update({"type": params.get("type").upper()})
 
     if params.get("space_type"):
         # params["space_type"] = params.get("space_type").upper()
-        params.update( {"space_type": params.get("space_type").upper()} )
+        params.update({"space_type": params.get("space_type").upper()})
 
     return params
 

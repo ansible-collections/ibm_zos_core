@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#-*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@ __metaclass__ = type
 
 import pytest
 import time
+import yaml
 
 class Volume:
     """ Volume class represents a volume on the z system, it tracks if the volume name
@@ -68,7 +69,7 @@ class Volume_Handler:
         self.volumes =list_volumes
 
 
-def get_volumes(ansible_zos_module):
+def get_volumes(ansible_zos_module, path):
     """Get an array of available volumes"""
     # Using the command d u,dasd,online to fill an array of available volumes with the priority
     # of of actives (A) and storage (STRG) first then online (O) and storage and if is needed, the
@@ -76,10 +77,10 @@ def get_volumes(ansible_zos_module):
     # is a instance of a class to manage the use.
     hosts = ansible_zos_module
     list_volumes = []
-    active_storage = []
     storage_online = []
     flag = False
     iteration = 5
+    prefer_vols = read_test_config(path)
     # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
     # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
     while not flag and iteration > 0:
@@ -98,8 +99,21 @@ def get_volumes(ansible_zos_module):
         if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
             storage_online.append(vol_w_info[3])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
-    for vol in active_storage:
-        list_volumes.append(vol)
     for vol in storage_online:
         list_volumes.append(vol)
-    return list_volumes
+    if prefer_vols is not None:
+        prefer_vols.extend(list_volumes)
+        return prefer_vols
+    else:
+        return list_volumes
+
+
+def read_test_config(path):
+    p = path
+    with open(p, 'r') as file:
+        config = yaml.safe_load(file)
+    if "VOLUMES" in config.keys():
+        if len(config["VOLUMES"]) > 0:
+            return config["VOLUMES"]
+    else:
+        return None

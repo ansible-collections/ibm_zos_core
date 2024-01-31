@@ -1028,12 +1028,10 @@ def fix_old_size_arg(params):
         params["space_type"] = match.group(2)
 
     if params.get("type"):
-        # params["type"] = params.get("type").upper()
-        params.update({"type": params.get("type").upper()})
+        params["type"] = params.get("type").upper()
 
     if params.get("space_type"):
-        # params["space_type"] = params.get("space_type").upper()
-        params.update({"space_type": params.get("space_type").upper()})
+        params["space_type"] = params.get("space_type").upper()
 
     return params
 

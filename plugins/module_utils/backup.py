@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,8 +22,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 
 import time
 from shutil import copy2, copytree, rmtree
+import traceback
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
@@ -39,9 +40,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, exceptions
 except Exception:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    exceptions = ZOAUImportError(traceback.format_exc())
 if PY3:
     from shlex import quote
 else:
@@ -76,29 +78,32 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
 
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
-        response = datasets._copy(dsn, bk_dsn)
-        if response.rc != 0:
+        try:
+            datasets.copy(dsn, bk_dsn)
+        except exceptions.ZOAUException as copy_exception:
             raise BackupError(
                 "Unable to backup {0} to {1}".format(dsn, bk_dsn),
-                rc=response.rc,
-                stdout=response.stdout_response,
-                stderr=response.stderr_response
+                rc=copy_exception.response.rc,
+                stdout=copy_exception.response.stdout_response,
+                stderr=copy_exception.response.stderr_response
             )
     else:
         if not bk_dsn:
             if tmphlq:
                 hlq = tmphlq
             else:
-                hlq = datasets.hlq()
-            bk_dsn = datasets.tmp_name(hlq)
+                hlq = datasets.get_hlq()
+            bk_dsn = datasets.tmp_name(high_level_qualifier=hlq)
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
 
         # In case the backup ds is a member we trust that the PDS attributes are ok to fit the src content.
         # This should not delete a PDS just to create a backup member.
         # Otherwise, we allocate the appropiate space for the backup ds based on src.
         if is_member(bk_dsn):
-            cp_response = datasets._copy(dsn, bk_dsn)
-            cp_rc = cp_response.rc
+            try:
+                cp_rc = datasets.copy(dsn, bk_dsn)
+            except exceptions.ZOAUException as copy_exception:
+                cp_rc = copy_exception.response.rc
         else:
             cp_rc = _copy_ds(dsn, bk_dsn)
 

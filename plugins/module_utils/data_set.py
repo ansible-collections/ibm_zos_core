@@ -1209,7 +1209,7 @@ class DataSet(object):
                     temp_name)
             )
             if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
-                raise DatasetUncatalogError(name, rc)
+                raise DatasetUncatalogError(name + '"' + stdout + '"', rc)
         finally:
             if temp_name:
                 datasets.delete(temp_name)

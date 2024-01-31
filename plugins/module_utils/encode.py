@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020 - 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,9 +24,10 @@ import errno
 import os
 import re
 import locale
+import traceback
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
@@ -39,7 +40,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 try:
     from zoautil_py import datasets
 except Exception:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 if PY3:
@@ -188,24 +189,23 @@ class EncodeUtils(object):
             str -- Name of the allocated data set
 
         Raises:
-            OSError: When any exception is raised during the data set allocation
+            ZOAUException: When any exception is raised during the data set allocation.
+            DatasetVerificationError: When the data set creation could not be verified.
         """
         size = str(space_u * 2) + "K"
         if self.tmphlq:
             hlq = self.tmphlq
         else:
-            hlq = datasets.hlq()
-        temp_ps = datasets.tmp_name(hlq)
-        response = datasets._create(
+            hlq = datasets.get_hlq()
+        temp_ps = datasets.tmp_name(high_level_qualifier=hlq)
+        temporary_data_set = datasets.create(
             name=temp_ps,
-            type="SEQ",
+            dataset_type="SEQ",
             primary_space=size,
             record_format="VB",
             record_length=reclen,
         )
-        if response.rc:
-            raise OSError("Failed when allocating temporary sequential data set!")
-        return temp_ps
+        return temporary_data_set.name
 
     def get_codeset(self):
         """Get the list of supported encodings from the  USS command 'iconv -l'
@@ -406,7 +406,7 @@ class EncodeUtils(object):
                 rc, out, err = copy.copy_pds2uss(src, temp_src)
             if src_type == "VSAM":
                 reclen, space_u = self.listdsi_data_set(src.upper())
-                # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+                # RDW takes the first 4 bytes in the VB format, hence we need to add an extra buffer to the vsam max recl.
                 reclen += 4
                 temp_ps = self.temp_data_set(reclen, space_u)
                 rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps)

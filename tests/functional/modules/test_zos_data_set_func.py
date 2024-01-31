@@ -150,8 +150,7 @@ def print_results(results):
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
+    volume_1 = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
         # hosts.all.zos_data_set(
@@ -221,8 +220,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
+    volume_1 = volumes.get_available_vol()
     print( "\n>>>> test 2 volume1={0}\n".format(volume_1))
 
     volume_1 = "000000"
@@ -273,8 +271,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
 def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
-    # volume = volumes.get_available_vol()
-    volume = "000000"
+    volume = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
         # hosts.all.zos_data_set(
@@ -325,8 +322,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
 def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_systems):
     try:
         volumes = Volume_Handler(volumes_on_systems)
-        # volume_1 = volumes.get_available_vol()
-        volume_1 = "000000"
+        volume_1 = volumes.get_available_vol()
         hosts = ansible_zos_module
         dataset = get_tmp_ds_name(2, 2)
         # hosts.all.zos_data_set(
@@ -369,10 +365,8 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
 )
 def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl, volumes_on_systems):
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
-    # volume_2 = volumes.get_available_vol()
-    volume_2 = "222222"
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name(2, 2)
     # hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)
@@ -749,10 +743,8 @@ def test_repeated_operations(ansible_zos_module):
 
 def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module, volumes_on_systems):
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
-    # volume_2 = volumes.get_available_vol()
-    volume_2 = "222222"
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
@@ -788,10 +780,8 @@ def test_multi_volume_creation_uncatalog_and_catalog_nonvsam(ansible_zos_module,
 
 def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, volumes_on_systems):
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
-    # volume_2 = volumes.get_available_vol()
-    volume_2 = "222222"
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
@@ -828,8 +818,7 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, vo
 
 def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
+    volume_1 = volumes.get_available_vol()
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
@@ -1015,8 +1004,7 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
 )
 def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
     volumes = Volume_Handler(volumes_on_systems)
-    # volume_1 = volumes.get_available_vol()
-    volume_1 = "000000"
+    volume_1 = volumes.get_available_vol()
     try:
         hosts = ansible_zos_module
         DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)

@@ -157,24 +157,18 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         #     name=dataset, state="cataloged", volumes=volume_1
         # )
         hosts.all.zos_data_set(name=dataset, state="absent")
-        print( "\nVVVVV -- initial\n")
-        print( "vols: {0} \nv1: {1} \nds: {2}\n".format(volumes, volume_1, dataset))
 
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
-        print( "\nVVVV --- cat uncat results\n")
-        print_results( results)
         # verify data set creation was successful
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
                 submitted_job_id = result.get("jobs")[0].get("job_id")
                 assert submitted_job_id is not None
                 results = hosts.all.zos_job_output(job_id=submitted_job_id)
-                print( "\nVVVV --- second job info")
-                print_results(results)
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
 
         # force catalog?!?!
@@ -183,22 +177,16 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print( "\nVVVVV -- uncat 1\n")
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second uncatalog shows uncatalog already performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print( "\nVVVVV -- uncat 2\n")
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is False
         # recatalog the data set
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
-        print( "\nVVVVV -- recat 1\n")
-        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -206,8 +194,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
-        print( "\nVVVVV -- recat 2\n")
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is False
     finally:
@@ -226,9 +212,6 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
-    print( "\n>>>> test 2 volume1={0}\n".format(volume_1))
-
-    volume_1 = "000000"
     dataset = get_tmp_ds_name(2, 2)
     try:
         # hosts.all.zos_data_set(
@@ -242,8 +225,6 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
         )
         # verify data set creation was successful
-        print( "\nVVVV --- present_when_unc results\n")
-        print_results( results)
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -309,9 +290,6 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
             volumes=volume,
             replace=True,
         )
-        print("\nVVV --- test_data_set_replacement_when_uncataloged\n")
-        print_results(results)
-        print( "\n--------\n")
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
@@ -354,8 +332,6 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         results = hosts.all.zos_data_set(
             name=dataset, state="absent", volumes=volume_1
         )
-        print( "\nVVV ---- abs when uncat\n")
-        print_results( results )
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
@@ -410,8 +386,6 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     # ensure data set absent
     results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
-    print( "\nVVV ---- abs when uncataloged_and_same_name_cat: remove \n")
-    print_results( results )
 
     for result in results.contacted.values():
         assert result.get("changed") is True
@@ -450,6 +424,8 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
+        print( "\nVVVV == when_present_replace\n")
+        print_results(results)
         hosts.all.zos_data_set(name=dataset, state="absent")
         for result in results.contacted.values():
             assert result.get("changed") is True

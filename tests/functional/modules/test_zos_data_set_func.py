@@ -502,10 +502,10 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
         results = hosts.all.zos_data_set(
             batch=[
                 {"name": dataset, "type": "PDS", "directory_blocks": 5},
-                {"name": dataset + "(newmem1)", "type": "member"},
+                {"name": dataset + "(newmem1)", "type": "MEMBER"},
                 {
                     "name": dataset + "(newmem2)",
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                 },
                 {"name": dataset, "state": "absent"},
@@ -562,7 +562,7 @@ def test_data_member_force_delete(ansible_zos_module):
             batch=[
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },

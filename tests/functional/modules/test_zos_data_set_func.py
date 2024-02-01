@@ -189,13 +189,18 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
-
+        print( "\nVVVV === cat uncat... recat 1 result\n")
+        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
+
         # verify second catalog shows catalog already performed
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
+        print( "\nVVVV === cat uncat... recat 2 result\n")
+        print_results(results)
+
         for result in results.contacted.values():
             assert result.get("changed") is False
     finally:

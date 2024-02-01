@@ -86,6 +86,7 @@ backup
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 backup_name
@@ -110,6 +111,7 @@ backup_compress
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 tmp_hlq

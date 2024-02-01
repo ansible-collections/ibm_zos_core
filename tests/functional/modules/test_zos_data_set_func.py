@@ -818,6 +818,8 @@ def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
             size="5m",
             volume=volume_1,
         )
+        print( "\nVVVV ===== old aliases\nvolume={0}\n".format(volume_1))
+        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

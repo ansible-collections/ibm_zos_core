@@ -815,7 +815,7 @@ def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
             name=DEFAULT_DATA_SET_NAME,
             state="present",
             format="FB",
-            size="5",
+            space_primary="5",
             space_type="M",
             volume=volume_1,
         )
@@ -1004,7 +1004,7 @@ def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
             name=DEFAULT_DATA_SET_NAME,
             state="present",
             format=formats,
-            size="5",
+            space_primary="5",
             space_type="M",
             volume=volume_1,
         )

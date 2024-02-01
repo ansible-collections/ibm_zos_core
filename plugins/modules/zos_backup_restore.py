@@ -337,7 +337,7 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["K", "M", "G", "CYL", "TRK"]),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),

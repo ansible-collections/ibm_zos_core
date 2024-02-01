@@ -183,6 +183,8 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         for result in results.contacted.values():
             assert result.get("changed") is False
+
+        time.sleep(3)
         # recatalog the data set
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1

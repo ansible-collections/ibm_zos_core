@@ -219,17 +219,18 @@ actions:
 
 from ansible.module_utils.basic import AnsibleModule
 import re
+import traceback
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 try:
     from zoautil_py import opercmd
 except Exception:
-    opercmd = MissingZOAUImport()
+    opercmd = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import ZOAU_API_VERSION
@@ -429,6 +430,7 @@ def handle_conditions(list, condition_type, value):
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
 
     # response = opercmd.execute(operator_cmd)
+    timeout *= 100
     response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
 
     rc = response.rc

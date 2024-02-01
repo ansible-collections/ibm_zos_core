@@ -575,19 +575,19 @@ def test_data_member_force_delete(ansible_zos_module):
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_3),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_4),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },

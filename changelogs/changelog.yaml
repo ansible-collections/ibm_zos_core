@@ -1265,6 +1265,7 @@ releases:
     - 1163-Refactor_calls_to_use_new_alias_and_execute_options.yml
     - 1176-copy-members.yml
     - 1195-Add_prefer_volumes_user.yml
+    - 1200-zos_backup_restore-sanity-issues.yml
     - 977-remove-hard-coded-vols-and-datasets.yml
     - v1.9.0-beta.1_summary.yml
-    release_date: '2024-01-31'
+    release_date: '2024-02-01'

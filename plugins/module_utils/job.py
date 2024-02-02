@@ -281,7 +281,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["system"] = ""
             job["owner"] = entry.owner
 
-            job["ret_code"] = {}
+            job["ret_code"] = dict()
             job["ret_code"]["msg"] = "{0} {1}".format(entry.status, entry.return_code)
             job["ret_code"]["msg_code"] = entry.return_code
             job["ret_code"]["code"] = None
@@ -329,15 +329,15 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 for single_dd in list_of_dds:
                     dd = {}
 
+                    if "dataset" not in single_dd:
+                        continue
+
                     # If dd_name not None, only that specific dd_name should be returned
                     if dd_name is not None:
                         if dd_name not in single_dd["dataset"]:
                             continue
                         else:
                             dd["ddname"] = single_dd["dataset"]
-
-                    if "dataset" not in single_dd:
-                        continue
 
                     if "recnum" in single_dd:
                         dd["record_count"] = single_dd["recnum"]

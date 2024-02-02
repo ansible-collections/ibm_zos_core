@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -620,6 +620,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text
 from timeit import default_timer as timer
 from os import remove
 import traceback
@@ -627,9 +628,9 @@ from time import sleep
 import re
 
 try:
-    from zoautil_py import exceptions
+    from zoautil_py import exceptions as zoau_exceptions
 except ImportError:
-    exceptions = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import jobs
@@ -642,7 +643,7 @@ JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLER
 MAX_WAIT_TIME_S = 86400
 
 
-def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None, start_time=timer()):
+def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=None, start_time=timer()):
     """ Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
 
         Arguments:
@@ -652,7 +653,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
             src_name (str)  - the src name that was provided in the module because through
                               the runtime src could be replace with a temporary file name
             timeout (int)   - how long to wait in seconds for a job to complete
-            hfs (boolean)   - True if JCL is a file in USS, otherwise False; Note that all
+            is_unix (bool)  - True if JCL is a file in USS, otherwise False; Note that all
                               JCL local to a controller is transfered to USS thus would be
                               True
             volume (str)    - volume the data set JCL is located on that will be cataloged before
@@ -666,11 +667,9 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
     """
 
     kwargs = {
-        "timeout": timeout,
-        "hfs": hfs,
+        "fetch_max_retries": timeout,
     }
 
-    wait = True  # Wait is always true because the module requires wait_time_s > 0
     present = False
     duration = 0
     job_submitted = None
@@ -691,9 +690,9 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        job_submitted = jobs.submit(src, wait, None, **kwargs)
+        job_submitted = jobs.submit(src, is_unix=is_unix, **kwargs)
 
-        # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
+        # Introducing a sleep to ensure we have the result of job submit carrying the job id.
         while (job_submitted is None and duration <= timeout):
             current_time = timer()
             duration = round(current_time - start_time)
@@ -704,32 +703,32 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
         # that is sent back as `AC` when the job is not complete but the problem
         # with monitoring 'AC' is that STARTED tasks never exit the AC status.
         if job_submitted:
-            job_listing_rc = jobs.listing(job_submitted.id)[0].rc
-            job_listing_status = jobs.listing(job_submitted.id)[0].status
+            job_fetch_rc = jobs.fetch_multiple(job_submitted.job_id)[0].return_code
+            job_fetch_status = jobs.fetch_multiple(job_submitted.job_id)[0].status
 
             # Before moving forward lets ensure our job has completed but if we see
             # status that matches one in JOB_ERROR_MESSAGES, don't wait, let the code
-            # drop through and get analyzed in the main as it will scan the job ouput
-            # Any match to JOB_ERROR_MESSAGES ends our processing and wait times
-            while (job_listing_status not in JOB_ERROR_MESSAGES and
-                    job_listing_status == 'AC' and
-                    ((job_listing_rc is None or len(job_listing_rc) == 0 or
-                      job_listing_rc == '?') and duration < timeout)):
+            # drop through and get analyzed in the main as it will scan the job ouput.
+            # Any match to JOB_ERROR_MESSAGES ends our processing and wait times.
+            while (job_fetch_status not in JOB_ERROR_MESSAGES and
+                    job_fetch_status == 'AC' and
+                    ((job_fetch_rc is None or len(job_fetch_rc) == 0 or
+                      job_fetch_rc == '?') and duration < timeout)):
                 current_time = timer()
                 duration = round(current_time - start_time)
                 sleep(1)
-                job_listing_rc = jobs.listing(job_submitted.id)[0].rc
-                job_listing_status = jobs.listing(job_submitted.id)[0].status
+                job_fetch_rc = jobs.fetch_multiple(job_submitted.job_id)[0].return_code
+                job_fetch_status = jobs.fetch_multiple(job_submitted.job_id)[0].status
 
-    # ZOAU throws a ZOAUException when the job sumbission fails thus there is no
+    # ZOAU throws a JobSubmitException when the job sumbission fails thus there is no
     # JCL RC to share with the user, if there is a RC, that will be processed
     # in the job_output parser.
-    except exceptions.ZOAUException as err:
+    except zoau_exceptions.JobSubmitException as err:
         result["changed"] = False
         result["failed"] = True
         result["stderr"] = str(err)
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("Unable to submit job {0}, the job submission has failed. "
                          "Without the job id, the error can not be determined. "
                          "Consider using module `zos_job_query` to poll for the "
@@ -737,14 +736,14 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                          "resulting from an abend.".format(src_name))
         module.fail_json(**result)
 
-    # ZOAU throws a JobSubmitException when timeout has execeeded in that no job_id
-    # has been returned within the allocated time.
-    except exceptions.JobSubmitException as err:
+    # ZOAU throws a JobFetchException when it is unable to fetch a job.
+    # This could happen while trying to fetch a job still running.
+    except zoau_exceptions.JobFetchException as err:
         result["changed"] = False
         result["failed"] = False
         result["stderr"] = str(err)
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("The JCL has been submitted {0} and no job id was returned "
                          "within the allocated time of {1} seconds. Consider using "
                          " module zos_job_query to poll for a long running "
@@ -752,20 +751,20 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                          "`wait_times_s`.".format(src_name, str(timeout)))
         module.fail_json(**result)
 
-    # Between getting a job_submitted and the jobs.listing(job_submitted.id)[0].rc
+    # Between getting a job_submitted and the jobs.fetch_multiple(job_submitted.job_id)[0].return_code
     # is enough time for the system to purge an invalid job, so catch it and let
     # it fall through to the catchall.
     except IndexError:
         job_submitted = None
 
     # There appears to be a small fraction of time when ZOAU has a handle on the
-    # job and and suddenly its purged, this check is to ensure the job is there
+    # job and suddenly its purged, this check is to ensure the job is there
     # long after the purge else we throw an error here if its been purged.
     if job_submitted is None:
         result["changed"] = False
         result["failed"] = True
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("The job {0} has been submitted and no job id was returned "
                          "within the allocated time of {1} seconds. Without the "
                          "job id, the error can not be determined, consider using "
@@ -774,7 +773,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                          "abend.".format(src_name, str(timeout)))
         module.fail_json(**result)
 
-    return job_submitted.id if job_submitted else None, duration
+    return job_submitted.job_id if job_submitted else None, duration
 
 
 def run_module():
@@ -906,13 +905,13 @@ def run_module():
     start_time = timer()
     if location == "DATA_SET":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
+            module, src, src_name=src, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)
     elif location == "USS":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, hfs=True)
+            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
     elif location == "LOCAL":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, hfs=True)
+            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
 
     try:
         # Explictly pass None for the unused args else a default of '*' will be
@@ -997,7 +996,7 @@ def run_module():
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "there was an error, please review "
                          "the error for further details: {1}".format
-                         (str(job_submitted_id), str(err)))
+                         (str(job_submitted_id), to_text(err)))
         module.exit_json(**result)
 
     finally:

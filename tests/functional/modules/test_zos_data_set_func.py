@@ -29,7 +29,7 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 data_set_types = [      # NOTE THESE WERE LOWERCASE BEFORE
     ("PDS"),
-    ("SEQ"),
+    ("seq"),
     ("PDSE"),
     ("ESDS"),
     ("RRDS"),
@@ -189,8 +189,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
-        print( "\nVVVV === cat uncat... recat 1 result\n")
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
 
@@ -198,8 +196,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
-        print( "\nVVVV === cat uncat... recat 2 result\n")
-        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -431,8 +427,6 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
-        print( "\nVVVV == when_present_replace\n")
-        print_results(results)
         hosts.all.zos_data_set(name=dataset, state="absent")
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -491,10 +485,6 @@ def test_batch_data_set_creation_and_deletion(ansible_zos_module):
             ]
         )
 
-        print( "\nVVV== batch ds create/delete result =====\n")
-        print_results(results)
-        print( "\n^^^== batch ds create/delete result =====\n")
-
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -518,9 +508,6 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
                 {"name": dataset, "state": "absent"},
             ]
         )
-        print( "\nVVV== batch member create result =====\n")
-        print_results(results)
-        print( "\n^^^== batch member create result =====\n")
 
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -819,8 +806,6 @@ def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
             space_type="M",
             volume=volume_1,
         )
-        print( "\nVVVV ===== old aliases\nvolume={0}\n".format(volume_1))
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

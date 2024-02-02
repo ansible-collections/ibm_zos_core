@@ -23,6 +23,7 @@ body:
       multiple: true
       options:
         - zos_apf
+        - zos_archive
         - zos_backup_restore
         - zos_blockinfile
         - zos_copy
@@ -42,6 +43,8 @@ body:
         - zos_ping
         - zos_script
         - zos_tso_command
+        - zos_unarchive
+        - zos_volume_init
     validations:
       required: false
   - type: textarea

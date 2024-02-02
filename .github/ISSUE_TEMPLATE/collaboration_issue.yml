@@ -40,6 +40,8 @@ body:
       description: Which version of ZOAU are you using?
       multiple: false
       options:
+        - None
+        - v1.3.0
         - v1.2.5
         - v1.2.4
         - v1.2.3
@@ -73,6 +75,9 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
       multiple: false
       options:
+        - latest
+        - v1.10.0
+        - v1.10.0-beta.1
         - v1.9.0
         - v1.9.0-beta.1
         - v1.8.0
@@ -127,6 +132,7 @@ body:
       multiple: true
       options:
         - zos_apf
+        - zos_archive
         - zos_backup_restore
         - zos_blockinfile
         - zos_copy
@@ -146,6 +152,8 @@ body:
         - zos_ping
         - zos_script
         - zos_tso_command
+        - zos_unarchive
+        - zos_volume_init
     validations:
       required: false
   - type: textarea

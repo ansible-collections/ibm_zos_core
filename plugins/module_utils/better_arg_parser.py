@@ -626,13 +626,16 @@ class BetterArgHandler(object):
         """
         if self.arg_def.choices and len(self.arg_def.choices) > 0:
             if self.contents not in self.arg_def.choices:
-                secondtest = self.contents.upper()
-                if secondtest not in self.arg_def.choices:
+                second_test = self.contents.upper()
+                if second_test not in self.arg_def.choices:
                     raise ValueError(
                         "Provided value: {0} for arg: {1} is not in a valid choice. Choices: {2}".format(
                             self.contents, self.arg_name, ", ".join(self.arg_def.choices)
                         )
-
+                    )
+                else:
+                    self.contents = second_test
+        return self.contents
 
     def _resolve_arg_type(self):
         """Perform type-specific operations for an argument.

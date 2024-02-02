@@ -405,6 +405,8 @@ def test_data_set_creation_when_present_no_replace(ansible_zos_module, dstype):
         hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
+        print( "\nVVV ==== create present NOforce 1: type={0}\n".format(dstype))
+        print_results(results)
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype
         )
@@ -421,15 +423,18 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
     try:
         hosts = ansible_zos_module
         dataset = get_tmp_ds_name(2, 2)
-        hosts.all.zos_data_set(
+        results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
+        print( "\nVVV ==== create present force 1: type={0}\n".format(dstype))
+        print_results(results)
+
         time.sleep(2)
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
         time.sleep(2)
-        print( "\nVVV ==== create present force\n")
+        print( "\nVVV ==== create present force 2\n")
         print_results(results)
         hosts.all.zos_data_set(name=dataset, state="absent")
         for result in results.contacted.values():

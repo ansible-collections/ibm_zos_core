@@ -531,16 +531,19 @@ def main():
         if library or volume or sms:
             try:
                 data = json.loads(operOut)
-            except json.JSONDecodeError:
+                data_sets = data["data"]["datasets"]
+            except (json.JSONDecodeError, KeyError):
                 module.exit_json(**result)
-            for d in data[2:]:
+            ds_list = ""
+            for d in data_sets:
                 ds = d.get('ds')
                 vol = d.get('vol')
                 try:
                     if (library and re.match(library, ds)) or (volume and re.match(volume, vol)) or (sms and sms == vol):
-                        result['stdout'] = "{0} {1}\n".format(vol, ds)
+                        ds_list = ds_list + "{0} {1}\n".format(vol, ds)
                 except re.error:
                     module.exit_json(**result)
+            result['stdout'] = ds_list
     module.exit_json(**result)
 
 

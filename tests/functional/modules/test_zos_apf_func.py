@@ -263,7 +263,7 @@ def test_operation_list(ansible_zos_module):
         listJson = result.get("stdout")
     import json
     data = json.loads(listJson)
-    assert data[0]['format'] in ['DYNAMIC', 'STATIC']
+    assert data['data']['format'] in ['DYNAMIC', 'STATIC']
     del json
 
 

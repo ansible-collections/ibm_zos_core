@@ -245,7 +245,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
- 
+
 ###################################
 # Ansible z/OS Core Development   #
 ###################################
@@ -256,6 +256,7 @@ venv.bak/
 .pytest_cache
 info.env
 shell_exploits.txt
+importer_result.json
 
 ################################################################################
 # Debugging .ignore, if you want to know why a particular file is being ignored

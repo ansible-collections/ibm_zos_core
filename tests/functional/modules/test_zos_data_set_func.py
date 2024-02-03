@@ -831,7 +831,7 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
             product_release = sys_info[5].split()[1].strip("'")
             if product_release >= "05" or product_version > "02":
                 fulltest = False
-                print( "skipping HFS test: zOS > 02.04" )
+                # print( "skipping HFS test: zOS > 02.04" )
 
         if fulltest:
             hosts = ansible_zos_module

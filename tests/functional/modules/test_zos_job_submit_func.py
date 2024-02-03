@@ -259,8 +259,10 @@ JCL_FULL_INPUT="""//HLQ0  JOB MSGLEVEL=(1,1),
 //STEP1 EXEC PGM=BPXBATCH,PARM='PGM /bin/sleep 5'"""
 
 TEMP_PATH = "/tmp/jcl"
-DATA_SET_NAME = "imstestl.ims1.test05"
-DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
+# DATA_SET_NAME = "imstestl.ims1.test05"
+# DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
+DATA_SET_NAME = "imstst01.ims1.test05"
+DATA_SET_NAME_SPECIAL_CHARS = "imstst01.im@1.xxx05"
 DEFAULT_VOLUME = "000000"
 
 def test_job_submit_PDS(ansible_zos_module):
@@ -396,6 +398,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
         )
 
         results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(SAMPLE)", location="DATA_SET", volume=DEFAULT_VOLUME)
+
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0

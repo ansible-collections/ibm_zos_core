@@ -636,6 +636,7 @@ try:
 except Exception:
     jobs = ZOAUImportError(traceback.format_exc())
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import dsname_escape
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])
@@ -691,13 +692,22 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        job_submitted = jobs.submit(src, wait, None, **kwargs)
+        # dsname_escape will make sure original_name is properly escaped and follows dsname rules
+        # if original_name violates rules, name will be None
+        # will not perform if user has indicated a USS path
 
-        # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
+        if hfs:
+            clean_name = src
+        else:
+            clean_name = dsname_escape(src)
+
+        job_submitted = jobs.submit(clean_name, wait, None, **kwargs)
+
+        # Introducing a sleep to ensure we have the result of job submit carrying the job id
         while (job_submitted is None and duration <= timeout):
+            sleep(0.5)
             current_time = timer()
             duration = round(current_time - start_time)
-            sleep(0.5)
 
         # Second sleep is to wait long enough for the job rc to not equal a `?`
         # which is what ZOAU sends back, opitonally we can check the 'status' as
@@ -893,7 +903,8 @@ def run_module():
     temp_file = parsed_args.get("src") if location == "LOCAL" else None
 
     # Default 'changed' is False in case the module is not able to execute
-    result = dict(changed=False)
+    result = {}
+    result["changed"] = False
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
         result["failed"] = True

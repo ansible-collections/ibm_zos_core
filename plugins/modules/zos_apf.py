@@ -521,6 +521,8 @@ def main():
     result['stderr'] = operErr
     result['rc'] = operRc
     result['stdout'] = operOut
+    if operErr:
+        module.fail_json(**result)
     if operation == 'list':
         if not library:
             library = ""
@@ -532,8 +534,9 @@ def main():
             try:
                 data = json.loads(operOut)
                 data_sets = data["data"]["datasets"]
-            except (json.JSONDecodeError, KeyError):
-                module.exit_json(**result)
+            except Exception as e:
+                err_msg = "An exception occurred. See stderr for more details."
+                module.fail_json(msg=err_msg, stderr=str(e), rc=operErr)
             ds_list = ""
             for d in data_sets:
                 ds = d.get('ds')

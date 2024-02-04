@@ -171,6 +171,11 @@ try:
 except Exception:
     ZOAU_API_VERSION = "1.2.0"
 
+try:
+    from zoautil_py import ZOAU_API_VERSION
+except Exception:
+    ZOAU_API_VERSION = "1.2.0"
+
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
     start = timer()

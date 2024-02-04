@@ -245,7 +245,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
 ###################################
 # Ansible z/OS Core Development   #
 ###################################

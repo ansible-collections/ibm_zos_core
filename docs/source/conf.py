@@ -16,7 +16,7 @@
 ##############################################################################
 
 project = 'IBM z/OS core collection'
-copyright = '2020, 2021, IBM'
+copyright = '2024, IBM'
 author = 'IBM'
 
 # The full version, including alpha/beta/rc tags

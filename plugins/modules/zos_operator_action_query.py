@@ -236,7 +236,6 @@ except Exception:
     opercmd = MissingZOAUImport()
 
 
-
 def run_module():
     module_args = dict(
         system=dict(type="str", required=False),

@@ -114,7 +114,7 @@ options:
         be deleted and recreated following the process outlined in the C(volume) option.
       - When the C(dest) is an existing VSAM (RRDS), then the source must be an RRDS.
         The VSAM (RRDS) will be deleted and recreated following the process outlined
-       in the C(volume) option.
+        in the C(volume) option.
       - When C(dest) is and existing VSAM (LDS), then source must be an LDS. The
         VSAM (LDS) will be deleted and recreated following the process outlined
         in the C(volume) option.

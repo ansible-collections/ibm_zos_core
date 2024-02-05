@@ -1420,11 +1420,11 @@ def run_module():
 
     # force parameters to upper case
     select_list = ("type", "space_type", "record_format")
-    if module.parame.get["batch"] is not None:
+    if module.params.get["batch"] is not None:
         for entry in module.params.get("batch"):
-          for item in select_list:
-            if entry.params.get(item) is not None:
-                entry.params[item] = module.params.get(item).upper()
+            for item in select_list:
+                if entry.params.get(item) is not None:
+                    entry.params[item] = module.params.get(item).upper()
     else:
         for item in select_list:
             if module.params.get(item) is not None:

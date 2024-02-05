@@ -13,8 +13,7 @@ Minor Changes
 -------------
 - ``zos_apf`` - Improved exception handling when the module is unable to process a response originating as a batch update.
 - ``zos_copy`` - Improved performance when copying multiple members from one PDS/E to another PDS/E.
-- ``zos_job_output`` - Has been enhanced to allow for both a job ID and owner to be selected when obtaining job output,
-                       removing the prior mutual exclusivity.
+- ``zos_job_output`` - Has been enhanced to allow for both a job ID and owner to be selected when obtaining job output, removing the prior mutual exclusivity.
 - ``zos_operator`` - Improved the modules handling of ZOAU import errors allowing for the traceback to flow back to the source.
 - ``zos_job_query`` - Improved the modules handling of ZOAU import errors allowing for the traceback to flow back to the source.
 - ``zos_job_submit``
@@ -41,19 +40,29 @@ Bugfixes
     - Fixed an issue when performing a copy operation to an existing file, the copied file resulted in having corrupted contents.
 
 - ``zos_job_output`` - Fixed an issue that when using a job ID with less than 8 characters would result in a traceback. The fix
-                       supports shorter job IDs as well as the use of wildcards.
+  supports shorter job IDs as well as the use of wildcards.
+
 - ``zos_job_query`` - Fixed an issue that when using a job ID with less than 8 characters would result in a traceback. The fix
-                       supports shorter job IDs as well as the use of wildcards.
+  supports shorter job IDs as well as the use of wildcards.
 
 - ``zos_unarchive``
 
     - Fixed an issue when using a local file with the USS format option that would fail sending it to the managed node.
-    - Fixed an issue that occurred when unarchiving USS files that would leave temporary files behind on the managed node. 
+    - Fixed an issue that occurred when unarchiving USS files that would leave temporary files behind on the managed node.
 
 Known Issues
 ------------
 
-- Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF8 characters in the response. This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules `zos_job_submit`, `zos_job_output`, `zos_operator_action_query` but are not limited to this list. This will be addressed in `ibm_zos_core` version 1.10.0-beta.1. Each case is unique, some options to work around the error are below. - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters. - Add `ignore_errors:true` to the playbook task so the task error will not fail the playbook. - If the error is resulting from a batch job, add `ignore_errors:true` to the task and capture the output into a variable and extract the job ID with a regular expression and then use `zos_job_output` to display the DD without the non-printable character such as the DD `JESMSGLG`.
+Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
+
+This occurs when a module receives content that does not correspond to a UTF-8 value. These includemodules ``zos_job_submit``, ``zos_job_output``,
+``zos_operator_action_query``` but are not limited to this list. This will be addressed in **ibm_zos_core** version 1.10.0-beta.1. Each case is
+unique, some options to work around the error are below.
+
+- Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+- Add **ignore_errors:true** to the playbook task so the task error will not fail the playbook.
+- If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
+  a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
 
 Availability
 ------------

@@ -826,7 +826,7 @@ def space_type(contents, dependencies):
                 contents
             )
         )
-    return contents
+    return contents.upper()
 
 
 # * dependent on state
@@ -1147,7 +1147,12 @@ def parse_and_validate_args(params):
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
-        type=dict(type=data_set_type, required=False, dependencies=["state"]),
+        type=dict(
+            type=data_set_type,
+            required=False,
+            dependencies=["state"],
+            choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+        ),
         space_type=dict(
             type=space_type,
             required=False,
@@ -1412,6 +1417,13 @@ def run_module():
         if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it
             module.params["record_format"] = None
+
+    # force parameters to upper case
+    select_list = ( "type", "space_type", "record_format")
+    if module.params.get["batch"] is None:
+        for item in select_list:
+            if module.params.get( item ) is not None:
+                module.params[item] = module.params.get(item).upper()
 
     if not module.check_mode:
         try:

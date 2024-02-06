@@ -522,7 +522,7 @@ def main():
     result['rc'] = operRc
     result['stdout'] = operOut
     if operErr:
-        module.fail_json(**result)
+        module.exit_json(**result)
     if operation == 'list':
         if not library:
             library = ""

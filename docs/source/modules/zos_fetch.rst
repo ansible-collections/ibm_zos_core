@@ -130,6 +130,7 @@ ignore_sftp_stderr
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 

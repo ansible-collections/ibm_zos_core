@@ -1,5 +1,0 @@
-minor_changes:
-  - zos_script - add support for remote_tmp from the Ansible
-    configuration to setup where temporary files will be created,
-    replacing the module option tmp_path.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1060).

@@ -1,3 +1,0 @@
-trivial:
-  - zos_unarchive - Change the USS file extraction method from extractall to a custom function to extract filtered members.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1077).

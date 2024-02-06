@@ -44,6 +44,7 @@ max_rc
 
   | **required**: False
   | **type**: int
+  | **default**: 0
 
 
 

@@ -17,7 +17,7 @@ import re
 import tempfile
 from os import path, walk
 from string import ascii_uppercase, digits
-from random import randint
+from random import sample
 # from ansible.module_utils._text import to_bytes
 from ansible.module_utils.common.text.converters import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -1751,9 +1751,10 @@ def temp_member_name():
     """Generate a temp member name"""
     first_char_set = ascii_uppercase + "#@$"
     rest_char_set = ascii_uppercase + digits + "#@$"
-    temp_name = first_char_set[randint(0, len(first_char_set) - 1)]
-    for i in range(7):
-        temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
+    # using sample as k=1 and k=7 to avoid using random.choice just for oneline import
+    temp_name = sample(first_char_set, k=1)
+    temp_name += sample(rest_char_set, k=7)
+    temp_name = "".join(temp_name)
     return temp_name
 
 

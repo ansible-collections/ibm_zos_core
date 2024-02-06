@@ -144,29 +144,31 @@ changed:
     sample: true
 """
 
+import traceback
 from timeit import default_timer as timer
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    # MissingZOAUImport,
+    ZOAUImportError
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
+
 try:
     from zoautil_py import opercmd
 except Exception:
-    opercmd = MissingZOAUImport()
-
-try:
-    from zoautil_py import ZOAU_API_VERSION
-except Exception:
-    ZOAU_API_VERSION = "1.2.0"
+    opercmd = ZOAUImportError(traceback.format_exc())
 
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
@@ -189,6 +191,10 @@ def run_module():
 
     result = dict(changed=False)
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+
+    # Checking that we can actually use ZOAU.
+    if isinstance(opercmd, ZOAUImportError):
+        module.fail_json(msg="An error ocurred while importing ZOAU: {0}".format(opercmd.traceback))
 
     try:
         new_params = parse_params(module.params)
@@ -241,10 +247,10 @@ def run_module():
                              stderr_lines=str(error).splitlines() if error is not None else result["content"],
                              changed=result["changed"],)
     except Error as e:
-        module.fail_json(msg=repr(e), **result)
+        module.fail_json(msg=to_text(e), **result)
     except Exception as e:
         module.fail_json(
-            msg="An unexpected error occurred: {0}".format(repr(e)), **result
+            msg="An unexpected error occurred: {0}".format(to_text(e)), **result
         )
 
     module.exit_json(**result)
@@ -273,13 +279,8 @@ def run_operator_command(params):
     wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
 
-    zv = ZOAU_API_VERSION.split(".")
     use_wait_arg = False
-    if zv[0] > "1":
-        use_wait_arg = True
-    elif zv[0] == "1" and zv[1] > "2":
-        use_wait_arg = True
-    elif zv[0] == "1" and zv[1] == "2" and zv[2] > "4":
+    if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
         use_wait_arg = True
 
     if use_wait_arg:

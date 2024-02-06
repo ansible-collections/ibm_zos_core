@@ -103,6 +103,7 @@ full_volume
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 temp_volume
@@ -130,6 +131,7 @@ recover
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 overwrite
@@ -139,6 +141,7 @@ overwrite
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 sms_storage_class

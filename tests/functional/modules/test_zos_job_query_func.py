@@ -23,12 +23,12 @@ from pprint import pprint
 from shellescape import quote
 import tempfile
 
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 # Make sure job list * returns something
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_query(job_name="*", owner="*")
-    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs") is not None
@@ -46,14 +46,12 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/jcl"
-JDATA_SET_NAME = "imstestl.ims1.testq1"
-NDATA_SET_NAME = "imstestl.ims1.testq2"
-DEFAULT_VOLUME = "000000"
 
 # test to show multi wildcard in Job_id query won't crash the search
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
+        JDATA_SET_NAME = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
@@ -86,6 +84,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
 def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
+        NDATA_SET_NAME = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
@@ -111,3 +110,17 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=NDATA_SET_NAME, state="absent")
+
+
+def test_zos_job_id_query_short_ids_func(ansible_zos_module):
+    hosts = ansible_zos_module
+    qresults = hosts.all.zos_job_query(job_id="STC003")
+    for qresult in qresults.contacted.values():
+        assert qresult.get("jobs") is not None
+
+
+def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
+    hosts = ansible_zos_module
+    qresults = hosts.all.zos_job_query(job_id="STC00*")
+    for qresult in qresults.contacted.values():
+        assert qresult.get("jobs") is not None

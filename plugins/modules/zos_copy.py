@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -283,6 +283,8 @@ options:
       - If C(src) is a directory and ends with "/", the contents of it will be copied
         into the root of C(dest). If it doesn't end with "/", the directory itself
         will be copied.
+      - If C(src) is a directory or a file, file names will be truncated and/or modified
+        to ensure a valid name for a data set or member.
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
         PDS/PDSE.
@@ -812,6 +814,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    is_member
 )
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
@@ -1540,16 +1545,12 @@ class USSCopyHandler(CopyHandler):
                 except FileExistsError:
                     pass
 
-        opts = dict()
-        if self.executable:
-            opts["options"] = "-IX "
-
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
                 elif self.executable:
-                    response = datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, alias=True, executable=True)
                 else:
                     response = datasets._copy(src, dest)
 
@@ -1562,7 +1563,7 @@ class USSCopyHandler(CopyHandler):
                     )
             else:
                 if self.executable:
-                    response = datasets._copy(src, dest, None, **opts)
+                    response = datasets._copy(src, dest, None, alias=True, executable=True)
 
                     if response.rc != 0:
                         raise CopyOperationError(
@@ -1706,33 +1707,56 @@ class PDSECopyHandler(CopyHandler):
         existing_members = datasets.list_members(dest)  # fyi - this list includes aliases
         overwritten_members = []
         new_members = []
+        bulk_src_members = ""
+        result = dict()
 
         for src_member, destination_member in zip(src_members, dest_members):
             if destination_member in existing_members:
                 overwritten_members.append(destination_member)
             else:
                 new_members.append(destination_member)
+            bulk_src_members += "{0} ".format(src_member)
 
+        # Copy section
+        if src_ds_type == "USS" or self.asa_text or len(src_members) == 1:
+            """
+            USS -> MVS : Was kept on member by member basis bc file names longer that 8
+            characters will throw an error when copying to a PDS, because of the member name
+            character limit.
+            MVS -> MVS (asa only): This has to be copied on member by member basis bc OPUT
+            does not allow for bulk member copy or entire PDS to PDS copy.
+            """
+            for src_member, destination_member in zip(src_members, dest_members):
+                result = self.copy_to_member(
+                    src_member,
+                    "{0}({1})".format(dest, destination_member),
+                    src_ds_type
+                )
+        else:
+            """
+            MVS -> MVS
+            Copies a list of members into a PDS, using this list of members greatly
+            enhances performance of datasets_copy.
+            """
             result = self.copy_to_member(
-                src_member,
-                "{0}({1})".format(dest, destination_member),
+                bulk_src_members,
+                dest,
                 src_ds_type
             )
 
-            if result["rc"] != 0:
-                msg = "Unable to copy source {0} to data set member {1}({2})".format(
-                    new_src,
-                    dest,
-                    destination_member
-                )
-                raise CopyOperationError(
-                    msg=msg,
-                    rc=result["rc"],
-                    stdout=result["out"],
-                    stderr=result["err"],
-                    overwritten_members=overwritten_members,
-                    new_members=new_members
-                )
+        if result["rc"] != 0:
+            msg = "Unable to copy source {0} to {1}.".format(
+                new_src,
+                dest
+            )
+            raise CopyOperationError(
+                msg=msg,
+                rc=result["rc"],
+                stdout=result["out"],
+                stderr=result["err"],
+                overwritten_members=overwritten_members,
+                new_members=new_members
+            )
 
     def copy_to_member(
         self,
@@ -1767,19 +1791,10 @@ class PDSECopyHandler(CopyHandler):
             if self.is_binary or self.asa_text:
                 opts["options"] = "-B"
 
-            if self.aliases and not self.executable:
-                # lower case 'i' for text-based copy (dcp)
-                opts["options"] = "-i"
-
-            if self.executable:
-                opts["options"] = "-X"
-                if self.aliases:
-                    opts["options"] = "-IX"
-
             if self.force_lock:
                 opts["options"] += " -f"
 
-            response = datasets._copy(src, dest, None, **opts)
+            response = datasets._copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         return dict(
@@ -2614,7 +2629,6 @@ def run_module(module, arg_def):
     is_mvs_dest = module.params.get('is_mvs_dest')
     temp_path = module.params.get('temp_path')
     src_member = module.params.get('src_member')
-    copy_member = module.params.get('copy_member')
     tmphlq = module.params.get('tmp_hlq')
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
@@ -2623,6 +2637,8 @@ def run_module(module, arg_def):
     if dest_data_set:
         if volume:
             dest_data_set["volumes"] = [volume]
+
+    copy_member = is_member(dest)
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -2763,6 +2779,15 @@ def run_module(module, arg_def):
                 Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
                 and LIBRARY is not in MVS_PARTITIONED frozen set."""
                 dest_ds_type = "PDSE"
+
+            if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
+                dest_has_asa_chars = True
+            elif not dest_exists and asa_text:
+                dest_has_asa_chars = True
+            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
+                dest_attributes = datasets.listing(dest_name)[0]
+                if dest_attributes.recfm == 'FBA' or dest_attributes.recfm == 'VBA':
+                    dest_has_asa_chars = True
 
             if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
                 dest_has_asa_chars = True
@@ -3107,7 +3132,7 @@ def run_module(module, arg_def):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(type='path'),
+            src=dict(type='str'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
@@ -3199,15 +3224,15 @@ def main():
             is_mvs_dest=dict(type='bool'),
             size=dict(type='int'),
             temp_path=dict(type='str'),
-            copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
             force=dict(type='bool', default=False),
             force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
+            owner=dict(type='str', required=False),
+            group=dict(type='str', required=False),
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
-        add_file_common_args=True,
     )
 
     arg_def = dict(

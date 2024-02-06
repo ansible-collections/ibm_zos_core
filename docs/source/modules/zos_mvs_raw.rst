@@ -51,6 +51,7 @@ auth
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 verbose
@@ -60,6 +61,7 @@ verbose
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 dds
@@ -156,6 +158,7 @@ dds
 
       | **required**: False
       | **type**: bool
+      | **default**: False
 
 
     replace
@@ -173,6 +176,7 @@ dds
 
       | **required**: False
       | **type**: bool
+      | **default**: False
 
 
     backup
@@ -182,6 +186,7 @@ dds
 
       | **required**: False
       | **type**: bool
+      | **default**: False
 
 
     space_type
@@ -655,9 +660,11 @@ dds
 
       Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
-      If a multi-line string is provided make sure to use the proper literal block style indicator "|".
-
       If a list of strings is provided, newlines will be added to each of the lines when used as input.
+
+      If a multi-line string is provided, use the proper block scalar style. YAML supports both `literal <https://yaml.org/spec/1.2.2/#literal-style>`_ and `folded <https://yaml.org/spec/1.2.2/#line-folding>`_ scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; *content: | 2* is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`_ indicators  "+" and "-" as well.
+
+      When using the *content* option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all *content* types; string, list of strings and when using a YAML block indicator.
 
       | **required**: True
       | **type**: raw
@@ -886,6 +893,7 @@ dds
 
           | **required**: False
           | **type**: bool
+          | **default**: False
 
 
         replace
@@ -903,6 +911,7 @@ dds
 
           | **required**: False
           | **type**: bool
+          | **default**: False
 
 
         backup
@@ -912,6 +921,7 @@ dds
 
           | **required**: False
           | **type**: bool
+          | **default**: False
 
 
         space_type
@@ -1371,9 +1381,11 @@ dds
 
           Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
-          If a multi-line string is provided make sure to use the proper literal block style indicator "|".
-
           If a list of strings is provided, newlines will be added to each of the lines when used as input.
+
+          If a multi-line string is provided, use the proper block scalar style. YAML supports both `literal <https://yaml.org/spec/1.2.2/#literal-style>`_ and `folded <https://yaml.org/spec/1.2.2/#line-folding>`_ scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; *content: | 2* is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`_ indicators  "+" and "-" as well.
+
+          When using the *content* option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all *content* types; string, list of strings and when using a YAML block indicator.
 
           | **required**: True
           | **type**: raw
@@ -1708,6 +1720,35 @@ Examples
            return_content:
              type: text
 
+       - name: Define a cluster using a literal block style indicator
+             with a 2 space indentation.
+         zos_mvs_raw:
+           program_name: idcams
+           auth: yes
+           dds:
+             - dd_output:
+                 dd_name: sysprint
+                 return_content:
+                   type: text
+             - dd_input:
+                 dd_name: sysin
+                 content: |2
+                   DEFINE CLUSTER -
+                             (NAME(ANSIBLE.TEST.VSAM) -
+                             CYL(10 10)  -
+                             FREESPACE(20 20) -
+                             INDEXED -
+                             KEYS(32 0) -
+                             NOERASE -
+                             NONSPANNED -
+                             NOREUSE -
+                             SHAREOPTIONS(3 3) -
+                             SPEED -
+                             UNORDERED -
+                             RECORDSIZE(4086 32600) -
+                             VOLUMES(222222) -
+                             UNIQUE)
+
 
 
 
@@ -1720,6 +1761,8 @@ Notes
    1. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
 
    2. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
+
+   3. When executing a program, refer to the programs documentation as each programs requirments can vary fom DDs, instream-data indentation and continuation characters.
 
 
 

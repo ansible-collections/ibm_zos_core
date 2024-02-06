@@ -57,9 +57,10 @@ class ActionModule(ActionBase):
             source = self._task.args.get("src", None)
 
             # Get a temporary file on the managed node
-            dest_path = self._execute_module(
+            tempfile = self._execute_module(
                 module_name="tempfile", module_args={}, task_vars=task_vars,
-            ).get("path")
+            )
+            dest_path = tempfile.get("path")
             # Calling execute_module from this step with tempfile leaves behind a tmpdir.
             # This is called to ensure the proper removal.
             tmpdir = self._connection._shell.tmpdir
@@ -67,10 +68,12 @@ class ActionModule(ActionBase):
                 self._remove_tmp_path(tmpdir)
 
             result["failed"] = True
-            if source is None or dest_path is None:
-                result["msg"] = "src and dest are required"
-            elif source is not None and source.endswith("/"):
-                result["msg"] = "src must be a file"
+            if source is None:
+                result["msg"] = "Source is required."
+            elif dest_path is None:
+                result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
+            elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
+                result["msg"] = "Source must be a file."
             else:
                 del result["failed"]
 
@@ -84,11 +87,6 @@ class ActionModule(ActionBase):
                 result["msg"] = to_text(e)
                 return result
 
-            if os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
-                result["failed"] = True
-                result["msg"] = to_text("NOT SUPPORTING THE DIRECTORY.")
-                return result
-
             if tmp is None or "-tmp-" not in tmp:
                 tmp = self._make_tmp_path()
 
@@ -98,24 +96,14 @@ class ActionModule(ActionBase):
                 # source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
-                result["msg"] = "could not find src=%s, %s" % (source_full, e)
+                result["msg"] = "Source {0} not found. {1}".format(source_full, e)
                 self._remove_tmp_path(tmp)
                 return result
 
             # if self._connection._shell.path_has_trailing_slash(dest):
             #     dest_file = self._connection._shell.join_path(dest, source_rel)
             # else:
-            dest_file = self._connection._shell.join_path(dest_path)
-
-            dest_status = self._execute_remote_stat(
-                dest_file, all_vars=task_vars, follow=False
-            )
-
-            if dest_status["exists"] and dest_status["isdir"]:
-                self._remove_tmp_path(tmp)
-                result["failed"] = True
-                result["msg"] = "can not use content with a dir as dest"
-                return result
+            self._connection._shell.join_path(dest_path)
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 
@@ -152,7 +140,6 @@ class ActionModule(ActionBase):
             result = {}
             copy_module_args = {}
             module_args = self._task.args.copy()
-            module_args["temp_file"] = dest_path
 
             copy_module_args.update(
                 dict(
@@ -160,6 +147,7 @@ class ActionModule(ActionBase):
                     dest=dest_path,
                     mode="0600",
                     force=True,
+                    encoding=module_args.get('encoding'),
                     remote_src=True,
                 )
             )

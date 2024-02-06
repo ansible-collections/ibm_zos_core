@@ -106,6 +106,11 @@ plugins:
       name: zos_ping
       namespace: ''
       version_added: 1.1.0
+    zos_script:
+      description: Run scripts in z/OS
+      name: zos_script
+      namespace: ''
+      version_added: 1.8.0
     zos_tso_command:
       description: Execute TSO commands
       name: zos_tso_command
@@ -126,4 +131,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 1.7.0
+version: 1.9.0-beta.1

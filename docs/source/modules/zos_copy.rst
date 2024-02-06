@@ -41,6 +41,7 @@ asa_text
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 backup
@@ -52,6 +53,7 @@ backup
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 backup_name
@@ -155,6 +157,7 @@ force
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 force_lock
@@ -168,6 +171,7 @@ force_lock
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 ignore_sftp_stderr
@@ -177,6 +181,7 @@ ignore_sftp_stderr
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 is_binary
@@ -188,6 +193,7 @@ is_binary
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 executable
@@ -203,6 +209,7 @@ executable
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 aliases
@@ -214,6 +221,7 @@ aliases
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 local_follow
@@ -246,6 +254,7 @@ remote_src
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 src
@@ -260,6 +269,8 @@ src
   If ``src`` is a file and ``dest`` ends with "/" or is a directory, the file is copied to the directory with the same filename as ``src``.
 
   If ``src`` is a directory and ends with "/", the contents of it will be copied into the root of ``dest``. If it doesn't end with "/", the directory itself will be copied.
+
+  If ``src`` is a directory or a file, file names will be truncated and/or modified to ensure a valid name for a data set or member.
 
   If ``src`` is a VSAM data set, ``dest`` must also be a VSAM.
 
@@ -278,6 +289,7 @@ validate
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 volume
@@ -446,6 +458,7 @@ use_template
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 template_parameters
@@ -526,6 +539,7 @@ template_parameters
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   trim_blocks
@@ -543,6 +557,7 @@ template_parameters
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   newline_sequence
@@ -554,12 +569,12 @@ template_parameters
     | **choices**: \\n, \\r, \\r\\n
 
 
-
   auto_reload
     Whether to reload a template file when it has changed after the task has started.
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
 

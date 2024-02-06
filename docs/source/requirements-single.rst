@@ -20,7 +20,7 @@ The controller is where the Ansible engine that runs the playbook is installed.
 Refer to RedHat Ansible Certified Content documentation for more on the `controllers dependencies`_.
 
 .. _controllers dependencies:
-   https://ibm.github.io/z_ansible_collections_doc/requirements/requirements_controller.html
+   https://ibm.github.io/z_ansible_collections_doc/requirements/requirements.html#control-node
 .. ...........................................................................
 .. © Copyright IBM Corporation 2020                                          .
 .. ...........................................................................

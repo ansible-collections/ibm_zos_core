@@ -1,0 +1,3 @@
+trivial:
+  - zos_apf - Add option to the user to decide prefer volumes to run test suite.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1195)

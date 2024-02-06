@@ -1,0 +1,5 @@
+trivial:
+  - module_utils/data_set - Replace the use of random.randint to random.sample
+    to generate random member names, random.randint raised a warning while
+    scanning with bandit.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1016)

@@ -55,7 +55,7 @@ Known Issues
 
 Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
 
-This occurs when a module receives content that does not correspond to a UTF-8 value. These includemodules ``zos_job_submit``, ``zos_job_output``,
+This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules ``zos_job_submit``, ``zos_job_output``,
 ``zos_operator_action_query``` but are not limited to this list. This will be addressed in **ibm_zos_core** version 1.10.0-beta.1. Each case is
 unique, some options to work around the error are below.
 
@@ -138,7 +138,16 @@ Bugfixes
 Known Issues
 ------------
 
-- Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF8 characters in the response. This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules `zos_job_submit`, `zos_job_output`, `zos_operator_action_query` but are not limited to this list. This will be addressed in `ibm_zos_core` version 1.10.0-beta.1. Each case is unique, some options to work around the error are below. - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters. - Add `ignore_errors:true` to the playbook task so the task error will not fail the playbook. - If the error is resulting from a batch job, add `ignore_errors:true` to the task and capture the output into a variable and extract the job ID with a regular expression and then use `zos_job_output` to display the DD without the non-printable character such as the DD `JESMSGLG`.
+Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
+
+This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules ``zos_job_submit``, ``zos_job_output``,
+``zos_operator_action_query``` but are not limited to this list. This will be addressed in **ibm_zos_core** version 1.10.0-beta.1. Each case is
+unique, some options to work around the error are below.
+
+- Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+- Add **ignore_errors:true** to the playbook task so the task error will not fail the playbook.
+- If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
+  a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
 
 Availability
 ------------

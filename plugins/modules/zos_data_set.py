@@ -988,16 +988,21 @@ def perform_data_set_operations(name, state, **extra_args):
     #  passing in **extra_args forced me to modify the acceptable parameters
     #  for multiple functions in data_set.py including ensure_present, replace
     #  and create where the force parameter has no bearing.
+    #  Note: added volume_to_use to handle cataloging when volume was not provided
+
+    volume_to_use = extra_args.get("volumes")
+    if volume_to_use is None:
+        volume_to_use = "000000"
     if state == "present" and extra_args.get("type") != "MEMBER":
         changed = DataSet.ensure_present(name, **extra_args)
     elif state == "present" and extra_args.get("type") == "MEMBER":
         changed = DataSet.ensure_member_present(name, extra_args.get("replace"))
     elif state == "absent" and extra_args.get("type") != "MEMBER":
-        changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
+        changed = DataSet.ensure_absent(name, volume_to_use)
     elif state == "absent" and extra_args.get("type") == "MEMBER":
         changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
     elif state == "cataloged":
-        changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
+        changed = DataSet.ensure_cataloged(name, volume_to_use)
     elif state == "uncataloged":
         changed = DataSet.ensure_uncataloged(name)
     return changed

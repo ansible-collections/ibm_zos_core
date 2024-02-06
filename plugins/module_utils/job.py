@@ -44,10 +44,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker
-)
-
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.

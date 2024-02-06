@@ -230,6 +230,7 @@ SH /tmp/disp_shr/pdse-lock '{0}'
 //STDERR DD SYSOUT=*
 //"""
 
+
 def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
@@ -1973,8 +1974,8 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         dest_data_set = data_set_2
     try:
         hosts = ansible_zos_module
-        hosts.all.zos_data_set(name=DATASET_1, state="present", type=ds_type, replace=True)
-        hosts.all.zos_data_set(name=DATASET_2, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
         if ds_type == "PDS" or ds_type == "PDSE":
             hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
             hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
@@ -4345,9 +4346,14 @@ def test_backup_pds(ansible_zos_module, args):
 @pytest.mark.parametrize("src_type", ["seq", "pds", "pdse"])
 def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_type):
     hosts = ansible_zos_module
-    source = "USER.TEST.FUNCTEST.SRC"
-    dest = "USER.TEST.FUNCTEST.DEST"
-    source_member = "USER.TEST.FUNCTEST.SRC(MEMBER)"
+    source = get_tmp_ds_name()
+    dest = get_tmp_ds_name()
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    if volume_1 == "SCR03":
+        volume = volumes.get_available_vol()
+        volumes.free_vol(volume_1)
+        volume_1 = volume
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
         hosts.all.zos_data_set(name=source_member, type="member", state='present')

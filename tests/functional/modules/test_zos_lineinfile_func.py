@@ -873,7 +873,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
         hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
             call_c_jcl.format(
-                DEFAULT_DATA_SET_NAME,
+                default_data_set_name,
                 MEMBER_1),
             '/tmp/disp_shr/call_c_pgm.jcl'))
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
@@ -928,7 +928,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
             call_c_jcl.format(
-                DEFAULT_DATA_SET_NAME,
+                default_data_set_name,
                 MEMBER_1),
             '/tmp/disp_shr/call_c_pgm.jcl'))
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")

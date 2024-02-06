@@ -179,7 +179,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print( "\nVVV === -catalog results\m")
+        print( "\nVVV === -catalog results\n")
         print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True

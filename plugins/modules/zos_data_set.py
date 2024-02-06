@@ -992,7 +992,9 @@ def perform_data_set_operations(name, state, **extra_args):
 
     volume_to_use = extra_args.get("volumes")
     if volume_to_use is None:
-        volume_to_use = "000000"
+        volume_to_use = {"000000"}
+        extra_args["volumes"] = volume_to_use
+
     if state == "present" and extra_args.get("type") != "MEMBER":
         changed = DataSet.ensure_present(name, **extra_args)
     elif state == "present" and extra_args.get("type") == "MEMBER":

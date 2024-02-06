@@ -667,6 +667,8 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
     """
 
     kwargs = {
+        # Since every fetch retry waits for a second before continuing,
+        # we can just pass the timeout (also in seconds) to this arg.
         "fetch_max_retries": timeout,
     }
 
@@ -726,14 +728,15 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
     except zoau_exceptions.JobSubmitException as err:
         result["changed"] = False
         result["failed"] = True
-        result["stderr"] = str(err)
+        result["stderr"] = to_text(err)
         result["duration"] = duration
         result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("Unable to submit job {0}, the job submission has failed. "
                          "Without the job id, the error can not be determined. "
                          "Consider using module `zos_job_query` to poll for the "
                          "job by name or review the system log for purged jobs "
-                         "resulting from an abend.".format(src_name))
+                         "resulting from an abend. Standard error may have "
+                         "additional information.".format(src_name))
         module.fail_json(**result)
 
     # ZOAU throws a JobFetchException when it is unable to fetch a job.
@@ -741,14 +744,14 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
     except zoau_exceptions.JobFetchException as err:
         result["changed"] = False
         result["failed"] = False
-        result["stderr"] = str(err)
+        result["stderr"] = to_text(err)
         result["duration"] = duration
-        result["job_id"] = job_submitted.job_id if job_submitted else None
-        result["msg"] = ("The JCL has been submitted {0} and no job id was returned "
-                         "within the allocated time of {1} seconds. Consider using "
-                         " module zos_job_query to poll for a long running "
-                         "jobs or increasing the value for "
-                         "`wait_times_s`.".format(src_name, str(timeout)))
+        result["job_id"] = job_submitted.job_id
+        result["msg"] = ("The JCL has been submitted {0} with ID {1} but there was an "
+                         "error while fetching its status within the allocated time of {2} "
+                         "seconds. Consider using module zos_job_query to poll for the "
+                         "job for more information. Standard error may have additional "
+                         "information.".format(src_name, job_submitted.job_id, str(timeout)))
         module.fail_json(**result)
 
     # Between getting a job_submitted and the jobs.fetch_multiple(job_submitted.job_id)[0].return_code

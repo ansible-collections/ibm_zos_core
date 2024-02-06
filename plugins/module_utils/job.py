@@ -22,7 +22,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    # MissingZOAUImport,
     ZOAUImportError
 )
 
@@ -35,9 +34,6 @@ try:
     # from zoautil_py.jobs import read_output, list_dds, listing
     from zoautil_py import jobs
 except Exception:
-    # read_output = MissingZOAUImport()
-    # list_dds = MissingZOAUImport()
-    # listing = MissingZOAUImport()
     jobs = ZOAUImportError(traceback.format_exc())
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (

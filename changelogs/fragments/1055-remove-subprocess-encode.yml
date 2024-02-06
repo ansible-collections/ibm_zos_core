@@ -1,4 +1,0 @@
-trivial:
-  - encode_utils - Removed use of subprocess from system utils, since the only
-    use of it could be replaced for AnsibleModule runcommand method.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1055).

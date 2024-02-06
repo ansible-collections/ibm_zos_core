@@ -83,6 +83,7 @@ backrefs
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 insertafter
@@ -140,6 +141,7 @@ backup
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 backup_name
@@ -173,6 +175,7 @@ firstmatch
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 encoding
@@ -194,6 +197,7 @@ force
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 

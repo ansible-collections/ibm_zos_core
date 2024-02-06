@@ -23,6 +23,7 @@ from pprint import pprint
 from shellescape import quote
 import tempfile
 
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 # Make sure job list * returns something
 def test_zos_job_query_func(ansible_zos_module):
@@ -45,14 +46,12 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/jcl"
-JDATA_SET_NAME = "imstestl.ims1.testq1"
-NDATA_SET_NAME = "imstestl.ims1.testq2"
-DEFAULT_VOLUME = "000000"
 
 # test to show multi wildcard in Job_id query won't crash the search
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
+        JDATA_SET_NAME = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
@@ -85,6 +84,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
 def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
+        NDATA_SET_NAME = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)

@@ -1,0 +1,68 @@
+trivial:
+  - zos_apf - Simplified the test cases, focused on removing static dictionaries and
+    increase test portability.
+  - zos_archive - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_backup_restore - Remove hard coded volumes in test. Now test will use an available
+    volume from a volume handler class, removing system specific dependencies.
+  - zos_blockinfile - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_copy - Remove hard coded volumes in test. Now test will use an available
+    volume from a volume handler class, removing system specific dependencies. Now test will use an available
+    volume from a volume handler class, removing system specific dependencies.
+  - zos_data_set - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_encode - Ensure atomicity of test cases and remove hard coded content.
+  - zos_fetch - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_find - Remove hard coded volumes in test. Now test will use an available
+    volume from a volume handler class, removing system specific dependencies.
+  - zos_job_query - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_job_submit - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_lineinfile - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_mount - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_mvs_raw - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_tso_command - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - zos_unarchive - Remove hard coded volumes and datasets names in test.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+    Now tests will generate random data set names and will use an available
+    volume taken from a volume handler class, removing system specific
+    name dependencies.
+  - volumes.py - Introduced a new class as part of the functional tests
+    to manage volume access, availability and status for test cases such
+    they no longer need to maintain or author such logic.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/977)

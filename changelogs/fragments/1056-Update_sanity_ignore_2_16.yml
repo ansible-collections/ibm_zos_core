@@ -1,4 +1,0 @@
-trivial:
-  - zos_copy - remove doc-default-does-not-match-spec 2.16 ignore file.
-  - zos_copy - remove doc-type-does-not-match-spec 2.16 ignore file.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1056).

@@ -976,7 +976,6 @@ def run_module():
             result["jobs"] = None
             raise Exception(_msg)
 
-    # TODO: change this.
     except Exception as err:
         result["failed"] = True
         result["changed"] = False

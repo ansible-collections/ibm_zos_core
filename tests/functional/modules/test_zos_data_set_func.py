@@ -165,7 +165,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         )
         # verify data set creation was successful
         print( "\nVVV == ds creation results\n")
-        print_results(res)
+        print_results(results)
 
         time.sleep(2)
         for result in results.contacted.values():

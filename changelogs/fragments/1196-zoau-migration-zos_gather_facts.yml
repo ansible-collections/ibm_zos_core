@@ -1,0 +1,4 @@
+trivial:
+  - zos_gather_facts - Update module internally to leverage ZOAU python API
+    for zinfo.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1196).

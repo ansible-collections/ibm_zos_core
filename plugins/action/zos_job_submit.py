@@ -103,7 +103,7 @@ class ActionModule(ActionBase):
             # if self._connection._shell.path_has_trailing_slash(dest):
             #     dest_file = self._connection._shell.join_path(dest, source_rel)
             # else:
-            dest_file = self._connection._shell.join_path(dest_path)
+            self._connection._shell.join_path(dest_path)
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 

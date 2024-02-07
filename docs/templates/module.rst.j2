@@ -62,7 +62,7 @@ Synopsis
 {%     if spec.elements %}
   {{ "  " * level }}| **elements**: {{ spec.elements }}
 {%     endif %}
-{%     if spec.default %}
+{%     if 'default' in spec and spec.default is not none and spec.default != ''%}
   {{ "  " * level }}| **default**: {{ spec.default }}
 {%     endif %}
 {%     if spec.choices %}

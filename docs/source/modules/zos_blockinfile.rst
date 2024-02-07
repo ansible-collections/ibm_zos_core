@@ -124,6 +124,7 @@ backup
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 backup_name
@@ -171,6 +172,7 @@ force
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 indentation
@@ -178,6 +180,7 @@ indentation
 
   | **required**: False
   | **type**: int
+  | **default**: 0
 
 
 

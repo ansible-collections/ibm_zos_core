@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_unarchive - When zos_unarchive fails during unpack either with xmit or terse it does not clean the
-    temporary data sets created. Fix now removes the temporary data sets.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1049).

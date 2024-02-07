@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_unarchive - When unarchiving USS files, the module left temporary files on the remote.
-    Change now removes temporary files.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1073).

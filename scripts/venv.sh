@@ -297,7 +297,7 @@ find_in_path() {
 discover_python(){
     # Don't use which, it only will find first in path within script
     # for python_found in `which python3 | cut -d" " -f3`; do
-    pys=("python3" "python3.8" "python3.9" "python3.10" "python3.11" "python3.12" "python3.13" "python3.14")
+    pys=("python3" "python3.8" "python3.9" "python3.10" "python3.11") # "python3.12" "python3.13" "python3.14")
     #pys=("python3.8" "python3.9")
     for py in "${pys[@]}"; do
         for python_found in `find_in_path $py`; do

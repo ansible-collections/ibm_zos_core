@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -102,7 +102,9 @@ def get_volumes(ansible_zos_module, path):
     for vol in storage_online:
         list_volumes.append(vol)
     if prefer_vols is not None:
+        list(map(str, prefer_vols))
         prefer_vols.extend(list_volumes)
+        prefer_vols = list(filter(lambda item: item is not None, prefer_vols))
         return prefer_vols
     else:
         return list_volumes

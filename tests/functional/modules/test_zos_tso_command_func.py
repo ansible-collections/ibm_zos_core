@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import ansible.errors
 import ansible.utils
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
+DEFAULT_TEMP_DATASET="imstestl.ims1.temp.ps"
 
 def test_zos_tso_command_run_help(ansible_zos_module):
     hosts = ansible_zos_module

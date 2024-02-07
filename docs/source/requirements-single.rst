@@ -33,7 +33,6 @@ the Ansible inventory. For the **IBM z/OS core collection** to manage the z/OS n
 some dependencies are required to be installed on z/OS such as:
 
 * `z/OS`_
-* `z/OS`_
 * `z/OS OpenSSH`_
 * `z/OS® shell`_
 * `IBM Open Enterprise SDK for Python`_

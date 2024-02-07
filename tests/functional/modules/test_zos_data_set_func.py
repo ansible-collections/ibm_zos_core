@@ -176,10 +176,14 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
                 results = hosts.all.zos_job_output(job_id=submitted_job_id)
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
 
+        results = hosts.all.shell( cmd="dls {0}".format(dataset), TEMP_PATH )
+        print("\nVVV === dls the file ({0})\n".format(dataset))
+        print_results(results)
+
         # force catalog?!?!
         time.sleep(2)
         res = hosts.all.zos_data_set(name=dataset, state="cataloged")
-        print( "\nVVV == force catalog results\n")
+        print( "\nVVV === force catalog results\n")
         print_results(res)
 
         time.sleep(2)

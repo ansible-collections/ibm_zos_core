@@ -164,6 +164,10 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
         # verify data set creation was successful
+        print( "\nVVV == ds creation results\n")
+        print_results(res)
+
+        time.sleep(2)
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
                 submitted_job_id = result.get("jobs")[0].get("job_id")
@@ -179,14 +183,18 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print( "\nVVV === -catalog results\n")
+        print( "\nVVV === first uncatalog results\n")
         print_results(results)
+
         for result in results.contacted.values():
             assert result.get("changed") is True
+
         # verify second uncatalog shows uncatalog already performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         for result in results.contacted.values():
             assert result.get("changed") is False
+        print( "\nVVV == second uncatalog results\n")
+        print_results(res)
 
         time.sleep(3)
         # recatalog the data set

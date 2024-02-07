@@ -244,10 +244,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
     # jls output has expanded in zoau 1.2.3 and later: jls -l -v shows headers
     # jobclass=job[5] serviceclass=job[6] priority=job[7] asid=job[8]
     # creationdatetime=job[9] queueposition=job[10]
-    # starting in zoau 1.2.4, program_name[11] was added.
-
+    # starting in zoau 1.2.4, program_name[11] was added. In 1.3.0, include_extended
+    # has to be set to true so we get the program name for a job.
     # Testing has shown that the program_name impact is minor, so we're removing that option
-    # This will also help maintain compatibility with 1.2.3
 
     final_entries = []
     entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
@@ -286,26 +285,17 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     job["ret_code"]["code"] = int(entry.return_code)
             job["ret_code"]["msg_text"] = entry.status
 
-            # this section only works on zoau 1.2.3/+ vvv
 
             # Beginning in ZOAU v1.3.0, the Job class changes svc_class to
             # service_class.
-            if zoau_version_checker.is_zoau_version_higher_than("1.2.5"):
-                job["service_class"] = entry.service_class
-            elif zoau_version_checker.is_zoau_version_higher_than("1.2.2"):
-                job["svc_class"] = entry.svc_class
-            if zoau_version_checker.is_zoau_version_higher_than("1.2.2"):
-                job["job_class"] = entry.job_class
-                job["priority"] = entry.priority
-                job["asid"] = entry.asid
-                job["creation_date"] = str(entry.creation_datetime)[0:10]
-                job["creation_time"] = str(entry.creation_datetime)[12:]
-                job["queue_position"] = entry.queue_position
-            if zoau_version_checker.is_zoau_version_higher_than("1.2.3"):
-                job["program_name"] = entry.program_name
-
-            # this section only works on zoau 1.2.3/+ ^^^
-
+            job["svc_class"] = entry.service_class
+            job["job_class"] = entry.job_class
+            job["priority"] = entry.priority
+            job["asid"] = entry.asid
+            job["creation_date"] = str(entry.creation_datetime)[0:10]
+            job["creation_time"] = str(entry.creation_datetime)[12:]
+            job["queue_position"] = entry.queue_position
+            job["program_name"] = entry.program_name
             job["class"] = ""
             job["content_type"] = ""
             job["ret_code"]["steps"] = []

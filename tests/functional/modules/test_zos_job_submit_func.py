@@ -277,7 +277,7 @@ def test_job_submit_PDS(ansible_zos_module):
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET", wait=True
+            src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET"
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -306,7 +306,6 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
         results = hosts.all.zos_job_submit(
             src="{0}(SAMPLE)".format(DATA_SET_NAME_SPECIAL_CHARS),
             location="DATA_SET",
-            wait=True,
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -325,7 +324,7 @@ def test_job_submit_USS(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -669,7 +668,10 @@ def test_job_submit_full_input(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FULL_INPUT), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH),
+            location="USS",
+            volume=None,
+            wait_time_s=30
         )
         for result in results.contacted.values():
             print(result)

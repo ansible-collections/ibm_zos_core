@@ -52,6 +52,7 @@ filter
   | **required**: False
   | **type**: list
   | **elements**: str
+  | **default**: []
 
 
 

@@ -51,6 +51,7 @@ auth
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 verbose
@@ -60,6 +61,7 @@ verbose
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 dds
@@ -156,6 +158,7 @@ dds
 
       | **required**: False
       | **type**: bool
+      | **default**: False
 
 
     replace
@@ -173,6 +176,7 @@ dds
 
       | **required**: False
       | **type**: bool
+      | **default**: False
 
 
     backup
@@ -182,6 +186,7 @@ dds
 
       | **required**: False
       | **type**: bool
+      | **default**: False
 
 
     space_type
@@ -888,6 +893,7 @@ dds
 
           | **required**: False
           | **type**: bool
+          | **default**: False
 
 
         replace
@@ -905,6 +911,7 @@ dds
 
           | **required**: False
           | **type**: bool
+          | **default**: False
 
 
         backup
@@ -914,6 +921,7 @@ dds
 
           | **required**: False
           | **type**: bool
+          | **default**: False
 
 
         space_type

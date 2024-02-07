@@ -70,7 +70,7 @@ MAG=$'\e[1;35m'
 CYN=$'\e[1;36m'
 ENDC=$'\e[0m'
 # 0 Docker is up, 1 docker is not up
-DOCKER_INFO=`docker info> /dev/null 2>&1;echo $?`
+DOCKER_INFO=`podman info> /dev/null 2>&1;echo $?`
 
 # ==============================================================================
 # Arg parsing helpers
@@ -298,12 +298,12 @@ ac_sanity(){
     if [ "${DOCKER_INFO}" == "0" ]; then
         if [ "${option_version}" ]; then
             message "Running ansible-test with docker container and python version ${option_version}."
-            . $VENV_BIN/activate && cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && \
+            . $VENV_BIN/activate && export ANSIBLE_TEST_PREFER_PODMAN=1 && cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && \
                  ${VENV_BIN}/ansible-test sanity --python ${option_version} --requirements --docker default && \
                     cd ${CURR_DIR};
         else
             message "Running ansible-test with docker container and all python versions."
-            . $VENV_BIN/activate && cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && \
+            . $VENV_BIN/activate && export ANSIBLE_TEST_PREFER_PODMAN=1 && cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && \
                 ${VENV_BIN}/ansible-test sanity --requirements --docker default && \
                     cd ${CURR_DIR};
         fi

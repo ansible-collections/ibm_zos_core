@@ -18,9 +18,10 @@ import re
 import pytest
 import inspect
 
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+
 __metaclass__ = type
 
-DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
 TEST_FOLDER_LINEINFILE = "/tmp/ansible-core-tests/zos_lineinfile/"
 
 c_pgm="""#include <stdio.h>
@@ -549,9 +550,8 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    test_name = "DST1"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -572,9 +572,8 @@ def test_ds_line_insertbefore_regex(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
-    test_name = "DST2"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -595,9 +594,8 @@ def test_ds_line_insertafter_eof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertafter="EOF", line="export 'ZOAU_ROOT'", state="present")
-    test_name = "DST3"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -617,9 +615,8 @@ def test_ds_line_insertbefore_bof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present")
-    test_name = "DST4"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -640,9 +637,8 @@ def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    test_name = "DST5"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -663,9 +659,8 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present")
-    test_name = "DST6"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -686,9 +681,8 @@ def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    test_name = "DST7"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -709,9 +703,8 @@ def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
-    test_name = "DST8"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -732,9 +725,8 @@ def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype)
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    test_name = "DST9"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -755,9 +747,8 @@ def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
-    test_name = "DST10"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -778,9 +769,8 @@ def test_ds_line_absent(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
-    test_name = "DST11"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -802,17 +792,10 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
     ds_type = "SEQ"
     kwargs = dict(backup_name=r"TMPHLQ\..")
     params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ")
-    test_name = "DST12"
-    temp_file = "/tmp/zos_lineinfile/" + test_name
     content = TEST_CONTENT
     try:
-        hosts.all.shell(cmd="mkdir -p {0}".format("/tmp/zos_lineinfile/"))
-        results = hosts.all.shell(cmd='hlq')
-        for result in results.contacted.values():
-            hlq = result.get("stdout")
-        if len(hlq) > 8:
-            hlq = hlq[:8]
-        ds_full_name = hlq + "." + test_name.upper() + "." + ds_type
+        ds_full_name = get_tmp_ds_name()
+        temp_file = "/tmp/" + ds_full_name
         hosts.all.zos_data_set(name=ds_full_name, type=ds_type, replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
         cmdStr = "cp {0} \"//'{1}'\" ".format(quote(temp_file), ds_full_name)
@@ -837,14 +820,8 @@ def test_ds_not_supported(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    test_name = "DST13"
-    ds_name = test_name.upper() + "." + ds_type
     try:
-        results = hosts.all.shell(cmd='hlq')
-        for result in results.contacted.values():
-            hlq = result.get("stdout")
-        assert len(hlq) <= 8 or hlq != ''
-        ds_name = test_name.upper() + "." + ds_type
+        ds_name = get_tmp_ds_name() + "." + ds_type
         results = hosts.all.zos_data_set(name=ds_name, type=ds_type, replace='yes')
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -862,21 +839,22 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 def test_ds_line_force(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
+    default_data_set_name = get_tmp_ds_name()
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="True")
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
     content = TEST_CONTENT
     if ds_type == "SEQ":
-        params["path"] = DEFAULT_DATA_SET_NAME+".{0}".format(MEMBER_2)
+        params["path"] = default_data_set_name+".{0}".format(MEMBER_2)
     else:
-        params["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+        params["path"] = default_data_set_name+"({0})".format(MEMBER_2)
     try:
         # set up:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
         hosts.all.zos_data_set(
             batch=[
-                {   "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
+                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
                     "type": "member", "state": "present", "replace": True, },
                 {   "name": params["path"], "type": "member",
                     "state": "present", "replace": True, },
@@ -895,7 +873,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
         hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
             call_c_jcl.format(
-                DEFAULT_DATA_SET_NAME,
+                default_data_set_name,
                 MEMBER_1),
             '/tmp/disp_shr/call_c_pgm.jcl'))
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
@@ -914,7 +892,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
 
 @pytest.mark.ds
@@ -922,18 +900,19 @@ def test_ds_line_force(ansible_zos_module, dstype):
 def test_ds_line_force_fail(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
+    default_data_set_name = get_tmp_ds_name()
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="False")
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
-    params["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+    params["path"] = default_data_set_name + "({0})".format(MEMBER_2)
     content = TEST_CONTENT
     try:
         # set up:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
         hosts.all.zos_data_set(
             batch=[
-                {   "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
+                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
                     "type": "member", "state": "present", "replace": True, },
                 {   "name": params["path"], "type": "member",
                     "state": "present", "replace": True, },
@@ -949,7 +928,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
             call_c_jcl.format(
-                DEFAULT_DATA_SET_NAME,
+                default_data_set_name,
                 MEMBER_1),
             '/tmp/disp_shr/call_c_pgm.jcl'))
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
@@ -965,7 +944,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
 
 @pytest.mark.ds
@@ -974,9 +953,8 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = dict(line='ZOAU_ROOT=/usr/lpp/zoautil/v100', state="present")
-    test_name = "DST15"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1033,9 +1011,8 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
     insert_data = "Insert this string"
     params = dict(insertafter="SIMPLE", line=insert_data, state="present", encoding={"from":"IBM-1047", "to":encoding})
     params["encoding"] = encoding
-    test_name = "DST13"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
     content = "SIMPLE LINE TO VERIFY"
     try:
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))

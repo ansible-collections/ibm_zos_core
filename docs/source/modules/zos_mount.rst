@@ -113,6 +113,7 @@ persistent
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   backup_name

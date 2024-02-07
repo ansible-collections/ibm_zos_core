@@ -90,6 +90,7 @@ message_filter
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
 

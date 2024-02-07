@@ -250,13 +250,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
     # This will also help maintain compatibility with 1.2.3
 
     final_entries = []
-    entries = jobs.fetch_multiple(job_id=job_id_temp)
+    entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = jobs.fetch_multiple(job_id=job_id_temp)
+        entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
 
     if entries:
         for entry in entries:

@@ -54,17 +54,6 @@ options:
       - DATA_SET can be a PDS, PDSE, or sequential data set.
       - USS means the JCL location is located in UNIX System Services (USS).
       - LOCAL means locally to the ansible control node.
-  wait:
-    required: false
-    default: false
-    type: bool
-    description:
-      - Setting this option will yield no change, it is deprecated. There is no
-        no need to set I(wait); setting I(wait_times_s) is the correct way to
-        configure the amount of tme to wait for a job to execute.
-      - Configuring wait used by the L(zos_job_submit,./zos_job_submit.html) module has been
-        deprecated and will be removed in ibm.ibm_zos_core collection.
-      - See option I(wait_time_s).
   wait_time_s:
     required: false
     default: 10
@@ -782,9 +771,6 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
 def run_module():
     module_args = dict(
         src=dict(type="str", required=True),
-        wait=dict(type="bool", required=False, default=False,
-                  removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
         location=dict(
             type="str",
             default="DATA_SET",
@@ -855,8 +841,6 @@ def run_module():
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
-        wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
         location=dict(
             arg_type="str",
             default="DATA_SET",
@@ -887,7 +871,6 @@ def run_module():
     # Extract values from set module options
     location = parsed_args.get("location")
     volume = parsed_args.get("volume")
-    parsed_args.get("wait")
     src = parsed_args.get("src")
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
@@ -993,6 +976,7 @@ def run_module():
             result["jobs"] = None
             raise Exception(_msg)
 
+    # TODO: change this.
     except Exception as err:
         result["failed"] = True
         result["changed"] = False

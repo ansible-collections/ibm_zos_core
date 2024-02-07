@@ -160,6 +160,8 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
+        time.sleep(2)
+
         results = hosts.all.zos_job_submit(
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
@@ -167,7 +169,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         print( "\nVVV == ds creation results\n")
         print_results(results)
 
-        time.sleep(2)
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
                 submitted_job_id = result.get("jobs")[0].get("job_id")
@@ -176,11 +177,12 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
 
         # force catalog?!?!
+        time.sleep(2)
         res = hosts.all.zos_data_set(name=dataset, state="cataloged")
         print( "\nVVV == force catalog results\n")
         print_results(res)
-        time.sleep(2)
 
+        time.sleep(2)
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         print( "\nVVV === first uncatalog results\n")
@@ -190,6 +192,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             assert result.get("changed") is True
 
         # verify second uncatalog shows uncatalog already performed
+        time.sleep(2)
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         print( "\nVVV == second uncatalog results\n")
         print_results(results)
@@ -197,18 +200,24 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         for result in results.contacted.values():
             assert result.get("changed") is False
 
-        time.sleep(3)
+        time.sleep(2)
         # recatalog the data set
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
+        print( "\nVVV == recatalog first results\n")
+        print_results(results)
+
         for result in results.contacted.values():
             assert result.get("changed") is True
 
+        time.sleep(2)
         # verify second catalog shows catalog already performed
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
+        print( "\nVVV == recatalog second results\n")
+        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is False

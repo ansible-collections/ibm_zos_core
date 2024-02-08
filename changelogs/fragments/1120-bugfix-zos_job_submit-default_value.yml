@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_job_submit - Was ignoring the default value for location=DATA_SET, now
+    when location is not specified it will default to DATA_SET.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1120).

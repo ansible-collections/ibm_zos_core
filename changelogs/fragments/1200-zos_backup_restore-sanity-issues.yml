@@ -1,4 +1,0 @@
-trivial:
-  - zos_backup_restore - Added space type choices to argument spec to remove
-    validate-modules:doc-choices-do-not-match-spec.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1200).

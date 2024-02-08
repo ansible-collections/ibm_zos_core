@@ -88,7 +88,6 @@ def get_volumes(ansible_zos_module, path):
         time.sleep(1)
         if all_volumes is not None:
             for volume in all_volumes.contacted.values():
-                print(volume)
                 all_volumes = volume.get('content')
             flag = True if len(all_volumes) > 5 else False
         iteration -= 1

@@ -315,7 +315,6 @@ def run_module():
     result["actions"] = requests
     module.exit_json(**result)
 
-
 def parse_params(params):
     arg_defs = dict(
         system=dict(arg_type=system_type, required=False),

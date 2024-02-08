@@ -262,8 +262,21 @@ JCL_FULL_INPUT="""//HLQ0  JOB MSGLEVEL=(1,1),
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
 
-def test_job_submit_PDS(ansible_zos_module):
+@pytest.mark.parametrize(
+    "location", [
+        dict(default_location=True),
+        dict(default_location=False),
+        ]
+)
+def test_job_submit_PDS(ansible_zos_module, location):
+    """
+    Test zos_job_submit with a PDS(MEMBER), also test the default
+    value for 'location', ensure it works with and without the
+    value "DATA_SET". If default_location is True, then don't
+    pass a 'location:DATA_SET' allow its default to come through.
+    """
     try:
+        results = None
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -276,9 +289,15 @@ def test_job_submit_PDS(ansible_zos_module):
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
         )
-        results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET", wait=True
-        )
+        if bool(location.get("default_location")):
+            results = hosts.all.zos_job_submit(
+                src="{0}(SAMPLE)".format(data_set_name), wait=True
+            )
+        else:
+            results = hosts.all.zos_job_submit(
+                src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET", wait=True
+            )
+
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0

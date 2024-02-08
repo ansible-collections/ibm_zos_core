@@ -325,7 +325,7 @@ def test_operation_list_with_filter(ansible_zos_module):
             test_info['persistent']['data_set_name'] = prstds
         hosts.all.zos_apf(**test_info)
         ti = dict(operation="list", library="")
-        ti['library'] = "APFTEST.*"
+        ti['library'] = "ANSIBLE.*"
         results = hosts.all.zos_apf(**ti)
         for result in results.contacted.values():
             listFiltered = result.get("stdout")

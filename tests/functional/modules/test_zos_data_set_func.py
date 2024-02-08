@@ -456,6 +456,8 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
+        print("\nVVV === est_data_set_creation_when_present_replace(\n")
+        print_results( results )
 
         time.sleep(2)
         hosts.all.zos_data_set(name=dataset, state="absent")

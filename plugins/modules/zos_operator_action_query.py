@@ -312,7 +312,6 @@ def run_module():
             msg="An unexpected error occurred: {0}".format(repr(e)), **result
         )
 
-
     result["actions"] = requests
     module.exit_json(**result)
 

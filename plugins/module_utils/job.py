@@ -36,10 +36,6 @@ try:
 except Exception:
     jobs = ZOAUImportError(traceback.format_exc())
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker
-)
-
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
@@ -284,7 +280,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 if entry.return_code.isdigit():
                     job["ret_code"]["code"] = int(entry.return_code)
             job["ret_code"]["msg_text"] = entry.status
-
 
             # Beginning in ZOAU v1.3.0, the Job class changes svc_class to
             # service_class.

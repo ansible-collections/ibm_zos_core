@@ -478,7 +478,7 @@ def test_persist_invalid_ds_format(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("rc") == 8
     finally:
-        lean_test_env(hosts, test_info)
+        clean_test_env(hosts, test_info)
 
 
 def test_persist_invalid_marker(ansible_zos_module):

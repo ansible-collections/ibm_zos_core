@@ -4,7 +4,7 @@ bugfixes:
     (https://github.com/ansible-collections/ibm_zos_core/pull/1204).
 
 minor_changes:
-  - zos_apf - Enhanced error messages when catching exceptions.
+  - zos_apf - Enhanced error messages when an exception is caught.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1204).
 
 trivial:

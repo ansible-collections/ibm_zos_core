@@ -1,3 +1,0 @@
-trivial:
-  - zos_copy - Change call to ZOAU python API by using a dictionary to arguments.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1163).

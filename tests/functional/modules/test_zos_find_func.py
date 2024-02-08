@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+
 SEQ_NAMES = [
     "TEST.FIND.SEQ.FUNCTEST.FIRST",
     "TEST.FIND.SEQ.FUNCTEST.SECOND",
@@ -280,15 +282,18 @@ def test_find_vsam_pattern(ansible_zos_module):
         )
 
 
-def test_find_vsam_in_volume(ansible_zos_module):
+def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    alternate_vsam = "TEST.FIND.ALTER.VSAM"
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
+    alternate_vsam = "TEST.FIND.VSAM.SECOND"
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts, volume="222222")
-        create_vsam_ksds(alternate_vsam, hosts, volume="000000")
+            create_vsam_ksds(vsam, hosts, volume=volume_1)
+        create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=['222222'], resource_type='cluster'
+            patterns=['TEST.FIND.*.*.*'], volumes=[volume_1], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

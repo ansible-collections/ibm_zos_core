@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2022
+# Copyright (c) IBM Corporation 2022 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,7 +18,6 @@ from ibm_zos_core.plugins.modules.zos_gather_facts import flatten_zinfo_json
 __metaclass__ = type
 
 import pytest
-from mock import call
 
 # Used my some mock modules, should match import directly below
 IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_gather_facts"
@@ -26,30 +25,32 @@ IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_gather_facts"
 # Tests for zos_father_facts helper functions
 
 test_data = [
-    (["ipl"], "zinfo -j -t ipl"),
-    (["ipl  "], "zinfo -j -t ipl"),
-    (["  ipl"], "zinfo -j -t ipl"),
-    (["ipl", "sys"], "zinfo -j -t ipl -t sys"),
-    (["all"], "zinfo -j -a"),
-    (None, "zinfo -j -a"),
-    (["ipl", "all", "sys"], "zinfo -j -a"),
+    (["ipl"], ["ipl"]),
+    (["ipl  "], ["ipl"]),
+    (["  ipl"], ["ipl"]),
+    (["ipl", "sys"], ["ipl", "sys"]),
+    (["all"], ["all"]),
+    (None, ["all"]),
+    (["ipl", "all", "sys"], ["all"]),
     # function does not validate legal vs illegal subsets
-    (["asdf"], "zinfo -j -t asdf"),
-    ([""], None),  # attemtped injection
+    (["asdf"], ["asdf"]),
+    ([""], None),
     (["ipl; cat /.bashrc"], None),  # attemtped injection
+    # for now, 'all' with some other invalid subset resolves to 'all'
+    (["ipl", "all", "ipl; cat /.ssh/id_rsa"], ["all"]),
 ]
 
 
 @pytest.mark.parametrize("args,expected", test_data)
-def test_zos_gather_facts_zinfo_cmd_string_builder(
+def test_zos_gather_facts_zinfo_facts_list_builder(
         zos_import_mocker, args, expected):
 
     mocker, importer = zos_import_mocker
     zos_gather_facts = importer(IMPORT_NAME)
 
     try:
-        result = zos_gather_facts.zinfo_cmd_string_builder(args)
-#         # add more logic here as the function evolves.
+        result = zos_gather_facts.zinfo_facts_list_builder(args)
+        # add more logic here as the function evolves.
     except Exception:
         result = None
     assert result == expected

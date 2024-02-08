@@ -113,6 +113,7 @@ use_template
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 template_parameters
@@ -193,6 +194,7 @@ template_parameters
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   trim_blocks
@@ -210,6 +212,7 @@ template_parameters
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   newline_sequence
@@ -226,6 +229,7 @@ template_parameters
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
 

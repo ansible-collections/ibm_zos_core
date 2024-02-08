@@ -227,15 +227,14 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
+
 try:
     from zoautil_py import opercmd
 except Exception:
     opercmd = ZOAUImportError(traceback.format_exc())
-
-try:
-    from zoautil_py import ZOAU_API_VERSION
-except Exception:
-    ZOAU_API_VERSION = "1.2.0"
 
 
 def run_module():
@@ -263,13 +262,8 @@ def run_module():
 
         wait_s = 5
 
-        zv = ZOAU_API_VERSION.split(".")
         use_wait_arg = False
-        if zv[0] > "1":
-            use_wait_arg = True
-        elif zv[0] == "1" and zv[1] > "2":
-            use_wait_arg = True
-        elif zv[0] == "1" and zv[1] == "2" and zv[2] > "4":
+        if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
             use_wait_arg = True
 
         if use_wait_arg:

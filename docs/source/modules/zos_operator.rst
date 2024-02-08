@@ -42,6 +42,7 @@ verbose
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 wait_time_s

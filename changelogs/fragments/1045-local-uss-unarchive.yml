@@ -1,5 +1,0 @@
-bugfixes:
-  - zos_unarchive - Using a local file with a USS format option failed when sending to
-    remote because dest_data_set option had an empty dictionary. Fix now leaves dest_data_set
-    as None when using a USS format option.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1045).

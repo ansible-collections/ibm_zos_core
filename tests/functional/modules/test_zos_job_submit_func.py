@@ -671,6 +671,8 @@ def test_job_submit_full_input(ansible_zos_module):
             src="{0}/SAMPLE".format(TEMP_PATH),
             location="USS",
             volume=None,
+            # This job used to set wait=True, but since it has been deprecated
+            # and removed, it now waits up to 30 seconds.
             wait_time_s=30
         )
         for result in results.contacted.values():

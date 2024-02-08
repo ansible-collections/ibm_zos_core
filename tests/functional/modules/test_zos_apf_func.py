@@ -253,15 +253,8 @@ def test_batch_add_del(ansible_zos_module):
                 vol = result.get("stdout")
             item['volume'] = vol
         prstds = get_tmp_ds_name(5,5)
-        # cmdStr = "dtouch {0}".format(prstds)
-        # hosts.all.shell(cmd=cmdStr)
-        hosts.all.zos_data_set(
-                name=prstds,
-                type="SEQ",
-                state="present",
-                record_format="F",
-                replace=True,
-        )
+        cmdStr = "dtouch -tseq {0}".format(prstds)
+        hosts.all.shell(cmd=cmdStr)
         test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
         pprint(vars(results))

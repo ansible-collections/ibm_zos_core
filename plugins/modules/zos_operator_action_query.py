@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -318,7 +318,11 @@ def run_module():
             msg="An unexpected error occurred: {0}".format(repr(e)), **result
         )
 
-    result["actions"] = requests
+    text = list_params_given(new_params)
+    if len(requests) > 0:
+        result["actions"] = requests
+    else :
+        result["actions"] = "None outstanding message with given conditions{0}".format(text)
     module.exit_json(**result)
 
 
@@ -402,25 +406,25 @@ def filter_requests(merged_list, params):
     message_id = params.get("message_id")
     job_name = params.get("job_name")
     newlist = merged_list
-
     if system:
         newlist = handle_conditions(newlist, "system", system)
     if job_name:
         newlist = handle_conditions(newlist, "job_name", job_name)
     if message_id:
         newlist = handle_conditions(newlist, "message_id", message_id)
-
     return newlist
 
 
 def handle_conditions(list, condition_type, value):
     # regex = re.compile(condition_values)
     newlist = []
+    exist = False
     for dict in list:
-        if value.endswith("*"):
-            exist = dict.get(condition_type).startswith(value.rstrip("*"))
-        else:
-            exist = dict.get(condition_type) == value
+        if dict.get(condition_type) is not None:
+            if value.endswith("*"):
+                exist = dict.get(condition_type).startswith(value.rstrip("*"))
+            else:
+                exist = dict.get(condition_type) == value
 
         if exist:
             newlist.append(dict)
@@ -428,9 +432,8 @@ def handle_conditions(list, condition_type, value):
 
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
-
     # response = opercmd.execute(operator_cmd)
-    timeout *= 100
+    timeout = timeout  * 100
     response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
 
     rc = response.rc
@@ -522,6 +525,15 @@ def merge_list(list_a, list_b):
                 merged_list.append(dict_z)
     return merged_list
 
+def list_params_given(params):
+    message = ""
+    if params.get("system") is not None:
+        message += " System: {0}".format(params.get("system"))
+    if params.get("message_id") is not None:
+        message += " Message id: {0}".format(params.get("message_id"))
+    if params.get("job_name") is not None:
+        message += " Job name: {0}".format(params.get("job_name"))
+    return message
 
 class Error(Exception):
     pass

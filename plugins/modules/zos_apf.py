@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -521,8 +521,6 @@ def main():
     result['stderr'] = operErr
     result['rc'] = operRc
     result['stdout'] = operOut
-    if operErr:
-        module.exit_json(**result)
     if operation == 'list':
         if not library:
             library = ""

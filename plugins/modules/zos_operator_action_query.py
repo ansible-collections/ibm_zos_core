@@ -312,11 +312,8 @@ def run_module():
             msg="An unexpected error occurred: {0}".format(repr(e)), **result
         )
 
-    text = list_params_given(new_params)
-    if len(requests) > 0:
-        result["actions"] = requests
-    else :
-        result["actions"] = "None outstanding message with given conditions{0}".format(text)
+
+    result["actions"] = requests
     module.exit_json(**result)
 
 
@@ -518,17 +515,6 @@ def merge_list(list_a, list_b):
                 dict_z.update(dict_b)
                 merged_list.append(dict_z)
     return merged_list
-
-
-def list_params_given(params):
-    message = ""
-    if params.get("system") is not None:
-        message += " System: {0}".format(params.get("system"))
-    if params.get("message_id") is not None:
-        message += " Message id: {0}".format(params.get("message_id"))
-    if params.get("job_name") is not None:
-        message += " Job name: {0}".format(params.get("job_name"))
-    return message
 
 
 class Error(Exception):

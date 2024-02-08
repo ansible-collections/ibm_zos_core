@@ -62,7 +62,7 @@ def test_zos_operator_action_query_option_message_id_invalid_abbreviation(
     except Exception:
         pass
     for result in results.contacted.values():
-        assert result.get("actions") 
+        assert not result.get("actions")
 
 @pytest.mark.parametrize("message_id", ["IEE*", "*"])
 def test_zos_operator_action_query_option_message_id_regex(

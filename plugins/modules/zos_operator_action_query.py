@@ -427,7 +427,7 @@ def handle_conditions(list, condition_type, value):
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
     # response = opercmd.execute(operator_cmd)
-    timeout = timeout  * 100
+    timeout = timeout * 100
     response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
 
     rc = response.rc
@@ -519,6 +519,7 @@ def merge_list(list_a, list_b):
                 merged_list.append(dict_z)
     return merged_list
 
+
 def list_params_given(params):
     message = ""
     if params.get("system") is not None:
@@ -528,6 +529,7 @@ def list_params_given(params):
     if params.get("job_name") is not None:
         message += " Job name: {0}".format(params.get("job_name"))
     return message
+
 
 class Error(Exception):
     pass

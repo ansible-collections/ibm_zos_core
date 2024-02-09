@@ -499,9 +499,15 @@ def test_data_set_deletion_when_present(ansible_zos_module, dstype):
 def test_data_set_deletion_when_absent(ansible_zos_module):
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name(2, 2)
-    hosts.all.zos_data_set(name=dataset, state="absent")
-    time.sleep(2)
     results = hosts.all.zos_data_set(name=dataset, state="absent")
+    print( "\nVVV=== delete 1\n")
+    print_results(results)
+
+    results = hosts.all.shell( cmd="dls {0}".format(dataset))
+    print_results(results)
+
+    results = hosts.all.zos_data_set(name=dataset, state="absent")
+    print( "\nVVV=== delete 2\n")
     print_results(results)
     for result in results.contacted.values():
         assert result.get("changed") is False

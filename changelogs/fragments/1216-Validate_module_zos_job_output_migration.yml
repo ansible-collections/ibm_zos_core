@@ -1,0 +1,3 @@
+trivial:
+  - zos_job_output - migrate code to use ZOAU v1.3.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1216).

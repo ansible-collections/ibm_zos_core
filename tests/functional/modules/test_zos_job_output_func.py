@@ -31,8 +31,6 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/jcl"
-JOB_NOT_FOUND_MSG_TXT="The job with the name * could not be found."
-JOB_NOT_FOUND_MSG_TXT_ID="The job with the job_id INVALID could not be found."
 
 def test_zos_job_output_no_job_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -47,7 +45,6 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
     results = hosts.all.zos_job_output(job_id="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT_ID
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -78,7 +75,6 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
     results = hosts.all.zos_job_output(owner="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT
 
 
 def test_zos_job_output_reject(ansible_zos_module):

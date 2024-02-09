@@ -1339,7 +1339,7 @@ def run_module():
             type="str",
             required=False,
             default="PDS",
-            choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+            # choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
         ),
         space_type=dict(
             type="str",
@@ -1431,7 +1431,7 @@ def run_module():
         for entry in module.params.get("batch"):
             for item in select_list:
                 if entry.params.get(item) is not None:
-                    entry.params[item] = module.params.get(item).upper()
+                    entry.params[item] = entry.params.get(item).upper()
     else:
         for item in select_list:
             if module.params.get(item) is not None:

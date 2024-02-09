@@ -17,6 +17,7 @@ __metaclass__ = type
 
 from shellescape import quote
 
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
@@ -118,16 +119,19 @@ def test_zos_job_output_job_exists(ansible_zos_module):
 def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        hosts.all.file(path=TEMP_PATH, state="directory")
+        mlq_size, llq_size = 3,4
+        temp_dataset = get_tmp_ds_name(mlq_size, llq_size)
+
+        #hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd="decho {0} > {1}".format(quote(JCL_FILE_CONTENTS), temp_dataset)
         )
         result = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
+            src="{0}".format(temp_dataset), location="DATA_SET"
         )
         for res in result.contacted.values():
             print(res)
-        hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.shell(cmd="drm {0}".format(temp_dataset))
         dd_name = "JESMSGLG"
         results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
         for result in results.contacted.values():

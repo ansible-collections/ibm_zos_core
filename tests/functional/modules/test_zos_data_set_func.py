@@ -500,7 +500,7 @@ def test_data_set_deletion_when_absent(ansible_zos_module):
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name(2, 2)
     hosts.all.zos_data_set(name=dataset, state="absent")
-    time.delay(2)
+    time.sleep(2)
     results = hosts.all.zos_data_set(name=dataset, state="absent")
     print_results(results)
     for result in results.contacted.values():

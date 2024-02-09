@@ -154,9 +154,15 @@ should uncomment this test as part of the validation process.
 #    finally:
 #        hosts.all.file(path=TEMP_PATH, state="absent")
 
-
-def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
-    for result in results.contacted.values():
-        assert result.get("rc") == 0
+"""
+keyword: ENABLE-FOR-1-3
+Test commented because it depends on zos_job_submit, which has not yet been
+migrated to ZOAU v1.3.0 and rework the test case. Whoever works in issue
+https://github.com/ansible-collections/ibm_zos_core/issues/1110
+should uncomment this test as part of the validation process.
+"""
+#def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
+#    hosts = ansible_zos_module
+#    results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
+#    for result in results.contacted.values():
+#        assert result.get("rc") == 0

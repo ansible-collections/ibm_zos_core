@@ -132,6 +132,7 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
             assert result.get("changed") is False
             assert result.get("jobs") is not None
             for job in result.get("jobs"):
+                print(job)
                 assert len(job.get("ddnames")) == 1
                 assert job.get("ddnames")[0].get("ddname") == dd_name
     finally:

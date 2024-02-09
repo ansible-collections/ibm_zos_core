@@ -292,6 +292,7 @@ backup_name:
 
 import re
 import json
+from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
@@ -522,6 +523,12 @@ def main():
     result['rc'] = operRc
     result['stdout'] = operOut
     if operation == 'list':
+        try:
+            data = json.loads(operOut)
+            data_sets = data["data"]["datasets"]
+        except Exception as e:
+            err_msg = "An exception occurred. See stderr for more details."
+            module.fail_json(msg=err_msg, stderr=to_text(e), rc=operErr)
         if not library:
             library = ""
         if not volume:
@@ -529,12 +536,6 @@ def main():
         if sms:
             sms = "*SMS*"
         if library or volume or sms:
-            try:
-                data = json.loads(operOut)
-                data_sets = data["data"]["datasets"]
-            except Exception as e:
-                err_msg = "An exception occurred. See stderr for more details."
-                module.fail_json(msg=err_msg, stderr=str(e), rc=operErr)
             ds_list = ""
             for d in data_sets:
                 ds = d.get('ds')
@@ -545,6 +546,16 @@ def main():
                 except re.error:
                     module.exit_json(**result)
             result['stdout'] = ds_list
+        else:
+            """
+            ZOAU 1.3 changed the output from apf, having the data set list inside a new "data" tag.
+            To keep consistency with previous ZOAU versions now we have to filter the json response.
+            """
+            try:
+                result['stdout'] = json.dumps(data.get("data"))
+            except Exception as e:
+                err_msg = "An exception occurred. See stderr for more details."
+                module.fail_json(msg=err_msg, stderr=to_text(e), rc=operErr)
     module.exit_json(**result)
 
 

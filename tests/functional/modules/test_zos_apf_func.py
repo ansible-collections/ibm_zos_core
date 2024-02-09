@@ -301,9 +301,10 @@ def test_operation_list(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     for result in results.contacted.values():
         listJson = result.get("stdout")
+        print(listJson)
     import json
     data = json.loads(listJson)
-    assert data['data']['format'] in ['DYNAMIC', 'STATIC']
+    assert data['format'] in ['DYNAMIC', 'STATIC']
     del json
 
 

@@ -405,26 +405,26 @@ def filter_requests(merged_list, params):
     return newlist
 
 
-def handle_conditions(list, condition_type, value):
+def handle_conditions(merged_list, condition_type, value):
     # regex = re.compile(condition_values)
     newlist = []
     exist = False
-    for dict in list:
-        if dict.get(condition_type) is not None:
+    for message in merged_list:
+        if message.get(condition_type) is not None:
             if value.endswith("*"):
-                exist = dict.get(condition_type).startswith(value.rstrip("*"))
+                exist = message.get(condition_type).startswith(value.rstrip("*"))
             else:
-                exist = dict.get(condition_type) == value
+                exist = message.get(condition_type) == value
 
         if exist:
-            newlist.append(dict)
+            newlist.append(message)
     return newlist
 
 
-def execute_command(operator_cmd, timeout=1, *args, **kwargs):
-    # response = opercmd.execute(operator_cmd)
-    timeout = timeout * 100
-    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
+    timeout_c = 100 * timeout_s
+    response = opercmd.execute(operator_cmd, timeout_c, *args, **kwargs)
 
     rc = response.rc
     stdout = response.stdout_response

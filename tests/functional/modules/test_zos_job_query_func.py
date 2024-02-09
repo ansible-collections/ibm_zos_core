@@ -63,7 +63,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, JDATA_SET_NAME)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(JDATA_SET_NAME), location="DATA_SET", wait=True
+            src="{0}(SAMPLE)".format(JDATA_SET_NAME), location="DATA_SET", wait_time_s=10
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -96,7 +96,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, NDATA_SET_NAME)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(NDATA_SET_NAME), location="DATA_SET", wait=True
+            src="{0}(SAMPLE)".format(NDATA_SET_NAME), location="DATA_SET", wait_time_s=10
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"

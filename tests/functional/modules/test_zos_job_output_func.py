@@ -63,6 +63,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_name="INVALID")
     for result in results.contacted.values():
+        print(result)
         assert result.get("changed") is False
         assert result.get("module_stderr") is not None
 

@@ -425,7 +425,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
 try:
-    from zoautil_py import exceptions
+    from zoautil_py import exceptions as zoau_exceptions
 except Exception:
     exceptions = ZOAUImportError(traceback.format_exc())
 
@@ -469,7 +469,7 @@ def run_module():
         results = {}
         results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
         results["changed"] = False
-    except exceptions.JobFetchException as fetch_exception:
+    except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(
             rc=fetch_exception.response.rc,
             stdout=fetch_exception.response.stdout_response,

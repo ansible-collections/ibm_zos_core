@@ -99,6 +99,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         )
 
         for job in jobs.contacted.values():
+            print(job)
             assert job.get("jobs") is not None
 
         for job in jobs.contacted.values():

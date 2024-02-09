@@ -1339,7 +1339,7 @@ def run_module():
             type="str",
             required=False,
             default="PDS",
-            # choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+            choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
         ),
         space_type=dict(
             type="str",

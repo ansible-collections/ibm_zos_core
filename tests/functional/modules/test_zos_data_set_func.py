@@ -29,7 +29,7 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 data_set_types = [      # NOTE THESE WERE LOWERCASE BEFORE
     ("PDS"),
-    ("seq"),
+    ("SEQ"),
     ("PDSE"),
     ("ESDS"),
     ("RRDS"),

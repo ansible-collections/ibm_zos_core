@@ -47,7 +47,8 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
     results = hosts.all.zos_job_output(job_id="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT_ID
+        assert result.get("rc") == 1
+        assert result.get("failed") is True
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -63,7 +64,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     results = hosts.all.zos_job_output(job_name="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get('job_name') == "INVALID"
+        assert result.get("failed") is True
 
 
 def test_zos_job_output_no_owner(ansible_zos_module):
@@ -79,8 +80,7 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
     results = hosts.all.zos_job_output(owner="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT
-
+        assert result.get("failed") is True
 
 def test_zos_job_output_reject(ansible_zos_module):
     hosts = ansible_zos_module
@@ -159,4 +159,4 @@ def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
     for result in results.contacted.values():
-        assert result.get("jobs") is not None
+        assert result.get("rc") == 0

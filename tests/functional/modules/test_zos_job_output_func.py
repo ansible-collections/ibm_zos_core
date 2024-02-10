@@ -122,16 +122,26 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         mlq_size, llq_size = 3,4
         temp_dataset = get_tmp_ds_name(mlq_size, llq_size)
 
-        #hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="decho {0} > {1}".format(quote(JCL_FILE_CONTENTS), temp_dataset)
+            cmd="dtouch {0}".format(temp_dataset)
+        )
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+        )
+
+        hosts.all.shell(
+            cmd= "cp -CM {0} \"//'{1}'\"".format(TEMP_PATH + "/SAMPLE", temp_dataset)
         )
         result = hosts.all.zos_job_submit(
             src="{0}".format(temp_dataset), location="DATA_SET"
         )
+        hosts.all.shell(
+            cmd= "drm {0}".format(temp_dataset)
+        )
         for res in result.contacted.values():
             print(res)
-        hosts.all.shell(cmd="drm {0}".format(temp_dataset))
+        hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"
         results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
         for result in results.contacted.values():

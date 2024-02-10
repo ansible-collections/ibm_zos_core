@@ -140,5 +140,5 @@ def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
     for result in results.contacted.values():
-        print(result)
         assert result.get("rc") == 0
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None

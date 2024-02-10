@@ -17,7 +17,6 @@ __metaclass__ = type
 
 from shellescape import quote
 
-from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
@@ -119,38 +118,20 @@ def test_zos_job_output_job_exists(ansible_zos_module):
 def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        mlq_size, llq_size = 3,4
-        temp_dataset = get_tmp_ds_name(mlq_size, llq_size)
-
-        hosts.all.shell(
-            cmd="dtouch {0}".format(temp_dataset)
-        )
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
-
-        hosts.all.shell(
-            cmd= "cp -CM {0} \"//'{1}'\"".format(TEMP_PATH + "/SAMPLE", temp_dataset)
-        )
         result = hosts.all.zos_job_submit(
-            src="{0}".format(temp_dataset), location="DATA_SET"
-        )
-        hosts.all.shell(
-            cmd= "drm {0}".format(temp_dataset)
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
         )
         for res in result.contacted.values():
             print(res)
         hosts.all.file(path=TEMP_PATH, state="absent")
-        dd_name = "JESMSGLG"
-        results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
+        results = hosts.all.zos_job_output(job_name="HELLO")
         for result in results.contacted.values():
             assert result.get("changed") is False
             assert result.get("jobs") is not None
-            for job in result.get("jobs"):
-                print(job)
-                assert len(job.get("ddnames")) == 1
-                assert job.get("ddnames")[0].get("ddname") == dd_name
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 

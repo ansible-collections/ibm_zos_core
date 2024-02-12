@@ -4347,16 +4347,21 @@ def test_backup_pds(ansible_zos_module, args):
 def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_type):
     hosts = ansible_zos_module
     source = get_tmp_ds_name()
+    source_member = f"{source}(MEM)"
     dest = get_tmp_ds_name()
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
+
     if volume_1 == "SCR03":
         volume = volumes.get_available_vol()
         volumes.free_vol(volume_1)
         volume_1 = volume
+
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
-        hosts.all.zos_data_set(name=source_member, type="member", state='present')
+        if src_type != "seq":
+            hosts.all.zos_data_set(name=source_member, type="member", state='present')
+
         copy_res = hosts.all.zos_copy(
             src=source,
             dest=dest,
@@ -4406,91 +4411,104 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=dest_ds, state="absent")
 
+"""
+keyword: ENABLE-FOR-1-3
+Test commented because it depends on zos_encode, which has not yet been
+migrated to ZOAU v1.3.0. Whoever works in issue
+https://github.com/ansible-collections/ibm_zos_core/issues/1107
+should uncomment this test as part of the validation process.
+"""
+# @pytest.mark.vsam
+# @pytest.mark.parametrize("force", [False, True])
+# def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
+#     hosts = ansible_zos_module
+#     src_ds = get_tmp_ds_name()
+#     dest_ds = get_tmp_ds_name()
 
-@pytest.mark.vsam
-@pytest.mark.parametrize("force", [False, True])
-def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
-    hosts = ansible_zos_module
-    src_ds = get_tmp_ds_name()
-    dest_ds = get_tmp_ds_name()
+#     try:
+#         create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
+#         create_vsam_data_set(hosts, dest_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
 
-    try:
-        create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
-        create_vsam_data_set(hosts, dest_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
+#         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True, force=force)
+#         verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
 
-        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True, force=force)
-        verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
+#         for result in copy_res.contacted.values():
+#             if force:
+#                 assert result.get("msg") is None
+#                 assert result.get("changed") is True
+#                 assert result.get("dest") == dest_ds
+#             else:
+#                 assert result.get("msg") is not None
+#                 assert result.get("changed") is False
 
-        for result in copy_res.contacted.values():
-            if force:
-                assert result.get("msg") is None
-                assert result.get("changed") is True
-                assert result.get("dest") == dest_ds
-            else:
-                assert result.get("msg") is not None
-                assert result.get("changed") is False
-
-        for result in verify_copy.contacted.values():
-            assert result.get("dd_names") is not None
-            dd_names = result.get("dd_names")
-            assert len(dd_names) > 0
-            output = "\n".join(dd_names[0]["content"])
-            assert "IN-CAT" in output
-            assert re.search(r"\bINDEXED\b", output)
-    finally:
-        hosts.all.zos_data_set(name=src_ds, state="absent")
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
+#         for result in verify_copy.contacted.values():
+#             assert result.get("dd_names") is not None
+#             dd_names = result.get("dd_names")
+#             assert len(dd_names) > 0
+#             output = "\n".join(dd_names[0]["content"])
+#             assert "IN-CAT" in output
+#             assert re.search(r"\bINDEXED\b", output)
+#     finally:
+#         hosts.all.zos_data_set(name=src_ds, state="absent")
+#         hosts.all.zos_data_set(name=dest_ds, state="absent")
 
 
-@pytest.mark.vsam
-@pytest.mark.parametrize("backup", [None, "USER.TEST.VSAM.KSDS.BACK"])
-def test_backup_ksds(ansible_zos_module, backup):
-    hosts = ansible_zos_module
-    src = get_tmp_ds_name()
-    dest = get_tmp_ds_name()
-    backup_name = None
+"""
+keyword: ENABLE-FOR-1-3
+Test commented because it depends on zos_encode, which has not yet been
+migrated to ZOAU v1.3.0. Whoever works in issue
+https://github.com/ansible-collections/ibm_zos_core/issues/1107
+should uncomment this test as part of the validation process.
+"""
+# @pytest.mark.vsam
+# @pytest.mark.parametrize("backup", [None, "USER.TEST.VSAM.KSDS.BACK"])
+# def test_backup_ksds(ansible_zos_module, backup):
+#     hosts = ansible_zos_module
+#     src = get_tmp_ds_name()
+#     dest = get_tmp_ds_name()
+#     backup_name = None
 
-    try:
-        create_vsam_data_set(hosts, src, "KSDS", add_data=True, key_length=12, key_offset=0)
-        create_vsam_data_set(hosts, dest, "KSDS", add_data=True, key_length=12, key_offset=0)
+#     try:
+#         create_vsam_data_set(hosts, src, "KSDS", add_data=True, key_length=12, key_offset=0)
+#         create_vsam_data_set(hosts, dest, "KSDS", add_data=True, key_length=12, key_offset=0)
 
-        if backup:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, backup_name=backup, remote_src=True, force=True)
-        else:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, remote_src=True, force=True)
+#         if backup:
+#             copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, backup_name=backup, remote_src=True, force=True)
+#         else:
+#             copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, remote_src=True, force=True)
 
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+#         for result in copy_res.contacted.values():
+#             assert result.get("msg") is None
+#             assert result.get("changed") is True
+#             backup_name = result.get("backup_name")
+#             assert backup_name is not None
 
-            if backup:
-                assert backup_name == backup
+#             if backup:
+#                 assert backup_name == backup
 
-        verify_copy = get_listcat_information(hosts, dest, "ksds")
-        verify_backup = get_listcat_information(hosts, backup_name, "ksds")
+#         verify_copy = get_listcat_information(hosts, dest, "ksds")
+#         verify_backup = get_listcat_information(hosts, backup_name, "ksds")
 
-        for result in verify_copy.contacted.values():
-            assert result.get("dd_names") is not None
-            dd_names = result.get("dd_names")
-            assert len(dd_names) > 0
-            output = "\n".join(dd_names[0]["content"])
-            assert "IN-CAT" in output
-            assert re.search(r"\bINDEXED\b", output)
-        for result in verify_backup.contacted.values():
-            assert result.get("dd_names") is not None
-            dd_names = result.get("dd_names")
-            assert len(dd_names) > 0
-            output = "\n".join(dd_names[0]["content"])
-            assert "IN-CAT" in output
-            assert re.search(r"\bINDEXED\b", output)
+#         for result in verify_copy.contacted.values():
+#             assert result.get("dd_names") is not None
+#             dd_names = result.get("dd_names")
+#             assert len(dd_names) > 0
+#             output = "\n".join(dd_names[0]["content"])
+#             assert "IN-CAT" in output
+#             assert re.search(r"\bINDEXED\b", output)
+#         for result in verify_backup.contacted.values():
+#             assert result.get("dd_names") is not None
+#             dd_names = result.get("dd_names")
+#             assert len(dd_names) > 0
+#             output = "\n".join(dd_names[0]["content"])
+#             assert "IN-CAT" in output
+#             assert re.search(r"\bINDEXED\b", output)
 
-    finally:
-        hosts.all.zos_data_set(name=src, state="absent")
-        hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_name:
-            hosts.all.zos_data_set(name=backup_name, state="absent")
+#     finally:
+#         hosts.all.zos_data_set(name=src, state="absent")
+#         hosts.all.zos_data_set(name=dest, state="absent")
+#         if backup_name:
+#             hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 @pytest.mark.vsam

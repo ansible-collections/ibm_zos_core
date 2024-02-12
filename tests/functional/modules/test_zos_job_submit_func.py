@@ -291,11 +291,11 @@ def test_job_submit_PDS(ansible_zos_module, location):
         )
         if bool(location.get("default_location")):
             results = hosts.all.zos_job_submit(
-                src="{0}(SAMPLE)".format(data_set_name), wait=True
+                src="{0}(SAMPLE)".format(data_set_name), wait_time_s=30
             )
         else:
             results = hosts.all.zos_job_submit(
-                src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET", wait=True
+                src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET", wait_time_s=30
             )
 
         for result in results.contacted.values():

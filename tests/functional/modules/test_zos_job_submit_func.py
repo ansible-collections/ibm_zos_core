@@ -333,64 +333,45 @@ def test_job_submit_USS(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
-# def test_job_submit_LOCAL(ansible_zos_module):
-#     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-#     with open(tmp_file.name, "w") as f:
-#         f.write(JCL_FILE_CONTENTS)
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
-#     for result in results.contacted.values():
-#         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
-#         assert result.get("jobs")[0].get("ret_code").get("code") == 0
-#         assert result.get("changed") is True
+def test_job_submit_LOCAL(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait_time_s=10)
+
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+        assert result.get("jobs")[0].get("ret_code").get("code") == 0
+        assert result.get("changed") is True
 
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
-# def test_job_submit_LOCAL_extraR(ansible_zos_module):
-#     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-#     with open(tmp_file.name, "w") as f:
-#         f.write(JCL_FILE_CONTENTS_BACKSLASH_R)
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
+def test_job_submit_LOCAL_extraR(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_BACKSLASH_R)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait_time_s=10)
 
-#     for result in results.contacted.values():
-#         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
-#         assert result.get("jobs")[0].get("ret_code").get("code") == 0
-#         assert result.get("changed") is True
+    for result in results.contacted.values():
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+        assert result.get("jobs")[0].get("ret_code").get("code") == 0
+        assert result.get("changed") is True
 
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
-# def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
-#     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-#     with open(tmp_file.name, "w") as f:
-#         f.write(JCL_FILE_CONTENTS_BAD)
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
+def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_BAD)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait_time_s=10)
 
-#     for result in results.contacted.values():
-#         # Expecting: The job completion code (CC) was not in the job log....."
-#         assert result.get("changed") is False
-#         assert re.search(r'completion code', repr(result.get("msg")))
+    for result in results.contacted.values():
+        # Expecting: The job completion code (CC) was not in the job log....."
+        assert result.get("changed") is False
+        assert re.search(r'completion code', repr(result.get("msg")))
 
 
 def test_job_submit_PDS_volume(ansible_zos_module, volumes_on_systems):
@@ -527,137 +508,123 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
         hosts.all.zos_data_set(name=data_set_name, state="absent")
 
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
-# @pytest.mark.parametrize("args", [
-#     dict(max_rc=None, wait_time_s=10),
-#     dict(max_rc=4, wait_time_s=10),
-#     dict(max_rc=12, wait_time_s=20)
-# ])
-# def test_job_submit_max_rc(ansible_zos_module, args):
-#     """This"""
-#     try:
-#         hosts = ansible_zos_module
-#         tmp_file = tempfile.NamedTemporaryFile(delete=True)
-#         with open(tmp_file.name, "w") as f:
-#             f.write(JCL_FILE_CONTENTS_RC_8)
+@pytest.mark.parametrize("args", [
+    dict(max_rc=None, wait_time_s=10),
+    dict(max_rc=4, wait_time_s=10),
+    dict(max_rc=12, wait_time_s=20)
+])
+def test_job_submit_max_rc(ansible_zos_module, args):
+    """This"""
+    try:
+        hosts = ansible_zos_module
+        tmp_file = tempfile.NamedTemporaryFile(delete=True)
+        with open(tmp_file.name, "w") as f:
+            f.write(JCL_FILE_CONTENTS_RC_8)
 
-#         results = hosts.all.zos_job_submit(
-#             src=tmp_file.name, location="LOCAL", max_rc=args["max_rc"], wait_time_s=args["wait_time_s"]
-#         )
+        results = hosts.all.zos_job_submit(
+            src=tmp_file.name, location="LOCAL", max_rc=args["max_rc"], wait_time_s=args["wait_time_s"]
+        )
 
-#         for result in results.contacted.values():
-#             # Should fail normally as a non-zero RC will result in job submit failure
-#             if args["max_rc"] is None:
-#                 assert result.get("msg") is not None
-#                 assert result.get('changed') is False
-#                 # On busy systems, it is possible that the duration even for a job with a non-zero return code
-#                 # will take considerable time to obtain the job log and thus you could see either error msg below
-#                 #Expecting: - "The job return code 8 was non-zero in the job output, this job has failed"
-#                 #           - Consider using module zos_job_query to poll for a long running job or
-#                 #             increase option \\'wait_times_s` to a value greater than 10.",
-#                 if result.get('duration'):
-#                     duration = result.get('duration')
-#                 else:
-#                     duration = 0
+        for result in results.contacted.values():
+            # Should fail normally as a non-zero RC will result in job submit failure
+            if args["max_rc"] is None:
+                assert result.get("msg") is not None
+                assert result.get('changed') is False
+                # On busy systems, it is possible that the duration even for a job with a non-zero return code
+                # will take considerable time to obtain the job log and thus you could see either error msg below
+                #Expecting: - "The job return code 8 was non-zero in the job output, this job has failed"
+                #           - Consider using module zos_job_query to poll for a long running job or
+                #             increase option \\'wait_times_s` to a value greater than 10.",
+                if result.get('duration'):
+                    duration = result.get('duration')
+                else:
+                    duration = 0
 
-#                 if duration >= args["wait_time_s"]:
-#                     re.search(r'long running job', repr(result.get("msg")))
-#                 else:
-#                     assert re.search(r'non-zero', repr(result.get("msg")))
+                if duration >= args["wait_time_s"]:
+                    re.search(r'long running job', repr(result.get("msg")))
+                else:
+                    assert re.search(r'non-zero', repr(result.get("msg")))
 
-#             # Should fail with normally as well, job fails with an RC 8 yet max is set to 4
-#             elif args["max_rc"] == 4:
-#                 assert result.get("msg") is not None
-#                 assert result.get('changed') is False
-#                 # Expecting "The job return code, 'ret_code[code]' 8 for the submitted job is greater
-#                 # than the value set for option 'max_rc' 4. Increase the value for 'max_rc' otherwise
-#                 # this job submission has failed.
-#                 assert re.search(r'the submitted job is greater than the value set for option', repr(result.get("msg")))
+            # Should fail with normally as well, job fails with an RC 8 yet max is set to 4
+            elif args["max_rc"] == 4:
+                assert result.get("msg") is not None
+                assert result.get('changed') is False
+                # Expecting "The job return code, 'ret_code[code]' 8 for the submitted job is greater
+                # than the value set for option 'max_rc' 4. Increase the value for 'max_rc' otherwise
+                # this job submission has failed.
+                assert re.search(r'the submitted job is greater than the value set for option', repr(result.get("msg")))
 
-#             elif args["max_rc"] == 12:
-#                 # Will not fail but changed will be false for the non-zero RC, there
-#                 # are other possibilities like an ABEND or JCL ERROR will fail this even
-#                 # with a MAX RC
-#                 assert result.get("msg") is None
-#                 assert result.get('changed') is False
-#                 assert result.get("jobs")[0].get("ret_code").get("code") < 12
-#     finally:
-#         hosts.all.file(path=tmp_file.name, state="absent")
+            elif args["max_rc"] == 12:
+                # Will not fail but changed will be false for the non-zero RC, there
+                # are other possibilities like an ABEND or JCL ERROR will fail this even
+                # with a MAX RC
+                assert result.get("msg") is None
+                assert result.get('changed') is False
+                assert result.get("jobs")[0].get("ret_code").get("code") < 12
+    finally:
+        hosts.all.file(path=tmp_file.name, state="absent")
 
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
-# @pytest.mark.template
-# @pytest.mark.parametrize("args", [
-#     dict(
-#         template="Default",
-#         options=dict(
-#             keep_trailing_newline=False
-#         )
-#     ),
-#     dict(
-#         template="Custom",
-#         options=dict(
-#             keep_trailing_newline=False,
-#             variable_start_string="((",
-#             variable_end_string="))",
-#             comment_start_string="(#",
-#             comment_end_string="#)"
-#         )
-#     ),
-#     dict(
-#         template="Loop",
-#         options=dict(
-#             keep_trailing_newline=False
-#         )
-#     )
-# ])
-# def test_job_submit_jinja_template(ansible_zos_module, args):
-#     try:
-#         hosts = ansible_zos_module
+@pytest.mark.template
+@pytest.mark.parametrize("args", [
+    dict(
+        template="Default",
+        options=dict(
+            keep_trailing_newline=False
+        )
+    ),
+    dict(
+        template="Custom",
+        options=dict(
+            keep_trailing_newline=False,
+            variable_start_string="((",
+            variable_end_string="))",
+            comment_start_string="(#",
+            comment_end_string="#)"
+        )
+    ),
+    dict(
+        template="Loop",
+        options=dict(
+            keep_trailing_newline=False
+        )
+    )
+])
+def test_job_submit_jinja_template(ansible_zos_module, args):
+    try:
+        hosts = ansible_zos_module
 
-#         tmp_file = tempfile.NamedTemporaryFile(delete=False)
-#         with open(tmp_file.name, "w") as f:
-#             f.write(JCL_TEMPLATES[args["template"]])
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        with open(tmp_file.name, "w") as f:
+            f.write(JCL_TEMPLATES[args["template"]])
 
-#         template_vars = dict(
-#             pgm_name="HELLO",
-#             input_dataset="DUMMY",
-#             message="Hello, world",
-#             steps=[
-#                 dict(step_name="IN", dd="DUMMY"),
-#                 dict(step_name="PRINT", dd="SYSOUT=*"),
-#                 dict(step_name="UT1", dd="*")
-#             ]
-#         )
-#         for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
-#             host.vars.update(template_vars)
+        template_vars = dict(
+            pgm_name="HELLO",
+            input_dataset="DUMMY",
+            message="Hello, world",
+            steps=[
+                dict(step_name="IN", dd="DUMMY"),
+                dict(step_name="PRINT", dd="SYSOUT=*"),
+                dict(step_name="UT1", dd="*")
+            ]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
 
-#         results = hosts.all.zos_job_submit(
-#             src=tmp_file.name,
-#             location="LOCAL",
-#             use_template=True,
-#             template_parameters=args["options"]
-#         )
+        results = hosts.all.zos_job_submit(
+            src=tmp_file.name,
+            location="LOCAL",
+            use_template=True,
+            template_parameters=args["options"]
+        )
 
-#         for result in results.contacted.values():
-#             assert result.get('changed') is True
-#             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
-#             assert result.get("jobs")[0].get("ret_code").get("code") == 0
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+            assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
-#     finally:
-#         os.remove(tmp_file.name)
+    finally:
+        os.remove(tmp_file.name)
 
 
 def test_job_submit_full_input(ansible_zos_module):
@@ -683,66 +650,46 @@ def test_job_submit_full_input(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
-# def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
-#     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-#     with open(tmp_file.name, "w") as f:
-#         f.write(JCL_FILE_CONTENTS_NO_DSN)
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
-#     for result in results.contacted.values():
-#         # Expecting: The job completion code (CC) was not in the job log....."
-#         assert result.get("changed") is False
-#         assert re.search(r'completion code', repr(result.get("msg")))
-#         assert result.get("jobs")[0].get("job_id") is not None
+
+def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_NO_DSN)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+    for result in results.contacted.values():
+        # Expecting: The job completion code (CC) was not in the job log....."
+        assert result.get("changed") is False
+        assert re.search(r'completion code', repr(result.get("msg")))
+        assert result.get("jobs")[0].get("job_id") is not None
 
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
 # Should have a JCL ERROR <int>
-# def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
-#     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-#     with open(tmp_file.name, "w") as f:
-#         f.write(JCL_FILE_CONTENTS_INVALID_USER)
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
-#     for result in results.contacted.values():
-#         # Expecting: The job completion code (CC) was not in the job log....."
-#         assert result.get("changed") is False
-#         assert re.search(r'return code was not available', repr(result.get("msg")))
-#         assert re.search(r'error SEC', repr(result.get("msg")))
-#         assert result.get("jobs")[0].get("job_id") is not None
-#         assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_text")))
+def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_INVALID_USER)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+    for result in results.contacted.values():
+        # Expecting: The job completion code (CC) was not in the job log....."
+        assert result.get("changed") is False
+        assert re.search(r'return code was not available', repr(result.get("msg")))
+        assert re.search(r'error SEC', repr(result.get("msg")))
+        assert result.get("jobs")[0].get("job_id") is not None
+        assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_text")))
 
 
-"""
-keyword: ENABLE-FOR-1-3
-Test commented because it depends on zos_copy, which has not yet been
-migrated to ZOAU v1.3.0. Whoever works in issue
-https://github.com/ansible-collections/ibm_zos_core/issues/1106
-should uncomment this test as part of the validation process.
-"""
-# def test_negative_job_submit_local_jcl_typrun_scan(ansible_zos_module):
-#     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-#     with open(tmp_file.name, "w") as f:
-#         f.write(JCL_FILE_CONTENTS_TYPRUN_SCAN)
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
-#     for result in results.contacted.values():
-#         # Expecting: The job completion code (CC) was not in the job log....."
-#         assert result.get("changed") is False
-#         assert re.search(r'return code was not available', repr(result.get("msg")))
-#         assert re.search(r'error ? ?', repr(result.get("msg")))
-#         assert result.get("jobs")[0].get("job_id") is not None
-#         assert result.get("jobs")[0].get("ret_code").get("msg_text") == "?"
+def test_negative_job_submit_local_jcl_typrun_scan(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_TYPRUN_SCAN)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+    for result in results.contacted.values():
+        # Expecting: The job completion code (CC) was not in the job log....."
+        assert result.get("changed") is False
+        assert re.search(r'return code was not available', repr(result.get("msg")))
+        assert re.search(r'error ? ?', repr(result.get("msg")))
+        assert result.get("jobs")[0].get("job_id") is not None
+        assert result.get("jobs")[0].get("ret_code").get("msg_text") == "?"

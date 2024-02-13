@@ -310,7 +310,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 for single_dd in list_of_dds:
                     dd = {}
 
-                    if "dataset" not in single_dd:
+                    if "dd_name" not in single_dd:
                         continue
 
                     # If dd_name not None, only that specific dd_name should be returned

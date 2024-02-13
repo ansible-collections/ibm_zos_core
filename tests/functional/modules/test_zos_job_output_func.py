@@ -61,6 +61,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     results = hosts.all.zos_job_output(job_name="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
+        assert result.get("msg") is not None
 
 
 def test_zos_job_output_no_owner(ansible_zos_module):
@@ -98,7 +99,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         jobs = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
         )
-
+        sleep(30)
         for job in jobs.contacted.values():
             print(job)
             assert job.get("jobs") is not None

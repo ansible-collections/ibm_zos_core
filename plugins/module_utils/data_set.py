@@ -543,7 +543,7 @@ class DataSet(object):
 
         data_sets_found = datasets.list_datasets(name)
 
-        # Using the DSORG property when it's a sequential or partitioned
+        # Using the organization property when it's a sequential or partitioned
         # dataset. VSAMs are not found by datasets.list_datasets.
         if len(data_sets_found) > 0:
             return data_sets_found[0].organization

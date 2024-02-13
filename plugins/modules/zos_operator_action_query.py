@@ -273,7 +273,7 @@ def run_module():
 
         cmdtxt = "d r,a,s"
 
-        cmd_result_a = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+        cmd_result_a = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
         if cmd_result_a.rc > 0:
             module.fail_json(
@@ -288,7 +288,7 @@ def run_module():
 
         cmdtxt = "d r,a,jn"
 
-        cmd_result_b = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+        cmd_result_b = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
         if cmd_result_b.rc > 0:
             module.fail_json(

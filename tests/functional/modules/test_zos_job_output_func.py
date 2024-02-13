@@ -60,7 +60,6 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_name="INVALID")
     for result in results.contacted.values():
-        print(result)
         assert result.get("changed") is False
         assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
 
@@ -133,6 +132,7 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         dd_name = "JESMSGLG"
         results = hosts.all.zos_job_output(job_name="HELLO", dd_name=dd_name)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") is False
             assert result.get("jobs") is not None
             for job in result.get("jobs"):

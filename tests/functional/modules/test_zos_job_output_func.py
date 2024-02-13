@@ -62,7 +62,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     for result in results.contacted.values():
         print(result)
         assert result.get("changed") is False
-        assert result.get("msg") is not None
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
 
 
 def test_zos_job_output_no_owner(ansible_zos_module):

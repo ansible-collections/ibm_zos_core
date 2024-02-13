@@ -315,10 +315,10 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                     # If dd_name not None, only that specific dd_name should be returned
                     if dd_name is not None:
-                        if dd_name not in single_dd["dataset"]:
+                        if dd_name not in single_dd["dd_name"]:
                             continue
                         else:
-                            dd["ddname"] = single_dd["dataset"]
+                            dd["ddname"] = single_dd["dd_name"]
 
                     if "recnum" in single_dd:
                         dd["record_count"] = single_dd["recnum"]
@@ -347,11 +347,11 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                     tmpcont = None
                     if "stepname" in single_dd:
-                        if "dataset" in single_dd:
+                        if "dd_name" in single_dd:
                             tmpcont = jobs.read_output(
                                 entry.job_id,
                                 single_dd["stepname"],
-                                single_dd["dataset"]
+                                single_dd["dd_name"]
                             )
 
                     dd["content"] = tmpcont.split("\n")

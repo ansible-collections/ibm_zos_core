@@ -387,7 +387,8 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, state=True, block=block, marker=marker, insert_after=ins_aft, insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
+    return datasets.blockinfile(src, state=True, block=block, marker=marker, insert_after=ins_aft,
+                                insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
 
 
 def absent(src, marker, encoding, force):

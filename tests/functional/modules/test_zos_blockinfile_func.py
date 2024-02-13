@@ -481,6 +481,7 @@ def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():

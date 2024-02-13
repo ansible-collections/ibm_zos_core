@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from shellescape import quote
+from time import sleep
 
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
@@ -45,6 +46,7 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
     results = hosts.all.zos_job_output(job_id="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -75,6 +77,7 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
     results = hosts.all.zos_job_output(owner="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
 
 
 def test_zos_job_output_reject(ansible_zos_module):
@@ -125,13 +128,16 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         result = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
         )
-        for res in result.contacted.values():
-            print(res)
+        sleep(30)
         hosts.all.file(path=TEMP_PATH, state="absent")
-        results = hosts.all.zos_job_output(job_name="HELLO")
+        dd_name = "JESMSGLG"
+        results = hosts.all.zos_job_output(job_name="HELLO", dd_name=dd_name)
         for result in results.contacted.values():
             assert result.get("changed") is False
             assert result.get("jobs") is not None
+            for job in result.get("jobs"):
+                assert len(job.get("ddnames")) == 1
+                assert job.get("ddnames")[0].get("ddname") == dd_name
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 

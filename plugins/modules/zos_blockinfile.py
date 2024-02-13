@@ -325,17 +325,18 @@ backup_name:
 """
 
 import json
+import traceback
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    Datasets = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
@@ -379,14 +380,14 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
                 - BOF
                 - '*regex*'
         encoding: {str} -- Encoding of the src.
-        force: {str} -- If not empty passes the -f option to dmod cmd.
+        force: {bool} -- If not empty passes True option to dmod cmd.
     Returns:
         str -- Information in JSON format. keys:
             cmd: {str} -- dmod shell command
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, options=force, as_json=True)
+    return datasets.blockinfile(src, state=True, block=block, marker=marker, insert_after=ins_aft, insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
 
 
 def absent(src, marker, encoding, force):
@@ -395,14 +396,14 @@ def absent(src, marker, encoding, force):
         src: {str} -- The z/OS USS file or data set to modify.
         marker: {str} -- Identifies the block to be removed.
         encoding: {str} -- Encoding of the src.
-        force: {str} -- If not empty passes the -f option to dmod cmd.
+        force: {bool} -- If not empty passes the -f option to dmod cmd.
     Returns:
         str -- Information in JSON format. keys:
             cmd: {str} -- dmod shell command
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, options=force, as_json=True)
+    return datasets.blockinfile(src, state=False, marker=marker, encoding=encoding, force=force, as_json=True)
 
 
 def quotedString(string):
@@ -540,7 +541,7 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
-    force = '-f' if force else ''
+    force = True if force else False
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)

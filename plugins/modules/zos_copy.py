@@ -1570,18 +1570,21 @@ class USSCopyHandler(CopyHandler):
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
+                    rc = response.rc
                 elif self.executable:
                     try:
-                        datasets.copy(src, dest, alias=True, executable=True)
+                        rc = datasets.copy(src, dest, alias=True, executable=True)
                     except zoau_exceptions.ZOAUException as copy_exception:
                         response = copy_exception.response
+                        rc = response.rc
                 else:
                     try:
-                        response = datasets.copy(src, dest)
+                        rc = datasets.copy(src, dest)
                     except zoau_exceptions.ZOAUException as copy_exception:
                         response = copy_exception.response
+                        rc = response.rc
 
-                if response.rc != 0:
+                if rc != 0:
                     raise CopyOperationError(
                         msg="Error while copying source {0} to {1}".format(src, dest),
                         rc=response.rc,

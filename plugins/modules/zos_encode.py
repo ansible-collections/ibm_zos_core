@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -273,7 +273,7 @@ backup_name:
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
 """
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
@@ -286,11 +286,12 @@ from os import path
 from os import makedirs
 from os import listdir
 import re
+import traceback
 
 try:
     from zoautil_py import datasets
 except Exception:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 def check_pds_member(ds, mem):

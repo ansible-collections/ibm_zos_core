@@ -320,8 +320,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                         else:
                             dd["ddname"] = single_dd["dd_name"]
 
-                    if "recnum" in single_dd:
-                        dd["record_count"] = single_dd["recnum"]
+                    if "records" in single_dd:
+                        dd["record_count"] = single_dd["records"]
                     else:
                         dd["record_count"] = None
 
@@ -330,8 +330,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     else:
                         dd["id"] = "?"
 
-                    if "stepname" in single_dd:
-                        dd["stepname"] = single_dd["stepname"]
+                    if "step_name" in single_dd:
+                        dd["stepname"] = single_dd["step_name"]
                     else:
                         dd["stepname"] = None
 
@@ -340,17 +340,17 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     else:
                         dd["proctep"] = None
 
-                    if "length" in single_dd:
-                        dd["byte_count"] = single_dd["length"]
+                    if "record_length" in single_dd:
+                        dd["byte_count"] = single_dd["record_length"]
                     else:
                         dd["byte_count"] = 0
 
                     tmpcont = None
-                    if "stepname" in single_dd:
+                    if "step_name" in single_dd:
                         if "dd_name" in single_dd:
                             tmpcont = jobs.read_output(
                                 entry.job_id,
-                                single_dd["stepname"],
+                                single_dd["step_name"],
                                 single_dd["dd_name"]
                             )
 

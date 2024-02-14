@@ -132,7 +132,6 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         dd_name = "JESMSGLG"
         results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is False
             assert result.get("jobs") is not None
             for job in result.get("jobs"):

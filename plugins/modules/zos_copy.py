@@ -843,6 +843,10 @@ except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     opercmd = ZOAUImportError(traceback.format_exc())
 
+try:
+    from zoautil_py import exceptions as zoau_exceptions
+except ImportError:
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 class CopyHandler(object):
     def __init__(
@@ -911,6 +915,14 @@ class CopyHandler(object):
 
         if src_type == 'USS' and self.asa_text:
             response = copy.copy_asa_uss2mvs(new_src, dest)
+
+            if response.rc != 0:
+                raise CopyOperationError(
+                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                    rc=response.rc,
+                    stdout=response.stdout_response,
+                    stderr=response.stderr_response
+                )
         else:
             # While ASA files are just text files, we do a binary copy
             # so dcp doesn't introduce any additional blanks or newlines.
@@ -920,14 +932,15 @@ class CopyHandler(object):
             if self.force_lock:
                 copy_args["options"] += " -f"
 
-            response = datasets._copy(new_src, dest, **copy_args)
-        if response.rc != 0:
-            raise CopyOperationError(
-                msg="Unable to copy source {0} to {1}".format(new_src, dest),
-                rc=response.rc,
-                stdout=response.stdout_response,
-                stderr=response.stderr_response
-            )
+            try:
+                datasets.copy(new_src, dest, **copy_args)
+            except zoau_exceptions.ZOAUException as copy_exception:
+                raise CopyOperationError(
+                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                    rc=copy_exception.response.rc,
+                    stdout=copy_exception.response.stdout_response,
+                    stderr=copy_exception.response.stderr_response
+                )
 
     def copy_to_vsam(self, src, dest):
         """Copy source VSAM to destination VSAM.
@@ -990,9 +1003,11 @@ class CopyHandler(object):
                 else:
                     opts = dict()
                     opts["options"] = ""
-                    response = datasets._copy(src_name, dest_name, **opts)
-                    if response.rc > 0:
-                        raise Exception(response.stderr_response)
+
+                    try:
+                        datasets.copy(src_name, dest_name, **opts)
+                    except zoau_exceptions.ZOAUException as copy_exception:
+                        raise Exception(copy_exception.response.stderr_response)
                     shutil.copystat(src_name, dest_name, follow_symlinks=True)
             except Exception as err:
                 raise err
@@ -1358,14 +1373,17 @@ class USSCopyHandler(CopyHandler):
             else:
                 opts = dict()
                 opts["options"] = ""
-                response = datasets._copy(new_src, dest, **opts)
-                if response.rc > 0:
-                    raise Exception(response.stderr_response)
+                datasets.copy(new_src, dest, **opts)
                 shutil.copystat(new_src, dest, follow_symlinks=True)
                 # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
+        except zoau_exceptions.ZOAUException as err:
+            raise CopyOperationError(
+                msg="Unable to copy file {0} to {1}".format(new_src, dest),
+                stderr=err.response.stderr_response,
+            )
         except OSError as err:
             raise CopyOperationError(
                 msg="Destination {0} is not writable".format(dest),
@@ -1552,9 +1570,15 @@ class USSCopyHandler(CopyHandler):
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
                 elif self.executable:
-                    response = datasets._copy(src, dest, alias=True, executable=True)
+                    try:
+                        datasets.copy(src, dest, alias=True, executable=True)
+                    except zoau_exceptions.ZOAUException as copy_exception:
+                        response = copy_exception.response
                 else:
-                    response = datasets._copy(src, dest)
+                    try:
+                        response = datasets.copy(src, dest)
+                    except zoau_exceptions.ZOAUException as copy_exception:
+                        response = copy_exception.response
 
                 if response.rc != 0:
                     raise CopyOperationError(
@@ -1565,14 +1589,14 @@ class USSCopyHandler(CopyHandler):
                     )
             else:
                 if self.executable:
-                    response = datasets._copy(src, dest, alias=True, executable=True)
-
-                    if response.rc != 0:
+                    try:
+                        datasets.copy(src, dest, alias=True, executable=True)
+                    except zoau_exceptions.ZOAUException as copy_exception:
                         raise CopyOperationError(
                             msg="Error while copying source {0} to {1}".format(src, dest),
-                            rc=response.rc,
-                            stdout=response.stdout_response,
-                            stderr=response.stderr_response
+                            rc=copy_exception.response.rc,
+                            stdout=copy_exception.response.stdout_response,
+                            stderr=copy_exception.response.stderr_response
                         )
                 elif self.asa_text:
                     response = copy.copy_asa_pds2uss(src, dest)
@@ -1787,6 +1811,7 @@ class PDSECopyHandler(CopyHandler):
 
         if src_type == 'USS' and self.asa_text:
             response = copy.copy_asa_uss2mvs(src, dest)
+            rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
             # so dcp doesn't introduce any additional blanks or newlines.
@@ -1796,8 +1821,14 @@ class PDSECopyHandler(CopyHandler):
             if self.force_lock:
                 opts["options"] += " -f"
 
-            response = datasets._copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
-        rc, out, err = response.rc, response.stdout_response, response.stderr_response
+            try:
+                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
+                out = ""
+                err = ""
+            except zoau_exceptions.ZOAUException as copy_exception:
+                rc = copy_exception.response.rc
+                out = copy_exception.response.stdout_response
+                err = copy_exception.response.stderr_response
 
         return dict(
             rc=rc,
@@ -1854,8 +1885,8 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
     if is_binary:
         copy_args["options"] = "-B"
 
-    response = datasets._copy(data_set_member, temp_path, **copy_args)
-    if response.rc != 0 or response.stderr_response:
+    response = datasets.copy(data_set_member, temp_path, **copy_args)
+    if response != 0:
         raise DataSetMemberAttributeError(data_set_member)
 
     return temp_path

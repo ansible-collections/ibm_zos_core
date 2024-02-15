@@ -689,7 +689,7 @@ class MVSUnarchive(Unarchive):
             else:
                 rc, hlq, err = self.module.run_command("hlq")
                 hlq = hlq.replace('\n', '')
-            cmd = "mvstmphelper {0}.RESTORE".format(hlq)
+            cmd = "mvstmp {0}.RESTORE".format(hlq)
             rc, temp_ds, err = self.module.run_command(cmd)
             arguments.update(name=temp_ds.replace('\n', ''))
         if record_format is None:

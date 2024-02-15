@@ -584,7 +584,7 @@ host_nodes(){
 ## the 'password' option should only an option when the utility can not decrypt.
 ## Usage: ac [--venv-setup] [--password 123456]
 ## Example:
-##  $ ac --venv-setup --passsword 123456
+##  $ ac --venv-setup --password 123456
 ##  $ ac --venv-setup
 venv_setup(){
     option_pass=$1
@@ -636,7 +636,6 @@ while true; do
             exit 1
         fi
     fi
-
     case $1 in
       -h|-\?|--help)
         if [ "$1" = "-h" ] || [ "$1" = "-?" ]; then

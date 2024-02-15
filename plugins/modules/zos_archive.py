@@ -424,7 +424,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     mvs_cmd,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 import os
 import tarfile
@@ -433,13 +433,14 @@ import abc
 import glob
 import re
 import math
+import traceback
 from hashlib import sha256
 
 
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 XMIT_RECORD_LENGTH = 80
 AMATERSE_RECORD_LENGTH = 1024
@@ -902,8 +903,8 @@ class MVSArchive(Archive):
         expanded_path = []
         for path in paths:
             if '*' in path:
-                e_paths = datasets.listing(path)
-                e_paths = [path.name for path in e_paths]
+                # list_dataset_names returns a list of data set names or empty.
+                e_paths = datasets.list_dataset_names(path)
             else:
                 e_paths = [path]
             expanded_path.extend(e_paths)
@@ -946,9 +947,9 @@ class MVSArchive(Archive):
                 {int} - Destination computed space in kilobytes.
         """
         if self.dest_data_set.get("space_primary") is None:
-            dest_space = 0
+            dest_space = 1
             for target in self.targets:
-                data_sets = datasets.listing(target)
+                data_sets = datasets.list_datasets(target)
                 for ds in data_sets:
                     dest_space += int(ds.to_dict().get("total_space"))
             # space unit returned from listings is bytes

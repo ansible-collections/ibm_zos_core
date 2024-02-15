@@ -52,7 +52,7 @@ class ActionModule(ActionBase):
             ))
             return result
 
-        if module_args["location"] == "LOCAL":
+        if location == "LOCAL":
 
             source = self._task.args.get("src", None)
 

@@ -1,6 +1,0 @@
-minor_changes:
-- zos_copy - Adds block_size, record_format, record_length, space_primary,
-  space_secondary, space_type and type in the return output when
-  the destination data set does not exist and has to be created
-  by the module.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/773) 

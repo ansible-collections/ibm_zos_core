@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.6.0-beta.1
+version: 1.9.0-beta.1
 
 # Collection README file
 readme: README.md
@@ -19,7 +19,7 @@ authors:
   - Ivan Moreno <ivan.moreno.soto@ibm.com>
   - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
   - Jenny Huang <jennyhuang@ibm.com>
-  - Marcel Guitierrez <andre.marcel.gutierrez@ibm.com>
+  - Marcel Gutierrez <andre.marcel.gutierrez@ibm.com>
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.
@@ -80,6 +80,7 @@ build_ignore:
   - changelogs
   - collections
   - docs
+  - importer_result.json
   - scripts
   - test_config.yml
   - tests/*.ini
@@ -93,4 +94,6 @@ build_ignore:
   - tests/sanity/ignore-2.9.txt
   - tests/sanity/ignore-2.10.txt
   - tests/sanity/ignore-2.11.txt
+  - tests/sanity/ignore-2.12.txt
+  - tests/sanity/ignore-2.13.txt
   - venv*

@@ -1,4 +1,0 @@
-trivial:
-- zos_copy - Adds a test cases to ensure copying from a PDS/E member containing
-  a loadlib to another PDS/E member loadlib member for issue 601.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/734)

@@ -12,9 +12,9 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
+from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
 import sys
 from mock import MagicMock
 import importlib
@@ -38,7 +38,8 @@ def z_python_interpreter(request):
     helper = ZTestHelper.from_yaml_file(path)
     interpreter_str = helper.build_interpreter_string()
     inventory = helper.get_inventory_info()
-    yield (interpreter_str, inventory)
+    python_path = helper.get_python_path()
+    yield (interpreter_str, inventory, python_path)
 
 
 def clean_logs(adhoc):
@@ -62,12 +63,18 @@ def clean_logs(adhoc):
 def ansible_zos_module(request, z_python_interpreter):
     """ Initialize pytest-ansible plugin with values from
     our YAML config and inject interpreter path into inventory. """
-    interpreter, inventory = z_python_interpreter
+    interpreter, inventory, python_path = z_python_interpreter
+
     # next two lines perform similar action to ansible_adhoc fixture
     plugin = request.config.pluginmanager.getplugin("ansible")
     adhoc = plugin.initialize(request.config, request, **inventory)
-    # * Inject our environment
+
+    # Inject our environment
     hosts = adhoc["options"]["inventory_manager"]._inventory.hosts
+
+    # Courtesy, pass along the python_path for some test cases need this information
+    adhoc["options"]["ansible_python_path"] = python_path
+
     for host in hosts.values():
         host.vars["ansible_python_interpreter"] = interpreter
         # host.vars["ansible_connection"] = "zos_ssh"
@@ -76,6 +83,26 @@ def ansible_zos_module(request, z_python_interpreter):
         clean_logs(adhoc)
     except Exception:
         pass
+
+    # Call of the class by the class ls_Volume (volumes.py file) as many times needed
+    # one time the array is filled
+@pytest.fixture(scope="session")
+def volumes_on_systems(ansible_zos_module, request):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    path = request.config.getoption("--zinventory")
+    list_Volumes = get_volumes(ansible_zos_module, path)
+    yield list_Volumes
+
+
+@pytest.fixture(scope="session")
+def volumes_with_vvds(ansible_zos_module, request):
+    """ Return a list of volumes that have a VVDS. If no volume has a VVDS
+    then it will try to create one for each volume found and return volumes only
+    if a VVDS was successfully created for it."""
+    path = request.config.getoption("--zinventory")
+    volumes = get_volumes(ansible_zos_module, path)
+    volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, volumes)
+    yield volumes_with_vvds
 
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

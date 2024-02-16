@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -29,6 +29,8 @@ author:
   - "Ping Xiao (@xiaoping8385)"
   - "Demetrios Dimatos (@ddimatos)"
   - "Ivan Moreno (@rexemin)"
+  - "Rich Parker (@richp405)"
+
 options:
   system:
     description:
@@ -224,6 +226,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
+
 try:
     from zoautil_py import opercmd
 except Exception:
@@ -251,7 +257,23 @@ def run_module():
     try:
         new_params = parse_params(module.params)
 
-        cmd_result_a = execute_command("d r,a,s")
+        kwargs = {}
+
+        wait_s = 5
+
+        use_wait_arg = False
+        if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
+            use_wait_arg = True
+
+        if use_wait_arg:
+            kwargs.update({"wait": True})
+
+        args = []
+
+        cmdtxt = "d r,a,s"
+
+        cmd_result_a = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+
         if cmd_result_a.rc > 0:
             module.fail_json(
                 msg="A non-zero return code was received while querying the operator.",
@@ -263,7 +285,10 @@ def run_module():
                 cmd="d r,a,s",
             )
 
-        cmd_result_b = execute_command("d r,a,jn")
+        cmdtxt = "d r,a,jn"
+
+        cmd_result_b = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+
         if cmd_result_b.rc > 0:
             module.fail_json(
                 msg="A non-zero return code was received while querying the operator.",
@@ -395,9 +420,11 @@ def handle_conditions(list, condition_type, value):
     return newlist
 
 
-def execute_command(operator_cmd):
+def execute_command(operator_cmd, timeout=1, *args, **kwargs):
 
-    response = opercmd.execute(operator_cmd)
+    # response = opercmd.execute(operator_cmd)
+    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response

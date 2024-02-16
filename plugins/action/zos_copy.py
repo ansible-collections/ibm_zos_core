@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2019-2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,6 +16,7 @@ __metaclass__ = type
 import os
 import stat
 import time
+import shutil
 
 from tempfile import mkstemp, gettempprefix
 
@@ -32,7 +33,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_data_set
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 display = Display()
 
@@ -56,6 +59,9 @@ class ActionModule(ActionBase):
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
         is_binary = _process_boolean(task_args.get('is_binary'), default=False)
+        force_lock = _process_boolean(task_args.get('force_lock'), default=False)
+        executable = _process_boolean(task_args.get('executable'), default=False)
+        asa_text = _process_boolean(task_args.get('asa_text'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
         backup_name = task_args.get("backup_name", None)
         encoding = task_args.get("encoding", None)
@@ -64,7 +70,7 @@ class ActionModule(ActionBase):
         group = task_args.get("group", None)
 
         is_pds = is_src_dir = False
-        temp_path = is_uss = is_mvs_dest = copy_member = src_member = None
+        temp_path = is_uss = is_mvs_dest = src_member = None
 
         if dest:
             if not isinstance(dest, string_types):
@@ -98,8 +104,6 @@ class ActionModule(ActionBase):
                     is_src_dir = os.path.isdir(src)
                     is_pds = is_src_dir and is_mvs_dest
 
-        copy_member = is_member(dest)
-
         if not src and not content:
             msg = "'src' or 'content' is required"
             return self._exit_action(result, msg, failed=True)
@@ -112,10 +116,28 @@ class ActionModule(ActionBase):
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
+        if is_binary and asa_text:
+            msg = "Both 'is_binary' and 'asa_text' are True. Unable to copy binary data as an ASA text file."
+            return self._exit_action(result, msg, failed=True)
+
+        if executable and asa_text:
+            msg = "Both 'executable' and 'asa_text' are True. Unable to copy an executable as an ASA text file."
+            return self._exit_action(result, msg, failed=True)
+
+        use_template = _process_boolean(task_args.get("use_template"), default=False)
+        if remote_src and use_template:
+            msg = "Use of Jinja2 templates is only valid for local files, remote_src cannot be set to true."
+            return self._exit_action(result, msg, failed=True)
+
         if not is_uss:
             if mode or owner or group:
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
+
+        if force_lock:
+            display.warning(
+                msg="Using force_lock uses operations that are subject to race conditions and can lead to data loss, use with caution.")
+        template_dir = None
 
         if not remote_src:
             if local_follow and not src:
@@ -150,14 +172,65 @@ class ActionModule(ActionBase):
                             dict(src=src, dest=dest, changed=False, failed=True)
                         )
                         return result
+
+                    if use_template:
+                        template_parameters = task_args.get("template_parameters", dict())
+                        if encoding:
+                            template_encoding = encoding.get("from", None)
+                        else:
+                            template_encoding = None
+
+                        try:
+                            renderer = template.create_template_environment(
+                                template_parameters,
+                                src,
+                                template_encoding
+                            )
+                            template_dir, rendered_dir = renderer.render_dir_template(
+                                task_vars.get("vars", dict())
+                            )
+                        except Exception as err:
+                            if template_dir:
+                                shutil.rmtree(template_dir, ignore_errors=True)
+                            return self._exit_action(result, str(err), failed=True)
+
+                        src = rendered_dir
+
                     task_args["size"] = sum(
-                        os.stat(path + "/" + f).st_size for f in files
+                        os.stat(os.path.join(validation.validate_safe_path(path), validation.validate_safe_path(f))).st_size
+                        for path, dirs, files in os.walk(src)
+                        for f in files
                     )
                 else:
                     if mode == "preserve":
                         task_args["mode"] = "0{0:o}".format(
                             stat.S_IMODE(os.stat(src).st_mode)
                         )
+
+                    if use_template:
+                        template_parameters = task_args.get("template_parameters", dict())
+                        if encoding:
+                            template_encoding = encoding.get("from", None)
+                        else:
+                            template_encoding = None
+
+                        try:
+                            renderer = template.create_template_environment(
+                                template_parameters,
+                                src,
+                                template_encoding
+                            )
+                            template_dir, rendered_file = renderer.render_file_template(
+                                os.path.basename(src),
+                                task_vars.get("vars", dict())
+                            )
+                        except Exception as err:
+                            if template_dir:
+                                shutil.rmtree(template_dir, ignore_errors=True)
+                            return self._exit_action(result, str(err), failed=True)
+
+                        src = rendered_file
+
                     task_args["size"] = os.stat(src).st_size
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
@@ -174,7 +247,6 @@ class ActionModule(ActionBase):
                 is_uss=is_uss,
                 is_pds=is_pds,
                 is_src_dir=is_src_dir,
-                copy_member=copy_member,
                 src_member=src_member,
                 temp_path=temp_path,
                 is_mvs_dest=is_mvs_dest,
@@ -186,6 +258,10 @@ class ActionModule(ActionBase):
             module_args=task_args,
             task_vars=task_vars,
         )
+
+        # Erasing all rendered Jinja2 templates from the controller.
+        if template_dir:
+            shutil.rmtree(template_dir, ignore_errors=True)
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
@@ -258,9 +334,10 @@ class ActionModule(ActionBase):
             display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
             display.vvv(u"ibm_zos_copy stdout: {0}".format(stdout), host=self._play_context.remote_addr)
             display.vvv(u"ibm_zos_copy stderr: {0}".format(stderr), host=self._play_context.remote_addr)
-            display.vvv(u"play context verbosity: {0}".format(self._play_context.verbosity), host=self._play_context.remote_addr)
 
-            err = _detect_sftp_errors(stderr)
+            ansible_verbosity = None
+            ansible_verbosity = display.verbosity
+            display.vvv(u"play context verbosity: {0}".format(ansible_verbosity), host=self._play_context.remote_addr)
 
             # ************************************************************************* #
             # When plugin shh connection member _build_command(..) detects verbosity    #
@@ -275,7 +352,9 @@ class ActionModule(ActionBase):
             # the verbosity is returned as 'stderr'.                                    #
             # ************************************************************************* #
 
-            if self._play_context.verbosity > 3:
+            err = _detect_sftp_errors(stderr)
+
+            if ansible_verbosity > 3:
                 ignore_stderr = True
 
             if returncode != 0 or (err and not ignore_stderr):

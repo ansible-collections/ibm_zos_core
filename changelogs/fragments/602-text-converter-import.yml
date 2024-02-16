@@ -1,6 +1,0 @@
-minor_changes:
-- Updated the text converter import from "from ansible.module_utils._text"
-  to "from ansible.module_utils.common.text.converters" to remove
-  warning".. warn Use ansible.module_utils.common.text.converters instead.".
-  (https://github.com/ansible-collections/ibm_zos_core/pull/602)
-

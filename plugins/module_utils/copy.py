@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2019-2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,6 +21,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
+    ikjeft01
 )
 
 if PY3:
@@ -110,7 +113,7 @@ def copy_ps2uss(src, dest, is_binary=False):
     return rc, out, err
 
 
-def copy_pds2uss(src, dest, is_binary=False):
+def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
     """Copy the whole PDS(E) to a uss path
 
     Arguments:
@@ -119,6 +122,8 @@ def copy_pds2uss(src, dest, is_binary=False):
 
     Keyword Arguments:
         is_binary: {bool} -- Whether the file to be copied contains binary data
+        asa_text: {bool} -- Whether the file to be copied contains ASA control
+            characters
 
     Raises:
         USSCmdExecError: When any exception is raised during the conversion.
@@ -130,12 +135,22 @@ def copy_pds2uss(src, dest, is_binary=False):
     module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
+
     cp_pds2uss = "cp -U -F rec \"//'{0}'\" {1}".format(src, quote(dest))
-    if is_binary:
+
+    # When dealing with ASA control chars, each record follows a
+    # different format than what '-F rec' means, so we remove it
+    # to allow the system to leave the control chars in the
+    # destination.
+    if asa_text:
+        cp_pds2uss = cp_pds2uss.replace("-F rec", "", 1)
+    elif is_binary:
         cp_pds2uss = cp_pds2uss.replace("rec", "bin", 1)
+
     rc, out, err = module.run_command(cp_pds2uss)
     if rc:
         raise USSCmdExecError(cp_pds2uss, rc, out, err)
+
     return rc, out, err
 
 
@@ -214,6 +229,91 @@ def copy_vsam_ps(src, dest):
     if rc:
         raise USSCmdExecError(cmd, rc, out, err)
     return rc, out, err
+
+
+def copy_asa_uss2mvs(src, dest):
+    """Copy a file from USS to an ASA sequential data set or PDS/E member.
+
+    Arguments:
+        src: {str} -- Path of the USS file
+        dest: {str} -- The MVS destination data set or member
+
+    Returns:
+        boolean -- The return code after the copy command executed successfully
+        str -- The stdout after the copy command executed successfully
+        str -- The stderr after the copy command executed successfully
+    """
+    oget_cmd = "OGET '{0}' '{1}'".format(src, dest)
+    rc, out, err = ikjeft01(oget_cmd, authorized=True)
+
+    return TSOCmdResponse(rc, out, err)
+
+
+def copy_asa_mvs2uss(src, dest):
+    """Copy an ASA sequential data set or member to USS.
+
+    Arguments:
+        src: {str} -- The MVS data set to be copied
+        dest: {str} -- Destination path in USS
+
+    Returns:
+        boolean -- The return code after the copy command executed successfully
+        str -- The stdout after the copy command executed successfully
+        str -- The stderr after the copy command executed successfully
+    """
+    src = _validate_data_set_name(src)
+    dest = _validate_path(dest)
+
+    oput_cmd = "OPUT '{0}' '{1}'".format(src, dest)
+    rc, out, err = ikjeft01(oput_cmd, authorized=True)
+
+    return TSOCmdResponse(rc, out, err)
+
+
+def copy_asa_pds2uss(src, dest):
+    """Copy all members from an ASA PDS/E to USS.
+
+    Arguments:
+        src: {str} -- The MVS data set to be copied
+        dest: {str} -- Destination path in USS (must be a directory)
+
+    Returns:
+        boolean -- The return code after the copy command executed successfully
+        str -- The stdout after the copy command executed successfully
+        str -- The stderr after the copy command executed successfully
+    """
+    from os import path
+    import traceback
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+        ZOAUImportError,
+    )
+
+    try:
+        from zoautil_py import datasets
+    except Exception:
+        datasets = ZOAUImportError(traceback.format_exc())
+
+    src = _validate_data_set_name(src)
+    dest = _validate_path(dest)
+
+    for member in datasets.list_members(src):
+        src_member = '{0}({1})'.format(src, member)
+        dest_path = path.join(dest, member)
+
+        oput_cmd = "OPUT '{0}' '{1}'".format(src_member, dest_path)
+        rc, out, err = ikjeft01(oput_cmd, authorized=True)
+
+        if rc != 0:
+            return TSOCmdResponse(rc, out, err)
+
+    return TSOCmdResponse(0, '', '')
+
+
+class TSOCmdResponse():
+    def __init__(self, rc, stdout, stderr):
+        self.rc = rc
+        self.stdout_response = stdout
+        self.stderr_response = stderr
 
 
 class USSCmdExecError(Exception):

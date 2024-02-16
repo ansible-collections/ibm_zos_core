@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022
+# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -116,6 +116,16 @@ jobs:
          Type of address space.
       type: str
       sample: JOB
+    creation_date:
+      description:
+        Date, local to the target system, when the job was created.
+      type: str
+      sample: "2023-05-04"
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: "14:15:00"
     ddnames:
       description:
          Data definition names.
@@ -175,6 +185,38 @@ jobs:
                "         6 //SYSUT2   DD SYSOUT=*                                                          ",
                "         7 //                                                                              "
              ]
+    job_class:
+      description:
+        Job class for this job.
+      type: str
+      sample: A
+    svc_class:
+      description:
+        Service class for this job.
+      type: str
+      sample: C
+    priority:
+      description:
+        A numeric indicator of the job priority assigned through JES.
+      type: int
+      sample: 4
+    asid:
+      description:
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
+      type: int
+      sample: 0
+    queue_position:
+      description:
+        The position within the job queue where the jobs resides.
+      type: int
+      sample: 3
+    program_name:
+      description:
+        The name of the program found in the job's last completed step found in the PGM parameter.
+        Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+      type: str
+      sample: "IEBGENER"
     ret_code:
       description:
          Return code output collected from job log.
@@ -341,8 +383,13 @@ jobs:
             "stepname": "STEP0001"
           }
         ],
+        "duration": 0,
+        "job_class": "R",
         "job_id": "JOB00134",
         "job_name": "HELLO",
+        "priority": "1",
+        "program_name": "IEBGENER",
+        "queue_position": "58",
         "owner": "OMVSADM",
         "ret_code": {
           "code": 0,
@@ -370,6 +417,9 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
 
 
 def run_module():
@@ -381,6 +431,23 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
+    args_def = dict(
+        job_id=dict(type="job_identifier", required=False),
+        job_name=dict(type="job_identifier", required=False),
+        owner=dict(type="str", required=False),
+        ddname=dict(type="str", required=False),
+    )
+
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
 
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")

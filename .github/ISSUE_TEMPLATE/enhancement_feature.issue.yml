@@ -20,6 +20,7 @@ body:
       description: Select which modules are being reported in this enhancement or feature. You can select more than one.
       multiple: true
       options:
+        - zos_archive
         - zos_apf
         - zos_backup_restore
         - zos_blockinfile
@@ -38,7 +39,9 @@ body:
         - zos_operator
         - zos_operator_action_query
         - zos_ping
+        - zos_script
         - zos_tso_command
+        - zos_unarchive
     validations:
       required: true
   - type: textarea

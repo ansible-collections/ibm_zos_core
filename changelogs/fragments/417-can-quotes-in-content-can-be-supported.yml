@@ -1,5 +1,0 @@
-bugfixes:
-- zos_blockinfile - was unable to use double quotes which prevented some use
-  cases and did not display an approriate message. The fix now allows for
-  double quotes to be used with the module. 
-  (https://github.com/ansible-collections/ibm_zos_core/pull/680)

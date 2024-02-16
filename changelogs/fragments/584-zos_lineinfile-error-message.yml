@@ -1,2 +1,0 @@
-bugfixes:
-- Fixed wrong error message when a USS source is not found, aligning with a similar error message from zos_blockinfile "{src} does not exist".

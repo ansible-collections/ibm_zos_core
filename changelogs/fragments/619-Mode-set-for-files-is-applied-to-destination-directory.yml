@@ -1,3 +1,0 @@
-minor_changes:
-- zos_copy - Fixed a bug where the module would change the mode for a directory when copying into it the contents of another.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/723)

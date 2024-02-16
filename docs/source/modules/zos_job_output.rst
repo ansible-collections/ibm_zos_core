@@ -217,9 +217,14 @@ jobs
                         "stepname": "STEP0001"
                     }
                 ],
+                "duration": 0,
+                "job_class": "R",
                 "job_id": "JOB00134",
                 "job_name": "HELLO",
                 "owner": "OMVSADM",
+                "priority": "1",
+                "program_name": "IEBGENER",
+                "queue_position": "58",
                 "ret_code": {
                     "code": 0,
                     "msg": "CC 0000",
@@ -264,6 +269,18 @@ jobs
 
     | **type**: str
     | **sample**: JOB
+
+  creation_date
+    Date, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 2023-05-04
+
+  creation_time
+    Time, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 14:15:00
 
   ddnames
     Data definition names.
@@ -333,6 +350,41 @@ jobs
                 "         7 //                                                                              "
             ]
 
+
+  job_class
+    Job class for this job.
+
+    | **type**: str
+    | **sample**: A
+
+  svc_class
+    Service class for this job.
+
+    | **type**: str
+    | **sample**: C
+
+  priority
+    A numeric indicator of the job priority assigned through JES.
+
+    | **type**: int
+    | **sample**: 4
+
+  asid
+    The address Space Identifier (ASID) that is a unique descriptor for the job address space. Zero if not active.
+
+    | **type**: int
+
+  queue_position
+    The position within the job queue where the jobs resides.
+
+    | **type**: int
+    | **sample**: 3
+
+  program_name
+    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+
+    | **type**: str
+    | **sample**: IEBGENER
 
   ret_code
     Return code output collected from job log.

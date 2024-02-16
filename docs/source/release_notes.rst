@@ -6,37 +6,148 @@
 Releases
 ========
 
-Version 1.6.0-beta.1
+Version 1.9.0-beta.1
 ====================
-
-New Modules
------------
-
-- ``zos_volume_init`` - Can initialize volumes or minidisks on target z/OS systems which includes creating a volume label and an entry into the volume table of contents (VTOC).
 
 Minor Changes
 -------------
+- ``zos_apf`` - Improved exception handling when the module is unable to process a response originating as a batch update.
+- ``zos_copy`` - Improved performance when copying multiple members from one PDS/E to another PDS/E.
+- ``zos_job_output`` - Has been enhanced to allow for both a job ID and owner to be selected when obtaining job output, removing the prior mutual exclusivity.
+- ``zos_operator`` - Improved the modules handling of ZOAU import errors allowing for the traceback to flow back to the source.
+- ``zos_job_query`` - Improved the modules handling of ZOAU import errors allowing for the traceback to flow back to the source.
+- ``zos_job_submit``
 
-- ``zos_blockinfile`` - Adds an enhancement to allow double quotes within a block.
-- ``zos_data_set`` - Adds a new option named *force* to enable deletion of a data member in a PDSE that is simultaneously in use by others.
-- ``zos_job_query`` - Enables embedded positional wild card placement throughout *job_name* and *job_id* parameters.
-- ``zos_lineinfile`` - Adds a new option named *force* to enable modification of a data member in a data set that is simultaneously in use by others.
-- ``zos_tso_command`` - Adds a new option named *max_rc* to enable non-zero return codes lower than the specified maximum return as succeeded.
+    - Improved messages in the action plugin.
+    - Improved the action plugin performance, flow and use of undocumented variables.
+    - Improved the modules handling of ZOAU import errors allowing for the traceback to flow back to the source.
+- ``zos_tso_command`` - Has been updated with a new example demonstrating how to explicitly execute a REXX script in a data set.
+- ``zos_mvs_raw``
+
+    - Has been enhanced to ensure that **instream-data** for option **dd_input** contain blanks in columns 1 and 2 while retaining a maximum length
+      of 80 columns for strings and a list of strings. This is generally the requirement for most z/OS programs.
+    - Has been updated with new examples demonstrating a YAML block indicator, often helpful when wanting to control the
+      **instream-data** formatting.
+
 
 Bugfixes
 --------
 
 - ``zos_copy``
 
-      - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset.
-      - Fixes a bug where the module would change the mode for a directory when copying in the contents of another directory.
-      - Fixes a bug where the incorrect encoding would be used during normalization, particularly when processing newlines in files.
-- ``zos_encode`` - Fixes a bug where converted files were not tagged with the new code set afterwards.
-- ``zos_find`` - Fixes a bug where the module would stop searching and exit after the first value in a list was not found.
-- ``zos_lineinfile``
+    - Fixed an issue when copying an aliased executable from a data set to a non-existent data set, the destination data sets primary
+      and secondary extents would not match the source data set extent sizes.
+    - Fixed an issue when performing a copy operation to an existing file, the copied file resulted in having corrupted contents.
 
-      - Removes use of Python f-string to ensure support for Python 2.7 on the controller.
-      - Fixes a bug where an incorect error message would be raised when a USS source was not found.
+- ``zos_job_output`` - Fixed an issue that when using a job ID with less than 8 characters would result in a traceback. The fix
+  supports shorter job IDs as well as the use of wildcards.
+
+- ``zos_job_query`` - Fixed an issue that when using a job ID with less than 8 characters would result in a traceback. The fix
+  supports shorter job IDs as well as the use of wildcards.
+
+- ``zos_unarchive``
+
+    - Fixed an issue when using a local file with the USS format option that would fail sending it to the managed node.
+    - Fixed an issue that occurred when unarchiving USS files that would leave temporary files behind on the managed node.
+
+Known Issues
+------------
+
+Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
+
+This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules ``zos_job_submit``, ``zos_job_output``,
+``zos_operator_action_query``` but are not limited to this list. This will be addressed in **ibm_zos_core** version 1.10.0-beta.1. Each case is
+unique, some options to work around the error are below.
+
+- Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+- Add **ignore_errors:true** to the playbook task so the task error will not fail the playbook.
+- If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
+  a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS®`_ V2R4 or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
+* Supported by IBM `Z Open Automation Utilities 1.2.5`_ (or later) but prior to version 1.3.
+
+Version 1.8.0
+=============
+
+New Modules
+-----------
+
+- ``zos_script`` - Run scripts in z/OS
+
+Minor Changes
+-------------
+- ``zos_archive``
+
+    - Add validation into path joins to detect unauthorized path traversals.
+    - Enhanced test cases to use test lines the same length of the record length.
+- ``zos_copy``
+
+    - Add validation into path joins to detect unauthorized path traversals.
+    - Add new option `force_lock` that can copy into data sets that are already in use by other processes (DISP=SHR). User needs to use with caution because this is subject to race conditions and can lead to data loss.
+    - Includes a new option `executable` that enables copying of executables such as load modules or program objects to both USS and partitioned data sets. When the `dest` option contains a non-existent data set, `zos_copy` will create a data set with the appropriate attributes for an executable.
+    - Introduces a new option 'aliases' to enable preservation of member aliases when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources. Copying aliases of text based members to/from USS is not supported.
+    - Add support in zos_copy for text files and data sets containing ASA control characters.
+- ``zos_fetch`` - Add validation into path joins to detect unauthorized path traversals.
+- ``zos_job_submit``
+
+    - Change action plugin call from copy to zos_copy.
+    - Previous code did not return output, but still requested job data from the target system. This changes to honor `return_output=false` by not querying the job dd segments at all.
+- ``zos_operator`` - Changed system to call `wait=true` parameter to zoau call. Requires zoau 1.2.5 or later.
+- ``zos_operator_action_query`` - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later.
+- ``zos_unarchive``
+
+    - Add validation into path joins to detect unauthorized path traversals.
+    - Enhanced test cases to use test lines the same length of the record length.
+- ``module_utils/template`` - Add validation into path joins to detect unauthorized path traversals.
+- ``zos_tso_command`` - Add example for executing explicitly a REXX script from a data set.
+- ``zos_script`` - Add support for remote_tmp from the Ansible configuration to setup where temporary files will be created, replacing the module option tmp_path.
+
+Bugfixes
+--------
+
+- ``zos_copy``
+
+    - Update option to include `LIBRARY` as dest_dataset/suboption value. Documentation updated to reflect this change.
+    - When copying an executable data set from controller to managed node, copy operation failed with an encoding error. Fix now avoids encoding when `executable` option is selected.
+    - When copying an executable data set with aliases and destination did not exist, destination data set was created with wrong attributes. Fix now creates destination data set with the same attributes as the source.
+    - When performing a copy operation to an existing file, the copied file resulted in having corrupted contents. Fix now implements a workaround to not use the specific copy routine that corrupts the file contents.
+- ``zos_job_submit``
+
+    - Temporary files were created in tmp directory. Fix now ensures the deletion of files every time the module run.
+    - The last line of the jcl was missing in the input. Fix now ensures the presence of the full input in job_submit.
+- ``zos_lineinfile`` - A duplicate entry was made even if line was already present in the target file. Fix now prevents a duplicate entry if the line already exists in the target file.
+- ``zos_operator``
+
+    - The last line of the operator was missing in the response of the module. The fix now ensures the presence of the full output of the operator.
+    - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU.
+- ``zos_operator_action_query`` - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU.
+- ``zos_unarchive`` - When zos_unarchive fails during unpack either with xmit or terse it does not clean the temporary data sets created. Fix now removes the temporary data sets.
+
+Known Issues
+------------
+
+Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
+
+This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules ``zos_job_submit``, ``zos_job_output``,
+``zos_operator_action_query``` but are not limited to this list. This will be addressed in **ibm_zos_core** version 1.10.0-beta.1. Each case is
+unique, some options to work around the error are below.
+
+- Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+- Add **ignore_errors:true** to the playbook task so the task error will not fail the playbook.
+- If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
+  a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
 
 Availability
 ------------
@@ -48,11 +159,140 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS Version`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
+* Supported by IBM `Z Open Automation Utilities 1.2.4`_ (or later) but prior to version 1.3.
+
+Version 1.7.0
+=============
+
+New Modules
+-----------
+
+- ``zos_archive`` - archive files, data sets and extend archives on z/OS. Formats include, *bz2*, *gz*, *tar*, *zip*, *terse*, *xmit* and *pax*.
+- ``zos_unarchive`` - unarchive files and data sets on z/OS. Formats include, *bz2*, *gz*, *tar*, *zip*, *terse*, *xmit* and *pax*.
+
+Major Changes
+-------------
+
+-- ``zos_copy`` and ``zos_job_submit`` - supports Jinja2 templating which is essential for handling tasks that require advanced file modifications such as JCL.
+
+Minor Changes
+-------------
+- ``zos_copy``
+
+      - displays the data set attributes when the destination does not exist and was created by the module.
+      - reverts the logic that would automatically create backups in the event of a module failure leaving it up to the user to decide if a backup is needed.
+- ``zos_data_set`` - supports record format *F* (fixed) where one physical block on disk is one logical record and all the blocks and records are the same size.
+- ``zos_job_output`` - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v1.2.4 or later).
+- ``zos_job_query``
+
+      - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v 1.2.4 or later).
+      - removes unnecessary queries to find DDs improving the modules performance.
+- ``zos_job_submit`` - displays job information *asid*, *creation date*, *creation time*, *job class*, *priority*, *queue position*, *service class* and conditionally *program name* (when ZOAU is v1.2.4 or later).
+- ``zos_archive``
+
+      - When XMIT encounters a space error because of the destination (dest) or log data set has reached capacity, the module raises an appropriate error message.
+      - When the destination (dest) data set space is not provided, then the module computes it using the source (src) given the pattern provided.
+
+- ``zos_unarchive``
+
+      - When copying to the z/OS managed node (remote_src) results in a failure, a proper error message is displayed
+      - When copying to the z/OS managed node (remote_src), if the option *primary_space* is not defined, then it is defaulted to 5M.
+
+Bugfixes
+--------
+- ``zos_data_set`` - fixes occasionally occurring orphaned VSAM cluster components such as INDEX when *present=absent*.
+- ``zos_fetch`` - fixes the warning that appeared about the use of *_play_context.verbosity*.
+- ``zos_copy``
+
+      - fixes the warning that appeared about the use of *_play_context.verbosity*.
+      - fixes an issue where subdirectories would not be encoded.
+      - fixes an issue where when mode was set, the mode was not applied to existing directories and files.
+      - displays a error message when copying into a data set that is being accessed by another process and no longer returns with *changed=true*.
+
+- ``zos_job_output`` - displays an appropriate error message for a job is not found in the spool.
+- ``zos_operator`` - fixes the false reports that a command failed when keywords such as *error* were seen, the module now acts as a passthrough.
+- ``zos_archive`` - Module did not return the proper src state after archiving. Fix now displays the status of the src after the operation.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS®`_ V2R4 or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
+* Supported by IBM `Z Open Automation Utilities 1.2.3`_ (or later) but prior to version 1.3.
+
+Version 1.6.0
+=============
+
+New Modules
+-----------
+
+- ``zos_volume_init`` - Can initialize volumes or minidisks on target z/OS systems which includes creating a volume label and an entry into the volume table of contents (VTOC).
+
+Minor Changes
+-------------
+
+- ``zos_blockinfile`` - Adds an enhancement to allow double quotes within a block.
+- ``zos_copy``
+
+      - Updates the behavior of the `mode` option so that permissions are applied to existing directories and contents.
+      - Adds an enhancement to option `restore_backup` to track modified members in a data set in the event of an error, restoring them to their previous state without reallocating the data set.
+- ``zos_data_set`` - Adds a new option named *force* to enable deletion of a data member in a PDSE that is simultaneously in use by others.
+- ``zos_job_query`` - Enables embedded positional wild card placement throughout *job_name* and *job_id* parameters.
+- ``zos_lineinfile`` - Adds a new option named *force* to enable modification of a data member in a data set that is simultaneously in use by others.
+- ``zos_tso_command`` - Adds a new option named *max_rc* to enable non-zero return codes lower than the specified maximum return as succeeded.
+- ``module_utils``
+
+      - job - Adds support for positional wild card placement for `job_name`` and `job_id`.
+      - Adds support for import *common.text.converters* over the deprecated *_text* import.
+
+Bugfixes
+--------
+
+- ``zos_copy``
+
+      - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset.
+      - Fixes a bug where the module would change the mode for a directory when copying in the contents of another directory.
+      - Fixes a bug where the incorrect encoding would be used during normalization, particularly when processing newlines in files.
+      - Fixes a bug where binary files were not excluded when normalizing data to remove newlines.
+      - Fixes a bug where a *_play_context.verbosity* deprecation warning would appear.
+- ``zos_fetch`` - Fixes a bug where a *_play_context.verbosity* deprecation warning would appear.
+- ``zos_encode`` - Fixes a bug where converted files were not tagged with the new code set afterwards.
+- ``zos_find`` - Fixes a bug where the module would stop searching and exit after the first value in a list was not found.
+- ``zos_lineinfile``
+
+      - Removes use of Python f-string to ensure support for Python 2.7 on the controller.
+      - Fixes a bug where an incorrect error message would be raised when a USS source was not found.
+- ``module_utils``
+
+      - data_set - Fixes an failure caused by cataloging a VSAM data set when the data set is not cataloged.
+- ``zos_data_set`` - Fixes a bug that will leave VSAM data set cluster components behind when instructed to delete the data set (`present=absent`).
+- ``zos_gather_facts`` - Fixes a bug that prevented the module from executing with newer versions of ZOAU.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
-
 
 Version 1.5.0
 =============
@@ -165,7 +405,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS Version`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
@@ -204,7 +444,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -354,7 +594,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.8`_` - `3.9`_
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -455,7 +695,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
   `IBM Open Enterprise SDK for Python`_ v3.9.5
@@ -496,7 +736,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -542,7 +782,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -574,7 +814,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -697,7 +937,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS®`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -718,115 +958,6 @@ Known issues
     #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
        "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
        addressed by APAR PH28089.
-
-Version 1.2.1
-=============
-
-Notes
------
-
-* Update required
-* Module changes
-
-  * Noteworthy Python 2.x support
-
-    * encode - removed TemporaryDirectory usage.
-    * zos_copy - fixed regex support, dictionary merge operation fix
-    * zos_fetch - fix quote import
-
-* Collection changes
-
-  * Beginning this release, all sample playbooks previously included with the
-    collection will be made available on the `samples repository`_. The
-    `samples repository`_ explains the playbook concepts,
-    discusses z/OS administration, provides links to the samples support site,
-    blogs and other community resources.
-
-* Documentation changes
-
-  * In this release, documentation related to playbook configuration has been
-    migrated to the `samples repository`_. Each sample contains a README that
-    explains what configurations must be made to run the sample playbook.
-
-.. _samples repository:
-   https://github.com/IBM/z_ansible_collections_samples/blob/main/README.md
-
-Availability
-------------
-
-* `Automation Hub`_
-* `Galaxy`_
-* `GitHub`_
-
-Reference
----------
-
-* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
-* Supported by z/OS V2R3 or later
-* The z/OS® shell
-
-Version 1.1.0
-=============
-
-Notes
------
-* Update recommended
-* New modules
-
-  * zos_fetch
-  * zos_encode
-  * zos_operator_action_query
-  * zos_operator
-  * zos_tso_command
-  * zos_ping
-
-* New filter
-* Improved error handling and messages
-* Bug fixes
-* Documentation updates
-* New samples
-
-Availability
-------------
-
-* `Automation Hub`_
-* `Galaxy`_
-* `GitHub`_
-
-Reference
----------
-
-* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-* Supported by IBM Z Open Automation Utilities: 1.0.3 PTF UI70435
-* Supported by z/OS V2R3
-* The z/OS® shell
-
-
-Version 1.0.0
-=============
-
-Notes
------
-
-* Update recommended
-* Security vulnerabilities fixed
-* Improved test, security and injection coverage
-* Module zos_data_set catalog support added
-* Documentation updates
-
-Availability
-------------
-
-* `Automation Hub`_
-* `Galaxy`_
-* `GitHub`_
-
-Reference
----------
-
-* Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
-  1.0.3 PTF UI70435
 
 .. .............................................................................
 .. Global Links
@@ -853,10 +984,20 @@ Reference
    https://www.ibm.com/docs/en/zoau/1.1.1
 .. _Z Open Automation Utilities 1.2.2:
    https://www.ibm.com/docs/en/zoau/1.2.x
+.. _Z Open Automation Utilities 1.2.3:
+   https://www.ibm.com/docs/en/zoau/1.2.x
+.. _Z Open Automation Utilities 1.2.4:
+   https://www.ibm.com/docs/en/zoau/1.2.x
+.. _Z Open Automation Utilities 1.2.5:
+   https://www.ibm.com/docs/en/zoau/1.2.x
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
+.. _z/OS®:
+   https://www.ibm.com/docs/en/zos
 .. _z/OS V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
+.. _z/OS V2R4:
+   https://www.ibm.com/docs/en/zos/2.4.0
 .. _z/OS Version:
    https://www.ibm.com/docs/en/zos
 .. _FAQs:

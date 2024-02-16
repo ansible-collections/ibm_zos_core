@@ -15,19 +15,12 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
 import random
 
-VOLUME = "222222"
-VOLUME2 = "222222"
-VOLUME_TO_BACKUP = VOLUME
-BIG_VOLUME = "DSHRL1"
-BIG_VOLUME2 = "DSHRL2"
-DATA_SET_NAME = "USER.PRIVATE.TESTDS"
-DATA_SET_NAME2 = "USER.PRIVATE.TESTDS2"
-DATA_SET_PATTERN = "USER.PRIVATE.*"
 DATA_SET_CONTENTS = "HELLO world"
 DATA_SET_QUALIFIER = "{0}.PRIVATE.TESTDS"
 DATA_SET_QUALIFIER2 = "{0}.PRIVATE.TESTDS2"
@@ -137,6 +130,7 @@ def assert_data_set_or_file_does_not_exist(hosts, name):
 def assert_data_set_exists(hosts, data_set_name):
     results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
+        print(result)
         found = search(
             "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )
@@ -183,7 +177,7 @@ def assert_file_does_not_exist(hosts, path):
 #                                Start of tests                                #
 # ---------------------------------------------------------------------------- #
 
-
+@pytest.mark.ds
 @pytest.mark.parametrize(
     "backup_name,overwrite,recover",
     [
@@ -199,16 +193,17 @@ def assert_file_does_not_exist(hosts, path):
 )
 def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
         if not overwrite:
             delete_data_set_or_file(hosts, backup_name)
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
             overwrite=overwrite,
             recover=recover,
@@ -216,7 +211,7 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, backup_name)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
 
 
@@ -233,15 +228,16 @@ def test_backup_of_data_set_when_backup_dest_exists(
     ansible_zos_module, backup_name, overwrite
 ):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
         create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
         assert_data_set_or_file_exists(hosts, backup_name)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
             overwrite=overwrite,
         )
@@ -251,7 +247,7 @@ def test_backup_of_data_set_when_backup_dest_exists(
             assert_module_failed(results)
         assert_data_set_or_file_exists(hosts, backup_name)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
 
 
@@ -272,16 +268,16 @@ def test_backup_and_restore_of_data_set(
     ansible_zos_module, backup_name, overwrite, recover
 ):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
             overwrite=overwrite,
             recover=recover,
@@ -295,9 +291,8 @@ def test_backup_and_restore_of_data_set(
             overwrite=overwrite,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, backup_name)
 
@@ -321,16 +316,16 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
     ansible_zos_module, backup_name, space, space_type
 ):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         args = dict(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
             overwrite=True,
             space=space,
@@ -351,9 +346,8 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
             args["space_type"] = space_type
         results = hosts.all.zos_backup_restore(**args)
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, backup_name)
 
@@ -371,16 +365,16 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
     ansible_zos_module, backup_name, overwrite
 ):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
         )
         assert_module_did_not_fail(results)
@@ -391,7 +385,6 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
             hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
@@ -403,31 +396,25 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
         else:
             assert_module_failed(results)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, backup_name)
 
 
-@pytest.mark.parametrize(
-    "data_set_include",
-    [
-        [DATA_SET_NAME, DATA_SET_NAME2],
-        DATA_SET_PATTERN,
-    ],
-)
-def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_include):
+def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    data_set_name2 = get_tmp_ds_name()
+    data_set_include = [data_set_name, data_set_name2]
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_NAME2)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_name2)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME2, DATA_SET_CONTENTS
+            hosts, data_set_name2, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
@@ -444,33 +431,32 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_i
             hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION2)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_NAME2)
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_name2)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
 
 
-def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
+def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    data_set_name2 = get_tmp_ds_name()
+    data_sets_hlq = "ANSIBLE.**"
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_NAME2)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_name2)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME2, DATA_SET_CONTENTS
+            hosts, data_set_name2, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_PATTERN, exclude=DATA_SET_NAME2),
+            data_sets=dict(include=data_sets_hlq),
             backup_name=DATA_SET_BACKUP_LOCATION,
         )
         assert_module_did_not_fail(results)
@@ -483,11 +469,51 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
             hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
+        assert_data_set_exists(hosts, DATA_SET_BACKUP_LOCATION)
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_name2)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+
+
+def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    data_set_name2 = get_tmp_ds_name()
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_name2)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name, DATA_SET_CONTENTS
+        )
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name2, DATA_SET_CONTENTS
+        )
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include="ANSIBLE.**", exclude=data_set_name2),
+            backup_name=DATA_SET_BACKUP_LOCATION,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=DATA_SET_BACKUP_LOCATION,
+            overwrite=True,
+            recover=True,
+            hlq=NEW_HLQ,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_exists(hosts, DATA_SET_BACKUP_LOCATION)
         assert_data_set_does_not_exist(hosts, DATA_SET_RESTORE_LOCATION2)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_NAME2)
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_name2)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
@@ -534,32 +560,34 @@ def test_backup_of_data_set_when_data_set_does_not_exist(
     ansible_zos_module, backup_name
 ):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
         )
         assert_module_failed(results)
         assert_data_set_or_file_does_not_exist(hosts, backup_name)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
 
 
 def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             # volume=get_unused_volume_serial(hosts),
             volume="@@@@",
             backup_name=DATA_SET_BACKUP_LOCATION,
@@ -567,22 +595,23 @@ def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         assert_module_failed(results)
         assert_data_set_does_not_exist(hosts, DATA_SET_BACKUP_LOCATION)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
 
 
 def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
     try:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
         create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+            hosts, data_set_name, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets=dict(include=DATA_SET_NAME),
+            data_sets=dict(include=data_set_name),
             backup_name=DATA_SET_BACKUP_LOCATION,
         )
         assert_module_did_not_fail(results)
@@ -597,7 +626,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         assert_module_failed(results)
         assert_data_set_does_not_exist(hosts, DATA_SET_RESTORE_LOCATION)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
 
@@ -606,15 +635,15 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #     hosts = ansible_zos_module
 #     try:
 #         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
-#         delete_data_set_or_file(hosts, DATA_SET_NAME)
-#         delete_data_set_or_file(hosts, DATA_SET_NAME2)
+#         delete_data_set_or_file(hosts, data_set_name)
+#         delete_data_set_or_file(hosts, data_set_name2)
 #         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
 #         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
 #         create_sequential_data_set_with_contents(
-#             hosts, DATA_SET_NAME, DATA_SET_CONTENTS, VOLUME
+#             hosts, data_set_name, DATA_SET_CONTENTS, VOLUME
 #         )
 #         create_sequential_data_set_with_contents(
-#             hosts, DATA_SET_NAME2, DATA_SET_CONTENTS, VOLUME2
+#             hosts, data_set_name2, DATA_SET_CONTENTS, VOLUME2
 #         )
 #         results = hosts.all.zos_backup_restore(
 #             operation="backup",
@@ -636,8 +665,8 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #         assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
 #         assert_data_set_does_not_exist(hosts, DATA_SET_RESTORE_LOCATION2)
 #     finally:
-#         delete_data_set_or_file(hosts, DATA_SET_NAME)
-#         delete_data_set_or_file(hosts, DATA_SET_NAME2)
+#         delete_data_set_or_file(hosts, data_set_name)
+#         delete_data_set_or_file(hosts, data_set_name2)
 #         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
 #         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
 #         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
@@ -647,9 +676,9 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #     hosts = ansible_zos_module
 #     try:
 #         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
-#         delete_data_set_or_file(hosts, DATA_SET_NAME)
+#         delete_data_set_or_file(hosts, data_set_name)
 #         create_sequential_data_set_with_contents(
-#             hosts, DATA_SET_NAME, DATA_SET_CONTENTS, VOLUME
+#             hosts, data_set_name, DATA_SET_CONTENTS, VOLUME
 #         )
 #         results = hosts.all.zos_backup_restore(
 #             operation="backup",
@@ -663,7 +692,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
-#         delete_data_set_or_file(hosts, DATA_SET_NAME)
+#         delete_data_set_or_file(hosts, data_set_name)
 #         results = hosts.all.zos_backup_restore(
 #             operation="restore",
 #             backup_name=DATA_SET_BACKUP_LOCATION,
@@ -675,7 +704,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #             space_type="M",
 #         )
 #         assert_module_did_not_fail(results)
-#         assert_data_set_exists_on_volume(hosts, DATA_SET_NAME, VOLUME)
+#         assert_data_set_exists_on_volume(hosts, data_set_name, VOLUME)
 #     finally:
-#         delete_data_set_or_file(hosts, DATA_SET_NAME)
+#         delete_data_set_or_file(hosts, data_set_name)
 #         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)

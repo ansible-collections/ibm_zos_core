@@ -15,9 +15,18 @@ __metaclass__ = type
 
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError, AnsibleFileNotFound
+from ansible.utils.display import Display
 # from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.common.text.converters import to_bytes, to_text
+from ansible.module_utils.parsing.convert_bool import boolean
 import os
+import copy
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
+from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
+
+
+display = Display()
 
 
 class ActionModule(ActionBase):
@@ -32,20 +41,39 @@ class ActionModule(ActionBase):
             return result
 
         module_args = self._task.args.copy()
-        if module_args["location"] == "LOCAL":
+
+        use_template = _process_boolean(module_args.get("use_template"))
+        location = module_args.get("location")
+        if use_template and location != "LOCAL":
+            result.update(dict(
+                failed=True,
+                changed=False,
+                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'LOCAL'".format(location)
+            ))
+            return result
+
+        if location == "LOCAL":
 
             source = self._task.args.get("src", None)
 
             # Get a temporary file on the managed node
-            dest_path = self._execute_module(
+            tempfile = self._execute_module(
                 module_name="tempfile", module_args={}, task_vars=task_vars,
-            ).get("path")
+            )
+            dest_path = tempfile.get("path")
+            # Calling execute_module from this step with tempfile leaves behind a tmpdir.
+            # This is called to ensure the proper removal.
+            tmpdir = self._connection._shell.tmpdir
+            if tmpdir:
+                self._remove_tmp_path(tmpdir)
 
             result["failed"] = True
-            if source is None or dest_path is None:
-                result["msg"] = "src and dest are required"
-            elif source is not None and source.endswith("/"):
-                result["msg"] = "src must be a file"
+            if source is None:
+                result["msg"] = "Source is required."
+            elif dest_path is None:
+                result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
+            elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
+                result["msg"] = "Source must be a file."
             else:
                 del result["failed"]
 
@@ -59,40 +87,49 @@ class ActionModule(ActionBase):
                 result["msg"] = to_text(e)
                 return result
 
-            if os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
-                result["failed"] = True
-                result["msg"] = to_text("NOT SUPPORTING THE DIRECTORY.")
-                return result
-
             if tmp is None or "-tmp-" not in tmp:
                 tmp = self._make_tmp_path()
 
             source_full = None
             try:
                 source_full = self._loader.get_real_file(source)
-                source_rel = os.path.basename(source)
+                # source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
-                result["msg"] = "could not find src=%s, %s" % (source_full, e)
+                result["msg"] = "Source {0} not found. {1}".format(source_full, e)
                 self._remove_tmp_path(tmp)
                 return result
 
             # if self._connection._shell.path_has_trailing_slash(dest):
             #     dest_file = self._connection._shell.join_path(dest, source_rel)
             # else:
-            dest_file = self._connection._shell.join_path(dest_path)
-
-            dest_status = self._execute_remote_stat(
-                dest_file, all_vars=task_vars, follow=False
-            )
-
-            if dest_status["exists"] and dest_status["isdir"]:
-                self._remove_tmp_path(tmp)
-                result["failed"] = True
-                result["msg"] = "can not use content with a dir as dest"
-                return result
+            self._connection._shell.join_path(dest_path)
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
+
+            rendered_file = None
+            if use_template:
+                template_parameters = module_args.get("template_parameters", dict())
+                encoding = module_args.get("encoding", dict())
+
+                try:
+                    renderer = template.create_template_environment(
+                        template_parameters,
+                        source_full,
+                        encoding.get("from", None)
+                    )
+                    template_dir, rendered_file = renderer.render_file_template(
+                        os.path.basename(source_full),
+                        task_vars
+                    )
+                except Exception as err:
+                    result["msg"] = to_text(err)
+                    result["failed"] = True
+                    result["changed"] = False
+                    result["invocation"] = dict(module_args=module_args)
+                    return result
+
+                source_full = rendered_file
 
             remote_path = None
             remote_path = self._transfer_file(source_full, tmp_src)
@@ -103,30 +140,38 @@ class ActionModule(ActionBase):
             result = {}
             copy_module_args = {}
             module_args = self._task.args.copy()
-            module_args["temp_file"] = dest_path
 
             copy_module_args.update(
                 dict(
                     src=tmp_src,
                     dest=dest_path,
                     mode="0600",
-                    _original_basename=source_rel,
+                    force=True,
+                    encoding=module_args.get('encoding'),
+                    remote_src=True,
                 )
             )
-            result.update(
-                self._execute_module(
-                    module_name="copy",
-                    module_args=copy_module_args,
-                    task_vars=task_vars,
+            copy_task = copy.deepcopy(self._task)
+            copy_task.args = copy_module_args
+            zos_copy_action_module = ZosCopyActionModule(task=copy_task,
+                                                         connection=self._connection,
+                                                         play_context=self._play_context,
+                                                         loader=self._loader,
+                                                         templar=self._templar,
+                                                         shared_loader_obj=self._shared_loader_obj)
+            result.update(zos_copy_action_module.run(task_vars=task_vars))
+            if result.get("msg") is None:
+                module_args["src"] = dest_path
+                result.update(
+                    self._execute_module(
+                        module_name="ibm.ibm_zos_core.zos_job_submit",
+                        module_args=module_args,
+                        task_vars=task_vars,
+                    )
                 )
-            )
-            result.update(
-                self._execute_module(
-                    module_name="ibm.ibm_zos_core.zos_job_submit",
-                    module_args=module_args,
-                    task_vars=task_vars,
-                )
-            )
+            else:
+                result.update(dict(failed=True))
+
         else:
             result.update(
                 self._execute_module(
@@ -153,3 +198,10 @@ class ActionModule(ActionBase):
         # entries = ('checksum', 'dest', 'gid', 'group', 'md5sum', 'mode', 'owner', 'size', 'src', 'state', 'uid')
         # delete_dict_entries(entries, result)
         return result
+
+
+def _process_boolean(arg, default=False):
+    try:
+        return boolean(arg)
+    except TypeError:
+        return default

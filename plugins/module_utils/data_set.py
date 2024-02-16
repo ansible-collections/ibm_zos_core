@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,17 +15,18 @@ __metaclass__ = type
 
 import re
 import tempfile
+import traceback
 from os import path, walk
 from string import ascii_uppercase, digits
-from random import randint
+from random import sample
 # from ansible.module_utils._text import to_bytes
 from ansible.module_utils.common.text.converters import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
     MissingImport,
+    ZOAUImportError,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -39,9 +40,10 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, exceptions
 except ImportError:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    exceptions = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -124,7 +126,7 @@ class DataSet(object):
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length (int, optional) The length, in bytes, of each record in the data set.
                     Defaults to None.
@@ -278,7 +280,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def allocate_model_data_set(ds_name, model, vol=None):
+    def allocate_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None):
         """Allocates a data set based on the attributes of a 'model' data set.
         Useful when a data set needs to be created identical to another. Supported
         model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
@@ -291,6 +293,9 @@ class DataSet(object):
             must be used. See extract_dsname(ds_name) in data_set.py
             model {str} -- The name of the data set whose allocation parameters
             should be used to allocate the new data set 'ds_name'
+            executable {bool} -- Whether the new data set should support executables
+            asa_text {bool} -- Whether the new data set should support ASA control
+            characters (have record format FBA)
             vol {str} -- The volume where data set should be allocated
 
         Raise:
@@ -313,13 +318,26 @@ class DataSet(object):
         # Now adding special parameters for sequential and partitioned
         # data sets.
         if model_type not in DataSet.MVS_VSAM:
-            block_size = datasets.listing(model)[0].block_size
+            try:
+                data_set = datasets.list_datasets(model)[0]
+            except IndexError:
+                raise AttributeError("Could not retrieve model data set block size.")
+            block_size = data_set.block_size
             alloc_cmd = """{0} -
             BLKSIZE({1})""".format(alloc_cmd, block_size)
 
         if vol:
             alloc_cmd = """{0} -
             VOLUME({1})""".format(alloc_cmd, vol.upper())
+
+        if asa_text:
+            alloc_cmd = """{0} -
+            RECFM(F,B,A)""".format(alloc_cmd)
+
+        if executable:
+            alloc_cmd = """{0} -
+            RECFM(U) -
+            DSNTYPE(LIBRARY)""".format(alloc_cmd)
 
         rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
         if rc != 0:
@@ -488,7 +506,7 @@ class DataSet(object):
             DatasetVolumeError: When the function is unable to parse the value
                                 of VOLSER.
         """
-        data_set_information = datasets.listing(name)
+        data_set_information = datasets.list_datasets(name)
 
         if len(data_set_information) > 0:
             return data_set_information[0].volume
@@ -523,12 +541,12 @@ class DataSet(object):
         if not DataSet.data_set_exists(name, volume):
             return None
 
-        data_sets_found = datasets.listing(name)
+        data_sets_found = datasets.list_datasets(name)
 
-        # Using the DSORG property when it's a sequential or partitioned
-        # dataset. VSAMs are not found by datasets.listing.
+        # Using the organization property when it's a sequential or partitioned
+        # dataset. VSAMs are not found by datasets.list_datasets.
         if len(data_sets_found) > 0:
-            return data_sets_found[0].dsorg
+            return data_sets_found[0].organization
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
@@ -832,7 +850,7 @@ class DataSet(object):
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length (int, optional) The length, in bytes, of each record in the data set.
                     Defaults to None.
@@ -900,7 +918,7 @@ class DataSet(object):
         volumes = ",".join(volumes) if volumes else None
         kwargs["space_primary"] = primary
         kwargs["space_secondary"] = secondary
-        kwargs["type"] = type
+        kwargs["dataset_type"] = type
         kwargs["volumes"] = volumes
         kwargs.pop("space_type", None)
         renamed_args = {}
@@ -934,7 +952,7 @@ class DataSet(object):
         force=None,
     ):
         """A wrapper around zoautil_py
-        Dataset.create() to raise exceptions on failure.
+        datasets.create() to raise exceptions on failure.
         Reasonable default arguments will be set by ZOAU when necessary.
 
         Args:
@@ -949,7 +967,7 @@ class DataSet(object):
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length (int, optional) The length, in bytes, of each record in the data set.
                     Defaults to None.
@@ -995,17 +1013,22 @@ class DataSet(object):
         """
         original_args = locals()
         formatted_args = DataSet._build_zoau_args(**original_args)
-        response = datasets._create(**formatted_args)
-        if response.rc > 0:
+        try:
+            datasets.create(**formatted_args)
+        except (exceptions.ZOAUException, exceptions.DatasetVerificationError) as create_exception:
             raise DatasetCreateError(
-                name, response.rc, response.stdout_response + response.stderr_response
+                name,
+                create_exception.response.rc,
+                create_exception.response.stdout_response + create_exception.response.stderr_response
             )
-        return response.rc
+        # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
+        # response.rc now we just return 0 if nothing failed
+        return 0
 
     @staticmethod
     def delete(name):
         """A wrapper around zoautil_py
-        Dataset.delete() to raise exceptions on failure.
+        datasets.delete() to raise exceptions on failure.
 
         Arguments:
             name (str) -- The name of the data set to delete.
@@ -1044,7 +1067,7 @@ class DataSet(object):
     @staticmethod
     def delete_member(name, force=False):
         """A wrapper around zoautil_py
-        Dataset.delete_members() to raise exceptions on failure.
+        datasets.delete_members() to raise exceptions on failure.
 
         Arguments:
             name (str) -- The name of the data set, including member name, to delete.
@@ -1294,7 +1317,7 @@ class DataSet(object):
             str: The temporary data set name.
         """
         if not hlq:
-            hlq = datasets.hlq()
+            hlq = datasets.get_hlq()
         temp_name = datasets.tmp_name(hlq)
         return temp_name
 
@@ -1317,7 +1340,7 @@ class DataSet(object):
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to "SEQ".
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to "FB".
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to 5.
@@ -1739,9 +1762,10 @@ def temp_member_name():
     """Generate a temp member name"""
     first_char_set = ascii_uppercase + "#@$"
     rest_char_set = ascii_uppercase + digits + "#@$"
-    temp_name = first_char_set[randint(0, len(first_char_set) - 1)]
-    for i in range(7):
-        temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
+    # using sample as k=1 and k=7 to avoid using random.choice just for oneline import
+    temp_name = sample(first_char_set, k=1)
+    temp_name += sample(rest_char_set, k=7)
+    temp_name = "".join(temp_name)
     return temp_name
 
 

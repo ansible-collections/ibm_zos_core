@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -151,6 +151,30 @@ def iehlist(cmd, dds=None, authorized=False):
         mode
     """
     return _run_mvs_command("IEHLIST", cmd, dds, authorized)
+
+
+def amaterse(cmd="", dds=None, authorized=False):
+    """AMATERSE is a service aid program that operates in problem state.
+    You can use AMATERSE to pack a data set before transmitting a copy
+    to another site, typically employing FTP as the transmission mechanism.
+    A complementary unpack service is provided to create a similar data set
+    at the receiving site.
+    Arguments:
+        dds {dict} -- Any DD statements to pass to MVS command
+        authorized {bool} -- Whether the command should be run in authorized
+        mode
+    """
+    return _run_mvs_command("AMATERSE", "", dds, authorized)
+
+
+def adrdssu(cmd, dds=None, authorized=False):
+    """The ADRDSSU program enables you to copy SMS-compressed data without
+    having to decompress the data and also provides support for copying
+    wildcard-named files.
+    Is a DFSMSdss utility that provides backup and recovery functions
+    at both the data set and volume levels.
+    """
+    return _run_mvs_command("ADRDSSU", cmd, dds, authorized)
 
 
 def _run_mvs_command(pgm, cmd, dd=None, authorized=False):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2022 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,8 +13,12 @@
 
 from __future__ import absolute_import, division, print_function
 
-import subprocess
+# import subprocess
 
+try:
+    from zoautil_py import ZOAU_API_VERSION
+except Exception:
+    ZOAU_API_VERSION = "1.2.0"
 
 __metaclass__ = type
 
@@ -27,8 +31,10 @@ def is_zoau_version_higher_than(min_version_str):
         bool -- Whether ZOAU version found was high enough.
     """
     if is_valid_version_string(min_version_str):
-        # check zoau version on system
+        # check zoau version on system (already a list)
         system_version_list = get_zoau_version_str()
+
+        # convert input to list format
         min_version_list = min_version_str.split('.')
 
         # convert list of strs to list of ints
@@ -94,16 +100,10 @@ def get_zoau_version_str():
     Returns:
         { [int, int, int] } -- ZOAU version found in format [#,#,#]. There is a
                                provision for a 4th level eg "v1.2.0.1".
+
     """
-    zoaversion_out = subprocess.run(
-        'zoaversion', shell=True, capture_output=True, check=False
-    )
     version_list = (
-        zoaversion_out
-        .stdout
-        .decode('UTF-8')
-        .strip()
-        .split(' ')[-1][1:]
-        .split('.')
+        ZOAU_API_VERSION.split('.')
     )
+
     return version_list

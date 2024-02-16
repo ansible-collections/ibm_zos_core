@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -54,17 +54,6 @@ options:
       - DATA_SET can be a PDS, PDSE, or sequential data set.
       - USS means the JCL location is located in UNIX System Services (USS).
       - LOCAL means locally to the ansible control node.
-  wait:
-    required: false
-    default: false
-    type: bool
-    description:
-      - Setting this option will yield no change, it is deprecated. There is no
-        no need to set I(wait); setting I(wait_times_s) is the correct way to
-        configure the amount of tme to wait for a job to execute.
-      - Configuring wait used by the L(zos_job_submit,./zos_job_submit.html) module has been
-        deprecated and will be removed in ibm.ibm_zos_core collection.
-      - See option I(wait_time_s).
   wait_time_s:
     required: false
     default: 10
@@ -130,6 +119,10 @@ options:
         required: false
         type: str
         default: IBM-1047
+
+extends_documentation_fragment:
+  - ibm.ibm_zos_core.template
+
 notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
@@ -278,12 +271,12 @@ jobs:
         }
     job_class:
       description:
-        Letter indicating job class for this job.
+        Job class for this job.
       type: str
       sample: A
     svc_class:
       description:
-        Character indicating service class for this job.
+        Service class for this job.
       type: str
       sample: C
     priority:
@@ -293,19 +286,32 @@ jobs:
       sample: 4
     asid:
       description:
-        An identifier created by JES.
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
       type: int
       sample: 0
-    creation_datetime:
+    creation_date:
       description:
-        Date and time, local to the target system, when the job was created.
+        Date, local to the target system, when the job was created.
       type: str
-      sample: 20230504T141500
+      sample: "2023-05-04"
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: "14:15:00"
     queue_position:
       description:
-        Integer of the position within the job queue where this jobs resided.
+        The position within the job queue where the jobs resides.
       type: int
       sample: 3
+    program_name:
+      description:
+        The name of the program found in the job's last completed step found in the PGM parameter.
+        Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+      type: str
+      sample: "IEBGENER"
+
   sample:
      [
           {
@@ -522,10 +528,13 @@ jobs:
               "job_class": "K",
               "svc_class": "?",
               "priority": 1,
+              "program_name": "IEBGENER",
               "asid": 0,
-              "creation_datetime": "20230503T121300",
+              "creation_date": "2023-05-03",
+              "creation_time": "12:13:00",
               "queue_position": 3,
-              "subsystem": "STL1"
+              "subsystem": "STL1",
+              "system": "STL1"
           }
      ]
 message:
@@ -591,7 +600,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
@@ -600,28 +609,22 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import PY3
+from ansible.module_utils._text import to_text
 from timeit import default_timer as timer
-from tempfile import NamedTemporaryFile
 from os import remove
+import traceback
 from time import sleep
 import re
 
 try:
-    from zoautil_py.exceptions import ZOAUException, JobSubmitException
+    from zoautil_py import exceptions as zoau_exceptions
 except ImportError:
-    ZOAUException = MissingZOAUImport()
-    JobSubmitException = MissingZOAUImport()
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import jobs
 except Exception:
-    jobs = MissingZOAUImport()
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+    jobs = ZOAUImportError(traceback.format_exc())
 
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
@@ -629,7 +632,7 @@ JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLER
 MAX_WAIT_TIME_S = 86400
 
 
-def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None, start_time=timer()):
+def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=None, start_time=timer()):
     """ Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
 
         Arguments:
@@ -639,7 +642,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
             src_name (str)  - the src name that was provided in the module because through
                               the runtime src could be replace with a temporary file name
             timeout (int)   - how long to wait in seconds for a job to complete
-            hfs (boolean)   - True if JCL is a file in USS, otherwise False; Note that all
+            is_unix (bool)  - True if JCL is a file in USS, otherwise False; Note that all
                               JCL local to a controller is transfered to USS thus would be
                               True
             volume (str)    - volume the data set JCL is located on that will be cataloged before
@@ -653,11 +656,11 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
     """
 
     kwargs = {
-        "timeout": timeout,
-        "hfs": hfs,
+        # Since every fetch retry waits for a second before continuing,
+        # we can just pass the timeout (also in seconds) to this arg.
+        "fetch_max_retries": timeout,
     }
 
-    wait = True  # Wait is always true because the module requires wait_time_s > 0
     present = False
     duration = 0
     job_submitted = None
@@ -678,9 +681,9 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        job_submitted = jobs.submit(src, wait, None, **kwargs)
+        job_submitted = jobs.submit(src, is_unix=is_unix, **kwargs)
 
-        # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
+        # Introducing a sleep to ensure we have the result of job submit carrying the job id.
         while (job_submitted is None and duration <= timeout):
             current_time = timer()
             duration = round(current_time - start_time)
@@ -691,68 +694,69 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
         # that is sent back as `AC` when the job is not complete but the problem
         # with monitoring 'AC' is that STARTED tasks never exit the AC status.
         if job_submitted:
-            job_listing_rc = jobs.listing(job_submitted.id)[0].rc
-            job_listing_status = jobs.listing(job_submitted.id)[0].status
+            job_fetch_rc = jobs.fetch_multiple(job_submitted.job_id)[0].return_code
+            job_fetch_status = jobs.fetch_multiple(job_submitted.job_id)[0].status
 
             # Before moving forward lets ensure our job has completed but if we see
             # status that matches one in JOB_ERROR_MESSAGES, don't wait, let the code
-            # drop through and get analyzed in the main as it will scan the job ouput
-            # Any match to JOB_ERROR_MESSAGES ends our processing and wait times
-            while (job_listing_status not in JOB_ERROR_MESSAGES and
-                    job_listing_status == 'AC' and
-                    ((job_listing_rc is None or len(job_listing_rc) == 0 or
-                      job_listing_rc == '?') and duration < timeout)):
+            # drop through and get analyzed in the main as it will scan the job ouput.
+            # Any match to JOB_ERROR_MESSAGES ends our processing and wait times.
+            while (job_fetch_status not in JOB_ERROR_MESSAGES and
+                    job_fetch_status == 'AC' and
+                    ((job_fetch_rc is None or len(job_fetch_rc) == 0 or
+                      job_fetch_rc == '?') and duration < timeout)):
                 current_time = timer()
                 duration = round(current_time - start_time)
                 sleep(1)
-                job_listing_rc = jobs.listing(job_submitted.id)[0].rc
-                job_listing_status = jobs.listing(job_submitted.id)[0].status
+                job_fetch_rc = jobs.fetch_multiple(job_submitted.job_id)[0].return_code
+                job_fetch_status = jobs.fetch_multiple(job_submitted.job_id)[0].status
 
-    # ZOAU throws a ZOAUException when the job sumbission fails thus there is no
+    # ZOAU throws a JobSubmitException when the job sumbission fails thus there is no
     # JCL RC to share with the user, if there is a RC, that will be processed
     # in the job_output parser.
-    except ZOAUException as err:
+    except zoau_exceptions.JobSubmitException as err:
         result["changed"] = False
         result["failed"] = True
-        result["stderr"] = str(err)
+        result["stderr"] = to_text(err)
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("Unable to submit job {0}, the job submission has failed. "
                          "Without the job id, the error can not be determined. "
                          "Consider using module `zos_job_query` to poll for the "
                          "job by name or review the system log for purged jobs "
-                         "resulting from an abend.".format(src_name))
+                         "resulting from an abend. Standard error may have "
+                         "additional information.".format(src_name))
         module.fail_json(**result)
 
-    # ZOAU throws a JobSubmitException when timeout has execeeded in that no job_id
-    # has been returned within the allocated time.
-    except JobSubmitException as err:
+    # ZOAU throws a JobFetchException when it is unable to fetch a job.
+    # This could happen while trying to fetch a job still running.
+    except zoau_exceptions.JobFetchException as err:
         result["changed"] = False
         result["failed"] = False
-        result["stderr"] = str(err)
+        result["stderr"] = to_text(err)
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
-        result["msg"] = ("The JCL has been submitted {0} and no job id was returned "
-                         "within the allocated time of {1} seconds. Consider using "
-                         " module zos_job_query to poll for a long running "
-                         "jobs or increasing the value for "
-                         "`wait_times_s`.".format(src_name, str(timeout)))
+        result["job_id"] = job_submitted.job_id
+        result["msg"] = ("The JCL has been submitted {0} with ID {1} but there was an "
+                         "error while fetching its status within the allocated time of {2} "
+                         "seconds. Consider using module zos_job_query to poll for the "
+                         "job for more information. Standard error may have additional "
+                         "information.".format(src_name, job_submitted.job_id, str(timeout)))
         module.fail_json(**result)
 
-    # Between getting a job_submitted and the jobs.listing(job_submitted.id)[0].rc
+    # Between getting a job_submitted and the jobs.fetch_multiple(job_submitted.job_id)[0].return_code
     # is enough time for the system to purge an invalid job, so catch it and let
     # it fall through to the catchall.
     except IndexError:
         job_submitted = None
 
     # There appears to be a small fraction of time when ZOAU has a handle on the
-    # job and and suddenly its purged, this check is to ensure the job is there
+    # job and suddenly its purged, this check is to ensure the job is there
     # long after the purge else we throw an error here if its been purged.
     if job_submitted is None:
         result["changed"] = False
         result["failed"] = True
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("The job {0} has been submitted and no job id was returned "
                          "within the allocated time of {1} seconds. Without the "
                          "job id, the error can not be determined, consider using "
@@ -761,15 +765,12 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                          "abend.".format(src_name, str(timeout)))
         module.fail_json(**result)
 
-    return job_submitted.id if job_submitted else None, duration
+    return job_submitted.job_id if job_submitted else None, duration
 
 
 def run_module():
     module_args = dict(
         src=dict(type="str", required=True),
-        wait=dict(type="bool", required=False, default=False,
-                  removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
         location=dict(
             type="str",
             default="DATA_SET",
@@ -795,7 +796,30 @@ def run_module():
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", default=10),
         max_rc=dict(type="int", required=False),
-        temp_file=dict(type="path", required=False),
+        use_template=dict(type='bool', default=False),
+        template_parameters=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                variable_start_string=dict(type='str', default='{{'),
+                variable_end_string=dict(type='str', default='}}'),
+                block_start_string=dict(type='str', default='{%'),
+                block_end_string=dict(type='str', default='%}'),
+                comment_start_string=dict(type='str', default='{#'),
+                comment_end_string=dict(type='str', default='#}'),
+                line_statement_prefix=dict(type='str', required=False),
+                line_comment_prefix=dict(type='str', required=False),
+                lstrip_blocks=dict(type='bool', default=False),
+                trim_blocks=dict(type='bool', default=True),
+                keep_trailing_newline=dict(type='bool', default=False),
+                newline_sequence=dict(
+                    type='str',
+                    default='\n',
+                    choices=['\n', '\r', '\r\n']
+                ),
+                auto_reload=dict(type='bool', default=False),
+            )
+        ),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -817,8 +841,6 @@ def run_module():
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
-        wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
         location=dict(
             arg_type="str",
             default="DATA_SET",
@@ -833,7 +855,6 @@ def run_module():
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=10),
         max_rc=dict(arg_type="int", required=False),
-        temp_file=dict(arg_type="path", required=False),
     )
 
     # ********************************************************************
@@ -850,16 +871,11 @@ def run_module():
     # Extract values from set module options
     location = parsed_args.get("location")
     volume = parsed_args.get("volume")
-    parsed_args.get("wait")
     src = parsed_args.get("src")
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    from_encoding = parsed_args.get("from_encoding")
-    to_encoding = parsed_args.get("to_encoding")
-    # temporary file names for copied files when user sets location to LOCAL
-    temp_file = parsed_args.get("temp_file")
-    temp_file_encoded = None
+    temp_file = parsed_args.get("src") if location == "LOCAL" else None
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
@@ -870,43 +886,18 @@ def run_module():
                          "be greater than 0 and less than {0}.".format(str(MAX_WAIT_TIME_S)))
         module.fail_json(**result)
 
-    if temp_file:
-        temp_file_encoded = NamedTemporaryFile(delete=True)
-
     job_submitted_id = None
     duration = 0
     start_time = timer()
-
     if location == "DATA_SET":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
+            module, src, src_name=src, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)
     elif location == "USS":
-        job_submitted_id, duration = submit_src_jcl(module, src, src_name=src, timeout=wait_time_s, hfs=True)
-    else:
-        # added -c to iconv to prevent '\r' from erroring as invalid chars to EBCDIC
-        conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
-            from_encoding,
-            to_encoding,
-            quote(temp_file),
-            quote(temp_file_encoded.name),
-        )
-
-        conv_rc, stdout, stderr = module.run_command(
-            conv_str,
-            use_unsafe_shell=True,
-        )
-
-        if conv_rc == 0:
-            job_submitted_id, duration = submit_src_jcl(
-                module, temp_file_encoded.name, src_name=src, timeout=wait_time_s, hfs=True)
-        else:
-            result["failed"] = True
-            result["stdout"] = stdout
-            result["stderr"] = stderr
-            result["msg"] = ("Failed to convert the src {0} from encoding {1} to "
-                             "encoding {2}, unable to submit job."
-                             .format(src, from_encoding, to_encoding))
-            module.fail_json(**result)
+        job_submitted_id, duration = submit_src_jcl(
+            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
+    elif location == "LOCAL":
+        job_submitted_id, duration = submit_src_jcl(
+            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
 
     try:
         # Explictly pass None for the unused args else a default of '*' will be
@@ -915,7 +906,7 @@ def run_module():
 
         job_output_txt = job_output(
             job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
-            duration=duration, timeout=wait_time_s, start_time=start_time)
+            dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
 
         result["duration"] = duration
 
@@ -991,11 +982,11 @@ def run_module():
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "there was an error, please review "
                          "the error for further details: {1}".format
-                         (str(job_submitted_id), str(err)))
+                         (str(job_submitted_id), to_text(err)))
         module.exit_json(**result)
 
     finally:
-        if temp_file:
+        if temp_file is not None:
             remove(temp_file)
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'

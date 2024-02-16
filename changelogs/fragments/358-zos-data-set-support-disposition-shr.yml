@@ -1,2 +1,0 @@
-minor_changes:
-  - zos_data_set - add force parameter to enable member delete while pdse is in use (https://github.com/ansible-collections/ibm_zos_core/pull/718).

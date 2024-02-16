@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+
 SEQ_NAMES = [
     "TEST.FIND.SEQ.FUNCTEST.FIRST",
     "TEST.FIND.SEQ.FUNCTEST.SECOND",
@@ -216,32 +218,50 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
 
 def test_find_data_sets_larger_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='100k')
-    print(vars(find_res))
-    for val in find_res.contacted.values():
-        assert len(val.get('data_sets')) == 2
-        assert val.get('matched') == 2
+    TEST_PS1 = 'TEST.PS.ONE'
+    TEST_PS2 = 'TEST.PS.TWO'
+    try:
+        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", size="5m")
+        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", size="5m")
+        find_res = hosts.all.zos_find(patterns=['TEST.PS.*'], size="1k")
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 2
+            assert val.get('matched') == 2
+    finally:
+        hosts.all.zos_data_set(name=TEST_PS1, state="absent")
+        hosts.all.zos_data_set(name=TEST_PS2, state="absent")
 
 
 def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='-1m')
-    print(vars(find_res))
-    for val in find_res.contacted.values():
-        assert len(val.get('data_sets')) == 1
-        assert val.get('matched') == 1
+    TEST_PS = 'USER.FIND.TEST'
+    try:
+        hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="1k")
+        find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 1
+            assert val.get('matched') == 1
+    finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
 
 
 def test_find_data_sets_in_volume(ansible_zos_module):
-    hosts = ansible_zos_module
+    try:
+        hosts = ansible_zos_module
+        data_set_name = "TEST.FIND.SEQ"
+        volume = "000000"
+        # Create temp data set
+        hosts.all.zos_data_set(name=data_set_name, type="seq", state="present", volumes=[volume])
+        find_res = hosts.all.zos_find(
+            patterns=[data_set_name], volumes=[volume]
+        )
+        print(vars(find_res))
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) >= 1
+            assert val.get('matched') >= 1
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent")
 
-    find_res = hosts.all.zos_find(
-        patterns=['USER.*'], volumes=['IMSSUN']
-    )
-    print(vars(find_res))
-    for val in find_res.contacted.values():
-        assert len(val.get('data_sets')) >= 1
-        assert val.get('matched') >= 1
 
 
 def test_find_vsam_pattern(ansible_zos_module):
@@ -262,15 +282,18 @@ def test_find_vsam_pattern(ansible_zos_module):
         )
 
 
-def test_find_vsam_in_volume(ansible_zos_module):
+def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    alternate_vsam = "TEST.FIND.ALTER.VSAM"
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
+    alternate_vsam = "TEST.FIND.VSAM.SECOND"
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts, volume="222222")
-        create_vsam_ksds(alternate_vsam, hosts, volume="000000")
+            create_vsam_ksds(vsam, hosts, volume=volume_1)
+        create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=['222222'], resource_type='cluster'
+            patterns=['TEST.FIND.*.*.*'], volumes=[volume_1], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

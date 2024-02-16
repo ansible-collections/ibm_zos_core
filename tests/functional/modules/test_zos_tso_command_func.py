@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,21 +15,18 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
-import sys
-import warnings
-
 import ansible.constants
 import ansible.errors
 import ansible.utils
-import pytest
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 
 def test_zos_tso_command_run_help(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["help"])
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
+        for item in result.get("output"):
+            assert item.get("rc") == 0
         assert result.get("changed") is True
 
 
@@ -45,89 +42,55 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
     ]
     results = hosts.all.zos_tso_command(commands=command_string)
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
+        for item in result.get("output"):
+            assert item.get("rc") == 0
         assert result.get("changed") is True
 
 
-# The happy path test
-# Run a long  tso command to allocate a dataset.
-def test_zos_tso_command_long_unauth_command_116_chars(ansible_zos_module):
+def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
     hosts = ansible_zos_module
+    default_temp_dataset = get_tmp_ds_name()
     command_string = [
-        "alloc da('imstestl.ims1.temp.ps') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)"
+        "alloc da('{0}') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)".format(default_temp_dataset)
     ]
-    results = hosts.all.zos_tso_command(commands=command_string)
-    for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
+    results_allocate = hosts.all.zos_tso_command(commands=command_string)
+    # Validate the correct allocation of dataset
+    for result in results_allocate.contacted.values():
+        for item in result.get("output"):
+            assert item.get("rc") == 0
         assert result.get("changed") is True
-
-
-# The positive path test
-def test_zos_tso_command_auth_command_listds(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands=["LISTDS 'imstestl.ims1.temp.ps'"])
+    # Validate listds of datasets and validate LISTDS using alias param 'command' of auth command
+    results = hosts.all.zos_tso_command(commands=["LISTDS '{0}'".format(default_temp_dataset)])
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
+        for item in result.get("output"):
+            assert item.get("rc") == 0
         assert result.get("changed") is True
-
-
-# The positive path test
-# tests that single command works as well
-def test_zos_tso_single_command_auth_command_listds(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="LISTDS 'imstestl.ims1.temp.ps'")
+    # Validate LISTDS using alias param 'command'
+    results = hosts.all.zos_tso_command(command="LISTDS '{0}'".format(default_temp_dataset))
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
+        for item in result.get("output"):
+            assert item.get("rc") == 0
         assert result.get("changed") is True
-
-
-# The positive path test
-# tests that single command works as well with alias
-def test_zos_tso_command_auth_command_listds_using_alias(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(command=["LISTDS 'imstestl.ims1.temp.ps'"])
-    for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
-        assert result.get("changed") is True
-
-
-# The positive path test
-# tests that alias "command" works
-def test_zos_tso_single_command_auth_command_listds_using_alias(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(command="LISTDS 'imstestl.ims1.temp.ps'")
-    for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
-        assert result.get("changed") is True
-
-
-# The positive path test
-def test_zos_tso_command_unauth_command_listcat(ansible_zos_module):
-    hosts = ansible_zos_module
+    # Validate LISTCAT command and an unauth command
     results = hosts.all.zos_tso_command(
-        commands=["LISTCAT ENT('imstestl.ims1.temp.ps')"]
+        commands=["LISTCAT ENT('{0}')".format(default_temp_dataset)]
     )
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
+        for item in result.get("output"):
+            assert item.get("rc") == 0
         assert result.get("changed") is True
-
-
-# The positive path test
-def test_zos_tso_command_both_unauth_and_auth_command(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands=["delete 'imstestl.ims1.temp.ps'"])
+    # Validate remove dataset
+    results = hosts.all.zos_tso_command(commands=["delete '{0}'".format(default_temp_dataset)])
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 0
+        for item in result.get("output"):
+            assert item.get("rc") == 0
         assert result.get("changed") is True
-
-
-# The failure path test
-# the dataset has be deleted.
-def test_zos_tso_command_valid_command_failed_as_has_been_deleted(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands=["delete 'imstestl.ims1.temp.ps'"])
+    # Expect the tso_command to fail here because the previous command will have already deleted the data set
+    # Validate data set was removed by previous call
+    results = hosts.all.zos_tso_command(commands=["delete '{0}'".format(default_temp_dataset)])
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 8
+        for item in result.get("output"):
+            assert item.get("rc") == 8
         assert result.get("changed") is False
 
 
@@ -137,6 +100,8 @@ def test_zos_tso_command_empty_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=[""])
     for result in results.contacted.values():
+        for item in result.get("output"):
+            assert item.get("rc") == 255
         assert result.get("changed") is False
 
 
@@ -146,7 +111,8 @@ def test_zos_tso_command_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["xxxxxx"])
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == 255
+        for item in result.get("output"):
+            assert item.get("rc") == 255
         assert result.get("changed") is False
 
 
@@ -158,7 +124,21 @@ def test_zos_tso_command_multiple_commands(ansible_zos_module):
     results = hosts.all.zos_tso_command(commands=commands_list)
     for result in results.contacted.values():
         for item in result.get("output"):
-            assert item.get("rc") == 0
+            if item.get("command") == "LU omvsadm":
+                assert item.get("rc") == 0
+            if item.get("command") == "LISTGRP":
+                assert item.get("rc") == 0
+        assert result.get("changed") is True
+
+
+# The positive test
+# The command that kicks off rc>0 which is allowed
+def test_zos_tso_command_maxrc(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_tso_command(commands=["LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC"],max_rc=4)
+    for result in results.contacted.values():
+        for item in result.get("output"):
+            assert item.get("rc") < 5
         assert result.get("changed") is True
 
 

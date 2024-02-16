@@ -1,7 +1,0 @@
-trivial:
-- doc - Updated the documentation in the README and release_notes.rst to reflect
-  ansible, ansible-core, Automation Hub and z/OS version.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/771)
-- templates - Update the git issue templates with current and
-  future product versions.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/771)

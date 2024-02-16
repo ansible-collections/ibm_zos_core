@@ -1,4 +1,0 @@
-minor_changes:
-- zos_copy - was enhanced to keep track of modified members in a destination
-  dataset, restoring them to their previous state in case of a failure.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/551)

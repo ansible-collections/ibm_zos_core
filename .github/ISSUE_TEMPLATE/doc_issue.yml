@@ -75,6 +75,7 @@ body:
         - zos_operator
         - zos_operator_action_query
         - zos_ping
+        - zos_script
         - zos_tso_command
     validations:
       required: false

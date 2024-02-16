@@ -64,3 +64,7 @@ class ZTestHelper(object):
             interpreter_string += "export {0}={1} ; ".format(key, value)
         interpreter_string += self._python_path
         return interpreter_string
+
+    def get_python_path(self):
+        """ Returns python path """
+        return self._python_path

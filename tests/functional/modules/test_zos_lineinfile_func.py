@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,618 +12,238 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-from ibm_zos_core.tests.helpers.zos_lineinfile_helper import (
-    UssGeneral,
-    DsGeneral,
-    DsNotSupportedHelper,
-    DsGeneralResultKeyMatchesRegex,
-    DsGeneralForceFail,
-    DsGeneralForce,
-)
-import os
-import sys
+from shellescape import quote
+import time
+import re
 import pytest
+import inspect
+
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 __metaclass__ = type
 
-TEST_CONTENT = """if [ -z STEPLIB ] && tty -s;
+TEST_FOLDER_LINEINFILE = "/tmp/ansible-core-tests/zos_lineinfile/"
+
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, \\\"//'%s'\\\", argv[1]);
+    FILE* member;
+    member = fopen(dsname, \\\"rb,type=record\\\");
+    sleep(300);
+    fclose(member);
+    return 0;
+}"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}({1})'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
+
+TEST_CONTENT="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
 export _BPXK_AUTOCVT"""
 
-# supported data set types
-DS_TYPE = ['SEQ', 'PDS', 'PDSE']
-# not supported data set types
-NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
-ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
-
-TEST_ENV = dict(
-    TEST_CONT=TEST_CONTENT,
-    TEST_DIR="/tmp/zos_lineinfile/",
-    TEST_FILE="",
-    DS_NAME="",
-    DS_TYPE="",
-    ENCODING="",
-)
-
-TEST_INFO = dict(
-    test_uss_line_replace=dict(
-        path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
-        state="present"),
-    test_uss_line_insertafter_regex=dict(
-        insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
-        state="present"),
-    test_uss_line_insertbefore_regex=dict(
-        insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
-    test_uss_line_insertafter_eof=dict(
-        insertafter="EOF", line="export ZOAU_ROOT", state="present"),
-    test_uss_line_insertbefore_bof=dict(
-        insertbefore="BOF", line="# this is file is for setting env vars",
-        state="present"),
-    test_uss_line_replace_match_insertafter_ignore=dict(
-        regexp="ZOAU_ROOT=", insertafter="PATH=",
-        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_uss_line_replace_match_insertbefore_ignore=dict(
-        regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT",
-        state="present"),
-    test_uss_line_replace_nomatch_insertafter_match=dict(
-        regexp="abcxyz", insertafter="ZOAU_ROOT=",
-        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_uss_line_replace_nomatch_insertbefore_match=dict(
-        regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT",
-        state="present"),
-    test_uss_line_replace_nomatch_insertafter_nomatch=dict(
-        regexp="abcxyz", insertafter="xyzijk",
-        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_uss_line_replace_nomatch_insertbefore_nomatch=dict(
-        regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT",
-        state="present"),
-    test_uss_line_absent=dict(regexp="ZOAU_ROOT=", line="", state="absent"),
-    test_ds_line_replace=dict(test_name="T1"),
-    test_ds_line_insertafter_regex=dict(test_name="T2"),
-    test_ds_line_insertbefore_regex=dict(test_name="T3"),
-    test_ds_line_insertafter_eof=dict(test_name="T4"),
-    test_ds_line_insertbefore_bof=dict(test_name="T5"),
-    test_ds_line_replace_match_insertafter_ignore=dict(test_name="T6"),
-    test_ds_line_replace_match_insertbefore_ignore=dict(test_name="T7"),
-    test_ds_line_replace_nomatch_insertafter_match=dict(test_name="T8"),
-    test_ds_line_replace_nomatch_insertbefore_match=dict(test_name="T9"),
-    test_ds_line_replace_nomatch_insertafter_nomatch=dict(test_name="T10"),
-    test_ds_line_replace_nomatch_insertbefore_nomatch=dict(test_name="T11"),
-    test_ds_line_absent=dict(test_name="T12"),
-    test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
-    test_ds_line_force=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=True),
-    test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=False),
-    test_ds_line_replace_force=dict(path="",regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
-        state="present",force=True),
-    test_ds_line_insertafter_regex_force=dict(path="",insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
-        state="present",force=True),
-    test_ds_line_insertbefore_regex_force=dict(path="",insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present",force=True),
-    test_ds_line_insertbefore_bof_force=dict(path="",insertbefore="BOF", line="# this is file is for setting env vars",
-        state="present",force=True),
-    test_ds_line_replace_match_insertafter_ignore_force=dict(path="",regexp="ZOAU_ROOT=", insertafter="PATH=",
-        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present",force=True),
-    test_ds_line_replace_match_insertbefore_ignore_force=dict(path="",regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT",
-        state="present",force=True),
-    test_ds_line_replace_nomatch_insertafter_match_force=dict(path="",regexp="abcxyz", insertafter="ZOAU_ROOT=",
-        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present",force=True),
-    test_ds_line_replace_nomatch_insertbefore_match_force=dict(path="",regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT",
-        state="present",force=True),
-    expected=dict(test_uss_line_replace="""if [ -z STEPLIB ] && tty -s;
+EXPECTED_REPLACE="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_insertafter_regex="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_INSERTAFTER_REGEX="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_insertbefore_regex="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_INSERTBEFORE_REGEX="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 unset ZOAU_ROOT
 ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_insertafter_eof="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_INSERTAFTER_EOF="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
 export _BPXK_AUTOCVT
-export ZOAU_ROOT""",
-                  test_uss_line_insertbefore_bof="""# this is file is for setting env vars
+export 'ZOAU_ROOT'"""
+
+EXPECTED_INSERTBEFORE_BOF="""# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_replace_match_insertafter_ignore="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_REPLACE_INSERTAFTER_IGNORE="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_replace_match_insertbefore_ignore="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_REPLACE_INSERTBEFORE_IGNORE="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 unset ZOAU_ROOT
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_replace_nomatch_insertafter_match="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_REPLACE_NOMATCH_INSERTAFTER="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_replace_nomatch_insertbefore_match="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_REPLACE_NOMATCH_INSERTBEFORE="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 unset ZOAU_ROOT
 ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_replace_nomatch_insertafter_nomatch="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_REPLACE_NOMATCH_INSERTAFTER_NOMATCH="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
 export _BPXK_AUTOCVT
-ZOAU_ROOT=/mvsutil-develop_dsed""",
-                  test_uss_line_replace_nomatch_insertbefore_nomatch="""if [ -z STEPLIB ] && tty -s;
+ZOAU_ROOT=/mvsutil-develop_dsed"""
+
+EXPECTED_REPLACE_NOMATCH_INSERTBEFORE_NOMATCH="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
 export _BPXK_AUTOCVT
-unset ZOAU_ROOT""",
-                  test_uss_line_absent="""if [ -z STEPLIB ] && tty -s;
+unset ZOAU_ROOT"""
+
+EXPECTED_ABSENT="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_line_replace_quoted="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT"""
+
+EXPECTED_QUOTED="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
 fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
 ZOAU_ROOT="/mvsutil-develop_dsed"
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
 export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_ds_line_force="""if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-LANG=C
-export LANG
-readonly LOGNAME
-PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
-export PATH
-LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-export LIBPATH
-NLSPATH=/usr/lib/nls/msg/%L/%N
-export NLSPATH
-MANPATH=/usr/man/%L
-export MANPATH
-MAIL=/usr/mail/LOGNAME
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-ZOAUTIL_DIR=/usr/lpp/zoautil/v100
-PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-_BPXK_AUTOCVT=ON
-export ZOAU_ROOT
-export ZOAUTIL_DIR
-export ZOAUTIL_DIR
-export PYTHONPATH
-export PKG_CONFIG_PATH
-export PYTHON_HOME
-export _BPXK_AUTOCVT
-export ZOAU_ROOT"""),
-)
+export _BPXK_AUTOCVT"""
+
+EXPECTED_ENCODING="""SIMPLE LINE TO VERIFY
+Insert this string"""
+def set_uss_environment(ansible_zos_module, CONTENT, FILE):
+    hosts = ansible_zos_module
+    hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
+    hosts.all.file(path=FILE, state="touch")
+    hosts.all.shell(cmd="echo \"{0}\" > {1}".format(CONTENT, FILE))
+
+def remove_uss_environment(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.shell(cmd="rm -rf " + TEST_FOLDER_LINEINFILE)
+
+def set_ds_environment(ansible_zos_module, TEMP_FILE, DS_NAME, DS_TYPE, CONTENT):
+    hosts = ansible_zos_module
+    hosts.all.shell(cmd="echo \"{0}\" > {1}".format(CONTENT, TEMP_FILE))
+    hosts.all.zos_data_set(name=DS_NAME, type=DS_TYPE)
+    if DS_TYPE in ["PDS", "PDSE"]:
+        DS_FULL_NAME = DS_NAME + "(MEM)"
+        hosts.all.zos_data_set(name=DS_FULL_NAME, state="present", type="member")
+        cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), DS_FULL_NAME)
+    else:
+        DS_FULL_NAME = DS_NAME
+        cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), DS_FULL_NAME)
+    hosts.all.shell(cmd=cmdStr)
+    hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
+    return DS_FULL_NAME
+
+def remove_ds_environment(ansible_zos_module, DS_NAME):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=DS_NAME, state="absent")
+# supported data set types
+DS_TYPE = ['SEQ', 'PDS', 'PDSE']
+# not supported data set types
+NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
+# The encoding will be only use on a few test
+ENCODING = [ 'ISO8859-1', 'UTF-8']
 
 #########################
 # USS test cases
@@ -632,462 +252,789 @@ export ZOAU_ROOT"""),
 
 @pytest.mark.uss
 def test_uss_line_replace(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace"])
+    hosts = ansible_zos_module
+    params = dict(regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_regex(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_insertafter_regex", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertafter_regex"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_regex"])
+    hosts = ansible_zos_module
+    params = dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_regex(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_insertbefore_regex", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertbefore_regex"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"])
+    hosts = ansible_zos_module
+    params = dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_eof(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_insertafter_eof", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_insertafter_eof"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_eof"])
+    hosts = ansible_zos_module
+    params = dict(insertafter="EOF", line="export 'ZOAU_ROOT'", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_bof(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_insertbefore_bof", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_insertbefore_bof"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"])
+    hosts = ansible_zos_module
+    params = dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertafter_ignore(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_replace_match_insertafter_ignore", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_replace_match_insertafter_ignore"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
-    )
+    hosts = ansible_zos_module
+    params = dict(regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER_IGNORE
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertbefore_ignore(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_replace_match_insertbefore_ignore", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_replace_match_insertbefore_ignore"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_match_insertbefore_ignore"]
-    )
+    hosts = ansible_zos_module
+    params = dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE_IGNORE
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertafter_match(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_replace_nomatch_insertafter_match", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_replace_nomatch_insertafter_match"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertafter_match"]
-    )
+    hosts = ansible_zos_module
+    params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertbefore_match(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_replace_nomatch_insertbefore_match", ansible_zos_module,
-        TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_match"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertbefore_match"]
-    )
+    hosts = ansible_zos_module
+    params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertafter_nomatch(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_replace_nomatch_insertafter_nomatch",
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertafter_nomatch"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertafter_nomatch"]
-    )
+    hosts = ansible_zos_module
+    params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER_NOMATCH
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_replace_nomatch_insertbefore_nomatch",
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_nomatch"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertbefore_nomatch"]
-    )
+    hosts = ansible_zos_module
+    params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE_NOMATCH
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_absent(ansible_zos_module):
-    UssGeneral(
-        "test_uss_line_absent", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_absent"],
-        TEST_INFO["expected"]["test_uss_line_absent"])
+    hosts = ansible_zos_module
+    params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_ABSENT
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_quoted_escaped(ansible_zos_module):
-    TEST_INFO["test_uss_line_replace"]["line"] = 'ZOAU_ROOT=\"/mvsutil-develop_dsed\"'
-    UssGeneral(
-        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace_quoted"])
+    hosts = ansible_zos_module
+    params = dict(path="", regexp="ZOAU_ROOT=", line='ZOAU_ROOT=\"/mvsutil-develop_dsed\"', state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_QUOTED
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
-    TEST_INFO["test_uss_line_replace"]["line"] = 'ZOAU_ROOT="/mvsutil-develop_dsed"'
-    UssGeneral(
-        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace_quoted"])
+    hosts = ansible_zos_module
+    params = dict(path="", regexp="ZOAU_ROOT=", line='ZOAU_ROOT="/mvsutil-develop_dsed"', state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_QUOTED
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
+@pytest.mark.uss
+def test_uss_line_does_not_insert_repeated(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(path="", line='ZOAU_ROOT=/usr/lpp/zoautil/v100', state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_CONTENT
+        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
+        hosts.all.zos_lineinfile(**params)
+        results = hosts.all.shell(cmd="""grep -c 'ZOAU_ROOT=/usr/lpp/zoautil/v10' {0} """.format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == '1'
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 #########################
 # Dataset test cases
 #########################
 
+# Now force is parameter to change witch function to call in the helper and alter the declaration by add the force or a test name required.
+# without change the original description or the other option is that at the end of the test get back to original one.
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_insertafter_regex(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_insertafter_regex"]["test_name"],
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertafter_regex"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_insertbefore_regex"]["test_name"],
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertbefore_regex"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
-    )
+def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_insertafter_eof(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_insertafter_eof"]["test_name"],
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertafter_eof"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_eof"]
-    )
+def test_ds_line_insertbefore_regex(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_insertbefore_bof(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_insertbefore_bof"]["test_name"],
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertbefore_bof"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
-    )
+def test_ds_line_insertafter_eof(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(insertafter="EOF", line="export 'ZOAU_ROOT'", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertbefore_bof(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_match_insertafter_ignore(
-        ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace_match_insertafter_ignore"]
-        ["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_match_insertafter_ignore"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
-    )
+def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER_IGNORE
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_match_insertbefore_ignore(
-        ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace_match_insertbefore_ignore"]
-        ["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_match_insertbefore_ignore"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_match_insertbefore_ignore"]
-    )
+def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE_IGNORE
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertafter_match(
-        ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace_nomatch_insertafter_match"]
-        ["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertafter_match"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertafter_match"]
-    )
+def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertbefore_match(
-        ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match"]
-        ["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_match"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertbefore_match"]
-    )
+def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertafter_nomatch(
-        ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace_nomatch_insertafter_nomatch"]
-        ["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertafter_nomatch"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertafter_nomatch"]
-    )
+def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER_NOMATCH
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertbefore_nomatch(
-        ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_nomatch"]
-        ["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_nomatch"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertbefore_nomatch"]
-    )
+def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE_NOMATCH
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_absent(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        TEST_INFO["test_ds_line_absent"]["test_name"], ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_absent"],
-        TEST_INFO["expected"]["test_uss_line_absent"]
-    )
+def test_ds_line_absent(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_ABSENT
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_tmp_hlq_option(ansible_zos_module, encoding):
+def test_ds_tmp_hlq_option(ansible_zos_module):
     # This TMPHLQ only works with sequential datasets
-    TEST_ENV["DS_TYPE"] = 'SEQ'
-    TEST_ENV["ENCODING"] = encoding
-    test_name = "T12"
+    hosts = ansible_zos_module
+    ds_type = "SEQ"
     kwargs = dict(backup_name=r"TMPHLQ\..")
-    DsGeneralResultKeyMatchesRegex(
-        test_name, ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_ds_line_tmp_hlq_option"],
-        **kwargs
-    )
+    params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ")
+    content = TEST_CONTENT
+    try:
+        ds_full_name = get_tmp_ds_name()
+        temp_file = "/tmp/" + ds_full_name
+        hosts.all.zos_data_set(name=ds_full_name, type=ds_type, replace=True)
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
+        cmdStr = "cp {0} \"//'{1}'\" ".format(quote(temp_file), ds_full_name)
+        hosts.all.shell(cmd=cmdStr)
+        hosts.all.shell(cmd="rm -rf " + "/tmp/zos_lineinfile/")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(ds_full_name))
+        for result in results.contacted.values():
+            assert int(result.get("stdout")) != 0
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            for key in kwargs:
+                assert re.match(kwargs.get(key), result.get(key))
+    finally:
+        hosts.all.zos_data_set(name=ds_full_name, state="absent")
 
 
+## Non supported test cases
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", NS_DS_TYPE)
 def test_ds_not_supported(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsNotSupportedHelper(
-        TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_replace"]
-    )
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    try:
+        ds_name = get_tmp_ds_name() + "." + ds_type
+        results = hosts.all.zos_data_set(name=ds_name, type=ds_type, replace='yes')
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+        params["path"] = ds_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("msg") == "VSAM data set type is NOT supported"
+    finally:
+        hosts.all.zos_data_set(name=ds_name, state="absent")
 
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    default_data_set_name = get_tmp_ds_name()
+    params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="True")
+    MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
+    TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
+    content = TEST_CONTENT
+    if ds_type == "SEQ":
+        params["path"] = default_data_set_name+".{0}".format(MEMBER_2)
+    else:
+        params["path"] = default_data_set_name+"({0})".format(MEMBER_2)
+    try:
+        # set up:
+        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
+        hosts.all.zos_data_set(
+            batch=[
+                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
+                    "type": "member", "state": "present", "replace": True, },
+                {   "name": params["path"], "type": "member",
+                    "state": "present", "replace": True, },
+            ]
+        )
+        # write memeber to verify cases
+        if ds_type in ["PDS", "PDSE"]:
+            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), params["path"])
+        else:
+            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), params["path"])
+        hosts.all.shell(cmd=cmdStr)
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))
+        for result in results.contacted.values():
+            assert int(result.get("stdout")) != 0
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
+            call_c_jcl.format(
+                default_data_set_name,
+                MEMBER_1),
+            '/tmp/disp_shr/call_c_pgm.jcl'))
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        time.sleep(5)
+        # call lineinfile to see results
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+        results = hosts.all.shell(cmd=r"""cat "//'{0}'" """.format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_REPLACE
+    finally:
+        hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", ["PDS","PDSE"])
+def test_ds_line_force_fail(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    default_data_set_name = get_tmp_ds_name()
+    params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="False")
+    MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
+    TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
+    params["path"] = default_data_set_name + "({0})".format(MEMBER_2)
+    content = TEST_CONTENT
+    try:
+        # set up:
+        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
+        hosts.all.zos_data_set(
+            batch=[
+                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
+                    "type": "member", "state": "present", "replace": True, },
+                {   "name": params["path"], "type": "member",
+                    "state": "present", "replace": True, },
+            ]
+        )
+        cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), params["path"])
+        hosts.all.shell(cmd=cmdStr)
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))
+        for result in results.contacted.values():
+            assert int(result.get("stdout")) != 0
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.file(path="/tmp/disp_shr", state='directory')
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
+            call_c_jcl.format(
+                default_data_set_name,
+                MEMBER_1),
+            '/tmp/disp_shr/call_c_pgm.jcl'))
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        time.sleep(5)
+        # call lineinfile to see results
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == False
+            assert result.get("failed") == True
+    finally:
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = dict(line='ZOAU_ROOT=/usr/lpp/zoautil/v100', state="present")
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_CONTENT
+        # Run lineinfle module with same params again, ensure duplicate entry is not made into file
+        hosts.all.zos_lineinfile(**params)
+        results = hosts.all.shell(cmd="""dgrep -c 'ZOAU_ROOT=/usr/lpp/zoautil/v10' "{0}" """.format(params["path"]))
+        response = params["path"] + " " + "1"
+        for result in results.contacted.values():
+            assert result.get("stdout") == response
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 #########################
-# Dataset test cases with force
+# Encoding tests
 #########################
 
-@pytest.mark.ds
+@pytest.mark.uss
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_force"],
-        TEST_INFO["expected"]["test_ds_line_force"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force_fail(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForceFail(
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_ds_line_force_fail"]
-    )
+def test_uss_encoding(ansible_zos_module, encoding):
+    hosts = ansible_zos_module
+    insert_data = "Insert this string"
+    params = dict(insertafter="SIMPLE", line=insert_data, state="present", encoding={"from":"IBM-1047", "to":encoding})
+    params["encoding"] = encoding
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    content = "SIMPLE LINE TO VERIFY"
+    try:
+        hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
+        hosts.all.file(path=full_path, state="touch")
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd=f"iconv -f IBM-1047 -t {encoding} {full_path}")
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_ENCODING
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_force"],
-        TEST_INFO["expected"]["test_uss_line_replace"]
-    )
+@pytest.mark.parametrize("encoding", ["IBM-1047"])
+def test_ds_encoding(ansible_zos_module, encoding, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    insert_data = "Insert this string"
+    params = dict(insertafter="SIMPLE", line=insert_data, state="present", encoding={"from":"IBM-1047", "to":encoding})
+    params["encoding"] = encoding
+    ds_name = get_tmp_ds_name()
+    temp_file = "/tmp/" + ds_name
+    content = "SIMPLE LINE TO VERIFY"
+    try:
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
+        hosts.all.shell(cmd=f"iconv -f IBM-1047 -t {params['encoding']} temp_file > temp_file ")
+        hosts.all.zos_data_set(name=ds_name, type=ds_type)
+        if ds_type in ["PDS", "PDSE"]:
+            ds_full_name = ds_name + "(MEM)"
+            hosts.all.zos_data_set(name=ds_full_name, state="present", type="member")
+            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file), ds_full_name)
+        else:
+            ds_full_name = ds_name
+            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(temp_file), ds_full_name)
+        hosts.all.shell(cmd=cmdStr)
+        hosts.all.shell(cmd="rm -rf " + temp_file)
+        params["path"] = ds_full_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        hosts.all.shell(cmd=f"iconv -f {encoding} -t IBM-1047 \"{ds_full_name}\" > \"{ds_full_name}\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(ds_full_name))
+        for result in results.contacted.values():
 
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertafter_regex_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_insertafter_regex_force"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertbefore_regex_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_insertbefore_regex_force"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertbefore_bof_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_insertbefore_bof_force"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_match_insertafter_ignore_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_match_insertafter_ignore_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_match_insertbefore_ignore_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_match_insertbefore_ignore_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertafter_match_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_nomatch_insertafter_match_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertbefore_match_force(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"]
-    )
+            assert result.get("stdout") == EXPECTED_ENCODING
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)

@@ -1,6 +1,11 @@
+################################################################################
+# Copyright (c) IBM Corporation 2024
+################################################################################
+# For additonal doc, see https://ansible.readthedocs.io/projects/lint/configuring/
 exclude_paths:
   - .tar.gz
   - __pycache__/
+  - .ansible-lint
   - .cache/
   - .DS_Store
   - .git/
@@ -28,8 +33,13 @@ exclude_paths:
   - tests/sanity/ignore-2.9.txt
   - tests/sanity/ignore-2.10.txt
   - tests/sanity/ignore-2.11.txt
+  - tests/sanity/ignore-2.12.txt
+  - tests/sanity/ignore-2.13.txt
   - venv*
 parseable: true
 quiet: false
 use_default_rules: true
 verbosity: 1
+# Offline mode disables installation of requirements.yml and schema refreshing often
+# found in project_root/collections/requirements.yml.
+offline: true

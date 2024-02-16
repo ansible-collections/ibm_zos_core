@@ -1,5 +1,0 @@
-trivial:
-- zos_blockinfile - was missing examples using Jinja2 and files. This change
-  adds a Jinja2 example in both the src and block content. It also includes
-  an example using a file as source.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/727)

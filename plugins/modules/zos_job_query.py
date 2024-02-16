@@ -176,12 +176,12 @@ jobs:
         }
     job_class:
       description:
-        Letter indicating job class for this job.
+        Job class for this job.
       type: str
       sample: A
     svc_class:
       description:
-        Character indicating service class for this job.
+        Service class for this job.
       type: str
       sample: C
     priority:
@@ -191,19 +191,32 @@ jobs:
       sample: 4
     asid:
       description:
-        An identifier created by JES.
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
       type: int
       sample: 0
-    creation_datetime:
+    creation_date:
       description:
-        Date and time, local to the target system, when the job was created.
+        Date, local to the target system, when the job was created.
       type: str
-      sample: 20230504T141500
+      sample: "2023-05-04"
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: "14:15:00"
     queue_position:
       description:
-        Integer of the position within the job queue where this jobs resided.
+        The position within the job queue where the jobs resides.
       type: int
       sample: 3
+    program_name:
+      description:
+        The name of the program found in the job's last completed step found in the PGM parameter.
+        Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+      type: str
+      sample: "IEBGENER"
+
   sample:
     [
         {
@@ -215,7 +228,8 @@ jobs:
             "svc_class": "?",
             "priority": 1,
             "asid": 0,
-            "creation_datetime": "20230503T121300",
+            "creation_date": "2023-05-03",
+            "creation_time": "12:13:00",
             "queue_position": 3,
         },
         {
@@ -227,7 +241,8 @@ jobs:
             "svc_class": "E",
             "priority": 0,
             "asid": 4,
-            "creation_datetime": "20230503T121400",
+            "creation_date": "2023-05-03",
+            "creation_time": "12:14:00",
             "queue_position": 0,
         },
     ]
@@ -243,9 +258,11 @@ message:
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_status,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
 from ansible.module_utils.basic import AnsibleModule
-import re
+from ansible.module_utils._text import to_text
 
 
 def run_module():
@@ -260,11 +277,29 @@ def run_module():
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
+    args_def = dict(
+        job_name=dict(type="job_identifier", required=False),
+        owner=dict(type="str", required=False),
+        job_id=dict(type="job_identifier", required=False),
+    )
+
+    try:
+        parser = better_arg_parser.BetterArgParser(args_def)
+        parsed_args = parser.parse_args(module.params)
+        module.params = parsed_args
+    except ValueError as err:
+        module.fail_json(
+            msg='Parameter verification failed.',
+            stderr=str(err)
+        )
+
     if module.check_mode:
         return result
 
     try:
-        name, id, owner = validate_arguments(module.params)
+        name = module.params.get("job_name")
+        id = module.params.get("job_id")
+        owner = module.params.get("owner")
         jobs_raw = query_jobs(name, id, owner)
         if jobs_raw:
             jobs = parsing_jobs(jobs_raw)
@@ -272,67 +307,9 @@ def run_module():
             jobs = None
 
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=to_text(e), **result)
     result["jobs"] = jobs
     module.exit_json(**result)
-
-
-# validate_arguments rturns a tuple, so we don't have to rebuild the job_name string
-def validate_arguments(params):
-    job_name_in = params.get("job_name")
-
-    job_id = params.get("job_id")
-
-    owner = params.get("owner")
-    if job_name_in or job_id:
-        if job_name_in and job_name_in != "*":
-            job_name_pattern = re.compile(r"^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,7}$")
-            job_name_pattern_with_star = re.compile(
-                r"^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,6}\*$"
-            )
-            test_basic = job_name_pattern.search(job_name_in)
-            test_star = job_name_pattern_with_star.search(job_name_in)
-            # logic twist: test_result should be a non-null value from test_basic or test_star
-            test_result = test_basic
-            if test_star:
-                test_result = test_star
-
-            job_name_short = "unused"
-            # if neither test_basic nor test_star were non-null, check if the string needed to be truncated to the first *
-            if not test_result:
-                ix = job_name_in.find("*")
-                if ix >= 0:
-                    job_name_short = job_name_in[0:ix + 1]
-                    test_result = job_name_pattern.search(job_name_short)
-                    if not test_result:
-                        test_result = job_name_pattern_with_star.search(job_name_short)
-
-            # so now, fail if neither test_basic, test_star or test_base from job_name_short found a match
-            if not test_result:
-                raise RuntimeError("Unable to locate job name {0}.".format(job_name_in))
-
-        if job_id:
-            job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")
-            test_basic = job_id_pattern.search(job_id)
-            test_result = None
-
-            if not test_basic:
-                ix = job_id.find("*")
-                if ix > 0:
-                    # this differs from job_name, in that we'll drop the star for the search
-                    job_id_short = job_id[0:ix]
-
-                    if job_id_short[0:3] in ['JOB', 'TSU', 'STC'] or job_id_short[0:1] in ['J', 'T', 'S']:
-                        test_result = job_id_short
-
-            if not test_basic and not test_result:
-                raise RuntimeError("Failed to validate the job id: " + job_id)
-    else:
-        raise RuntimeError("Argument Error:Either job name(s) or job id is required")
-    if job_id and owner:
-        raise RuntimeError("Argument Error:job id can not be co-exist with owner")
-
-    return job_name_in, job_id, owner
 
 
 def query_jobs(job_name, job_id, owner):
@@ -400,8 +377,10 @@ def parsing_jobs(jobs_raw):
             "svc_class": job.get("svc_class"),
             "priority": job.get("priority"),
             "asid": job.get("asid"),
-            "creation_datetime": job.get("creation_datetime"),
+            "creation_date": job.get("creation_date"),
+            "creation_time": job.get("creation_time"),
             "queue_position": job.get("queue_position"),
+            "program_name": job.get("program_name"),
         }
         jobs.append(job_dict)
     return jobs

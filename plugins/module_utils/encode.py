@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,14 +24,15 @@ import errno
 import os
 import re
 import locale
+import traceback
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy, system
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy, system, validation
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -39,7 +40,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 try:
     from zoautil_py import datasets
 except Exception:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 if PY3:
@@ -62,7 +63,8 @@ class Defaults:
         """
         system_charset = locale.getdefaultlocale()[1]
         if system_charset is None:
-            rc, out, err = system.run_command("locale -c charmap")
+            module = AnsibleModuleHelper(argument_spec={})
+            rc, out, err = module.run_command("locale -c charmap")
             if rc != 0 or not out or err:
                 if system.is_zos():
                     system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET
@@ -187,24 +189,23 @@ class EncodeUtils(object):
             str -- Name of the allocated data set
 
         Raises:
-            OSError: When any exception is raised during the data set allocation
+            ZOAUException: When any exception is raised during the data set allocation.
+            DatasetVerificationError: When the data set creation could not be verified.
         """
         size = str(space_u * 2) + "K"
         if self.tmphlq:
             hlq = self.tmphlq
         else:
-            hlq = datasets.hlq()
-        temp_ps = datasets.tmp_name(hlq)
-        response = datasets._create(
+            hlq = datasets.get_hlq()
+        temp_ps = datasets.tmp_name(high_level_qualifier=hlq)
+        temporary_data_set = datasets.create(
             name=temp_ps,
-            type="SEQ",
+            dataset_type="SEQ",
             primary_space=size,
             record_format="VB",
             record_length=reclen,
         )
-        if response.rc:
-            raise OSError("Failed when allocating temporary sequential data set!")
-        return temp_ps
+        return temporary_data_set.name
 
     def get_codeset(self):
         """Get the list of supported encodings from the  USS command 'iconv -l'
@@ -327,7 +328,7 @@ class EncodeUtils(object):
         if path.isdir(src):
             for (dir, subdir, files) in walk(src):
                 for file in files:
-                    file_list.append(path.join(dir, file))
+                    file_list.append(path.join(validation.validate_safe_path(dir), validation.validate_safe_path(file)))
             if len(file_list) == 0:
                 raise EncodeError(
                     "Directory {0} is empty. Please check the path.".format(src)
@@ -335,8 +336,8 @@ class EncodeUtils(object):
             elif len(file_list) == 1:
                 if path.isdir(dest):
                     file_name = path.basename(file_list[0])
-                    src_f = path.join(src, file_name)
-                    dest_f = path.join(dest, file_name)
+                    src_f = path.join(validation.validate_safe_path(src), validation.validate_safe_path(file_name))
+                    dest_f = path.join(validation.validate_safe_path(dest), validation.validate_safe_path(file_name))
                 convert_rc = self.uss_convert_encoding(
                     src_f, dest_f, from_code, to_code
                 )
@@ -361,7 +362,7 @@ class EncodeUtils(object):
         else:
             if path.isdir(dest):
                 file_name = path.basename(path.abspath(src))
-                dest = path.join(dest, file_name)
+                dest = path.join(validation.validate_safe_path(dest), validation.validate_safe_path(file_name))
             convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
 
         return convert_rc
@@ -405,7 +406,7 @@ class EncodeUtils(object):
                 rc, out, err = copy.copy_pds2uss(src, temp_src)
             if src_type == "VSAM":
                 reclen, space_u = self.listdsi_data_set(src.upper())
-                # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+                # RDW takes the first 4 bytes in the VB format, hence we need to add an extra buffer to the vsam max recl.
                 reclen += 4
                 temp_ps = self.temp_data_set(reclen, space_u)
                 rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps)
@@ -433,7 +434,7 @@ class EncodeUtils(object):
                     elif dest_type == "PO":
                         for (dir, subdir, files) in walk(temp_dest):
                             for file in files:
-                                temp_file = path.join(dir, file)
+                                temp_file = path.join(validation.validate_safe_path(dir), validation.validate_safe_path(file))
                                 rc, out, err = copy.copy_uss2mvs(temp_file, dest, "PO")
                                 convert_rc = True
                     else:

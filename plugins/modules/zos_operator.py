@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -55,16 +55,6 @@ options:
     type: int
     required: false
     default: 1
-  wait:
-    description:
-      - Configuring wait used by the L(zos_operator,./zos_operator.html) module
-        has been deprecated and will be removed in a future ibm.ibm_zos_core
-        collection.
-      - Setting this option will yield no change, it is deprecated.
-      - Review option I(wait_time_s) to instruct operator commands to wait.
-    type: bool
-    required: false
-    default: true
 """
 
 EXAMPLES = r"""
@@ -81,15 +71,10 @@ EXAMPLES = r"""
   zos_operator:
     cmd: "\\$PJ(*)"
 
-- name: Execute operator command to show jobs, waiting up to 5 seconds for response
+- name: Execute operator command to show jobs, always waiting 5 seconds for response
   zos_operator:
     cmd: 'd a,all'
     wait_time_s: 5
-
-- name: Execute operator command to show jobs, always waiting 7 seconds for response
-  zos_operator:
-    cmd: 'd a,all'
-    wait_time_s: 7
 
 - name: Display the system symbols and associated substitution texts.
   zos_operator:
@@ -159,29 +144,40 @@ changed:
     sample: true
 """
 
+import traceback
 from timeit import default_timer as timer
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    # MissingZOAUImport,
+    ZOAUImportError
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
+
 try:
     from zoautil_py import opercmd
 except Exception:
-    opercmd = MissingZOAUImport()
+    opercmd = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(operator_cmd, timeout=1, *args, **kwargs):
+def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
+    timeout_c = 100 * timeout_s
+
     start = timer()
-    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+    response = opercmd.execute(operator_cmd, timeout=timeout_c, *args, **kwargs)
     end = timer()
     rc = response.rc
     stdout = response.stdout_response
@@ -195,11 +191,14 @@ def run_module():
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
         wait_time_s=dict(type="int", required=False, default=1),
-        wait=dict(type="bool", required=False, default=True),
     )
 
     result = dict(changed=False)
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+
+    # Checking that we can actually use ZOAU.
+    if isinstance(opercmd, ZOAUImportError):
+        module.fail_json(msg="An error ocurred while importing ZOAU: {0}".format(opercmd.traceback))
 
     try:
         new_params = parse_params(module.params)
@@ -252,10 +251,10 @@ def run_module():
                              stderr_lines=str(error).splitlines() if error is not None else result["content"],
                              changed=result["changed"],)
     except Error as e:
-        module.fail_json(msg=repr(e), **result)
+        module.fail_json(msg=to_text(e), **result)
     except Exception as e:
         module.fail_json(
-            msg="An unexpected error occurred: {0}".format(repr(e)), **result
+            msg="An unexpected error occurred: {0}".format(to_text(e)), **result
         )
 
     module.exit_json(**result)
@@ -266,8 +265,6 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
-        wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -286,8 +283,15 @@ def run_operator_command(params):
     wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
 
+    use_wait_arg = False
+    if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
+        use_wait_arg = True
+
+    if use_wait_arg:
+        kwargs.update({"wait": True})
+
     args = []
-    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
     if rc > 0:
         message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)

@@ -12,7 +12,9 @@ executing operator commands, executing TSO commands, ping,
 querying operator actions, APF authorizing libraries,
 editing textual data in data sets or Unix System Services files,
 finding data sets, backing up and restoring data sets and
-volumes, mounting file systems and running z/OS programs without JCL.
+volumes, mounting file systems, running z/OS programs without JCL,
+running local and remote scripts on z/OS, initializing volumes,
+archiving, unarchiving and templating with Jinja.
 
 
 Red Hat Ansible Certified Content for IBM Z
@@ -29,7 +31,7 @@ The **IBM z/OS core collection** is following the
 **Red Hat® Ansible Certified Content for IBM Z®** method of distributing
 content. Collections will be developed in the open, and when content is ready
 for use, it is released to
-[Ansible Galaxy](https://galaxy.ansible.com/search?keywords=zos_&order_by=-relevance&deprecated=false&type=collection&page=1)
+[Ansible Galaxy](https://galaxy.ansible.com/ui/)
 for community adoption. Once contributors review community usage, feedback,
 and are satisfied with the content published, the collection will then be
 released to [Ansible Automation Hub](https://www.ansible.com/products/automation-hub)
@@ -49,20 +51,28 @@ and ansible-doc to automate tasks on z/OS.
 
 Ansible version compatibility
 =============================
-This collection has been tested against **Ansible** and **Ansible Core** versions >=2.9,<2.15.
-The Ansible and Ansible Core versions supported for this collection align to the
+This collection has been tested against **Ansible Core** versions >=2.14.
+The Ansible Core versions supported for this collection align to the
 [ansible-core support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix). Review the
 [Ansible community changelogs](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs) for corresponding **Ansible community packages**
 and **ansible-core**.
 
 For **Ansible Automation Platform** (AAP) users, review the
-[Ansible Automation Platform Certified Content](https://access.redhat.com/articles/3642632)
+[Ansible Automation Platform Certified Content](https://access.redhat.com/support/articles/ansible-automation-platform-certified-content)
 and [AAP Life Cycle](https://access.redhat.com/support/policy/updates/ansible-automation-platform)
 for more more information on supported versions of Ansible.
 
+Other Dependencies
+==================
+This release of the **IBM z/OS core collection** requires the z/OS managed node have:
+- [z/OS](https://www.ibm.com/docs/en/zos) V2R4 or later.
+- [z/OS shell](https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm).
+- [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) 3.9 - 3.11.
+- [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau/1.2.x) 1.2.5 (or later) but prior to version 1.3.
+
 Copyright
 =========
-© Copyright IBM Corporation 2020-2023.
+© Copyright IBM Corporation 2020-2024.
 
 License
 =======

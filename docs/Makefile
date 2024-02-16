@@ -172,8 +172,17 @@ module-doc:
 	mv ../plugins/modules/__init__.py ../plugins/modules/__init__.py.skip; \
 	fi
 
+	@echo "Replacing string based carriage returns with literal escaped to produce sphynx consumable RST."
+	scripts/pre-template.sh
+
 	@echo "Generating ReStructuredText for all ansible modules found at '../plugins/modules/' to 'source/modules'."
 	@ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/*.py
+
+	@echo "Updating zos_apf file."
+	scripts/post-zos_apf.sh
+
+	@echo "Reverting edited source file."
+	scripts/post-template.sh
 
 	@if test -e ../plugins/modules/__init__.py.skip; \
     echo "Rename file '../plugins/modules/__init__.py.skip' back to ../plugins/modules/__init__.py.'"; \

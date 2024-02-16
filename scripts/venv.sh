@@ -27,6 +27,13 @@ VENV_HOME_MANAGED=${PWD%/*}/venv
 # Array where each entry is: "<index>:<version>:<mount>:<data_set>"
 HOSTS_ALL=""
 
+OPER_EQ="=="
+OPER_NE="!="
+OPER_LT="<"
+OPER_LE="<="
+OPER_GT=">"
+OPER_GE=">="
+
 # hosts_env="hosts.env"
 
 # if [ -f "$hosts_env" ]; then
@@ -128,9 +135,9 @@ echo_requirements(){
 
         py_req="0"
         for ver in "${python[@]}" ; do
-            key=${ver%%:*}
-            value=${ver#*:}
-            py_req="${value}"
+            py_op=`echo "${ver}" | cut -d ":" -f 1`
+            py_name=`echo "${ver}" | cut -d ":" -f 2`
+            py_req=`echo "${ver}" | cut -d ":" -f 3`
         done
          echo "${py_req}"
     done
@@ -222,13 +229,29 @@ write_requirements(){
 
         py_req="0"
         for ver in "${python[@]}" ; do
-            key=${ver%%:*}
-            value=${ver#*:}
-            py_req="${value}"
+            py_op=`echo "${ver}" | cut -d ":" -f 1`
+            py_name=`echo "${ver}" | cut -d ":" -f 2`
+            py_req=`echo "${ver}" | cut -d ":" -f 3`
         done
 
+        if [ "$OPER_EQ" == "$py_op" ];then
+			py_op="-eq"
+		elif [ "$OPER_NE" == "$py_op" ];then
+			py_op="-ne"
+		elif [ "$OPER_LT" == "$py_op" ];then
+			py_op="-lt"
+		elif [ "$OPER_LE" == "$py_op" ];then
+			py_op="-le"
+		elif [ "$OPER_GT" == "$py_op" ];then
+			py_op="-gt"
+		elif [ "$OPER_GE" == "$py_op" ];then
+			py_op="-ge"
+		fi
+
+        discover_python $py_op $py_req
+
         # Is the discoverd python >= what the requirements.txt requires?
-        if [ $(normalize_version $VERSION_PYTHON) -ge $(normalize_version $py_req) ]; then
+        if [ $(normalize_version $VERSION_PYTHON) "$py_op" $(normalize_version $py_req) ]; then
             echo "${REQ}${REQ_COMMON}">"${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
             cp mounts.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             #cp info.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
@@ -245,6 +268,16 @@ write_requirements(){
                 chmod 700 "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env
                 #echo "${option_pass}" | openssl bf -d -a -in info.env.axx -out "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env -pass stdin
                 echo "${option_pass}" | openssl enc -d -aes-256-cbc -a -in info.env.axx -out "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env -pass stdin
+            else
+                # echo a stub so the user can later choose to rename and configure
+                touch "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
+                echo "# This configuration file is used by the tool to avoid exporting enviroment variables">>"${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
+                echo "# To use this, update all the variables with a value and rename the file to 'info.env'.">>"${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
+                echo "USER=\"\"">>"${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
+                echo "PASS=\"\"">>"${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
+                echo "HOST_SUFFIX=\"\"">>"${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
+                echo "SSH_KEY_PIPELINE=\"\"">>"${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
+                echo "No password was provided, a temporary 'info.env.changeme' file has been created for your convenience."
             fi
         else
             echo "Not able to create managed venv path: ${VENV_HOME_MANAGED}/${venv_name} , min python required is ${py_req}, found version $VERSION_PYTHON"
@@ -280,36 +313,52 @@ create_venv_and_pip_install_req(){
 
 find_in_path() {
     result=""
+    OTHER_PYTHON_PATHS="/Library/Frameworks/Python.framework/Versions/Current/bin:/opt/homebrew/bin:"
+    PATH="${OTHER_PYTHON_PATHS}${PATH}"
+    OLDIFS=$IFS
     IFS=:
     for x in $PATH; do
         if [ -x "$x/$1" ]; then
             result=${result}" $x/$1"
         fi
     done
+    IFS=$OLDIFS
     echo $result
 }
 
 
-
 # Find the most recent python in a users path
 discover_python(){
-    # Don't use which, it only will find first in path within script
+    operator=$1
+    required_python=$2
+    if [ ! "$operator" ]; then
+        operator="-ge"
+    fi
+
+    if [ "$required_python" ]; then
+        VERSION_PYTHON=$required_python
+    fi
+
+    # Don't use which, it only will find first in path within the script
     # for python_found in `which python3 | cut -d" " -f3`; do
-    pys=("python3.8" "python3.9" "python3.10" "python3.11" "python3.12" "python3.13" "python3.14")
-    #pys=("python3.8" "python3.9")
+    pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
+    rc=1
     for py in "${pys[@]}"; do
         for python_found in `find_in_path $py`; do
             ver=`${python_found} --version | cut -d" " -f2`
+            rc=$?
+            ver=`echo $ver  |cut -d"." -f1,2`
             ver_path="$python_found"
             echo "Found $ver_path"
         done
 
-
-        if [ $(normalize_version $ver) -ge $(normalize_version $VERSION_PYTHON) ]; then
-            VERSION_PYTHON="$ver"
-            VERSION_PYTHON_PATH="$ver_path"
+        if [ $rc -eq 0  ];then
+            if [ $(normalize_version $ver) "$operator" $(normalize_version $VERSION_PYTHON) ]; then
+                VERSION_PYTHON="$ver"
+                VERSION_PYTHON_PATH="$ver_path"
+                break
+            fi
         fi
-
     done
 
     echo ${DIVIDER}
@@ -404,7 +453,7 @@ set_hosts_to_array(){
     else # check if the env varas instead have been exported
         if [ -z "$USER" ] || [ -z "$PASS" ]  || [ -z "$HOST_SUFFIX" ]; then
             echo "This configuration requires either 'info.env' exist or environment vars for the z/OS host exist and be exported."
-            echo "Export and set vars: 'USER', 'PASS' and'HOST_SUFFIX', or place them in a file named info.env."
+            echo "Export and set vars: 'USER', 'PASS','HOST_SUFFIX' and optionally 'SSH_KEY_PIPELINE', or place them in a file named info.env."
             exit 1
         fi
     fi
@@ -600,7 +649,7 @@ case "$1" in
     discover_python
     ;;
 --vsetup)
-    discover_python
+    #discover_python
     make_venv_dirs
     #echo_requirements
     write_requirements $3

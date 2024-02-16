@@ -63,7 +63,7 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
             batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES]
         )
         for ds in SEQ_NAMES:
-            hosts.all.zos_lineinfile(src=ds, line=search_string)
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
 
         find_res = hosts.all.zos_find(
             patterns=['TEST.FIND.SEQ.*.*'],
@@ -91,9 +91,9 @@ def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
             batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES]
         )
         hosts.all.zos_data_set(name=new_ds, type='seq', state='present')
-        hosts.all.zos_lineinfile(src=new_ds, line="incorrect string")
+        hosts.all.shell(cmd=f"decho 'incorrect string' \"{new_ds}\" ")
         for ds in SEQ_NAMES:
-            hosts.all.zos_lineinfile(src=ds, line=search_string)
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
 
         find_res = hosts.all.zos_find(
             patterns=['TEST.FIND.SEQ.*.*', 'TEST.INVALID.*'],
@@ -131,7 +131,7 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             ]
         )
         for ds in PDS_NAMES:
-            hosts.all.zos_lineinfile(src=ds + "(MEMBER)", line=search_string)
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
 
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'],

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
-from ibm_zos_core.tests.helpers.volumes import get_volumes
+from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
 import sys
 from mock import MagicMock
 import importlib
@@ -92,6 +92,18 @@ def volumes_on_systems(ansible_zos_module, request):
     path = request.config.getoption("--zinventory")
     list_Volumes = get_volumes(ansible_zos_module, path)
     yield list_Volumes
+
+
+@pytest.fixture(scope="session")
+def volumes_with_vvds(ansible_zos_module, request):
+    """ Return a list of volumes that have a VVDS. If no volume has a VVDS
+    then it will try to create one for each volume found and return volumes only
+    if a VVDS was successfully created for it."""
+    path = request.config.getoption("--zinventory")
+    volumes = get_volumes(ansible_zos_module, path)
+    volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, volumes)
+    yield volumes_with_vvds
+
 
 # * We no longer edit sys.modules directly to add zoautil_py mock
 # * because automatic teardown is not performed, leading to mock pollution

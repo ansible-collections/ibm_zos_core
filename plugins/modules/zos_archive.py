@@ -790,11 +790,9 @@ class MVSArchive(Archive):
             if tmp_hlq:
                 hlq = tmp_hlq
             else:
-                rc, hlq, err = self.module.run_command("hlq")
-                hlq = hlq.replace('\n', '')
-            cmd = "mvstmp {0}.DZIP".format(hlq)
-            rc, temp_ds, err = self.module.run_command(cmd)
-            arguments.update(name=temp_ds.replace('\n', ''))
+                hlq = datasets.get_hlq()
+            temp_ds = datasets.tmp_name(high_level_qualifier=hlq)
+            arguments.update(name=temp_ds)
 
         if record_format is None:
             arguments.update(record_format="FB")

@@ -387,7 +387,7 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(dataset=src, state=True, block=block, marker=marker, insert_after=ins_aft,
+    return datasets.blockinfile(src, True, block=block, marker=marker, insert_after=ins_aft,
                                 insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
 
 
@@ -404,7 +404,7 @@ def absent(src, marker, encoding, force):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(dataset=src, state=False, marker=marker, encoding=encoding, force=force, as_json=True)
+    return datasets.blockinfile(src, False, marker=marker, encoding=encoding, force=force, as_json=True)
 
 
 def quotedString(string):
@@ -412,12 +412,6 @@ def quotedString(string):
     if not isinstance(string, str):
         return string
     return string.replace('"', "")
-
-
-def quoted_string_output_json(string):
-    if not isinstance(string, str):
-        return string
-    return string.replace('"', "u'")
 
 
 def main():
@@ -576,42 +570,30 @@ def main():
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, block, quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
+        return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
-        return_content = absent(src, quotedString(marker), encoding, force)
+        return_content = absent(src, marker, encoding, force)
     stdout = return_content.stdout_response
     stderr = return_content.stderr_response
     rc = return_content.rc
+    stdout = stdout.replace('/d', '\\\\d')
     try:
-        # change the return string to be loadable by json.loads()
-        stdout = stdout.replace('/c\\', '/c\\\\')
-        stdout = stdout.replace('/a\\', '/a\\\\')
-        stdout = stdout.replace('/i\\', '/i\\\\')
-        stdout = stdout.replace('$ a\\', '$ a\\\\')
-        stdout = stdout.replace('1 i\\', '1 i\\\\')
-        if block:
-            stdout = stdout.replace(block, quoted_string_output_json(block))
-        if ins_aft:
-            stdout = stdout.replace(ins_aft, quoted_string_output_json(ins_aft))
-        if ins_bef:
-            stdout = stdout.replace(ins_bef, quoted_string_output_json(ins_bef))
         # Try to extract information from stdout
-        ret = json.loads(stdout)
-        ret['cmd'] = ret['cmd'].replace("u'", '"')
-
-        result['cmd'] = ret['cmd']
-        result['changed'] = ret['changed']
-        result['found'] = ret['found']
-        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
-        # That information will be given with 'changed' and 'found'
-        if len(stderr):
-            result['stderr'] = str(stderr)
-            result['rc'] = rc
+        ret = json.loads("""{0}""".format(stdout))
     except Exception:
         messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):
             messageDict['backup_name'] = result['backup_name']
         module.fail_json(**messageDict)
+
+    result['cmd'] = ret['data']['commands']
+    result['changed'] = ret['data']['changed']
+    result['found'] = ret['data']['found']
+    # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+    # That information will be given with 'changed' and 'found'
+    if len(stderr):
+        result['stderr'] = str(stderr)
+        result['rc'] = rc
     module.exit_json(**result)
 
 

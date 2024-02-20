@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -271,7 +271,7 @@ rc:
 import tempfile
 import re
 import os
-
+import traceback
 from math import ceil
 from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
@@ -285,16 +285,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     validation,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 
 try:
-    from zoautil_py import datasets, mvscmd, types
+    from zoautil_py import datasets, mvscmd, ztypes
 except Exception:
-    datasets = MissingZOAUImport()
-    mvscmd = MissingZOAUImport()
-    types = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    mvscmd = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 class FetchHandler:
@@ -373,23 +373,23 @@ class FetchHandler:
 
             dd_statements = []
             dd_statements.append(
-                types.DDStatement(
-                    name="sysin", definition=types.DatasetDefinition(sysin)
+                ztypes.DDStatement(
+                    name="sysin", definition=ztypes.DatasetDefinition(sysin)
                 )
             )
             dd_statements.append(
-                types.DDStatement(
-                    name="input", definition=types.DatasetDefinition(ds_name)
+                ztypes.DDStatement(
+                    name="input", definition=ztypes.DatasetDefinition(ds_name)
                 )
             )
             dd_statements.append(
-                types.DDStatement(
-                    name="output", definition=types.DatasetDefinition(out_ds_name)
+                ztypes.DDStatement(
+                    name="output", definition=ztypes.DatasetDefinition(out_ds_name)
                 )
             )
             dd_statements.append(
-                types.DDStatement(
-                    name="sysprint", definition=types.FileDefinition(sysprint)
+                ztypes.DDStatement(
+                    name="sysprint", definition=ztypes.FileDefinition(sysprint)
                 )
             )
 
@@ -591,7 +591,7 @@ def run_module():
 
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
-        module.params["src"] = datasets.hlq() + "." + src
+        module.params["src"] = datasets.get_hlq() + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #

@@ -177,13 +177,14 @@ class DataSet(object):
         changed = False
         if DataSet.data_set_cataloged(name):
             present = True
+
         if not present:
             try:
                 DataSet.create(**arguments)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
-                if "Error Code: 0x4704" in e.msg:
+                if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
                         name, volumes
                     )
@@ -191,6 +192,8 @@ class DataSet(object):
                         raise_error = False
                 if raise_error:
                     raise
+            except Exception as e:
+                raise Exception(e)
         if present:
             if not replace:
                 return changed
@@ -355,6 +358,7 @@ class DataSet(object):
         """
 
         name = name.upper()
+
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
@@ -388,7 +392,7 @@ class DataSet(object):
         delimiter = 'VOLSER------------'
         arr = stdout.split(delimiter)
         # A volume serial (VOLSER) is not always of fixed length, use ":x.find(' ')" here instead of arr[index].
-        volume_list = list(set([x[:x.find(' ')] for x in arr[1:]]))
+        volume_list = list(set([x[:x.find(' ')].strip('-') for x in arr[1:]]))
         return volume_list
 
     @staticmethod
@@ -1015,11 +1019,17 @@ class DataSet(object):
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
             datasets.create(**formatted_args)
-        except (exceptions.ZOAUException, exceptions.DatasetVerificationError) as create_exception:
+        except exceptions.ZOAUException as create_exception:
             raise DatasetCreateError(
                 name,
                 create_exception.response.rc,
                 create_exception.response.stdout_response + create_exception.response.stderr_response
+            )
+        except exceptions.DatasetVerificationError as e:
+            raise DatasetCreateError(
+                name,
+                rc=-1,
+                msg="DatasetVerificationError received from ZOAU...",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
         # response.rc now we just return 0 if nothing failed
@@ -1107,6 +1117,7 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._build_non_vsam_catalog_command(
             name.upper(), volumes)
+
 
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin", data=iehprogm_input

@@ -4347,16 +4347,21 @@ def test_backup_pds(ansible_zos_module, args):
 def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_type):
     hosts = ansible_zos_module
     source = get_tmp_ds_name()
+    source_member = f"{source}(MEM)"
     dest = get_tmp_ds_name()
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
+
     if volume_1 == "SCR03":
         volume = volumes.get_available_vol()
         volumes.free_vol(volume_1)
         volume_1 = volume
+
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
-        hosts.all.zos_data_set(name=source_member, type="member", state='present')
+        if src_type != "seq":
+            hosts.all.zos_data_set(name=source_member, type="member", state='present')
+
         copy_res = hosts.all.zos_copy(
             src=source,
             dest=dest,
@@ -4405,7 +4410,6 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
             assert re.search(r"\bINDEXED\b", output)
     finally:
         hosts.all.zos_data_set(name=dest_ds, state="absent")
-
 
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])

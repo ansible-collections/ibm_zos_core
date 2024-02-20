@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -424,7 +424,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     mvs_cmd,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 import os
 import tarfile
@@ -433,13 +433,14 @@ import abc
 import glob
 import re
 import math
+import traceback
 from hashlib import sha256
 
 
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 XMIT_RECORD_LENGTH = 80
 AMATERSE_RECORD_LENGTH = 1024
@@ -789,11 +790,9 @@ class MVSArchive(Archive):
             if tmp_hlq:
                 hlq = tmp_hlq
             else:
-                rc, hlq, err = self.module.run_command("hlq")
-                hlq = hlq.replace('\n', '')
-            cmd = "mvstmphelper {0}.DZIP".format(hlq)
-            rc, temp_ds, err = self.module.run_command(cmd)
-            arguments.update(name=temp_ds.replace('\n', ''))
+                hlq = datasets.get_hlq()
+            temp_ds = datasets.tmp_name(high_level_qualifier=hlq)
+            arguments.update(name=temp_ds)
 
         if record_format is None:
             arguments.update(record_format="FB")
@@ -902,8 +901,8 @@ class MVSArchive(Archive):
         expanded_path = []
         for path in paths:
             if '*' in path:
-                e_paths = datasets.listing(path)
-                e_paths = [path.name for path in e_paths]
+                # list_dataset_names returns a list of data set names or empty.
+                e_paths = datasets.list_dataset_names(path)
             else:
                 e_paths = [path]
             expanded_path.extend(e_paths)
@@ -946,11 +945,11 @@ class MVSArchive(Archive):
                 {int} - Destination computed space in kilobytes.
         """
         if self.dest_data_set.get("space_primary") is None:
-            dest_space = 0
+            dest_space = 1
             for target in self.targets:
-                data_sets = datasets.listing(target)
+                data_sets = datasets.list_datasets(target)
                 for ds in data_sets:
-                    dest_space += int(ds.to_dict().get("total_space"))
+                    dest_space += int(ds.total_space)
             # space unit returned from listings is bytes
             dest_space = math.ceil(dest_space / 1024)
             self.dest_data_set.update(space_primary=dest_space, space_type="K")

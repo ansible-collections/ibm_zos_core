@@ -390,9 +390,14 @@ class DataSet(object):
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
         delimiter = 'VOLSER------------'
-        arr = stdout.split(delimiter)
-        # A volume serial (VOLSER) is not always of fixed length, use ":x.find(' ')" here instead of arr[index].
-        volume_list = list(set([x[:x.find(' ')].strip('-') for x in arr[1:]]))
+        arr = stdout.split(delimiter)[1:]  # throw away header
+
+        # Volume serials (VOLSER) under 6 chars will have one or more leading '-'s due to the chosen delimiter.
+        # The volser is in between the beginning of each str and the first space.
+        # Strip away any leading '-'s, then split on the next whitespace and throw away the remaining in each str.
+        volume_list = [x.strip('-').split()[0] for x in arr]
+
+        volume_list = list(set(volume_list))  # remove duplicates, order doesn't matter
         return volume_list
 
     @staticmethod

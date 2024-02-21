@@ -192,8 +192,6 @@ class DataSet(object):
                         raise_error = False
                 if raise_error:
                     raise
-            except Exception as e:
-                raise Exception(e)
         if present:
             if not replace:
                 return changed

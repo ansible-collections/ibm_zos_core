@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -219,11 +219,12 @@ actions:
 
 from ansible.module_utils.basic import AnsibleModule
 import re
+import traceback
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -233,7 +234,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 try:
     from zoautil_py import opercmd
 except Exception:
-    opercmd = MissingZOAUImport()
+    opercmd = ZOAUImportError(traceback.format_exc())
 
 
 def run_module():
@@ -272,7 +273,7 @@ def run_module():
 
         cmdtxt = "d r,a,s"
 
-        cmd_result_a = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+        cmd_result_a = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
         if cmd_result_a.rc > 0:
             module.fail_json(
@@ -287,7 +288,7 @@ def run_module():
 
         cmdtxt = "d r,a,jn"
 
-        cmd_result_b = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+        cmd_result_b = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
         if cmd_result_b.rc > 0:
             module.fail_json(
@@ -395,35 +396,35 @@ def filter_requests(merged_list, params):
     message_id = params.get("message_id")
     job_name = params.get("job_name")
     newlist = merged_list
-
     if system:
         newlist = handle_conditions(newlist, "system", system)
     if job_name:
         newlist = handle_conditions(newlist, "job_name", job_name)
     if message_id:
         newlist = handle_conditions(newlist, "message_id", message_id)
-
     return newlist
 
 
-def handle_conditions(list, condition_type, value):
+def handle_conditions(merged_list, condition_type, value):
     # regex = re.compile(condition_values)
     newlist = []
-    for dict in list:
-        if value.endswith("*"):
-            exist = dict.get(condition_type).startswith(value.rstrip("*"))
-        else:
-            exist = dict.get(condition_type) == value
+    exist = False
+    for message in merged_list:
+        if message.get(condition_type) is not None:
+            if value.endswith("*"):
+                exist = message.get(condition_type).startswith(value.rstrip("*"))
+            else:
+                exist = message.get(condition_type) == value
 
         if exist:
-            newlist.append(dict)
+            newlist.append(message)
     return newlist
 
 
-def execute_command(operator_cmd, timeout=1, *args, **kwargs):
-
-    # response = opercmd.execute(operator_cmd)
-    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
+    timeout_c = 100 * timeout_s
+    response = opercmd.execute(operator_cmd, timeout_c, *args, **kwargs)
 
     rc = response.rc
     stdout = response.stdout_response

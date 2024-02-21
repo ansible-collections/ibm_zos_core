@@ -804,7 +804,7 @@ cmd:
 
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
     idcams
@@ -829,6 +829,7 @@ import stat
 import math
 import tempfile
 import os
+import traceback
 
 if PY3:
     from re import fullmatch
@@ -839,7 +840,13 @@ else:
 try:
     from zoautil_py import datasets, opercmd
 except Exception:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    opercmd = ZOAUImportError(traceback.format_exc())
+
+try:
+    from zoautil_py import exceptions as zoau_exceptions
+except ImportError:
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
 class CopyHandler(object):
@@ -909,6 +916,14 @@ class CopyHandler(object):
 
         if src_type == 'USS' and self.asa_text:
             response = copy.copy_asa_uss2mvs(new_src, dest)
+
+            if response.rc != 0:
+                raise CopyOperationError(
+                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                    rc=response.rc,
+                    stdout=response.stdout_response,
+                    stderr=response.stderr_response
+                )
         else:
             # While ASA files are just text files, we do a binary copy
             # so dcp doesn't introduce any additional blanks or newlines.
@@ -918,14 +933,15 @@ class CopyHandler(object):
             if self.force_lock:
                 copy_args["options"] += " -f"
 
-            response = datasets._copy(new_src, dest, None, **copy_args)
-        if response.rc != 0:
-            raise CopyOperationError(
-                msg="Unable to copy source {0} to {1}".format(new_src, dest),
-                rc=response.rc,
-                stdout=response.stdout_response,
-                stderr=response.stderr_response
-            )
+            try:
+                datasets.copy(new_src, dest, **copy_args)
+            except zoau_exceptions.ZOAUException as copy_exception:
+                raise CopyOperationError(
+                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                    rc=copy_exception.response.rc,
+                    stdout=copy_exception.response.stdout_response,
+                    stderr=copy_exception.response.stderr_response
+                )
 
     def copy_to_vsam(self, src, dest):
         """Copy source VSAM to destination VSAM.
@@ -988,9 +1004,11 @@ class CopyHandler(object):
                 else:
                     opts = dict()
                     opts["options"] = ""
-                    response = datasets._copy(src_name, dest_name, None, **opts)
-                    if response.rc > 0:
-                        raise Exception(response.stderr_response)
+
+                    try:
+                        datasets.copy(src_name, dest_name, **opts)
+                    except zoau_exceptions.ZOAUException as copy_exception:
+                        raise Exception(copy_exception.response.stderr_response)
                     shutil.copystat(src_name, dest_name, follow_symlinks=True)
             except Exception as err:
                 raise err
@@ -1356,14 +1374,17 @@ class USSCopyHandler(CopyHandler):
             else:
                 opts = dict()
                 opts["options"] = ""
-                response = datasets._copy(new_src, dest, None, **opts)
-                if response.rc > 0:
-                    raise Exception(response.stderr_response)
+                datasets.copy(new_src, dest, **opts)
                 shutil.copystat(new_src, dest, follow_symlinks=True)
                 # shutil.copy(new_src, dest)
             if self.executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
+        except zoau_exceptions.ZOAUException as err:
+            raise CopyOperationError(
+                msg="Unable to copy file {0} to {1}".format(new_src, dest),
+                stderr=err.response.stderr_response,
+            )
         except OSError as err:
             raise CopyOperationError(
                 msg="Destination {0} is not writable".format(dest),
@@ -1549,12 +1570,21 @@ class USSCopyHandler(CopyHandler):
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest)
+                    rc = response.rc
                 elif self.executable:
-                    response = datasets._copy(src, dest, alias=True, executable=True)
+                    try:
+                        rc = datasets.copy(src, dest, alias=True, executable=True)
+                    except zoau_exceptions.ZOAUException as copy_exception:
+                        response = copy_exception.response
+                        rc = response.rc
                 else:
-                    response = datasets._copy(src, dest)
+                    try:
+                        rc = datasets.copy(src, dest)
+                    except zoau_exceptions.ZOAUException as copy_exception:
+                        response = copy_exception.response
+                        rc = response.rc
 
-                if response.rc != 0:
+                if rc != 0:
                     raise CopyOperationError(
                         msg="Error while copying source {0} to {1}".format(src, dest),
                         rc=response.rc,
@@ -1563,14 +1593,14 @@ class USSCopyHandler(CopyHandler):
                     )
             else:
                 if self.executable:
-                    response = datasets._copy(src, dest, None, alias=True, executable=True)
-
-                    if response.rc != 0:
+                    try:
+                        datasets.copy(src, dest, alias=True, executable=True)
+                    except zoau_exceptions.ZOAUException as copy_exception:
                         raise CopyOperationError(
                             msg="Error while copying source {0} to {1}".format(src, dest),
-                            rc=response.rc,
-                            stdout=response.stdout_response,
-                            stderr=response.stderr_response
+                            rc=copy_exception.response.rc,
+                            stdout=copy_exception.response.stdout_response,
+                            stderr=copy_exception.response.stderr_response
                         )
                 elif self.asa_text:
                     response = copy.copy_asa_pds2uss(src, dest)
@@ -1785,6 +1815,7 @@ class PDSECopyHandler(CopyHandler):
 
         if src_type == 'USS' and self.asa_text:
             response = copy.copy_asa_uss2mvs(src, dest)
+            rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
             # so dcp doesn't introduce any additional blanks or newlines.
@@ -1794,8 +1825,14 @@ class PDSECopyHandler(CopyHandler):
             if self.force_lock:
                 opts["options"] += " -f"
 
-            response = datasets._copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
-        rc, out, err = response.rc, response.stdout_response, response.stderr_response
+            try:
+                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
+                out = ""
+                err = ""
+            except zoau_exceptions.ZOAUException as copy_exception:
+                rc = copy_exception.response.rc
+                out = copy_exception.response.stdout_response
+                err = copy_exception.response.stderr_response
 
         return dict(
             rc=rc,
@@ -1852,8 +1889,8 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
     if is_binary:
         copy_args["options"] = "-B"
 
-    response = datasets._copy(data_set_member, temp_path, None, **copy_args)
-    if response.rc != 0 or response.stderr_response:
+    response = datasets.copy(data_set_member, temp_path, **copy_args)
+    if response != 0:
         raise DataSetMemberAttributeError(data_set_member)
 
     return temp_path
@@ -2315,7 +2352,7 @@ def get_attributes_of_any_dataset_created(
                 volume=volume
             )
     else:
-        src_attributes = datasets.listing(src_name)[0]
+        src_attributes = datasets.list_datasets(src_name)[0]
         size = int(src_attributes.total_space)
         params = get_data_set_attributes(
             dest,
@@ -2397,8 +2434,8 @@ def allocate_destination_data_set(
             try:
                 # Dumping the member into a file in USS to compute the record length and
                 # size for the new data set.
-                src_attributes = datasets.listing(src_name)[0]
-                record_length = int(src_attributes.lrecl)
+                src_attributes = datasets.list_datasets(src_name)[0]
+                record_length = int(src_attributes.record_length)
                 temp_dump = dump_data_set_member_to_file(src, is_binary)
                 create_seq_dataset_from_file(
                     temp_dump,
@@ -2417,11 +2454,11 @@ def allocate_destination_data_set(
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            src_attributes = datasets.listing(src_name)[0]
+            src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
             size = int(src_attributes.total_space)
-            record_format = src_attributes.recfm
-            record_length = int(src_attributes.lrecl)
+            record_format = src_attributes.record_format
+            record_length = int(src_attributes.record_length)
             dest_params = get_data_set_attributes(
                 dest,
                 size,
@@ -2507,8 +2544,8 @@ def allocate_destination_data_set(
             asa_text,
             volume
         )
-        dest_attributes = datasets.listing(dest)[0]
-        record_format = dest_attributes.recfm
+        dest_attributes = datasets.list_datasets(dest)[0]
+        record_format = dest_attributes.record_format
         dest_params["type"] = dest_ds_type
         dest_params["record_format"] = record_format
     return True, dest_params
@@ -2730,8 +2767,8 @@ def run_module(module, arg_def):
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
 
                 if src_ds_type not in data_set.DataSet.MVS_VSAM:
-                    src_attributes = datasets.listing(src_name)[0]
-                    if src_attributes.recfm == 'FBA' or src_attributes.recfm == 'VBA':
+                    src_attributes = datasets.list_datasets(src_name)[0]
+                    if src_attributes.record_format == 'FBA' or src_attributes.record_format == 'VBA':
                         src_has_asa_chars = True
             else:
                 raise NonExistentSourceError(src)
@@ -2785,8 +2822,8 @@ def run_module(module, arg_def):
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
             elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
-                dest_attributes = datasets.listing(dest_name)[0]
-                if dest_attributes.recfm == 'FBA' or dest_attributes.recfm == 'VBA':
+                dest_attributes = datasets.list_datasets(dest_name)[0]
+                if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
                     dest_has_asa_chars = True
 
             if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
@@ -2794,8 +2831,8 @@ def run_module(module, arg_def):
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
             elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
-                dest_attributes = datasets.listing(dest_name)[0]
-                if dest_attributes.recfm == 'FBA' or dest_attributes.recfm == 'VBA':
+                dest_attributes = datasets.list_datasets(dest_name)[0]
+                if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
                     dest_has_asa_chars = True
 
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:

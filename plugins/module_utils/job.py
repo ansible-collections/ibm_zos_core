@@ -273,13 +273,21 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["owner"] = entry.owner
 
             job["ret_code"] = dict()
-            job["ret_code"]["msg"] = "{0} {1}".format(entry.status, entry.return_code)
+
+            # From v1.3.0, ZOAU sets unavailable job fields as None, instead of '?'.
+            # This new way of constructing msg allows for a better empty message.
+            # "" instead of "None None".
+            job["ret_code"]["msg"] = "{0} {1}".format(
+                entry.status if entry.status else "",
+                entry.return_code if entry.return_code else ""
+            ).strip()
+
             job["ret_code"]["msg_code"] = entry.return_code
             job["ret_code"]["code"] = None
             if entry.return_code and len(entry.return_code) > 0:
                 if entry.return_code.isdigit():
                     job["ret_code"]["code"] = int(entry.return_code)
-            job["ret_code"]["msg_text"] = entry.status
+            job["ret_code"]["msg_text"] = entry.status if entry.status else "?"
 
             # Beginning in ZOAU v1.3.0, the Job class changes svc_class to
             # service_class.

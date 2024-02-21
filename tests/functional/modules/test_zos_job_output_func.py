@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from shellescape import quote
-from time import sleep
 
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
@@ -46,6 +45,8 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
     results = hosts.all.zos_job_output(job_id="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
+        assert result.get("stderr") is not None
+        assert result.get("failed") is True
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -69,7 +70,7 @@ def test_zos_job_output_no_owner(ansible_zos_module):
     results = hosts.all.zos_job_output(owner="")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs") is None
+        assert result.get("msg") is not None
 
 
 def test_zos_job_output_invalid_owner(ansible_zos_module):
@@ -99,7 +100,6 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         jobs = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
         )
-        sleep(30)
         for job in jobs.contacted.values():
             print(job)
             assert job.get("jobs") is not None
@@ -113,6 +113,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
             assert result.get("changed") is False
             assert result.get("jobs") is not None
             assert result.get("jobs")[0].get("ret_code").get("steps") is not None
+            assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001"
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 
@@ -127,7 +128,6 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         result = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
         )
-        sleep(30)
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"
         results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)

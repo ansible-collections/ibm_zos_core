@@ -471,6 +471,7 @@ def run_module():
         results["changed"] = False
     except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(
+            msg="ZOAU exception",
             rc=fetch_exception.response.rc,
             stdout=fetch_exception.response.stdout_response,
             stderr=fetch_exception.response.stderr_response,

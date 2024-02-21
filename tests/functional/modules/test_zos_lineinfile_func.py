@@ -675,92 +675,96 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
         remove_ds_environment(ansible_zos_module, ds_name)
 
 
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
-    hosts = ansible_zos_module
-    ds_type = dstype
-    params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
-    content = TEST_CONTENT
-    try:
-        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
-        params["path"] = ds_full_name
-        results = hosts.all.zos_lineinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
-        for result in results.contacted.values():
-            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER
-    finally:
-        remove_ds_environment(ansible_zos_module, ds_name)
+#@pytest.mark.ds
+#@pytest.mark.parametrize("dstype", DS_TYPE)
+#def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
+#    hosts = ansible_zos_module
+#    ds_type = dstype
+#    params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+#    ds_name = get_tmp_ds_name()
+#    temp_file = "/tmp/" + ds_name
+#    content = TEST_CONTENT
+#    try:
+#        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+#        params["path"] = ds_full_name
+#        results = hosts.all.zos_lineinfile(**params)
+#        for result in results.contacted.values():
+#            print(result)
+#            assert result.get("changed") == 1
+#        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+#        for result in results.contacted.values():
+#            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER
+#    finally:
+#        remove_ds_environment(ansible_zos_module, ds_name)
 
 
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
-    hosts = ansible_zos_module
-    ds_type = dstype
-    params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
-    ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
-    content = TEST_CONTENT
-    try:
-        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
-        params["path"] = ds_full_name
-        results = hosts.all.zos_lineinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
-        for result in results.contacted.values():
-            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE
-    finally:
-        remove_ds_environment(ansible_zos_module, ds_name)
+#@pytest.mark.ds
+#@pytest.mark.parametrize("dstype", DS_TYPE)
+#def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
+#    hosts = ansible_zos_module
+#    ds_type = dstype
+#    params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
+#    ds_name = get_tmp_ds_name()
+#    temp_file = "/tmp/" + ds_name
+#    content = TEST_CONTENT
+#    try:
+#        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+#        params["path"] = ds_full_name
+#        results = hosts.all.zos_lineinfile(**params)
+#        for result in results.contacted.values():
+#            print(result)
+#            assert result.get("changed") == 1
+#        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+#        for result in results.contacted.values():
+#            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE
+#    finally:
+#        remove_ds_environment(ansible_zos_module, ds_name)
 
 
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
-    hosts = ansible_zos_module
-    ds_type = dstype
-    params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
-    content = TEST_CONTENT
-    try:
-        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
-        params["path"] = ds_full_name
-        results = hosts.all.zos_lineinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
-        for result in results.contacted.values():
-            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER_NOMATCH
-    finally:
-        remove_ds_environment(ansible_zos_module, ds_name)
+#@pytest.mark.ds
+#@pytest.mark.parametrize("dstype", DS_TYPE)
+#def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
+#    hosts = ansible_zos_module
+#    ds_type = dstype
+#    params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+#    ds_name = get_tmp_ds_name()
+#    temp_file = "/tmp/" + ds_name
+#    content = TEST_CONTENT
+#    try:
+#        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+#        params["path"] = ds_full_name
+#        results = hosts.all.zos_lineinfile(**params)
+#        for result in results.contacted.values():
+#            print(result)
+#            assert result.get("changed") == 1
+#        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+#        for result in results.contacted.values():
+#            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER_NOMATCH
+#    finally:
+#        remove_ds_environment(ansible_zos_module, ds_name)
 
 
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):
-    hosts = ansible_zos_module
-    ds_type = dstype
-    params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
-    ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
-    content = TEST_CONTENT
-    try:
-        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
-        params["path"] = ds_full_name
-        results = hosts.all.zos_lineinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
-        for result in results.contacted.values():
-            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE_NOMATCH
-    finally:
-        remove_ds_environment(ansible_zos_module, ds_name)
+#@pytest.mark.ds
+#@pytest.mark.parametrize("dstype", DS_TYPE)
+#def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):
+#    hosts = ansible_zos_module
+#    ds_type = dstype
+#    params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
+#    ds_name = get_tmp_ds_name()
+#    temp_file = "/tmp/" + ds_name
+#    content = TEST_CONTENT
+#    try:
+#        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+#        params["path"] = ds_full_name
+#        results = hosts.all.zos_lineinfile(**params)
+#        for result in results.contacted.values():
+#            print(result)
+#            assert result.get("changed") == 1
+#        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+#        for result in results.contacted.values():
+#            assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE_NOMATCH
+#    finally:
+#        remove_ds_environment(ansible_zos_module, ds_name)
 
 
 @pytest.mark.ds

@@ -1127,7 +1127,6 @@ class DataSet(object):
         iehprogm_input = DataSet._build_non_vsam_catalog_command(
             name.upper(), volumes)
 
-
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin", data=iehprogm_input
         )

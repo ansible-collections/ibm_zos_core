@@ -20,7 +20,6 @@ from ansible.utils.display import Display
 from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
-import copy
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
@@ -151,7 +150,7 @@ class ActionModule(ActionBase):
                     remote_src=True,
                 )
             )
-            copy_task = copy.deepcopy(self._task)
+            copy_task = self._task.copy()
             copy_task.args = copy_module_args
             zos_copy_action_module = ZosCopyActionModule(task=copy_task,
                                                          connection=self._connection,

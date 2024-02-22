@@ -12,7 +12,6 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-import copy
 import shlex
 from os import path
 
@@ -99,7 +98,7 @@ class ActionModule(ActionBase):
                 use_template=module_args.get('use_template', False),
                 template_parameters=module_args.get('template_parameters', dict())
             )
-            copy_task = copy.deepcopy(self._task)
+            copy_task = self._task.copy()
             copy_task.args = zos_copy_args
             zos_copy_action_plugin = ZosCopyActionModule(
                 task=copy_task,

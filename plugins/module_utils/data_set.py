@@ -1036,7 +1036,7 @@ class DataSet(object):
             raise DatasetCreateError(
                 name,
                 rc=-1,
-                msg="DatasetVerificationError received from ZOAU...",
+                msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
         # response.rc now we just return 0 if nothing failed

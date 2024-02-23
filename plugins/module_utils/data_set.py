@@ -1806,7 +1806,7 @@ class DatasetCreateError(Exception):
                 'An error occurred during creation of data set "{0}". {1}'.format(
                     data_set, msg
                 )
-        )
+            )
         super().__init__(self.msg)
 
 

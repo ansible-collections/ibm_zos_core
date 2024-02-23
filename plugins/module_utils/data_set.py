@@ -1035,7 +1035,6 @@ class DataSet(object):
                     return 0
             raise DatasetCreateError(
                 name,
-                rc=-1,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
@@ -1795,11 +1794,18 @@ class DatasetDeleteError(Exception):
 
 
 class DatasetCreateError(Exception):
-    def __init__(self, data_set, rc, msg=""):
-        self.msg = (
-            'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
-                data_set, rc, msg
+    def __init__(self, data_set, rc=None, msg=""):
+        if rc:
+            self.msg = (
+                'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
+                    data_set, rc, msg
+                )
             )
+        else:
+            self.msg = (
+                'An error occurred during creation of data set "{0}". {1}'.format(
+                    data_set, msg
+                )
         )
         super().__init__(self.msg)
 

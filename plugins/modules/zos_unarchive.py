@@ -400,7 +400,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = ZOAUImportError(traceback.format_exc())
+    datasets = ZOAUImportError(traceback.format_exc())
 
 data_set_regex = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}"
 

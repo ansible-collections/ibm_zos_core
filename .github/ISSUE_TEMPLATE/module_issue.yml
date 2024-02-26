@@ -1,6 +1,6 @@
 name: Request a new module
 description: Request a new module be added to the collection. Complete all required fields.
-title: "[Module] <title> "
+title: "[Module] Enter description "
 labels: [Module]
 assignees:
   - IBMAnsibleHelper

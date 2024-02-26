@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -545,7 +545,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
         )
 
         for result in results.contacted.values():
@@ -671,7 +671,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
         )
         for result in results.contacted.values():
             assert result.get("jobs") is not None
@@ -803,7 +803,7 @@ def test_vsam_backup(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
         )
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         # submit JCL to populate KSDS
@@ -814,7 +814,7 @@ def test_vsam_backup(ansible_zos_module):
             )
         )
         hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
         )
 
         hosts.all.zos_encode(

@@ -18,7 +18,7 @@ __metaclass__ = type
 import pytest
 import time
 import yaml
-
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 class Volume:
     """ Volume class represents a volume on the z system, it tracks if the volume name
     and status of the volume with respect to the current test session."""
@@ -119,3 +119,43 @@ def read_test_config(path):
             return config["VOLUMES"]
     else:
         return None
+
+def get_volumes_with_vvds( ansible_zos_module, volumes_on_system):
+    """
+    Get a list of volumes that contain a VVDS, if no volume has a VVDS then
+    creates one on any volume.
+    """
+    volumes_with_vvds = find_volumes_with_vvds(ansible_zos_module, volumes_on_system)
+    if len(volumes_with_vvds) == 0 and len(volumes_on_system) > 0:
+        volumes_with_vvds = list()
+        for volume in volumes_on_system:
+            if create_vvds_on_volume(ansible_zos_module, volume):
+                volumes_with_vvds.append(volume)
+    return volumes_with_vvds
+
+def find_volumes_with_vvds( ansible_zos_module, volumes_on_system):
+    """
+    Fetches all VVDS in the system and returns a list of volumes for
+    which there are VVDS.
+    """
+    hosts = ansible_zos_module
+    vls_result = hosts.all.shell(cmd="vls SYS1.VVDS.*")
+    for vls_res in vls_result.contacted.values():
+        vvds_list = vls_res.get("stdout")
+    return [volume for volume in volumes_on_system if volume in vvds_list]
+
+def create_vvds_on_volume( ansible_zos_module, volume):
+    """
+    Creates a vvds on a volume by allocating a small VSAM and then deleting it.
+    """
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name(mlq_size=7, llq_size=7)
+    hosts.all.shell(cmd=f"dtouch -tesds -s10K -V{volume} {data_set_name}")
+    # Remove that dataset
+    hosts.all.shell(cmd=f"drm {data_set_name}")
+    # Verify that the VVDS is in place
+    vls_result = hosts.all.shell(cmd=f"vls SYS1.VVDS.V{volume} ")
+    for vls_res in vls_result.contacted.values():
+        if vls_res.get("rc") == 0:
+            return True
+    return False

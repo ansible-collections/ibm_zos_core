@@ -536,7 +536,6 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
-    force = True if force else False
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)

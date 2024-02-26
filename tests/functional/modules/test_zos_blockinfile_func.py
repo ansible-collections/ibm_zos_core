@@ -863,7 +863,8 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
     finally:
         remove_uss_environment(ansible_zos_module)
 
-# Test case base on bug of dataset.blockifile 
+# Test case base on bug of dataset.blockifile
+# GH Issue #1258 
 #@pytest.mark.uss
 #def test_uss_block_insert_with_doublequotes(ansible_zos_module):
 #    hosts = ansible_zos_module

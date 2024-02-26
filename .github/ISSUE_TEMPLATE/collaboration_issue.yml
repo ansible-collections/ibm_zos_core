@@ -23,24 +23,59 @@ body:
         required: false
       - label: No, support and service is involved.
         required: false
-  - type: checkboxes
-    id: valid-dependencies
+  - type: textarea
+    id: issue-description
     attributes:
-      label: Are the dependencies a supported?
-      description: Please review the ZOAU and IBM Enterprise Python versions in the reference section of the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
+      label: Collaboration description
+      description: Describe the collaboration issue.
+      placeholder: |
+        For example
+          1. Working with IBM Enterprise Python to resolve issue xyz.
+          2. Working with z/OS application team DFSMS to resolve xyz.
+          3. Assisting IBM support to resolve an ibm_zos_copy issue.
+    validations:
+      required: true
+  - type: dropdown
+    id: collection-version
+    attributes:
+      label: IBM z/OS Ansible core Version
+      description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
+      multiple: false
       options:
-        - label: Yes, the dependencies are supported.
-          required: false
-        - label: Not applicable to this collaboration.
-          required: false
+        - v1.12.0
+        - v1.12.0-beta.1
+        - v1.11.0
+        - v1.11.0-beta.1
+        - v1.10.0
+        - v1.10.0-beta.1
+        - v1.9.0
+        - v1.9.0-beta.1
+        - v1.8.0 (default)
+        - v1.7.0
+        - v1.6.0
+        - v1.5.0
+        - v1.4.1
+        - v1.3.6
+        - v1.3.5
+        - v1.3.3
+        - v1.3.1
+        - v1.3.0
+      default: 8
+    validations:
+      required: false
   - type: dropdown
     id: zoau-version
     attributes:
       label: IBM Z Open Automation Utilities
-      description: Which version of ZOAU are you using?
+      description: Which version of ZOAU are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
-        - v1.2.5
+        - v1.3.4
+        - v1.3.3
+        - v1.3.2
+        - v1.3.1
+        - v1.3.0
+        - v1.2.5 (default)
         - v1.2.4
         - v1.2.3
         - v1.2.2
@@ -48,45 +83,23 @@ body:
         - v1.2.0
         - v1.1.1
         - v1.0.3
+      default: 5
     validations:
       required: false
   - type: dropdown
     id: python-version
     attributes:
       label: IBM Enterprise Python
-      description: Which version of IBM Enterprise Python are you using?
-      multiple: true
+      description: Which version of IBM Enterprise Python are you using? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
+      multiple: false
       options:
-        - v3.14.x
         - v3.13.x
         - v3.12.x
-        - v3.11.x
+        - v3.11.x (default)
         - v3.10.x
         - v3.9.x
         - v3.8.x
-    validations:
-      required: false
-  - type: dropdown
-    id: collection-version
-    attributes:
-      label: IBM z/OS Ansible core Version
-      description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
-      multiple: false
-      options:
-        - v1.9.0
-        - v1.9.0-beta.1
-        - v1.8.0
-        - v1.8.0-beta.1
-        - v1.7.0
-        - v1.7.0-beta.1
-        - v1.6.0
-        - v1.6.0-beta.1
-        - v1.5.0
-        - v1.4.1
-        - v1.3.6
-        - v1.2.1
-        - v1.1.0
-        - v1.0.0
+      default: 2
     validations:
       required: false
   - type: dropdown
@@ -96,27 +109,24 @@ body:
       description: What is the version of Ansible on the controller (`ansible --version`)?
       multiple: false
       options:
-        - latest
-        - v2.16.x
+        - v2.17.x
+        - v2.16.x (default)
         - v2.15.x
         - v2.14.x
-        - v2.13.x
-        - v2.12.x
-        - v2.11.x
-        - v2.9.x
+      default: 1
     validations:
       required: false
   - type: dropdown
     id: zos-version
     attributes:
       label: z/OS version
-      description: What is the version of z/OS on the managed node?
+      description: What is the version of z/OS on the managed node? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
-        - v3.1
-        - v2.5
+        - v3.1 (unsupported)
+        - v2.5 (default)
         - v2.4
-        - v2.3
+      default: 1
     validations:
       required: false
   - type: dropdown
@@ -127,6 +137,7 @@ body:
       multiple: true
       options:
         - zos_apf
+        - zos_archive
         - zos_backup_restore
         - zos_blockinfile
         - zos_copy
@@ -146,23 +157,7 @@ body:
         - zos_ping
         - zos_script
         - zos_tso_command
+        - zos_unarchive
+        - zos_volume_init
     validations:
       required: false
-  - type: textarea
-    id: issue-description
-    attributes:
-      label: Collaboration description
-      description: Describe the collaboration issue.
-      placeholder: |
-        For example
-          1. Working with IBM Enterprise Python to resolve issue xyz.
-          2. Working with z/OS application team DFSMS to resolve xyz.
-          3. Assisting IBM support to resolve an ibm_zos_copy issue.
-    validations:
-      required: true
-
-
-
-
-
-

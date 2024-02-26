@@ -427,7 +427,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 try:
     from zoautil_py import exceptions as zoau_exceptions
 except Exception:
-    exceptions = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
 def run_module():

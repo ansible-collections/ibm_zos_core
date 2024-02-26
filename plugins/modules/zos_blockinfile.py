@@ -397,7 +397,7 @@ def absent(src, marker, encoding, force):
         src: {str} -- The z/OS USS file or data set to modify.
         marker: {str} -- Identifies the block to be removed.
         encoding: {str} -- Encoding of the src.
-        force: {bool} -- If not empty passes the -f option to dmod cmd.
+        force: {bool} -- If not empty passes the value True option to dmod cmd.
     Returns:
         str -- Information in JSON format. keys:
             cmd: {str} -- dmod shell command

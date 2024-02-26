@@ -312,16 +312,16 @@ from ansible.module_utils.basic import AnsibleModule
 from re import match, search, IGNORECASE
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from os import path
-
+import traceback
 try:
-    from zoautil_py import datasets, exceptions
+    from zoautil_py import datasets
+    from zoautil_py import exceptions as zoau_exceptions
 except ImportError:
-    datasets = MissingZOAUImport()
-    exceptions = MissingZOAUImport()
-
+    datasets = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 def main():
     """Run the zos_backup_restore module core functions."""
@@ -485,7 +485,7 @@ def backup(
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
-    datasets.zip(**zoau_args)
+    datasets.dzip(**zoau_args)
 
 
 def restore(
@@ -526,19 +526,21 @@ def restore(
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
-    response = datasets._unzip(**zoau_args)
+    try:
+        rc = datasets.dunzip(**zoau_args)
+    except zoau_exceptions.ZOAUException as dunzip_exception:
+        output = dunzip_exception.response.stdout_response
+        output = output + dunzip_exception.response.stderr_response
+        rc = get_real_rc(output)
+    response = datasets.dunzip(**zoau_args)
     failed = False
-    true_rc = response.rc
-    if response.rc > 0:
-        output = response.stdout_response + response.stderr_response
-        true_rc = get_real_rc(output) or true_rc
-    if true_rc > 0 and true_rc <= 4:
+    if rc > 0 and rc <= 4:
         if recover is not True:
             failed = True
-    elif true_rc > 0:
+    elif rc > 0:
         failed = True
     if failed:
-        raise exceptions.ZOAUException(
+        raise zoau_exceptions.ZOAUException(
             "%s,RC=%s" % (response.stderr_response, response.rc)
         )
 
@@ -631,7 +633,7 @@ def hlq_default(contents, dependencies):
     """
     hlq = None
     if dependencies.get("operation") == "restore":
-        hlq = datasets.hlq()
+        hlq = datasets.get_hlq()
     return hlq
 
 

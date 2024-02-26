@@ -312,15 +312,15 @@ from ansible.module_utils.basic import AnsibleModule
 from re import match, search, IGNORECASE
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from os import path
 
 try:
     from zoautil_py import datasets, exceptions
 except ImportError:
-    datasets = MissingZOAUImport()
-    exceptions = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    exceptions = ZOAUImportError(traceback.format_exc())
 
 
 def main():

@@ -297,13 +297,14 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
+import traceback
 
 try:
     from zoautil_py import zsystem
 except Exception:
-    Datasets = MissingZOAUImport()
+    zsystem = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types

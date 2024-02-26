@@ -392,7 +392,7 @@ def main():
                 temp_volume=temp_volume,
                 overwrite=overwrite,
                 recover=recover,
-                high_level_qualifier=hlq,
+                hlq=hlq,
                 space=space,
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
@@ -498,7 +498,7 @@ def restore(
     temp_volume,
     overwrite,
     recover,
-    high_level_qualifier,
+    hlq,
     space,
     space_type,
     sms_storage_class,
@@ -847,7 +847,7 @@ def to_dunzip_args(**kwargs):
         zoau_args["size"] = size
 
     if kwargs.get("hlq"):
-        zoau_args["hlq"] = kwargs.get("hlq")
+        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
     return zoau_args
 

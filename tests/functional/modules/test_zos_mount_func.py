@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2020 - 2024
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
@@ -9,21 +9,8 @@ __metaclass__ = type
 
 import tempfile
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    data_set,
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
-
-try:
-    from zoautil_py import Datasets
-except Exception:
-    Datasets = MissingZOAUImport()
 
 
 INITIAL_PRM_MEMBER = """/* Initial file to look like BPXPRM */
@@ -79,9 +66,6 @@ def create_sourcefile(hosts, volume):
             starter, thisfile, str(type(thisfile))
         )
     )
-    # fs_du = data_set.DataSetUtils(thisfile)
-    # fs_exists = fs_du.exists()
-    # if fs_exists is False:
 
     hosts.all.shell(
         cmd="zfsadm define -aggregate "
@@ -338,9 +322,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
 
         assert srcfn in data
         assert "bpxtablecomment - try this" in data
-        # fs_du = data_set.DataSetUtils(back_dest_path)
-        # fs_exists = fs_du.exists()
-        # assert fs_exists
     finally:
         hosts.all.zos_mount(
             src=srcfn,

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -392,14 +392,15 @@ import re
 import os
 import zipfile
 import tarfile
+import traceback
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 data_set_regex = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}"
 
@@ -646,8 +647,8 @@ class MVSUnarchive(Unarchive):
         """
 
         # Get the size from the system
-        src_attributes = datasets.listing(self.src)[0]
-        # The size returned by listing is in bytes.
+        src_attributes = datasets.list_datasets(self.src)[0]
+        # The size returned by list_datasets is in bytes.
         source_size = int(src_attributes.total_space)
         if self.format == 'terse':
             source_size = int(source_size * 1.5)
@@ -687,11 +688,9 @@ class MVSUnarchive(Unarchive):
             if tmp_hlq:
                 hlq = tmp_hlq
             else:
-                rc, hlq, err = self.module.run_command("hlq")
-                hlq = hlq.replace('\n', '')
-            cmd = "mvstmphelper {0}.RESTORE".format(hlq)
-            rc, temp_ds, err = self.module.run_command(cmd)
-            arguments.update(name=temp_ds.replace('\n', ''))
+                hlq = datasets.get_hlq()
+            temp_ds = datasets.tmp_name(high_level_qualifier=hlq)
+            arguments.update(name=temp_ds)
         if record_format is None:
             arguments.update(record_format="FB")
         if record_length is None:

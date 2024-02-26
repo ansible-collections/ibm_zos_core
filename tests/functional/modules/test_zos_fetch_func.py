@@ -264,7 +264,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(volume_1, test_vsam)), temp_jcl_path)
         )
         hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(temp_jcl_path), location="USS", wait=True
+            src="{0}/SAMPLE".format(temp_jcl_path), location="USS", wait_time_s=30
         )
         hosts.all.shell(cmd="echo \"{0}\c\" > {1}".format(TEST_DATA, USS_FILE))
         hosts.all.zos_encode(

@@ -73,7 +73,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.5`_ (or later) but prior to version 1.3.
@@ -159,7 +159,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.4`_ (or later) but prior to version 1.3.
@@ -226,7 +226,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.3`_ (or later) but prior to version 1.3.
@@ -289,7 +289,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
@@ -405,7 +405,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
@@ -444,7 +444,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -594,7 +594,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.8`_` - `3.9`_
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -695,7 +695,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
   `IBM Open Enterprise SDK for Python`_ v3.9.5
@@ -736,7 +736,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -782,7 +782,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -814,7 +814,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
@@ -937,7 +937,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS®`_ V2R4 or later
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and

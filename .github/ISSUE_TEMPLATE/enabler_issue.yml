@@ -15,14 +15,23 @@ body:
       options:
         - label: There are no existing issues.
           required: true
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Enabler description
+      description: Describe the task.
+      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
+    validations:
+      required: true
   - type: dropdown
     id: modules
     attributes:
       label: Ansible module
-      description: Select which modules are being reported for this task. You can select more than one.
+      description: Select which modules are being reported in this bug. You can select more than one.
       multiple: true
       options:
         - zos_apf
+        - zos_archive
         - zos_backup_restore
         - zos_blockinfile
         - zos_copy
@@ -42,13 +51,8 @@ body:
         - zos_ping
         - zos_script
         - zos_tso_command
+        - zos_unarchive
+        - zos_volume_init
     validations:
       required: false
-  - type: textarea
-    id: issue-description
-    attributes:
-      label: Enabler description
-      description: Describe the task, this is the equivalent of a agile story.
-      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
-    validations:
-      required: true
+

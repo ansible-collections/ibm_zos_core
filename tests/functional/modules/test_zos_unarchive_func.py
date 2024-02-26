@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -281,6 +281,7 @@ def test_uss_single_unarchive_with_mode(ansible_zos_module, format):
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
+
 @pytest.mark.uss
 def test_uss_unarchive_copy_to_remote(ansible_zos_module):
     try:
@@ -370,7 +371,6 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
         DATASET = get_tmp_ds_name(3)
         HLQ = "ANSIBLE"
         # Clean env
-        hosts.all.zos_data_set(name=DATASET, state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
         # Create source data set
         hosts.all.zos_data_set(
@@ -379,6 +379,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True
         )
         # Create members if needed
         if data_set.get("dstype") in ["PDS", "PDSE"]:
@@ -386,7 +387,8 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
                     type="member",
-                    state="present"
+                    state="present",
+                    replace=True
                 )
         # Write some content into src the same size of the record,
         # need to reduce 4 from V and VB due to RDW
@@ -480,7 +482,6 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
         DATASET = get_tmp_ds_name(3)
         HLQ = "ANSIBLE"
         # Clean env
-        hosts.all.zos_data_set(name=DATASET, state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
         # Create source data set
         hosts.all.zos_data_set(
@@ -489,6 +490,7 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True
         )
         # Create members if needed
         if data_set.get("dstype") in ["PDS", "PDSE"]:
@@ -496,7 +498,8 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
                     type="member",
-                    state="present"
+                    state="present",
+                    replace=True
                 )
         # Write some content into src the same size of the record,
         # need to reduce 4 from V and VB due to RDW
@@ -961,6 +964,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
     finally:
         hosts.all.shell(cmd=""" drm "{0}*" """.format(DATASET))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
+
 
 @pytest.mark.ds
 @pytest.mark.parametrize(

@@ -1,0 +1,4 @@
+trivial:
+  - zos_lineinfile - migrate code to use ZOAU v1.3.0.
+  - zos_blockinfile - migrate code to use ZOAU v1.3.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1256).

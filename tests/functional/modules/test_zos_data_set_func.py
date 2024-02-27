@@ -160,7 +160,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
+            src=TEMP_PATH + "/SAMPLE", location="USS", wait_time_s=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -215,7 +215,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+            src=TEMP_PATH + "/SAMPLE", location="USS"
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -260,7 +260,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+            src=TEMP_PATH + "/SAMPLE", location="USS"
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -308,7 +308,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+            src=TEMP_PATH + "/SAMPLE", location="USS"
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -345,7 +345,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
-    results =hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS", wait=True)
+    results =hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS")
 
     # verify data set creation was successful
     for result in results.contacted.values():
@@ -360,7 +360,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_2, dataset)), TEMP_PATH))
-    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS", wait=True)
+    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS")
 
     # verify data set creation was successful
     for result in results.contacted.values():

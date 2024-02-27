@@ -1030,9 +1030,17 @@ def parse_and_validate_args(params):
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type=data_set_type, required=False, dependencies=["state"]),
+                type=dict(
+                    type=data_set_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=DATA_SET_TYPES,
+                ),
                 space_type=dict(
-                    type=space_type, required=False, dependencies=["state"]
+                    type=space_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=["K", "M", "G", "CYL", "TRK"],
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1106,6 +1114,7 @@ def parse_and_validate_args(params):
             type=data_set_name,
             default=data_set_name,
             required=False,
+            choices=DATA_SET_TYPES,
             dependencies=["type", "state", "batch", "tmp_hlq"],
         ),
         state=dict(
@@ -1114,7 +1123,12 @@ def parse_and_validate_args(params):
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
         type=dict(type=data_set_type, required=False, dependencies=["state"]),
-        space_type=dict(type=space_type, required=False, dependencies=["state"]),
+        space_type=dict(
+            type=space_type,
+            required=False,
+            dependencies=["state"],
+            choices=["K", "M", "G", "CYL", "TRK"],
+        ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
         record_format=dict(
@@ -1218,8 +1232,18 @@ def run_module():
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type="str", required=False, default="PDS"),
-                space_type=dict(type="str", required=False, default="M"),
+                type=dict(
+                    type="str",
+                    required=False,
+                    default="PDS",
+                    choices=DATA_SET_TYPES,
+                ),
+                space_type=dict(
+                    type="str",
+                    required=False,
+                    default="M",
+                    choices=["K", "M", "G", "CYL", "TRK"],
+                ),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
                 record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
@@ -1267,8 +1291,18 @@ def run_module():
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
-        type=dict(type="str", required=False, default="PDS"),
-        space_type=dict(type="str", required=False, default="M"),
+        type=dict(
+            type="str",
+            required=False,
+            default="PDS",
+            choices=DATA_SET_TYPES,
+        ),
+        space_type=dict(
+            type="str",
+            required=False,
+            default="M",
+            choices=["K", "M", "G", "CYL", "TRK"],
+        ),
         space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),
         record_format=dict(type="str", required=False, aliases=["format"], default="FB"),

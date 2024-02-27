@@ -579,7 +579,7 @@ EXAMPLES = r"""
     type: PDS
     space_primary: 5
     space_type: M
-    record_format: Uu
+    record_format: U
     record_length: 25
     volumes: "222222"
     replace: yes
@@ -1264,7 +1264,7 @@ def run_module():
                     type="str",
                     required=False,
                     aliases=["format"],
-                    default="FB"
+                    default="FB",
                     choices=["FB", "VB", "FBA", "VBA", "U", "F"],
                 ),
                 sms_management_class=dict(type="str", required=False),

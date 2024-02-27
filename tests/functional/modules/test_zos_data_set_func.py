@@ -163,6 +163,9 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
         # verify data set creation was successful
+        print("\nVVV ================ VVV")
+        print_results(results)
+
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
                 submitted_job_id = result.get("jobs")[0].get("job_id")
@@ -460,7 +463,7 @@ def test_batch_data_set_creation_and_deletion(ansible_zos_module):
         results = hosts.all.zos_data_set(
             batch=[
                 {"name": dataset, "state": "absent"},
-                {"name": dataset, "type": "pds", "state": "present"},
+                {"name": dataset, "type": "PDS", "state": "present"},
                 {"name": dataset, "state": "absent"},
             ]
         )
@@ -477,11 +480,11 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
         dataset = get_tmp_ds_name(2, 2)
         results = hosts.all.zos_data_set(
             batch=[
-                {"name": dataset, "type": "pds", "directory_blocks": 5},
-                {"name": dataset + "(newmem1)", "type": "member"},
+                {"name": dataset, "type": "PDS", "directory_blocks": 5},
+                {"name": dataset + "(newmem1)", "type": "MEMBER"},
                 {
                     "name": dataset + "(newmem2)",
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                 },
                 {"name": dataset, "state": "absent"},
@@ -525,7 +528,7 @@ def test_data_member_force_delete(ansible_zos_module):
         DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
         # set up:
         # create pdse
-        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="PDSE", replace=True)
         for result in results.contacted.values():
             assert result.get("changed") is True
 
@@ -534,25 +537,25 @@ def test_data_member_force_delete(ansible_zos_module):
             batch=[
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_3),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_4),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
@@ -779,7 +782,7 @@ def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME,
             state="present",
-            format="fb",
+            format="FB",
             size="5m",
             volume=volume_1,
         )

@@ -1,0 +1,4 @@
+trivial:
+  - zos_job_submit - Added test case to validate a bugfix in ZOAU v1.3.0 that
+    handles non-UTF8 characters correctly in a job's output.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1261).

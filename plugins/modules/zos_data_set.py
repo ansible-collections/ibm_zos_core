@@ -183,6 +183,8 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
+    aliases:
+      - data_class
   sms_data_class:
     description:
       - The data class for an SMS-managed dataset.
@@ -191,8 +193,6 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
-    aliases:
-      - data_class
   sms_management_class:
     description:
       - The management class for an SMS-managed dataset.
@@ -450,6 +450,8 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
+        aliases:
+          - data_class
       sms_data_class:
         description:
           - The data class for an SMS-managed dataset.
@@ -458,8 +460,6 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
-        aliases:
-          - storage_class
       sms_management_class:
         description:
           - The management class for an SMS-managed dataset.

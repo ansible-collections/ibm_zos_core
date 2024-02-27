@@ -1127,7 +1127,6 @@ def parse_and_validate_args(params):
             type=data_set_name,
             default=data_set_name,
             required=False,
-            choices=DATA_SET_TYPES,
             dependencies=["type", "state", "batch", "tmp_hlq"],
         ),
         state=dict(

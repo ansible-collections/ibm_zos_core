@@ -109,7 +109,7 @@ options:
     description:
       - The data set type to be used when creating a data set. (e.g C(pdse))
       - C(MEMBER) expects to be used with an existing partitioned data set.
-      - Choices are case-insensitive.
+      - Choices are case-sensitive.
     required: false
     type: str
     choices:
@@ -134,6 +134,8 @@ options:
     type: int
     required: false
     default: 5
+    aliases:
+      - size
   space_secondary:
     description:
       - The amount of secondary space to allocate for the dataset.
@@ -157,7 +159,7 @@ options:
   record_format:
     description:
       - The format of the data set. (e.g C(FB))
-      - Choices are case-insensitive.
+      - Choices are case-sensitive.
       - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or I(type=ZFS)
         then I(record_format=None), these types do not have a default
         I(record_format).
@@ -171,6 +173,8 @@ options:
       - F
     type: str
     default: FB
+    aliases:
+      - format
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -187,6 +191,8 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
+    aliases:
+      - data_class
   sms_management_class:
     description:
       - The management class for an SMS-managed dataset.
@@ -370,7 +376,7 @@ options:
         description:
           - The data set type to be used when creating a data set. (e.g C(PDSE))
           - C(MEMBER) expects to be used with an existing partitioned data set.
-          - Choices are case-insensitive.
+          - Choices are case-sensitive.
         required: false
         type: str
         choices:
@@ -395,6 +401,8 @@ options:
         type: int
         required: false
         default: 5
+        aliases:
+          - size
       space_secondary:
         description:
           - The amount of secondary space to allocate for the dataset.
@@ -418,7 +426,7 @@ options:
       record_format:
         description:
           - The format of the data set. (e.g C(FB))
-          - Choices are case-insensitive.
+          - Choices are case-sensitive.
           - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or
             I(type=ZFS) then I(record_format=None), these types do not have a
             default I(record_format).
@@ -432,7 +440,9 @@ options:
           - F
         type: str
         default: FB
-      sms_storage_class:
+        aliases:
+          - format
+        sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
           - Required for SMS-managed datasets that do not match an SMS-rule.
@@ -448,6 +458,8 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
+        aliases:
+          - storage_class
       sms_management_class:
         description:
           - The management class for an SMS-managed dataset.
@@ -539,7 +551,7 @@ EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: seq
+    type: SEQ
     state: present
 
 - name: Create a PDS data set if it does not exist
@@ -548,26 +560,26 @@ EXAMPLES = r"""
     type: pds
     space_primary: 5
     space_type: M
-    record_format: fba
+    record_format: FBA
     record_length: 25
 
 - name: Attempt to replace a data set if it exists
   zos_data_set:
     name: someds.name.here
-    type: pds
+    type: PDS
     space_primary: 5
     space_type: M
-    record_format: u
+    record_format: U
     record_length: 25
     replace: yes
 
 - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
   zos_data_set:
     name: someds.name.here
-    type: pds
+    type: PDS
     space_primary: 5
     space_type: M
-    record_format: u
+    record_format: Uu
     record_length: 25
     volumes: "222222"
     replace: yes
@@ -575,19 +587,19 @@ EXAMPLES = r"""
 - name: Create an ESDS data set if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: esds
+    type: ESDS
 
 - name: Create a KSDS data set if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: ksds
+    type: KSDS
     key_length: 8
     key_offset: 0
 
 - name: Create an RRDS data set with storage class MYDATA if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: rrds
+    type: RRDS
     sms_storage_class: mydata
 
 - name: Delete a data set if it exists
@@ -632,7 +644,7 @@ EXAMPLES = r"""
         type: PDS
         space_primary: 5
         space_type: M
-        record_format: fb
+        record_format: FB
         replace: yes
       - name: someds.name.here1(member1)
         type: MEMBER
@@ -1050,6 +1062,7 @@ def parse_and_validate_args(params):
                     type=record_format,
                     required=False,
                     dependencies=["state"],
+                    choices=["FB", "VB", "FBA", "VBA", "U", "F"],
                     aliases=["format"],
                 ),
                 sms_management_class=dict(
@@ -1135,6 +1148,7 @@ def parse_and_validate_args(params):
             type=record_format,
             required=False,
             dependencies=["state"],
+            choices=["FB", "VB", "FBA", "VBA", "U", "F"],
             aliases=["format"],
         ),
         sms_management_class=dict(
@@ -1246,7 +1260,13 @@ def run_module():
                 ),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+                record_format=dict(
+                    type="str",
+                    required=False,
+                    aliases=["format"],
+                    default="FB"
+                    choices=["FB", "VB", "FBA", "VBA", "U", "F"],
+                ),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1303,9 +1323,15 @@ def run_module():
             default="M",
             choices=["K", "M", "G", "CYL", "TRK"],
         ),
-        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        space_primary=dict(type="int", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+        record_format=dict(
+            type="str",
+            required=False,
+            aliases=["format"],
+            choices=["FB", "VB", "FBA", "VBA", "U", "F"],
+            default="FB"
+        ),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class

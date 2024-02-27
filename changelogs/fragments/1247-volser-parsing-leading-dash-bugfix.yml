@@ -1,4 +1,4 @@
-bugfix:
+bugfixes:
   - zos_data_set - Fixes a small parsing bug in module_utils/data_set function 
     which extracts volume serial(s) from a LISTCAT command output. Previously a 
     leading '-' was left behind for volser strings under 6 chars.

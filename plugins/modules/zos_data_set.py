@@ -442,7 +442,7 @@ options:
         default: FB
         aliases:
           - format
-        sms_storage_class:
+      sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
           - Required for SMS-managed datasets that do not match an SMS-rule.

@@ -1065,6 +1065,7 @@ def parse_and_validate_args(params):
                     dependencies=["state"],
                     choices=["FB", "VB", "FBA", "VBA", "U", "F"],
                     aliases=["format"],
+                    default="FB",
                 ),
                 sms_management_class=dict(
                     type=sms_class, required=False, dependencies=["state"]
@@ -1151,6 +1152,7 @@ def parse_and_validate_args(params):
             dependencies=["state"],
             choices=["FB", "VB", "FBA", "VBA", "U", "F"],
             aliases=["format"],
+            default="FB",
         ),
         sms_management_class=dict(
             type=sms_class, required=False, dependencies=["state"]

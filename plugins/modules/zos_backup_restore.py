@@ -544,13 +544,13 @@ def restore(
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
+    output = ""
     try:
         rc = datasets.dunzip(**zoau_args)
     except zoau_exceptions.ZOAUException as dunzip_exception:
         output = dunzip_exception.response.stdout_response
         output = output + dunzip_exception.response.stderr_response
         rc = get_real_rc(output)
-    response = datasets.dunzip(**zoau_args)
     failed = False
     if rc > 0 and rc <= 4:
         if recover is not True:
@@ -559,7 +559,7 @@ def restore(
         failed = True
     if failed:
         raise zoau_exceptions.ZOAUException(
-            "%s,RC=%s" % (response.stderr_response, response.rc)
+            "{0}, RC={1}".format(output, rc)
         )
 
 

@@ -269,7 +269,7 @@ int main()
         unsigned char e=0x81;
         unsigned char f=0x82;
         unsigned char g=0x83;
-        unsigned char h=0x84;
+        unsigned char h=0x00;
         printf("Value of a: Hex: %X, character: %c",a,a);
         printf("Value of b: Hex: %X, character: %c",b,b);
         printf("Value of c: Hex: %X, character: %c",c,c);
@@ -771,13 +771,10 @@ def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
 
         # Copy C source and compile it.
         hosts.all.file(path=TEMP_PATH, state="directory")
-        print("dir created")
         hosts.all.shell(
             cmd="echo {0} > {1}/noprint.c".format(quote(C_SRC_INVALID_UTF8), TEMP_PATH)
         )
-        print("c code copied")
         hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c")
-        print("code compiled")
 
         # Create local JCL and submit it.
         tmp_file = tempfile.NamedTemporaryFile(delete=True)

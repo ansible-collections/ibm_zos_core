@@ -186,6 +186,14 @@ options:
       - Defaults to running user's username.
     type: str
     required: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
 """
 
 RETURN = r""""""
@@ -348,6 +356,7 @@ def main():
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
+        tmp_hlq=dict(type="str", required=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -366,6 +375,7 @@ def main():
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
+        tmp_hlq = params.get("tmp_hlq")
 
         if operation == "backup":
             backup(
@@ -381,6 +391,7 @@ def main():
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
+                tmp_hlq=tmp_hlq,
             )
         else:
             restore(
@@ -397,6 +408,7 @@ def main():
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
+                tmp_hlq=tmp_hlq,
             )
         result["changed"] = True
 
@@ -445,6 +457,7 @@ def parse_and_validate_args(params):
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
+        tmp_hlq=dict(type=hlq_type, required=False),
     )
 
     parsed_args = BetterArgParser(arg_defs).parse_args(params)
@@ -467,6 +480,7 @@ def backup(
     space_type,
     sms_storage_class,
     sms_management_class,
+    tmp_hlq,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -483,6 +497,7 @@ def backup(
         space_type (str): The unit of measurement to use when defining data set space.
         sms_storage_class (str): Specifies the storage class to use.
         sms_management_class (str): Specifies the management class to use.
+        tmp_hlq (str): Specifies the tmp hlq to temporary datasets
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -503,6 +518,7 @@ def restore(
     space_type,
     sms_storage_class,
     sms_management_class,
+    tmp_hlq,
 ):
     """[summary]
 
@@ -524,6 +540,7 @@ def restore(
         space_type (str): The unit of measurement to use when defining data set space.
         sms_storage_class (str): Specifies the storage class to use.
         sms_management_class (str): Specifies the management class to use.
+        tmp_hlq (str): : Specifies the tmp hlq to temporary datasets
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
@@ -794,6 +811,10 @@ def to_dzip_args(**kwargs):
         if kwargs.get("space_type"):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
+
+    if kwargs.get("tmp_hlq"):
+        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+
     return zoau_args
 
 
@@ -848,6 +869,9 @@ def to_dunzip_args(**kwargs):
 
     if kwargs.get("hlq"):
         zoau_args["high_level_qualifier"] = kwargs.get("hlq")
+
+    if kwargs.get("tmp_hlq"):
+        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
     return zoau_args
 

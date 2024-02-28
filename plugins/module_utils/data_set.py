@@ -177,13 +177,14 @@ class DataSet(object):
         changed = False
         if DataSet.data_set_cataloged(name):
             present = True
+
         if not present:
             try:
                 DataSet.create(**arguments)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
-                if "Error Code: 0x4704" in e.msg:
+                if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
                         name, volumes
                     )
@@ -355,6 +356,7 @@ class DataSet(object):
         """
 
         name = name.upper()
+
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
@@ -386,9 +388,14 @@ class DataSet(object):
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
         delimiter = 'VOLSER------------'
-        arr = stdout.split(delimiter)
-        # A volume serial (VOLSER) is not always of fixed length, use ":x.find(' ')" here instead of arr[index].
-        volume_list = list(set([x[:x.find(' ')] for x in arr[1:]]))
+        arr = stdout.split(delimiter)[1:]  # throw away header
+
+        # Volume serials (VOLSER) under 6 chars will have one or more leading '-'s due to the chosen delimiter.
+        # The volser is in between the beginning of each str and the first space.
+        # Strip away any leading '-'s, then split on the next whitespace and throw away the remaining in each str.
+        volume_list = [x.strip('-').split()[0] for x in arr]
+
+        volume_list = list(set(volume_list))  # remove duplicates, order doesn't matter
         return volume_list
 
     @staticmethod
@@ -1015,13 +1022,22 @@ class DataSet(object):
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
             datasets.create(**formatted_args)
-        except (exceptions.ZOAUException, exceptions.DatasetVerificationError) as create_exception:
+        except exceptions.ZOAUException as create_exception:
             raise DatasetCreateError(
                 name,
                 # create_exception.response.rc,
                 # create_exception.response.stdout_response + create_exception.response.stderr_response
                 create_exception.rc,
                 create_exception.stdout_response + create_exception.stderr_response
+            )
+        except exceptions.DatasetVerificationError as e:
+            # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
+            if len(volumes) > 1:
+                if DataSet.data_set_cataloged(name, volumes):
+                    return 0
+            raise DatasetCreateError(
+                name,
+                msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
         # response.rc now we just return 0 if nothing failed
@@ -1780,12 +1796,19 @@ class DatasetDeleteError(Exception):
 
 
 class DatasetCreateError(Exception):
-    def __init__(self, data_set, rc, msg=""):
-        self.msg = (
-            'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
-                data_set, rc, msg
+    def __init__(self, data_set, rc=None, msg=""):
+        if rc:
+            self.msg = (
+                'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
+                    data_set, rc, msg
+                )
             )
-        )
+        else:
+            self.msg = (
+                'An error occurred during creation of data set "{0}". {1}'.format(
+                    data_set, msg
+                )
+            )
         super().__init__(self.msg)
 
 

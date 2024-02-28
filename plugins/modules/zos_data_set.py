@@ -877,7 +877,7 @@ def record_format(contents, dependencies):
     """Validates data set format is valid.
     Returns uppercase data set format."""
     if dependencies.get("state") == "absent":
-        return None
+        return "FB"
     if contents is None:
         return None
     formats = "|".join(DATA_SET_FORMATS)

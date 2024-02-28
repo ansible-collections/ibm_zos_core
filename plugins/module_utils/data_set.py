@@ -1018,8 +1018,10 @@ class DataSet(object):
         except (exceptions.ZOAUException, exceptions.DatasetVerificationError) as create_exception:
             raise DatasetCreateError(
                 name,
-                create_exception.response.rc,
-                create_exception.response.stdout_response + create_exception.response.stderr_response
+                # create_exception.response.rc,
+                # create_exception.response.stdout_response + create_exception.response.stderr_response
+                create_exception.rc,
+                create_exception.stdout_response + create_exception.stderr_response
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
         # response.rc now we just return 0 if nothing failed

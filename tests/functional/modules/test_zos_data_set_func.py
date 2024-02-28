@@ -163,8 +163,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             src=TEMP_PATH + "/SAMPLE", location="USS", wait_time_s=30
         )
         # verify data set creation was successful
-        print("\nVVV ================ VVV")
-        print_results(results)
 
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
@@ -237,6 +235,9 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         results = hosts.all.zos_data_set(
             name=dataset, state="present", volumes=volume_1
         )
+        print("\nVVV =====present when uncat?=========== VVV")
+        print_results(results)
+
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:

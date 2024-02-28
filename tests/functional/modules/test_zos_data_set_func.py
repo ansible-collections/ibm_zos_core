@@ -413,6 +413,8 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
+        print("\nVVV === create when absent === VVV\n")
+        print_results( results )
         hosts.all.zos_data_set(name=dataset, state="absent")
         for result in results.contacted.values():
             assert result.get("changed") is True

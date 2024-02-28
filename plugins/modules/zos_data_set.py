@@ -811,7 +811,7 @@ def space_type(contents, dependencies):
     """Validates provided data set unit of space is valid.
     Returns the unit of space."""
     if dependencies.get("state") == "absent":
-        return None
+        return "M"
     if contents is None:
         return None
     match = re.fullmatch(r"(M|G|K|TRK|CYL)", contents, re.IGNORECASE)
@@ -1053,6 +1053,7 @@ def parse_and_validate_args(params):
                     required=False,
                     dependencies=["state"],
                     choices=["K", "M", "G", "CYL", "TRK"],
+                    default="M",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1140,6 +1141,7 @@ def parse_and_validate_args(params):
             required=False,
             dependencies=["state"],
             choices=["K", "M", "G", "CYL", "TRK"],
+            default="M",
         ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),

@@ -407,13 +407,15 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
     try:
         hosts = ansible_zos_module
         dataset = get_tmp_ds_name(2, 2)
-        hosts.all.zos_data_set(
-            name=dataset, state="present", type=dstype, replace=True
-        )
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
-        print("\nVVV === create when present_rep 416 === VVV\n")
+        print("\nVVV === create when present_rep 413 === VVV\n")
+        print_results( results )
+        results = hosts.all.zos_data_set(
+            name=dataset, state="present", type=dstype, replace=True
+        )
+        print("\nVVV === (re)create when present_rep 418 === VVV\n")
         print_results( results )
         hosts.all.zos_data_set(name=dataset, state="absent")
         for result in results.contacted.values():

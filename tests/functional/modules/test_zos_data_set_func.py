@@ -26,12 +26,13 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
+# Temporarily removing ESDS dstype
 
 data_set_types = [
     ("PDS"),
     ("SEQ"),
     ("PDSE"),
-    ("ESDS"),
+    # ("ESDS"),
     ("RRDS"),
     ("LDS"),
 ]

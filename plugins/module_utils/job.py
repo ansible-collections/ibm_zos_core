@@ -318,18 +318,18 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 for single_dd in list_of_dds:
                     dd = {}
 
-                    if "dataset" not in single_dd:
+                    if "dd_name" not in single_dd:
                         continue
 
                     # If dd_name not None, only that specific dd_name should be returned
                     if dd_name is not None:
-                        if dd_name not in single_dd["dataset"]:
+                        if dd_name not in single_dd["dd_name"]:
                             continue
                         else:
-                            dd["ddname"] = single_dd["dataset"]
+                            dd["ddname"] = single_dd["dd_name"]
 
-                    if "recnum" in single_dd:
-                        dd["record_count"] = single_dd["recnum"]
+                    if "records" in single_dd:
+                        dd["record_count"] = single_dd["records"]
                     else:
                         dd["record_count"] = None
 
@@ -338,28 +338,28 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     else:
                         dd["id"] = "?"
 
-                    if "stepname" in single_dd:
-                        dd["stepname"] = single_dd["stepname"]
+                    if "step_name" in single_dd:
+                        dd["stepname"] = single_dd["step_name"]
                     else:
                         dd["stepname"] = None
 
                     if "procstep" in single_dd:
                         dd["procstep"] = single_dd["procstep"]
                     else:
-                        dd["proctep"] = None
+                        dd["procstep"] = None
 
-                    if "length" in single_dd:
-                        dd["byte_count"] = single_dd["length"]
+                    if "record_length" in single_dd:
+                        dd["byte_count"] = single_dd["record_length"]
                     else:
                         dd["byte_count"] = 0
 
                     tmpcont = None
-                    if "stepname" in single_dd:
-                        if "dataset" in single_dd:
+                    if "step_name" in single_dd:
+                        if "dd_name" in single_dd:
                             tmpcont = jobs.read_output(
                                 entry.job_id,
-                                single_dd["stepname"],
-                                single_dd["dataset"]
+                                single_dd["step_name"],
+                                single_dd["dd_name"]
                             )
 
                     dd["content"] = tmpcont.split("\n")

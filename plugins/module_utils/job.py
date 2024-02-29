@@ -356,11 +356,21 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     tmpcont = None
                     if "step_name" in single_dd:
                         if "dd_name" in single_dd:
-                            tmpcont = jobs.read_output(
-                                entry.job_id,
-                                single_dd["step_name"],
-                                single_dd["dd_name"]
-                            )
+                            # In case ZOAU fails when reading the job output, we'll
+                            # add a message to the user telling them of this.
+                            # ZOAU cannot read partial output from a job, so we
+                            # have to make do with nothing from this step if it fails.
+                            try:
+                                tmpcont = jobs.read_output(
+                                    entry.job_id,
+                                    single_dd["step_name"],
+                                    single_dd["dd_name"]
+                                )
+                            except UnicodeDecodeError:
+                                tmpcont = (
+                                    "Non-printable UTF-8 characters were present in this output. "
+                                    "Please access it manually."
+                                )
 
                     dd["content"] = tmpcont.split("\n")
                     job["ret_code"]["steps"].extend(_parse_steps(tmpcont))

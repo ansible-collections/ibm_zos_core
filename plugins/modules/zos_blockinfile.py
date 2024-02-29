@@ -578,6 +578,7 @@ def main():
     stdout = stdout.replace('/d', '\\\\d')
     try:
         # Try to extract information from stdout
+        # The triple double quotes is required for special characters (/_) been scape
         ret = json.loads("""{0}""".format(stdout))
     except Exception:
         messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)

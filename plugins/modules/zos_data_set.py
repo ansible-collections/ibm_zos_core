@@ -879,7 +879,7 @@ def record_format(contents, dependencies):
     if dependencies.get("state") == "absent":
         return "FB"
     if contents is None:
-        return None
+        return "FB"
     formats = "|".join(DATA_SET_FORMATS)
     if not re.fullmatch(formats, contents, re.IGNORECASE):
         raise ValueError(

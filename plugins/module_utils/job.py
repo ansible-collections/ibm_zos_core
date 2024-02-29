@@ -403,13 +403,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                             job["ret_code"]["msg_code"] = None
                             job["ret_code"]["code"] = None
 
-                # if len(list_of_dds) > 0:
-                    # The duration should really only be returned for job submit but the code
-                    # is used job_output as well, for now we can ignore this point unless
-                    # we want to offer a wait_time_s for job output which might be reasonable.
-                    # Note: Moved this to the upper time loop, so it should always be populated.
-                    # job["duration"] = duration
-
             final_entries.append(job)
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")

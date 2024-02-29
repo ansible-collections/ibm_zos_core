@@ -538,9 +538,11 @@ def main():
                 vol = d.get('vol')
                 try:
                     if (library and re.match(library, ds)) or (volume and re.match(volume, vol)) or (sms and sms == vol):
-                        result['stdout'] = "{0} {1}\n".format(vol, ds)
+                        operOut = operOut + "{0} {1}\n".format(vol, ds)
                 except re.error:
+                    result['stdout'] = operOut
                     module.exit_json(**result)
+            result['stdout'] = operOut
     module.exit_json(**result)
 
 

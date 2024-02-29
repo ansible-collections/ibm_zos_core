@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020 - 2023
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -325,17 +325,18 @@ backup_name:
 """
 
 import json
+import traceback
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
@@ -379,14 +380,15 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
                 - BOF
                 - '*regex*'
         encoding: {str} -- Encoding of the src.
-        force: {str} -- If not empty passes the -f option to dmod cmd.
+        force: {bool} -- If not empty passes True option to dmod cmd.
     Returns:
         str -- Information in JSON format. keys:
             cmd: {str} -- dmod shell command
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, options=force, as_json=True)
+    return datasets.blockinfile(src, True, block=block, marker=marker, insert_after=ins_aft,
+                                insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
 
 
 def absent(src, marker, encoding, force):
@@ -395,14 +397,14 @@ def absent(src, marker, encoding, force):
         src: {str} -- The z/OS USS file or data set to modify.
         marker: {str} -- Identifies the block to be removed.
         encoding: {str} -- Encoding of the src.
-        force: {str} -- If not empty passes the -f option to dmod cmd.
+        force: {bool} -- If not empty passes the value True option to dmod cmd.
     Returns:
         str -- Information in JSON format. keys:
             cmd: {str} -- dmod shell command
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, options=force, as_json=True)
+    return datasets.blockinfile(src, False, marker=marker, encoding=encoding, force=force, as_json=True)
 
 
 def quotedString(string):
@@ -410,12 +412,6 @@ def quotedString(string):
     if not isinstance(string, str):
         return string
     return string.replace('"', "")
-
-
-def quoted_string_output_json(string):
-    if not isinstance(string, str):
-        return string
-    return string.replace('"', "u'")
 
 
 def main():
@@ -540,7 +536,6 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
-    force = '-f' if force else ''
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
@@ -574,42 +569,31 @@ def main():
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, block, quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
+        return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
-        return_content = absent(src, quotedString(marker), encoding, force)
+        return_content = absent(src, marker, encoding, force)
     stdout = return_content.stdout_response
     stderr = return_content.stderr_response
     rc = return_content.rc
+    stdout = stdout.replace('/d', '\\\\d')
     try:
-        # change the return string to be loadable by json.loads()
-        stdout = stdout.replace('/c\\', '/c\\\\')
-        stdout = stdout.replace('/a\\', '/a\\\\')
-        stdout = stdout.replace('/i\\', '/i\\\\')
-        stdout = stdout.replace('$ a\\', '$ a\\\\')
-        stdout = stdout.replace('1 i\\', '1 i\\\\')
-        if block:
-            stdout = stdout.replace(block, quoted_string_output_json(block))
-        if ins_aft:
-            stdout = stdout.replace(ins_aft, quoted_string_output_json(ins_aft))
-        if ins_bef:
-            stdout = stdout.replace(ins_bef, quoted_string_output_json(ins_bef))
         # Try to extract information from stdout
-        ret = json.loads(stdout)
-        ret['cmd'] = ret['cmd'].replace("u'", '"')
-
-        result['cmd'] = ret['cmd']
-        result['changed'] = ret['changed']
-        result['found'] = ret['found']
-        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
-        # That information will be given with 'changed' and 'found'
-        if len(stderr):
-            result['stderr'] = str(stderr)
-            result['rc'] = rc
+        # The triple double quotes is required for special characters (/_) been scape
+        ret = json.loads("""{0}""".format(stdout))
     except Exception:
         messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):
             messageDict['backup_name'] = result['backup_name']
         module.fail_json(**messageDict)
+
+    result['cmd'] = ret['data']['commands']
+    result['changed'] = ret['data']['changed']
+    result['found'] = ret['data']['found']
+    # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+    # That information will be given with 'changed' and 'found'
+    if len(stderr):
+        result['stderr'] = str(stderr)
+        result['rc'] = rc
     module.exit_json(**result)
 
 

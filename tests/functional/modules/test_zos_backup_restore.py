@@ -273,6 +273,7 @@ def test_backup_and_restore_of_data_set(
 ):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    new_hlq  = NEW_HLQ
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -287,13 +288,13 @@ def test_backup_and_restore_of_data_set(
             recover=recover,
         )
         if not overwrite:
-            NEW_HLQ = "TEST"
+            new_hlq = "TEST"
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, backup_name)
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
             overwrite=overwrite,
         )
         assert_module_did_not_fail(results)

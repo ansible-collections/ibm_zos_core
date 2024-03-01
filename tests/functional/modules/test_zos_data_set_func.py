@@ -173,18 +173,28 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
                 assert submitted_job_id is not None
                 results = hosts.all.zos_job_output(job_id=submitted_job_id)
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
+        print( "\nVVV ===== uncat 179 ===== VVV\n")
+        print_results(results)
+
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second uncatalog shows uncatalog already performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
+        print( "\nVVV ===== uncat 186 ===== VVV\n")
+        print_results(results)
+
         for result in results.contacted.values():
             assert result.get("changed") is False
         # recatalog the data set
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
+        print( "\nVVV ===== recat 195 ===== VVV\n")
+        print_results(results)
+
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second catalog shows catalog already performed

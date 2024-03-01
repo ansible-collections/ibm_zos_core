@@ -190,8 +190,8 @@ options:
     description:
       - Override the default high level qualifier (HLQ) for temporary and backup
         datasets.
-      - The default HLQ is the Ansible user used to execute the module and if
-        that is not available, then the value C(TMPHLQ) is used.
+      - The default HLQ is the Ansible user that executes the module and if
+        that is not available, then the value of C(TMPHLQ) is used.
     required: false
     type: str
 """

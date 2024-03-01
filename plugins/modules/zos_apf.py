@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -297,13 +297,14 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
+import traceback
 
 try:
     from zoautil_py import zsystem
 except Exception:
-    Datasets = MissingZOAUImport()
+    zsystem = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types

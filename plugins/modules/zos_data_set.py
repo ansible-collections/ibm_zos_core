@@ -1403,7 +1403,9 @@ def run_module():
     elif module.params.get("type") is not None:
         if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it
-            module.params["record_format"] = None
+            # module.params["record_format"] = None
+            if module.params.get("record_format"):
+                del module.params["record_format"]
 
     if not module.check_mode:
         try:

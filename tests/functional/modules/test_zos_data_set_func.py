@@ -987,7 +987,8 @@ def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
             name=DEFAULT_DATA_SET_NAME,
             state="present",
             format=formats,
-            size="5m",
+            size="5",
+            space_type="M",
             volume=volume_1,
         )
         for result in results.contacted.values():

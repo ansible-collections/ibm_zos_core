@@ -189,7 +189,7 @@ options:
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary and backup
-        datasets.
+        data sets.
       - The default HLQ is the Ansible user that executes the module and if
         that is not available, then the value of C(TMPHLQ) is used.
     required: false
@@ -555,7 +555,7 @@ def restore(
     if rc > 0 and rc <= 4:
         if recover is not True:
             failed = True
-    elif rc > 0:
+    elif rc > 4:
         failed = True
     if failed:
         raise zoau_exceptions.ZOAUException(

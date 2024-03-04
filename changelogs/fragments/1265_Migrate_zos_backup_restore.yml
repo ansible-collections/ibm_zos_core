@@ -1,0 +1,7 @@
+trivial:
+  - zos_backup_restore - Refactor zos_backup_restore module and functional tests for ZOAU v1.3.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1265).
+minor_changes:
+  - zos_backup_restore - Add tmp_hlq option to the user interface to override the default high level qualifier
+    (HLQ) for temporary and backup.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1265).

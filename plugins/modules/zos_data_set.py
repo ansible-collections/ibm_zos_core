@@ -1404,7 +1404,7 @@ def run_module():
         if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it
             # module.params["record_format"] = None
-            if module.params.get("record_format"):
+            if module.params.get("record_format") is not None:
                 del module.params["record_format"]
 
     if not module.check_mode:
@@ -1418,6 +1418,11 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
+                # This *appears* redundant, bit the parse_and_validate reinforces the default value for record_type
+                if data_set_params.get("type").upper() in DATA_SET_TYPES_VSAM:
+                    if data_set_params.get("record_format") is not None:
+                        del data_set_params["record_format"]
+
                 # remove unnecessary empty batch argument
                 result["changed"] = perform_data_set_operations(
                     **data_set_params

@@ -260,7 +260,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             if len(entry.rc) > 0:
                 if entry.rc.isdigit():
                     job["ret_code"]["code"] = int(entry.rc)
-            job["ret_code"]["msg_text"] = entry.status
+            job["ret_code"]["msg_txt"] = entry.status
 
             # this section only works on zoau 1.2.3/+ vvv
 

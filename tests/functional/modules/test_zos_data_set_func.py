@@ -174,14 +174,10 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print("\nVVV === 177 uncat VVV\n")
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second uncatalog shows uncatalog already performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print("\nVVV === 183 2nd uncat VVV\n")
-        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -355,7 +351,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
-    results =hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS")
+    result = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS")
 
     # verify data set creation was successful
     for result in results.contacted.values():
@@ -378,11 +374,14 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     hosts.all.file(path=TEMP_PATH, state="absent")
 
-    # ensure data set absent
-    results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
+    # ensure second data set absent
+    results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_2)
     for result in results.contacted.values():
         assert result.get("changed") is True
 
+    # ensure first data set absent
+    hosts.all.zos_data_set(name=dataset, state="cataloged")
+    results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
     for result in results.contacted.values():
         assert result.get("changed") is True
 

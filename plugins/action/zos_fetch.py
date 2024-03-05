@@ -219,7 +219,7 @@ class ActionModule(ActionBase):
         #                Execute module on remote host               #
         # ********************************************************** #
         new_module_args = self._task.args.copy()
-        encoding_to=None
+        encoding_to = None
         if encoding:
             encoding_to = encoding.get("to", None)
         if encoding is None or encoding_to is None:

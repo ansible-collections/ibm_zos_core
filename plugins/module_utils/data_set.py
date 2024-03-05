@@ -1032,10 +1032,9 @@ class DataSet(object):
             )
         except exceptions.DatasetVerificationError as e:
             # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
-            # - note that you can't check length on a potential NoneType
-            # if len(volumes) > 1:
-            if DataSet.data_set_cataloged(name, volumes):
-                return 0
+            if volumes and len(volumes) > 1:
+                if DataSet.data_set_cataloged(name, volumes):
+                    return 0
             raise DatasetCreateError(
                 name,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU." +

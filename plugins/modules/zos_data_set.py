@@ -1210,7 +1210,7 @@ def parse_and_validate_args(params):
             # ["batch", "space_type"],
             # ["batch", "space_primary"],
             # ["batch", "space_secondary"],
-            ["batch", "record_format"],
+            # ["batch", "record_format"],
             ["batch", "sms_management_class"],
             ["batch", "sms_storage_class"],
             ["batch", "sms_data_class"],

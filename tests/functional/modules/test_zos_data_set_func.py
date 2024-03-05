@@ -787,7 +787,7 @@ def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
             name=DEFAULT_DATA_SET_NAME,
             state="present",
             format="FB",
-            size="5m",
+            size="5M",
             volume=volume_1,
         )
         for result in results.contacted.values():

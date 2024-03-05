@@ -1382,8 +1382,7 @@ def run_module():
     # This evaluation will always occur as a result of the limitation on the
     # better arg parser, this will serve as a solution for now and ensure
     # the non-batch and batch arguments are correctly set
-    # This section is moved down inside if/check_mode false, so it modifies after the arg parser
-    holdout = """
+    # This section is copied down inside if/check_mode false, so it modifies after the arg parser
     if module.params.get("batch") is not None:
         for entry in module.params.get("batch"):
             if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
@@ -1408,7 +1407,6 @@ def run_module():
             # module.params["record_format"] = None
             if module.params.get("record_format") is not None:
                 del module.params["record_format"]
-    """
 
     if not module.check_mode:
         try:

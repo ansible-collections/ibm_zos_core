@@ -24,7 +24,9 @@ short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
-author: "Blake Becker (@blakeinate)"
+author:
+  - "Blake Becker (@blakeinate)"
+  - "Rich Parker (@richp405)"
 options:
   name:
     description:
@@ -1058,7 +1060,7 @@ def parse_and_validate_args(params):
                     default="M",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
-                size=dict(type="str", required=False)
+                size=dict(type="str", required=False),
                 space_secondary=dict(
                     type="int", required=False, dependencies=["state"]
                 ),
@@ -1148,7 +1150,7 @@ def parse_and_validate_args(params):
             default="M",
         ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
-        size=dict(type="str", required=False)
+        size=dict(type="str", required=False),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
         record_format=dict(
             type=record_format,
@@ -1266,7 +1268,7 @@ def run_module():
                     choices=["K", "M", "G", "CYL", "TRK"],
                 ),
                 space_primary=dict(type="int", required=False, default=5),
-                size=dict(type="str", required=False)
+                size=dict(type="str", required=False),
                 space_secondary=dict(type="int", required=False, default=3),
                 record_format=dict(
                     type="str",
@@ -1332,7 +1334,7 @@ def run_module():
             choices=["K", "M", "G", "CYL", "TRK"],
         ),
         space_primary=dict(type="int", required=False, default=5),
-        size=dict(type="str", required=False)
+        size=dict(type="str", required=False),
         space_secondary=dict(type="int", required=False, default=3),
         record_format=dict(
             type="str",

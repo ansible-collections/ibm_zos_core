@@ -3332,12 +3332,18 @@ def main():
     )
 
     if (
-        not module.params.get("encoding").get("from")
+        not module.params.get("encoding").get("to")
         and not module.params.get("remote_src")
         and not module.params.get("is_binary")
         and not module.params.get("executable")
     ):
-        module.params["encoding"]["from"] = encode.Defaults.get_default_system_charset()
+        module.params["encoding"]["to"] = encode.Defaults.get_default_system_charset()
+    elif (
+        module.params.get("remote_src")
+        or module.params.get("is_binary")
+        or module.params.get("executable")
+    ):
+        module.params["encoding"] = None
 
     if module.params.get("encoding"):
         module.params.update(

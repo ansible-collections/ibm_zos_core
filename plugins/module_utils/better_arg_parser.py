@@ -570,7 +570,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), IGNORECASE):
+        if not fullmatch(r"^[A-Z0-9-]*$", str(contents), IGNORECASE):
             raise ValueError(
                 'Invalid argument "{0}" for type "encoding".'.format(contents)
             )

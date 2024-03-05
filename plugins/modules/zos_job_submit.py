@@ -639,6 +639,7 @@ except Exception:
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])
+JOB_SPECIAL_PROCESSING = frozenset(["TYPRUN"])
 MAX_WAIT_TIME_S = 86400
 
 
@@ -970,10 +971,33 @@ def run_module():
                         raise Exception(_msg)
 
                 if job_code is None:
-                    raise Exception("The job return code was not available in the job log, "
+                    # If there is no job_code (Job return code) it may NOT be an error,
+                    # some jobs will never return have an RC, eg Jobs with TYPRUN=*,
+                    # Started tasks (which are not supported) so further analyze the
+                    # JESJCL DD to figure out if its a TYPRUN job
+
+                    job_dd_names = job_output_txt[0].get("ddnames")
+                    jes_jcl_dd= search_dictionaries("ddname", "JESJCL", job_dd_names)
+                    jes_jcl_dd_content=jes_jcl_dd[0].get("content")
+                    jes_jcl_dd_content_str=" ".join(jes_jcl_dd_content)
+                    special_processing_keyword = re.search("({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)"
+                                                          .format("|".join(JOB_SPECIAL_PROCESSING))
+                                                          , jes_jcl_dd_content_str)
+
+                    if special_processing_keyword:
+                      job_ret_code.update({"msg": special_processing_keyword[0]})
+                      job_ret_code.update({"code": None})
+                      job_ret_code.update({"msg_code": None})
+                      job_ret_code.update({"msg_txt": "The job {0} was run with special job "
+                                           "processing {1}. This will result in no completion, "
+                                           "return code or job steps and changed will be false."
+                                           .format(job_submitted_id,special_processing_keyword[0])})
+                      is_changed = False
+                    else:
+                        raise Exception("The job return code was not available in the job log, "
                                     "please review the job log and error {0}.".format(job_msg))
 
-                if job_code != 0 and max_rc is None:
+                elif job_code != 0 and max_rc is None:
                     raise Exception("The job return code {0} was non-zero in the "
                                     "job output, this job has failed.".format(str(job_code)))
 
@@ -1009,6 +1033,27 @@ def run_module():
     result["failed"] = False
     module.exit_json(**result)
 
+
+def search_dictionaries(key, value, list_of_dictionaries):
+    """ Searches a list of dictionaries given key and returns
+        the value dictionary.
+
+        Arguments:
+            key {str} -- dictionary key to search for.
+            value {str} -- value to match for the dictionary key
+            list {str} -- list of dictionaries
+
+        Returns:
+            dictionary -- dictionary matching the key and value
+
+        Raises:
+            TypeError -- When input is not a list of dictionaries
+    """
+    if not isinstance(list_of_dictionaries, dict):
+            raise TypeError(
+                "Unsupported type for 'list_of_dictionaries', must be a list of dictionaries")
+
+    return [element for element in list_of_dictionaries if element[key] == value]
 
 def assert_valid_return_code(max_rc, job_rc, ret_code):
     if job_rc is None:

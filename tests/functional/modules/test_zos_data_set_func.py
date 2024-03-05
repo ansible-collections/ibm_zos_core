@@ -27,8 +27,6 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
 
-import logging
-logging.basicConfig(level=logging.DEBUG)
 
 data_set_types = [
     ("PDS"),
@@ -166,8 +164,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             src=TEMP_PATH + "/SAMPLE", location="USS", wait_time_s=30
         )
         # verify data set creation was successful
-        print( "\nVVV ===== cat 166 ===== VVV\n")
-        print_results(results)
 
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
@@ -178,15 +174,11 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
 
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print( "\nVVV ===== uncat 179 ===== VVV\n")
-        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second uncatalog shows uncatalog already performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-        print( "\nVVV ===== uncat 186 ===== VVV\n")
-        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -194,8 +186,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
-        print( "\nVVV ===== recat 195 ===== VVV\n")
-        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -250,8 +240,6 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         results = hosts.all.zos_data_set(
             name=dataset, state="present", volumes=volume_1
         )
-        print("\nVVV ==== ensure 253 present === VVV\n")
-        print_results(results)
 
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -340,8 +328,6 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         results = hosts.all.zos_data_set(
             name=dataset, state="absent", volumes=volume_1
         )
-        print("\nVVV =====absent when when uncat 326?=========== VVV")
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
@@ -425,13 +411,9 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
-        print("\nVVV === create when present_rep 413 === VVV\n")
-        print_results( results )
         results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
-        print("\nVVV === (re)create when present_rep 418 === VVV\n")
-        print_results( results )
         hosts.all.zos_data_set(name=dataset, state="absent")
         for result in results.contacted.values():
             assert result.get("changed") is True

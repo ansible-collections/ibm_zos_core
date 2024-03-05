@@ -1382,6 +1382,8 @@ def run_module():
     # This evaluation will always occur as a result of the limitation on the
     # better arg parser, this will serve as a solution for now and ensure
     # the non-batch and batch arguments are correctly set
+    # This section is moved down inside if/check_mode false, so it modifies after the arg parser
+    holdout = """
     if module.params.get("batch") is not None:
         for entry in module.params.get("batch"):
             if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
@@ -1406,6 +1408,7 @@ def run_module():
             # module.params["record_format"] = None
             if module.params.get("record_format") is not None:
                 del module.params["record_format"]
+    """
 
     if not module.check_mode:
         try:
@@ -1419,9 +1422,28 @@ def run_module():
 
             for data_set_params in data_set_param_list:
                 # This *appears* redundant, bit the parse_and_validate reinforces the default value for record_type
-                if data_set_params.get("type").upper() in DATA_SET_TYPES_VSAM:
+                if data_set_params.get("batch") is not None:
+                    for entry in data_set_params.get("batch"):
+                        if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
+                            entry["record_format"] = None
+                    if data_set_params.get("type") is not None:
+                        data_set_params["type"] = None
+                    if data_set_params.get("state") is not None:
+                        data_set_params["state"] = None
+                    if data_set_params.get("space_type") is not None:
+                        data_set_params["space_type"] = None
+                    if data_set_params.get("space_primary") is not None:
+                        data_set_params["space_primary"] = None
+                    if data_set_params.get("space_secondary") is not None:
+                        data_set_params["space_secondary"] = None
+                    if data_set_params.get("replace") is not None:
+                        data_set_params["replace"] = None
                     if data_set_params.get("record_format") is not None:
-                        del data_set_params["record_format"]
+                        data_set_params["record_format"] = None
+                else:
+                    if data_set_params.get("type").upper() in DATA_SET_TYPES_VSAM:
+                        if data_set_params.get("record_format") is not None:
+                            data_set_params["record_format"] = None
 
                 # remove unnecessary empty batch argument
                 result["changed"] = perform_data_set_operations(

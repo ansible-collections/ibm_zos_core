@@ -244,8 +244,8 @@ class ActionModule(ActionBase):
 
         if not encoding:
             encoding = {
-            "from": encode.Defaults.get_default_system_charset(),
-            "to": None,
+                "from": encode.Defaults.get_default_system_charset(),
+                "to": None,
             }
 
         task_args.update(

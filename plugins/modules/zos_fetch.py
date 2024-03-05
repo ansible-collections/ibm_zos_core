@@ -584,7 +584,6 @@ def run_module():
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
-            local_charset=dict(type="str"),
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )

@@ -136,12 +136,6 @@ options:
     type: int
     required: false
     default: 5
-  size:
-    description:
-      - A compound value with size and units in the same string.
-      - This will split into space_primary and space_type.
-    type: str
-    required: false
   space_secondary:
     description:
       - The amount of secondary space to allocate for the dataset.
@@ -407,12 +401,6 @@ options:
         type: int
         required: false
         default: 5
-      size:
-        description:
-          - A compound value with size and units in the same string.
-          - This will split into space_primary and space_type.
-        type: str
-        required: false
       space_secondary:
         description:
           - The amount of secondary space to allocate for the dataset.
@@ -1008,27 +996,7 @@ def perform_data_set_operations(name, state, **extra_args):
     return changed
 
 
-def fix_old_size_arg(params):
-    """ for backwards compatibility with old styled size argument """
-    match = None
-    if params.get("size"):
-        match = re.fullmatch(
-            r"([1-9][0-9]*)(M|G|K|TRK|CYL)", str(params.get("size")), re.IGNORECASE
-        )
-        if not match:
-            raise ValueError(
-                'Value {0} is invalid for size argument. Valid size measurements are "K", "M", "G", "TRK" or "CYL".'.format(
-                    str(params.get("size"))
-                )
-            )
-        else:
-            params["space_primary"] = int(match.group(1))
-            params["space_type"] = match.group(2).upper()
-    return params
-
-
 def parse_and_validate_args(params):
-    params = fix_old_size_arg(params)
 
     arg_defs = dict(
         # Used for batch data set args
@@ -1060,7 +1028,6 @@ def parse_and_validate_args(params):
                     default="M",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
-                size=dict(type="str", required=False),
                 space_secondary=dict(
                     type="int", required=False, dependencies=["state"]
                 ),
@@ -1150,7 +1117,6 @@ def parse_and_validate_args(params):
             default="M",
         ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
-        size=dict(type="str", required=False),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
         record_format=dict(
             type=record_format,
@@ -1268,7 +1234,6 @@ def run_module():
                     choices=["K", "M", "G", "CYL", "TRK"],
                 ),
                 space_primary=dict(type="int", required=False, default=5),
-                size=dict(type="str", required=False),
                 space_secondary=dict(type="int", required=False, default=3),
                 record_format=dict(
                     type="str",
@@ -1334,7 +1299,6 @@ def run_module():
             choices=["K", "M", "G", "CYL", "TRK"],
         ),
         space_primary=dict(type="int", required=False, default=5),
-        size=dict(type="str", required=False),
         space_secondary=dict(type="int", required=False, default=3),
         record_format=dict(
             type="str",
@@ -1403,8 +1367,6 @@ def run_module():
             module.params["space_type"] = None
         if module.params.get("space_primary") is not None:
             module.params["space_primary"] = None
-        if module.params.get("size") is not None:
-            module.params["size"] = None
         if module.params.get("space_secondary") is not None:
             module.params["space_secondary"] = None
         if module.params.get("replace") is not None:
@@ -1442,8 +1404,6 @@ def run_module():
                         data_set_params["space_type"] = None
                     if data_set_params.get("space_primary") is not None:
                         data_set_params["space_primary"] = None
-                    if data_set_params.get("size") is not None:
-                        data_set_params["size"] = None
                     if data_set_params.get("space_secondary") is not None:
                         data_set_params["space_secondary"] = None
                     if data_set_params.get("replace") is not None:

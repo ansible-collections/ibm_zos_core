@@ -778,27 +778,6 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, vo
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
-def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    try:
-        hosts = ansible_zos_module
-        DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-        results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME,
-            state="present",
-            format="FB",
-            size="5M",
-            volume=volume_1,
-        )
-        for result in results.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("module_stderr") is None
-    finally:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-
-
 def test_data_set_temp_data_set_name(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -975,7 +954,7 @@ def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
             name=DEFAULT_DATA_SET_NAME,
             state="present",
             format=formats,
-            size="5",
+            space_primary="5",
             space_type="M",
             volume=volume_1,
         )

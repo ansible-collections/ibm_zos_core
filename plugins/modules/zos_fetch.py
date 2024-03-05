@@ -606,7 +606,7 @@ def run_module():
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
-    if not module.params.get("encoding") and not module.params.get("is_binary"):
+    if not module.params.get("encoding").get("from") and not module.params.get("is_binary"):
         mvs_src = data_set.is_data_set(src)
         remote_charset = encode.Defaults.get_default_system_charset()
 
@@ -614,10 +614,10 @@ def run_module():
             "from": encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
             if mvs_src
             else remote_charset,
-            "to": module.params.get("local_charset"),
+            "to": module.params.get("encoding").get("to"),
         }
 
-    if module.params.get("encoding"):
+    if module.params.get("encoding").get("from") and module.params.get("encoding").get("to"):
         module.params.update(
             dict(
                 from_encoding=module.params.get("encoding").get("from"),

@@ -242,6 +242,12 @@ class ActionModule(ActionBase):
                 return transfer_res
             display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host=self._play_context.remote_addr)
 
+        if not encoding:
+            encoding = {
+            "from": encode.Defaults.get_default_system_charset(),
+            "to": None,
+            }
+
         task_args.update(
             dict(
                 is_uss=is_uss,
@@ -250,7 +256,7 @@ class ActionModule(ActionBase):
                 src_member=src_member,
                 temp_path=temp_path,
                 is_mvs_dest=is_mvs_dest,
-                local_charset=encode.Defaults.get_default_system_charset()
+                encoding=encoding,
             )
         )
         copy_res = self._execute_module(

@@ -3262,7 +3262,6 @@ def main():
             size=dict(type='int'),
             temp_path=dict(type='str'),
             src_member=dict(type='bool'),
-            local_charset=dict(type='str'),
             force=dict(type='bool', default=False),
             force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
@@ -3333,15 +3332,12 @@ def main():
     )
 
     if (
-        not module.params.get("encoding")
+        not module.params.get("encoding").get("from")
         and not module.params.get("remote_src")
         and not module.params.get("is_binary")
         and not module.params.get("executable")
     ):
-        module.params["encoding"] = {
-            "from": module.params.get("local_charset"),
-            "to": encode.Defaults.get_default_system_charset(),
-        }
+        module.params["encoding"]["from"] = encode.Defaults.get_default_system_charset()
 
     if module.params.get("encoding"):
         module.params.update(

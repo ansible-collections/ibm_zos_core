@@ -258,7 +258,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["owner"] = entry.owner
 
             job["ret_code"] = {}
-            job["ret_code"]["msg"] = entry.status + " " + entry.rc
+            job["ret_code"]["msg"] = entry.status
+            # job["ret_code"]["msg"] = entry.status + " " + entry.rc
             job["ret_code"]["msg_code"] = entry.rc
             job["ret_code"]["code"] = None
             if len(entry.rc) > 0:

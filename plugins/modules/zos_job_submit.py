@@ -608,7 +608,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
-    job_output,
+    job_output,search_dictionaries
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -898,7 +898,7 @@ def run_module():
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
         result["failed"] = True
-        result["msg"] = ("The value for option `wait_time_s` is not valid, it must "
+        result["msg"] = ("The value for option 'wait_time_s' is not valid, it must "
                          "be greater than 0 and less than {0}.".format(str(MAX_WAIT_TIME_S)))
         module.fail_json(**result)
 
@@ -924,6 +924,11 @@ def run_module():
             job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
             dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
 
+        # This is resolvig a bug where the duration coming from job_output is passed by value, duration
+        # being an immutable type can not be changed and must be returned or accessed from the job.py.
+        if job_output is not None:
+            duration = job_output_txt[0].get("duration") if not None else duration
+
         result["duration"] = duration
 
         if duration >= wait_time_s:
@@ -935,7 +940,7 @@ def run_module():
                 "The JCL submitted with job id {0} but appears to be a long "
                 "running job that exceeded its maximum wait time of {1} "
                 "second(s). Consider using module zos_job_query to poll for "
-                "a long running job or increase option 'wait_times_s` to a value "
+                "a long running job or increase option 'wait_times_s' to a value "
                 "greater than {2}.".format(
                     str(job_submitted_id), str(wait_time_s), str(duration)))
             module.exit_json(**result)
@@ -978,6 +983,13 @@ def run_module():
 
                     job_dd_names = job_output_txt[0].get("ddnames")
                     jes_jcl_dd= search_dictionaries("ddname", "JESJCL", job_dd_names)
+
+                    # Its possible jobs don't have a JESJCL which are active and this would
+                    # cause an index out of range error.
+                    if not jes_jcl_dd:
+                        raise Exception("The job return code was not available in the job log, "
+                                    "please review the job log and error {0}.".format(job_msg))
+
                     jes_jcl_dd_content=jes_jcl_dd[0].get("content")
                     jes_jcl_dd_content_str=" ".join(jes_jcl_dd_content)
                     special_processing_keyword = re.search("({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)"
@@ -1032,28 +1044,6 @@ def run_module():
     result["changed"] = True if is_changed else False
     result["failed"] = False
     module.exit_json(**result)
-
-
-def search_dictionaries(key, value, list_of_dictionaries):
-    """ Searches a list of dictionaries given key and returns
-        the value dictionary.
-
-        Arguments:
-            key {str} -- dictionary key to search for.
-            value {str} -- value to match for the dictionary key
-            list {str} -- list of dictionaries
-
-        Returns:
-            dictionary -- dictionary matching the key and value
-
-        Raises:
-            TypeError -- When input is not a list of dictionaries
-    """
-    if not isinstance(list_of_dictionaries, dict):
-            raise TypeError(
-                "Unsupported type for 'list_of_dictionaries', must be a list of dictionaries")
-
-    return [element for element in list_of_dictionaries if element[key] == value]
 
 def assert_valid_return_code(max_rc, job_rc, ret_code):
     if job_rc is None:

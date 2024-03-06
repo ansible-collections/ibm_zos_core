@@ -26,6 +26,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError
 )
 
+from zoautil_py.exceptions import (
+    DDQueryException
+)
+
 try:
     # For files that import individual functions from a ZOAU module,
     # we'll replace the imports to instead get the module.
@@ -284,16 +288,39 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["duration"] = duration
 
             if dd_scan:
-                list_of_dds = jobs.list_dds(entry.id)
-                while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
+                # If true, it means the job is not ready for DD queries and the duration and
+                # timeout should apply here instructing the user to add more time
+                is_dd_query_exception = False
+                is_jesjcl = False
+                list_of_dds = []
+
+                try:
+                    list_of_dds = jobs.list_dds(entry.id)
+                except DDQueryException as err:
+                    if 'BGYSC5201E' in str(err):
+                        is_dd_query_exception = True
+                        pass
+
+                # Check if the Job has JESJCL, if not, its in the JES INPUT queue, thus wait the full wait_time_s.
+                is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
+
+                while ((list_of_dds is None or len(list_of_dds) == 0 or is_dd_query_exception or not is_jesjcl) and duration <= timeout):
                     current_time = timer()
                     duration = round(current_time - start_time)
                     sleep(1)
-                    list_of_dds = jobs.list_dds(entry.id)
-
+                    try:
+                        # Note, in then event of an exception, eg job has TYPRUN=HOLD
+                        # list_of_dds will still be populated with valuable content
+                        list_of_dds = jobs.list_dds(entry.id)
+                        is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
+                    except DDQueryException as err:
+                        if 'BGYSC5201E' in str(err):
+                            is_dd_query_exception = True
+                            continue
                 job["duration"] = duration
 
                 for single_dd in list_of_dds:
+
                     dd = {}
 
                     # If dd_name not None, only that specific dd_name should be returned
@@ -407,3 +434,25 @@ def _ddname_pattern(contents, resolve_dependencies):
             )
         )
     return str(contents)
+
+
+def search_dictionaries(key, value, list_of_dictionaries):
+    """ Searches a list of dictionaries given key and returns
+        the value dictionary.
+
+        Arguments:
+            key {str} -- dictionary key to search for.
+            value {str} -- value to match for the dictionary key
+            list {str} -- list of dictionaries
+
+        Returns:
+            dictionary -- dictionary matching the key and value
+
+        Raises:
+            TypeError -- When input is not a list of dictionaries
+    """
+    if not isinstance(list_of_dictionaries, list):
+            raise TypeError(
+                "Unsupported type for 'list_of_dictionaries', must be a list of dictionaries")
+
+    return [element for element in list_of_dictionaries if element[key] == value]

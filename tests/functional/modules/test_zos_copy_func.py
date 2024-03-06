@@ -731,6 +731,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
         copy_res = hosts.all.zos_copy(src=src_path+"/", dest=dest_path, encoding={"from": "IBM-1047", "to": "UTF-8"}, remote_src=True)
 
         for result in copy_res.contacted.values():
+            print(result)
             assert result.get("msg") is None
             assert result.get("changed") is True
 
@@ -743,12 +744,15 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
 
         for result in str_one_od_dst.contacted.values():
             assert result.get("stdout") == str_one_big_endian_hex
+            print(result)
 
         for result in str_two_od_dst.contacted.values():
             assert result.get("stdout") == str_two_big_endian_hex
+            print(result)
 
         for result in str_three_od_dst.contacted.values():
             assert result.get("stdout") == str_three_big_endian_hex
+            print(result)
 
     finally:
         hosts.all.file(path=path, state="absent")

@@ -3185,7 +3185,7 @@ def main():
                     ),
                     "to": dict(
                         type='str',
-                        required=True,
+                        required=False,
                     )
                 }
             ),
@@ -3339,8 +3339,7 @@ def main():
     ):
         module.params["encoding"]["to"] = encode.Defaults.get_default_system_charset()
     elif (
-        module.params.get("remote_src")
-        or module.params.get("is_binary")
+        module.params.get("is_binary")
         or module.params.get("executable")
     ):
         module.params["encoding"] = None

@@ -934,15 +934,18 @@ def run_module():
         if duration >= wait_time_s:
             result["failed"] = True
             result["changed"] = False
-            if job_output_txt is not None:
-                result["jobs"] = job_output_txt
-            result["msg"] = (
-                "The JCL submitted with job id {0} but appears to be a long "
+            _msg = ("The JCL submitted with job id {0} but appears to be a long "
                 "running job that exceeded its maximum wait time of {1} "
                 "second(s). Consider using module zos_job_query to poll for "
                 "a long running job or increase option 'wait_times_s' to a value "
                 "greater than {2}.".format(
                     str(job_submitted_id), str(wait_time_s), str(duration)))
+
+            if job_output_txt is not None:
+                result["jobs"] = job_output_txt
+                job_ret_code = job_output_txt[0].get("ret_code")
+                job_ret_code.update({"msg_txt": _msg})
+            result["msg"] = _msg
             module.exit_json(**result)
 
         # Job has submitted, the module changed the managed node

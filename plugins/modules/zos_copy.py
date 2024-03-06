@@ -143,7 +143,7 @@ options:
       to:
         description:
           - The encoding to be converted to
-        required: true
+        required: false
         type: str
   tmp_hlq:
     description:
@@ -3339,8 +3339,7 @@ def main():
     ):
         module.params["encoding"]["to"] = encode.Defaults.get_default_system_charset()
     elif (
-        module.params.get("is_binary")
-        or module.params.get("executable")
+        not module.params.get("encoding").get("to")
     ):
         module.params["encoding"] = None
 

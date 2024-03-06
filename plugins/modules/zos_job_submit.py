@@ -992,7 +992,8 @@ def run_module():
 
                     jes_jcl_dd_content=jes_jcl_dd[0].get("content")
                     jes_jcl_dd_content_str=" ".join(jes_jcl_dd_content)
-                    special_processing_keyword = re.search("({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)"
+                    # The regex can be "({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
+                    special_processing_keyword = re.search("({0})\s*=\s*(SCAN)"
                                                           .format("|".join(JOB_SPECIAL_PROCESSING))
                                                           , jes_jcl_dd_content_str)
 

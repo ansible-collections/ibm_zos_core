@@ -473,8 +473,6 @@ def test_batch_data_set_creation_and_deletion(ansible_zos_module):
                 {"name": dataset, "state": "absent"},
             ]
         )
-        print("\nVVV === create & delete batch VVV\n")
-        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

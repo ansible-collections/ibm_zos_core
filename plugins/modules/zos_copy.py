@@ -243,6 +243,15 @@ options:
     type: bool
     default: true
     required: false
+  group:
+    description:
+      - Name of the group that will own the file system objects.
+      - When left unspecified, it uses the current group of the current user
+        unless you are root, in which case it can preserve the previous
+        ownership.
+      - This option is only applicable if C(dest) is USS, otherwise ignored.
+    type: str
+    required: false
   mode:
     description:
       - The permission of the destination file or directory.
@@ -259,6 +268,14 @@ options:
         string `preserve`.
       - I(mode=preserve) means that the file will be given the same permissions as
         the source file.
+    type: str
+    required: false
+  owner:
+    description:
+      - Name of the user that should own the filesystem object, as would be
+        passed to the chown command.
+      - When left unspecified, it uses the current user unless you are root,
+        in which case it can preserve the previous ownership.
     type: str
     required: false
   remote_src:
@@ -3259,7 +3276,6 @@ def main():
             is_pds=dict(type='bool'),
             is_src_dir=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
-            size=dict(type='int'),
             temp_path=dict(type='str'),
             src_member=dict(type='bool'),
             force=dict(type='bool', default=False),

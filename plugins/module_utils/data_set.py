@@ -1025,8 +1025,6 @@ class DataSet(object):
         except exceptions.ZOAUException as create_exception:
             raise DatasetCreateError(
                 name,
-                # create_exception.response.rc,
-                # create_exception.response.stdout_response + create_exception.response.stderr_response
                 create_exception.rc,
                 create_exception.stdout_response + create_exception.stderr_response
             )
@@ -1037,8 +1035,7 @@ class DataSet(object):
                     return 0
             raise DatasetCreateError(
                 name,
-                msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU." +
-                str(formatted_args) + "--rf originally=" + record_format + ".",
+                msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
         # response.rc now we just return 0 if nothing failed

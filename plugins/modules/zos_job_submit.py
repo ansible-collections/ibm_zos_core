@@ -608,7 +608,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
-    job_output,search_dictionaries
+    job_output, search_dictionaries,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -935,11 +935,11 @@ def run_module():
             result["failed"] = True
             result["changed"] = False
             _msg = ("The JCL submitted with job id {0} but appears to be a long "
-                "running job that exceeded its maximum wait time of {1} "
-                "second(s). Consider using module zos_job_query to poll for "
-                "a long running job or increase option 'wait_times_s' to a value "
-                "greater than {2}.".format(
-                    str(job_submitted_id), str(wait_time_s), str(duration)))
+                    "running job that exceeded its maximum wait time of {1} "
+                    "second(s). Consider using module zos_job_query to poll for "
+                    "a long running job or increase option 'wait_times_s' to a value "
+                    "greater than {2}.".format(
+                        str(job_submitted_id), str(wait_time_s), str(duration)))
 
             if job_output_txt is not None:
                 result["jobs"] = job_output_txt
@@ -985,33 +985,33 @@ def run_module():
                     # JESJCL DD to figure out if its a TYPRUN job
 
                     job_dd_names = job_output_txt[0].get("ddnames")
-                    jes_jcl_dd= search_dictionaries("ddname", "JESJCL", job_dd_names)
+                    jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
 
                     # Its possible jobs don't have a JESJCL which are active and this would
                     # cause an index out of range error.
                     if not jes_jcl_dd:
                         raise Exception("The job return code was not available in the job log, "
-                                    "please review the job log and error {0}.".format(job_msg))
+                                        "please review the job log and error {0}.".format(job_msg))
 
-                    jes_jcl_dd_content=jes_jcl_dd[0].get("content")
-                    jes_jcl_dd_content_str=" ".join(jes_jcl_dd_content)
-                    # The regex can be "({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
-                    special_processing_keyword = re.search("({0})\s*=\s*(SCAN)"
-                                                          .format("|".join(JOB_SPECIAL_PROCESSING))
-                                                          , jes_jcl_dd_content_str)
+                    jes_jcl_dd_content = jes_jcl_dd[0].get("content")
+                    jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
+                    # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
+                    special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
+                                                           .format("|".join(JOB_SPECIAL_PROCESSING))
+                                                           , jes_jcl_dd_content_str)
 
                     if special_processing_keyword:
-                      job_ret_code.update({"msg": special_processing_keyword[0]})
-                      job_ret_code.update({"code": None})
-                      job_ret_code.update({"msg_code": None})
-                      job_ret_code.update({"msg_txt": "The job {0} was run with special job "
-                                           "processing {1}. This will result in no completion, "
-                                           "return code or job steps and changed will be false."
-                                           .format(job_submitted_id,special_processing_keyword[0])})
-                      is_changed = False
+                        job_ret_code.update({"msg": special_processing_keyword[0]})
+                        job_ret_code.update({"code": None})
+                        job_ret_code.update({"msg_code": None})
+                        job_ret_code.update({"msg_txt": "The job {0} was run with special job "
+                                             "processing {1}. This will result in no completion, "
+                                             "return code or job steps and changed will be false."
+                                             .format(job_submitted_id, special_processing_keyword[0])})
+                        is_changed = False
                     else:
                         raise Exception("The job return code was not available in the job log, "
-                                    "please review the job log and error {0}.".format(job_msg))
+                                        "please review the job log and error {0}.".format(job_msg))
 
                 elif job_code != 0 and max_rc is None:
                     raise Exception("The job return code {0} was non-zero in the "
@@ -1048,6 +1048,7 @@ def run_module():
     result["changed"] = True if is_changed else False
     result["failed"] = False
     module.exit_json(**result)
+
 
 def assert_valid_return_code(max_rc, job_rc, ret_code):
     if job_rc is None:

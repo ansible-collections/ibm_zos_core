@@ -26,9 +26,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError
 )
 
-from zoautil_py.exceptions import (
-    DDQueryException
-)
+try:
+    from zoautil_py import exceptions
+except ImportError:
+    exceptions = ZOAUImportError(traceback.format_exc())
+
 
 try:
     # For files that import individual functions from a ZOAU module,
@@ -297,7 +299,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                 try:
                     list_of_dds = jobs.list_dds(entry.id)
-                except DDQueryException as err:
+                except exceptions.DDQueryException as err:
                     if 'BGYSC5201E' in str(err):
                         is_dd_query_exception = True
                         pass
@@ -314,7 +316,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                         # list_of_dds will still be populated with valuable content
                         list_of_dds = jobs.list_dds(entry.id)
                         is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
-                    except DDQueryException as err:
+                    except exceptions.DDQueryException as err:
                         if 'BGYSC5201E' in str(err):
                             is_dd_query_exception = True
                             continue
@@ -453,7 +455,7 @@ def search_dictionaries(key, value, list_of_dictionaries):
             TypeError -- When input is not a list of dictionaries
     """
     if not isinstance(list_of_dictionaries, list):
-            raise TypeError(
-                "Unsupported type for 'list_of_dictionaries', must be a list of dictionaries")
+        raise TypeError(
+            "Unsupported type for 'list_of_dictionaries', must be a list of dictionaries")
 
     return [element for element in list_of_dictionaries if element[key] == value]

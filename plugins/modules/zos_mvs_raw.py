@@ -1852,6 +1852,7 @@ def run_module():
                 dd_statements=dd_statements,
                 authorized=authorized,
                 verbose=verbose,
+                tmphlq=g_tmphlq,
             )
             if program_response.rc != 0 and program_response.stderr:
                 raise ZOSRawError(
@@ -2839,7 +2840,7 @@ def data_set_exists(name, volumes=None):
 
 
 def run_zos_program(
-    program, parm="", dd_statements=None, authorized=False, verbose=False
+    program, parm="", dd_statements=None, authorized=False, verbose=False, tmphlq=None
 ):
     """Run a program on z/OS.
 
@@ -2848,6 +2849,7 @@ def run_zos_program(
         parm (str, optional): Additional argument string if required. Defaults to "".
         dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
         authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
+        tmphlq (str, optional): Arguments overwrite variable tmp_hlq
 
     Returns:
         MVSCmdResponse: Holds the response information for program execution.
@@ -2857,11 +2859,11 @@ def run_zos_program(
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq
         )
     else:
         response = MVSCmd.execute(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq
         )
     return response
 

@@ -214,11 +214,11 @@ JCL_FILE_CONTENTS_INVALID_USER = """//*
 //* Job containing a USER=FOOBAR that will cause JES to return a SEC ERROR which
 //* is a security error.
 //* Returns:
-//*   ret_code->(code=null, msg=SEC ?, msg_text=SEC, msg_code=?)
-//*   msg --> The JCL submitted with job id JOB00464 but there was an error,
+//*   ret_code->(code=None, msg=SEC, msg_txt=<msg>, msg_code=?)
+//*   msg --> The JCL submitted with job id JOB01062 but there was an error,
 //*           please review the error for further details: The job return code
-//*           was not available in the job log, please review the job log
-//*           and error SEC ?.",
+//*           was not available in the job log, please review the job log and
+//*           status SEC.
 //******************************************************************************
 //INVUSER JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM,USER=FOOBAR
@@ -734,7 +734,7 @@ def test_job_submit_full_input(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FULL_INPUT), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait_time_s=20, volume=None
         )
         for result in results.contacted.values():
             print(result)
@@ -749,9 +749,9 @@ def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_NO_DSN)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+    results = hosts.all.zos_job_submit(src=tmp_file.name, wait_time_s=20, location="LOCAL")
+    import pprint
     for result in results.contacted.values():
-        # Expecting: The job completion code (CC) was not in the job log....."
         assert result.get("changed") is False
         assert re.search(r'completion code', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
@@ -764,13 +764,14 @@ def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
         f.write(JCL_FILE_CONTENTS_INVALID_USER)
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+
     for result in results.contacted.values():
-        # Expecting: The job completion code (CC) was not in the job log....."
         assert result.get("changed") is False
         assert re.search(r'return code was not available', repr(result.get("msg")))
-        assert re.search(r'error SEC', repr(result.get("msg")))
+        assert re.search(r'status SEC', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
-        assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_text")))
+        assert re.search(r'please review the job log', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg")))
 
 
 def test_job_submit_local_jcl_typrun_scan(ansible_zos_module):

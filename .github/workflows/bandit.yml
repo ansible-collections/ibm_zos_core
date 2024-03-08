@@ -17,8 +17,7 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "dev" ]
-  schedule:
-    - cron: '23 0 * * 0'
+  workflow_dispatch:
 
 jobs:
   bandit:

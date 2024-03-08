@@ -811,7 +811,7 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         pprint.pprint(result)
         assert result.get("changed") is False
         assert result.get("jobs")[0].get("job_id") is not None
-        assert re.search(r'appears to be a long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert re.search(r'please review the job log', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
         assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == "?"
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "?"
@@ -832,7 +832,7 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs")[0].get("job_id") is not None
-        assert re.search(r'appears to be a long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert re.search(r'long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
         assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "?"
@@ -853,7 +853,7 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs")[0].get("job_id") is not None
-        assert re.search(r'appears to be a long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert re.search(r'long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
         assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "?"

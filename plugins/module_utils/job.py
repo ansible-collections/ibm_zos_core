@@ -50,6 +50,19 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
 
+JOB_ERROR_STATUS = frozenset(["ABEND",      # ZOAU job ended abnormally
+                              "SEC ERROR",  # Security error (legacy Ansible code)
+                              "SEC",        # ZOAU security error
+                              "JCL ERROR",  # Job had a JCL error (legacy Ansible code)
+                              "JCLERR",     # ZOAU job had a JCL error
+                              "CANCELED",   # ZOAU job was cancelled
+                              "CAB",        # ZOAU converter abend
+                              "CNV",        # ZOAU converter error
+                              "SYS",        # ZOAU system failure
+                              "FLU",        # ZOAU job was flushed
+                              "?"           # ZOAU error or unknown
+                              ])
+
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
@@ -305,9 +318,14 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                         pass
 
                 # Check if the Job has JESJCL, if not, its in the JES INPUT queue, thus wait the full wait_time_s.
+                # Idea here is to force a TYPRUN{HOLD|JCLHOLD|COPY} job to go the full wait duration since we have
+                # currently no way to detect them, but if we know the job is one of the JOB_ERROR_STATUS lets
+                # exit the wait time supplied as we know it is a job failure.
                 is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
+                is_job_error_status = True if entry.status in JOB_ERROR_STATUS else False
 
-                while ((list_of_dds is None or len(list_of_dds) == 0 or is_dd_query_exception or not is_jesjcl) and duration <= timeout):
+                while ((list_of_dds is None or len(list_of_dds) == 0 or is_dd_query_exception) and
+                        (not is_jesjcl and not is_job_error_status and duration <= timeout)):
                     current_time = timer()
                     duration = round(current_time - start_time)
                     sleep(1)
@@ -316,12 +334,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                         # list_of_dds will still be populated with valuable content
                         list_of_dds = jobs.list_dds(entry.id)
                         is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
+                        is_job_error_status = True if entry.status in JOB_ERROR_STATUS else False
                     except exceptions.DDQueryException as err:
                         if 'BGYSC5201E' in str(err):
                             is_dd_query_exception = True
                             continue
-                job["duration"] = duration
 
+                job["duration"] = duration
                 for single_dd in list_of_dds:
 
                     dd = {}
@@ -388,15 +407,18 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                             job["subsystem"] = (tmptext.split("\n")[
                                                 0]).replace(" ", "")
 
+                    # Disabling this code, the integer following JCL ERROR is not a reason code, its a
+                    # multi line marker used in a WTO so errors spanning more than one line will be found
+                    # by searching for the prefix integer, eg 029
                     # Extract similar: "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
                     # then further reduce down to: 'JCL ERROR 029'
-                    if job["ret_code"]["msg_code"] == "?":
-                        if "JOB NOT RUN -" in tmpcont:
-                            tmptext = tmpcont.split(
-                                "JOB NOT RUN -")[1].split("\n")[0]
-                            job["ret_code"]["msg"] = tmptext.strip()
-                            job["ret_code"]["msg_code"] = None
-                            job["ret_code"]["code"] = None
+                    # if job["ret_code"]["msg_code"] == "?":
+                    #     if "JOB NOT RUN -" in tmpcont:
+                    #         tmptext = tmpcont.split(
+                    #             "JOB NOT RUN -")[1].split("\n")[0]
+                    #         job["ret_code"]["msg"] = tmptext.strip()
+                    #         job["ret_code"]["msg_code"] = None
+                    #         job["ret_code"]["code"] = None
 
                 # if len(list_of_dds) > 0:
                     # The duration should really only be returned for job submit but the code

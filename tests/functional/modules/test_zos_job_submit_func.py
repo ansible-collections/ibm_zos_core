@@ -700,7 +700,7 @@ def test_job_submit_full_input(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FULL_INPUT), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait_time_s=20, volume=None
         )
         for result in results.contacted.values():
             print(result)

@@ -2,8 +2,8 @@ name: Antsibull Changelog Lint
 
 on:
   pull_request:
-    # paths:
-    #   - '**/*.md'
+    paths:
+    - 'changelogs/fragments/*'
 
 jobs:
   lint:

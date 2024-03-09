@@ -28,7 +28,7 @@ jobs:
         uses: shundor/python-bandit-scan@9cc5aa4a006482b8a7f91134412df6772dbda22c
         with: # optional arguments
           # exit with 0, even with results found
-          exit_zero: true # optional, default is DEFAULT
+          # exit_zero: true # optional, default is DEFAULT
           # Github token of the repository (automatically created by Github)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information.
           # File or directory to run bandit on

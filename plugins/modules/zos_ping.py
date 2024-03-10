@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,6 +31,16 @@ author:
   - "Blake Becker (@blakeinate)"
   - "Demetrios Dimatos (@ddimatos)"
 options: {}
+notes:
+    - This module is written in REXX and relies on the SCP protocol to transfer the source to
+      the managed z/OS node and encode it in the managed nodes default encoding, eg IBM-1047.
+      Starting with OpenSSH 9.0, it switches from SCP to use SFTP by default, meaning transfers
+      are no longer treated as text and are transferred as binary preserving the source files
+      encoding resulting in a module failure. If you are using OpenSSH 9.0 (ssh -V) or later,
+      you can instruct SSH to use SCP by adding the entry C(scp_extra_args="-O") into the ini
+      file named C(ansible.cfg).
+seealso:
+- module: ansible.builtin.ssh
 """
 
 EXAMPLES = r"""

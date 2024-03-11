@@ -270,14 +270,26 @@ int main()
         unsigned char f=0x82;
         unsigned char g=0x83;
         unsigned char h=0x00;
+        /* The following are non-printables from DBB. */
+        unsigned char nl=0x15;
+        unsigned char cr=0x0D;
+        unsigned char lf=0x25;
+        unsigned char shiftOut=0x0E;
+        unsigned char shiftIn=0x0F;
+
         printf("Value of a: Hex: %X, character: %c",a,a);
         printf("Value of b: Hex: %X, character: %c",b,b);
         printf("Value of c: Hex: %X, character: %c",c,c);
         printf("Value of d: Hex: %X, character: %c",d,d);
-        printf("Value of a: Hex: %X, character: %c",e,e);
-        printf("Value of b: Hex: %X, character: %c",f,f);
-        printf("Value of c: Hex: %X, character: %c",g,g);
-        printf("Value of d: Hex: %X, character: %c",h,h);
+        printf("Value of e: Hex: %X, character: %c",e,e);
+        printf("Value of f: Hex: %X, character: %c",f,f);
+        printf("Value of g: Hex: %X, character: %c",g,g);
+        printf("Value of h: Hex: %X, character: %c",h,h);
+        printf("Value of NL: Hex: %X, character: %c",nl,nl);
+        printf("Value of CR: Hex: %X, character: %c",cr,cr);
+        printf("Value of LF: Hex: %X, character: %c",lf,lf);
+        printf("Value of Shift-Out: Hex: %X, character: %c",shiftOut,shiftOut);
+        printf("Value of Shift-In: Hex: %X, character: %c",shiftIn,shiftIn);
         return 0;
 }
 """
@@ -774,7 +786,7 @@ def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
         hosts.all.shell(
             cmd="echo {0} > {1}/noprint.c".format(quote(C_SRC_INVALID_UTF8), TEMP_PATH)
         )
-        hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c")
+        hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c".format(TEMP_PATH))
 
         # Create local JCL and submit it.
         tmp_file = tempfile.NamedTemporaryFile(delete=True)

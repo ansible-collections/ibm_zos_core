@@ -840,7 +840,8 @@ try:
     from zoautil_py import datasets, opercmd
 except Exception:
     datasets = MissingZOAUImport()
-
+with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as sftp_proc:
+            result = sftp_proc.stdout.read()
 
 class CopyHandler(object):
     def __init__(

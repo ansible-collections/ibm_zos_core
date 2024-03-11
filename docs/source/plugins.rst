@@ -5,7 +5,7 @@
 Plugins
 =======
 
-Plugins that come with the **IBM z/OS core collection** compliment Ansible's core
+Plugins that come with the **IBM z/OS core collection** complement Ansible's core
 functionality. Ansible uses a plugin architecture to enable a rich, flexible
 and expandable feature set.
 

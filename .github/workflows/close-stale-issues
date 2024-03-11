@@ -7,8 +7,6 @@ on:
   schedule:
     - cron: '0 23 * * *'
 
-  workflow_dispatch:
-
 jobs:
   stale:
     runs-on: ubuntu-latest

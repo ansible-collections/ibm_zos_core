@@ -91,7 +91,7 @@ dest
 
   If ``dest`` is a nonexistent USS file, it will be created.
 
-  If ``dest`` is a new USS file or replacement, the file will be appropriately tagged with either the systems default local or the encoding option defined. If the USS file is a replacement, the user must have write authority to the file either through ownership, group or other permissions, else the copy will fail.
+  If ``dest`` is a new USS file or replacement, the file will be appropriately tagged with either the systems default locale or the encoding option defined. If the USS file is a replacement, the user must have write authority to the file either through ownership, group or other permissions, else the copy will fail.
 
   If ``dest`` is a nonexistent data set, it will be created following the process outlined here and in the ``volume`` option.
 

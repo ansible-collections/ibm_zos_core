@@ -1,23 +1,23 @@
 trivial:
   - zos_copy - documentation has been updated to explain the
     SFTP requirements.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1297).
   - zos_fetch - documentation has been updated to explain the
     SFTP requirements.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1297).
   - zos_script - documentation has been updated to explain the
     SFTP requirements.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1297).
   - zos_job_submit - documentation has been updated to explain the
     SFTP requirements.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1297).
   - zos_unarchive - documentation has been updated to explain the
     SFTP requirements as well correct the prior `path` references
     which are now correctly documented as `src`.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1297).
   - zos_unarchive - documentation has been updated to explain the
     SFTP requirements.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1297).
   - site - documentation has been updated to include missing plugin
     descriptions.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1297).

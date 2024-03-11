@@ -31,7 +31,6 @@ jobs:
     - name: Run Ansible test
       run: |
         collection_name=$(ansible-galaxy collection build | awk -F/ '{print $NF}')
-        echo $collection_name
-        pwd
-        ansible-galaxy collection install $collection_name
+        dir="$(pwd)/$collection_name"
+        ansible-galaxy collection install $dir
         cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/&& ansible-test sanity $collection_name

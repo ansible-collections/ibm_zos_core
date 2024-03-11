@@ -2,6 +2,11 @@ trivial:
   - zos_copy - documentation has been updated to explain the
     SFTP requirements.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
+  - zos_copy - documentation has been updated to explain the file
+    tagging that occurs when files are being updated and that files
+    must have write authority to the file either through ownership,
+    group or other permissions.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1296).
   - zos_fetch - documentation has been updated to explain the
     SFTP requirements.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1296).

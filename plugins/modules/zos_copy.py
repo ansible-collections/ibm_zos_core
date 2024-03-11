@@ -94,6 +94,10 @@ options:
       - C(dest) can be a USS file, directory or MVS data set name.
       - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
+      - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
+        either the systems default local or the encoding option defined. If the USS file is
+        a replacement, the user must have write authority to the file either through ownership,
+        group or other permissions, else the copy will fail.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
       - If C(dest) is a nonexistent data set, the attributes assigned will depend on the type of

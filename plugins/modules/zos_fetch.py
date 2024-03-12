@@ -616,6 +616,9 @@ def run_module():
             "to": module.params.get("encoding").get("to"),
         }
 
+    # We check encoding 'from' and 'to' because if the user pass both arguments of encoding,
+    # we honor those but encoding 'to' is an argument that the code obtain any time.
+    # Encoding will not be null and will generate problems as encoding 'from' could came empty.
     if module.params.get("encoding").get("from") and module.params.get("encoding").get("to"):
         module.params.update(
             dict(

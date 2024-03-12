@@ -27,6 +27,12 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
+    from zoautil_py import exceptions
+except ImportError:
+    exceptions = ZOAUImportError(traceback.format_exc())
+
+
+try:
     # For files that import individual functions from a ZOAU module,
     # we'll replace the imports to instead get the module.
     # This way, we'll always make a call to the module, allowing us
@@ -43,6 +49,19 @@ except Exception:
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
+
+JOB_ERROR_STATUS = frozenset(["ABEND",      # ZOAU job ended abnormally
+                              "SEC ERROR",  # Security error (legacy Ansible code)
+                              "SEC",        # ZOAU security error
+                              "JCL ERROR",  # Job had a JCL error (legacy Ansible code)
+                              "JCLERR",     # ZOAU job had a JCL error
+                              "CANCELED",   # ZOAU job was cancelled
+                              "CAB",        # ZOAU converter abend
+                              "CNV",        # ZOAU converter error
+                              "SYS",        # ZOAU system failure
+                              "FLU",        # ZOAU job was flushed
+                              "?"           # ZOAU error or unknown
+                              ])
 
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
@@ -254,13 +273,14 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["owner"] = entry.owner
 
             job["ret_code"] = {}
-            job["ret_code"]["msg"] = entry.status + " " + entry.rc
+            job["ret_code"]["msg"] = entry.status
+            # job["ret_code"]["msg"] = entry.status + " " + entry.rc
             job["ret_code"]["msg_code"] = entry.rc
             job["ret_code"]["code"] = None
             if len(entry.rc) > 0:
                 if entry.rc.isdigit():
                     job["ret_code"]["code"] = int(entry.rc)
-            job["ret_code"]["msg_text"] = entry.status
+            job["ret_code"]["msg_txt"] = entry.status
 
             # this section only works on zoau 1.2.3/+ vvv
 
@@ -284,16 +304,45 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["duration"] = duration
 
             if dd_scan:
-                list_of_dds = jobs.list_dds(entry.id)
-                while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
+                # If true, it means the job is not ready for DD queries and the duration and
+                # timeout should apply here instructing the user to add more time
+                is_dd_query_exception = False
+                is_jesjcl = False
+                list_of_dds = []
+
+                try:
+                    list_of_dds = jobs.list_dds(entry.id)
+                except exceptions.DDQueryException as err:
+                    if 'BGYSC5201E' in str(err):
+                        is_dd_query_exception = True
+                        pass
+
+                # Check if the Job has JESJCL, if not, its in the JES INPUT queue, thus wait the full wait_time_s.
+                # Idea here is to force a TYPRUN{HOLD|JCLHOLD|COPY} job to go the full wait duration since we have
+                # currently no way to detect them, but if we know the job is one of the JOB_ERROR_STATUS lets
+                # exit the wait time supplied as we know it is a job failure.
+                is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
+                is_job_error_status = True if entry.status in JOB_ERROR_STATUS else False
+
+                while ((list_of_dds is None or len(list_of_dds) == 0 or is_dd_query_exception) and
+                        (not is_jesjcl and not is_job_error_status and duration <= timeout)):
                     current_time = timer()
                     duration = round(current_time - start_time)
                     sleep(1)
-                    list_of_dds = jobs.list_dds(entry.id)
+                    try:
+                        # Note, in then event of an exception, eg job has TYPRUN=HOLD
+                        # list_of_dds will still be populated with valuable content
+                        list_of_dds = jobs.list_dds(entry.id)
+                        is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
+                        is_job_error_status = True if entry.status in JOB_ERROR_STATUS else False
+                    except exceptions.DDQueryException as err:
+                        if 'BGYSC5201E' in str(err):
+                            is_dd_query_exception = True
+                            continue
 
                 job["duration"] = duration
-
                 for single_dd in list_of_dds:
+
                     dd = {}
 
                     # If dd_name not None, only that specific dd_name should be returned
@@ -371,15 +420,18 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                             job["subsystem"] = (tmptext.split("\n")[
                                                 0]).replace(" ", "")
 
+                    # Disabling this code, the integer following JCL ERROR is not a reason code, its a
+                    # multi line marker used in a WTO so errors spanning more than one line will be found
+                    # by searching for the prefix integer, eg 029
                     # Extract similar: "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
                     # then further reduce down to: 'JCL ERROR 029'
-                    if job["ret_code"]["msg_code"] == "?":
-                        if "JOB NOT RUN -" in tmpcont:
-                            tmptext = tmpcont.split(
-                                "JOB NOT RUN -")[1].split("\n")[0]
-                            job["ret_code"]["msg"] = tmptext.strip()
-                            job["ret_code"]["msg_code"] = None
-                            job["ret_code"]["code"] = None
+                    # if job["ret_code"]["msg_code"] == "?":
+                    #     if "JOB NOT RUN -" in tmpcont:
+                    #         tmptext = tmpcont.split(
+                    #             "JOB NOT RUN -")[1].split("\n")[0]
+                    #         job["ret_code"]["msg"] = tmptext.strip()
+                    #         job["ret_code"]["msg_code"] = None
+                    #         job["ret_code"]["code"] = None
 
             final_entries.append(job)
     if not final_entries:
@@ -413,3 +465,25 @@ def _ddname_pattern(contents, resolve_dependencies):
             )
         )
     return str(contents)
+
+
+def search_dictionaries(key, value, list_of_dictionaries):
+    """ Searches a list of dictionaries given key and returns
+        the value dictionary.
+
+        Arguments:
+            key {str} -- dictionary key to search for.
+            value {str} -- value to match for the dictionary key
+            list {str} -- list of dictionaries
+
+        Returns:
+            dictionary -- dictionary matching the key and value
+
+        Raises:
+            TypeError -- When input is not a list of dictionaries
+    """
+    if not isinstance(list_of_dictionaries, list):
+        raise TypeError(
+            "Unsupported type for 'list_of_dictionaries', must be a list of dictionaries")
+
+    return [element for element in list_of_dictionaries if element[key] == value]

@@ -55,27 +55,34 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Execute TSO commands to allocate a new dataset
+   - name: Execute TSO commands to allocate a new dataset.
      zos_tso_command:
-         commands:
-             - alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
-             - delete 'TEST.HILL3.TEST'
+       commands:
+         - alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
+         - delete 'TEST.HILL3.TEST'
 
-   - name: Execute TSO command list user TESTUSER to obtain TSO information
+   - name: Execute TSO command List User (LU) for TESTUSER to obtain TSO information.
      zos_tso_command:
-         commands:
-              - LU TESTUSER
+       commands:
+         - LU TESTUSER
 
-   - name: Execute TSO command to list dataset data (allow 4 for no dataset listed or cert found)
+   - name: Execute TSO command List Dataset (LISTDSD) and allow for maximum return code of 4.
      zos_tso_command:
-         commands:
-              - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
-         max_rc: 4
+       commands:
+         - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
+       max_rc: 4
 
    - name: Execute TSO command to run a REXX script explicitly from a data set.
      zos_tso_command:
-         commands:
-              - EXEC HLQ.DATASET.REXX exec
+       commands:
+         - EXEC HLQ.DATASET.REXX exec
+
+   - name: Chain multiple TSO commands into one invocation using semicolons.
+     zos_tso_command:
+       commands: >-
+         ALLOCATE DDNAME(IN1) DSNAME('HLQ.PDSE.DATA.SRC(INPUT)') SHR;
+         ALLOCATE DDNAME(OUT1) DSNAME('HLQ.PDSE.DATA.DEST(OUTPUT)') SHR;
+         OCOPY INDD(IN1) OUTDD(OUT1) BINARY;
 
 
 

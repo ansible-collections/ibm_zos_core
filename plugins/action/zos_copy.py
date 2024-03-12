@@ -253,7 +253,7 @@ class ActionModule(ActionBase):
                 is_pds=is_pds,
                 is_src_dir=is_src_dir,
                 src_member=src_member,
-                src=temp_path if temp_path else task_args.get("src"),
+                src= "{0}/{1}".format(temp_path, src) if temp_path else task_args.get("src"),
                 is_mvs_dest=is_mvs_dest,
                 encoding=encoding,
             )

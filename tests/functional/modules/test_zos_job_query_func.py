@@ -114,7 +114,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
 
 def test_zos_job_id_query_short_ids_func(ansible_zos_module):
     hosts = ansible_zos_module
-    qresults = hosts.all.zos_job_query(job_id="STC003")
+    qresults = hosts.all.zos_job_query(job_id="STC00002")
     for qresult in qresults.contacted.values():
         assert qresult.get("jobs") is not None
 

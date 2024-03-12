@@ -335,9 +335,49 @@ HELLO, WORLD. JCLHOLD OPERATION
 //
 """
 
-JCL_FULL_INPUT="""//HLQ0  JOB MSGLEVEL=(1,1),
+JCL_FULL_INPUT = """//HLQ0  JOB MSGLEVEL=(1,1),
 //  MSGCLASS=A,CLASS=A,NOTIFY=&SYSUID
 //STEP1 EXEC PGM=BPXBATCH,PARM='PGM /bin/sleep 5'"""
+
+C_SRC_INVALID_UTF8 = """#include <stdio.h>
+int main()
+{
+    /* Generate and print all EBCDIC characters to stdout to
+     * ensure non-printable chars can be handled by Python.
+     * This will included the non-printable hex from DBB docs:
+     * nl=0x15, cr=0x0D, lf=0x25, shiftOut=0x0E, shiftIn=0x0F
+    */
+
+    for (int i = 0; i <= 255; i++) {
+        printf("Hex 0x%X is character: (%c)\\\\n",i,(char)(i));
+    }
+
+    return 0;
+}
+"""
+
+JCL_INVALID_UTF8_CHARS_EXC = """//*
+//******************************************************************************
+//* Job that runs a C program that returns characters outside of the UTF-8 range
+//* expected by Python. This job tests a bugfix present in ZOAU v1.2.5.6 and
+//* later that deals properly with these chars.
+//* The JCL needs to be formatted to give it the directory where the C program
+//* is located.
+//******************************************************************************
+//NOEBCDIC JOB (T043JM,JM00,1,0,0,0),'NOEBCDIC - JRM',
+//             MSGCLASS=H,MSGLEVEL=1,NOTIFY=&SYSUID
+//NOPRINT  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH (
+cd {0};
+./noprint;
+exit 0;
+)
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//
+"""
 
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
@@ -858,3 +898,38 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
         assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "?"
+
+# This test case is related to the following GitHub issues:
+# - https://github.com/ansible-collections/ibm_zos_core/issues/677
+# - https://github.com/ansible-collections/ibm_zos_core/issues/972
+# - https://github.com/ansible-collections/ibm_zos_core/issues/1160
+# - https://github.com/ansible-collections/ibm_zos_core/issues/1255
+def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        # Copy C source and compile it.
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/noprint.c".format(quote(C_SRC_INVALID_UTF8), TEMP_PATH)
+        )
+        hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c".format(TEMP_PATH))
+        # Create local JCL and submit it.
+        tmp_file = tempfile.NamedTemporaryFile(delete=True)
+        with open(tmp_file.name, "w") as f:
+            f.write(JCL_INVALID_UTF8_CHARS_EXC.format(TEMP_PATH))
+
+        results = hosts.all.zos_job_submit(
+            src=tmp_file.name,
+            location="LOCAL",
+            wait_time_s=15
+        )
+
+        for result in results.contacted.values():
+            print(result)
+            # We shouldn't get an error now that ZOAU handles invalid/unprintable
+            # UTF-8 chars correctly.
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+            assert result.get("jobs")[0].get("ret_code").get("code") == 0
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")

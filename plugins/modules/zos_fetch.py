@@ -584,7 +584,6 @@ def run_module():
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
-            local_charset=dict(type="str"),
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
@@ -606,7 +605,7 @@ def run_module():
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
-    if not module.params.get("encoding") and not module.params.get("is_binary"):
+    if not module.params.get("encoding").get("from") and not module.params.get("is_binary"):
         mvs_src = data_set.is_data_set(src)
         remote_charset = encode.Defaults.get_default_system_charset()
 
@@ -614,10 +613,13 @@ def run_module():
             "from": encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
             if mvs_src
             else remote_charset,
-            "to": module.params.get("local_charset"),
+            "to": module.params.get("encoding").get("to"),
         }
 
-    if module.params.get("encoding"):
+    # We check encoding 'from' and 'to' because if the user pass both arguments of encoding,
+    # we honor those but encoding 'to' is an argument that the code obtain any time.
+    # Encoding will not be null and will generate problems as encoding 'from' could came empty.
+    if module.params.get("encoding").get("from") and module.params.get("encoding").get("to"):
         module.params.update(
             dict(
                 from_encoding=module.params.get("encoding").get("from"),

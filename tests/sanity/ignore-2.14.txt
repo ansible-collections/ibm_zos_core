@@ -10,8 +10,6 @@ plugins/modules/zos_data_set.py validate-modules:missing-gplv3-license # License
 plugins/modules/zos_data_set.py validate-modules:undocumented-parameter # Keep aliases to match behavior of old module spec, but some aliases were functionally inaccurate, and detailing in docs would only confuse user.
 plugins/modules/zos_encode.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_fetch.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
-plugins/modules/zos_fetch.py validate-modules:parameter-type-not-in-doc # Passing args from action plugin
-plugins/modules/zos_fetch.py validate-modules:undocumented-parameter # Passing args from action plugin
 plugins/modules/zos_find.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_job_output.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_job_query.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0

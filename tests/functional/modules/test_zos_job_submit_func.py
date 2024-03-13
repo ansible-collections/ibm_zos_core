@@ -262,36 +262,49 @@ JCL_FULL_INPUT = """//HLQ0  JOB MSGLEVEL=(1,1),
 C_SRC_INVALID_UTF8 = """#include <stdio.h>
 int main()
 {
-        unsigned char a=0x64;
-        unsigned char b=0x2A;
-        unsigned char c=0xB8;
-        unsigned char d=0xFF;
-        unsigned char e=0x81;
-        unsigned char f=0x82;
-        unsigned char g=0x83;
-        unsigned char h=0x00;
-        printf("Value of a: Hex: %X, character: %c",a,a);
-        printf("Value of b: Hex: %X, character: %c",b,b);
-        printf("Value of c: Hex: %X, character: %c",c,c);
-        printf("Value of d: Hex: %X, character: %c",d,d);
-        printf("Value of a: Hex: %X, character: %c",e,e);
-        printf("Value of b: Hex: %X, character: %c",f,f);
-        printf("Value of c: Hex: %X, character: %c",g,g);
-        printf("Value of d: Hex: %X, character: %c",h,h);
-        return 0;
+    unsigned char a=0x64;
+    unsigned char b=0x2A;
+    unsigned char c=0xB8;
+    unsigned char d=0xFF;
+    unsigned char e=0x81;
+    unsigned char f=0x82;
+    unsigned char g=0x83;
+    unsigned char h=0x00;
+    /* The following are non-printables from DBB. */
+    unsigned char nl=0x15;
+    unsigned char cr=0x0D;
+    unsigned char lf=0x25;
+    unsigned char shiftOut=0x0E;
+    unsigned char shiftIn=0x0F;
+
+    printf("Value of a: Hex: %X, character: %c",a,a);
+    printf("Value of b: Hex: %X, character: %c",b,b);
+    printf("Value of c: Hex: %X, character: %c",c,c);
+    printf("Value of d: Hex: %X, character: %c",d,d);
+    printf("Value of e: Hex: %X, character: %c",e,e);
+    printf("Value of f: Hex: %X, character: %c",f,f);
+    printf("Value of g: Hex: %X, character: %c",g,g);
+    printf("Value of h: Hex: %X, character: %c",h,h);
+    printf("Value of NL: Hex: %X, character: %c",nl,nl);
+    printf("Value of CR: Hex: %X, character: %c",cr,cr);
+    printf("Value of LF: Hex: %X, character: %c",lf,lf);
+    printf("Value of Shift-Out: Hex: %X, character: %c",shiftOut,shiftOut);
+    printf("Value of Shift-In: Hex: %X, character: %c",shiftIn,shiftIn);
+
+    return 0;
 }
 """
 
 JCL_INVALID_UTF8_CHARS_EXC = """//*
 //******************************************************************************
 //* Job that runs a C program that returns characters outside of the UTF-8 range
-//* expected by Python. This job tests a bugfix present in ZOAU v1.3.0 onwards
-//* that deals properly with these chars.
+//* expected by Python. This job tests a bugfix present in ZOAU v1.3.0 and
+//* later that deals properly with these chars.
 //* The JCL needs to be formatted to give it the directory where the C program
 //* is located.
 //******************************************************************************
 //NOEBCDIC JOB (T043JM,JM00,1,0,0,0),'NOEBCDIC - JRM',
-//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=&SYSUID
+//             MSGCLASS=H,MSGLEVEL=1,NOTIFY=&SYSUID
 //NOPRINT  EXEC PGM=BPXBATCH
 //STDPARM DD *
 SH (
@@ -774,7 +787,7 @@ def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
         hosts.all.shell(
             cmd="echo {0} > {1}/noprint.c".format(quote(C_SRC_INVALID_UTF8), TEMP_PATH)
         )
-        hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c")
+        hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c".format(TEMP_PATH))
 
         # Create local JCL and submit it.
         tmp_file = tempfile.NamedTemporaryFile(delete=True)

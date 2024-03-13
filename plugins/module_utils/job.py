@@ -18,6 +18,10 @@ import re
 import traceback
 from time import sleep
 from timeit import default_timer as timer
+# Only importing this module so we can catch a JSONDecodeError that sometimes happens
+# when a job's output has non-printable chars that conflict with JSON's control
+# chars.
+from json import decoder
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -366,7 +370,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                                     single_dd["step_name"],
                                     single_dd["dd_name"]
                                 )
-                            except UnicodeDecodeError:
+                            except (UnicodeDecodeError, decoder.JSONDecodeError):
                                 tmpcont = (
                                     "Non-printable UTF-8 characters were present in this output. "
                                     "Please access it manually."

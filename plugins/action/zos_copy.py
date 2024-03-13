@@ -247,14 +247,23 @@ class ActionModule(ActionBase):
                 "from": encode.Defaults.get_default_system_charset(),
             }
 
-        base_name = os.path.basename(src)
+        src = task_args.get("src")
+        if src and not remote_src:
+            base_name = os.path.basename(src)
+            if os.path.isdir(src):
+                src = "{0}/{1}".format(temp_path, base_name)
+            else:
+                src = temp_path
+        if not src:
+            src = temp_path
+
         task_args.update(
             dict(
                 is_uss=is_uss,
                 is_pds=is_pds,
                 is_src_dir=is_src_dir,
                 src_member=src_member,
-                src="{0}/{1}".format(temp_path, base_name) if temp_path else task_args.get("src"),
+                src=src,
                 is_mvs_dest=is_mvs_dest,
                 encoding=encoding,
             )

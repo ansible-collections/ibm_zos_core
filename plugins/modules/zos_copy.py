@@ -1048,7 +1048,7 @@ class CopyHandler(object):
             entries = list(itr)
         return self._copy_tree(entries, src_dir, dest_dir, dirs_exist_ok=dirs_exist_ok)
 
-    def convert_encoding(self, src, temp_path, encoding):
+    def convert_encoding(self, src, temp_path, encoding, remote_src):
         """Convert encoding for given src
 
         Arguments:
@@ -1068,7 +1068,7 @@ class CopyHandler(object):
         from_code_set = encoding.get("from")
         to_code_set = encoding.get("to")
         enc_utils = encode.EncodeUtils()
-        new_src = temp_path or src
+        new_src = src
 
         if os.path.isdir(new_src):
             if temp_path:
@@ -1122,10 +1122,10 @@ class CopyHandler(object):
                 if new_src != src:
                     os.remove(new_src)
                 raise err
-            except Exception as err:
-                if new_src != src:
-                    os.remove(new_src)
-                raise CopyOperationError(msg=str(err))
+            # except Exception as err:
+            #     if new_src != src:
+            #         os.remove(new_src)
+            #     raise CopyOperationError(msg=str(err))
         return new_src
 
     def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):
@@ -3061,7 +3061,7 @@ def run_module(module, arg_def):
             # if is_mvs_dest:
             #     encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
 
-            conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
+            conv_path = copy_handler.convert_encoding(src, temp_path, encoding, remote_src)
 
         # ------------------------------- o -----------------------------------
         # Copy to USS file or directory

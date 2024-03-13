@@ -3347,6 +3347,9 @@ def main():
         ),
     )
 
+    if not module.params.get("remote_src") and not module.params.get("content"):
+        arg_def.update(temp_path=module.params.get("src"))
+        module.params["src"] = None
     if (
         not module.params.get("encoding").get("to")
         and not module.params.get("remote_src")

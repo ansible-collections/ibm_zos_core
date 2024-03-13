@@ -1334,7 +1334,7 @@ class DataSet(object):
         """
         if not hlq:
             hlq = datasets.get_hlq()
-        temp_name = datasets.tmp_name(hlq)
+        temp_name = datasets.tmp_name(high_level_qualifier=hlq)
         return temp_name
 
     @staticmethod

@@ -3093,6 +3093,7 @@ def run_module(module, arg_def):
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None
+            # module.fail_json(msg="{0}".format(res_args))
 
             try:
                 remote_checksum = get_file_checksum(temp_path or src)
@@ -3347,9 +3348,6 @@ def main():
         ),
     )
 
-    if not module.params.get("remote_src") and not module.params.get("content"):
-        arg_def.update(temp_path=module.params.get("src"))
-        module.params["src"] = None
     if (
         not module.params.get("encoding").get("to")
         and not module.params.get("remote_src")

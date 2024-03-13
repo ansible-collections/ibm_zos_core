@@ -304,7 +304,7 @@ class ActionModule(ActionBase):
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
 
-        temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
+        temp_path = "/{0}/{1}".format(gettempprefix(), os.path.basename(src))
         _src = src.replace("#", "\\#")
         _sftp_action = 'put'
 

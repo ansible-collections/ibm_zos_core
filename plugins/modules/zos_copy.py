@@ -2809,7 +2809,6 @@ def run_module(module, arg_def):
             if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
                 src_basename = os.path.basename(src) if src else "inline_copy"
                 dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
-
                 if dest.startswith("//"):
                     dest = dest.replace("//", "/")
 
@@ -3093,7 +3092,6 @@ def run_module(module, arg_def):
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None
-            # module.fail_json(msg="{0}".format(res_args))
 
             try:
                 remote_checksum = get_file_checksum(temp_path or src)

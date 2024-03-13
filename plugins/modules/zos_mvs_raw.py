@@ -2569,6 +2569,7 @@ class RawDatasetDefinition(DatasetDefinition):
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
+        self.tmphlq= tmphlq
         primary_unit = space_type
         secondary_unit = space_type
         key_label1 = None
@@ -2704,7 +2705,7 @@ class RawInputDefinition(InputDefinition):
         InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, content="", return_content=None, **kwargs):
+    def __init__(self, content="", return_content=None, tmphlq="",**kwargs):
         """Initialize RawInputDefinition
 
         Args:
@@ -2712,7 +2713,7 @@ class RawInputDefinition(InputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__(content=content)
+        super().__init__(content=content, tmphlq=tmphlq)
 
 
 class RawOutputDefinition(OutputDefinition):
@@ -2723,7 +2724,7 @@ class RawOutputDefinition(OutputDefinition):
         OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, return_content=None, **kwargs):
+    def __init__(self, return_content=None, tmphlq="", **kwargs):
         """Initialize RawOutputDefinition
 
         Args:
@@ -2731,7 +2732,7 @@ class RawOutputDefinition(OutputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__()
+        super().__init__(tmphlq=tmphlq)
 
 
 class ReturnContent(object):

@@ -2460,7 +2460,7 @@ def set_extra_attributes_in_dd(dd, parms):
         dd.get("dd_vio")["tmphlq"] = tmphlq
     elif dd.get("dd_concat"):
         for single_dd in dd.get("dd_concat").get("dds", []):
-            set_extra_attributes_in_dd(single_dd)
+            set_extra_attributes_in_dd(single_dd, parms)
     return dd
 
 

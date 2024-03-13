@@ -2569,7 +2569,7 @@ class RawDatasetDefinition(DatasetDefinition):
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
-        self.tmphlq= tmphlq
+        self.tmphlq = tmphlq
         primary_unit = space_type
         secondary_unit = space_type
         key_label1 = None
@@ -2696,7 +2696,7 @@ class RawFileDefinition(FileDefinition):
         )
 
 
-# TODO: potentially extend the available parameters to end user
+
 class RawInputDefinition(InputDefinition):
     """Wrapper around InputDefinition to contain information about
     desired return contents.
@@ -2705,7 +2705,7 @@ class RawInputDefinition(InputDefinition):
         InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, content="", return_content=None, tmphlq="",**kwargs):
+    def __init__(self, content="", return_content=None, tmphlq="", **kwargs):
         """Initialize RawInputDefinition
 
         Args:

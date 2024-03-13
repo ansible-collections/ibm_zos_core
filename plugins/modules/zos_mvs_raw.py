@@ -2696,7 +2696,6 @@ class RawFileDefinition(FileDefinition):
         )
 
 
-
 class RawInputDefinition(InputDefinition):
     """Wrapper around InputDefinition to contain information about
     desired return contents.

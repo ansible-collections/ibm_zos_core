@@ -257,12 +257,12 @@ ac_build(){
 ##  $ ac --ac-changelog --command lint
 ##  $ ac --ac-changelog
 ac_changelog(){
-    option_lint=$1
-    if [ ! "$option_lint" ]; then
-        option_lint="lint"
+    option_command=$1
+    if [ ! "$option_command" ]; then
+        option_command="lint"
     fi
-    message "Running Changelog '$option_lint'"
-    . $VENV_BIN/activate && antsibull-changelog "${option_lint}"
+    message "Running Changelog '$option_command'"
+    . $VENV_BIN/activate && antsibull-changelog "${option_command}"
 }
 
 # ------------------------------------------------------------------------------
@@ -744,6 +744,11 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
+      --command|--command=?*)                       # option
+            command=`option_processor $1 $2`
+            option_sanitize $command
+            shift
+            ;;
       --debug|--debug=?*)                       # option
             debug=`option_processor $1 $2`
             option_sanitize $debug
@@ -762,11 +767,6 @@ while true; do
       --level|--level=?*)                       # option
             level=`option_processor $1 $2`
             option_sanitize $level
-            shift
-            ;;
-      --lint|--lint=?*)                       # option
-            lint=`option_processor $1 $2`
-            option_sanitize $lint
             shift
             ;;
       --out-file|--out-file=?*)                 # option
@@ -834,7 +834,7 @@ if [ "$option_submitted" ] && [ "$option_submitted" = "--ac-bandit" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
-    ac_changelog $lint
+    ac_changelog $command
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then

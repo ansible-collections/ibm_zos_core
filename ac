@@ -242,12 +242,12 @@ ac_build(){
 }
 
 ac_changelog(){
-    option=$1
-    if [ ! "$option" ]; then
-        option="lint"
+    option_lint=$1
+    if [ ! "$option_lint" ]; then
+        option_lint="lint"
     fi
-    message "Running Changelog '$option'"
-    . $VENV_BIN/activate && antsibull-changelog "${option}"
+    message "Running Changelog '$option_lint'"
+    . $VENV_BIN/activate && antsibull-changelog "${option_lint}"
 }
 
 # ------------------------------------------------------------------------------
@@ -749,6 +749,11 @@ while true; do
             option_sanitize $level
             shift
             ;;
+      --lint|--lint=?*)                       # option
+            lint=`option_processor $1 $2`
+            option_sanitize $lint
+            shift
+            ;;
       --out-file|--out-file=?*)                 # option
             out_file=`option_processor $1 $2`
             option_sanitize $out_file
@@ -814,7 +819,7 @@ if [ "$option_submitted" ] && [ "$option_submitted" = "--ac-bandit" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
-    ac_changelog $option
+    ac_changelog $lint
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then

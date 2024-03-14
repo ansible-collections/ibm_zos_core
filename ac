@@ -241,6 +241,15 @@ ac_build(){
 			$VENV_BIN/ansible-galaxy collection install -f ibm-ibm_zos_core-*
 }
 
+ac_changelog(){
+    option=$1
+    if [ ! "$option" ]; then
+        option="lint"
+    fi
+    message "Running Changelog '$option'"
+    . $VENV_BIN/activate && antsibull-changelog "${option}"
+}
+
 # ------------------------------------------------------------------------------
 # Install an ibm_zos_core collection from galaxy (or how you have ansible.cfg configured)
 # ------------------------------------------------------------------------------
@@ -653,6 +662,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-build"
             ;;
+      --ac-changelog)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-changelog"
+            ;;
       --ac-install)
             ensure_managed_venv_exists $1      # Command
             option_submitted="--ac-install"
@@ -800,6 +813,8 @@ if [ "$option_submitted" ] && [ "$option_submitted" = "--ac-bandit" ] ; then
     ac_bandit $level
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
+    ac_changelog $option
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then

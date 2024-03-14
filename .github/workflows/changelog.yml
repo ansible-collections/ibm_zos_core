@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
     - 'changelogs/fragments/*'
+    
+  workflow_dispatch:
 
 jobs:
   lint:

@@ -383,7 +383,7 @@ class AnsibleModuleHelper(AnsibleModule):
                         stdout = to_native(stdout, encoding=encoding, errors=errors)
 
                     if not stdin_close_success:
-                        log_fd, log_file_path = tempfile.mkstemp(suffix=time.time(), prefix="ibm_zos_core", text=True)
+                        log_fd, log_file_path = tempfile.mkstemp(suffix=str(time.time()), prefix="ibm_zos_core", text=True)
                         with os.fdopen(log_fd, "w", encoding="cp1047") as log:
                             log.write(cmd_log)
 
@@ -429,7 +429,7 @@ class AnsibleModuleHelper(AnsibleModule):
             self.fail_json(cmd=self._clean_args(args), rc=rc, stdout=stdout, stderr=stderr, msg=msg)
 
         if not stdin_close_success:
-            log_fd, log_file_path = tempfile.mkstemp(suffix=time.time(), prefix="ibm_zos_core", text=True)
+            log_fd, log_file_path = tempfile.mkstemp(suffix=str(time.time()), prefix="ibm_zos_core", text=True)
             with os.fdopen(log_fd, "w", encoding="cp1047") as log:
                 log.write(cmd_log)
 

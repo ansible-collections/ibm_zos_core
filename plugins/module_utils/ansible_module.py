@@ -348,6 +348,7 @@ class AnsibleModuleHelper(AnsibleModule):
                     # Only closing the stream when it is still open, to avoid latency issues when a system
                     # is overwhelmed.
                     if not cmd.stdin.closed:
+                        cmd_log = "{0}\nSTDIN has not been closed yet, closing it...".format(cmd_log)
                         cmd.stdin.close()
                     else:
                         cmd_log = "{0}\nThe STDIN stream was closed by run_command.".format(cmd_log)

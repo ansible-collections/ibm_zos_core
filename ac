@@ -241,6 +241,21 @@ ac_build(){
 			$VENV_BIN/ansible-galaxy collection install -f ibm-ibm_zos_core-*
 }
 
+# ------------------------------------------------------------------------------
+# Run a changelog lint locally
+# ------------------------------------------------------------------------------
+#->ac-changelog:
+## Run a changelog lint locally.
+## Usage: ac [--ac-changelog <command>]
+## <command> - choose from 'init', 'lint', 'lint-changelog-yaml', 'release', 'generate'
+##         - generate generate the changelog
+##         - init set up changelog infrastructure for collection, or an other project
+##         - lint check changelog fragments for syntax errors
+##         - lint-changelog-yaml check syntax of changelogs/changelog.yaml file
+##         - release add a new release to the change metadata
+## Example:
+##  $ ac --ac-changelog --command lint
+##  $ ac --ac-changelog
 ac_changelog(){
     option_lint=$1
     if [ ! "$option_lint" ]; then

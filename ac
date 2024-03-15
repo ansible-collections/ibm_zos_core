@@ -242,10 +242,10 @@ ac_build(){
 }
 
 # ------------------------------------------------------------------------------
-# Run a changelog lint locally
+# Run a check on all the libraries to ensure they exist.
 # ------------------------------------------------------------------------------
 #->ac-galaxy-importer:
-## Run a changelog lint locally.
+## Run a check on all the libraries to ensure they exist.
 ## Usage: ac [--ac-galaxy-importer]
 ## Example:
 ##  $ ac --ac-galaxy-importer

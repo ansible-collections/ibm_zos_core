@@ -245,7 +245,8 @@ ac_build(){
 # Run a changelog lint locally
 # ------------------------------------------------------------------------------
 #->ac-changelog:
-## Run a changelog lint locally.
+## Runs antsibull-changelog to generate the release changelog or perform a lint
+## on changelog fragments or release notes.
 ## Usage: ac [--ac-changelog <command>]
 ## <command> - choose from 'init', 'lint', 'lint-changelog-yaml', 'release', 'generate'
 ##         - generate generate the changelog
@@ -255,6 +256,7 @@ ac_build(){
 ##         - release add a new release to the change metadata
 ## Example:
 ##  $ ac --ac-changelog --command lint
+##  $ ac --ac-changelog --command release
 ##  $ ac --ac-changelog
 ac_changelog(){
     option_command=$1
@@ -613,7 +615,7 @@ host_nodes(){
 venv_setup(){
     option_pass=$1
     message "Create managed virtual environments based on hosts latest python3."
-    ./scripts/venv.sh --vsetup --password $option_pass
+    scripts/./venv.sh --vsetup --password $option_pass
 }
 
 # ------------------------------------------------------------------------------

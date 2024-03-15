@@ -29,6 +29,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        source venv/venv-2.16/bin/activate
         pip install ansible
         pip install ansible-importer
         pip install galaxy-importer

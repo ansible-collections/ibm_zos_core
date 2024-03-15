@@ -1,4 +1,4 @@
-name: AC Galaxy Importer Lint
+name: AC Galaxy Importer
 
 on:
   pull_request:

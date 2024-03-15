@@ -1,4 +1,4 @@
-name: Antsibull Changelog Lint
+name: AC Changelog Lint
 
 on:
   pull_request:

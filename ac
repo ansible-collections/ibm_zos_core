@@ -613,7 +613,7 @@ host_nodes(){
 venv_setup(){
     option_pass=$1
     message "Create managed virtual environments based on hosts latest python3."
-    scripts/./venv.sh --vsetup --password $option_pass
+    ./scripts/venv.sh --vsetup --password $option_pass
 }
 
 # ------------------------------------------------------------------------------

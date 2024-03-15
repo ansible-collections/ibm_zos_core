@@ -242,6 +242,19 @@ ac_build(){
 }
 
 # ------------------------------------------------------------------------------
+# Run a changelog lint locally
+# ------------------------------------------------------------------------------
+#->ac-galaxy-importer:
+## Run a changelog lint locally.
+## Usage: ac [--ac-galaxy-importer]
+## Example:
+##  $ ac --ac-galaxy-importer
+ac_galaxy_importer(){
+    message "Running Galaxy Importer"
+    . $VENV_BIN/activate && collection_name=$(ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m galaxy_importer.main $collection_name
+}
+
+# ------------------------------------------------------------------------------
 # Install an ibm_zos_core collection from galaxy (or how you have ansible.cfg configured)
 # ------------------------------------------------------------------------------
 #->ac-install:
@@ -653,6 +666,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-build"
             ;;
+      --ac-galaxy-importer)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-galaxy-importer"
+            ;;
       --ac-install)
             ensure_managed_venv_exists $1      # Command
             option_submitted="--ac-install"
@@ -800,6 +817,8 @@ if [ "$option_submitted" ] && [ "$option_submitted" = "--ac-bandit" ] ; then
     ac_bandit $level
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ] ; then
+    ac_galaxy_importer
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then

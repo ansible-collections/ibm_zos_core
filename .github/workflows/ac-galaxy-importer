@@ -7,7 +7,7 @@ on:
       - staging*
     
 jobs:
-  lint:
+  galaxy-importer:
     runs-on: ubuntu-latest
 
     steps:

@@ -1,0 +1,8 @@
+trivial:
+  - ac - Added new command ac-changelog into ac tool to run changelog
+    fragments lint and changelog release generation.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1304).
+
+  - workflows/ac_changelog - Added new github action that will lint
+    changelog fragments upon a new pull request.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1304).

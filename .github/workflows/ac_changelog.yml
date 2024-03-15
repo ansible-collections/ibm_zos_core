@@ -24,12 +24,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install virtualenv
-        ls
-        ./ac --venv-setup
+        mkdir venv
+        virtualenv venv/evirtual
+#        ./ac --venv-setup
 
     - name: Install dependencies
       run: |
-        source venv/bin/activate
+        source venv/evirtual/bin/activate
         pip install antsibull-changelog
 
     - name: Run ac-changelog

@@ -1,0 +1,40 @@
+name: AC Changelog Lint
+
+on:
+  pull_request:
+    paths:
+    - 'changelogs/fragments/*'
+    branches:
+    - dev
+    - staging*
+    
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+
+    - name: Set up venv
+      run: |
+        python -m pip install --upgrade pip
+        pip install virtualenv
+        mkdir venv
+        virtualenv venv/venv-2.16
+#        ./ac --venv-setup
+
+    - name: Install dependencies
+      run: |
+        source venv/venv-2.16/bin/activate
+        pip install antsibull-changelog
+
+    - name: Run ac-changelog
+      run: |
+        source venv/venv-2.16/bin/activate
+        ./ac --ac-changelog --command lint

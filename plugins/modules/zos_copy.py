@@ -848,7 +848,6 @@ try:
 except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
-
 class CopyHandler(object):
     def __init__(
         self,

@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
     - 'changelogs/fragments/*'
+    branches:
+    - dev
+    - staging*
     
 jobs:
   lint:

@@ -25,15 +25,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install virtualenv
         mkdir venv
-        virtualenv venv/evirtual
+        virtualenv venv/venv-2.16
 #        ./ac --venv-setup
 
     - name: Install dependencies
       run: |
-        source venv/evirtual/bin/activate
+        source venv/venv-2.16/bin/activate
         pip install antsibull-changelog
 
     - name: Run ac-changelog
       run: |
-        source venv/evirtual/bin/activate
+        source venv/venv-2.16/bin/activate
         ./ac --ac-changelog --command lint

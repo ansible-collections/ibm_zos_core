@@ -21,12 +21,12 @@ jobs:
     - name: Set up venv
       run: |
         python -m pip install --upgrade pip
-	pip install virtualenv
-	virtualenv venv
+        pip install virtualenv
+        virtualenv venv
 
     - name: Install dependencies
       run: |
-	source venv/bin/activate
+        source venv/bin/activate
         pip install antsibull-changelog
 
     - name: Run ac-changelog

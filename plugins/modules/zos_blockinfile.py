@@ -414,6 +414,28 @@ def quotedString(string):
     return string.replace('"', "")
 
 
+def execute_dmod(src, block, marker, force, encoding, module, ins_bef=None, ins_aft=None):
+    block = block.replace('"', '\\"')
+    force = "-f" if force else ""
+    encoding = "-c {0}".format(encoding) if encoding else ""
+    marker = "-m {0}".format(marker) if marker else ""
+    if ins_aft:
+        if ins_aft == "EOF":
+            opts = f'"$ a\\{block}" "{src}"'
+        else:
+            opts = f'-s -e "/{ins_aft}/a\\{block}/$" -e "$ a\\{block}" "{src}"'
+    elif ins_bef:
+        if ins_bef == "BOF":
+            opts = f' "1 i\\{block}" "{src}" '
+        else:
+            opts = f'-s -e "/{ins_bef}/i\\{block}/$" -e "$ a\\{block}" "{src}"'
+
+    cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
+
+    rc, stdout, stderr = module.run_command(cmd)
+    module.fail_json(msg="{0} \n {1} \n {2} \n {3}".format(rc, stdout, stderr, cmd))
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -569,7 +591,10 @@ def main():
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
+          if '"' in block:
+              return_content = execute_dmod(src, block, quotedString(marker), force, encoding, module=module, ins_bef=quotedString(ins_bef), ins_aft=quotedString(ins_aft))
+          else:
+              return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
         return_content = absent(src, marker, encoding, force)
     stdout = return_content.stdout_response

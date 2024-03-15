@@ -3,10 +3,10 @@ name: AC Changelog Lint
 on:
   pull_request:
     paths:
-    - 'changelogs/fragments/*'
+      - 'changelogs/fragments/*'
     branches:
-    - dev
-    - staging*
+      - dev
+      - staging*
     
 jobs:
   lint:

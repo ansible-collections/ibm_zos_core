@@ -460,9 +460,9 @@ notes:
       transfers, if not available, the module will fail.
     - Beginning in version 1.8.x, zos_copy will no longer attempt to correct a copy of
       a data type member into a PDSE that contains program objects. You can control this
-      behavior using module option executable that will signify an executable is being
+      behavior using module option C(executable) that will signify an executable is being
       copied into a PDSE with other executables. Mixing data type members with program
-      objects will be responded with a (FSUM8976,./zos_copy.html) error.
+      objects will result in a (FSUM8976,./zos_copy.html) error.
 seealso:
 - module: zos_fetch
 - module: zos_data_set

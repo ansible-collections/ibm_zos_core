@@ -1,5 +1,0 @@
-bugfixes:
-  - zos_apf - When operation=list was selected and more than one data set entry
-    was fetched, the module only returned one data set. Fix now returns the complete
-    list.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1236).

@@ -1,9 +1,0 @@
-bugfixes:
-  - module_utils/job.py - job output containing non-printable characters would
-    crash modules. Fix now handles the error gracefully and returns a message
-    to the user inside `content` of the `ddname` that failed.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1288).
-trivial:
-  - zos_job_submit - add test case to validate that the module
-    handles non-UTF8 characters correctly in a job's output.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1288).

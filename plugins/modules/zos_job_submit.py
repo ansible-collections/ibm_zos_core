@@ -1012,8 +1012,7 @@ def run_module():
                     jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
                     # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
                     special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
-                                                           .format("|".join(JOB_SPECIAL_PROCESSING))
-                                                           , jes_jcl_dd_content_str)
+                                                           .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
 
                     if special_processing_keyword:
                         job_ret_code.update({"msg": special_processing_keyword[0]})

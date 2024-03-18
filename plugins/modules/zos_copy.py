@@ -820,37 +820,33 @@ cmd:
 """
 
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
-    idcams
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, backup, copy, validation,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member
-)
+import glob
+import math
+import os
+import shutil
+import stat
+import tempfile
+import traceback
+from hashlib import sha256
+from re import IGNORECASE
+
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
-from re import IGNORECASE
-from hashlib import sha256
-import glob
-import shutil
-import stat
-import math
-import tempfile
-import os
-import traceback
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    backup, better_arg_parser, copy, data_set, encode, validation)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import \
+    AnsibleModuleHelper
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
+    is_member
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import \
+    idcams
 
 if PY3:
-    from re import fullmatch
     import pathlib
+    from re import fullmatch
 else:
     from re import match as fullmatch
 
@@ -1071,16 +1067,8 @@ class CopyHandler(object):
         new_src = src
 
         if os.path.isdir(new_src):
-            if temp_path:
-                if src.endswith("/"):
-                    new_src = "{0}/{1}".format(
-                        temp_path, os.path.basename(os.path.dirname(src))
-                    )
-                else:
-                    new_src = "{0}/{1}".format(temp_path,
-                                               os.path.basename(src))
             try:
-                if not temp_path:
+                if remote_src:
                     temp_dir = tempfile.mkdtemp()
                     shutil.copytree(new_src, temp_dir, dirs_exist_ok=True)
                     new_src = temp_dir
@@ -1098,7 +1086,7 @@ class CopyHandler(object):
                 raise CopyOperationError(msg=str(err))
         else:
             try:
-                if not temp_path:
+                if remote_src:
                     fd, temp_src = tempfile.mkstemp()
                     os.close(fd)
                     shutil.copy(new_src, temp_src)
@@ -1291,7 +1279,8 @@ class USSCopyHandler(CopyHandler):
         src_ds_type,
         src_member,
         member_name,
-        force
+        force,
+        content,
     ):
         """Copy a file or data set to a USS location
 
@@ -1339,11 +1328,11 @@ class USSCopyHandler(CopyHandler):
                     if "File exists" not in err:
                         raise CopyOperationError(msg=to_native(err))
 
-            if os.path.isfile(temp_path or conv_path or src):
-                dest = self._copy_to_file(src, dest, conv_path, temp_path)
+            if os.path.isfile(conv_path or src):
+                dest = self._copy_to_file(src, dest, content, conv_path)
                 changed_files = None
             else:
-                dest, changed_files = self._copy_to_dir(src, dest, conv_path, temp_path, force)
+                dest, changed_files = self._copy_to_dir(src, dest, conv_path, force)
 
         if self.common_file_args is not None:
             mode = self.common_file_args.get("mode")
@@ -1364,7 +1353,7 @@ class USSCopyHandler(CopyHandler):
                 self.module.set_owner_if_different(dest, owner, False)
         return dest
 
-    def _copy_to_file(self, src, dest, conv_path, temp_path):
+    def _copy_to_file(self, src, dest, content, conv_path):
         """Helper function to copy a USS src to USS dest.
 
         Arguments:
@@ -1380,11 +1369,10 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the file was copied to
         """
-        src_path = os.path.basename(src) if src else "inline_copy"
+        src_path = os.path.basename(src) if not content else "inline_copy"
         if os.path.isdir(dest):
             dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_path))
-
-        new_src = temp_path or conv_path or src
+        new_src = conv_path or src
         try:
             if self.is_binary:
                 copy.copy_uss2uss_binary(new_src, dest)
@@ -1419,7 +1407,6 @@ class USSCopyHandler(CopyHandler):
         src_dir,
         dest_dir,
         conv_path,
-        temp_path,
         force
     ):
         """Helper function to copy a USS directory to another USS directory.
@@ -1443,17 +1430,11 @@ class USSCopyHandler(CopyHandler):
                        that got copied.
         """
         copy_directory = True if not src_dir.endswith("/") else False
-
-        if temp_path:
-            temp_path = "{0}/{1}".format(
-                temp_path,
-                os.path.basename(os.path.normpath(src_dir))
-            )
-
-        new_src_dir = temp_path or conv_path or src_dir
+        new_src_dir = conv_path or src_dir
         new_src_dir = os.path.normpath(new_src_dir)
         dest = dest_dir
         changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir, copy_directory)
+        # self.module.fail_json("DEST DIR : {0}, CONV DIR : {1}, SRC DIR {2} CONV PATH {3}, copy_dir {4}".format(dest, new_src_dir, src_dir, conv_path, copy_directory))
 
         try:
             if copy_directory:
@@ -2686,6 +2667,7 @@ def run_module(module, arg_def):
     tmphlq = module.params.get('tmp_hlq')
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
+    content = module.params.get('content')
 
     dest_data_set = module.params.get('dest_data_set')
     if dest_data_set:
@@ -2739,18 +2721,17 @@ def run_module(module, arg_def):
     # data sets with record format 'FBA' or 'VBA'.
     src_has_asa_chars = dest_has_asa_chars = False
     try:
-        # If temp_path, the plugin has copied a file from the controller to USS.
-        if temp_path or "/" in src:
+        if "/" in src:
             src_ds_type = "USS"
 
-            if remote_src and os.path.isdir(src):
+            if os.path.isdir(src):
                 is_src_dir = True
 
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
             if not is_binary and not is_uss and not executable:
-                new_src = temp_path or src
+                new_src = src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).
                 encode_utils = encode.EncodeUtils()
@@ -2807,7 +2788,7 @@ def run_module(module, arg_def):
         if is_uss:
             dest_ds_type = "USS"
             if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
-                src_basename = os.path.basename(src) if src else "inline_copy"
+                src_basename = os.path.basename(src) if not content else "inline_copy"
                 dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
                 if dest.startswith("//"):
                     dest = dest.replace("//", "/")
@@ -2906,7 +2887,8 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set_locked(dest_name)
+            is_dest_lock = data_set_locked
+            (dest_name)
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
@@ -3088,7 +3070,8 @@ def run_module(module, arg_def):
                 src_ds_type,
                 src_member,
                 member_name,
-                force
+                force,
+                content
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None

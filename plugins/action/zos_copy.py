@@ -247,14 +247,20 @@ class ActionModule(ActionBase):
                 "from": encode.Defaults.get_default_system_charset(),
             }
 
-        src = task_args.get("src")
-        if src and not remote_src:
-            base_name = os.path.basename(src)
-            if os.path.isdir(src):
-                src = "{0}/{1}".format(temp_path, base_name)
-            else:
-                src = temp_path
-        if not src:
+        """
+        We format temp_path correctly to pass it as src option to the module,
+        we keep the original source to return to the user and avoid confusion
+        by returning the temp_path created.
+        """
+        original_src = task_args.get("src")
+        if original_src:
+            if not remote_src:
+                base_name = os.path.basename(original_src)
+                if is_src_dir:
+                    src = "{0}/{1}".format(temp_path, base_name)
+                else:
+                    src = temp_path
+        else:
             src = temp_path
 
         task_args.update(
@@ -299,7 +305,7 @@ class ActionModule(ActionBase):
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
-        return _update_result(is_binary, copy_res, self._task.args)
+        return _update_result(is_binary, copy_res, self._task.args, original_src)
 
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
@@ -433,7 +439,7 @@ class ActionModule(ActionBase):
         return result
 
 
-def _update_result(is_binary, copy_res, original_args):
+def _update_result(is_binary, copy_res, original_args, original_src):
     """ Helper function to update output result with the provided values """
     ds_type = copy_res.get("ds_type")
     src = copy_res.get("src")
@@ -447,7 +453,7 @@ def _update_result(is_binary, copy_res, original_args):
         invocation=dict(module_args=original_args),
     )
     if src:
-        updated_result["src"] = src
+        updated_result["src"] = original_src
     if note:
         updated_result["note"] = note
     if backup_name:

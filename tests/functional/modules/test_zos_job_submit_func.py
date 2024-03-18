@@ -408,12 +408,6 @@ def test_job_submit_PDS(ansible_zos_module, location):
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
-<<<<<<< HEAD
-=======
-        )
-        results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET", wait=True
->>>>>>> main
         )
         if bool(location.get("default_location")):
             results = hosts.all.zos_job_submit(

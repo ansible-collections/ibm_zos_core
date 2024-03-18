@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -59,8 +59,8 @@ options:
     type: bool
     description:
       - Setting this option will yield no change, it is disabled. There is no
-        no need to set I(wait); setting I(wait_times_s) is the correct way to
-        configure the amount of tme to wait for a job to execute.
+        need to set I(wait); setting I(wait_times_s) is the correct way to
+        configure the amount of time to wait for a job to execute.
       - This option will be removed in ibm.ibm_zos_core collection version 1.10.0
       - See option I(wait_time_s).
   wait_time_s:

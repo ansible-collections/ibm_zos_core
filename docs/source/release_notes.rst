@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020 - 2024                              .
+.. © Copyright IBM Corporation 2020, 2024                              .
 .. ...........................................................................
 
 ========
@@ -46,7 +46,7 @@ Minor Changes
 - ``zos_tso_command``
 
     - Has been updated with a new example demonstrating how to explicitly execute a REXX script in a data set.
-    - Has been updated with a new exmaple demonstrating how to chain multiple TSO commands into one invocation using semicolons.
+    - Has been updated with a new example demonstrating how to chain multiple TSO commands into one invocation using semicolons.
 
 - ``zos_mvs_raw``
 
@@ -76,8 +76,8 @@ Bugfixes
     - Fixed an issue that when JCL contained **TYPRUN=SCAN**, the module would fail. The module no longer fails and an appropriate message and response is returned.
     - Fixed an issue that when JCL contained either **TYPRUN=COPY**, **TYPRUN=HOLD**, or **TYPRUN=JCLHOLD** an improper message was returned and the job submission failed.
       Now the job will fail under the condition that the module has exceeded its wait time and return a proper message.
-    - Fixed an issue where when option **wait_time_s** was used, the duration would be approximately 5 seconds longer than what reported in the duration.
-      Now the duration is the accounting from when the job is submitted to when the module reads the job output.
+    - Fixed an issue where when option **wait_time_s** was used, the duration would be approximately 5 seconds longer than what was reported in the duration.
+      Now the duration is from when the job is submitted to when the module reads the job output.
 
 - ``zos_job_output`` - Fixed an issue that when using a job ID with less than 8 characters, would result in a traceback. The fix
   supports shorter job IDs as well as the use of wildcards.
@@ -107,9 +107,9 @@ Several modules have reported UTF-8 decoding errors when interacting with result
 - If the appropriate level of ZOAU can not be installed, some options are to:
 
   - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
-  - Ignore module errors by using  **ignore_errors:true** for a specific.
-  - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
-    a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+  - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+  - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+    job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
   - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
 
 An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended

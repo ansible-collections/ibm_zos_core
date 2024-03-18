@@ -57,7 +57,7 @@ location
 
 
 wait
-  Setting this option will yield no change, it is disabled. There is no no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of tme to wait for a job to execute.
+  Setting this option will yield no change, it is disabled. There is no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of time to wait for a job to execute.
 
   This option will be removed in ibm.ibm_zos_core collection version 1.10.0
 

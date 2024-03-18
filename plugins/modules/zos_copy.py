@@ -905,7 +905,6 @@ class CopyHandler(object):
     def copy_to_seq(
         self,
         src,
-        temp_path,
         conv_path,
         dest,
         src_type
@@ -917,13 +916,11 @@ class CopyHandler(object):
 
         Arguments:
             src {str} -- Path to USS file or data set name
-            temp_path {str} -- Path to the location where the control node
-                               transferred data to
             conv_path {str} -- Path to the converted source file
             dest {str} -- Name of destination data set
             src_type {str} -- Type of the source
         """
-        new_src = conv_path or temp_path or src
+        new_src = conv_path or src
         copy_args = dict()
         copy_args["options"] = ""
 
@@ -1044,13 +1041,11 @@ class CopyHandler(object):
             entries = list(itr)
         return self._copy_tree(entries, src_dir, dest_dir, dirs_exist_ok=dirs_exist_ok)
 
-    def convert_encoding(self, src, temp_path, encoding, remote_src):
+    def convert_encoding(self, src, encoding, remote_src):
         """Convert encoding for given src
 
         Arguments:
             src {str} -- Path to the USS source file or directory
-            temp_path {str} -- Path to the location where the control node
-                               transferred data to
             encoding {dict} -- Charsets that the source is to be converted
                                from and to
 
@@ -1065,7 +1060,6 @@ class CopyHandler(object):
         to_code_set = encoding.get("to")
         enc_utils = encode.EncodeUtils()
         new_src = src
-        # self.module.fail_json(msg="NEW SRC : {0}".format(new_src))
         if os.path.isdir(new_src):
             try:
                 if remote_src:
@@ -1275,7 +1269,6 @@ class USSCopyHandler(CopyHandler):
         src,
         dest,
         conv_path,
-        temp_path,
         src_ds_type,
         src_member,
         member_name,
@@ -1287,8 +1280,6 @@ class USSCopyHandler(CopyHandler):
         Arguments:
             src {str} -- The USS source
             dest {str} -- Destination file or directory on USS
-            temp_path {str} -- Path to the location where the control node
-                               transferred data to
             conv_path {str} -- Path to the converted source file or directory
             src_ds_type {str} -- Type of source
             src_member {bool} -- Whether src is a data set member
@@ -1359,8 +1350,6 @@ class USSCopyHandler(CopyHandler):
         Arguments:
             src {str} -- USS source file path
             dest {str} -- USS dest file path
-            temp_path {str} -- Path to the location where the control node
-                               transferred data to
             conv_path {str} -- Path to the converted source file or directory
 
         Raises:
@@ -1417,8 +1406,6 @@ class USSCopyHandler(CopyHandler):
             src_dir {str} -- USS source directory
             dest_dir {str} -- USS dest directory
             conv_path {str} -- Path to the converted source directory
-            temp_path {str} -- Path to the location where the control node
-                               transferred data to
             force {bool} -- Whether to copy files to an already existing directory
 
         Raises:
@@ -1434,13 +1421,11 @@ class USSCopyHandler(CopyHandler):
         new_src_dir = os.path.normpath(new_src_dir)
         dest = dest_dir
         changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir, copy_directory)
-        # self.module.fail_json("DEST DIR : {0}, CONV DIR : {1}, SRC DIR {2} CONV PATH {3}, copy_dir {4}".format(dest, new_src_dir, src_dir, conv_path, copy_directory))
 
         try:
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
             # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
-            # self.module.fail_json("DEST DIR : {0}, CONV DIR : {1}, SRC DIR {2} CONV PATH {3}, copy_dir {4}".format(dest, new_src_dir, src_dir, conv_path, copy_directory))
             dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.
@@ -1660,7 +1645,6 @@ class PDSECopyHandler(CopyHandler):
     def copy_to_pdse(
         self,
         src,
-        temp_path,
         conv_path,
         dest,
         src_ds_type,
@@ -1675,8 +1659,6 @@ class PDSECopyHandler(CopyHandler):
 
         Arguments:
             src {str} -- Path to USS file/directory or data set name.
-            temp_path {str} -- Path to the location where the control node
-                               transferred data to.
             conv_path {str} -- Path to the converted source file/directory.
             dest {str} -- Name of destination data set.
             src_ds_type {str} -- The type of source.
@@ -1684,7 +1666,7 @@ class PDSECopyHandler(CopyHandler):
             dest_member {str, optional} -- Name of destination member in data set.
             encoding {dict, optional} -- Dictionary with encoding options.
         """
-        new_src = conv_path or temp_path or src
+        new_src = conv_path or src
         src_members = []
         dest_members = []
 
@@ -2839,12 +2821,12 @@ def run_module(module, arg_def):
                 if copy_member:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
                 elif src_ds_type == "USS":
-                    if temp_path:
-                        root_dir = "{0}/{1}".format(temp_path, os.path.basename(os.path.normpath(src)))
-                        root_dir = os.path.normpath(root_dir)
-                    else:
-                        root_dir = src
-
+                    # if temp_path:
+                    #     root_dir = "{0}/{1}".format(temp_path, os.path.basename(os.path.normpath(src)))
+                    #     root_dir = os.path.normpath(root_dir)
+                    # else:
+                    #     root_dir = src
+                    root_dir = src
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
@@ -2985,17 +2967,19 @@ def run_module(module, arg_def):
     # original one. This change applies only to the
     # allocate_destination_data_set call.
     if converted_src:
-        if remote_src:
-            original_src = src
-            src = converted_src
-        else:
-            original_temp = temp_path
-            temp_path = converted_src
+        # if remote_src:
+        #     original_src = src
+        #     src = converted_src
+        # else:
+        #     original_temp = temp_path
+        #     temp_path = converted_src
+        original_src = src
+        src = converted_src
 
     try:
         if not is_uss:
             res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
-                temp_path or src,
+                src,
                 dest_name, src_ds_type,
                 dest_ds_type,
                 dest_exists,
@@ -3008,20 +2992,22 @@ def run_module(module, arg_def):
             )
     except Exception as err:
         if converted_src:
-            if remote_src:
-                src = original_src
-            else:
-                temp_path = original_temp
+            # if remote_src:
+            #     src = original_src
+            # else:
+            #     temp_path = original_temp
+            src = original_src
         module.fail_json(
             msg="Unable to allocate destination data set: {0}".format(str(err)),
             dest_exists=dest_exists
         )
 
     if converted_src:
-        if remote_src:
-            src = original_src
-        else:
-            temp_path = original_temp
+        # if remote_src:
+        #     src = original_src
+        # else:
+        #     temp_path = original_temp
+        src = original_src
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -3042,7 +3028,7 @@ def run_module(module, arg_def):
             # if is_mvs_dest:
             #     encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
 
-            conv_path = copy_handler.convert_encoding(src, temp_path, encoding, remote_src)
+            conv_path = copy_handler.convert_encoding(src, encoding, remote_src)
 
         # ------------------------------- o -----------------------------------
         # Copy to USS file or directory
@@ -3066,7 +3052,6 @@ def run_module(module, arg_def):
                 src,
                 dest,
                 conv_path,
-                temp_path,
                 src_ds_type,
                 src_member,
                 member_name,
@@ -3077,7 +3062,7 @@ def run_module(module, arg_def):
             remote_checksum = dest_checksum = None
 
             try:
-                remote_checksum = get_file_checksum(temp_path or src)
+                remote_checksum = get_file_checksum(src)
                 dest_checksum = get_file_checksum(dest)
 
                 if validate:
@@ -3099,12 +3084,11 @@ def run_module(module, arg_def):
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
             # TODO: check how ASA behaves with this
             if src_ds_type == "USS" and not is_binary:
-                new_src = conv_path or temp_path or src
+                new_src = conv_path or src
                 conv_path = normalize_line_endings(new_src, encoding)
 
             copy_handler.copy_to_seq(
                 src,
-                temp_path,
                 conv_path,
                 dest,
                 src_ds_type
@@ -3116,8 +3100,9 @@ def run_module(module, arg_def):
         # Copy to PDS/PDSE
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED or dest_ds_type == "LIBRARY":
-            if not remote_src and not copy_member and os.path.isdir(temp_path):
-                temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
+            # if not remote_src and not copy_member and os.path.isdir(src):
+            #     temp_path = src
+                # temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
             pdse_copy_handler = PDSECopyHandler(
                 module,
@@ -3131,7 +3116,6 @@ def run_module(module, arg_def):
 
             pdse_copy_handler.copy_to_pdse(
                 src,
-                temp_path,
                 conv_path,
                 dest_name,
                 src_ds_type,
@@ -3162,7 +3146,7 @@ def run_module(module, arg_def):
         )
     )
 
-    return res_args, temp_path, conv_path
+    return res_args, conv_path
 
 
 def main():
@@ -3355,15 +3339,15 @@ def main():
             )
         )
 
-    res_args = temp_path = conv_path = None
+    res_args = conv_path = None
     try:
-        res_args, temp_path, conv_path = run_module(module, arg_def)
+        res_args, conv_path = run_module(module, arg_def)
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
         module.fail_json(**(err.json_args))
     finally:
-        cleanup([temp_path, conv_path])
+        cleanup([ conv_path])
 
 
 class EncodingConversionError(Exception):

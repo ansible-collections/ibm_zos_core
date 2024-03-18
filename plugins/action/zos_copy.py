@@ -256,8 +256,8 @@ class ActionModule(ActionBase):
         if original_src:
             if not remote_src:
                 base_name = os.path.basename(original_src)
-                if is_src_dir:
-                    src = "{0}/{1}".format(temp_path, base_name)
+                if original_src.endswith("/"):
+                    src = temp_path + "/"
                 else:
                     src = temp_path
         else:
@@ -274,6 +274,7 @@ class ActionModule(ActionBase):
                 encoding=encoding,
             )
         )
+        display.vvv(u"ibm_zos_copy task args copy to remote: {0}".format(task_args), host=self._play_context.remote_addr)
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,
@@ -314,9 +315,11 @@ class ActionModule(ActionBase):
         self._connection.exec_command("mkdir -p {0}".format(os.path.dirname(temp_path)))
         _src = src.replace("#", "\\#")
         _sftp_action = 'put'
+        full_temp_path = temp_path
 
         if is_dir:
             src = src.rstrip("/") if src.endswith("/") else src
+            temp_path = os.path.dirname(temp_path)
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
             _sftp_action += ' -r'    # add '-r` to clone the source trees
@@ -401,7 +404,7 @@ class ActionModule(ActionBase):
                 display.vvv(u"ibm_zos_copy SSH transfer method restored to {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
                 is_ssh_transfer_method_updated = False
 
-        return dict(temp_path=temp_path)
+        return dict(temp_path=full_temp_path)
 
     def _remote_cleanup(self, dest, dest_exists, task_vars):
         """Remove all files or data sets pointed to by 'dest' on the remote

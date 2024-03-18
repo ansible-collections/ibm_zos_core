@@ -842,9 +842,8 @@ def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
         for result in stat_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-
     finally:
-        # hosts.all.file(path=dest_path, state="absent")
+        hosts.all.file(path=dest_path, state="absent")
         shutil.rmtree(temp_path)
 
 

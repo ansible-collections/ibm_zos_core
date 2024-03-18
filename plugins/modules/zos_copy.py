@@ -1065,7 +1065,7 @@ class CopyHandler(object):
         to_code_set = encoding.get("to")
         enc_utils = encode.EncodeUtils()
         new_src = src
-
+        # self.module.fail_json(msg="NEW SRC : {0}".format(new_src))
         if os.path.isdir(new_src):
             try:
                 if remote_src:
@@ -1440,6 +1440,7 @@ class USSCopyHandler(CopyHandler):
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
             # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+            # self.module.fail_json("DEST DIR : {0}, CONV DIR : {1}, SRC DIR {2} CONV PATH {3}, copy_dir {4}".format(dest, new_src_dir, src_dir, conv_path, copy_directory))
             dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.

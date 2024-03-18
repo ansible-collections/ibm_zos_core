@@ -2888,8 +2888,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set_locked
-            (dest_name)
+            is_dest_lock = data_set_locked(dest_name)
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))

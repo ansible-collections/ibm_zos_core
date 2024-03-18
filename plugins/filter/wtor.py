@@ -39,7 +39,7 @@ options:
       required: true
     ingore_case:
       description:
-            - Should the the filter enable case sensitivity when performing a match.
+            - Should the filter enable case sensitivity when performing a match.
       type: bool
       required: false
       default: false

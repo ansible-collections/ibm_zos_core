@@ -2645,7 +2645,6 @@ def run_module(module, arg_def):
     is_pds = module.params.get('is_pds')
     is_src_dir = module.params.get('is_src_dir')
     is_mvs_dest = module.params.get('is_mvs_dest')
-    temp_path = module.params.get('temp_path')
     src_member = module.params.get('src_member')
     tmphlq = module.params.get('tmp_hlq')
     force = module.params.get('force')
@@ -2821,11 +2820,6 @@ def run_module(module, arg_def):
                 if copy_member:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
                 elif src_ds_type == "USS":
-                    # if temp_path:
-                    #     root_dir = "{0}/{1}".format(temp_path, os.path.basename(os.path.normpath(src)))
-                    #     root_dir = os.path.normpath(root_dir)
-                    # else:
-                    #     root_dir = src
                     root_dir = src
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
@@ -2967,12 +2961,6 @@ def run_module(module, arg_def):
     # original one. This change applies only to the
     # allocate_destination_data_set call.
     if converted_src:
-        # if remote_src:
-        #     original_src = src
-        #     src = converted_src
-        # else:
-        #     original_temp = temp_path
-        #     temp_path = converted_src
         original_src = src
         src = converted_src
 
@@ -2992,10 +2980,6 @@ def run_module(module, arg_def):
             )
     except Exception as err:
         if converted_src:
-            # if remote_src:
-            #     src = original_src
-            # else:
-            #     temp_path = original_temp
             src = original_src
         module.fail_json(
             msg="Unable to allocate destination data set: {0}".format(str(err)),
@@ -3003,10 +2987,6 @@ def run_module(module, arg_def):
         )
 
     if converted_src:
-        # if remote_src:
-        #     src = original_src
-        # else:
-        #     temp_path = original_temp
         src = original_src
 
     # ********************************************************************
@@ -3100,9 +3080,6 @@ def run_module(module, arg_def):
         # Copy to PDS/PDSE
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED or dest_ds_type == "LIBRARY":
-            # if not remote_src and not copy_member and os.path.isdir(src):
-            #     temp_path = src
-                # temp_path = os.path.join(validation.validate_safe_path(temp_path), validation.validate_safe_path(os.path.basename(src)))
 
             pdse_copy_handler = PDSECopyHandler(
                 module,
@@ -3242,7 +3219,6 @@ def main():
             is_pds=dict(type='bool'),
             is_src_dir=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
-            temp_path=dict(type='str'),
             src_member=dict(type='bool'),
             force=dict(type='bool', default=False),
             force_lock=dict(type='bool', default=False),
@@ -3347,7 +3323,7 @@ def main():
         cleanup([])
         module.fail_json(**(err.json_args))
     finally:
-        cleanup([ conv_path])
+        cleanup([conv_path])
 
 
 class EncodingConversionError(Exception):

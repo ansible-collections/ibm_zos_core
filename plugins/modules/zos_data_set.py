@@ -24,7 +24,9 @@ short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
-author: "Blake Becker (@blakeinate)"
+author:
+  - "Blake Becker (@blakeinate)"
+  - "Rich Parker (@richp405)"
 options:
   name:
     description:
@@ -109,7 +111,7 @@ options:
     description:
       - The data set type to be used when creating a data set. (e.g C(pdse))
       - C(MEMBER) expects to be used with an existing partitioned data set.
-      - Choices are case-insensitive.
+      - Choices are case-sensitive.
     required: false
     type: str
     choices:
@@ -157,7 +159,7 @@ options:
   record_format:
     description:
       - The format of the data set. (e.g C(FB))
-      - Choices are case-insensitive.
+      - Choices are case-sensitive.
       - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or I(type=ZFS)
         then I(record_format=None), these types do not have a default
         I(record_format).
@@ -171,6 +173,8 @@ options:
       - F
     type: str
     default: FB
+    aliases:
+      - format
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -179,6 +183,8 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
+    aliases:
+      - data_class
   sms_data_class:
     description:
       - The data class for an SMS-managed dataset.
@@ -370,7 +376,7 @@ options:
         description:
           - The data set type to be used when creating a data set. (e.g C(PDSE))
           - C(MEMBER) expects to be used with an existing partitioned data set.
-          - Choices are case-insensitive.
+          - Choices are case-sensitive.
         required: false
         type: str
         choices:
@@ -418,7 +424,7 @@ options:
       record_format:
         description:
           - The format of the data set. (e.g C(FB))
-          - Choices are case-insensitive.
+          - Choices are case-sensitive.
           - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or
             I(type=ZFS) then I(record_format=None), these types do not have a
             default I(record_format).
@@ -432,6 +438,8 @@ options:
           - F
         type: str
         default: FB
+        aliases:
+          - format
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -440,6 +448,8 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
+        aliases:
+          - data_class
       sms_data_class:
         description:
           - The data class for an SMS-managed dataset.
@@ -539,7 +549,7 @@ EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: seq
+    type: SEQ
     state: present
 
 - name: Create a PDS data set if it does not exist
@@ -548,26 +558,26 @@ EXAMPLES = r"""
     type: pds
     space_primary: 5
     space_type: M
-    record_format: fba
+    record_format: FBA
     record_length: 25
 
 - name: Attempt to replace a data set if it exists
   zos_data_set:
     name: someds.name.here
-    type: pds
+    type: PDS
     space_primary: 5
     space_type: M
-    record_format: u
+    record_format: U
     record_length: 25
     replace: yes
 
 - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
   zos_data_set:
     name: someds.name.here
-    type: pds
+    type: PDS
     space_primary: 5
     space_type: M
-    record_format: u
+    record_format: U
     record_length: 25
     volumes: "222222"
     replace: yes
@@ -575,19 +585,19 @@ EXAMPLES = r"""
 - name: Create an ESDS data set if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: esds
+    type: ESDS
 
 - name: Create a KSDS data set if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: ksds
+    type: KSDS
     key_length: 8
     key_offset: 0
 
 - name: Create an RRDS data set with storage class MYDATA if it does not exist
   zos_data_set:
     name: someds.name.here
-    type: rrds
+    type: RRDS
     sms_storage_class: mydata
 
 - name: Delete a data set if it exists
@@ -632,7 +642,7 @@ EXAMPLES = r"""
         type: PDS
         space_primary: 5
         space_type: M
-        record_format: fb
+        record_format: FB
         replace: yes
       - name: someds.name.here1(member1)
         type: MEMBER
@@ -799,7 +809,7 @@ def space_type(contents, dependencies):
     """Validates provided data set unit of space is valid.
     Returns the unit of space."""
     if dependencies.get("state") == "absent":
-        return None
+        return "M"
     if contents is None:
         return None
     match = re.fullmatch(r"(M|G|K|TRK|CYL)", contents, re.IGNORECASE)
@@ -865,9 +875,9 @@ def record_format(contents, dependencies):
     """Validates data set format is valid.
     Returns uppercase data set format."""
     if dependencies.get("state") == "absent":
-        return None
+        return "FB"
     if contents is None:
-        return None
+        return "FB"
     formats = "|".join(DATA_SET_FORMATS)
     if not re.fullmatch(formats, contents, re.IGNORECASE):
         raise ValueError(
@@ -986,33 +996,7 @@ def perform_data_set_operations(name, state, **extra_args):
     return changed
 
 
-def fix_old_size_arg(params):
-    """ for backwards compatibility with old styled size argument """
-    match = None
-    if params.get("size"):
-        match = re.fullmatch(
-            r"([1-9][0-9]*)(M|G|K|TRK|CYL)", str(params.get("size")), re.IGNORECASE
-        )
-        if not match:
-            raise ValueError(
-                'Value {0} is invalid for size argument. Valid size measurements are "K", "M", "G", "TRK" or "CYL".'.format(
-                    str(params.get("size"))
-                )
-            )
-    if params.get("space_primary"):
-        match = re.fullmatch(
-            r"([1-9][0-9]*)(M|G|K|TRK|CYL)",
-            str(params.get("space_primary")),
-            re.IGNORECASE,
-        )
-    if match:
-        params["space_primary"] = int(match.group(1))
-        params["space_type"] = match.group(2)
-    return params
-
-
 def parse_and_validate_args(params):
-    params = fix_old_size_arg(params)
 
     arg_defs = dict(
         # Used for batch data set args
@@ -1030,9 +1014,18 @@ def parse_and_validate_args(params):
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type=data_set_type, required=False, dependencies=["state"]),
+                type=dict(
+                    type=data_set_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=DATA_SET_TYPES,
+                ),
                 space_type=dict(
-                    type=space_type, required=False, dependencies=["state"]
+                    type=space_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=["K", "M", "G", "CYL", "TRK"],
+                    default="M",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1042,7 +1035,9 @@ def parse_and_validate_args(params):
                     type=record_format,
                     required=False,
                     dependencies=["state"],
+                    choices=["FB", "VB", "FBA", "VBA", "U", "F"],
                     aliases=["format"],
+                    default="FB",
                 ),
                 sms_management_class=dict(
                     type=sms_class, required=False, dependencies=["state"]
@@ -1114,14 +1109,22 @@ def parse_and_validate_args(params):
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
         type=dict(type=data_set_type, required=False, dependencies=["state"]),
-        space_type=dict(type=space_type, required=False, dependencies=["state"]),
+        space_type=dict(
+            type=space_type,
+            required=False,
+            dependencies=["state"],
+            choices=["K", "M", "G", "CYL", "TRK"],
+            default="M",
+        ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
         record_format=dict(
             type=record_format,
             required=False,
             dependencies=["state"],
+            choices=["FB", "VB", "FBA", "VBA", "U", "F"],
             aliases=["format"],
+            default="FB",
         ),
         sms_management_class=dict(
             type=sms_class, required=False, dependencies=["state"]
@@ -1179,7 +1182,7 @@ def parse_and_validate_args(params):
             # ["batch", "space_type"],
             # ["batch", "space_primary"],
             # ["batch", "space_secondary"],
-            ["batch", "record_format"],
+            # ["batch", "record_format"],
             ["batch", "sms_management_class"],
             ["batch", "sms_storage_class"],
             ["batch", "sms_data_class"],
@@ -1218,11 +1221,27 @@ def run_module():
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type="str", required=False, default="PDS"),
-                space_type=dict(type="str", required=False, default="M"),
-                space_primary=dict(type="int", required=False, aliases=["size"], default=5),
+                type=dict(
+                    type="str",
+                    required=False,
+                    default="PDS",
+                    choices=DATA_SET_TYPES,
+                ),
+                space_type=dict(
+                    type="str",
+                    required=False,
+                    default="M",
+                    choices=["K", "M", "G", "CYL", "TRK"],
+                ),
+                space_primary=dict(type="int", required=False, default=5),
                 space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+                record_format=dict(
+                    type="str",
+                    required=False,
+                    aliases=["format"],
+                    default="FB",
+                    choices=["FB", "VB", "FBA", "VBA", "U", "F"],
+                ),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1267,11 +1286,27 @@ def run_module():
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
-        type=dict(type="str", required=False, default="PDS"),
-        space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        type=dict(
+            type="str",
+            required=False,
+            default="PDS",
+            choices=DATA_SET_TYPES,
+        ),
+        space_type=dict(
+            type="str",
+            required=False,
+            default="M",
+            choices=["K", "M", "G", "CYL", "TRK"],
+        ),
+        space_primary=dict(type="int", required=False, default=5),
         space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+        record_format=dict(
+            type="str",
+            required=False,
+            aliases=["format"],
+            choices=["FB", "VB", "FBA", "VBA", "U", "F"],
+            default="FB"
+        ),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
@@ -1319,6 +1354,7 @@ def run_module():
     # This evaluation will always occur as a result of the limitation on the
     # better arg parser, this will serve as a solution for now and ensure
     # the non-batch and batch arguments are correctly set
+    # This section is copied down inside if/check_mode false, so it modifies after the arg parser
     if module.params.get("batch") is not None:
         for entry in module.params.get("batch"):
             if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
@@ -1340,7 +1376,9 @@ def run_module():
     elif module.params.get("type") is not None:
         if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it
-            module.params["record_format"] = None
+            # module.params["record_format"] = None
+            if module.params.get("record_format") is not None:
+                del module.params["record_format"]
 
     if not module.check_mode:
         try:
@@ -1353,6 +1391,30 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
+                # This *appears* redundant, bit the parse_and_validate reinforces the default value for record_type
+                if data_set_params.get("batch") is not None:
+                    for entry in data_set_params.get("batch"):
+                        if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
+                            entry["record_format"] = None
+                    if data_set_params.get("type") is not None:
+                        data_set_params["type"] = None
+                    if data_set_params.get("state") is not None:
+                        data_set_params["state"] = None
+                    if data_set_params.get("space_type") is not None:
+                        data_set_params["space_type"] = None
+                    if data_set_params.get("space_primary") is not None:
+                        data_set_params["space_primary"] = None
+                    if data_set_params.get("space_secondary") is not None:
+                        data_set_params["space_secondary"] = None
+                    if data_set_params.get("replace") is not None:
+                        data_set_params["replace"] = None
+                    if data_set_params.get("record_format") is not None:
+                        data_set_params["record_format"] = None
+                else:
+                    if data_set_params.get("type").upper() in DATA_SET_TYPES_VSAM:
+                        if data_set_params.get("record_format") is not None:
+                            data_set_params["record_format"] = None
+
                 # remove unnecessary empty batch argument
                 result["changed"] = perform_data_set_operations(
                     **data_set_params

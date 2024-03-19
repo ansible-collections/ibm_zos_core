@@ -251,7 +251,7 @@ ac_build(){
 ##  $ ac --ac-galaxy-importer
 ac_galaxy_importer(){
     message "Running Galaxy Importer"
-    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m $VENV_BIN/galaxy_importer.main $collection_name
+    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m galaxy_importer.main $collection_name
 }
 
 # Run a changelog lint locally

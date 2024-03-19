@@ -255,9 +255,68 @@ HELLO, WORLD
 //
 """
 
-JCL_FULL_INPUT="""//HLQ0  JOB MSGLEVEL=(1,1),
+JCL_FULL_INPUT = """//HLQ0  JOB MSGLEVEL=(1,1),
 //  MSGCLASS=A,CLASS=A,NOTIFY=&SYSUID
 //STEP1 EXEC PGM=BPXBATCH,PARM='PGM /bin/sleep 5'"""
+
+C_SRC_INVALID_UTF8 = """#include <stdio.h>
+int main()
+{
+    unsigned char a=0x64;
+    unsigned char b=0x2A;
+    unsigned char c=0xB8;
+    unsigned char d=0xFF;
+    unsigned char e=0x81;
+    unsigned char f=0x82;
+    unsigned char g=0x83;
+    unsigned char h=0x00;
+    /* The following are non-printables from DBB. */
+    unsigned char nl=0x15;
+    unsigned char cr=0x0D;
+    unsigned char lf=0x25;
+    unsigned char shiftOut=0x0E;
+    unsigned char shiftIn=0x0F;
+
+    printf("Value of a: Hex: %X, character: %c",a,a);
+    printf("Value of b: Hex: %X, character: %c",b,b);
+    printf("Value of c: Hex: %X, character: %c",c,c);
+    printf("Value of d: Hex: %X, character: %c",d,d);
+    printf("Value of e: Hex: %X, character: %c",e,e);
+    printf("Value of f: Hex: %X, character: %c",f,f);
+    printf("Value of g: Hex: %X, character: %c",g,g);
+    printf("Value of h: Hex: %X, character: %c",h,h);
+    printf("Value of NL: Hex: %X, character: %c",nl,nl);
+    printf("Value of CR: Hex: %X, character: %c",cr,cr);
+    printf("Value of LF: Hex: %X, character: %c",lf,lf);
+    printf("Value of Shift-Out: Hex: %X, character: %c",shiftOut,shiftOut);
+    printf("Value of Shift-In: Hex: %X, character: %c",shiftIn,shiftIn);
+
+    return 0;
+}
+"""
+
+JCL_INVALID_UTF8_CHARS_EXC = """//*
+//******************************************************************************
+//* Job that runs a C program that returns characters outside of the UTF-8 range
+//* expected by Python. This job tests a bugfix present in ZOAU v1.3.0 and
+//* later that deals properly with these chars.
+//* The JCL needs to be formatted to give it the directory where the C program
+//* is located.
+//******************************************************************************
+//NOEBCDIC JOB (T043JM,JM00,1,0,0,0),'NOEBCDIC - JRM',
+//             MSGCLASS=H,MSGLEVEL=1,NOTIFY=&SYSUID
+//NOPRINT  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH (
+cd {0};
+./noprint;
+exit 0;
+)
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//
+"""
 
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
@@ -712,3 +771,40 @@ def test_negative_job_submit_local_jcl_typrun_scan(ansible_zos_module):
         assert re.search(r'error ? ?', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
         assert result.get("jobs")[0].get("ret_code").get("msg_text") == "?"
+
+
+# This test case is related to the following GitHub issues:
+# - https://github.com/ansible-collections/ibm_zos_core/issues/677
+# - https://github.com/ansible-collections/ibm_zos_core/issues/972
+# - https://github.com/ansible-collections/ibm_zos_core/issues/1160
+# - https://github.com/ansible-collections/ibm_zos_core/issues/1255
+def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+
+        # Copy C source and compile it.
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/noprint.c".format(quote(C_SRC_INVALID_UTF8), TEMP_PATH)
+        )
+        hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c".format(TEMP_PATH))
+
+        # Create local JCL and submit it.
+        tmp_file = tempfile.NamedTemporaryFile(delete=True)
+        with open(tmp_file.name, "w") as f:
+            f.write(JCL_INVALID_UTF8_CHARS_EXC.format(TEMP_PATH))
+
+        results = hosts.all.zos_job_submit(
+            src=tmp_file.name,
+            location="LOCAL",
+            wait_time_s=15
+        )
+
+        for result in results.contacted.values():
+            # We shouldn't get an error now that ZOAU handles invalid/unprintable
+            # UTF-8 chars correctly.
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+            assert result.get("jobs")[0].get("ret_code").get("code") == 0
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")

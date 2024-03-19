@@ -18,6 +18,10 @@ import re
 import traceback
 from time import sleep
 from timeit import default_timer as timer
+# Only importing this module so we can catch a JSONDecodeError that sometimes happens
+# when a job's output has non-printable chars that conflict with JSON's control
+# chars.
+from json import decoder
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -356,11 +360,21 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     tmpcont = None
                     if "step_name" in single_dd:
                         if "dd_name" in single_dd:
-                            tmpcont = jobs.read_output(
-                                entry.job_id,
-                                single_dd["step_name"],
-                                single_dd["dd_name"]
-                            )
+                            # In case ZOAU fails when reading the job output, we'll
+                            # add a message to the user telling them of this.
+                            # ZOAU cannot read partial output from a job, so we
+                            # have to make do with nothing from this step if it fails.
+                            try:
+                                tmpcont = jobs.read_output(
+                                    entry.job_id,
+                                    single_dd["step_name"],
+                                    single_dd["dd_name"]
+                                )
+                            except (UnicodeDecodeError, decoder.JSONDecodeError):
+                                tmpcont = (
+                                    "Non-printable UTF-8 characters were present in this output. "
+                                    "Please access it manually."
+                                )
 
                     dd["content"] = tmpcont.split("\n")
                     job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
@@ -392,13 +406,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                             job["ret_code"]["msg"] = tmptext.strip()
                             job["ret_code"]["msg_code"] = None
                             job["ret_code"]["code"] = None
-
-                # if len(list_of_dds) > 0:
-                    # The duration should really only be returned for job submit but the code
-                    # is used job_output as well, for now we can ignore this point unless
-                    # we want to offer a wait_time_s for job output which might be reasonable.
-                    # Note: Moved this to the upper time loop, so it should always be populated.
-                    # job["duration"] = duration
 
             final_entries.append(job)
     if not final_entries:

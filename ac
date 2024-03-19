@@ -251,7 +251,32 @@ ac_build(){
 ##  $ ac --ac-galaxy-importer
 ac_galaxy_importer(){
     message "Running Galaxy Importer"
-    . $VENV_BIN/activate && collection_name=$(ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m galaxy_importer.main $collection_name
+    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m $VENV_BIN/galaxy_importer.main $collection_name
+}
+
+# Run a changelog lint locally
+# ------------------------------------------------------------------------------
+#->ac-changelog:
+## Runs antsibull-changelog to generate the release changelog or perform a lint
+## on changelog fragments or release notes.
+## Usage: ac [--ac-changelog <command>]
+## <command> - choose from 'init', 'lint', 'lint-changelog-yaml', 'release', 'generate'
+##         - generate generate the changelog
+##         - init set up changelog infrastructure for collection, or an other project
+##         - lint check changelog fragments for syntax errors
+##         - lint-changelog-yaml check syntax of changelogs/changelog.yaml file
+##         - release add a new release to the change metadata
+## Example:
+##  $ ac --ac-changelog --command lint
+##  $ ac --ac-changelog --command release
+##  $ ac --ac-changelog
+ac_changelog(){
+    option_command=$1
+    if [ ! "$option_command" ]; then
+        option_command="lint"
+    fi
+    message "Running Changelog '$option_command'"
+    . $VENV_BIN/activate && antsibull-changelog "${option_command}"
 }
 
 # ------------------------------------------------------------------------------
@@ -670,6 +695,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-galaxy-importer"
             ;;
+      --ac-changelog)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-changelog"
+            ;;
       --ac-install)
             ensure_managed_venv_exists $1      # Command
             option_submitted="--ac-install"
@@ -732,6 +761,11 @@ while true; do
       --venv-stop)                              # Command
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
+            ;;
+      --command|--command=?*)                       # option
+            command=`option_processor $1 $2`
+            option_sanitize $command
+            shift
             ;;
       --debug|--debug=?*)                       # option
             debug=`option_processor $1 $2`
@@ -819,6 +853,8 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ] ; then
     ac_galaxy_importer
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
+    ac_changelog $command
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then

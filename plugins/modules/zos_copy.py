@@ -1050,6 +1050,8 @@ class CopyHandler(object):
             src {str} -- Path to the USS source file or directory
             encoding {dict} -- Charsets that the source is to be converted
                                from and to
+            remote_src {bool} -- Whether the file was already on the remote
+                                node or not.
 
         Raises:
             CopyOperationError -- When the encoding of a USS file is not
@@ -1275,7 +1277,7 @@ class USSCopyHandler(CopyHandler):
         src_member,
         member_name,
         force,
-        content,
+        content_copy,
     ):
         """Copy a file or data set to a USS location
 
@@ -1287,6 +1289,7 @@ class USSCopyHandler(CopyHandler):
             src_member {bool} -- Whether src is a data set member
             member_name {str} -- The name of the source data set member
             force {bool} -- Whether to copy files to an already existing directory
+            content_copy {bool} -- Whether copy is using content option or not.
 
         Returns:
             {str} -- Destination where the file was copied to
@@ -1322,7 +1325,7 @@ class USSCopyHandler(CopyHandler):
                         raise CopyOperationError(msg=to_native(err))
 
             if os.path.isfile(conv_path or src):
-                dest = self._copy_to_file(src, dest, content, conv_path)
+                dest = self._copy_to_file(src, dest, content_copy, conv_path)
                 changed_files = None
             else:
                 dest, changed_files = self._copy_to_dir(src, dest, conv_path, force)
@@ -1346,12 +1349,13 @@ class USSCopyHandler(CopyHandler):
                 self.module.set_owner_if_different(dest, owner, False)
         return dest
 
-    def _copy_to_file(self, src, dest, content, conv_path):
+    def _copy_to_file(self, src, dest, content_copy, conv_path):
         """Helper function to copy a USS src to USS dest.
 
         Arguments:
             src {str} -- USS source file path
             dest {str} -- USS dest file path
+            content_copy {bool} -- Whether copy is using content option or not.
             conv_path {str} -- Path to the converted source file or directory
 
         Raises:
@@ -1360,7 +1364,7 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the file was copied to
         """
-        src_path = os.path.basename(src) if not content else "inline_copy"
+        src_path = os.path.basename(src) if not content_copy else "inline_copy"
         if os.path.isdir(dest):
             dest = os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(src_path))
         new_src = conv_path or src
@@ -3040,7 +3044,7 @@ def run_module(module, arg_def):
                 src_member,
                 member_name,
                 force,
-                content
+                bool(content)
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None

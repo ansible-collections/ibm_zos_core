@@ -192,11 +192,6 @@ class ActionModule(ActionBase):
 
                         src = rendered_dir
 
-                    # task_args["size"] = sum(
-                    #     os.stat(os.path.join(validation.validate_safe_path(path), validation.validate_safe_path(f))).st_size
-                    #     for path, dirs, files in os.walk(src)
-                    #     for f in files
-                    # )
                 else:
                     if mode == "preserve":
                         task_args["mode"] = "0{0:o}".format(
@@ -227,7 +222,6 @@ class ActionModule(ActionBase):
 
                         src = rendered_file
 
-                    # task_args["size"] = os.stat(src).st_size
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
                     src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
@@ -265,7 +259,6 @@ class ActionModule(ActionBase):
                 encoding=encoding,
             )
         )
-        display.vvv(u"ibm_zos_copy task args copy to remote: {0}".format(task_args), host=self._play_context.remote_addr)
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,

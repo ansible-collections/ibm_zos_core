@@ -1022,11 +1022,11 @@ class DataSet(object):
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
             datasets.create(**formatted_args)
-        except exceptions.ZOAUException as create_exception:
+        except exceptions._ZOAUExtendableException as create_exception:
             raise DatasetCreateError(
                 name,
                 create_exception.response.rc,
-                create_exception.response.stdout_response + create_exception.response.stderr_response
+                create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
         except exceptions.DatasetVerificationError as e:
             # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0

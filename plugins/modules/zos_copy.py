@@ -1106,10 +1106,10 @@ class CopyHandler(object):
                 if new_src != src:
                     os.remove(new_src)
                 raise err
-            # except Exception as err:
-            #     if new_src != src:
-            #         os.remove(new_src)
-            #     raise CopyOperationError(msg=str(err))
+            except Exception as err:
+                if new_src != src:
+                    os.remove(new_src)
+                raise CopyOperationError(msg=str(err))
         return new_src
 
     def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):

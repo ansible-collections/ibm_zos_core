@@ -1,0 +1,5 @@
+trivial:
+  - zos_archive - Updated examples to use path instead of src.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1286).
+  - zos_unarchive - Updated examples and return dict to use path instead of src.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1286).

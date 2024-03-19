@@ -245,7 +245,7 @@ ac_build(){
 # Run a check on all the libraries to ensure they exist.
 # ------------------------------------------------------------------------------
 #->ac-galaxy-importer:
-## Run a check on all the libraries to ensure they exist.
+## Build current branch and run importer on collection.
 ## Usage: ac [--ac-galaxy-importer]
 ## Example:
 ##  $ ac --ac-galaxy-importer

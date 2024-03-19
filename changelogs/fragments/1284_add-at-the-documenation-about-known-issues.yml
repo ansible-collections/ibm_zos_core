@@ -1,4 +1,5 @@
 trivial:
   - zos_blockinfile - Add information about known issues in notes.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1284).
   - zos_lineinfile - Add information about known issues in notes.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1284).

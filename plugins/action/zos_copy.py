@@ -29,8 +29,7 @@ from ansible.utils.display import Display
 from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member,
-    is_data_set
+    is_member
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
@@ -69,8 +68,8 @@ class ActionModule(ActionBase):
         owner = task_args.get("owner", None)
         group = task_args.get("group", None)
 
-        is_pds = is_src_dir = False
-        temp_path = is_uss = is_mvs_dest = src_member = None
+        is_src_dir = False
+        temp_path = is_uss = None
 
         if dest:
             if not isinstance(dest, string_types):
@@ -78,7 +77,6 @@ class ActionModule(ActionBase):
                 return self._exit_action(result, msg, failed=True)
             else:
                 is_uss = "/" in dest
-                is_mvs_dest = is_data_set(dest)
         else:
             msg = "Destination is required"
             return self._exit_action(result, msg, failed=True)
@@ -96,13 +94,11 @@ class ActionModule(ActionBase):
                 msg = "'src' or 'dest' must not be empty"
                 return self._exit_action(result, msg, failed=True)
             else:
-                src_member = is_member(src)
                 if not remote_src:
                     if src.startswith('~'):
                         src = os.path.expanduser(src)
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
-                    is_pds = is_src_dir and is_mvs_dest
 
         if not src and not content:
             msg = "'src' or 'content' is required"
@@ -265,12 +261,7 @@ class ActionModule(ActionBase):
 
         task_args.update(
             dict(
-                is_uss=is_uss,
-                is_pds=is_pds,
-                is_src_dir=is_src_dir,
-                src_member=src_member,
                 src=src,
-                is_mvs_dest=is_mvs_dest,
                 encoding=encoding,
             )
         )

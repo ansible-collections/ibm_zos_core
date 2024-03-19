@@ -837,8 +837,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup, better_arg_parser, copy, data_set, encode, validation)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import \
     AnsibleModuleHelper
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
-    is_member
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    is_member,
+    is_data_set
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import \
@@ -2641,11 +2643,6 @@ def run_module(module, arg_def):
     owner = module.params.get('owner')
     encoding = module.params.get('encoding')
     volume = module.params.get('volume')
-    is_uss = module.params.get('is_uss')
-    is_pds = module.params.get('is_pds')
-    is_src_dir = module.params.get('is_src_dir')
-    is_mvs_dest = module.params.get('is_mvs_dest')
-    src_member = module.params.get('src_member')
     tmphlq = module.params.get('tmp_hlq')
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
@@ -2657,6 +2654,13 @@ def run_module(module, arg_def):
             dest_data_set["volumes"] = [volume]
 
     copy_member = is_member(dest)
+    # This section we initialize different is_something variables
+    # that we used to pass from the action plugin.
+    is_src_dir = os.path.isdir(src)
+    is_uss = "/" in dest
+    is_mvs_dest = is_data_set(dest)
+    is_pds = is_src_dir and is_mvs_dest
+    src_member = is_member(src)
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -3215,11 +3219,6 @@ def main():
                     auto_reload=dict(type='bool', default=False),
                 )
             ),
-            is_uss=dict(type='bool'),
-            is_pds=dict(type='bool'),
-            is_src_dir=dict(type='bool'),
-            is_mvs_dest=dict(type='bool'),
-            src_member=dict(type='bool'),
             force=dict(type='bool', default=False),
             force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),

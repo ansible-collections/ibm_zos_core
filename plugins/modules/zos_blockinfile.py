@@ -418,7 +418,7 @@ def execute_dmod(src, block, marker, force, encoding, module, ins_bef=None, ins_
     block = block.replace('"', '\\"')
     force = "-f" if force else ""
     encoding = "-c {0}".format(encoding) if encoding else ""
-    marker = "-m {0}".format(marker) if marker else ""
+    marker = "-m \"{0}\"".format(marker) if marker else ""
     if ins_aft:
         if ins_aft == "EOF":
             opts = f'"$ a\\{block}" "{src}"'
@@ -432,9 +432,8 @@ def execute_dmod(src, block, marker, force, encoding, module, ins_bef=None, ins_
 
     cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
 
-    rc, stdout, stderr = module.run_command(cmd)
-    module.fail_json(msg="{0} \n {1} \n {2} \n {3}".format(rc, stdout, stderr, cmd))
-
+    rc = module.run_command(cmd)
+    return rc, cmd
 
 def main():
     module = AnsibleModule(
@@ -542,6 +541,7 @@ def main():
     force = parsed_args.get('force')
     state = parsed_args.get('state')
     indentation = parsed_args.get('indentation')
+    stderr = None
 
     if not block and state == 'present':
         module.fail_json(msg='block is required with state=present')
@@ -592,31 +592,35 @@ def main():
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
           if '"' in block:
-              return_content = execute_dmod(src, block, quotedString(marker), force, encoding, module=module, ins_bef=quotedString(ins_bef), ins_aft=quotedString(ins_aft))
+              rc, cmd = execute_dmod(src, block, quotedString(marker), force, encoding, module=module, ins_bef=quotedString(ins_bef), ins_aft=quotedString(ins_aft))
+              result['rc'] = rc
+              result['cmd'] = cmd
+              result['changed'] = True
           else:
               return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
         return_content = absent(src, marker, encoding, force)
-    stdout = return_content.stdout_response
-    stderr = return_content.stderr_response
-    rc = return_content.rc
-    stdout = stdout.replace('/d', '\\\\d')
-    try:
-        # Try to extract information from stdout
-        # The triple double quotes is required for special characters (/_) been scape
-        ret = json.loads("""{0}""".format(stdout))
-    except Exception:
-        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-        if result.get('backup_name'):
-            messageDict['backup_name'] = result['backup_name']
-        module.fail_json(**messageDict)
+    if '"' not in block:
+      stdout = return_content.stdout_response
+      stderr = return_content.stderr_response
+      rc = return_content.rc
+      stdout = stdout.replace('/d', '\\\\d')
+      try:
+          # Try to extract information from stdout
+          # The triple double quotes is required for special characters (/_) been scape
+          ret = json.loads("""{0}""".format(stdout))
+      except Exception:
+          messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+          if result.get('backup_name'):
+              messageDict['backup_name'] = result['backup_name']
+          module.fail_json(**messageDict)
 
-    result['cmd'] = ret['data']['commands']
-    result['changed'] = ret['data']['changed']
-    result['found'] = ret['data']['found']
+      result['cmd'] = ret['data']['commands']
+      result['changed'] = ret['data']['changed']
+      result['found'] = ret['data']['found']
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
-    if len(stderr):
+    if stderr:
         result['stderr'] = str(stderr)
         result['rc'] = rc
     module.exit_json(**result)

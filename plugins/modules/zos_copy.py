@@ -2654,7 +2654,7 @@ def run_module(module, arg_def):
             dest_data_set["volumes"] = [volume]
 
     copy_member = is_member(dest)
-    # This section we initialize different is_something variables
+    # This section we initialize different variables
     # that we used to pass from the action plugin.
     is_src_dir = os.path.isdir(src)
     is_uss = "/" in dest

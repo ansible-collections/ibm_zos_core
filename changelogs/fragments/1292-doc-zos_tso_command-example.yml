@@ -1,0 +1,4 @@
+trivial:
+  - zos_tso_command - Added an example on how to chain multiple TSO commands such
+    that they are invoked together when dependent on each other.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1293).

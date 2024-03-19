@@ -27,13 +27,14 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
 
+
 data_set_types = [
-    ("pds"),
-    ("seq"),
-    ("pdse"),
-    ("esds"),
-    ("rrds"),
-    ("lds"),
+    ("PDS"),
+    ("SEQ"),
+    ("PDSE"),
+    ("ESDS"),
+    ("RRDS"),
+    ("LDS"),
 ]
 
 TEMP_PATH = "/tmp/jcl"
@@ -153,7 +154,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
     dataset = get_tmp_ds_name(2, 2)
     try:
         hosts.all.zos_data_set(
-            name=dataset, state="cataloged", volumes=volume_1
+             name=dataset, state="cataloged", volumes=volume_1
         )
         hosts.all.zos_data_set(name=dataset, state="absent")
 
@@ -163,24 +164,28 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             src=TEMP_PATH + "/SAMPLE", location="USS", wait_time_s=30
         )
         # verify data set creation was successful
+
         for result in results.contacted.values():
             if(result.get("jobs")[0].get("ret_code") is None):
                 submitted_job_id = result.get("jobs")[0].get("job_id")
                 assert submitted_job_id is not None
                 results = hosts.all.zos_job_output(job_id=submitted_job_id)
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second uncatalog shows uncatalog already performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
+
         for result in results.contacted.values():
             assert result.get("changed") is False
         # recatalog the data set
         results = hosts.all.zos_data_set(
             name=dataset, state="cataloged", volumes=volume_1
         )
+
         for result in results.contacted.values():
             assert result.get("changed") is True
         # verify second catalog shows catalog already performed
@@ -234,6 +239,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         results = hosts.all.zos_data_set(
             name=dataset, state="present", volumes=volume_1
         )
+
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:
@@ -345,7 +351,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
-    results =hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS")
+    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="USS")
 
     # verify data set creation was successful
     for result in results.contacted.values():
@@ -368,11 +374,14 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     hosts.all.file(path=TEMP_PATH, state="absent")
 
-    # ensure data set absent
-    results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
+    # ensure second data set absent
+    results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_2)
     for result in results.contacted.values():
         assert result.get("changed") is True
 
+    # ensure first data set absent
+    hosts.all.zos_data_set(name=dataset, state="cataloged")
+    results = hosts.all.zos_data_set(name=dataset, state="absent", volumes=volume_1)
     for result in results.contacted.values():
         assert result.get("changed") is True
 
@@ -401,7 +410,7 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
     try:
         hosts = ansible_zos_module
         dataset = get_tmp_ds_name(2, 2)
-        hosts.all.zos_data_set(
+        results = hosts.all.zos_data_set(
             name=dataset, state="present", type=dstype, replace=True
         )
         results = hosts.all.zos_data_set(
@@ -460,7 +469,7 @@ def test_batch_data_set_creation_and_deletion(ansible_zos_module):
         results = hosts.all.zos_data_set(
             batch=[
                 {"name": dataset, "state": "absent"},
-                {"name": dataset, "type": "pds", "state": "present"},
+                {"name": dataset, "type": "PDS", "state": "present"},
                 {"name": dataset, "state": "absent"},
             ]
         )
@@ -477,11 +486,11 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
         dataset = get_tmp_ds_name(2, 2)
         results = hosts.all.zos_data_set(
             batch=[
-                {"name": dataset, "type": "pds", "directory_blocks": 5},
-                {"name": dataset + "(newmem1)", "type": "member"},
+                {"name": dataset, "type": "PDS", "directory_blocks": 5},
+                {"name": dataset + "(newmem1)", "type": "MEMBER"},
                 {
                     "name": dataset + "(newmem2)",
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                 },
                 {"name": dataset, "state": "absent"},
@@ -525,7 +534,7 @@ def test_data_member_force_delete(ansible_zos_module):
         DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
         # set up:
         # create pdse
-        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="PDSE", replace=True)
         for result in results.contacted.values():
             assert result.get("changed") is True
 
@@ -534,25 +543,25 @@ def test_data_member_force_delete(ansible_zos_module):
             batch=[
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_3),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
                 {
                     "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_4),
-                    "type": "member",
+                    "type": "MEMBER",
                     "state": "present",
                     "replace": True,
                 },
@@ -769,27 +778,6 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, vo
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
-def test_data_set_old_aliases(ansible_zos_module, volumes_on_systems):
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    try:
-        hosts = ansible_zos_module
-        DEFAULT_DATA_SET_NAME = get_tmp_ds_name(2, 2)
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-        results = hosts.all.zos_data_set(
-            name=DEFAULT_DATA_SET_NAME,
-            state="present",
-            format="fb",
-            size="5m",
-            volume=volume_1,
-        )
-        for result in results.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("module_stderr") is None
-    finally:
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-
-
 def test_data_set_temp_data_set_name(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -966,7 +954,8 @@ def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
             name=DEFAULT_DATA_SET_NAME,
             state="present",
             format=formats,
-            size="5m",
+            space_primary="5",
+            space_type="M",
             volume=volume_1,
         )
         for result in results.contacted.values():

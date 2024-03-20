@@ -31,4 +31,4 @@ jobs:
 
     - name: Run ac-check-changelog
       run: |
-        ./ac --ac-check-changelog --base "$PR_BASE" --head "$PR_HEAD"
+        ./ac --ac-check-changelog --base "$PR_BASE" --head origin/"$PR_HEAD"

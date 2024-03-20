@@ -18,13 +18,6 @@ jobs:
       with:
         python-version: 3.11
 
-    - name: Set up venv
-      run: |
-        python -m pip install --upgrade pip
-        pip install virtualenv
-        mkdir -p .ansible/collections/ansible_collections/ibm/ibm_zos_core/venv
-        virtualenv .ansible/collections/ansible_collections/ibm/ibm_zos_core/venv/venv-2.16
-
     - name: Checkout repository
       run:
         pwd
@@ -32,14 +25,23 @@ jobs:
         git clone https://github.com/ansible-collections/ibm_zos_core.git
         git checkout origin/"$branch"
 
+    - name: Set up venv
+      run: |
+        python -m pip install --upgrade pip
+        pip install virtualenv
+        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core/
+        mkdir venv
+        virtualenv venv/venv-2.16
+
     - name: Install dependencies
       run: |
-        source .ansible/collections/ansible_collections/ibm/ibm_zos_core/venv/venv-2.16/bin/activate
+        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core
+        source venv/venv-2.16/bin/activate
         python -m pip install --upgrade pip
         pip install ansible
 
     - name: Run ac-sanity
       run: |
-        source .ansible/collections/ansible_collections/ibm/ibm_zos_core/venv/venv-2.16/bin/activate
         cd .ansible/collections/ansible_collections/ibm/ibm_zos_core
+        source venv/venv-2.16/bin/activate
         ./ac --ac-sanity

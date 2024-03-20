@@ -432,8 +432,28 @@ def execute_dmod(src, block, marker, force, encoding, module, ins_bef=None, ins_
 
     cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
 
-    rc = module.run_command(cmd)
+    rc, stdout, stderr = module.run_command(cmd)
+    cmd = clean_command(cmd)
     return rc, cmd
+
+
+def clean_command(cmd):
+    cmd = cmd.replace('/c\\\\', '')
+    cmd = cmd.replace('/a\\\\', '', )
+    cmd = cmd.replace('/i\\\\', '', )
+    cmd = cmd.replace('$ a\\\\', '', )
+    cmd = cmd.replace('1 i\\\\', '', )
+    cmd = cmd.replace('/c\\', '')
+    cmd = cmd.replace('/a\\', '')
+    cmd = cmd.replace('/i\\', '')
+    cmd = cmd.replace('$ a\\', '')
+    cmd = cmd.replace('1 i\\', '')
+    cmd = cmd.replace('/d', '')
+    cmd = cmd.replace('\\\\d', '')
+    cmd = cmd.replace('\\n', '\n')
+    cmd = cmd.replace('\\"', '"')
+    return cmd
+
 
 def main():
     module = AnsibleModule(
@@ -595,7 +615,7 @@ def main():
               rc, cmd = execute_dmod(src, block, quotedString(marker), force, encoding, module=module, ins_bef=quotedString(ins_bef), ins_aft=quotedString(ins_aft))
               result['rc'] = rc
               result['cmd'] = cmd
-              result['changed'] = True
+              result['changed'] = True if rc == 0 else False
           else:
               return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:

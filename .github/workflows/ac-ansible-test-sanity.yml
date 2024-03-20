@@ -5,7 +5,41 @@ on:
     branches:
       - dev
       - staging*
-    
+    paths-ignore:
+      - '**.tar.gz'
+      - 'pycache/'
+      - '.ansible-lint'
+      - 'cache/'
+      - '.DS_Store'
+      - '.git/'
+      - '.github/'
+      - '.gitignore'
+      - '.python-version'
+      - '.pytest_cache/'
+      - '.vscode/'
+      - 'Jenkinsfile'
+      - 'ac'
+      - 'ansible.cfg'
+      - 'changelogs/'
+      - 'collections/'
+      - 'docs/'
+      - 'scripts/'
+      - 'test_config.yml'
+      - 'tests/*.ini'
+      - 'tests/*.py'
+      - 'tests/.pytest_cache'
+      - 'tests/pycache'
+      - 'tests/functional'
+      - 'tests/helpers'
+      - 'tests/requirements.txt'
+      - 'tests/unit'
+      - 'tests/sanity/ignore-2.9'
+      - 'tests/sanity/ignore-2.10'
+      - 'tests/sanity/ignore-2.11'
+      - 'tests/sanity/ignore-2.12'
+      - 'tests/sanity/ignore-2.13'
+      - 'venv*'
+
 jobs:
   ansible-sanity:
     runs-on: ubuntu-latest

@@ -23,7 +23,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        ref: $branch
+        ref: ${{ github.event.pull_request.head.ref }}
 
 
     - name: Set up Python

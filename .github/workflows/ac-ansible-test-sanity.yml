@@ -13,11 +13,6 @@ jobs:
       branch: ${{ github.event.pull_request.head.ref }}
 
     steps:
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.11
-
     - name: Checkout repository
       run:
         pwd
@@ -25,6 +20,11 @@ jobs:
         git clone https://github.com/ansible-collections/ibm_zos_core.git
         git checkout origin/"$branch"
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+  
     - name: Set up venv
       run: |
         python -m pip install --upgrade pip

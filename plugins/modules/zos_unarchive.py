@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -29,8 +29,6 @@ description:
   - Supported sources are USS (UNIX System Services) or z/OS data sets.
   - Mixing MVS data sets with USS files for unarchiving is not supported.
   - The archive is sent to the remote as binary, so no encoding is performed.
-
-
 options:
   src:
     description:
@@ -311,26 +309,31 @@ options:
     type: bool
     required: false
     default: false
-
 notes:
   - VSAMs are not supported.
-
+  - This module uses L(zos_copy,./zos_copy.html) to copy local scripts to
+    the remote machine which uses SFTP (Secure File Transfer Protocol) for the
+    underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not
+    supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS
+    from using Co:Z thus falling back to using standard SFTP. If the module detects
+    SCP, it will temporarily use SFTP for transfers, if not available, the module
+    will fail.
 seealso:
-  - module: zos_unarchive
+  - module: zos_archive
 '''
 
 EXAMPLES = r'''
 # Simple extract
 - name: Copy local tar file and unpack it on the managed z/OS node.
   zos_unarchive:
-    path: "./files/archive_folder_test.tar"
+    src: "./files/archive_folder_test.tar"
     format:
       name: tar
 
 # use include
 - name: Unarchive a bzip file selecting only a file to unpack.
   zos_unarchive:
-    path: "/tmp/test.bz2"
+    src: "/tmp/test.bz2"
     format:
       name: bz2
     include:
@@ -339,7 +342,7 @@ EXAMPLES = r'''
 # Use exclude
 - name: Unarchive a terse data set and excluding data sets from unpacking.
   zos_unarchive:
-    path: "USER.ARCHIVE.RESULT.TRS"
+    src: "USER.ARCHIVE.RESULT.TRS"
     format:
       name: terse
     exclude:
@@ -349,7 +352,7 @@ EXAMPLES = r'''
 # List option
 - name: List content from XMIT
   zos_unarchive:
-    path: "USER.ARCHIVE.RESULT.XMIT"
+    src: "USER.ARCHIVE.RESULT.XMIT"
     format:
       name: xmit
       format_options:
@@ -358,14 +361,14 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-path:
+src:
   description:
-    File path or data set name unarchived.
+    File path or data set name unpacked.
   type: str
   returned: always
 dest_path:
   description:
-    - Destination path where archive was extracted.
+    - Destination path where archive was unpacked.
   type: str
   returned: always
 targets:

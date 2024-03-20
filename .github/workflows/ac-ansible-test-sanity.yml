@@ -13,12 +13,18 @@ jobs:
       branch: ${{ github.event.pull_request.head.ref }}
 
     steps:
+#    - name: Checkout repository
+#      run:
+#        pwd
+#        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core/
+#        git clone https://github.com/ansible-collections/ibm_zos_core.git
+#        git checkout origin/"$branch"
+
     - name: Checkout repository
-      run:
-        pwd
-        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core/
-        git clone https://github.com/ansible-collections/ibm_zos_core.git
-        git checkout origin/"$branch"
+      uses: actions/checkout@v4
+      with:
+        ref: $branch
+
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -44,4 +50,5 @@ jobs:
       run: |
         cd .ansible/collections/ansible_collections/ibm/ibm_zos_core
         source venv/venv-2.16/bin/activate
+        ./ac --ac-build
         ./ac --ac-sanity

@@ -32,20 +32,17 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install virtualenv
-        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core/
         mkdir venv
         virtualenv venv/venv-2.16
 
     - name: Install dependencies
       run: |
-        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core
         source venv/venv-2.16/bin/activate
         python -m pip install --upgrade pip
         pip install ansible
 
     - name: Run ac-sanity
       run: |
-        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core
         source venv/venv-2.16/bin/activate
         ./ac --ac-build
         ./ac --ac-sanity

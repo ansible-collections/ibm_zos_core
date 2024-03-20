@@ -611,33 +611,34 @@ def main():
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-          if '"' in block:
-              rc, cmd = execute_dmod(src, block, quotedString(marker), force, encoding, module=module, ins_bef=quotedString(ins_bef), ins_aft=quotedString(ins_aft))
-              result['rc'] = rc
-              result['cmd'] = cmd
-              result['changed'] = True if rc == 0 else False
-          else:
-              return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
+        if '"' in block:
+            rc, cmd = execute_dmod(src, block, quotedString(marker), force, encoding, module=module, ins_bef=quotedString(ins_bef),
+                                   ins_aft=quotedString(ins_aft))
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['changed'] = True if rc == 0 else False
+        else:
+            return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
         return_content = absent(src, marker, encoding, force)
     if '"' not in block:
-      stdout = return_content.stdout_response
-      stderr = return_content.stderr_response
-      rc = return_content.rc
-      stdout = stdout.replace('/d', '\\\\d')
-      try:
-          # Try to extract information from stdout
-          # The triple double quotes is required for special characters (/_) been scape
-          ret = json.loads("""{0}""".format(stdout))
-      except Exception:
-          messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-          if result.get('backup_name'):
-              messageDict['backup_name'] = result['backup_name']
-          module.fail_json(**messageDict)
+        stdout = return_content.stdout_response
+        stderr = return_content.stderr_response
+        rc = return_content.rc
+        stdout = stdout.replace('/d', '\\\\d')
+        try:
+            # Try to extract information from stdout
+            # The triple double quotes is required for special characters (/_) been scape
+            ret = json.loads("""{0}""".format(stdout))
+        except Exception:
+            messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+            if result.get('backup_name'):
+                messageDict['backup_name'] = result['backup_name']
+            module.fail_json(**messageDict)
 
-      result['cmd'] = ret['data']['commands']
-      result['changed'] = ret['data']['changed']
-      result['found'] = ret['data']['found']
+        result['cmd'] = ret['data']['commands']
+        result['changed'] = ret['data']['changed']
+        result['found'] = ret['data']['found']
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
     if stderr:

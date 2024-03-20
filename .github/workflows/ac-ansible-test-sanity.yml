@@ -13,6 +13,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        path: ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -23,16 +25,17 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install virtualenv
-        mkdir venv
-        virtualenv venv/venv-2.16
+        mkdir ~/.ansible/collections/ansible_collections/ibm/ibm_zos_corevenv/venv
+        virtualenv ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/venv/venv-2.16
 
     - name: Install dependencies
       run: |
-        source venv/venv-2.16/bin/activate
+        source ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/venv/venv-2.16/bin/activate
         python -m pip install --upgrade pip
         pip install ansible
 
     - name: Run ac-sanity
       run: |
-        source venv/venv-2.16/bin/activate
+        source ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/venv/venv-2.16/bin/activate
+        cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core
         ./ac --ac-sanity

@@ -259,7 +259,7 @@ ac_check_changelog(){
         option_base="dev"
     fi
     message "Check for new files in the changelog."
-    . $VENV_BIN/activate && git fetch  && git checkout origin/"$option_base" && cd changelogs/fragments/ && LS_BASE="$(ls)" && cd .. && cd .. && git checkout "$option_head" ./changelogs/fragments/ && cd changelogs/fragments/ && LS_ALL="$(ls)" && [ "${#LS_ALL}" -gt "${#LS_BASE}" ] && VAR="No new changelog file was found" && echo $VAR && [ "$VAR" != "No new changelog file was found" ] || return 1 && git checkout "$option_head"
+    . $VENV_BIN/activate && git fetch  && git checkout origin/"$option_base" && cd changelogs/fragments/ && LS_BASE="$(ls)" && cd .. && cd .. && git checkout "$option_head" ./changelogs/fragments/ && cd changelogs/fragments/ && LS_ALL="$(ls)" && git checkout "$option_head" && [ "${#LS_ALL}" -gt "${#LS_BASE}" ] && VAR="No new changelog file was found" && echo $VAR && [ "$VAR" != "No new changelog file was found" ] || return 1
 
 }
 

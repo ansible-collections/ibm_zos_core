@@ -9,13 +9,10 @@ on:
 jobs:
   ansible-sanity:
     runs-on: ubuntu-latest
+    env:
+      branch: ${{ github.event.pull_request.head.ref }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        path: .ansible/collections/ansible_collections/ibm/ibm_zos_core
-
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -25,8 +22,15 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install virtualenv
-        mkdir .ansible/collections/ansible_collections/ibm/ibm_zos_core/venv
+        mkdir -p .ansible/collections/ansible_collections/ibm/ibm_zos_core/venv
         virtualenv .ansible/collections/ansible_collections/ibm/ibm_zos_core/venv/venv-2.16
+
+    - name: Checkout repository
+      run:
+        pwd
+        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core/
+        git clone https://github.com/ansible-collections/ibm_zos_core.git
+        git checkout origin/"$branch"
 
     - name: Install dependencies
       run: |

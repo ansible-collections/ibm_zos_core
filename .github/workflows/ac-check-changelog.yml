@@ -31,5 +31,4 @@ jobs:
 
     - name: Run ac-check-changelog
       run: |
-        source venv/venv-2.16/bin/activate
         ./ac --ac-check-changelog --base "$PR_BASE" --head "$PR_HEAD"

@@ -561,7 +561,6 @@ def main():
     force = parsed_args.get('force')
     state = parsed_args.get('state')
     indentation = parsed_args.get('indentation')
-    stderr = None
 
     if not block and state == 'present':
         module.fail_json(msg='block is required with state=present')
@@ -617,6 +616,7 @@ def main():
             result['rc'] = rc
             result['cmd'] = cmd
             result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to insert new entry' if rc != 0 else ""
         else:
             return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
@@ -641,7 +641,7 @@ def main():
         result['found'] = ret['data']['found']
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
-    if stderr:
+    if len(stderr):
         result['stderr'] = str(stderr)
         result['rc'] = rc
     module.exit_json(**result)

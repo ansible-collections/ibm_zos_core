@@ -1983,8 +1983,8 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
         hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
         if ds_type == "PDS" or ds_type == "PDSE":
-            hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
-            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
+            hosts.all.zos_data_set(name=src_data_set, state="present", type="MEMBER", replace=True)
+            hosts.all.zos_data_set(name=dest_data_set, state="present", type="MEMBER", replace=True)
         # copy text_in source
         hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
@@ -2574,7 +2574,7 @@ def test_copy_file_to_non_existing_member(ansible_zos_module, src):
             type="PDSE",
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
             replace=True
         )
@@ -2620,11 +2620,11 @@ def test_copy_file_to_existing_member(ansible_zos_module, src):
             type="PDSE",
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
             replace=True
         )
-        hosts.all.zos_data_set(name=dest, type="member", state="present")
+        hosts.all.zos_data_set(name=dest, type="MEMBER", state="present")
 
         if src["is_file"]:
             copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, force=src["force"], remote_src=src["is_remote"])
@@ -2670,7 +2670,7 @@ def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
     try:
         hosts.all.zos_data_set(name=src_data_set, type=args["type"])
         if args["type"] != "SEQ":
-            hosts.all.zos_data_set(name=src, type="member")
+            hosts.all.zos_data_set(name=src, type="MEMBER")
 
         hosts.all.shell(
             "decho 'Records for test' '{0}'".format(src),
@@ -2717,7 +2717,7 @@ def test_copy_data_set_to_existing_member(ansible_zos_module, args):
     try:
         hosts.all.zos_data_set(name=src_data_set, type=args["type"])
         if args["type"] != "SEQ":
-            hosts.all.zos_data_set(name=src, type="member")
+            hosts.all.zos_data_set(name=src, type="MEMBER")
 
         hosts.all.shell(
             "decho 'Records for test' '{0}'".format(src),
@@ -2725,7 +2725,7 @@ def test_copy_data_set_to_existing_member(ansible_zos_module, args):
         )
 
         hosts.all.zos_data_set(name=dest_data_set, type="PDSE", replace=True)
-        hosts.all.zos_data_set(name=dest, type="member")
+        hosts.all.zos_data_set(name=dest, type="MEMBER")
         copy_result = hosts.all.zos_copy(src=src, dest=dest, force=args["force"], remote_src=True)
 
         verify_copy = hosts.all.shell(
@@ -2860,7 +2860,7 @@ def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
             type=src_type,
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
         )
 
@@ -2894,7 +2894,7 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
     try:
         hosts.all.zos_data_set(name=src_data_set, type=src_type)
         if src_type != "SEQ":
-            hosts.all.zos_data_set(name=src, type="member")
+            hosts.all.zos_data_set(name=src, type="MEMBER")
 
         hosts.all.shell(
             "decho 'Records for test' '{0}'".format(src),
@@ -4268,7 +4268,7 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
             type=dest_type,
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=25,
         )
 
@@ -4366,7 +4366,7 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
         if src_type != "SEQ":
-            hosts.all.zos_data_set(name=source_member, type="member", state='present')
+            hosts.all.zos_data_set(name=source_member, type="MEMBER", state='present')
 
         copy_res = hosts.all.zos_copy(
             src=source,

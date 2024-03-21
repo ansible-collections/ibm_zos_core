@@ -29,11 +29,10 @@ from ansible.utils.display import Display
 from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member,
-    is_data_set
+    is_member
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
@@ -69,8 +68,8 @@ class ActionModule(ActionBase):
         owner = task_args.get("owner", None)
         group = task_args.get("group", None)
 
-        is_pds = is_src_dir = False
-        temp_path = is_uss = is_mvs_dest = src_member = None
+        is_src_dir = False
+        temp_path = is_uss = None
 
         if dest:
             if not isinstance(dest, string_types):
@@ -78,7 +77,6 @@ class ActionModule(ActionBase):
                 return self._exit_action(result, msg, failed=True)
             else:
                 is_uss = "/" in dest
-                is_mvs_dest = is_data_set(dest)
         else:
             msg = "Destination is required"
             return self._exit_action(result, msg, failed=True)
@@ -96,13 +94,11 @@ class ActionModule(ActionBase):
                 msg = "'src' or 'dest' must not be empty"
                 return self._exit_action(result, msg, failed=True)
             else:
-                src_member = is_member(src)
                 if not remote_src:
                     if src.startswith('~'):
                         src = os.path.expanduser(src)
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
-                    is_pds = is_src_dir and is_mvs_dest
 
         if not src and not content:
             msg = "'src' or 'content' is required"
@@ -196,11 +192,6 @@ class ActionModule(ActionBase):
 
                         src = rendered_dir
 
-                    task_args["size"] = sum(
-                        os.stat(os.path.join(validation.validate_safe_path(path), validation.validate_safe_path(f))).st_size
-                        for path, dirs, files in os.walk(src)
-                        for f in files
-                    )
                 else:
                     if mode == "preserve":
                         task_args["mode"] = "0{0:o}".format(
@@ -231,7 +222,6 @@ class ActionModule(ActionBase):
 
                         src = rendered_file
 
-                    task_args["size"] = os.stat(src).st_size
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
                     src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
@@ -242,15 +232,31 @@ class ActionModule(ActionBase):
                 return transfer_res
             display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host=self._play_context.remote_addr)
 
+        if not encoding:
+            encoding = {
+                "from": encode.Defaults.get_default_system_charset(),
+            }
+
+        """
+        We format temp_path correctly to pass it as src option to the module,
+        we keep the original source to return to the user and avoid confusion
+        by returning the temp_path created.
+        """
+        original_src = task_args.get("src")
+        if original_src:
+            if not remote_src:
+                base_name = os.path.basename(original_src)
+                if original_src.endswith("/"):
+                    src = temp_path + "/"
+                else:
+                    src = temp_path
+        else:
+            src = temp_path
+
         task_args.update(
             dict(
-                is_uss=is_uss,
-                is_pds=is_pds,
-                is_src_dir=is_src_dir,
-                src_member=src_member,
-                temp_path=temp_path,
-                is_mvs_dest=is_mvs_dest,
-                local_charset=encode.Defaults.get_default_system_charset()
+                src=src,
+                encoding=encoding,
             )
         )
         copy_res = self._execute_module(
@@ -284,17 +290,20 @@ class ActionModule(ActionBase):
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
-        return _update_result(is_binary, copy_res, self._task.args)
+        return _update_result(is_binary, copy_res, self._task.args, original_src)
 
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
 
-        temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
+        temp_path = "/{0}/{1}/{2}".format(gettempprefix(), _create_temp_path_name(), os.path.basename(src))
+        self._connection.exec_command("mkdir -p {0}".format(os.path.dirname(temp_path)))
         _src = src.replace("#", "\\#")
         _sftp_action = 'put'
+        full_temp_path = temp_path
 
         if is_dir:
             src = src.rstrip("/") if src.endswith("/") else src
+            temp_path = os.path.dirname(temp_path)
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
             _sftp_action += ' -r'    # add '-r` to clone the source trees
@@ -379,7 +388,7 @@ class ActionModule(ActionBase):
                 display.vvv(u"ibm_zos_copy SSH transfer method restored to {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
                 is_ssh_transfer_method_updated = False
 
-        return dict(temp_path=temp_path)
+        return dict(temp_path=full_temp_path)
 
     def _remote_cleanup(self, dest, dest_exists, task_vars):
         """Remove all files or data sets pointed to by 'dest' on the remote
@@ -417,7 +426,7 @@ class ActionModule(ActionBase):
         return result
 
 
-def _update_result(is_binary, copy_res, original_args):
+def _update_result(is_binary, copy_res, original_args, original_src):
     """ Helper function to update output result with the provided values """
     ds_type = copy_res.get("ds_type")
     src = copy_res.get("src")
@@ -431,7 +440,7 @@ def _update_result(is_binary, copy_res, original_args):
         invocation=dict(module_args=original_args),
     )
     if src:
-        updated_result["src"] = src
+        updated_result["src"] = original_src
     if note:
         updated_result["note"] = note
     if backup_name:

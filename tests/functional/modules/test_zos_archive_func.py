@@ -85,7 +85,7 @@ def create_multiple_members(ansible_zos_module, pds_name, member_base_name, n):
     test_members = []
     for i in range(n):
         curr_ds = dict(name="{0}({1})".format(pds_name, member_base_name+str(i)),
-                       type="member",
+                       type="MEMBER",
                        state="present",
                        replace=True,
                        force=True)
@@ -370,7 +370,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{src_data_set}({member})",
-                    type="member",
+                    type="MEMBER",
                     state="present"
                 )
         # Write some content into src the same size of the record,
@@ -449,7 +449,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{src_data_set}({member})",
-                    type="member",
+                    type="MEMBER",
                     state="present"
                 )
         # Write some content into src the same size of the record,
@@ -522,7 +522,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{src_data_set}({member})",
-                    type="member",
+                    type="MEMBER",
                     state="present"
                 )
         # Write some content into src
@@ -862,7 +862,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{src_data_set}({member})",
-                    type="member",
+                    type="MEMBER",
                     state="present"
                 )
         # Write some content into src

@@ -276,6 +276,7 @@ options:
         passed to the chown command.
       - When left unspecified, it uses the current user unless you are root,
         in which case it can preserve the previous ownership.
+      - This option is only applicable if C(dest) is USS, otherwise ignored.
     type: str
     required: false
   remote_src:

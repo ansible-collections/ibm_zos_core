@@ -1,7 +1,7 @@
 name: Report a bug
 description: Request that a bug be reviewed. Complete all required fields.
 title: "[Bug] Enter description"
-labels: [Bug]
+labels: ["Bug", "Needs Triage" ]
 assignees:
   - IBMAnsibleHelper
 body:

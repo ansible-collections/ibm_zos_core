@@ -109,7 +109,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
 
         # In case the backup ds is a member we trust that the PDS attributes are ok to fit the src content.
         # This should not delete a PDS just to create a backup member.
-        # Otherwise, we allocate the appropiate space for the backup ds based on src.
+        # Otherwise, we allocate the appropriate space for the backup ds based on src.
         if is_member(bk_dsn):
             try:
                 cp_rc = datasets.copy(dsn, bk_dsn)

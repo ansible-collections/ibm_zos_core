@@ -114,58 +114,58 @@ class DataSet(object):
         """Creates data set if it does not already exist.
 
         Args:
-            name {str}: The name of the dataset
+            name {str} -- The name of the dataset
             replace {bool} -- Used to determine behavior when data set already exists.
-            type {str, optional}: The type of dataset.
+            type {str, optional} -- The type of dataset.
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to None.
-            space_primary {int, optional}: The amount of primary space to allocate for the dataset.
+            space_primary {int, optional} -- The amount of primary space to allocate for the dataset.
                     Defaults to None.
-            space_secondary {int, optional}:  The amount of secondary space to allocate for the dataset.
+            space_secondary {int, optional} -- The amount of secondary space to allocate for the dataset.
                     Defaults to None.
-            space_type {str, optional}: The unit of measurement to use when defining primary and secondary space.
+            space_type {str, optional} -- The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
-            record_format {str, optional}: The record format to use for the dataset.
+            record_format {str, optional} -- The record format to use for the dataset.
                     Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
-            record_length {int, optional} The length, in bytes, of each record in the data set.
+            record_length {int, optional} -- The length, in bytes, of each record in the data set.
                     Defaults to None.
-            block_size {int, optional}: The block size to use for the data set.
+            block_size {int, optional} -- The block size to use for the data set.
                     Defaults to None.
-            directory_blocks {int, optional}: The number of directory blocks to allocate to the data set.
+            directory_blocks {int, optional} -- The number of directory blocks to allocate to the data set.
                     Defaults to None.
-            key_length {int, optional}: The key length of a record.
+            key_length {int, optional} -- The key length of a record.
                     Required for Key Sequenced Datasets (KSDS).
                     Defaults to None.
-            key_offset {int, optional}: The key offset is the position of the first byte of the key
+            key_offset {int, optional} -- The key offset is the position of the first byte of the key
                     in each logical record of a the specified VSAM data set.
                     If the key is at the beginning of the logical record, the offset is zero.
                     Required for Key Sequenced Datasets (KSDS).
                     Defaults to None.
-            sms_storage_class {str, optional}: The storage class for an SMS-managed dataset.
+            sms_storage_class {str, optional} -- The storage class for an SMS-managed dataset.
                     Required for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            sms_data_class {str, optional}: The data class for an SMS-managed dataset.
+            sms_data_class {str, optional} -- The data class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            sms_management_class {str, optional}: The management class for an SMS-managed dataset.
+            sms_management_class {str, optional} -- The management class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            volumes {Union[str, list[str]], optional}: A list of volume serials.
+            volumes {Union[str, list[str]], optional} -- A list of volume serials.
                     When providing multiple volumes, processing will begin with
                     the first volume in the provided list. Offline volumes are not considered.
                     Volumes can always be provided when not using SMS.
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
-            tmp_hlq {str, optional}: High level qualifier for temporary datasets.
-            force {bool, optional}: Used to determine behavior when performing member operations on a pdse.
+            tmp_hlq {str, optional} -- High level qualifier for temporary datasets.
+            force {bool, optional} -- Used to determine behavior when performing member operations on a PDSE.
                     Defaults to None.
 
         Returns:
@@ -211,7 +211,7 @@ class DataSet(object):
             name {str} -- The name of the data set to ensure is absent.
             volumes {list[str]} -- The volumes the data set may reside on.
         Returns:
-            changed {bool} -- Indicates if changes were made.
+            bool -- Indicates if changes were made.
         """
         changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes)
         return changed
@@ -242,7 +242,7 @@ class DataSet(object):
         Returns a boolean indicating if changes were made.
 
         Arguments:
-            force {bool} -- Something
+            force {bool} -- Mode to execute
 
         Returns:
             bool -- True if the data set member exists
@@ -390,7 +390,7 @@ class DataSet(object):
         Arguments:
             name {str} -- The data set name to check if cataloged.
         Returns:
-            list{str} -- A list of volumes where the dataset is cataloged.
+            list[str] -- A list of volumes where the dataset is cataloged.
         """
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
@@ -860,57 +860,57 @@ class DataSet(object):
         """Attempts to replace an existing data set.
 
         Arguments:
-            name {str}: The name of the dataset
-            type {str, optional}: The type of dataset.
+            name {str} -- The name of the dataset
+            type {str, optional} -- The type of dataset.
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to None.
-            space_primary {int, optional}: The amount of primary space to allocate for the dataset.
+            space_primary {int, optional} -- The amount of primary space to allocate for the dataset.
                     Defaults to None.
-            space_secondary {int, optional}:  The amount of secondary space to allocate for the dataset.
+            space_secondary {int, optional} --  The amount of secondary space to allocate for the dataset.
                     Defaults to None.
-            space_type {str, optional}: The unit of measurement to use when defining primary and secondary space.
+            space_type {str, optional} -- The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
-            record_format {str, optional}: The record format to use for the dataset.
+            record_format {str, optional} -- The record format to use for the dataset.
                     Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
-            record_length {int, optional} The length, in bytes, of each record in the data set.
+            record_length {int, optional} -- The length, in bytes, of each record in the data set.
                     Defaults to None.
-            block_size {int, optional}: The block size to use for the data set.
+            block_size {int, optional} -- The block size to use for the data set.
                     Defaults to None.
-            directory_blocks {int, optional}: The number of directory blocks to allocate to the data set.
+            directory_blocks {int, optional} -- The number of directory blocks to allocate to the data set.
                     Defaults to None.
-            key_length {int, optional}: The key length of a record.
+            key_length {int, optional} -- The key length of a record.
                     Required for Key Sequenced Datasets (KSDS).
                     Defaults to None.
-            key_offset {int, optional}: The key offset is the position of the first byte of the key
+            key_offset {int, optional} -- The key offset is the position of the first byte of the key
                     in each logical record of a the specified VSAM data set.
                     If the key is at the beginning of the logical record, the offset is zero.
                     Required for Key Sequenced Datasets (KSDS).
                     Defaults to None.
-            sms_storage_class {str, optional}: The storage class for an SMS-managed dataset.
+            sms_storage_class {str, optional} -- The storage class for an SMS-managed dataset.
                     Required for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            sms_data_class {str, optional}: The data class for an SMS-managed dataset.
+            sms_data_class {str, optional} -- The data class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            sms_management_class {str, optional}: The management class for an SMS-managed dataset.
+            sms_management_class {str, optional} -- The management class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            volumes {Union[str, list[str]], optional}: A list of volume serials.
+            volumes {Union[str, list[str]], optional} -- A list of volume serials.
                     When providing multiple volumes, processing will begin with
                     the first volume in the provided list. Offline volumes are not considered.
                     Volumes can always be provided when not using SMS.
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
-            tmp_hlq {str, optional}: High level qualifier for temporary datasets.
-            force {bool, optional}: Used to determine behavior when performing member operations on a pdse.
+            tmp_hlq {str, optional} -- High level qualifier for temporary datasets.
+            force {bool, optional} -- Used to determine behavior when performing member operations on a pdse.
                     Defaults to None.
         """
         arguments = locals()
@@ -985,57 +985,57 @@ class DataSet(object):
         Reasonable default arguments will be set by ZOAU when necessary.
 
         Arguments:
-            name {str}: The name of the dataset
-            type {str, optional}: The type of dataset.
+            name {str} -- The name of the dataset
+            type {str, optional} -- The type of dataset.
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to None.
-            space_primary {int, optional}: The amount of primary space to allocate for the dataset.
+            space_primary {int, optional} -- The amount of primary space to allocate for the dataset.
                     Defaults to None.
-            space_secondary {int, optional}:  The amount of secondary space to allocate for the dataset.
+            space_secondary {int, optional} -- The amount of secondary space to allocate for the dataset.
                     Defaults to None.
-            space_type {str, optional}: The unit of measurement to use when defining primary and secondary space.
+            space_type {str, optional} -- The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
-            record_format {str, optional}: The record format to use for the dataset.
+            record_format {str, optional} -- The record format to use for the dataset.
                     Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length {int, optional} The length, in bytes, of each record in the data set.
                     Defaults to None.
-            block_size {int, optional}: The block size to use for the data set.
+            block_size {int, optional} -- The block size to use for the data set.
                     Defaults to None.
-            directory_blocks {int, optional}: The number of directory blocks to allocate to the data set.
+            directory_blocks {int, optional} -- The number of directory blocks to allocate to the data set.
                     Defaults to None.
-            key_length {int, optional}: The key length of a record.
+            key_length {int, optional} -- The key length of a record.
                     Required for Key Sequenced Datasets (KSDS).
                     Defaults to None.
-            key_offset {int, optional}: The key offset is the position of the first byte of the key
+            key_offset {int, optional} -- The key offset is the position of the first byte of the key
                     in each logical record of a the specified VSAM data set.
                     If the key is at the beginning of the logical record, the offset is zero.
                     Required for Key Sequenced Datasets (KSDS).
                     Defaults to None.
-            sms_storage_class {str, optional}: The storage class for an SMS-managed dataset.
+            sms_storage_class {str, optional} -- The storage class for an SMS-managed dataset.
                     Required for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            sms_data_class {str, optional}: The data class for an SMS-managed dataset.
+            sms_data_class {str, optional} -- The data class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            sms_management_class {str, optional}: The management class for an SMS-managed dataset.
+            sms_management_class {str, optional} -- The management class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-            volumes {Union[str, list[str]], optional}: A list of volume serials.
+            volumes {Union[str, list[str]], optional} -- A list of volume serials.
                     When providing multiple volumes, processing will begin with
                     the first volume in the provided list. Offline volumes are not considered.
                     Volumes can always be provided when not using SMS.
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
-            tmp_hlq {str, optional}: High level qualifier for temporary datasets.
-            force {bool, optional}: Used to determine behavior when performing member operations on a pdse.
+            tmp_hlq {str, optional} -- High level qualifier for temporary datasets.
+            force {bool, optional} -- Used to determine behavior when performing member operations on a pdse.
                     Defaults to None.
         Raises:
             DatasetCreateError: When data set creation fails.
@@ -1349,10 +1349,10 @@ class DataSet(object):
         """Get temporary data set name.
 
         Arguments:
-            hlq {str, optional}: The HLQ to use for the temporary data set. Defaults to "".
+            hlq {str, optional} -- The HLQ to use for the temporary data set. Defaults to "".
 
         Returns:
-            str: The temporary data set name.
+            str -- The temporary data set name.
         """
         if not hlq:
             hlq = datasets.get_hlq()
@@ -1373,20 +1373,20 @@ class DataSet(object):
         User is responsible for removing the data set after use.
 
         Arguments:
-            hlq {str}: The HLQ to use for the temporary data set's name.
-            type {str, optional}: The type of dataset.
+            hlq {str} -- The HLQ to use for the temporary data set's name.
+            type {str, optional} -- The type of dataset.
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to "SEQ".
-            record_format {str, optional}: The record format to use for the dataset.
+            record_format {str, optional} -- The record format to use for the dataset.
                     Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to "FB".
-            space_primary {int, optional}: The amount of primary space to allocate for the dataset.
+            space_primary {int, optional} -- The amount of primary space to allocate for the dataset.
                     Defaults to 5.
-            space_secondary {int, optional}:  The amount of secondary space to allocate for the dataset.
+            space_secondary {int, optional} -- The amount of secondary space to allocate for the dataset.
                     Defaults to 5.
-            space_type {str, optional}: The unit of measurement to use when defining primary and secondary space.
+            space_type {str, optional} -- The unit of measurement to use when defining primary and secondary space.
                     Defaults to "M".
-            record_length {int, optional}: The length, in bytes, of each record in the data set.
+            record_length {int, optional} -- The length, in bytes, of each record in the data set.
                     Defaults to 80.
 
         Returns:
@@ -1409,7 +1409,7 @@ class DataSet(object):
         """Format an existing LDS as a ZFS file system.
 
         Arguments:
-            name {str}: The name of the data set to format.
+            name {str} -- The name of the data set to format.
 
         Raises:
             DatasetFormatError: When data set formatting fails.
@@ -1469,15 +1469,15 @@ class DataSet(object):
         which is required for some programs available through JCL.
 
         Arguments:
-            string {str}: The string to format.
-            eol_char {str, optional}: The character to place in column 72 of the string.
+            string {str} -- The string to format.
+            eol_char {str, optional} -- The character to place in column 72 of the string.
                     Defaults to "X".
-            include_newline {bool, optional}: Determines if a newline will be appended
+            include_newline {bool, optional} -- Determines if a newline will be appended
                     to the end of the formatted string.
                     Defaults to True.
 
         Returns:
-            str: The string formatted with special character in column 72
+            str -- The string formatted with special character in column 72
         """
         formatted = "{line: <{max_len}}".format(line=string, max_len=71)
         formatted += eol_char
@@ -1490,10 +1490,10 @@ class DataSet(object):
         """Build string for volume portion of idcams input
 
         Arguments:
-            volumes {list[str]}: List of volumes used to build string.
+            volumes {list[str]} -- List of volumes used to build string.
 
         Returns:
-            str: string built from volumes.
+            str -- string built from volumes.
         """
         return " -\n    ".join(volumes)
 
@@ -1502,10 +1502,10 @@ class DataSet(object):
         """Build string for volume portion of iehprogm input
 
         Arguments:
-            volumes {list[str]}: List of volumes used to build string.
+            volumes {list[str]} -- List of volumes used to build string.
 
         Returns:
-            str-- string built from volumes.
+            str -- string built from volumes.
         """
         volume_string = ""
         for index, volume in enumerate(volumes):

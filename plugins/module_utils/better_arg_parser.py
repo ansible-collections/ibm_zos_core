@@ -174,6 +174,7 @@ class BetterArgHandler(object):
             resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
+
         Returns:
             list[Union[int, str, bool, dict]] -- The arguments contents after any necessary operations.
         """
@@ -228,11 +229,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not isinstance(contents, str):
             raise ValueError('Invalid argument "{0}" for type "str".'.format(contents))
@@ -247,11 +248,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-
         Returns:
             int -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(r"[0-9]+", str(contents)):
             raise ValueError('Invalid argument "{0}" for type "int".'.format(contents))
@@ -266,10 +267,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             bool -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not isinstance(contents, bool):
             raise ValueError('Invalid argument "{0}" for type "bool".'.format(contents))
@@ -284,10 +286,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         contents = BetterArgHandler.fix_local_path(contents)
         if not path.isabs(str(contents)):
@@ -323,10 +326,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
@@ -347,10 +351,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}$",
@@ -371,10 +376,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)$",
@@ -395,10 +401,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^[A-Z]{1}[A-Z0-9]{0,7}$",
@@ -419,10 +426,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^[A-Z]{1}[A-Z0-9]{0,7}$",
@@ -443,10 +451,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^(?:[A-Z]{1}[A-Z0-9]{0,7})|(?:\*{1})|(?:[A-Z]{1}[A-Z0-9]{0,6}\*{1})$",
@@ -467,10 +476,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^[A-Z0-9@#$]{1,6}$",
@@ -491,10 +501,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^[A-Z$#@][A-Z0-9@#$]{0,7}$",
@@ -509,7 +520,7 @@ class BetterArgHandler(object):
         """Adapter for local/USS path abbreviations
 
         Arguments:
-            path given as input, which may need adjustment
+            given_path {str} -- Path given as input, which may need adjustment
 
         Returns:
             str -- The path, after leading ~, .. or . has been adjusted
@@ -535,10 +546,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
@@ -565,10 +577,11 @@ class BetterArgHandler(object):
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), IGNORECASE):
             raise ValueError(
@@ -637,11 +650,11 @@ class BetterArgHandler(object):
         This may include manipulating argument contents and/or
         any necessary validation.
 
-        Raises:
-            ValueError: When the provided arg_type is invalid.
-
         Returns:
             Union[str, int, bool, list, dict] -- The argument's contents after any necessary processing by type handler.
+
+        Raises:
+            ValueError: When the provided arg_type is invalid.
         """
         if BetterArgHandler.is_function(self.arg_def.arg_type):
             return self._call_arg_function(self.arg_def.arg_type, self.contents)
@@ -724,11 +737,11 @@ class BetterArgHandler(object):
             arg_function {function} -- The function to call.
             contents {Union[str,list,dict,int,bool]} -- The argument contents to pass to the function.
 
-        Raises:
-            ValueError: When the provided function's number of parameters do not match BetterArgParser spec.
-
         Returns:
             ?? -- Returns the result of the function call.
+
+        Raises:
+            ValueError: When the provided function's number of parameters do not match BetterArgParser spec.
         """
         number_of_params = self._num_of_params(arg_function)
         if number_of_params == 2:
@@ -758,10 +771,11 @@ class BetterArgHandler(object):
         Arguments:
             contents {str} -- The contents of the argument.
 
-        Raises:
-            ValueError: When contents is invalid argument type
         Returns:
             str -- The arguments contents after any necessary operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
         """
         if not fullmatch(
             r"(^[a-zA-Z$#@%}]{1}[0-9a-zA-Z$#@%*]{1,7})|(^['\*']{1})",
@@ -856,11 +870,11 @@ class BetterArgParser(object):
             arg_aliases {list[str]} -- The list of aliases for the argument name (default: {None})
             aliases {dict} -- The dictionary containing all of the currently defined aliases. (default: {None})
 
-        Raises:
-            ValueError: When conflicting aliases are found.
-
         Returns:
             dict -- The updated dict of aliases
+
+        Raises:
+            ValueError: When conflicting aliases are found.
         """
         if arg_aliases is None:
             arg_aliases = []
@@ -950,11 +964,11 @@ class BetterArgParser(object):
         Arguments:
             args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
 
-        Raises:
-            ValueError: When invalid dependency found.
-
         Returns:
             bool -- Always returns True when no invalid dependencies found.
+
+        Raises:
+            ValueError: When invalid dependency found.
         """
         valid_names = args.keys()
         dependencies = []
@@ -1057,7 +1071,7 @@ class BetterArgParser(object):
         """Works with _has_cycle() to determine if cyclic dependencies exist between arguments.
 
         Arguments:
-            i {integer} -- The index for the current argument
+            i {int} -- The index for the current argument
             visited {list[bool]} -- Maintains a record of which arguments have been visited
             stack {list[bool]} -- Used with visited to identify cycles.
             graph {defaultdict[list]} -- The graph representing our argument dependencies as numbers

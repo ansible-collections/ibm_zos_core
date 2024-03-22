@@ -242,6 +242,18 @@ ac_build(){
 }
 
 # ------------------------------------------------------------------------------
+# Run galaxy importer on collection.
+# ------------------------------------------------------------------------------
+#->ac-galaxy-importer:
+## Build current branch and run galaxy importer on collection.
+## Usage: ac [--ac-galaxy-importer]
+## Example:
+##  $ ac --ac-galaxy-importer
+ac_galaxy_importer(){
+    message "Running Galaxy Importer"
+    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m galaxy_importer.main $collection_name
+}
+
 # Run a changelog lint locally
 # ------------------------------------------------------------------------------
 #->ac-changelog:
@@ -679,6 +691,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-build"
             ;;
+      --ac-galaxy-importer)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-galaxy-importer"
+            ;;
       --ac-changelog)                              # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-changelog"
@@ -835,6 +851,8 @@ if [ "$option_submitted" ] && [ "$option_submitted" = "--ac-bandit" ] ; then
     ac_bandit $level
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ] ; then
+    ac_galaxy_importer
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
     ac_changelog $command
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then

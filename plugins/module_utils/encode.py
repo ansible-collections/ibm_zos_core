@@ -82,13 +82,21 @@ class EncodeUtils(object):
         """Call the coded character set conversion utility iconv
         to convert a USS file from one coded character set to another
 
-        Arguments:
+        Attributes:
             module {AnsibleModule} -- The AnsibleModule object from currently running module
         """
         self.module = AnsibleModuleHelper(argument_spec={})
         self.tmphlq = None
 
     def _validate_data_set_name(self, ds):
+        """Validate data set name
+
+        Arguments:
+            ds {str} -- The source dataset
+
+        Returns:
+            string -- Parsed dataset
+        """
         arg_defs = dict(
             ds=dict(arg_type="data_set"),
         )
@@ -97,6 +105,14 @@ class EncodeUtils(object):
         return parsed_args.get("ds")
 
     def _validate_path(self, path):
+        """Validate path
+
+        Arguments:
+            path {str} -- The path
+
+        Returns:
+            string -- Parsed path
+        """
         arg_defs = dict(
             path=dict(arg_type="path"),
         )
@@ -105,6 +121,14 @@ class EncodeUtils(object):
         return parsed_args.get("path")
 
     def _validate_data_set_or_path(self, path):
+        """Validate data set or path
+
+        Arguments:
+            path {str} -- The path
+
+        Returns:
+            string -- Parsed path
+        """
         arg_defs = dict(
             path=dict(arg_type="data_set_or_path"),
         )
@@ -113,6 +137,14 @@ class EncodeUtils(object):
         return parsed_args.get("path")
 
     def _validate_encoding(self, encoding):
+        """Validate encoding
+
+        Arguments:
+            path {str} -- The encoding
+
+        Returns:
+            string -- Parsed encoding
+        """
         arg_defs = dict(
             encoding=dict(arg_type="encoding"),
         )
@@ -125,13 +157,14 @@ class EncodeUtils(object):
         to estimate the space used by the VSAM data set
 
         Arguments:
-            ds: {str} -- The VSAM data set to be checked.
+            ds {str} -- The VSAM data set to be checked.
 
-        Raises:
-            EncodeError: When any exception is raised during the conversion.
         Returns:
             int -- The maximum record length of the VSAM data set.
             int -- The space used by the VSAM data set(KB).
+
+        Raises:
+            EncodeError: When any exception is raised during the conversion.
         """
         ds = self._validate_data_set_name(ds)
         reclen = 80
@@ -229,14 +262,15 @@ class EncodeUtils(object):
         """Convert the encoding of the data when the src is a normal string
 
         Arguments:
-            from_code_set: {str} -- The source code set of the string
-            to_code_set: {str} -- The destination code set for the string
-            src: {str} -- The input string content
+            from_code_set {str} -- The source code set of the string
+            to_code_set {str} -- The destination code set for the string
+            src {str} -- The input string content
+
+        Returns:
+            str -- The string content after the encoding
 
         Raises:
             EncodeError: When any exception is raised during the conversion
-        Returns:
-            str -- The string content after the encoding
         """
         from_encoding = self._validate_encoding(from_encoding)
         to_encoding = self._validate_encoding(to_encoding)
@@ -252,16 +286,17 @@ class EncodeUtils(object):
         """Convert the encoding of the data in a USS file
 
         Arguments:
-            from_code: {str} -- The source code set of the input file
-            to_code: {str} -- The destination code set for the output file
-            src: {str} -- The input file name, it should be a uss file
-            dest: {str} -- The output file name, it should be a uss file
+            from_code {str} -- The source code set of the input file
+            to_code {str} -- The destination code set for the output file
+            src {str} -- The input file name, it should be a uss file
+            dest {str} -- The output file name, it should be a uss file
+
+        Returns:
+            boolean -- Indicate whether the conversion is successful or not.
 
         Raises:
             EncodeError: When any exception is raised during the conversion.
             MoveFileError: When any exception is raised during moving files.
-        Returns:
-            boolean -- Indicate whether the conversion is successful or not.
         """
         src = self._validate_path(src)
         dest = self._validate_path(dest)
@@ -309,15 +344,16 @@ class EncodeUtils(object):
         use this method to split then do the conversion
 
         Arguments:
-            from_code: {str} -- The source code set of the input path
-            to_code: {str} -- The destination code set for the output path
-            src: {str} -- The input uss path or a file
-            dest: {str} -- The output uss path or a file
+            from_code {str} -- The source code set of the input path
+            to_code {str} -- The destination code set for the output path
+            src {str} -- The input uss path or a file
+            dest {str} -- The output uss path or a file
+
+        Returns:
+            boolean -- Indicate whether the conversion is successful or not
 
         Raises:
             EncodeError: When direcotry is empty or copy multiple files to a single file
-        Returns:
-            boolean -- Indicate whether the conversion is successful or not
         """
         src = self._validate_path(src)
         dest = self._validate_path(dest)
@@ -376,10 +412,10 @@ class EncodeUtils(object):
            3) MVS to MVS
 
         Arguments:
-            src: {str} -- The input MVS data set or USS path to be converted
-            dest: {str} -- The output MVS data set or USS path to be converted
-            from_code: {str} -- The source code set of the input MVS data set
-            to_code: {str} -- The destination code set of the output MVS data set
+            src {str} -- The input MVS data set or USS path to be converted
+            dest {str} -- The output MVS data set or USS path to be converted
+            from_code {str} -- The source code set of the input MVS data set
+            to_code {str} -- The destination code set of the output MVS data set
 
         Keyword Arguments:
             src_type {[type]} -- The input MVS data set or type: PS, PDS, PDSE, VSAM(KSDS) (default: {None})
@@ -458,9 +494,11 @@ class EncodeUtils(object):
         """Tag the file/directory specified with the given code set.
         If `file_path` is a directory, all of the files and subdirectories will
         be tagged recursively.
+
         Arguments:
             file_path {str} -- Absolute file path to tag.
             tag {str} -- Code set to tag the file/directory.
+
         Raises:
             TaggingError: When the chtag command fails.
         """
@@ -473,8 +511,10 @@ class EncodeUtils(object):
 
     def uss_file_tag(self, file_path):
         """Returns the current tag set for a file.
+
         Arguments:
             file_path {str} -- USS path to the file.
+
         Returns:
             str -- Current tag set for the file, as returned by 'ls -T'
             None -- If the file does not exist or the command fails.
@@ -499,12 +539,35 @@ class EncodeUtils(object):
 
 
 class EncodeError(Exception):
+    """Error during encoding.
+
+    Arguments:
+        message {str} -- Human readable string describing the exception.
+
+    Attributes:
+        msg {str} -- Human readable string describing the exception.
+    """
     def __init__(self, message):
         self.msg = 'An error occurred during encoding: "{0}"'.format(message)
         super(EncodeError, self).__init__(self.msg)
 
 
 class TaggingError(Exception):
+    """Error during tagging.
+
+    Arguments:
+        file_path {str} -- File to tag
+        tag {str} -- Tag to put in the file
+        rc {int} -- Return code
+        stdout {str} -- Standard output
+        stderr {str} -- Standard error
+
+    Attributes:
+        msg {str} -- Human readable string describing the exception.
+        rc {int} -- Return code
+        stdout {str} -- Standard output
+        stderr {str} -- Standard error
+    """
     def __init__(self, file_path, tag, rc, stdout, stderr):
         self.msg = 'An error occurred during tagging of {0} to {1}'.format(
             file_path,
@@ -516,7 +579,18 @@ class TaggingError(Exception):
         super(TaggingError, self).__init__(self.msg)
 
 
+# Verify e variable refer to encoding
 class MoveFileError(Exception):
+    """Error while moving a file.
+
+    Arguments:
+        src {str} -- From where the file moves
+        dest {str} -- To where the file moves
+        e {str} -- Encoding
+
+    Attributes:
+        msg {str} -- Human readable string describing the exception.
+    """
     def __init__(self, src, dest, e):
         self.msg = "Failed when moving {0} to {1}: {2}".format(src, dest, e)
         super().__init__(self.msg)

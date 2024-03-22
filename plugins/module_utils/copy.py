@@ -37,6 +37,14 @@ REPRO = """  REPRO INDATASET({}) -
 
 
 def _validate_data_set_name(ds):
+    """Validate data set name
+
+    Arguments:
+        ds {str} -- The source dataset
+
+    Returns:
+        string: Parsed dataset
+    """
     arg_defs = dict(ds=dict(arg_type="data_set"),)
     parser = BetterArgParser(arg_defs)
     parsed_args = parser.parse_args({"ds": ds})
@@ -44,6 +52,14 @@ def _validate_data_set_name(ds):
 
 
 def _validate_path(path):
+    """Validate path
+
+    Arguments:
+        path {str} -- The path
+
+    Returns:
+        string: Parsed path
+    """
     arg_defs = dict(path=dict(arg_type="path"),)
     parser = BetterArgParser(arg_defs)
     parsed_args = parser.parse_args({"path": path})
@@ -61,12 +77,13 @@ def copy_uss2mvs(src, dest, ds_type, is_binary=False):
     Keyword Arguments:
         is_binary: {bool} -- Whether the file to be copied contains binary data
 
-    Raises:
-        USSCmdExecError: When any exception is raised during the conversion.
     Returns:
         boolean -- The return code after the copy command executed successfully
         str -- The stdout after the copy command executed successfully
         str -- The stderr after the copy command executed successfully
+
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion.
     """
     module = AnsibleModuleHelper(argument_spec={})
     src = _validate_path(src)
@@ -94,12 +111,13 @@ def copy_ps2uss(src, dest, is_binary=False):
     Keyword Arguments:
         is_binary: {bool} -- Whether the file to be copied contains binary data
 
-    Raises:
-        USSCmdExecError: When any exception is raised during the conversion
     Returns:
         boolean -- The return code after the copy command executed successfully
         str -- The stdout after the copy command executed successfully
         str -- The stderr after the copy command executed successfully
+
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion
     """
     module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
@@ -125,12 +143,13 @@ def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
         asa_text: {bool} -- Whether the file to be copied contains ASA control
             characters
 
-    Raises:
-        USSCmdExecError: When any exception is raised during the conversion.
     Returns:
         boolean -- The return code after the USS command executed successfully
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
+
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion.
     """
     module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
@@ -160,12 +179,14 @@ def copy_uss2uss_binary(src, dest):
     Arguments:
         src: {str} -- The source USS path
         dest: {str} -- The destination USS path
-    Raises:
-        USSCmdExecError: When any exception is raised during the conversion.
+
     Returns:
         boolean -- The return code after the USS command executed successfully
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
+
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion.
     """
     module = AnsibleModuleHelper(argument_spec={})
     src = _validate_path(src)
@@ -187,12 +208,13 @@ def copy_mvs2mvs(src, dest, is_binary=False):
     Keyword Arguments:
         is_binary: {bool} -- Whether the data set to be copied contains binary data
 
-    Raises:
-        USSCmdExecError: When any exception is raised during the conversion.
     Returns:
         boolean -- The return code after the USS command executed successfully
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
+
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion.
     """
     module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
@@ -213,12 +235,13 @@ def copy_vsam_ps(src, dest):
         src: {str} -- The VSAM(KSDS) or PS data set to be copied
         dest: {str} -- The PS or VSAM(KSDS) data set
 
-    Raises:
-        USSCmdExecError: When any exception is raised during the conversion
     Returns:
         boolean -- The return code after the USS command executed successfully
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
+
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion
     """
     module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
@@ -310,6 +333,18 @@ def copy_asa_pds2uss(src, dest):
 
 
 class TSOCmdResponse():
+    """Builds TSO cmd response.
+
+    Args:
+        rc {int} -- Return code
+        stdout {str} -- Standard output
+        stderr {str} -- Standard error
+
+    Attributes:
+        rc {int} -- Return code
+        stdout {str} -- Standard output
+        stderr {str} -- Standard error
+    """
     def __init__(self, rc, stdout, stderr):
         self.rc = rc
         self.stdout_response = stdout
@@ -317,6 +352,20 @@ class TSOCmdResponse():
 
 
 class USSCmdExecError(Exception):
+    """Error during USS cmd execution.
+
+    Args:
+        uss_cmd {str} -- Human readable string describing the exception.
+        rc {int} -- Return code
+        out {str} -- Standard output
+        err {str} -- Standard error
+
+    Attributes:
+        uss_cmd {str} -- Human readable string describing the exception.
+        rc {int} -- Return code
+        out {str} -- Standard output
+        err {str} -- Standard error
+    """
     def __init__(self, uss_cmd, rc, out, err):
         self.msg = (
             "Failed during execution of usscmd: {0}, Return code: {1}; "

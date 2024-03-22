@@ -51,6 +51,14 @@ else:
 
 
 def _validate_data_set_name(ds):
+    """Validate data set name
+
+    Arguments:
+        ds {str} -- The source dataset
+
+    Returns:
+        string -- Parsed dataset
+    """
     arg_defs = dict(ds=dict(arg_type="data_set"))
     parser = BetterArgParser(arg_defs)
     parsed_args = parser.parse_args({"ds": ds})
@@ -64,6 +72,9 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
         dsn {str} -- The name of the data set to backup.
                         It could be an MVS PS/PDS/PDSE/VSAM(KSDS), etc.
         bk_dsn {str} -- The name of the backup data set.
+
+    Returns:
+        string -- The backup dataset
 
     Raises:
         BackupError: When backup data set exists.
@@ -131,11 +142,11 @@ def uss_file_backup(path, backup_name=None, compress=False):
     Keyword Arguments:
         compress {bool} -- Determines if the backup be compressed. (default: {False})
 
-    Raises:
-        BackupError: When creating compressed backup fails.
-
     Returns:
         str -- Name of the backup file.
+
+    Raises:
+        BackupError: When creating compressed backup fails.
     """
     abs_path = os.path.abspath(path)
 
@@ -194,6 +205,9 @@ def _copy_ds(ds, bk_ds):
         ds {str} -- The source data set to be copied from. Should be SEQ or VSAM
         bk_dsn {str} -- The destination data set to copy to.
 
+    Returns:
+        int -- Return code.
+
     Raises:
         BackupError: When copying data fails
     """
@@ -226,6 +240,9 @@ def _allocate_model(ds, model):
         ds {str} -- The name of the data set to be allocated.
         model {str} -- The name of the data set whose allocation parameters should be used.
 
+    Returns:
+        int -- Return code.
+
     Raises:
         BackupError: When allocation fails
     """
@@ -247,12 +264,35 @@ def _allocate_model(ds, model):
 
 
 def _copy_pds(ds, bk_dsn):
+    """Copy a dataset.
+
+    Arguments:
+        ds {str} -- The name of the data set to be allocated.
+        bk_dsn {str} -- The destination data set to copy to.
+
+    Returns:
+        string -- Copied dataset
+    """
     dds = dict(OUTPUT=bk_dsn, INPUT=ds)
     copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
     return iebcopy(copy_cmd, dds=dds)
 
 
 class BackupError(Exception):
+    """Error during backup.
+
+    Arguments:
+        msg {str} -- Human readable string describing the exception.
+        rc {int} -- Return code
+        stdout {str} -- Standard output
+        stderr {str} -- Standard error
+
+    Attributes:
+        msg {str} -- Human readable string describing the exception.
+        rc {int} -- Return code
+        stdout {str} -- Standard output
+        stderr {str} -- Standard error
+    """
     def __init__(self, message, rc=None, stdout=None, stderr=None):
         self.msg = 'An error occurred during backup: "{0}"'.format(message)
         self.rc = rc

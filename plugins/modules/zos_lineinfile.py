@@ -195,6 +195,9 @@ notes:
     needs to be encoded, it should be cataloged first.
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
+  - When working with an MVS file and ZOAU version 1.3.0, combining C(regexp)
+    with either C(insertafter) or C(insertbefore), will throw an error.
+    Follow up on the L(issue in the collection's repository,https://github.com/ansible-collections/ibm_zos_core/issues/1244).
 """
 
 EXAMPLES = r"""

@@ -1733,7 +1733,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src,
             state="present",
-            type="seq",
+            type="SEQ",
             replace=True
         )
 

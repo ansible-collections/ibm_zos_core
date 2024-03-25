@@ -27,13 +27,13 @@ class MVSCmd(object):
     def execute(pgm, dds, parm="", debug=False, verbose=False):
         """Execute an unauthorized MVS command.
 
-        Args:
-            pgm (str): The name of the program to execute.
-            dds (list[DDStatement]): A list of DDStatement objects.
-            parm (str, optional): Argument string if required by the program. Defaults to "".
+        Arguments:
+            pgm {str} -- The name of the program to execute.
+            dds {list[DDStatement]} -- A list of DDStatement objects.
+            parm {str, optional} -- Argument string if required by the program. Defaults to "".
 
         Returns:
-            MVSCmdResponse: The response of the command.
+            MVSCmdResponse -- The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
         command = "mvscmd {0} {1} {2} ".format(
@@ -48,14 +48,14 @@ class MVSCmd(object):
     def execute_authorized(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None):
         """Execute an authorized MVS command.
 
-        Args:
-            pgm (str): The name of the program to execute.
-            dds (list[DDStatement]): A list of DDStatement objects.
-            parm (str, optional): Argument string if required by the program. Defaults to "".
-            tmp_hlq (str): The name of the temporary high level qualifier to use for temp data sets.
+        Arguments:
+            pgm {str} -- The name of the program to execute.
+            dds {list[DDStatement]} -- A list of DDStatement objects.
+            parm {str, optional} -- Argument string if required by the program. Defaults to "".
+            tmp_hlq {str} -- The name of the temporary high level qualifier to use for temp data sets.
 
         Returns:
-            MVSCmdResponse: The response of the command.
+            MVSCmdResponse -- The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
         command = "mvscmdauth {0} {1} {2} {3} ".format(
@@ -72,13 +72,13 @@ class MVSCmd(object):
     def _build_command(pgm, dds, parm):
         """Build the command string to be used by ZOAU mvscmd/mvscmdauth.
 
-        Args:
-            pgm (str): [description]
-            dds (list[DDStatement]): A list of DDStatement objects.
-            parm (str, optional): Argument string if required by the program. Defaults to "".
+        Arguments:
+            pgm {str} -- The name of the program to execute.
+            dds {list[DDStatement]} -- A list of DDStatement objects.
+            parm {str, optional} -- Argument string if required by the program. Defaults to "".
 
         Returns:
-            str: Command string formatted as expected by mvscmd/mvscmdauth.
+            str -- Command string formatted as expected by mvscmd/mvscmdauth.
         """
         args_string = ""
         if parm:
@@ -93,6 +93,16 @@ class MVSCmd(object):
 
 class MVSCmdResponse(object):
     """Holds response information for MVSCmd call.
+
+    Arguments:
+        rc {int} -- Return code
+        stdout {str} -- Standard output 
+        stderr {str} -- Standard error
+
+    Attributes:
+        rc {int} -- Return code
+        stdout {str} -- Standard output 
+        stderr {str} -- Standard error
     """
 
     def __init__(self, rc, stdout, stderr):

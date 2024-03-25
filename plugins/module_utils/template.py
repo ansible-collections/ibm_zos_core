@@ -36,6 +36,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, va
 
 
 def _process_boolean(arg, default=False):
+    """Tries to convert a process to boolean
+
+    Arguments:
+        arg {bool} -- Process to convert
+        default {bool} -- Output in case the operation fails
+
+    Returns:
+        bool -- argument introduced
+        bool -- Introduced fail output 
+    """
     try:
         return boolean(arg)
     except TypeError:
@@ -47,9 +57,9 @@ def create_template_environment(template_parameters, src, template_encoding=None
     instance.
 
     Arguments:
-        template_parametrs (dict): Parameters for creating the template environment.
-        src (str): Local path where the templates are located.
-        template_encoding (dict, optional): encoding used by the templates. If not
+        template_parameters {dict} -- Parameters for creating the template environment.
+        src {str} -- Local path where the templates are located.
+        template_encoding {dict, optional} -- encoding used by the templates. If not
                 given, the default locale set in the system will be used.
 
     Returns:
@@ -72,13 +82,6 @@ def create_template_environment(template_parameters, src, template_encoding=None
 
 
 class TemplateRenderer:
-    """This class implements functionality to load and render Jinja2
-    templates. To add support for Jinja2 in a module, you need to include
-    the template.py doc fragment, add the options for configuring the Jinja2
-    environment to the module's options, and instantiate this class to
-    render templates inside an action plugin.
-    """
-
     _ALLOWED_NEWLINE_DELIMITERS = ["\n", "\r", "\r\n"]
     _FIXABLE_NEWLINE_DELIMITERS = ["\\n", "\\r", "\\r\\n"]
     _NEWLINE_DELIMITER_SWAP = {
@@ -105,40 +108,51 @@ class TemplateRenderer:
         newline_sequence="\n",
         auto_reload=False,
     ):
-        """Initializes a new TemplateRenderer object with a Jinja2
+        """This class implements functionality to load and render Jinja2
+        templates. To add support for Jinja2 in a module, you need to include
+        the template.py doc fragment, add the options for configuring the Jinja2
+        environment to the module's options, and instantiate this class to
+        render templates inside an action plugin.
+
+        Initializes a new TemplateRenderer object with a Jinja2
         environment that can use templates from a given directory.
         More information about Jinja2 templates and environments can
         be found at https://jinja.palletsprojects.com/en/3.0.x/api/.
 
         Arguments:
-            template_path (str): Path to a Jinja2 template file or directory.
-            encoding (str): Encoding for rendered templates.
-            variable_start_string (str, optional): Marker for the beginning of
+            template_path {str} -- Path to a Jinja2 template file or directory.
+            encoding {str} -- Encoding for rendered templates.
+            variable_start_string {str, optional} -- Marker for the beginning of
                     a statement to print a variable in Jinja2.
-            variable_end_string (str, optional): Marker for the end of
+            variable_end_string {str, optional} -- Marker for the end of
                     a statement to print a variable in Jinja2.
-            block_start_string (str, optional): Marker for the beginning of
+            block_start_string {str, optional} -- Marker for the beginning of
                     a block in Jinja2.
-            block_end_string (str, optional): Marker for the end of a block
+            block_end_string {str, optional} -- Marker for the end of a block
                     in Jinja2.
-            comment_start_string (str, optional): Marker for the beginning of
+            comment_start_string {str, optional} -- Marker for the beginning of
                     a comment in Jinja2.
-            comment_end_string (str, optional): Marker for the end of a comment
+            comment_end_string {str, optional} -- Marker for the end of a comment
                     in Jinja2.
-            line_statement_prefix (str, optional): Prefix used by Jinja2 to identify
+            line_statement_prefix {str, optional} -- Prefix used by Jinja2 to identify
                     line-based statements.
-            line_comment_prefix (str, optional): Prefix used by Jinja2 to identify
+            line_comment_prefix {str, optional} -- Prefix used by Jinja2 to identify
                     comment lines.
-            lstrip_blocks (bool, optional): Whether Jinja2 should strip leading spaces
+            lstrip_blocks {bool, optional} -- Whether Jinja2 should strip leading spaces
                     from the start of a line to a block.
-            trim_blocks (bool, optional): Whether Jinja2 should remove the first
+            trim_blocks {bool, optional} -- Whether Jinja2 should remove the first
                     newline after a block is removed.
-            keep_trailing_newline (bool, optional): Whether Jinja2 should keep the
+            keep_trailing_newline {bool, optional} -- Whether Jinja2 should keep the
                     first trailing newline at the end of a template after rendering.
-            newline_sequence (str, optional): Sequence that starts a newline in a
+            newline_sequence {str, optional} -- Sequence that starts a newline in a
                     template. Valid values are '\n', '\r', '\r\n'.
-            auto_reload (bool, optional): Whether to reload a template file when it
+            auto_reload {bool, optional} -- Whether to reload a template file when it
                     has changed after creating the Jinja2 environment.
+
+        Attributes:
+            encoding {str} -- Encoding for rendered templates.
+            template_dir {str} -- Dir with the template path.
+            templating_env {jinja2.environment} -- Environment created with the arguments as input
 
         Raises:
             FileNotFoundError: When template_path points to a non-existent

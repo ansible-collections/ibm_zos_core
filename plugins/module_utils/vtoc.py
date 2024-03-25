@@ -27,11 +27,11 @@ def get_volume_entry(volume):
     Arguments:
         volume {str} -- The name of the volume.
 
-    Raises:
-        VolumeTableOfContentsError: When any exception is raised during VTOC operations.
-
     Returns:
         list[dict] -- List of dictionaries holding data set information from VTOC.
+
+    Raises:
+        VolumeTableOfContentsError: When any exception is raised during VTOC operations.
     """
     try:
         stdin = "  LISTVTOC FORMAT,VOL=3390={0}".format(volume.upper())
@@ -417,6 +417,14 @@ def _format_extent_data(extent_data):
 
 
 class VolumeTableOfContentsError(Exception):
+    """Error during VTOC parsing or retrieval.
+
+    Arguments:
+        msg {str} -- Human readable string describing the exception
+
+    Attributes:
+        msg {str} -- Human readable string describing the exception
+    """
     def __init__(self, msg=""):
         self.msg = "An error occurred during VTOC parsing or retrieval. {0}".format(msg)
         super(VolumeTableOfContentsError, self).__init__(self.msg)

@@ -26,16 +26,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
 
 
 def get_init_command(module, result, args):
-    """Get init command
-
-    Arguments:
-        module {obj} -- Object from the collection
-        result {dic} -- Results dictionary
-        args {dict} -- Arguments to be formatted
-
-    Returns:
-        str -- Formatted JCL strings for zos_mvs_raw
-    """
 
     # Get parameters from playbooks
     address = args.get('address')
@@ -114,16 +104,6 @@ def get_init_command(module, result, args):
 
 
 def init(module, result, parsed_args):
-    """Init
-
-    Arguments:
-        module {object} -- The module to give results of
-        result {dict} -- The results of the process
-        parsed_args {dict} -- Parsed arguments to be converted to command
-
-    Returns:
-        dict -- The dictionary with the results
-    """
     # Convert args parsed from module to ickdsf INIT command
     cmd = get_init_command(module, result, parsed_args)
 

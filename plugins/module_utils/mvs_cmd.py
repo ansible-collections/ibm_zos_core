@@ -31,6 +31,9 @@ def iebcopy(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IEBCOPY", cmd, dds, authorized)
 
@@ -45,6 +48,9 @@ def iebedit(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IEBEDIT", cmd, dds, authorized)
 
@@ -61,6 +67,9 @@ def iebcompr(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IEBCOMPR", cmd, dds, authorized)
 
@@ -75,6 +84,9 @@ def iebdg(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IEBDG", cmd, dds, authorized)
 
@@ -103,6 +115,9 @@ def iebgener(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IEBGENER", cmd, dds, authorized)
 
@@ -117,6 +132,9 @@ def idcams(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IDCAMS", cmd, dds, authorized)
 
@@ -134,6 +152,9 @@ def ikjeft01(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IKJEFT01", cmd, dds, authorized)
 
@@ -149,6 +170,9 @@ def iehlist(cmd, dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("IEHLIST", cmd, dds, authorized)
 
@@ -163,6 +187,9 @@ def amaterse(cmd="", dds=None, authorized=False):
         dds {dict} -- Any DD statements to pass to MVS command
         authorized {bool} -- Whether the command should be run in authorized
         mode
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("AMATERSE", "", dds, authorized)
 
@@ -173,6 +200,9 @@ def adrdssu(cmd, dds=None, authorized=False):
     wildcard-named files.
     Is a DFSMSdss utility that provides backup and recovery functions
     at both the data set and volume levels.
+
+    Returns:
+        tuple[int, str, str] -- A tuple of return code, stdout and stderr
     """
     return _run_mvs_command("ADRDSSU", cmd, dds, authorized)
 

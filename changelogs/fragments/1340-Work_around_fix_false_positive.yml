@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_blockinfile - the use of " in a block generated a false positive.
+    Fix now generate a true positive in those cases.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1340).

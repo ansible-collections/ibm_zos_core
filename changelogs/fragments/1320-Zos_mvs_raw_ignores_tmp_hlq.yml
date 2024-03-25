@@ -1,5 +1,5 @@
 bugfixes:
   - zos_mvs_raw - mvs raw ignored the tmphlq argument by the creation of dd's.
     Fix now enables the user to pass tmphlq argument to be use by the creation of
-    dd's name's.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/13020).
+    dd's names.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1320).

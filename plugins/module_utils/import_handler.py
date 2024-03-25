@@ -15,8 +15,19 @@ __metaclass__ = type
 
 
 class MissingZOAUImport(object):
+    """Error when importing ZOAU
+    """
     def __getattr__(self, name):
         def method(*args, **kwargs):
+            """Raises ImportError as a result of a failed ZOAU import
+
+            Arguments:
+                *args {dict} -- Arguments ordered in a dictionary
+                **kwargs {dict} -- Arguments ordered in a dictionary
+
+            Raises:
+                ImportError: Unable to import a module or library
+            """
             raise ImportError(
                 (
                     "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
@@ -39,16 +50,21 @@ class ZOAUImportError(object):
 
     Instead, we'll replace what would've been a ZOAU library with this class,
     and the moment ANY method gets called, we finally raise an exception.
+    When creating a new instance of this class, we save the traceback
+    from the original exception so that users have more context when their
+    task/code fails. The expected traceback is a string representation of
+    it, not an actual traceback object. By importing `traceback` from the
+    standard library and calling `traceback.format_exc()` we can
+    get this string.
+
+    Arguments:
+        exception_traceback {} -- The formatted traceback of the exception
+
+    Attributes:
+        exception_traceback {} -- The formatted traceback of the exception
     """
 
     def __init__(self, exception_traceback):
-        """When creating a new instance of this class, we save the traceback
-        from the original exception so that users have more context when their
-        task/code fails. The expected traceback is a string representation of
-        it, not an actual traceback object. By importing `traceback` from the
-        standard library and calling `traceback.format_exc()` we can
-        get this string.
-        """
         self.traceback = exception_traceback
 
     def __getattr__(self, name):
@@ -58,6 +74,15 @@ class ZOAUImportError(object):
         an error while importing ZOAU.
         """
         def method(*args, **kwargs):
+            """Raises ImportError as a result of a failed ZOAU import
+
+            Arguments:
+                *args {dict} -- Arguments ordered in a dictionary
+                **kwargs {dict} -- Arguments ordered in a dictionary
+
+            Raises:
+                ImportError: Unable to import a module or library
+            """
             raise ImportError(
                 (
                     "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
@@ -70,11 +95,28 @@ class ZOAUImportError(object):
 
 
 class MissingImport(object):
+    """Error when it is unable to import a module due it being missing
+
+    Arguments:
+        import_name {str} -- The name of the module to import
+
+    Attributes:
+        import_name {str} -- The name of the module to import
+    """
     def __init__(self, import_name=""):
         self.import_name = import_name
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
+            """Raises ImportError as a result of trying to import a missing module
+
+            Arguments:
+                *args {dict} -- Arguments ordered in a dictionary
+                **kwargs {dict} -- Arguments ordered in a dictionary
+
+            Raises:
+                ImportError: Unable to import a module or library
+            """
             raise ImportError("Import {0} was not available.".format(self.import_name))
 
         return method

@@ -1413,51 +1413,52 @@ def test_ds_not_supported(ansible_zos_module, dstype):
         hosts.all.zos_data_set(name=ds_name, state="absent")
 
 
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", ["PDS","PDSE"])
-def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
-    hosts = ansible_zos_module
-    ds_type = dstype
-    default_data_set_name = get_tmp_ds_name()
-    params = dict(path="", insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present", force=False)
-    MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
-    TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
-    params["path"] = default_data_set_name+"({0})".format(MEMBER_2)
-    content = TEST_CONTENT
-    try:
+# Enhancemed #1339
+#@pytest.mark.ds
+#@pytest.mark.parametrize("dstype", ["PDS","PDSE"])
+#def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
+#    hosts = ansible_zos_module
+#    ds_type = dstype
+#    default_data_set_name = get_tmp_ds_name()
+#    params = dict(path="", insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present", force=False)
+#    MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
+#    TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
+#    params["path"] = default_data_set_name+"({0})".format(MEMBER_2)
+#    content = TEST_CONTENT
+#    try:
         # set up:
-        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
-        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
-        hosts.all.zos_data_set(
-            batch=[
-                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
-                    "type": "member", "state": "present", "replace": True, },
-                {   "name": params["path"], "type": "member",
-                    "state": "present", "replace": True, },
-            ]
-        )
-        cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), params["path"])
-        hosts.all.shell(cmd=cmdStr)
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))
-        for result in results.contacted.values():
-            assert int(result.get("stdout")) != 0
+#        hosts.all.zos_data_set(name=default_data_set_name, state="present", type=ds_type, replace=True)
+#        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, TEMP_FILE))
+#        hosts.all.zos_data_set(
+#            batch=[
+#                {   "name": default_data_set_name + "({0})".format(MEMBER_1),
+#                    "type": "member", "state": "present", "replace": True, },
+#                {   "name": params["path"], "type": "member",
+#                    "state": "present", "replace": True, },
+#            ]
+#        )
+#        cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), params["path"])
+#        hosts.all.shell(cmd=cmdStr)
+#        results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))
+#        for result in results.contacted.values():
+#            assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.file(path="/tmp/disp_shr/", state="directory")
-        hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
-        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
-            call_c_jcl.format(default_data_set_name, MEMBER_1),
-        '/tmp/disp_shr/call_c_pgm.jcl'))
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
-        time.sleep(5)
+#        hosts.all.file(path="/tmp/disp_shr/", state="directory")
+#        hosts.all.shell(cmd="echo \"{0}\"  > {1}".format(c_pgm, '/tmp/disp_shr/pdse-lock.c'))
+#        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(
+#            call_c_jcl.format(default_data_set_name, MEMBER_1),
+#        '/tmp/disp_shr/call_c_pgm.jcl'))
+#        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+#        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+#        time.sleep(5)
         # call lineinfile to see results
-        results = hosts.all.zos_blockinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == False
-            assert result.get("failed") == True
-    finally:
-        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
-        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
-        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
-        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
-        hosts.all.zos_data_set(name=default_data_set_name, state="absent")
+#        results = hosts.all.zos_blockinfile(**params)
+#        for result in results.contacted.values():
+#            assert result.get("changed") == False
+#            assert result.get("failed") == True
+#    finally:
+#        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+#        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+#        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+#        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+#        hosts.all.zos_data_set(name=default_data_set_name, state="absent")

@@ -1628,10 +1628,6 @@ ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 backups = []
 
 
-# Use of global tmphlq to keep coherent classes definitions
-g_tmphlq = ""
-
-
 def run_module():
     """Executes all module-related functions.
 
@@ -1839,8 +1835,7 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
-            global g_tmphlq
-            g_tmphlq = parms.get("tmp_hlq")
+            tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
@@ -1852,6 +1847,7 @@ def run_module():
                 dd_statements=dd_statements,
                 authorized=authorized,
                 verbose=verbose,
+                tmp_hlq=tmphlq,
             )
             if program_response.rc != 0 and program_response.stderr:
                 raise ZOSRawError(
@@ -2408,7 +2404,7 @@ def build_dd_statements(parms):
     dd_statements = []
     for dd in parms.get("dds"):
         dd_name = get_dd_name(dd)
-        dd = set_extra_attributes_in_dd(dd)
+        dd = set_extra_attributes_in_dd(dd, parms)
         data_definition = build_data_definition(dd)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
@@ -2444,26 +2440,27 @@ def get_dd_name(dd):
     return dd_name
 
 
-def set_extra_attributes_in_dd(dd):
+def set_extra_attributes_in_dd(dd, parms):
     """
-    Set any extra attributes in dds like in global g_tmphlq.
+    Set any extra attributes in dds like in global tmp_hlq.
     Args:
         dd (dict): A single DD parm as specified in module parms.
 
     Returns:
         dd (dict): A single DD parm as specified in module parms.
     """
+    tmphlq = parms.get("tmp_hlq")
     if dd.get("dd_data_set"):
-        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
+        dd.get("dd_data_set")["tmphlq"] = tmphlq
     elif dd.get("dd_input"):
-        dd.get("dd_input")["tmphlq"] = g_tmphlq
+        dd.get("dd_input")["tmphlq"] = tmphlq
     elif dd.get("dd_output"):
-        dd.get("dd_output")["tmphlq"] = g_tmphlq
+        dd.get("dd_output")["tmphlq"] = tmphlq
     elif dd.get("dd_vio"):
-        dd.get("dd_vio")["tmphlq"] = g_tmphlq
+        dd.get("dd_vio")["tmphlq"] = tmphlq
     elif dd.get("dd_concat"):
         for single_dd in dd.get("dd_concat").get("dds", []):
-            set_extra_attributes_in_dd(single_dd)
+            set_extra_attributes_in_dd(single_dd, parms)
     return dd
 
 
@@ -2572,6 +2569,7 @@ class RawDatasetDefinition(DatasetDefinition):
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
+        self.tmphlq = tmphlq
         primary_unit = space_type
         secondary_unit = space_type
         key_label1 = None
@@ -2698,7 +2696,6 @@ class RawFileDefinition(FileDefinition):
         )
 
 
-# TODO: potentially extend the available parameters to end user
 class RawInputDefinition(InputDefinition):
     """Wrapper around InputDefinition to contain information about
     desired return contents.
@@ -2707,7 +2704,7 @@ class RawInputDefinition(InputDefinition):
         InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, content="", return_content=None, **kwargs):
+    def __init__(self, content="", return_content=None, tmphlq="", **kwargs):
         """Initialize RawInputDefinition
 
         Args:
@@ -2715,7 +2712,7 @@ class RawInputDefinition(InputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__(content=content)
+        super().__init__(content=content, tmphlq=tmphlq)
 
 
 class RawOutputDefinition(OutputDefinition):
@@ -2726,7 +2723,7 @@ class RawOutputDefinition(OutputDefinition):
         OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, return_content=None, **kwargs):
+    def __init__(self, return_content=None, tmphlq="", **kwargs):
         """Initialize RawOutputDefinition
 
         Args:
@@ -2734,7 +2731,7 @@ class RawOutputDefinition(OutputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__()
+        super().__init__(tmphlq=tmphlq)
 
 
 class ReturnContent(object):
@@ -2839,7 +2836,7 @@ def data_set_exists(name, volumes=None):
 
 
 def run_zos_program(
-    program, parm="", dd_statements=None, authorized=False, verbose=False
+    program, parm="", dd_statements=None, authorized=False, verbose=False, tmp_hlq=None
 ):
     """Run a program on z/OS.
 
@@ -2848,6 +2845,7 @@ def run_zos_program(
         parm (str, optional): Additional argument string if required. Defaults to "".
         dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
         authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
+        tmphlq (str, optional): Arguments overwrite variable tmphlq
 
     Returns:
         MVSCmdResponse: Holds the response information for program execution.
@@ -2857,11 +2855,11 @@ def run_zos_program(
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
         )
     else:
         response = MVSCmd.execute(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
         )
     return response
 

@@ -740,16 +740,16 @@ def get_individual_data_set_parameters(params):
         params {dict} -- The parameters from
         Ansible's AnsibleModule object module.params.
 
+    Returns:
+        list -- A list of dicts where each list item
+        represents one data set. Each dictionary holds the parameters
+        (passed to the zos_data_set module) for the data set which it represents.
+
     Raises:
         ValueError: Raised if top-level parameters "name"
         and "batch" are both provided.
         ValueError: Raised if neither top-level parameters "name"
         or "batch" are provided.
-
-    Returns:
-        [list] -- A list of dicts where each list item
-        represents one data set. Each dictionary holds the parameters
-        (passed to the zos_data_set module) for the data set which it represents.
     """
     if params.get("name") and params.get("batch"):
         raise ValueError(
@@ -769,7 +769,21 @@ def get_individual_data_set_parameters(params):
 # * can be replaced by built-in
 def data_set_name(contents, dependencies):
     """Validates provided data set name(s) are valid.
-    Returns a list containing the name(s) of data sets."""
+    Returns a list containing the name(s) of data sets.
+    
+    Arguments:
+        contents {} --
+        dependencies {} --
+
+    Returns:
+        None --
+        str --
+
+    Raises:
+        ValueError: Data set name must be provided
+        ValueError: Data set and member name must be provided
+        ValueError: A value is invalid
+    """
     if dependencies.get("batch"):
         return None
     if contents is None:

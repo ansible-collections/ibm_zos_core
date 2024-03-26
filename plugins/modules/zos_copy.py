@@ -3408,6 +3408,16 @@ def main():
 
 class EncodingConversionError(Exception):
     def __init__(self, src, f_code, t_code):
+        """Error converting encoding
+
+        Arguments:
+            src {str} -- Source where the file is in
+            f_code {} -- 
+            t_code {} -- 
+
+        Attributes:
+            msg {str} -- Human readable string describing the exception
+        """
         self.msg = "Unable to convert encoding for {0} from {1} to {2}".format(
             src, f_code, t_code
         )
@@ -3416,12 +3426,28 @@ class EncodingConversionError(Exception):
 
 class NonExistentSourceError(Exception):
     def __init__(self, src):
+        """Error trying to find a dataset that doesn't exist
+
+        Arguments:
+            src {str} -- Source where the dataset was expected to be
+
+        Attributes:
+            msg {str} -- Human readable string describing the exception
+        """
         self.msg = "Source data set {0} does not exist".format(src)
         super().__init__(self.msg)
 
 
 class DataSetMemberAttributeError(Exception):
     def __init__(self, src):
+        """Error measuring a dataset member
+
+        Arguments:
+            src {str} -- Path the member is in
+
+        Attributes:
+            msg {str} -- Human readable string describing the exception
+        """
         self.msg = "Unable to get size and record length of member {0}".format(src)
         super().__init__(self.msg)
 
@@ -3440,6 +3466,24 @@ class CopyOperationError(Exception):
         overwritten_members=None,
         new_members=None
     ):
+        """Error in a copy operation
+
+        Arguments:
+            msg {str} -- Human readable string describing the exception
+            rc {int} -- 
+            stdout {str} -- Standart output
+            stderr {str} -- Standart error
+            stdout_lines {int} -- Standart output lines
+            stderr_lines {int} -- Standart error lines
+            cmd {str} -- cmd command
+            dest_exists {bool} -- If the destination exists
+            overwritten_members {} --
+            new_members {} --
+
+        Attributes:
+            overwritten_members {} --
+            new_members {} --
+        """
         self.json_args = dict(
             msg=msg,
             rc=rc,

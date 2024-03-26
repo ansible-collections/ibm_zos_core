@@ -456,7 +456,7 @@ def parse_and_validate_args(params):
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
-        hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
+        hlq=dict(type=hlq_type, required=False, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
     )
 
@@ -637,22 +637,6 @@ def hlq_type(contents, dependencies):
     if not match(r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})$", contents, IGNORECASE):
         raise ValueError("Invalid argument {0} for hlq_type.".format(contents))
     return contents.upper()
-
-
-def hlq_default(contents, dependencies):
-    """Sets the default HLQ to use if none is provided.
-
-    Args:
-        contents (str): The HLQ to use
-        dependencies (dict): Any dependent arguments
-
-    Returns:
-        str: The HLQ to use
-    """
-    hlq = None
-    if dependencies.get("operation") == "restore":
-        hlq = datasets.get_hlq()
-    return hlq
 
 
 def sms_type(contents, dependencies):

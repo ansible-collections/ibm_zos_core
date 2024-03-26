@@ -633,11 +633,11 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 assert re.search(r'the submitted job is greater than the value set for option', repr(result.get("msg")))
 
             elif args["max_rc"] == 12:
-                # Will not fail but changed will be false for the non-zero RC, there
-                # are other possibilities like an ABEND or JCL ERROR will fail this even
+                # Will not fail and as the max_rc is set to 12 and the rc is 8 is a change true
+                # there are other possibilities like an ABEND or JCL ERROR will fail this even
                 # with a MAX RC
                 assert result.get("msg") is None
-                assert result.get('changed') is False
+                assert result.get('changed') is True
                 assert result.get("jobs")[0].get("ret_code").get("code") < 12
     finally:
         hosts.all.file(path=tmp_file.name, state="absent")

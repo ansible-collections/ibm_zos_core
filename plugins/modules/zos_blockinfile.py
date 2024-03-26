@@ -413,6 +413,14 @@ def absent(src, marker, encoding, force):
 
 
 def quotedString(string):
+    """Deletes the quote mark on strings
+
+    Arguments:
+        string {str} -- String to be delete quote marks from
+
+    Returns:
+        str -- String without the quote marks
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string

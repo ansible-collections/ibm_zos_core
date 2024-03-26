@@ -1023,7 +1023,7 @@ def assert_valid_return_code(max_rc, job_rc, ret_code):
     # result["chagned"]=False,
     if max_rc and job_rc > max_rc:
         return False
-    elif job_rc != 0:
+    elif job_rc != 0 and max_rc is None:
         return False
 
     return True

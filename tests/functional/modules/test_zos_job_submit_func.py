@@ -343,7 +343,7 @@ def test_job_submit_PDS(ansible_zos_module, location):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
@@ -374,7 +374,7 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="pds", replace=True
+            name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="PDS", replace=True
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
@@ -465,7 +465,7 @@ def test_job_submit_PDS_volume(ansible_zos_module, volumes_on_systems):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True, volumes=volume_1
+            name=data_set_name, state="present", type="PDS", replace=True, volumes=volume_1
         )
 
         hosts.all.shell(
@@ -473,7 +473,7 @@ def test_job_submit_PDS_volume(ansible_zos_module, volumes_on_systems):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="uncataloged", type="pds"
+            name=data_set_name, state="uncataloged", type="PDS"
         )
 
         results = hosts.all.zos_job_submit(src=data_set_name+"(SAMPLE)", location="DATA_SET", volume=volume_1)
@@ -498,7 +498,7 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -531,7 +531,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -564,7 +564,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -633,11 +633,11 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 assert re.search(r'the submitted job is greater than the value set for option', repr(result.get("msg")))
 
             elif args["max_rc"] == 12:
-                # Will not fail but changed will be false for the non-zero RC, there
-                # are other possibilities like an ABEND or JCL ERROR will fail this even
+                # Will not fail and as the max_rc is set to 12 and the rc is 8 is a change true
+                # there are other possibilities like an ABEND or JCL ERROR will fail this even
                 # with a MAX RC
                 assert result.get("msg") is None
-                assert result.get('changed') is False
+                assert result.get('changed') is True
                 assert result.get("jobs")[0].get("ret_code").get("code") < 12
     finally:
         hosts.all.file(path=tmp_file.name, state="absent")

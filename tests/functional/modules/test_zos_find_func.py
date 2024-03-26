@@ -60,7 +60,7 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
     search_string = "hello"
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES]
+            batch=[dict(name=i, type='SEQ', state='present') for i in SEQ_NAMES]
         )
         for ds in SEQ_NAMES:
             hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
@@ -88,9 +88,9 @@ def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
     new_ds = "TEST.FIND.SEQ.FUNCTEST.FOURTH"
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES]
+            batch=[dict(name=i, type='SEQ', state='present') for i in SEQ_NAMES]
         )
-        hosts.all.zos_data_set(name=new_ds, type='seq', state='present')
+        hosts.all.zos_data_set(name=new_ds, type='SEQ', state='present')
         hosts.all.shell(cmd=f"decho 'incorrect string' \"{new_ds}\" ")
         for ds in SEQ_NAMES:
             hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
@@ -118,7 +118,7 @@ def test_find_pds_members_containing_string(ansible_zos_module):
     search_string = "hello"
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='pds') for i in PDS_NAMES]
+            batch=[dict(name=i, type='PDS') for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
             batch=[
@@ -157,7 +157,7 @@ def test_exclude_data_sets_from_matched_list(ansible_zos_module):
             batch=[
                 dict(
                     name=i,
-                    type='seq',
+                    type='SEQ',
                     record_length=80,
                     state='present'
                 ) for i in SEQ_NAMES
@@ -182,7 +182,7 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
     hosts = ansible_zos_module
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='pds', state='present') for i in PDS_NAMES]
+            batch=[dict(name=i, type='PDS', state='present') for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
             batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES]
@@ -251,7 +251,7 @@ def test_find_data_sets_in_volume(ansible_zos_module):
         data_set_name = "TEST.FIND.SEQ"
         volume = "000000"
         # Create temp data set
-        hosts.all.zos_data_set(name=data_set_name, type="seq", state="present", volumes=[volume])
+        hosts.all.zos_data_set(name=data_set_name, type="SEQ", state="present", volumes=[volume])
         find_res = hosts.all.zos_find(
             patterns=[data_set_name], volumes=[volume]
         )
@@ -341,7 +341,7 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
     hosts = ansible_zos_module
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='pds', state='present') for i in PDS_NAMES]
+            batch=[dict(name=i, type='PDS', state='present') for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
             batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES]

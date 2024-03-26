@@ -3412,8 +3412,8 @@ class EncodingConversionError(Exception):
 
         Arguments:
             src {str} -- Source where the file is in
-            f_code {} -- 
-            t_code {} -- 
+            f_code {str} -- Encoding format the source is in 
+            t_code {str} -- Encoding format it tried to convert it to
 
         Attributes:
             msg {str} -- Human readable string describing the exception
@@ -3470,19 +3470,19 @@ class CopyOperationError(Exception):
 
         Arguments:
             msg {str} -- Human readable string describing the exception
-            rc {int} -- 
+            rc {int} -- Result code
             stdout {str} -- Standart output
             stderr {str} -- Standart error
-            stdout_lines {int} -- Standart output lines
-            stderr_lines {int} -- Standart error lines
+            stdout_lines {str} -- Standart output divided in lines
+            stderr_lines {str} -- Standart error divided in lines
             cmd {str} -- cmd command
             dest_exists {bool} -- If the destination exists
-            overwritten_members {} --
-            new_members {} --
+            overwritten_members {list} -- Members replaced before the error ocurred
+            new_members {list} -- New members that could be copied before the error ocurred
 
         Attributes:
-            overwritten_members {} --
-            new_members {} --
+            overwritten_members {list} -- Members replaced before the error ocurred
+            new_members {list} -- New members that could be copied before the error ocurred
         """
         self.json_args = dict(
             msg=msg,

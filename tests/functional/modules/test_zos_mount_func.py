@@ -178,10 +178,10 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
 
     hosts.all.zos_data_set(
         name=dest,
-        type="pdse",
+        type="PDSE",
         space_primary=5,
         space_type="M",
-        record_format="fba",
+        record_format="FBA",
         record_length=80,
     )
     print("\nbnn-Copying {0} to {1}\n".format(tmp_file_filename, dest_path))
@@ -217,10 +217,10 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
         hosts.all.zos_data_set(
             name=dest,
             state="absent",
-            type="pdse",
+            type="PDSE",
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
         )
 
@@ -262,10 +262,10 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
 
     hosts.all.zos_data_set(
         name=dest,
-        type="pdse",
+        type="PDSE",
         space_primary=5,
         space_type="M",
-        record_format="fba",
+        record_format="FBA",
         record_length=80,
     )
 
@@ -335,10 +335,10 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
         hosts.all.zos_data_set(
             name=dest,
             state="absent",
-            type="pdse",
+            type="PDSE",
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
         )
 

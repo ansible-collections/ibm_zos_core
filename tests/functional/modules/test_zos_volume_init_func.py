@@ -331,7 +331,7 @@ def test_no_existing_data_sets_check(ansible_zos_module):
         hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
 
         # allocate data set to volume
-        hosts.all.zos_data_set(name="USER.PRIVATE.TESTDS", type='pds', volumes=TEST_VOL_SER)
+        hosts.all.zos_data_set(name="USER.PRIVATE.TESTDS", type='PDS', volumes=TEST_VOL_SER)
 
         # take volume back offline
         hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")

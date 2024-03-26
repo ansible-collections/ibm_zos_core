@@ -46,9 +46,9 @@ def create_sequential_data_set_with_contents(
     hosts, data_set_name, contents, volume=None
 ):
     if volume is not None:
-        results = hosts.all.zos_data_set(name=data_set_name, type="seq", volumes=volume)
+        results = hosts.all.zos_data_set(name=data_set_name, type="SEQ", volumes=volume)
     else:
-        results = hosts.all.zos_data_set(name=data_set_name, type="seq")
+        results = hosts.all.zos_data_set(name=data_set_name, type="SEQ")
     assert_module_did_not_fail(results)
     results = hosts.all.shell("decho '{0}' {1}".format(contents, data_set_name))
     assert_module_did_not_fail(results)
@@ -636,6 +636,34 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         delete_remnants(hosts)
 
 
+def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        create_sequential_data_set_with_contents(
+            hosts, data_set_name, DATA_SET_CONTENTS
+        )
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=DATA_SET_BACKUP_LOCATION,
+        )
+        delete_data_set_or_file(hosts, data_set_name)
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=DATA_SET_BACKUP_LOCATION,
+        )
+        assert_module_did_not_fail(results)
+        # Check the HLQ in the response
+        assert_data_set_or_file_exists(hosts, data_set_name)
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_remnants(hosts)
 # def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module):
 #     hosts = ansible_zos_module
 #     try:

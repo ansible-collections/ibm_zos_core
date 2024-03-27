@@ -56,18 +56,6 @@ location
   | **choices**: DATA_SET, USS, LOCAL
 
 
-wait
-  Setting this option will yield no change, it is disabled. There is no no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of tme to wait for a job to execute.
-
-  This option will be removed in ibm.ibm_zos_core collection version 1.10.0
-
-  See option *wait_time_s*.
-
-  | **required**: False
-  | **type**: bool
-  | **default**: False
-
-
 wait_time_s
   Option *wait_time_s* is the total time that module `zos_job_submit <./zos_job_submit.html>`_ will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
 

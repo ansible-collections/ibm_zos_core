@@ -302,16 +302,37 @@ class FetchHandler:
         self.module = module
 
     def _fail_json(self, **kwargs):
-        """ Wrapper for AnsibleModule.fail_json """
+        """Wrapper for AnsibleModule.fail_json
+        
+        Arguments:
+            **kwargs {dict} -- Arguments to pass to fail_json()
+        """
         self.module.fail_json(**kwargs)
 
     def _run_command(self, cmd, **kwargs):
-        """ Wrapper for AnsibleModule.run_command """
+        """Wrapper for AnsibleModule.run_command
+        
+        Arguments:
+            cmd {str} -- cmd command to run
+            **kwargs {dict} -- Arguments to pass to run_command()
+
+        Returns:
+            tuple[int,str,str] -- Return code, standard output and standard error
+        """
         return self.module.run_command(cmd, **kwargs)
 
     def _get_vsam_size(self, vsam):
         """Invoke IDCAMS LISTCAT command to get the record length and space used.
         Then estimate the space used by the VSAM data set.
+
+        Arguments:
+            vsam {} -- VSAM data set name
+
+        Returns:
+            list[int] -- Total size, max_recl and rec_total
+
+        Raises:
+            fail_json: Unable to obtain data set information
         """
         space_pri = 0
         total_size = 0
@@ -349,7 +370,19 @@ class FetchHandler:
         return total_size, max_recl, rec_total
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
-        """ Copy VSAM data set to a temporary sequential data set """
+        """Copy VSAM data set to a temporary sequential data set
+
+        Arguments:
+            ds_name {str} -- Dataset name
+
+        Returns:
+            str -- Temporary dataset name
+
+        Raises:
+            fail_json: OS error
+            fail_json: cmd error while copying dataset
+            fail_json: Failed to call IDCAMS
+        """
         mvs_rc = 0
         vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
         # Default in case of max recl being 80 to avoid failures when fetching and empty vsam.
@@ -441,6 +474,18 @@ class FetchHandler:
     def _fetch_uss_file(self, src, is_binary, encoding=None):
         """Convert encoding of a USS file. Return a tuple of temporary file
         name containing converted data.
+
+        Arguments:
+            src {str} -- Source of the file
+            is_binary {bool} -- If is binary
+            encoding {str} -- The file encoding
+
+        Returns:
+            str -- File path if no able to make it
+            str -- Provided src
+
+        Raises:
+            fail_json: Any exception ocurred while converting encoding
         """
         file_path = None
         if (not is_binary) and encoding:
@@ -470,6 +515,17 @@ class FetchHandler:
     def _fetch_vsam(self, src, is_binary, encoding=None):
         """Copy the contents of a VSAM to a sequential data set.
         Afterwards, copy that data set to a USS file.
+
+        Arguments:
+            src {str} -- Source of the file
+            is_binary {bool} -- If is binary
+            encoding {str} -- The file encoding
+
+        Returns:
+            str -- File path
+
+        Raises:
+            fail_json: Unable to delete temporary dataset
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
         file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
@@ -486,6 +542,18 @@ class FetchHandler:
         """Copy a partitioned data set to a USS directory. If the data set
         is not being fetched in binary mode, encoding for all members inside
         the data set will be converted.
+
+        Arguments:
+            src {str} -- Source of the dataset
+            is_binary {bool} -- If is binary
+            encoding {str} -- The file encoding
+
+        Returns:
+            str -- Directory path
+
+        Raises:
+            fail_json: Error copying partitioned dataset to USS
+            fail_json: Error converting encoding of the member
         """
         dir_path = tempfile.mkdtemp()
         cmd = "cp -B \"//'{0}'\" {1}"
@@ -531,6 +599,18 @@ class FetchHandler:
     def _fetch_mvs_data(self, src, is_binary, encoding=None):
         """Copy a sequential data set or a partitioned data set member
         to a USS file
+
+        Arguments:
+            src {str} -- Source of the dataset
+            is_binary {bool} -- If is binary
+            encoding {str} -- The file encoding
+
+        Returns:
+            str -- File path
+
+        Raises:
+            fail_json: Unable to copy to USS
+            fail_json: Error converting encoding of the dataset
         """
         fd, file_path = tempfile.mkstemp()
         os.close(fd)
@@ -570,6 +650,16 @@ class FetchHandler:
 
 
 def run_module():
+    """Runs the module
+
+    Raises:
+        fail_json: When parameter verification fails
+        fail_json: When the source does not exist or is uncataloged
+        fail_json: When it's unable to determine dataset type
+        fail_json: While gathering dataset information
+        fail_json: When the data set member was not found inside a dataset
+        fail_json: When the file does not have appropriate read permissions
+    """
     # ********************************************************** #
     #                Module initialization                       #
     # ********************************************************** #

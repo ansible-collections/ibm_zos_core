@@ -288,6 +288,9 @@ def content_filter(module, patterns, content):
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
+
+    Raises:
+        fail_json: Non-zero return code received while executing ZOAU shell command 'dgrep'
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
@@ -329,6 +332,9 @@ def data_set_filter(module, pds_paths, patterns):
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
+
+    Raises:
+        fail_json: Non-zero return code received while executing ZOAU shell command 'dls'
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     patterns = pds_paths or patterns
@@ -417,6 +423,9 @@ def vsam_filter(module, patterns, resource_type, age=None):
 
     Returns:
         set[str]-- Matched VSAM data sets
+
+    Raises:
+        fail_json: Non-zero return code received while executing ZOAU shell command 'vls'
     """
     filtered_data_sets = set()
     now = time.time()
@@ -454,6 +463,9 @@ def data_set_attribute_filter(
 
     Returns:
         set[str] -- Matched data sets filtered by age and size
+
+    Raises:
+        fail_json: Non-zero return code received while executing ZOAU shell command 'dls'
     """
     filtered_data_sets = set()
     now = time.time()
@@ -500,6 +512,9 @@ def volume_filter(module, data_sets, volumes):
 
     Returns:
         set[str] -- The filtered data sets
+
+    Raises:
+        fail_json: Unable to retrieve VTOC information
     """
     filtered_data_sets = set()
     for volume in volumes:
@@ -568,6 +583,9 @@ def _get_creation_date(module, ds):
 
     Returns:
         str -- The data set creation date in the format "YYYY/MM/DD"
+
+    Raises:
+        fail_json: Non-zero return code received while retrieving data set age
     """
     rc, out, err = mvs_cmd.idcams(
         "  LISTCAT ENT('{0}') HISTORY".format(ds), authorized=True
@@ -621,6 +639,9 @@ def _match_regex(module, pattern, string):
 
     Returns:
         re.Match -- A Match object that matches the pattern to string
+
+    Raises:
+        fail_json: Invalid regular expression
     """
     try:
         return fullmatch(pattern, string, re.IGNORECASE)
@@ -639,7 +660,19 @@ def _dgrep_wrapper(
     verbose=False,
     context=None
 ):
-    """A wrapper for ZOAU 'dgrep' shell command"""
+    """A wrapper for ZOAU 'dgrep' shell command
+
+    Arguments:
+        data_set_pattern {str} -- Data set pattern
+        content {str} -- Content
+        ignore_case {bool} -- If ignore case
+        line_num {bool} -- If line num
+        verbose {bool} -- If verbose
+        context {bool} -- If context
+
+    Returns:
+        tuple[int,str,str] -- Return code, standard output and standard error
+    """
     dgrep_cmd = "dgrep"
     if ignore_case:
         dgrep_cmd += " -i"
@@ -662,7 +695,20 @@ def _dls_wrapper(
     verbose=False,
     migrated=False
 ):
-    """A wrapper for ZOAU 'dls' shell command"""
+    """A wrapper for ZOAU 'dls' shell command
+
+    Arguments:
+        data_set_pattern {str} -- Data set pattern
+        content {str} -- Content
+        list_details {bool} -- If list details
+        u_time {bool} -- If u time
+        size {bool} -- If size
+        verbose {bool} -- If verbose
+        migrated {bool} -- If migrated
+
+    Returns:
+        tuple[int,str,str] -- Return code, standard output and standard error
+    """
     dls_cmd = "dls"
     if migrated:
         dls_cmd += " -m"
@@ -681,7 +727,16 @@ def _dls_wrapper(
 
 
 def _vls_wrapper(pattern, details=False, verbose=False):
-    """A wrapper for ZOAU 'vls' shell command"""
+    """A wrapper for ZOAU 'vls' shell command
+
+    Arguments:
+        pattern {str} -- Data set pattern
+        details {bool} -- If details
+        verbose {bool} -- If verbose
+
+    Returns:
+        tuple[int,str,str] -- Return code, standard output and standard error
+    """
     vls_cmd = "vls"
     if details:
         vls_cmd += " -l"
@@ -693,6 +748,15 @@ def _vls_wrapper(pattern, details=False, verbose=False):
 
 
 def _match_resource_type(type1, type2):
+    """Compare that the two types match
+
+    Arguments:
+        type1 {str} -- One of the types that are expected to match
+        type2 {str} -- One of the types that are expected to match
+
+    Returns:
+        bool -- If the types match
+    """
     if type1 == type2:
         return True
     if type1 == "CLUSTER" and type2 not in ("DATA", "INDEX"):
@@ -720,6 +784,18 @@ def _ds_type(ds_name):
 
 
 def run_module(module):
+    """Initialize parameters
+
+    Arguments:
+        module {AnsibleModule} -- Ansible Module
+
+    Returns:
+        dict -- Arguments
+
+    Raises:
+        fail_json: Failed to process age
+        fail_json: Failed to process size
+    """
     # Parameter initialization
     age = module.params.get('age')
     age_stamp = module.params.get('age_stamp')
@@ -816,6 +892,11 @@ def run_module(module):
 
 
 def main():
+    """Initialize module when it's run as main
+
+    Raises:
+        fail_json: Parameter verification failed
+    """
     module = AnsibleModule(
         argument_spec=dict(
             age=dict(type="str", required=False),

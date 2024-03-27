@@ -97,7 +97,7 @@ type
 
   ``MEMBER`` expects to be used with an existing partitioned data set.
 
-  Choices are case-insensitive.
+  Choices are case-sensitive.
 
   | **required**: False
   | **type**: str
@@ -139,7 +139,7 @@ space_type
 record_format
   The format of the data set. (e.g ``FB``)
 
-  Choices are case-insensitive.
+  Choices are case-sensitive.
 
   When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
 
@@ -370,7 +370,7 @@ batch
 
     ``MEMBER`` expects to be used with an existing partitioned data set.
 
-    Choices are case-insensitive.
+    Choices are case-sensitive.
 
     | **required**: False
     | **type**: str
@@ -412,7 +412,7 @@ batch
   record_format
     The format of the data set. (e.g ``FB``)
 
-    Choices are case-insensitive.
+    Choices are case-sensitive.
 
     When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
 
@@ -568,7 +568,7 @@ Examples
    - name: Create a sequential data set if it does not exist
      zos_data_set:
        name: someds.name.here
-       type: seq
+       type: SEQ
        state: present
 
    - name: Create a PDS data set if it does not exist
@@ -577,26 +577,26 @@ Examples
        type: pds
        space_primary: 5
        space_type: M
-       record_format: fba
+       record_format: FBA
        record_length: 25
 
    - name: Attempt to replace a data set if it exists
      zos_data_set:
        name: someds.name.here
-       type: pds
+       type: PDS
        space_primary: 5
        space_type: M
-       record_format: u
+       record_format: U
        record_length: 25
        replace: yes
 
    - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
      zos_data_set:
        name: someds.name.here
-       type: pds
+       type: PDS
        space_primary: 5
        space_type: M
-       record_format: u
+       record_format: U
        record_length: 25
        volumes: "222222"
        replace: yes
@@ -604,19 +604,19 @@ Examples
    - name: Create an ESDS data set if it does not exist
      zos_data_set:
        name: someds.name.here
-       type: esds
+       type: ESDS
 
    - name: Create a KSDS data set if it does not exist
      zos_data_set:
        name: someds.name.here
-       type: ksds
+       type: KSDS
        key_length: 8
        key_offset: 0
 
    - name: Create an RRDS data set with storage class MYDATA if it does not exist
      zos_data_set:
        name: someds.name.here
-       type: rrds
+       type: RRDS
        sms_storage_class: mydata
 
    - name: Delete a data set if it exists
@@ -661,7 +661,7 @@ Examples
            type: PDS
            space_primary: 5
            space_type: M
-           record_format: fb
+           record_format: FB
            replace: yes
          - name: someds.name.here1(member1)
            type: MEMBER

@@ -29,8 +29,6 @@ description:
   - Supported sources are USS (UNIX System Services) or z/OS data sets.
   - Mixing MVS data sets with USS files for unarchiving is not supported.
   - The archive is sent to the remote as binary, so no encoding is performed.
-
-
 options:
   src:
     description:
@@ -311,12 +309,17 @@ options:
     type: bool
     required: false
     default: false
-
 notes:
   - VSAMs are not supported.
-
+  - This module uses L(zos_copy,./zos_copy.html) to copy local scripts to
+    the remote machine which uses SFTP (Secure File Transfer Protocol) for the
+    underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not
+    supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS
+    from using Co:Z thus falling back to using standard SFTP. If the module detects
+    SCP, it will temporarily use SFTP for transfers, if not available, the module
+    will fail.
 seealso:
-  - module: zos_unarchive
+  - module: zos_archive
 '''
 
 EXAMPLES = r'''

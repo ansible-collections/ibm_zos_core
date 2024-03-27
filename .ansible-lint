@@ -35,6 +35,7 @@ exclude_paths:
   - tests/sanity/ignore-2.11.txt
   - tests/sanity/ignore-2.12.txt
   - tests/sanity/ignore-2.13.txt
+  - tests/sanity/ignore-2.14.txt
   - venv*
 parseable: true
 quiet: false

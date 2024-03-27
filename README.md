@@ -51,7 +51,7 @@ and ansible-doc to automate tasks on z/OS.
 
 Ansible version compatibility
 =============================
-This collection has been tested against **Ansible Core** versions >=2.14.
+This collection has been tested against **Ansible Core** versions >=2.15.
 The Ansible Core versions supported for this collection align to the
 [ansible-core support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix). Review the
 [Ansible community changelogs](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs) for corresponding **Ansible community packages**
@@ -64,11 +64,12 @@ for more more information on supported versions of Ansible.
 
 Other Dependencies
 ==================
-This release of the **IBM z/OS core collection** requires the z/OS managed node have:
-- [z/OS](https://www.ibm.com/docs/en/zos) V2R4 or later.
+This release of the **IBM z/OS core collection** requires the z/OS managed node have the following:
+- [z/OS](https://www.ibm.com/docs/en/zos)
 - [z/OS shell](https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm).
-- [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) 3.9 - 3.11.
-- [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau/1.2.x) 1.2.5 (or later) but prior to version 1.3.
+- [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos)
+- [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau/1.2.x)
+For specific dependency versions, please review the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) for the version of the IBM Ansible z/OS core installed.
 
 Copyright
 =========

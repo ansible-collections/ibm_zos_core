@@ -72,7 +72,7 @@ Examples
          - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
        max_rc: 4
 
-   - name: Execute TSO command to run explicitly a REXX script from a data set.
+   - name: Execute TSO command to run a REXX script explicitly from a data set.
      zos_tso_command:
        commands:
          - EXEC HLQ.DATASET.REXX exec

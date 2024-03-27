@@ -85,7 +85,7 @@ If (rc <> 0 | returnCode <> HWTJ_OK) Then Do
     failModule(errmsg, "", retC)
 End
 
-/* Check for Python version >= 3.8 eg: 'Python 3.10.0' */
+/* Check for Python version >= 3.10 eg: 'Python 3.10.0' */
 retC = bpxwunix('python3 --version', out., err.)
 If (err.0 > 0) Then Do
     Do index=1 To err.0

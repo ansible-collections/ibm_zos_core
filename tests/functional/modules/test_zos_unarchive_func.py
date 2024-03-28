@@ -62,7 +62,7 @@ def create_multiple_members(ansible_zos_module, pds_name, member_base_name, n):
     test_members = []
     for i in range(n):
         curr_ds = dict(name="{0}({1})".format(pds_name, member_base_name+str(i)),
-                       type="member",
+                       type="MEMBER",
                        state="present",
                        replace=True,
                        force=True)
@@ -386,7 +386,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
-                    type="member",
+                    type="MEMBER",
                     state="present",
                     replace=True
                 )
@@ -497,7 +497,7 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
-                    type="member",
+                    type="MEMBER",
                     state="present",
                     replace=True
                 )
@@ -601,7 +601,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -677,7 +677,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -763,7 +763,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -845,7 +845,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -932,7 +932,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -1008,7 +1008,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
-                    type="member",
+                    type="MEMBER",
                     state="present"
                 )
         # Write some content into src the same size of the record,

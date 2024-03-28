@@ -86,7 +86,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(
-            name=default_data_set, type="seq", state="present", replace=True
+            name=default_data_set, type="SEQ", state="present", replace=True
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -118,7 +118,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
     default_volume = volumes.get_available_vol()
     default_data_set = get_tmp_ds_name()[:25]
     hosts.all.zos_data_set(
-        name=default_data_set, type="seq", state="present", replace=True
+        name=default_data_set, type="SEQ", state="present", replace=True
     )
     results = hosts.all.zos_mvs_raw(
         program_name="idcams",
@@ -197,7 +197,7 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
         default_data_set = get_tmp_ds_name()
         DEFAULT_DATA_SET_WITH_MEMBER = default_data_set + '(MEM)'
         hosts.all.zos_data_set(
-            name=default_data_set, type="pds", state="present", replace=True
+            name=default_data_set, type="PDS", state="present", replace=True
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -234,7 +234,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
         default_data_set = get_tmp_ds_name()
         results = hosts.all.zos_data_set(
             name=default_data_set,
-            type="seq",
+            type="SEQ",
             state="present",
             replace=True,
             volumes=[volume_1],
@@ -271,7 +271,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
         ("cyl", 3, 1, 2549880),
         ("b", 3, 1, 56664),
         ("k", 3, 1, 56664),
-        ("m", 3, 1, 2889864),
+        ("m", 3, 1, 3003192),
     ],
 )
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):
@@ -453,7 +453,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
         default_data_set = get_tmp_ds_name()
         results = hosts.all.zos_data_set(
             name=default_data_set,
-            type="seq",
+            type="SEQ",
             state="present",
             replace=True,
             volumes=[volume_1],
@@ -505,7 +505,7 @@ def test_return_text_content_encodings(
         default_data_set = get_tmp_ds_name()
         results = hosts.all.zos_data_set(
             name=default_data_set,
-            type="seq",
+            type="SEQ",
             state="present",
             replace=True,
             volumes=[volume_1],
@@ -1391,8 +1391,8 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         DEFAULT_DATA_SET_2 = get_tmp_ds_name()
-        hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="present", type="seq")
+        hosts.all.zos_data_set(name=default_data_set, state="present", type="SEQ")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="present", type="SEQ")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
@@ -1462,7 +1462,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
         default_data_set = get_tmp_ds_name()
         DEFAULT_DATA_SET_2 = get_tmp_ds_name()
         DEFAULT_DATA_SET_WITH_MEMBER = default_data_set + '(MEM)'
-        hosts.all.zos_data_set(name=default_data_set, state="present", type="pds")
+        hosts.all.zos_data_set(name=default_data_set, state="present", type="PDS")
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1766,7 +1766,7 @@ def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_co
     try:
         hosts = ansible_zos_module
         default_data_set = "ANSIBLE.USER.PRIVATE.TEST"
-        hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
+        hosts.all.zos_data_set(name=default_data_set, state="present", type="SEQ")
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
         results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)

@@ -1,0 +1,3 @@
+trivial:
+  - dd_statement - Updated docstrings to google style for visual aid to developers.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1323).

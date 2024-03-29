@@ -47,13 +47,6 @@ jobs:
       branch: ${{ github.event.pull_request.head.ref }}
 
     steps:
-#    - name: Checkout repository
-#      run:
-#        pwd
-#        cd .ansible/collections/ansible_collections/ibm/ibm_zos_core/
-#        git clone https://github.com/ansible-collections/ibm_zos_core.git
-#        git checkout origin/"$branch"
-
     - name: Checkout repository
       uses: actions/checkout@v4
 

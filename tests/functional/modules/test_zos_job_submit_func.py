@@ -825,7 +825,6 @@ def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
         assert result.get("jobs")[0].get("job_id") is not None
 
 
-# Should have a JCL ERROR <int>
 def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
@@ -835,11 +834,10 @@ def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert re.search(r'return code was not available', repr(result.get("msg")))
-        assert re.search(r'status SEC', repr(result.get("msg")))
+        assert re.search(r'please review the error for further details', repr(result.get("msg")))
+        assert re.search(r'please review the job log for status SEC', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
-        assert re.search(r'please review the job log', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
-        assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg")))
+        assert re.search(r'please review the job log for status SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
 
 
 def test_job_submit_local_jcl_typrun_scan(ansible_zos_module):

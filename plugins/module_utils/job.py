@@ -21,7 +21,7 @@ from timeit import default_timer as timer
 # Only importing this module so we can catch a JSONDecodeError that sometimes happens
 # when a job's output has non-printable chars that conflict with JSON's control
 # chars.
-from json import decoder, JSONDecodeError
+from json import JSONDecodeError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )

@@ -740,7 +740,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
                     if duration >= timeout:
                         raise err
                     else:
-                      continue
+                        continue
 
     # ZOAU throws a JobSubmitException when the job sumbission fails thus there is no
     # JCL RC to share with the user, if there is a RC, that will be processed
@@ -937,8 +937,8 @@ def run_module():
 
     try:
         job_output_txt = job_output(
-              job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
-              dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
+            job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
+            dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
 
         # This is resolvig a bug where the duration coming from job_output is passed by value, duration
         # being an immutable type can not be changed and must be returned or accessed from the job.py.
@@ -1040,7 +1040,7 @@ def run_module():
                         #                 "please review the job log and error {0}.".format(job_ret_code_msg))
                 elif job_ret_code_code != 0 and max_rc is None:
                     _msg = ("The job return code {0} was non-zero in the "
-                                    "job output, this job has failed.".format(str(job_ret_code_code)))
+                            "job output, this job has failed.".format(str(job_ret_code_code)))
                     job_ret_code.update({"msg_txt": _msg})
                     result["stderr"] = _msg
                     raise Exception(_msg)
@@ -1097,9 +1097,9 @@ def assert_valid_return_code(max_rc, job_rc, ret_code, result):
         step_name_for_rc = step["step_name"]
         if step_cc_rc > max_rc:
             _msg = ("The step name {0} with return code {1} for the submitted job is "
-                            "greater than the value set for option 'max_rc' {2}. "
-                            "Increase the value for 'max_rc' otherwise this job submission "
-                            "has failed.".format(step_name_for_rc, str(step_cc_rc), str(max_rc)))
+                    "greater than the value set for option 'max_rc' {2}. "
+                    "Increase the value for 'max_rc' otherwise this job submission "
+                    "has failed.".format(step_name_for_rc, str(step_cc_rc), str(max_rc)))
             ret_code.update({"msg_txt": _msg})
             result["stderr"] = _msg
             raise Exception(_msg)

@@ -163,7 +163,7 @@ JCL_FILE_CONTENTS_NO_DSN = """//*
 //******************************************************************************
 //* Job containing a non existent DSN that will force an error.
 //* Returns:
-//*   ret_code->(code=null, msg=JCLERR ?, msg_text=JCLERR, msg_code=?)
+//*   ret_code->(code=null, msg=JCLERR, msg_txt=JCLERR, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00532 but there was an error,
 //*           please review the error for further details: The job completion
 //*           code (CC) was not in the job log. Please review the error
@@ -198,7 +198,7 @@ JCL_FILE_CONTENTS_JCL_ERROR_INT = """//*
 //* Another job containing no job card resulting in a JCLERROR with an value. It
 //* won't always be 952, it will increment.
 //* Returns:
-//*   ret_code->(code=null, msg=JCL ERROR  952, msg_text=JCLERR, msg_code=null)
+//*   ret_code->(code=null, msg=JCLERR, msg_text=JCLERR, msg_code=null)
 //*   msg --> The JCL submitted with job id JOB00728 but there was an error,
 //*           please review the error for further details: The job completion
 //*           code (CC) was not in the job log. Please review the error
@@ -238,7 +238,7 @@ JCL_FILE_CONTENTS_TYPRUN_SCAN = """//*
 //* not actually run the JCL. The job will be put on the H output queue, DDs
 //* JESJCL and JESMSGLG are available. Ansible considers this a passing job.
 //* Returns:
-//*   ret_code->(code=null, msg=TYPRUN=SCAN, msg_text=<msg>, msg_code=null)
+//*   ret_code->(code=null, msg=TYPRUN=SCAN, msg_txt=<msg>, msg_code=null)
 //*   msg --> The job JOB00551 was run with special job processing TYPRUN=SCAN.
 //*           This will result in no completion, return code or job steps and
 //*           changed will be false."
@@ -264,7 +264,7 @@ JCL_FILE_CONTENTS_TYPRUN_COPY = """//*
 //* JESMSGLG and JESJCLIN are available. Ansible considers this a failing job
 //* given currently the jobs status can not be determined so it times out.
 //* Returns:
-//*   ret_code->(code=null, msg=?, msg_text=<msg>, msg_code=?)
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
 //*           running job that exceeded its maximum wait time of 10 second(s).
 //*           Consider using module zos_job_query to poll for a long running
@@ -290,7 +290,7 @@ JCL_FILE_CONTENTS_TYPRUN_HOLD = """//*
 //* Ansible considers this a failing job
 //* given currently the jobs status can not be determined so it times out.
 //* Returns:
-//*   ret_code->(code=null, msg=AC, msg_text=<msg>, msg_code=?)
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
 //*           running job that exceeded its maximum wait time of 10 second(s).
 //*           Consider using module zos_job_query to poll for a long running
@@ -317,7 +317,7 @@ JCL_FILE_CONTENTS_TYPRUN_JCLHOLD = """//*
 //* Ansible considers this a failing job
 //* given currently the jobs status can not be determined so it times out.
 //* Returns:
-//*   ret_code->(code=null, msg=AC, msg_text=<msg>, msg_code=?)
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
 //*           running job that exceeded its maximum wait time of 10 second(s).
 //*           Consider using module zos_job_query to poll for a long running

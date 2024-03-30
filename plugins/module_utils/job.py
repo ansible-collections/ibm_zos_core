@@ -21,7 +21,7 @@ from timeit import default_timer as timer
 # Only importing this module so we can catch a JSONDecodeError that sometimes happens
 # when a job's output has non-printable chars that conflict with JSON's control
 # chars.
-from json import decoder
+from json import decoder, JSONDecodeError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -46,22 +46,17 @@ try:
 except Exception:
     jobs = ZOAUImportError(traceback.format_exc())
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker
-)
-
-JOB_ERROR_STATUS = frozenset(["ABEND",      # ZOAU job ended abnormally
-                              "SEC ERROR",  # Security error (legacy Ansible code)
-                              "SEC",        # ZOAU security error
-                              "JCL ERROR",  # Job had a JCL error (legacy Ansible code)
-                              "JCLERR",     # ZOAU job had a JCL error
-                              "CANCELED",   # ZOAU job was cancelled
-                              "CAB",        # ZOAU converter abend
-                              "CNV",        # ZOAU converter error
-                              "SYS",        # ZOAU system failure
-                              "FLU",        # ZOAU job was flushed
-                              "?"           # ZOAU error or unknown
-                              ])
+JOB_ERROR_STATUSES = frozenset(["ABEND",      # ZOAU job ended abnormally
+                                "SEC ERROR",  # Security error (legacy Ansible code)
+                                "SEC",        # ZOAU security error
+                                "JCL ERROR",  # Job had a JCL error (legacy Ansible code)
+                                "JCLERR",     # ZOAU job had a JCL error
+                                "CANCELED",   # ZOAU job was cancelled
+                                "CAB",        # ZOAU converter abend
+                                "CNV",        # ZOAU converter error
+                                "SYS",        # ZOAU system failure
+                                "FLU"         # ZOAU job was flushed
+                                ])
 
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
@@ -329,8 +324,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 # Idea here is to force a TYPRUN{HOLD|JCLHOLD|COPY} job to go the full wait duration since we have
                 # currently no way to detect them, but if we know the job is one of the JOB_ERROR_STATUS lets
                 # exit the wait time supplied as we know it is a job failure.
-                is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
-                is_job_error_status = True if entry.status in JOB_ERROR_STATUS else False
+                is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
+                is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
 
                 while ((list_of_dds is None or len(list_of_dds) == 0 or is_dd_query_exception) and
                         (not is_jesjcl and not is_job_error_status and duration <= timeout)):
@@ -338,11 +333,11 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     duration = round(current_time - start_time)
                     sleep(1)
                     try:
-                        # Note, in then event of an exception, eg job has TYPRUN=HOLD
+                        # Note, in the event of an exception, eg job has TYPRUN=HOLD
                         # list_of_dds will still be populated with valuable content
                         list_of_dds = jobs.list_dds(entry.job_id)
-                        is_jesjcl = True if search_dictionaries("dataset", "JESJCL", list_of_dds) else False
-                        is_job_error_status = True if entry.status in JOB_ERROR_STATUS else False
+                        is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
+                        is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
                     except exceptions.DDQueryException as err:
                         if 'BGYSC5201E' in str(err):
                             is_dd_query_exception = True
@@ -391,23 +386,24 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     tmpcont = None
                     if "step_name" in single_dd:
                         if "dd_name" in single_dd:
-                            # In case ZOAU fails when reading the job output, we'll
-                            # add a message to the user telling them of this.
-                            # ZOAU cannot read partial output from a job, so we
-                            # have to make do with nothing from this step if it fails.
+                            # In case ZOAU fails when reading the job output, we'll add a
+                            # message to the user telling them of this. ZOAU cannot read
+                            # partial output from a job, so we have to make do with nothing
+                            # from this step if it fails.
                             try:
                                 tmpcont = jobs.read_output(
                                     entry.job_id,
                                     single_dd["step_name"],
                                     single_dd["dd_name"]
                                 )
-                            except (UnicodeDecodeError, decoder.JSONDecodeError):
+                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) as e:
                                 tmpcont = (
                                     "Non-printable UTF-8 characters were present in this output. "
-                                    "Please access it manually."
+                                    "Please access it from the job log."
                                 )
 
                     dd["content"] = tmpcont.split("\n")
+
                     job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 
                     job["ddnames"].append(dd)

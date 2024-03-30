@@ -97,7 +97,7 @@ options:
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
         either the system's default locale or the encoding option defined. If the USS file is
         a replacement, the user must have write authority to the file either through ownership,
-        group or other permissions, else the copy will fail.
+        group or other permissions, else the module will fail.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
       - If C(dest) is a nonexistent data set, the attributes assigned will depend on the type of

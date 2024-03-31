@@ -286,7 +286,7 @@ JCL_FILE_CONTENTS_TYPRUN_HOLD = """//*
 //******************************************************************************
 //* Job containing a TYPRUN=HOLD will cause JES to hold this JCL without
 //* executing it until a special event occurs at which time, the operator will
-//* release the job from HOLD and allow the job to to continue processing.
+//* release the job from HOLD and allow the job to continue processing.
 //* Ansible considers this a failing job
 //* given currently the jobs status can not be determined so it times out.
 //* Returns:
@@ -444,9 +444,8 @@ def test_job_submit_PDS(ansible_zos_module, location):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
     finally:
-       # hosts.all.file(path=TEMP_PATH, state="absent")
-       # hosts.all.zos_data_set(name=data_set_name, state="absent")
-       print("FINAL")
+       hosts.all.file(path=TEMP_PATH, state="absent")
+       hosts.all.zos_data_set(name=data_set_name, state="absent")
 
 
 def test_job_submit_PDS_special_characters(ansible_zos_module):

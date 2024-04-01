@@ -414,6 +414,13 @@ def quotedString(string):
     return string.replace('"', "")
 
 
+def quotedString_double_quotes(string):
+    # add escape if string was quoted
+    if not isinstance(string, str):
+        return string
+    return string.replace('"', '\"')
+
+
 def execute_dmod(src, block, marker, force, encoding, module, ins_bef=None, ins_aft=None):
     block = block.replace('"', '\\"')
     force = "-f" if force else ""
@@ -611,8 +618,8 @@ def main():
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
         if '"' in block:
-            rc, cmd = execute_dmod(src, block, quotedString(marker), force, encoding, module=module, ins_bef=quotedString(ins_bef),
-                                   ins_aft=quotedString(ins_aft))
+            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, module=module,
+                                   ins_bef=quotedString_double_quotes(ins_bef), ins_aft=quotedString_double_quotes(ins_aft))
             result['rc'] = rc
             result['cmd'] = cmd
             result['changed'] = True if rc == 0 else False
@@ -621,6 +628,7 @@ def main():
             return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
         return_content = absent(src, marker, encoding, force)
+    # ZOAU 1.3.0 generate false positive working with double quotes (") the call generate distinct return when using and not
     if '"' not in block:
         stdout = return_content.stdout_response
         stderr = return_content.stderr_response

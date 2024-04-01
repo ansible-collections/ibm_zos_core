@@ -21,12 +21,17 @@ class MissingZOAUImport(object):
         def method(*args, **kwargs):
             """Raises ImportError as a result of a failed ZOAU import
 
-            Arguments:
-                *args {dict} -- Arguments ordered in a dictionary
-                **kwargs {dict} -- Arguments ordered in a dictionary
+            Parameters
+            ----------
+                *args : dict
+                    Arguments ordered in a dictionary
+                **kwargs : dict
+                    Arguments ordered in a dictionary
 
-            Raises:
-                ImportError: Unable to import a module or library
+            Raises
+            ------
+                ImportError
+                    Unable to import a module or library
             """
             raise ImportError(
                 (
@@ -39,32 +44,35 @@ class MissingZOAUImport(object):
 
 
 class ZOAUImportError(object):
-    """This class serves as a wrapper for any kind of error when importing
-    ZOAU. Since ZOAU is used by both modules and module_utils, we need a way
-    to alert the user when they're trying to use a function that couldn't be
-    imported properly. If we only had to deal with this in modules, we could
-    just validate that imports worked at the start of their main functions,
-    but on utils, we don't have an entry point where we can validate this.
-    Just raising an exception when trying the import would be better, but that
-    introduces a failure on Ansible sanity tests, so we can't do it.
-
-    Instead, we'll replace what would've been a ZOAU library with this class,
-    and the moment ANY method gets called, we finally raise an exception.
-    When creating a new instance of this class, we save the traceback
-    from the original exception so that users have more context when their
-    task/code fails. The expected traceback is a string representation of
-    it, not an actual traceback object. By importing `traceback` from the
-    standard library and calling `traceback.format_exc()` we can
-    get this string.
-
-    Arguments:
-        exception_traceback {} -- The formatted traceback of the exception
-
-    Attributes:
-        exception_traceback {} -- The formatted traceback of the exception
-    """
-
     def __init__(self, exception_traceback):
+        """This class serves as a wrapper for any kind of error when importing
+        ZOAU. Since ZOAU is used by both modules and module_utils, we need a way
+        to alert the user when they're trying to use a function that couldn't be
+        imported properly. If we only had to deal with this in modules, we could
+        just validate that imports worked at the start of their main functions,
+        but on utils, we don't have an entry point where we can validate this.
+        Just raising an exception when trying the import would be better, but that
+        introduces a failure on Ansible sanity tests, so we can't do it.
+
+        Instead, we'll replace what would've been a ZOAU library with this class,
+        and the moment ANY method gets called, we finally raise an exception.
+        When creating a new instance of this class, we save the traceback
+        from the original exception so that users have more context when their
+        task/code fails. The expected traceback is a string representation of
+        it, not an actual traceback object. By importing `traceback` from the
+        standard library and calling `traceback.format_exc()` we can
+        get this string.
+
+        Parameters
+        ----------
+            exception_traceback : str
+                The formatted traceback of the exception
+
+        Attributes
+        ----------
+            exception_traceback : str
+                The formatted traceback of the exception
+        """
         self.traceback = exception_traceback
 
     def __getattr__(self, name):
@@ -76,12 +84,17 @@ class ZOAUImportError(object):
         def method(*args, **kwargs):
             """Raises ImportError as a result of a failed ZOAU import
 
-            Arguments:
-                *args {dict} -- Arguments ordered in a dictionary
-                **kwargs {dict} -- Arguments ordered in a dictionary
+            Parameters
+            ----------
+                *args : dict
+                    Arguments ordered in a dictionary
+                **kwargs : dict
+                    Arguments ordered in a dictionary
 
-            Raises:
-                ImportError: Unable to import a module or library
+            Raises
+            ------
+                ImportError
+                    Unable to import a module or library
             """
             raise ImportError(
                 (
@@ -95,27 +108,36 @@ class ZOAUImportError(object):
 
 
 class MissingImport(object):
-    """Error when it is unable to import a module due it being missing
-
-    Arguments:
-        import_name {str} -- The name of the module to import
-
-    Attributes:
-        import_name {str} -- The name of the module to import
-    """
     def __init__(self, import_name=""):
+        """Error when it is unable to import a module due it being missing
+
+        Parameters
+        ----------
+            import_name : str
+                The name of the module to import
+
+        Attributes
+        ----------
+            import_name : str
+                The name of the module to import
+        """
         self.import_name = import_name
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
             """Raises ImportError as a result of trying to import a missing module
 
-            Arguments:
-                *args {dict} -- Arguments ordered in a dictionary
-                **kwargs {dict} -- Arguments ordered in a dictionary
+            Parameter
+            ---------
+                *args : dict
+                    Arguments ordered in a dictionary
+                **kwargs : dict
+                    Arguments ordered in a dictionary
 
-            Raises:
-                ImportError: Unable to import a module or library
+            Raises
+            ------
+                ImportError
+                    Unable to import a module or library
             """
             raise ImportError("Import {0} was not available.".format(self.import_name))
 

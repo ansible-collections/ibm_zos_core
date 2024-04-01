@@ -27,14 +27,20 @@ def validate_safe_path(path):
 
     In this action plugin, path is on the controller.
 
-    Arguments:
-        path {str} -- A file's path.
+    Parameters
+    ----------
+        path : str
+            A file's path.
 
-    Returns:
-        str -- The introduced path
+    Returns
+    -------
+        str
+            The introduced path
 
-    Raises:
-        DirectoryTraversalError: User does not have access to a directory.
+    Raises
+    ------
+        DirectoryTraversalError
+            User does not have access to a directory.
     """
     if not os.path.isabs(path):
         real_path = os.path.realpath(path)
@@ -49,11 +55,15 @@ def validate_safe_path(path):
 class DirectoryTraversalError(Exception):
     """User does not have access to a directory.
 
-    Arguments:
-        path {str} -- Directory path.
-    
-    Attributes:
-        msg {str} -- Human readable string describing the exception.
+    Parameters
+    ----------
+        path : str
+            Directory path.
+
+    Attributes
+    ----------
+        msg : str
+            Human readable string describing the exception.
     """
     def __init__(self, path):
         self.msg = "Detected directory traversal, user does not have access to {0}".format(path)

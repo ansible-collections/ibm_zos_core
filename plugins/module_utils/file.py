@@ -22,11 +22,15 @@ def _get_dir_mode(path):
     """Get the mode of an existing directory.
     Defaults to 0600 if directory not found.
 
-    Arguments:
-        path {str} -- The absolute path to retrieve directory mode from.
+    Parameters
+    ----------
+        path : str
+            The absolute path to retrieve directory mode from.
 
-    Returns:
-        int -- The mode of the directory.
+    Returns
+    -------
+        int
+            The mode of the directory.
     """
     mask = S_IREAD | S_IWRITE
     if os.path.isdir(path):
@@ -41,12 +45,16 @@ def make_dirs(path, mode_from=None):
     If path does not end in "/", assumes end of path is
     a file.
 
-    Arguments:
-        path {str} -- The path to ensure subdirectories are created for.
+    Parameters
+    ----------
+        path : str
+            The path to ensure subdirectories are created for.
 
-    Keyword Arguments:
-        mode_from {str} -- Path to existing dir to retrieve the mode from.
-        Mode will be used for new directories. (default: {None})
+    Keyword Parameters
+    ------------------
+        mode_from : str
+            Path to existing dir to retrieve the mode from.
+            Mode will be used for new directories. (default: {None})
     """
     mode = _get_dir_mode(mode_from) if mode_from is not None else S_IREAD | S_IWRITE
     if path[-1] == "/":

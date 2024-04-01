@@ -1,4 +1,4 @@
 bugfixes:
-  - zos_blockinfile - the use of " in a block generated a false positive.
-    Fix now generate a true positive in those cases.
+  - zos_blockinfile - Using double quotation marks inside a block resulted in a false
+    positive result with ZOAU 1.3. Fix now handles this special case to avoid false negatives.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1340).

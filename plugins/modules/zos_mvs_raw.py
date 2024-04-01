@@ -96,16 +96,16 @@ options:
               - Maps to DSNTYPE on z/OS.
             type: str
             choices:
-              - library
-              - pds
-              - pdse
-              - large
-              - basic
-              - seq
-              - rrds
-              - esds
-              - lds
-              - ksds
+              - LIBRARY
+              - PSDS
+              - PDSE
+              - LARGE
+              - BASIC
+              - SEQ
+              - RRDS
+              - ESDS
+              - LDS
+              - KSDS
           disposition:
             description:
               - I(disposition) indicates the status of a data set.
@@ -174,12 +174,12 @@ options:
                 using I(space_primary) and I(space_secondary).
             type: str
             choices:
-              - trk
-              - cyl
-              - b
-              - k
-              - m
-              - g
+              - TRK
+              - CYL
+              - B
+              - K
+              - M
+              - G
           space_primary:
             description:
               - The primary amount of space to allocate for a new data set.
@@ -325,11 +325,11 @@ options:
               - The format and characteristics of the records for new data set.
             type: str
             choices:
-              - u
-              - vb
-              - vba
-              - fb
-              - fba
+              - U
+              - VB
+              - VBA
+              - FB
+              - FBA
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -505,11 +505,11 @@ options:
                 a UNIX file would normally be treated as a stream of bytes.
             type: str
             choices:
-              - u
-              - vb
-              - vba
-              - fb
-              - fba
+              - U
+              - VB
+              - VBA
+              - FB
+              - FBA
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -717,16 +717,16 @@ options:
                       - Maps to DSNTYPE on z/OS.
                     type: str
                     choices:
-                      - library
-                      - pds
-                      - pdse
-                      - large
-                      - basic
-                      - seq
-                      - rrds
-                      - esds
-                      - lds
-                      - ksds
+                      - LIBRARY
+                      - PDS
+                      - PDSE
+                      - LARGE
+                      - BASIC
+                      - SEQ
+                      - RRDS
+                      - ESDS
+                      - LDS
+                      - KSDS
                   disposition:
                     description:
                       - I(disposition) indicates the status of a data set.
@@ -795,12 +795,12 @@ options:
                         using I(space_primary) and I(space_secondary).
                     type: str
                     choices:
-                      - trk
-                      - cyl
-                      - b
-                      - k
-                      - m
-                      - g
+                      - TRK
+                      - CYL
+                      - B
+                      - K
+                      - M
+                      - G
                   space_primary:
                     description:
                       - The primary amount of space to allocate for a new data set.
@@ -946,11 +946,11 @@ options:
                       - The format and characteristics of the records for new data set.
                     type: str
                     choices:
-                      - u
-                      - vb
-                      - vba
-                      - fb
-                      - fba
+                      - U
+                      - VB
+                      - VBA
+                      - FB
+                      - FBA
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1124,11 +1124,11 @@ options:
                         a UNIX file would normally be treated as a stream of bytes.
                     type: str
                     choices:
-                      - u
-                      - vb
-                      - vba
-                      - fb
-                      - fba
+                      - U
+                      - VB
+                      - VBA
+                      - FB
+                      - FBA
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1300,13 +1300,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1324,13 +1324,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1369,13 +1369,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1398,15 +1398,15 @@ EXAMPLES = r"""
           disposition: new
           replace: yes
           backup: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
             - "111111"
             - "SCR002"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1647,7 +1647,7 @@ def run_module():
             type="str",
             choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
-        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
+        space_type=dict(type="str", choices=["TRK", "CYL", "B", "K", "M", "G"]),
         space_primary=dict(type="int"),
         space_secondary=dict(type="int"),
         volumes=dict(type="raw"),
@@ -1660,16 +1660,16 @@ def run_module():
         type=dict(
             type="str",
             choices=[
-                "library",
-                "pds",
-                "pdse",
-                "seq",
-                "basic",
-                "large",
-                "ksds",
-                "rrds",
-                "lds",
-                "esds",
+                "LIBRARY",
+                "PDS",
+                "PDSE",
+                "SEQ",
+                "BASIC",
+                "LARGE",
+                "KSDS",
+                "RRDS",
+                "LDS",
+                "ESDS",
             ],
         ),
         encryption_key_1=dict(
@@ -1691,7 +1691,7 @@ def run_module():
         key_length=dict(type="int", no_log=False),
         key_offset=dict(type="int", no_log=False),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1766,7 +1766,7 @@ def run_module():
         ),
         block_size=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1890,7 +1890,7 @@ def parse_and_validate_args(params):
             type="str",
             choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
-        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
+        space_type=dict(type="str", choices=["TRK", "CYL", "B", "K", "M", "G"]),
         space_primary=dict(type="int"),
         space_secondary=dict(type="int"),
         volumes=dict(type=volumes),
@@ -1903,16 +1903,16 @@ def parse_and_validate_args(params):
         type=dict(
             type="str",
             choices=[
-                "library",
-                "pds",
-                "pdse",
-                "seq",
-                "basic",
-                "large",
-                "ksds",
-                "rrds",
-                "lds",
-                "esds",
+                "LIBRARY",
+                "PDS",
+                "PDSE",
+                "SEQ",
+                "BASIC",
+                "LARGE",
+                "KSDS",
+                "RRDS",
+                "LDS",
+                "ESDS",
             ],
         ),
         encryption_key_1=dict(
@@ -1936,7 +1936,7 @@ def parse_and_validate_args(params):
             type=key_offset, default=key_offset_default, dependencies=["type"]
         ),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1992,7 +1992,7 @@ def parse_and_validate_args(params):
         ),
         block_size=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(

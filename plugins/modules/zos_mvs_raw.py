@@ -2845,7 +2845,7 @@ def run_zos_program(
         parm (str, optional): Additional argument string if required. Defaults to "".
         dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
         authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
-        tmphlq (str, optional): Arguments overwrite variable tmp_hlq
+        tmp_hlq (str, optional): Arguments overwrite variable tmp_hlq
 
     Returns:
         MVSCmdResponse: Holds the response information for program execution.

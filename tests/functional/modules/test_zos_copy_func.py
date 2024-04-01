@@ -794,6 +794,12 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_
 @pytest.mark.uss
 @pytest.mark.parametrize("copy_directory", [False, True])
 def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
+    """
+    This test evaluates the behavior of testing copy of a directory when src ends
+    with '/' versus only the dir name. Expectation is that when only dir name is provided
+    that directory is also created on the remote, when directory name ends with '/'
+    this means we only copy that directory contents without creating it on the remote.
+    """
     hosts = ansible_zos_module
     dest_path = "/tmp/new_dir"
 

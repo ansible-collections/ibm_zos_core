@@ -360,8 +360,8 @@ class DatasetDefinition(DataDefinition):
         """Dataset DD data type to be used in a DDStatement.
         Defaults and validation are handled my mvscmd.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
             dataset_name : str
                 The name of the dataset to associate with the DD statement.
             disposition : str, optional
@@ -659,8 +659,8 @@ class VolumeDefinition(DataDefinition):
     def __init__(self, volume_name):
         """Volume DD data type to be used in a DDStatement.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
             volume_name : str
                 The volume name to associate with the DD statement.
         """
@@ -731,8 +731,8 @@ class StdinDefinition(DataDefinition):
         """Stdin DD Data type to be used in a DDStatement.
         This should be used in cases where "DD *" would be used in a jcl.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
             content : Union[str, list[str]]
                 The content to write to temporary data set / stdin.
                 Content can be provided as a string or a list of strings where each list item
@@ -792,8 +792,8 @@ class InputDefinition(StdinDefinition):
     This should be used in cases where "DD *" would be used in a jcl.
     Added for consistent naming with OutputDefinition, is exact same as StdinDefinition.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
         content : Union[str, list[str]]
             The content to write to temporary data set / stdin.
             Content can be provided as a string or a list of strings where each list item
@@ -834,8 +834,8 @@ class OutputDefinition(DataDefinition):
         output from a program but does not want to store in a
         persistent data set or file.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
             record_format : str, optional
                 The record format to use for the dataset.
                 Valid options are: FB, VB, FBA, VBA, U.
@@ -890,8 +890,8 @@ class VIODefinition(DataDefinition):
         A temporary data set will be created for use in cases where VIO is unavailable.
         Defaults for VIODefinition should be sufficient.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
             tmphlq : str, optional
                 HLQ to be used for temporary datasets. Defaults to None.
         """

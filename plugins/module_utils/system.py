@@ -36,8 +36,10 @@ NIX_PLATFORMS = frozenset({
 def is_posix():
     """ Determine if the system is POSIX certified or compliant
 
-    Returns:
-        bool -- Whether the system is POSIX
+    Returns
+    -------
+        bool
+            Whether the system is POSIX
     """
     return OS_NAME == "posix"
 
@@ -45,8 +47,10 @@ def is_posix():
 def is_nix():
     """ Determine if the system is a variant of Unix, supported by Python.
 
-    Returns:
-        bool -- Whether the system is Unix-based
+    Returns
+    -------
+        bool
+            Whether the system is Unix-based
     """
     if not is_posix():
         return False
@@ -60,8 +64,10 @@ def is_nix():
 def is_win():
     """ Determine if the system is a Windows platform
 
-    Returns:
-        bool -- Whether the system is Windows
+    Returns
+    -------
+        bool
+            Whether the system is Windows
     """
     return "win32" in platform().lower() or OS_NAME == "nt"
 
@@ -69,8 +75,10 @@ def is_win():
 def is_zos():
     """ Determine if the system is a z/OS distribution
 
-    Returns:
-        bool -- Whether the system is z/OS
+    Returns
+    -------
+        bool
+            Whether the system is z/OS
     """
     is_zos_unix = is_posix() and not is_nix()
     return is_zos_unix and SYS_PLATFORM == "zos"

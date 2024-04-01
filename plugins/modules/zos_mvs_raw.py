@@ -97,7 +97,7 @@ options:
             type: str
             choices:
               - LIBRARY
-              - PSDS
+              - PDS
               - PDSE
               - LARGE
               - BASIC

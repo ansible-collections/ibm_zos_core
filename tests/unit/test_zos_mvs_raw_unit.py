@@ -139,7 +139,7 @@ class DummyModule(object):
             "",
             0,
             "",
-            "lds",
+            "LDS",
             {"label": "keyforME", "encoding": "l"},
             {"label": "keyyyyy343asdfasfsdfa", "encoding": "l"},
             "VBA",

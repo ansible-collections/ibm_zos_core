@@ -181,11 +181,11 @@ options:
           - Organization of the destination
         type: str
         required: false
-        default: SEQ
+        default: seq
         choices:
-          - SEQ
-          - PDS
-          - PDSE
+          - seq
+          - pds
+          - pdse
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -207,25 +207,25 @@ options:
           - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
         type: str
         choices:
-          - K
-          - M
-          - G
-          - CYL
-          - TRK
+          - k
+          - m
+          - g
+          - cyl
+          - trk
         required: false
       record_format:
         description:
           - If the destination data set does not exist, this sets the format of
             the
             data set. (e.g C(FB))
-          - Choices are case-insensitive.
+          - Choices are case-sensitive.
         required: false
         choices:
-          - FB
-          - VB
-          - FBA
-          - VBA
-          - U
+          - fb
+          - vb
+          - fba
+          - vba
+          - u
         type: str
       record_length:
         description:
@@ -1026,9 +1026,9 @@ def run_module():
                     ),
                     type=dict(
                         type='str',
-                        choices=['SEQ', 'PDS', 'PDSE'],
+                        choices=['seq', 'pds', 'pdse'],
                         required=False,
-                        default='SEQ',
+                        default='seq',
                     ),
                     space_primary=dict(
                         type='int', required=False),
@@ -1036,12 +1036,12 @@ def run_module():
                         type='int', required=False),
                     space_type=dict(
                         type='str',
-                        choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                        choices=['k', 'm', 'g', 'cyl', 'trk'],
                         required=False,
                     ),
                     record_format=dict(
                         type='str',
-                        choices=["FB", "VB", "FBA", "VBA", "U"],
+                        choices=["fb", "vb", "fba", "vba", "u"],
                         required=False
                     ),
                     record_length=dict(type='int', required=False),

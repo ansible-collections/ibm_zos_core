@@ -295,17 +295,24 @@ except Exception:
 
 
 def check_pds_member(ds, mem):
-    """Check pds member
+    """Check pds member.
 
-    Arguments:
-        ds {str} -- Data set name
-        mem {str} -- Data set member name
+    Parameters
+    ----------
+    ds : str
+        Data set name.
+    mem : str
+        Data set member name.
 
-    Returns:
-        bool --If it is a member of the data set
+    Returns
+    -------
+    bool
+        If it is a member of the data set.
 
-    Raises:
-        EncodeError: Can not find member in provided dataset
+    Raises
+    ------
+    EncodeError
+        Can not find member in provided dataset.
     """
     check_rc = False
     if mem in datasets.list_members(ds):
@@ -316,17 +323,24 @@ def check_pds_member(ds, mem):
 
 
 def check_mvs_dataset(ds):
-    """To call data_set utils to check if the MVS data set exists or not
+    """To call data_set utils to check if the MVS data set exists or not.
 
-    Arguments:
-        ds {str} -- Data set name
+    Parameters
+    ----------
+    ds : str
+        Data set name.
 
-    Returns:
-        list[bool,str] -- If the data set exists and it's type
+    Returns
+    -------
+    list[bool,str]
+        If the data set exists and it's type.
 
-    Raises:
-        EncodeError: If data set is not cataloged
-        EncodeError: Unable to determine data set type
+    Raises
+    ------
+    EncodeError
+        If data set is not cataloged.
+    EncodeError
+        Unable to determine data set type.
     """
     check_rc = False
     ds_type = None
@@ -344,16 +358,22 @@ def check_mvs_dataset(ds):
 
 
 def check_file(file):
-    """Check file is a USS file or an MVS data set
+    """Check file is a USS file or an MVS data set.
 
-    Arguments:
-        file {str} -- File to check
+    Parameters
+    ----------
+    file : str
+        File to check.
 
-    Returns:
-        list[bool,bool,str] -- If is USS file, MVS dataset, and the dataset type
+    Returns
+    -------
+    list[bool,bool,str]
+        If is USS file, MVS dataset, and the dataset type.
 
-    Raises:
-        EncodeError: The data set is not partitioned
+    Raises
+    ------
+    EncodeError
+        The data set is not partitioned.
     """
     is_uss = False
     is_mvs = False
@@ -380,13 +400,17 @@ def check_file(file):
 
 
 def verify_uss_path_exists(file):
-    """Verify if USS path exists
+    """Verify if USS path exists.
 
-    Arguments:
-        file {str} -- Path of the file
+    Parameters
+    ----------
+    file : str
+        Path of the file.
 
-    Raises:
-        EncodeError: File does not exist in the directory
+    Raises
+    ------
+    EncodeError
+        File does not exist in the directory.
     """
     if not path.exists(file):
         mypath = "/" + file.split("/")[0] + "/*"
@@ -400,10 +424,12 @@ def verify_uss_path_exists(file):
 
 
 def run_module():
-    """Runs the module
+    """Runs the module.
 
-    Raises:
-        fail_json: Exception during execution
+    Raises
+    ------
+    fail_json
+        Exception during execution.
     """
     module_args = dict(
         src=dict(type="str", required=True),
@@ -576,13 +602,17 @@ def run_module():
 
 class EncodeError(Exception):
     def __init__(self, message):
-        """Error during encoding
+        """Error during encoding.
 
-        Arguments:
-            message {str} -- Human readable string describing the exception
+        Parameters
+        ----------
+        message : str
+            Human readable string describing the exception.
 
         Attributes
-            message {str} -- Human readable string describing the exception
+        ----------
+        msg : str
+            Human readable string describing the exception.
         """
         self.msg = 'An error occurred during encoding: "{0}"'.format(message)
         super(EncodeError, self).__init__(self.msg)

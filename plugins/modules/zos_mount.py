@@ -564,20 +564,30 @@ mt_DS_TYPE = ["PS", "PO"]
 
 
 def mt_backupOper(module, src, backup, tmphlq=None):
-    """Makes a backup of the source
+    """Makes a backup of the source.
 
-    Arguments:
-        module {AnsibleModule} -- AnsibleModule
-        src {str} -- Source of the file
-        backup {str} -- Name for the backup
-        tmphlq {str} -- HLQ to be used for backup dataset
+    Parameters
+    ----------
+    module : AnsibleModule
+        AnsibleModule.
+    src : str
+        Source of the file.
+    backup : str
+        Name for the backup.
+    tmphlq : str
+        HLQ to be used for backup dataset.
 
-    Returns:
-        str -- Backup name
+    Returns
+    -------
+    str
+        Backup name.
 
-    Raises:
-        fail_json: Crating backup has failed
-        fail_json: Data set type is NOT supported
+    Raises
+    ------
+    fail_json
+        Crating backup has failed.
+    fail_json
+        Data set type is NOT supported.
     """
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
@@ -606,17 +616,23 @@ def mt_backupOper(module, src, backup, tmphlq=None):
 
 def swap_text(original, adding, removing):
     """swap_text returns original after removing blocks matching removing,
-    and adding the adding param
-    original now should be a list of lines without newlines
-    return is the consolidated file value
+    and adding the adding param.
+    original now should be a list of lines without newlines.
+    return is the consolidated file value.
 
-    Arguments:
-        original {str} -- Text to modify
-        adding {str} -- Lines to add
-        removing {str} -- Lines to delete if matched
+    Parameters
+    ----------
+    original : str
+        Text to modify.
+    adding : str
+        Lines to add.
+    removing : str
+        Lines to delete if matched.
 
-    Returns:
-        str -- The consolidated file value
+    Returns
+    -------
+    str
+        The consolidated file value.
     """
     content_lines = original
 
@@ -680,23 +696,36 @@ def swap_text(original, adding, removing):
 
 
 def run_module(module, arg_def):
-    """Initialize module
+    """Initialize module.
 
-    Arguments:
-        arg_def {dict} -- Arguments to use
+    Parameters
+    ----------
+    arg_def : dict
+        Arguments to use.
 
-    Returns:
-        dict -- Arguments
+    Returns
+    -------
+    dict
+        Arguments.
 
-    Raises:
-        fail_json: Parameter verification failed
-        fail_json: Mount source either is not cataloged or does not exist.
-        fail_json: Exception encountered during directory creation
-        fail_json: Mount destination doesn't exist
-        fail_json: Checking filesystem list failed with error
-        fail_json: Exception encountered when running unmount
-        fail_json: Exception occurrend when running mount
-        fail_json: Persistent data set is either not cataloged or does not exist
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Mount source either is not cataloged or does not exist.
+    fail_json
+        Exception encountered during directory creation.
+    fail_json
+        Mount destination doesn't exist.
+    fail_json
+        Checking filesystem list failed with error.
+    fail_json
+        Exception encountered when running unmount.
+    fail_json
+        Exception occurred when running mount.
+    fail_json
+        Persistent data set is either not cataloged or does not exist.
     """
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
@@ -1082,7 +1111,7 @@ def run_module(module, arg_def):
 
 
 def main():
-    """Initialize module when executed as main
+    """Initialize module when executed as main.
     """
     global module
 

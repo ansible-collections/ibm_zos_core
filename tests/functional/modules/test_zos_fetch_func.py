@@ -231,7 +231,7 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
     TEST_PDS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="PDSE")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
-    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="MEMBER")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PDS
@@ -322,7 +322,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     TEST_PDS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PDS, state="present")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
-    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="MEMBER")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
     params = dict(
         src=TEST_PDS_MEMBER, dest="/tmp/", flat=True, is_binary=True
@@ -370,7 +370,7 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
     TEST_PDS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="PDSE")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
-    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="MEMBER")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_PDS
@@ -443,7 +443,7 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
         record_length=25,
     )
     hosts.all.zos_data_set(name=pds_name, type="PDS")
-    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
+    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="MEMBER", replace="yes")
     params = dict(src=pds_name + "(MYDATA)", dest="/tmp/", flat=True)
     dest_path = "/tmp/MYDATA"
     try:
@@ -570,7 +570,7 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
         record_format="fba",
         record_length=25,
     )
-    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
+    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="MEMBER", replace="yes")
     os.mkdir(dest_path)
     with open(full_path, "w") as infile:
         infile.write(DUMMY_DATA)

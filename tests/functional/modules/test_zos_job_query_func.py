@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -57,7 +57,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
         )
         hosts.all.zos_data_set(
-            name=JDATA_SET_NAME, state="present", type="pds", replace=True
+            name=JDATA_SET_NAME, state="present", type="PDS", replace=True
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, JDATA_SET_NAME)
@@ -90,7 +90,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
         )
         hosts.all.zos_data_set(
-            name=NDATA_SET_NAME, state="present", type="pds", replace=True
+            name=NDATA_SET_NAME, state="present", type="PDS", replace=True
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, NDATA_SET_NAME)

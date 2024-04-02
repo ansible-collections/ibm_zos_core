@@ -266,11 +266,14 @@ from ansible.module_utils._text import to_text
 
 
 def run_module():
-    """Initialize the module
+    """Initialize the module.
 
-    Raises:
-        fail_json: Parameter verification failed.
-        fail_json: Any exception while getting job params
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Any exception while getting job params.
     """
     module_args = dict(
         job_name=dict(type="str", required=False, default="*"),
@@ -318,18 +321,26 @@ def run_module():
 
 
 def query_jobs(job_name, job_id, owner):
-    """Returns jobs that coincide with the given arguments
+    """Returns jobs that coincide with the given arguments.
 
-    Arguments:
-        job_name {str} --
-        job_id {str} --
-        owner {str} --
+    Parameters
+    ----------
+    job_name : str
+        Name of the jobs.
+    job_id : str
+        Id of the jobs.
+    owner : str
+        Owner of the jobs.
 
-    Returns:
-        list -- List with the jobs
+    Returns
+    -------
+    list
+        List with the jobs.
 
-    Raises:
-        RuntimeError: No job with was found
+    Raises
+    ------
+    RuntimeError
+        No job with was found.
     """
     jobs = []
     if job_id:
@@ -344,13 +355,17 @@ def query_jobs(job_name, job_id, owner):
 
 
 def parsing_jobs(jobs_raw):
-    """Parse job into an understandable format
+    """Parse job into an understandable format.
 
-    Arguments:
-        jobs_raw {dict} -- Raw jobs
+    Parameters
+    ----------
+    jobs_raw : dict
+        Raw jobs.
 
-    Returns:
-        dict -- Parsed jobs
+    Returns
+    -------
+    dict
+        Parsed jobs.
     """
     jobs = []
     ret_code = {}

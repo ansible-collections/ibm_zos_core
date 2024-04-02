@@ -115,20 +115,20 @@ options:
     required: false
     type: str
     choices:
-      - KSDS
-      - ESDS
-      - RRDS
-      - LDS
-      - SEQ
-      - PDS
-      - PDSE
-      - LIBRARY
-      - BASIC
-      - LARGE
-      - MEMBER
-      - HFS
-      - ZFS
-    default: PDS
+      - ksds
+      - esds
+      - rrds
+      - lds
+      - seq
+      - pds
+      - pdse
+      - library
+      - basic
+      - large
+      - member
+      - hfs
+      - zfs
+    default: pds
   space_primary:
     description:
       - The amount of primary space to allocate for the dataset.
@@ -149,13 +149,13 @@ options:
       - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
     type: str
     choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+      - k
+      - m
+      - g
+      - cyl
+      - trk
     required: false
-    default: M
+    default: m
   record_format:
     description:
       - The format of the data set. (e.g C(FB))
@@ -165,14 +165,14 @@ options:
         I(record_format).
     required: false
     choices:
-      - FB
-      - VB
-      - FBA
-      - VBA
-      - U
-      - F
+      - fb
+      - vb
+      - fba
+      - vba
+      - u
+      - f
     type: str
-    default: FB
+    default: fb
     aliases:
       - format
   sms_storage_class:
@@ -380,20 +380,20 @@ options:
         required: false
         type: str
         choices:
-          - KSDS
-          - ESDS
-          - RRDS
-          - LDS
-          - SEQ
-          - PDS
-          - PDSE
-          - LIBRARY
-          - BASIC
-          - LARGE
-          - MEMBER
-          - HFS
-          - ZFS
-        default: PDS
+          - ksds
+          - esds
+          - rrds
+          - lds
+          - seq
+          - pds
+          - pdse
+          - library
+          - basic
+          - large
+          - member
+          - hfs
+          - zfs
+        default: pds
       space_primary:
         description:
           - The amount of primary space to allocate for the dataset.
@@ -414,13 +414,13 @@ options:
           - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
         type: str
         choices:
-          - K
-          - M
-          - G
-          - CYL
-          - TRK
+          - k
+          - m
+          - g
+          - cyl
+          - trk
         required: false
-        default: M
+        default: m
       record_format:
         description:
           - The format of the data set. (e.g C(FB))
@@ -430,14 +430,14 @@ options:
             default I(record_format).
         required: false
         choices:
-          - FB
-          - VB
-          - FBA
-          - VBA
-          - U
-          - F
+          - fb
+          - vb
+          - fba
+          - vba
+          - u
+          - f
         type: str
-        default: FB
+        default: fb
         aliases:
           - format
       sms_storage_class:
@@ -689,19 +689,19 @@ import re
 
 # CONSTANTS
 DATA_SET_TYPES = [
-    "KSDS",
-    "ESDS",
-    "RRDS",
-    "LDS",
-    "SEQ",
-    "PDS",
-    "PDSE",
-    "BASIC",
-    "LARGE",
-    "LIBRARY",
-    "MEMBER",
-    "HFS",
-    "ZFS",
+    "ksds",
+    "esds",
+    "rrds",
+    "lds",
+    "seq",
+    "pds",
+    "pdse",
+    "basic",
+    "large",
+    "library",
+    "member",
+    "hfs",
+    "zfs",
 ]
 
 DATA_SET_FORMATS = [
@@ -1024,8 +1024,8 @@ def parse_and_validate_args(params):
                     type=space_type,
                     required=False,
                     dependencies=["state"],
-                    choices=["K", "M", "G", "CYL", "TRK"],
-                    default="M",
+                    choices=["k", "m", "g", "cyl", "trk"],
+                    default="m",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1035,9 +1035,9 @@ def parse_and_validate_args(params):
                     type=record_format,
                     required=False,
                     dependencies=["state"],
-                    choices=["FB", "VB", "FBA", "VBA", "U", "F"],
+                    choices=["fb", "vb", "fba", "vba", "u", "f"],
                     aliases=["format"],
-                    default="FB",
+                    default="fb",
                 ),
                 sms_management_class=dict(
                     type=sms_class, required=False, dependencies=["state"]
@@ -1113,8 +1113,8 @@ def parse_and_validate_args(params):
             type=space_type,
             required=False,
             dependencies=["state"],
-            choices=["K", "M", "G", "CYL", "TRK"],
-            default="M",
+            choices=["k", "m", "g", "cyl", "trk"],
+            default="m",
         ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
@@ -1122,9 +1122,9 @@ def parse_and_validate_args(params):
             type=record_format,
             required=False,
             dependencies=["state"],
-            choices=["FB", "VB", "FBA", "VBA", "U", "F"],
+            choices=["fb", "vb", "fba", "vba", "u", "f"],
             aliases=["format"],
-            default="FB",
+            default="fb",
         ),
         sms_management_class=dict(
             type=sms_class, required=False, dependencies=["state"]
@@ -1230,8 +1230,8 @@ def run_module():
                 space_type=dict(
                     type="str",
                     required=False,
-                    default="M",
-                    choices=["K", "M", "G", "CYL", "TRK"],
+                    default="m",
+                    choices=["k", "m", "g", "cyl", "trk"],
                 ),
                 space_primary=dict(type="int", required=False, default=5),
                 space_secondary=dict(type="int", required=False, default=3),
@@ -1239,8 +1239,8 @@ def run_module():
                     type="str",
                     required=False,
                     aliases=["format"],
-                    default="FB",
-                    choices=["FB", "VB", "FBA", "VBA", "U", "F"],
+                    default="fb",
+                    choices=["fb", "vb", "fba", "vba", "u", "f"],
                 ),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
@@ -1295,8 +1295,8 @@ def run_module():
         space_type=dict(
             type="str",
             required=False,
-            default="M",
-            choices=["K", "M", "G", "CYL", "TRK"],
+            default="m",
+            choices=["k", "m", "g", "cyl", "trk"],
         ),
         space_primary=dict(type="int", required=False, default=5),
         space_secondary=dict(type="int", required=False, default=3),
@@ -1304,8 +1304,8 @@ def run_module():
             type="str",
             required=False,
             aliases=["format"],
-            choices=["FB", "VB", "FBA", "VBA", "U", "F"],
-            default="FB"
+            choices=["fb", "vb", "fba", "vba", "u", "f"],
+            default="fb"
         ),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported

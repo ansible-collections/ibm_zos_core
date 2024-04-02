@@ -342,7 +342,7 @@ Examples
    # Simple archive
    - name: Archive file into a tar
      zos_archive:
-       path: /tmp/archive/foo.txt
+       src: /tmp/archive/foo.txt
        dest: /tmp/archive/foo_archive_test.tar
        format:
          name: tar
@@ -350,7 +350,7 @@ Examples
    # Archive multiple files
    - name: Compress list of files into a zip
      zos_archive:
-       path:
+       src:
          - /tmp/archive/foo.txt
          - /tmp/archive/bar.txt
        dest: /tmp/archive/foo_bar_archive_test.zip
@@ -360,7 +360,7 @@ Examples
    # Archive one data set into terse
    - name: Compress data set into a terse
      zos_archive:
-       path: "USER.ARCHIVE.TEST"
+       src: "USER.ARCHIVE.TEST"
        dest: "USER.ARCHIVE.RESULT.TRS"
        format:
          name: terse
@@ -368,7 +368,7 @@ Examples
    # Use terse with different options
    - name: Compress data set into a terse, specify pack algorithm and use adrdssu
      zos_archive:
-       path: "USER.ARCHIVE.TEST"
+       src: "USER.ARCHIVE.TEST"
        dest: "USER.ARCHIVE.RESULT.TRS"
        format:
          name: terse
@@ -379,7 +379,7 @@ Examples
    # Use a pattern to store
    - name: Compress data set pattern using xmit
      zos_archive:
-       path: "USER.ARCHIVE.*"
+       src: "USER.ARCHIVE.*"
        exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
        dest: "USER.ARCHIVE.RESULT.XMIT"
        format:

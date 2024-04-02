@@ -248,7 +248,7 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
         hosts.all.zos_data_set(name=TEST_PDS, state="absent")
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
-s
+
 
 def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module

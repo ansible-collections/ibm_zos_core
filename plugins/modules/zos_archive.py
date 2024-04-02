@@ -228,7 +228,7 @@ options:
           - If the destination data set does not exist, this sets the format of
             the
             data set. (e.g C(FB))
-          - Choices are case-insensitive.
+          - Choices are case-sensitive.
         required: false
         choices:
           - fb

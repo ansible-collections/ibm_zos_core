@@ -110,7 +110,7 @@ options:
   type:
     description:
       - The data set type to be used when creating a data set. (e.g C(pdse))
-      - C(MEMBER) expects to be used with an existing partitioned data set.
+      - C(member) expects to be used with an existing partitioned data set.
       - Choices are case-sensitive.
     required: false
     type: str
@@ -375,7 +375,7 @@ options:
       type:
         description:
           - The data set type to be used when creating a data set. (e.g C(PDSE))
-          - C(MEMBER) expects to be used with an existing partitioned data set.
+          - C(member) expects to be used with an existing partitioned data set.
           - Choices are case-sensitive.
         required: false
         type: str

@@ -42,17 +42,17 @@ options:
         (e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
     required: false
-    default: DATA_SET
+    default: data_set
     type: str
     choices:
-      - DATA_SET
-      - USS
-      - LOCAL
+      - data_set
+      - uss
+      - local
     description:
-      - The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
-      - DATA_SET can be a PDS, PDSE, or sequential data set.
-      - USS means the JCL location is located in UNIX System Services (USS).
-      - LOCAL means locally to the ansible control node.
+      - The JCL location. Supported choices are ``data_set``, ``uss`` or ``local``.
+      - ``data_set`` can be a PDS, PDSE, or sequential data set.
+      - ``uss`` means the JCL location is located in UNIX System Services (USS).
+      - ``local`` means locally to the ansible control node.
   wait_time_s:
     required: false
     default: 10
@@ -805,8 +805,8 @@ def run_module():
         src=dict(type="str", required=True),
         location=dict(
             type="str",
-            default="DATA_SET",
-            choices=["DATA_SET", "USS", "LOCAL"],
+            default="data_set",
+            choices=["data_set", "uss", "local"],
         ),
         encoding=dict(
             type="dict",
@@ -875,8 +875,8 @@ def run_module():
         src=dict(arg_type="data_set_or_path", required=True),
         location=dict(
             arg_type="str",
-            default="DATA_SET",
-            choices=["DATA_SET", "USS", "LOCAL"],
+            default="data_set",
+            choices=["data_set", "uss", "local"],
         ),
         from_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),

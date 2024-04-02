@@ -633,32 +633,48 @@ MAX_WAIT_TIME_S = 86400
 
 
 def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=None, start_time=timer()):
-    """ Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
+    """Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
 
-        Arguments:
-            module -- module instnace to access the module api
-            src {str} -- JCL, can be relative or absolute paths either on controller or USS
-                            - Data set, can be PS, PDS, PDSE Member
-            src_name {str} -- the src name that was provided in the module because through
-                              the runtime src could be replace with a temporary file name
-            timeout {int} -- how long to wait in seconds for a job to complete
-            is_unix {bool} -- True if JCL is a file in USS, otherwise False; Note that all
-                              JCL local to a controller is transfered to USS thus would be
-                              True
-            volume {str} -- volume the data set JCL is located on that will be cataloged before
-                              being submitted
-            start_time -- time the JCL started its submission
+        Parameters
+        ----------
+        module: AnsibleModule
+            module instance to access the module api.
+        src : str
+            JCL, can be relative or absolute paths either on controller or USS
+            - Data set, can be PS, PDS, PDSE Member.
+        src_name : str
+            The src name that was provided in the module because through
+            the runtime src could be replace with a temporary file name.
+        timeout : int
+            How long to wait in seconds for a job to complete.
+        is_unix : bool
+            True if JCL is a file in USS, otherwise False; Note that all
+            JCL local to a controller is transfered to USS thus would be
+            True.
+        volume : str
+            volume the data set JCL is located on that will be cataloged before
+            being submitted.
+        start_time : int
+            time the JCL started its submission.
 
-        Returns:
-            str -- the JCL job ID returned from submitting a job, else if no
-                                job submits, None will be returned
-            int -- how long the job ran for in this method
-        
-        Raises:
-            fail_json: Unable to submit job because the data set could not be cataloged on the volume.
-            fail_json: Unable to submit job, the job submission has failed.
-            fail_json: The JCL has been submitted but there was an error while fetching its status.
-            fail_json: The job has been submitted and no job id was returned.
+        Returns
+        -------
+        str
+            the JCL job ID returned from submitting a job, else if no
+            job submits, None will be returned.
+        int
+            how long the job ran for in this method.
+
+        Raises
+        ------
+        fail_json
+            Unable to submit job because the data set could not be cataloged on the volume.
+        fail_json
+            Unable to submit job, the job submission has failed.
+        fail_json
+            The JCL has been submitted but there was an error while fetching its status.
+        fail_json
+            The job has been submitted and no job id was returned.
     """
 
     kwargs = {
@@ -775,11 +791,14 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
 
 
 def run_module():
-    """Initialize module
+    """Initialize module.
 
-    Raises:
-        fail_json: Parameter verification failed
-        fail_json: The value for option 'wait_time_s' is not valid.
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        The value for option 'wait_time_s' is not valid.
     """
     module_args = dict(
         src=dict(type="str", required=True),
@@ -1008,20 +1027,30 @@ def run_module():
 
 
 def assert_valid_return_code(max_rc, job_rc, ret_code):
-    """Asserts valid return code
+    """Asserts valid return code.
 
-    Arguments:
-        max_rc {int} -- MAx return code
-        joc_rc {int} -- Job return code
-        ret_code {int} -- Return code
+    Parameters
+    ----------
+    max_rc : int
+        Max return code.
+    joc_rc : int
+        Job return code.
+    ret_code : int
+        Return code.
 
-    Returns:
-        bool -- If job_rc is not 0
+    Returns
+    -------
+    bool
+        If job_rc is not 0.
 
-    Raises:
-        Exception: The job return code was not available in the jobs output.
-        Exception: The job return code for the submitted job is greater than the value set for option 'max_rc'.
-        Exception: The step return code for the submitted job is greater than the value set for option 'max_rc'
+    Raises
+    ------
+    Exception
+        The job return code was not available in the jobs output.
+    Exception
+        The job return code for the submitted job is greater than the value set for option 'max_rc'.
+    Exception
+        The step return code for the submitted job is greater than the value set for option 'max_rc'.
     """
     if job_rc is None:
         raise Exception(

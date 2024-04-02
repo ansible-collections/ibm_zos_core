@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_job_submit - job submit when mx rc was given by the user the change value return as false
+    when the max rc is not 0. Fix now return a change value of true when the rc is not 0 and
+    max rc is above or equal the value the user insert.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1345).

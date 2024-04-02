@@ -172,11 +172,11 @@ options:
       - When I(full_volume=True), I(space_type) defaults to C(G), otherwise default is C(M)
     type: str
     choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+      - k
+      - m
+      - g
+      - cyl
+      - trk
     required: false
     aliases:
       - unit
@@ -346,7 +346,7 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"], choices=["K", "M", "G", "CYL", "TRK"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"]),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),

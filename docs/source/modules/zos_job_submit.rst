@@ -16,9 +16,8 @@ zos_job_submit -- Submit JCL
 
 Synopsis
 --------
-- Submit JCL from a data set, USS, or from the controller.
-- Submit a job and optionally monitor for completion.
-- Optionally, wait a designated time until the job finishes.
+- Submit JCL in a data set, USS file, or file on the controller.
+- Submit a job and monitor for completion.
 - For an uncataloged dataset, specify the volume serial number.
 
 
@@ -55,18 +54,6 @@ location
   | **type**: str
   | **default**: DATA_SET
   | **choices**: DATA_SET, USS, LOCAL
-
-
-wait
-  Setting this option will yield no change, it is deprecated. There is no no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of tme to wait for a job to execute.
-
-  Configuring wait used by the `zos_job_submit <./zos_job_submit.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
-
-  See option *wait_time_s*.
-
-  | **required**: False
-  | **type**: bool
-  | **default**: False
 
 
 wait_time_s
@@ -332,6 +319,8 @@ Notes
 
 .. note::
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
+
+   This module uses `zos_copy <./zos_copy.html>`_ to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
 
 
@@ -689,24 +678,46 @@ jobs
           }
 
     msg
-      Return code resulting from the job submission. Jobs that take longer to assign a value can have a value of '?'.
+      Job status resulting from the job submission.
+
+      Job status `ABEND` indicates the job ended abnormally.
+
+      Job status `AC` indicates the job is active, often a started task or job taking long.
+
+      Job status `CAB` indicates a converter abend.
+
+      Job status `CANCELED` indicates the job was canceled.
+
+      Job status `CNV` indicates a converter error.
+
+      Job status `FLU` indicates the job was flushed.
+
+      Job status `JCLERR` or `JCL ERROR` indicates the JCL has an error.
+
+      Job status `SEC` or `SEC ERROR` indicates the job as encountered a security error.
+
+      Job status `SYS` indicates a system failure.
+
+      Job status `?` indicates status can not be determined.
 
       | **type**: str
-      | **sample**: CC 0000
+      | **sample**: AC
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated as a string. Jobs that take longer to assign a value can have a value of '?'.
+      The return code from the submitted job as a string.
 
       | **type**: str
 
     msg_txt
-      Returns additional information related to the job. Jobs that take longer to assign a value can have a value of '?'.
+      Returns additional information related to the submitted job.
 
       | **type**: str
-      | **sample**: The job completion code (CC) was not available in the job output, please review the job log."
+      | **sample**: The job JOB00551 was run with special job processing TYPRUN=SCAN. This will result in no completion, return code or job steps and changed will be false.
 
     code
-      Return code converted to an integer value (when possible). For JCL ERRORs, this will be None.
+      The return code converted to an integer value when available.
+
+      Jobs which have no return code will return NULL, such is the case of a job that errors or is active.
 
       | **type**: int
 

@@ -129,12 +129,17 @@ def zinfo_facts_list_builder(gather_subset):
     """Builds a list of strings to pass into 'zinfo' based off the
         gather_subset list.
 
-    Arguments:
-        gather_subset {list} -- A list of subsets to pass in.
+    Parameters
+    ----------
+    gather_subset : list
+        A list of subsets to pass in.
 
-    Returns:
-        list[str] -- A list of strings that contains sanitized subsets.
-        None -- An invalid value was received for the subsets.
+    Returns
+    -------
+    list[str]
+        A list of strings that contains sanitized subsets.
+    None
+        An invalid value was received for the subsets.
     """
     if gather_subset is None or 'all' in gather_subset:
         return ["all"]
@@ -160,12 +165,16 @@ def flatten_zinfo_json(zinfo_dict):
     """Removes one layer of mapping in the dictionary. Top-level keys
         correspond to zinfo subsets and are removed.
 
-    Arguments:
-        zinfo_dict {dict} -- A dictionary that contains the parsed result from
-                             the zinfo json string.
+    Parameters
+    ----------
+    zinfo_dict : dict
+        A dictionary that contains the parsed result from
+        the zinfo json string.
 
-    Returns:
-        dict -- A flattened dictionary.
+    Returns
+    -------
+    dict
+        A flattened dictionary.
     """
     d = {}
     for subset in list(zinfo_dict):
@@ -177,14 +186,19 @@ def apply_filter(zinfo_dict, filter_list):
     """Returns a dictionary that contains only the keys which fit the specified
        filters.
 
-    Arguments:
-        zinfo_dict {dict} -- A flattened dictionary that contains results from
-                             zinfo.
-        filter_list {list} -- A string list of shell wildcard patterns (i.e.
-                              'filters') to apply to the zinfo_dict keys.
+    Parameters
+    ----------
+    zinfo_dict : dict
+        A flattened dictionary that contains results from
+        zinfo.
+    filter_list : list
+        A string list of shell wildcard patterns (i.e.
+        'filters') to apply to the zinfo_dict keys.
 
-    Returns:
-        dict -- A dictionary with keys that are filtered out.
+    Returns
+    -------
+    dict
+        A dictionary with keys that are filtered out.
     """
 
     if filter_list is None or filter_list == [] or '*' in filter_list:
@@ -199,13 +213,18 @@ def apply_filter(zinfo_dict, filter_list):
 
 
 def run_module():
-    """Initialize module
+    """Initialize module.
 
-    Raises:
-        fail_json: The zos_gather_facts module requires ZOAU >= 1.3.0.
-        fail_json: An invalid subset was passed to Ansible.
-        fail_json: An invalid subset was detected.
-        fail_json: An exception has occurred. Unable to gather facts.
+    Raises
+    ------
+    fail_json
+        The zos_gather_facts module requires ZOAU >= 1.3.0.
+    fail_json
+        An invalid subset was passed to Ansible.
+    fail_json
+        An invalid subset was detected.
+    fail_json
+        An exception has occurred. Unable to gather facts.
     """
     # define available arguments/parameters a user can pass to the module
     module_args = dict(

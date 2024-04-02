@@ -627,7 +627,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()[:25]
     dest_path = "/tmp/"+ src
-    hosts.all.zos_data_set(name="OMVSADM." + src, type="seq", state="present")
+    hosts.all.zos_data_set(name="OMVSADM." + src, type="SEQ", state="present")
     params = dict(src=src, dest="/tmp/", flat=True, use_qualifier=True)
     try:
         results = hosts.all.zos_fetch(**params)

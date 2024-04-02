@@ -248,7 +248,7 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
         hosts.all.zos_data_set(name=TEST_PDS, state="absent")
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
-
+s
 
 def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
@@ -395,7 +395,7 @@ def test_fetch_sequential_data_set_empty(ansible_zos_module):
     params = dict(src=src, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + src
     try:
-        hosts.all.zos_data_set(name=src, type='seq', state='present')
+        hosts.all.zos_data_set(name=src, type='SEQ', state='present')
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -415,7 +415,7 @@ def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
     pds_name = get_tmp_ds_name()
     hosts.all.zos_data_set(
         name=pds_name,
-        type="pds",
+        type="PDS",
         space_primary=5,
         space_type="M",
         record_format="fba",
@@ -436,14 +436,14 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
     pds_name = get_tmp_ds_name()
     hosts.all.zos_data_set(
         name=pds_name,
-        type="pds",
+        type="PDS",
         space_primary=5,
         space_type="M",
         record_format="fba",
         record_length=25,
     )
-    hosts.all.zos_data_set(name=pds_name, type="pds")
-    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="MEMBER", replace="yes")
+    hosts.all.zos_data_set(name=pds_name, type="PDS")
+    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
     params = dict(src=pds_name + "(MYDATA)", dest="/tmp/", flat=True)
     dest_path = "/tmp/MYDATA"
     try:
@@ -564,13 +564,13 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
     full_path = dest_path + "/MYDATA"
     hosts.all.zos_data_set(
         name=pds_name,
-        type="pds",
+        type="PDS",
         space_primary=5,
         space_type="M",
         record_format="fba",
         record_length=25,
     )
-    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="MEMBER", replace="yes")
+    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
     os.mkdir(dest_path)
     with open(full_path, "w") as infile:
         infile.write(DUMMY_DATA)

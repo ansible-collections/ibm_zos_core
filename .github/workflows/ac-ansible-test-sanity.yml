@@ -33,11 +33,7 @@ on:
       - 'tests/helpers'
       - 'tests/requirements.txt'
       - 'tests/unit'
-      - 'tests/sanity/ignore-2.9'
-      - 'tests/sanity/ignore-2.10'
-      - 'tests/sanity/ignore-2.11'
-      - 'tests/sanity/ignore-2.12'
-      - 'tests/sanity/ignore-2.13'
+      - 'tests/sanity/ignore-*'
       - 'venv*'
 
 jobs:

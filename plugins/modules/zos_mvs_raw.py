@@ -2084,8 +2084,8 @@ def key_length(contents, dependencies):
     """
     if contents is None:
         return contents
-    if contents is not None and dependencies.get("type") != "ksds":
-        raise ValueError('key_length is only valid when "type=ksds".')
+    if contents is not None and dependencies.get("type") != "KSDS":
+        raise ValueError('key_length is only valid when "type=KSDS".')
     if not re.fullmatch(r"[0-9]+", str(contents)):
         raise ValueError(
             'Invalid argument "{0}" for type "key_length".'.format(str(contents))
@@ -2105,8 +2105,8 @@ def key_offset(contents, dependencies):
     """
     if contents is None:
         return contents
-    if contents is not None and dependencies.get("type") != "ksds":
-        raise ValueError('key_offset is only valid when "type=ksds".')
+    if contents is not None and dependencies.get("type") != "KSDS":
+        raise ValueError('key_offset is only valid when "type=KSDS".')
 
     if not re.fullmatch(r"[0-9]+", str(contents)):
         raise ValueError(
@@ -2127,9 +2127,9 @@ def key_length_default(contents, dependencies):
     """
     KEY_LENGTH = 5
     length = None
-    if contents is None and dependencies.get("type") == "ksds":
+    if contents is None and dependencies.get("type") == "KSDS":
         length = KEY_LENGTH
-    elif dependencies.get("type") == "ksds":
+    elif dependencies.get("type") == "KSDS":
         length = contents
     return length
 
@@ -2145,9 +2145,9 @@ def key_offset_default(contents, dependencies):
     """
     KEY_OFFSET = 0
     offset = None
-    if contents is None and dependencies.get("type") == "ksds":
+    if contents is None and dependencies.get("type") == "KSDS":
         offset = KEY_OFFSET
-    elif dependencies.get("type") == "ksds":
+    elif dependencies.get("type") == "KSDS":
         offset = contents
     return offset
 
@@ -2756,28 +2756,6 @@ class ReturnContent(object):
         self.type = type
         self.src_encoding = src_encoding
         self.response_encoding = response_encoding
-
-
-def to_bytes(size, unit):
-    """Convert sizes of various units to bytes.
-
-    Args:
-        size (int): The size to convert.
-        unit (str): The unit of size.
-
-    Returns:
-        int: The size converted to bytes.
-    """
-    num_bytes = 0
-    if unit == "b":
-        num_bytes = size
-    elif unit == "k":
-        num_bytes = size * 1024
-    elif unit == "m":
-        num_bytes = size * 1048576
-    elif unit == "g":
-        num_bytes = size * 1073741824
-    return num_bytes
 
 
 def rename_parms(parms, name_map):

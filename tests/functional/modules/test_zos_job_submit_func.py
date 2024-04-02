@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -163,7 +163,7 @@ JCL_FILE_CONTENTS_NO_DSN = """//*
 //******************************************************************************
 //* Job containing a non existent DSN that will force an error.
 //* Returns:
-//*   ret_code->(code=null, msg=JCLERR ?, msg_text=JCLERR, msg_code=?)
+//*   ret_code->(code=null, msg=JCLERR, msg_txt=JCLERR, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00532 but there was an error,
 //*           please review the error for further details: The job completion
 //*           code (CC) was not in the job log. Please review the error
@@ -198,7 +198,7 @@ JCL_FILE_CONTENTS_JCL_ERROR_INT = """//*
 //* Another job containing no job card resulting in a JCLERROR with an value. It
 //* won't always be 952, it will increment.
 //* Returns:
-//*   ret_code->(code=null, msg=JCL ERROR  952, msg_text=JCLERR, msg_code=null)
+//*   ret_code->(code=null, msg=JCLERR, msg_text=JCLERR, msg_code=null)
 //*   msg --> The JCL submitted with job id JOB00728 but there was an error,
 //*           please review the error for further details: The job completion
 //*           code (CC) was not in the job log. Please review the error
@@ -214,11 +214,11 @@ JCL_FILE_CONTENTS_INVALID_USER = """//*
 //* Job containing a USER=FOOBAR that will cause JES to return a SEC ERROR which
 //* is a security error.
 //* Returns:
-//*   ret_code->(code=null, msg=SEC ?, msg_text=SEC, msg_code=?)
-//*   msg --> The JCL submitted with job id JOB00464 but there was an error,
+//*   ret_code->(code=None, msg=SEC, msg_txt=<msg>, msg_code=?)
+//*   msg --> The JCL submitted with job id JOB01062 but there was an error,
 //*           please review the error for further details: The job return code
-//*           was not available in the job log, please review the job log
-//*           and error SEC ?.",
+//*           was not available in the job log, please review the job log and
+//*           status SEC.
 //******************************************************************************
 //INVUSER JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM,USER=FOOBAR
@@ -234,22 +234,102 @@ HELLO, WORLD
 
 JCL_FILE_CONTENTS_TYPRUN_SCAN = """//*
 //******************************************************************************
-//* Job containing a TYPRUN=SCAN that will cause JES to run a syntax check and
-//* not actually run the JCL.
+//* Job containing a TYPRUN=SCAN will cause JES to run a syntax check and
+//* not actually run the JCL. The job will be put on the H output queue, DDs
+//* JESJCL and JESMSGLG are available. Ansible considers this a passing job.
 //* Returns:
-//*   ret_code->(code=null, msg=? ?, msg_text=?, msg_code=?)
-//*   msg --> The JCL submitted with job id JOB00620 but there was an error,
-//*           please review the error for further details: The job return code
-//*           was not available in the job log, please review the job log
-//*           and error ? ?.",
+//*   ret_code->(code=null, msg=TYPRUN=SCAN, msg_txt=<msg>, msg_code=null)
+//*   msg --> The job JOB00551 was run with special job processing TYPRUN=SCAN.
+//*           This will result in no completion, return code or job steps and
+//*           changed will be false."
 //******************************************************************************
-//TYPESCAN JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
-//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM,TYPRUN=SCAN
+//SCAN JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=H,MSGLEVEL=1,NOTIFY=S0JM,TYPRUN=SCAN
 //STEP0001 EXEC PGM=IEBGENER
 //SYSIN    DD DUMMY
 //SYSPRINT DD SYSOUT=*
 //SYSUT1   DD *
-HELLO, WORLD
+HELLO, WORLD. SCAN OPERATION
+/*
+//SYSUT2   DD SYSOUT=*
+//
+"""
+
+JCL_FILE_CONTENTS_TYPRUN_COPY = """//*
+//******************************************************************************
+//* Job containing a TYPRUN=COPY will cause JES to copy the input job
+//* (source content) stream directly to a sysout data set (device specified in
+//* the message class parameter (H)) and schedule it for output processing, in
+//* other words, the job will be put on the H output queue; DD's
+//* JESMSGLG and JESJCLIN are available. Ansible considers this a failing job
+//* given currently the jobs status can not be determined so it times out.
+//* Returns:
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
+//*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
+//*           running job that exceeded its maximum wait time of 10 second(s).
+//*           Consider using module zos_job_query to poll for a long running
+//*           job or increase option 'wait_times_s' to a value greater than 11.
+//******************************************************************************
+//COPY JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=H,MSGLEVEL=1,NOTIFY=S0JM,TYPRUN=COPY
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+HELLO, WORLD. COPY OPERATION
+/*
+//SYSUT2   DD SYSOUT=*
+//
+"""
+
+JCL_FILE_CONTENTS_TYPRUN_HOLD = """//*
+//******************************************************************************
+//* Job containing a TYPRUN=HOLD will cause JES to hold this JCL without
+//* executing it until a special event occurs at which time, the operator will
+//* release the job from HOLD and allow the job to continue processing.
+//* Ansible considers this a failing job
+//* given currently the jobs status can not be determined so it times out.
+//* Returns:
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
+//*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
+//*           running job that exceeded its maximum wait time of 10 second(s).
+//*           Consider using module zos_job_query to poll for a long running
+//*           job or increase option 'wait_times_s' to a value greater than 11.
+//******************************************************************************
+//HOLD JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=H,MSGLEVEL=1,NOTIFY=S0JM,TYPRUN=HOLD
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+HELLO, WORLD. HOLD OPERATION
+/*
+//SYSUT2   DD SYSOUT=*
+//
+"""
+
+JCL_FILE_CONTENTS_TYPRUN_JCLHOLD = """//*
+//******************************************************************************
+//* Job containing a TYPRUN=JCLHOLD will cause JES to will keep the submitted
+//* job in the input queue until it's released by an operator or by the default
+//* time assigned to the class parameter. As the operator you enter 'A' or 'R'
+//* to release it from the queue.
+//* Ansible considers this a failing job
+//* given currently the jobs status can not be determined so it times out.
+//* Returns:
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
+//*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
+//*           running job that exceeded its maximum wait time of 10 second(s).
+//*           Consider using module zos_job_query to poll for a long running
+//*           job or increase option 'wait_times_s' to a value greater than 11.
+//******************************************************************************
+//JCLHOLD JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=H,MSGLEVEL=1,NOTIFY=S0JM,TYPRUN=JCLHOLD
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+HELLO, WORLD. JCLHOLD OPERATION
 /*
 //SYSUT2   DD SYSOUT=*
 //
@@ -342,9 +422,11 @@ def test_job_submit_PDS(ansible_zos_module, location):
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
+
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
+
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
         )
@@ -362,8 +444,8 @@ def test_job_submit_PDS(ansible_zos_module, location):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
     finally:
-        hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=data_set_name, state="absent")
+       hosts.all.file(path=TEMP_PATH, state="absent")
+       hosts.all.zos_data_set(name=data_set_name, state="absent")
 
 
 def test_job_submit_PDS_special_characters(ansible_zos_module):
@@ -374,7 +456,7 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         hosts.all.zos_data_set(
-            name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="pds", replace=True
+            name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="PDS", replace=True
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
@@ -465,7 +547,7 @@ def test_job_submit_PDS_volume(ansible_zos_module, volumes_on_systems):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True, volumes=volume_1
+            name=data_set_name, state="present", type="PDS", replace=True, volumes=volume_1
         )
 
         hosts.all.shell(
@@ -473,7 +555,7 @@ def test_job_submit_PDS_volume(ansible_zos_module, volumes_on_systems):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="uncataloged", type="pds"
+            name=data_set_name, state="uncataloged", type="PDS"
         )
 
         results = hosts.all.zos_job_submit(src=data_set_name+"(SAMPLE)", location="DATA_SET", volume=volume_1)
@@ -498,7 +580,7 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -531,7 +613,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -564,7 +646,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
         )
 
         hosts.all.zos_data_set(
-            name=data_set_name, state="present", type="pds", replace=True
+            name=data_set_name, state="present", type="PDS", replace=True
         )
 
         hosts.all.shell(
@@ -734,43 +816,113 @@ def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_NO_DSN)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+    results = hosts.all.zos_job_submit(src=tmp_file.name, wait_time_s=20, location="LOCAL")
+    import pprint
     for result in results.contacted.values():
-        # Expecting: The job completion code (CC) was not in the job log....."
         assert result.get("changed") is False
         assert re.search(r'completion code', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
 
 
-# Should have a JCL ERROR <int>
 def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_INVALID_USER)
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+
     for result in results.contacted.values():
-        # Expecting: The job completion code (CC) was not in the job log....."
         assert result.get("changed") is False
-        assert re.search(r'return code was not available', repr(result.get("msg")))
-        assert re.search(r'error SEC', repr(result.get("msg")))
+        assert re.search(r'please review the error for further details', repr(result.get("msg")))
+        assert re.search(r'please review the job log for status SEC', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
-        assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_text")))
+        assert re.search(r'please review the job log for status SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
 
 
-def test_negative_job_submit_local_jcl_typrun_scan(ansible_zos_module):
+def test_job_submit_local_jcl_typrun_scan(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_TYPRUN_SCAN)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+    results = hosts.all.zos_job_submit(src=tmp_file.name,
+                                       location="LOCAL",
+                                       wait_time_s=20,
+                                       encoding={
+                                            "from": "UTF-8",
+                                            "to": "IBM-1047"
+                                        },)
     for result in results.contacted.values():
-        # Expecting: The job completion code (CC) was not in the job log....."
         assert result.get("changed") is False
-        assert re.search(r'return code was not available', repr(result.get("msg")))
-        assert re.search(r'error ? ?', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
-        assert result.get("jobs")[0].get("ret_code").get("msg_text") == "?"
+        assert re.search(r'run with special job processing TYPRUN=SCAN', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "TYPRUN=SCAN"
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
+
+
+def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_TYPRUN_COPY)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name,
+                                       location="LOCAL",
+                                       wait_time_s=20,
+                                       encoding={
+                                            "from": "UTF-8",
+                                            "to": "IBM-1047"
+                                        },)
+    import pprint
+    for result in results.contacted.values():
+        pprint.pprint(result)
+        assert result.get("changed") is False
+        assert result.get("jobs")[0].get("job_id") is not None
+        assert re.search(r'please review the job log', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
+
+
+def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_TYPRUN_HOLD)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name,
+                                       location="LOCAL",
+                                       wait_time_s=20,
+                                       encoding={
+                                            "from": "UTF-8",
+                                            "to": "IBM-1047"
+                                        },)
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("jobs")[0].get("job_id") is not None
+        assert re.search(r'long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
+
+
+def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_TYPRUN_JCLHOLD)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name,
+                                       location="LOCAL",
+                                       wait_time_s=20,
+                                       encoding={
+                                            "from": "UTF-8",
+                                            "to": "IBM-1047"
+                                        },)
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("jobs")[0].get("job_id") is not None
+        assert re.search(r'long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
+        assert result.get("jobs")[0].get("ret_code").get("code") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 # This test case is related to the following GitHub issues:

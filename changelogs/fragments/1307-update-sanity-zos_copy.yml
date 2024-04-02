@@ -1,0 +1,10 @@
+minor_changes:
+  - zos_copy - Documented `group` and `owner` options.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1307).
+
+trivial:
+  - zos_copy - Removed many of the variables that were passed from the
+    action plugin to the module, reimplementing the logic inside the
+    module instead. Removed the use of temp_path variable inside zos_copy
+    in favor of using remote_src to deal with files copied to remote.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1307).

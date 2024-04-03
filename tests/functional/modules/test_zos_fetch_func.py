@@ -536,15 +536,13 @@ def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="5m")
-    ds_name = TEST_PS
-    hosts.all.zos_data_set(name=TEST_PS, state="present")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
-    dest_path = "/tmp/" + ds_name
+    dest_path = "/tmp/" + TEST_PS
     with open(dest_path, "w") as infile:
         infile.write(DUMMY_DATA)
 
     local_checksum = checksum(dest_path, hash_func=sha256)
-    params = dict(src=ds_name, dest="/tmp/", flat=True)
+    params = dict(src=TEST_PS, dest="/tmp/", flat=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

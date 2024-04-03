@@ -334,7 +334,7 @@ def query_jobs(job_name, job_id, owner):
 
     Returns
     -------
-    list
+    Union[str]
         List with the jobs.
 
     Raises

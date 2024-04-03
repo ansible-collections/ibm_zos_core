@@ -15,23 +15,23 @@ __metaclass__ = type
 
 
 class MissingZOAUImport(object):
-    """Error when importing ZOAU
+    """Error when importing ZOAU.
     """
     def __getattr__(self, name):
         def method(*args, **kwargs):
-            """Raises ImportError as a result of a failed ZOAU import
+            """Raises ImportError as a result of a failed ZOAU import.
 
             Parameters
             ----------
-                *args : dict
-                    Arguments ordered in a dictionary
-                **kwargs : dict
-                    Arguments ordered in a dictionary
+            *args : dict
+                Arguments ordered in a dictionary.
+            **kwargs : dict
+                Arguments ordered in a dictionary.
 
             Raises
             ------
-                ImportError
-                    Unable to import a module or library
+            ImportError
+                Unable to import a module or library.
             """
             raise ImportError(
                 (
@@ -65,13 +65,13 @@ class ZOAUImportError(object):
 
         Parameters
         ----------
-            exception_traceback : str
-                The formatted traceback of the exception
+        exception_traceback : str
+            The formatted traceback of the exception.
 
         Attributes
         ----------
-            exception_traceback : str
-                The formatted traceback of the exception
+        exception_traceback : str
+            The formatted traceback of the exception.
         """
         self.traceback = exception_traceback
 
@@ -82,19 +82,19 @@ class ZOAUImportError(object):
         an error while importing ZOAU.
         """
         def method(*args, **kwargs):
-            """Raises ImportError as a result of a failed ZOAU import
+            """Raises ImportError as a result of a failed ZOAU import.
 
             Parameters
             ----------
-                *args : dict
-                    Arguments ordered in a dictionary
-                **kwargs : dict
-                    Arguments ordered in a dictionary
+            *args : dict
+                Arguments ordered in a dictionary.
+            **kwargs : dict
+                Arguments ordered in a dictionary.
 
             Raises
             ------
-                ImportError
-                    Unable to import a module or library
+            ImportError
+                Unable to import a module or library.
             """
             raise ImportError(
                 (
@@ -109,35 +109,35 @@ class ZOAUImportError(object):
 
 class MissingImport(object):
     def __init__(self, import_name=""):
-        """Error when it is unable to import a module due it being missing
+        """Error when it is unable to import a module due it being missing.
 
         Parameters
         ----------
-            import_name : str
-                The name of the module to import
+        import_name : str
+            The name of the module to import.
 
         Attributes
         ----------
-            import_name : str
-                The name of the module to import
+        import_name : str
+            The name of the module to import.
         """
         self.import_name = import_name
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
-            """Raises ImportError as a result of trying to import a missing module
+            """Raises ImportError as a result of trying to import a missing module.
 
             Parameter
             ---------
-                *args : dict
-                    Arguments ordered in a dictionary
-                **kwargs : dict
-                    Arguments ordered in a dictionary
+            *args : dict
+                Arguments ordered in a dictionary.
+            **kwargs : dict
+                Arguments ordered in a dictionary.
 
             Raises
             ------
-                ImportError
-                    Unable to import a module or library
+            ImportError
+                Unable to import a module or library.
             """
             raise ImportError("Import {0} was not available.".format(self.import_name))
 

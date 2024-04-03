@@ -46,29 +46,29 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
 
     Keyword Parameters
     ------------------
-        job_id : str
-            The job ID to search for (default: {None})
-        owner : str
-            The owner of the job (default: {None})
-        job_name : str
-            The job name search for (default: {None})
-        dd_name : str
-            The data definition to retrieve (default: {None})
-        dd_scan : bool
-            Whether or not to pull information from the dd's for this job {default: {True}}
-        duration : int
-            The time the submitted job ran for
-        timeout : int
-            How long to wait in seconds for a job to complete
-        start_time : int
-            Time the JCL started its submission
+    job_id : str
+        The job ID to search for (default: {None}).
+    owner : str
+        The owner of the job (default: {None}).
+    job_name : str
+        The job name search for (default: {None}).
+    dd_name : str
+        The data definition to retrieve (default: {None}).
+    dd_scan : bool
+        Whether or not to pull information from the dd's for this job {default: {True}}.
+    duration : int
+        The time the submitted job ran for.
+    timeout : int
+        How long to wait in seconds for a job to complete.
+    start_time : int
+        Time the JCL started its submission.
 
     Returns
     -------
-        list[dict]
-            The output information for a list of jobs matching specified criteria.
-            If no job status is found it will return a ret_code diction with
-            parameter 'msg_txt" = "The job could not be found.
+    Union[dict]
+        The output information for a list of jobs matching specified criteria.
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found.
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -129,21 +129,21 @@ def _job_not_found(job_id, owner, job_name, dd_name):
 
     Keyword Parameters
     ------------------
-        job_id : str
-            The job ID to search for (default: {None})
-        owner : str
-            The owner of the job (default: {None})
-        job_name : str
-            The job name search for (default: {None})
-        dd_name : str
-            The data definition to retrieve (default: {None})
+    job_id : str
+        The job ID to search for (default: {None}).
+    owner : str
+        The owner of the job (default: {None}).
+    job_name : str
+        The job name search for (default: {None}).
+    dd_name : str
+        The data definition to retrieve (default: {None}).
 
     Returns
     -------
-        list[dict]
-            The empty job information in a list.
-            If no job status is found it will return a ret_code diction with
-            parameter 'msg_txt" = "The job could not be found.
+    Union[dict]
+        The empty job information in a list.
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found.
     """
     # Note that the text in the msg_txt is used in test cases and thus sensitive to change
     jobs = []
@@ -190,23 +190,23 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
     Keyword Parameters
     ------------------
-        job_id : str
-            The job ID to search for (default: {None})
-        owner : str
-            The owner of the job (default: {None})
-        job_name : str
-            The job name search for (default: {None})
-        dd_name : str
-            If populated, return ONLY this DD in the job list (default: {None})
-            note: no routines call job_status with dd_name, so we are speeding this routine with
-            'dd_scan=False'
+    job_id : str
+        The job ID to search for (default: {None}).
+    owner : str
+        The owner of the job (default: {None}).
+    job_name : str
+        The job name search for (default: {None}).
+    dd_name : str
+        If populated, return ONLY this DD in the job list (default: {None})
+        note: no routines call job_status with dd_name, so we are speeding this routine with
+        'dd_scan=False'.
 
     Returns
     -------
-        list[dict]
-            The status information for a list of jobs matching search criteria.
-            If no job status is found it will return a ret_code diction with
-            parameter 'msg_txt" = "The job could not be found."
+    Union[dict]
+        The status information for a list of jobs matching search criteria.
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found.".
 
     """
     arg_defs = dict(
@@ -247,17 +247,17 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
 
 def _parse_steps(job_str):
-    """Parse the dd section of output to retrieve step-wise CC's
+    """Parse the dd section of output to retrieve step-wise CC's.
 
     Parameters
     ----------
-        job_str : str
-            The content for a given dd.
+    job_str : str
+        The content for a given dd.
 
     Returns
     -------
-        list[dict]
-            A list of step names listed as "step executed" the related CC.
+    Union[dict]
+        A list of step names listed as "step executed" the related CC.
     """
     stp = []
     if "STEP WAS EXECUTED" in job_str:
@@ -274,33 +274,33 @@ def _parse_steps(job_str):
 
 
 def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
-    """Get job status
+    """Get job status.
 
     Parameters
     ----------
-        job_id : str
-            The job ID to search for (default: {None})
-        owner : str
-            The owner of the job (default: {None})
-        job_name : str
-            The job name search for (default: {None})
-        dd_name : str
-            The data definition to retrieve (default: {None})
-        dd_scan : bool
-            Whether or not to pull information from the dd's for this job {default: {True}}
-        duration : int
-            The time the submitted job ran for
-        timeout : int
-            How long to wait in seconds for a job to complete
-        start_time : int
-            Time the JCL started its submission
+    job_id : str
+        The job ID to search for (default: {None}).
+    owner : str
+        The owner of the job (default: {None}).
+    job_name : str
+        The job name search for (default: {None}).
+    dd_name : str
+        The data definition to retrieve (default: {None}).
+    dd_scan : bool
+        Whether or not to pull information from the dd's for this job {default: {True}}.
+    duration : int
+        The time the submitted job ran for.
+    timeout : int
+        How long to wait in seconds for a job to complete.
+    start_time : int
+        Time the JCL started its submission.
 
     Returns
     -------
-        list[dict]
-            The output information for a list of jobs matching specified criteria.
-            If no job status is found it will return a ret_code diction with
-            parameter 'msg_txt" = "The job could not be found.
+    Union[dict]
+        The output information for a list of jobs matching specified criteria.
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found.
     """
     if job_id == "*":
         job_id_temp = None
@@ -484,25 +484,25 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
 
 def _ddname_pattern(contents, resolve_dependencies):
-    """Resolver for ddname_pattern type arguments
+    """Resolver for ddname_pattern type arguments.
 
     Parameters
     ----------
-        contents : bool
-            The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
-            which have already been handled,
-            for use during current arguments handling operations.
+    contents : bool
+        The contents of the argument.
+        resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        which have already been handled,
+        for use during current arguments handling operations.
 
     Returns
     -------
-        str
-            The arguments contents after any necessary operations.
+    str
+        The arguments contents after any necessary operations.
 
     Raises
     ------
-        ValueError
-            When contents is invalid argument type
+    ValueError
+        When contents is invalid argument type.
     """
     if not re.fullmatch(
         r"^(?:[A-Z]{1}[A-Z0-9]{0,7})|(?:\?{1})$",

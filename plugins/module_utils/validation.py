@@ -29,18 +29,18 @@ def validate_safe_path(path):
 
     Parameters
     ----------
-        path : str
-            A file's path.
+    path : str
+        A file's path.
 
     Returns
     -------
-        str
-            The introduced path
+    str
+        The introduced path.
 
     Raises
     ------
-        DirectoryTraversalError
-            User does not have access to a directory.
+    DirectoryTraversalError
+        User does not have access to a directory.
     """
     if not os.path.isabs(path):
         real_path = os.path.realpath(path)
@@ -57,13 +57,13 @@ class DirectoryTraversalError(Exception):
 
     Parameters
     ----------
-        path : str
-            Directory path.
+    path : str
+        Directory path.
 
     Attributes
     ----------
-        msg : str
-            Human readable string describing the exception.
+    msg : str
+        Human readable string describing the exception.
     """
     def __init__(self, path):
         self.msg = "Detected directory traversal, user does not have access to {0}".format(path)

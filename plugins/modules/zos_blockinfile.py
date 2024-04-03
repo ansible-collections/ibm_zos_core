@@ -620,6 +620,7 @@ def main():
             module.fail_json(msg=message)
         file_type = 0
 
+    return_content = None
     if backup:
         # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
         # setting backup to None if backup_name wasn't provided. if backup=None, Backup module will use

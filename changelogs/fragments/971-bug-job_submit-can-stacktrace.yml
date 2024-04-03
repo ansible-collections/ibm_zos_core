@@ -1,0 +1,6 @@
+trivial:
+  - job.py - generalized resolution of query_exception that may be thrown.
+    This should prevent the stack trace.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/xxxx).
+  - test_zos_job_submit.py - Removed code that was hiding if a duration was not returned.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/xxxx).

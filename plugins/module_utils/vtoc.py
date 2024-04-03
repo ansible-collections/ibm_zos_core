@@ -26,18 +26,18 @@ def get_volume_entry(volume):
 
     Parameters
     ----------
-        volume : str
-            The name of the volume.
+    volume : str
+        The name of the volume.
 
     Returns
     -------
-        list[dict]
-            List of dictionaries holding data set information from VTOC.
+    Union[dict]
+        List of dictionaries holding data set information from VTOC.
 
     Raises
     ------
-        VolumeTableOfContentsError
-            When any exception is raised during VTOC operations.
+    VolumeTableOfContentsError
+        When any exception is raised during VTOC operations.
     """
     try:
         stdin = "  LISTVTOC FORMAT,VOL=3390={0}".format(volume.upper())
@@ -58,15 +58,15 @@ def get_data_set_entry(data_set_name, volume):
 
     Parameters
     ----------
-        data_set_name : str
-            The name of the data set to retrieve information for.
-        volume : str
-            The name of the volume.
+    data_set_name : str
+        The name of the data set to retrieve information for.
+    volume : str
+        The name of the volume.
 
     Returns
     -------
-        dict
-            The information for the data set found in VTOC.
+    dict
+        The information for the data set found in VTOC.
     """
     data_set = None
     data_sets = get_volume_entry(volume)
@@ -85,15 +85,15 @@ def find_data_set_in_volume_output(data_set_name, data_sets):
 
     Parameters
     ----------
-        data_set_name : str
-            The name of the data set to retrieve information for.
-        data_sets : list[dict]
-            List of dictionaries holding data set information from VTOC.
+    data_set_name : str
+        The name of the data set to retrieve information for.
+    data_sets : list[dict]
+        List of dictionaries holding data set information from VTOC.
 
     Returns
     -------
-        dict
-            The information for the data set found in VTOC.
+    dict
+        The information for the data set found in VTOC.
     """
     if isinstance(data_sets, list):
         for data_set in data_sets:
@@ -107,13 +107,15 @@ def _iehlist(dd, stdin):
 
     Parameters
     ----------
-        dd {str} -- Volume information to pass as DD statement.
-        stdin {str} -- Input to stdin.
+    dd : str
+        Volume information to pass as DD statement.
+    stdin : str
+        Input to stdin.
 
     Returns
     -------
-        str
-            The sysprint response of IEHLIST.
+    str
+        The sysprint response of IEHLIST.
     """
     module = AnsibleModuleHelper(argument_spec={})
     response = None
@@ -131,13 +133,13 @@ def _process_output(stdout):
 
     Parameters
     ----------
-        stdout : str
-            The output of LISTVTOC.
+    stdout : str
+        The output of LISTVTOC.
 
     Returns
     -------
-        list[dict]
-            List of dictionaries holding data set information from VTOC.
+    Union[dict]
+        List of dictionaries holding data set information from VTOC.
     """
     data_sets = []
     data_set_strings = _separate_data_set_sections(stdout)
@@ -151,13 +153,13 @@ def _separate_data_set_sections(contents):
 
     Parameters
     ----------
-        contents : str
-            The output of LISTVTOC.
+    contents : str
+        The output of LISTVTOC.
 
     Returns
     -------
-        list[str]
-            LISTVTOC output separated into sections by data set.
+    Union[str]
+        LISTVTOC output separated into sections by data set.
     """
     delimeter = "0---------------DATA SET NAME----------------"
     data_sets = re.split(delimeter, contents)
@@ -171,13 +173,13 @@ def _parse_data_set_info(data_set_string):
 
     Parameters
     ----------
-        data_set_string : str
-            Single data set section of the LISTVTOC output.
+    data_set_string : str
+        Single data set section of the LISTVTOC output.
 
     Returns
     -------
-        dict
-            Holds data set information from VTOC.
+    dict
+        Holds data set information from VTOC.
     """
     lines = data_set_string.split("\n")
     data_set_info = {}
@@ -205,17 +207,17 @@ def _parse_table_row(regex, header_row, data_row):
 
     Parameters
     ----------
-        regex : str
-            The regular expression used to parse table row.
-        header_row : str
-            The row of the table containing headers.
-        data_row : str
-            The row of the table containing data.
+    regex : str
+        The regular expression used to parse table row.
+    header_row : str
+        The row of the table containing headers.
+    data_row : str
+        The row of the table containing data.
 
     Returns
     -------
-        dict
-            Structured data for the row of the table.
+    dict
+        Structured data for the row of the table.
     """
     table_data = {}
     fields = re.findall(regex, header_row)
@@ -239,13 +241,13 @@ def _format_table_data(table_data):
 
     Parameters
     ----------
-        table_data : dict
-            Structured data parsed from VTOCLIST output.
+    table_data : dict
+        Structured data parsed from VTOCLIST output.
 
     Returns
     -------
-        dict
-            Updated data.
+    dict
+        Updated data.
     """
     handlers = {
         "DATA SET NAME": "data_set_name",
@@ -293,16 +295,16 @@ def _format_extend(contents, formatted_table_data):
 
     Parameters
     ----------
-        contents : str
-            Contents of the extend field from VTOCLIST.
-        formatted_table_data : dict
-            The dictionary containing other already formatted
-            table data.
+    contents : str
+        Contents of the extend field from VTOCLIST.
+    formatted_table_data : dict
+        The dictionary containing other already formatted
+        table data.
 
     Returns
     -------
-        dict
-            The updated formatted_table_data dictionary.
+    dict
+        The updated formatted_table_data dictionary.
     """
     matches = re.search(r"([0-9]+)(AV|BY|KB|MB)", contents)
     original_space_secondary = ""
@@ -328,13 +330,13 @@ def _format_last_blk(contents):
 
     Parameters
     ----------
-        contents : str
-            Contents of the last blk field from VTOCLIST.
+    contents : str
+        Contents of the last blk field from VTOCLIST.
 
     Returns
     -------
-        dict
-            Structured data parsed from last blk field contents.
+    dict
+        Structured data parsed from last blk field contents.
     """
     result = None
     matches = re.search(r"[ ]*([0-9]+)[ ]+([0-9]+)[ ]+([0-9]+)?", contents)
@@ -352,13 +354,13 @@ def _format_f2_or_f3(contents):
 
     Parameters
     ----------
-        contents : str
-            Contents of the F2 or F3 field from VTOCLIST.
+    contents : str
+        Contents of the F2 or F3 field from VTOCLIST.
 
     Returns
     -------
-        dict
-            Structured data parsed from the F2 or F3 field contents.
+    dict
+        Structured data parsed from the F2 or F3 field contents.
     """
     result = None
     matches = re.search(r"[ ]*([0-9]+)[ ]+([0-9]+)[ ]+([0-9]+)", contents)
@@ -375,13 +377,13 @@ def _format_dscb(contents):
 
     Parameters
     ----------
-        contents : str
-            Contents of the dscb field from VTOCLIST.
+    contents : str
+        Contents of the dscb field from VTOCLIST.
 
     Returns
     -------
-        dict
-            Structured data parsed from the dscb field contents.
+    dict
+        Structured data parsed from the dscb field contents.
     """
     result = None
     matches = re.search(r"[ ]*([0-9]+)[ ]+([0-9]+)[ ]+([0-9]+)", contents)
@@ -398,15 +400,15 @@ def _parse_extents(lines):
 
     Parameters
     ----------
-        contents : list[str]
-            Partial contents of single data set section
-            from VTOCLIST that will contain extent information if data set has
-            extents.
+    contents : list[str]
+        Partial contents of single data set section
+        from VTOCLIST that will contain extent information if data set has
+        extents.
 
     Returns
     -------
-        list[dict]
-            Structured data parsed from the extent field contents.
+    dict
+        Structured data parsed from the extent field contents.
     """
     extents = []
     if re.search(r"THE\sABOVE\sDATASET\sHAS\sNO\sEXTENTS", "".join(lines)):
@@ -430,16 +432,16 @@ def _extent_regex_builder(indent_length, header_groups):
 
     Parameters
     ----------
-        indent_length : int
-            The number of spaces before extent information starts.
-        header_groups : list[tuple]
-            Captured output of header groups identified
-            during VTOCLIST parsing.
+    indent_length : int
+        The number of spaces before extent information starts.
+    header_groups : list[tuple]
+        Captured output of header groups identified
+        during VTOCLIST parsing.
 
     Returns
     -------
-        str
-            The regular expression for parsing extent information.
+    str
+        The regular expression for parsing extent information.
     """
     extent_regex = "^[ ]{{{0}}}".format(str(indent_length))
     for index, header_group in enumerate(header_groups):
@@ -458,13 +460,13 @@ def _format_extent_data(extent_data):
 
     Parameters
     ----------
-        extent_data : list[tuple]
-            Captured output of extent data.
+    extent_data : list[tuple]
+        Captured output of extent data.
 
     Returns
     -------
-        dict
-            Structured data parsed from captured output of extent data.
+    Union[dict]
+        Structured data parsed from captured output of extent data.
     """
     extents = []
     flattened_extent_data = []
@@ -488,18 +490,18 @@ def _format_extent_data(extent_data):
 
 
 class VolumeTableOfContentsError(Exception):
-    """Error during VTOC parsing or retrieval.
-
-    Parameters
-    ----------
-        msg : str
-            Human readable string describing the exception
-
-    Attributes
-    ----------
-        msg : str
-            Human readable string describing the exception
-    """
     def __init__(self, msg=""):
+        """Error during VTOC parsing or retrieval.
+
+        Parameters
+        ----------
+        msg : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = "An error occurred during VTOC parsing or retrieval. {0}".format(msg)
         super(VolumeTableOfContentsError, self).__init__(self.msg)

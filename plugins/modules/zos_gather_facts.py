@@ -136,7 +136,7 @@ def zinfo_facts_list_builder(gather_subset):
 
     Returns
     -------
-    list[str]
+    Union[str]
         A list of strings that contains sanitized subsets.
     None
         An invalid value was received for the subsets.

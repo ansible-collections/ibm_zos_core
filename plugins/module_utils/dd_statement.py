@@ -33,22 +33,22 @@ class DDStatement(object):
 
         Parameters
         ----------
-            name : str
-                The DD name to use for this DD statement.
-            definition : Union[DataDefinition, list[DataDefinition]]
-                One or more DataDefinition objects for the DD.
+        name : str
+            The DD name to use for this DD statement.
+        definition : Union[DataDefinition, list[DataDefinition]]
+            One or more DataDefinition objects for the DD.
 
         Attributes
         ----------
-            name : str
-                The DD name to use for this DD statement.
-            definition : Union[DataDefinition, list[DataDefinition]]
-                One or more DataDefinition objects for the DD.
+        name : str
+            The DD name to use for this DD statement.
+        definition : Union[DataDefinition, list[DataDefinition]]
+            One or more DataDefinition objects for the DD.
 
         Raises
         ------
-            ValueError
-                When a value other than a DataDefinition is provided for definition parameter.
+        ValueError
+            When a value other than a DataDefinition is provided for definition parameter.
         """
         self.name = name
         self.definition = definition
@@ -60,8 +60,8 @@ class DDStatement(object):
 
         Returns
         -------
-            str
-                The string representation of this DD statement, as expected by mvscmd.
+        str
+            The string representation of this DD statement, as expected by mvscmd.
         """
         mvscmd_string = "--{0}=".format(self.name)
         if isinstance(self.definition, list):
@@ -92,8 +92,8 @@ class DDStatement(object):
 
         Raises
         ------
-            ValueError
-                When an invalid type is specified in DD concatenation.
+        ValueError
+            When an invalid type is specified in DD concatenation.
         """
         if not isinstance(self.definition, DataDefinition):
             raise ValueError("DDStatement expects an object of type DataDefinition.")
@@ -104,8 +104,8 @@ class DDStatement(object):
 
         Raises
         ------
-            ValueError
-                When an invalid type is specified in DD concatenation.
+        ValueError
+            When an invalid type is specified in DD concatenation.
         """
         for dd in self.definition:
             if not isinstance(
@@ -122,13 +122,13 @@ class DataDefinition(object):
 
         Parameters
         ----------
-            name : str
-                The name used to refer to the resource pointed to by the DD.
+        name : str
+            The name used to refer to the resource pointed to by the DD.
 
         Attributes
         ----------
-            name : str
-                The name used to refer to the resource pointed to by the DD.
+        name : str
+            The name used to refer to the resource pointed to by the DD.
         """
         self.name = name
 
@@ -138,8 +138,8 @@ class DataDefinition(object):
 
         Raises
         ------
-            NotImplementedError
-                When the abstract version of the method is called.
+        NotImplementedError
+            When the abstract version of the method is called.
         """
         raise NotImplementedError
 
@@ -149,17 +149,17 @@ class DataDefinition(object):
 
         Parameters
         ----------
-            string : str
-                The string to append an argument to.
-            variable_name : str
-                The name of the argument to use as expected by mvscmd.
-            variable : Union[str, int, list[str, int]]
-                The argument value to append.
+        string : str
+            The string to append an argument to.
+        variable_name : str
+            The name of the argument to use as expected by mvscmd.
+        variable : Union[str, int, list[str, int]]
+            The argument value to append.
 
         Returns
         -------
-            str
-                The provided string with additional arguments appended.
+        str
+            The provided string with additional arguments appended.
         """
         if (
             variable is None
@@ -194,87 +194,87 @@ class FileDefinition(DataDefinition):
 
         Parameters
         ----------
-            path_name : str
-                An absolute UNIX file path.
-            normal_disposition : str, optional
-                What to do with path after normal program termination.
-                May be one of keep, delete.
-                Defaults to None.
-            conditional_disposition : str, optional
-                What to do with path after abnormal program termination.
-                May be one of keep, delete.
-                Defaults to None.
-            path_mode : Union[str, int], optional
-                The file access attributes for the UNIX file.
-                Provide in chmod-like number format. Defaults to None.
-            access_group : str, optional
-                The access mode for UNIX file.
-                Options are: ORDWR, ORDONLY, OWRONLY.
-                Defaults to None.
-            status_group : list[str], optional
-                The status for UNIX file.
-                Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
-                Defaults to None.
-            file_data : str, optional
-                The type of data that is (or will be) stored in the UNIX file.
-                Defaults to None.
-            record_length : int, optional
-                The specified logical record length for the
-                UNIX file being allocated. This is required in situations where the data will be processed as
-                records and therefore, the record length, block size and record format need to be supplied since
-                a UNIX file would normally be treated as a stream of bytes.
-                Defaults to None.
-            block_size : int, optional
-                The specified block size for the UNIX file
-                being allocated since a UNIX file would normally
-                be treated as a stream of bytes.
-                Defaults to None.
-            record_format : str, optional
-                The specified record format for the UNIX file
-                being allocated since an UNIX file would normally
-                be treated as a stream of bytes.
-                Defaults to None.
+        path_name : str
+            An absolute UNIX file path.
+        normal_disposition : str, optional
+            What to do with path after normal program termination.
+            May be one of keep, delete.
+            Defaults to None.
+        conditional_disposition : str, optional
+            What to do with path after abnormal program termination.
+            May be one of keep, delete.
+            Defaults to None.
+        path_mode : Union[str, int], optional
+            The file access attributes for the UNIX file.
+            Provide in chmod-like number format. Defaults to None.
+        access_group : str, optional
+            The access mode for UNIX file.
+            Options are: ORDWR, ORDONLY, OWRONLY.
+            Defaults to None.
+        status_group : list[str], optional
+            The status for UNIX file.
+            Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
+            Defaults to None.
+        file_data : str, optional
+            The type of data that is (or will be) stored in the UNIX file.
+            Defaults to None.
+        record_length : int, optional
+            The specified logical record length for the
+            UNIX file being allocated. This is required in situations where the data will be processed as
+            records and therefore, the record length, block size and record format need to be supplied since
+            a UNIX file would normally be treated as a stream of bytes.
+            Defaults to None.
+        block_size : int, optional
+            The specified block size for the UNIX file
+            being allocated since a UNIX file would normally
+            be treated as a stream of bytes.
+            Defaults to None.
+        record_format : str, optional
+            The specified record format for the UNIX file
+            being allocated since an UNIX file would normally
+            be treated as a stream of bytes.
+            Defaults to None.
 
         Attributes
         ----------
-            normal_disposition : str, optional
-                What to do with path after normal program termination.
-                May be one of keep, delete.
-                Defaults to None.
-            conditional_disposition : str, optional
-                What to do with path after abnormal program termination.
-                May be one of keep, delete.
-                Defaults to None.
-            path_mode : Union[str, int], optional
-                The file access attributes for the UNIX file.
-                Provide in chmod-like number format. Defaults to None.
-            access_group : str, optional
-                The access mode for UNIX file.
-                Options are: ORDWR, ORDONLY, OWRONLY.
-                Defaults to None.
-            status_group : list[str], optional
-                The status for UNIX file.
-                Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
-                Defaults to None.
-            file_data : str, optional
-                The type of data that is (or will be) stored in the UNIX file.
-                Defaults to None.
-            record_length : int, optional
-                The specified logical record length for the
-                UNIX file being allocated. This is required in situations where the data will be processed as
-                records and therefore, the record length, block size and record format need to be supplied since
-                a UNIX file would normally be treated as a stream of bytes.
-                Defaults to None.
-            block_size : int, optional
-                The specified block size for the UNIX file
-                being allocated since a UNIX file would normally
-                be treated as a stream of bytes.
-                Defaults to None.
-            record_format : str, optional
-                The specified record format for the UNIX file
-                being allocated since an UNIX file would normally
-                be treated as a stream of bytes.
-                Defaults to None.
+        normal_disposition : str, optional
+            What to do with path after normal program termination.
+            May be one of keep, delete.
+            Defaults to None.
+        conditional_disposition : str, optional
+            What to do with path after abnormal program termination.
+            May be one of keep, delete.
+            Defaults to None.
+        path_mode : Union[str, int], optional
+            The file access attributes for the UNIX file.
+            Provide in chmod-like number format. Defaults to None.
+        access_group : str, optional
+            The access mode for UNIX file.
+            Options are: ORDWR, ORDONLY, OWRONLY.
+            Defaults to None.
+        status_group : list[str], optional
+            The status for UNIX file.
+            Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
+            Defaults to None.
+        file_data : str, optional
+            The type of data that is (or will be) stored in the UNIX file.
+            Defaults to None.
+        record_length : int, optional
+            The specified logical record length for the
+            UNIX file being allocated. This is required in situations where the data will be processed as
+            records and therefore, the record length, block size and record format need to be supplied since
+            a UNIX file would normally be treated as a stream of bytes.
+            Defaults to None.
+        block_size : int, optional
+            The specified block size for the UNIX file
+            being allocated since a UNIX file would normally
+            be treated as a stream of bytes.
+            Defaults to None.
+        record_format : str, optional
+            The specified record format for the UNIX file
+            being allocated since an UNIX file would normally
+            be treated as a stream of bytes.
+            Defaults to None.
         """
         super().__init__(path_name)
         self.normal_disposition = normal_disposition
@@ -293,8 +293,8 @@ class FileDefinition(DataDefinition):
 
         Returns
         -------
-            str
-                String to be used by mvscmd/mvscmdauth.
+        str
+            String to be used by mvscmd/mvscmdauth.
         """
         mvscmd_string = ""
         mvscmd_string = self._append_mvscmd_string(
@@ -362,179 +362,179 @@ class DatasetDefinition(DataDefinition):
 
         Parameters
         ----------
-            dataset_name : str
-                The name of the dataset to associate with the DD statement.
-            disposition : str, optional
-                The expected disposition of the dataset.
-                Valid options are: EXCL, OLD, SHR, MOD, NEW.
-                Defaults to "".
-            type : str, optional
-                The type of dataset.
-                Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                Defaults to None.
-            primary : int, optional
-                The amount of primary space to allocate for the dataset.
-                Defaults to None.
-            primary_unit : str, optional
-                The unit of size to use when specifying primary space.
-                May be one of: K or KB (kilobytes), M or MB (megabytes),
-                G or GB (gigabytes), C or CYL (cylinders), T or TRK (tracks).
-                Defaults to "TRK".
-            secondary : int, optional
-                The amount of secondary space to allocate for the dataset.
-                Defaults to None.
-            secondary_unit : str, optional
-                The unit of size to use when specifying secondary space.
-                May be one of: K or KB (kilobytes), M or MB (megabytes),
-                G or GB (gigabytes), C or CYL (cylinders), T or TRK (tracks).
-                Defaults to "TRK".
-            normal_disposition : str, optional
-                Tells the system what to do with the data set after normal termination of the program.
-                Valid options are: delete, keep, catalog/catlg, uncatalog/uncatlg.
-                Defaults to None.
-            conditional_disposition : str, optional
-                Tells the system what to do with the data set after abnormal termination of the program.
-                Valid options are: delete, keep, catalog/catlg, uncatalog/uncatlg.
-                Defaults to None.
-            block_size : int, optional
-                The block size of the data set.
-                Defaults to None.
-            directory_blocks : int, optional
-                The number of directory blocks to allocate for the data set.
-                Defaults to None.
-            record_format : str, optional
-                The record format of the dataset.
-                Valid options are: FB, VB, FBA, VBA, U.
-                Defaults to None.
-            record_length : int, optional
-                The length, in bytes, of each record in the data set.
-                Defaults to None.
-            storage_class : str, optional
-                The storage class for an SMS-managed dataset.
-                Not valid for datasets that are not SMS-managed.
-                Note that all non-linear VSAM datasets are SMS-managed.
-                Defaults to None.
-            data_class : str, optional
-                The data class for an SMS-managed dataset.
-                Optional for SMS-managed datasets that do not match an SMS-rule.
-                Not valid for datasets that are not SMS-managed.
-                Note that all non-linear VSAM datasets are SMS-managed.
-                Defaults to None.
-            management_class : str, optional
-                Is the management class for an SMS-managed dataset.
-                Optional for SMS-managed datasets that do not match an SMS-rule.
-                Not valid for datasets that are not SMS-managed.
-                Note that all non-linear VSAM datasets are SMS-managed.
-                Defaults to None.
-            key_length : int, optional
-                The key length of a record.
-                Required for Key Sequenced Datasets (KSDS).
-                Defaults to None.
-            key_offset : int, optional
-                The key offset is the position of the first byte of the key
-                in each logical record of a the specified VSAM data set.
-                If the key is at the beginning of the logical record, the offset is zero.
-                Required for Key Sequenced Datasets (KSDS).
-                Defaults to None.
-            volumes : Union[str, list[str]], optional
-                A list of volume serials.
-                When providing multiple volumes, processing will begin with
-                the first volume in the provided list. Offline volumes are not considered.
-                Volumes can always be provided when not using SMS.
-                When using SMS, volumes can be provided when the storage class being used
-                has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
-                Defaults to None.
-            dataset_key_label : str, optional
-                The label for the encryption key used by the system to encrypt the data set.
-                Only applicable when using encrypted datasets.
-                Defaults to None.
-            key_label1 : str, optional
-                The label for the key encrypting key used by the Encryption Key Manager.
-                Only applicable when using encrypted datasets.
-                Defaults to None.
-            key_encoding1 : str, optional
-                How the label for the key encrypting key specified by keylab1 is encoded by the Encryption Key Manager.
-                Valid values are: L, H.
-                Only applicable when using encrypted datasets.
-                Defaults to None.
-            key_label2 : str, optional
-                The label for the key encrypting key used by the Encryption Key Manager.
-                Only applicable when using encrypted datasets.
-                Defaults to None.
-            key_encoding2 : str, optional
-                How the label for the key encrypting key specified by keylab2 is encoded by the Encryption Key Manager.
-                Valid values are: L, H
-                Only applicable when using encrypted datasets.
-                Defaults to None.
+        dataset_name : str
+            The name of the dataset to associate with the DD statement.
+        disposition : str, optional
+            The expected disposition of the dataset.
+            Valid options are: EXCL, OLD, SHR, MOD, NEW.
+            Defaults to "".
+        type : str, optional
+            The type of dataset.
+            Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
+            Defaults to None.
+        primary : int, optional
+            The amount of primary space to allocate for the dataset.
+            Defaults to None.
+        primary_unit : str, optional
+            The unit of size to use when specifying primary space.
+            May be one of: K or KB (kilobytes), M or MB (megabytes),
+            G or GB (gigabytes), C or CYL (cylinders), T or TRK (tracks).
+            Defaults to "TRK".
+        secondary : int, optional
+            The amount of secondary space to allocate for the dataset.
+            Defaults to None.
+        secondary_unit : str, optional
+            The unit of size to use when specifying secondary space.
+            May be one of: K or KB (kilobytes), M or MB (megabytes),
+            G or GB (gigabytes), C or CYL (cylinders), T or TRK (tracks).
+            Defaults to "TRK".
+        normal_disposition : str, optional
+            Tells the system what to do with the data set after normal termination of the program.
+            Valid options are: delete, keep, catalog/catlg, uncatalog/uncatlg.
+            Defaults to None.
+        conditional_disposition : str, optional
+            Tells the system what to do with the data set after abnormal termination of the program.
+            Valid options are: delete, keep, catalog/catlg, uncatalog/uncatlg.
+            Defaults to None.
+        block_size : int, optional
+            The block size of the data set.
+            Defaults to None.
+        directory_blocks : int, optional
+            The number of directory blocks to allocate for the data set.
+            Defaults to None.
+        record_format : str, optional
+            The record format of the dataset.
+            Valid options are: FB, VB, FBA, VBA, U.
+            Defaults to None.
+        record_length : int, optional
+            The length, in bytes, of each record in the data set.
+            Defaults to None.
+        storage_class : str, optional
+            The storage class for an SMS-managed dataset.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        data_class : str, optional
+            The data class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        management_class : str, optional
+            Is the management class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        key_length : int, optional
+            The key length of a record.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        key_offset : int, optional
+            The key offset is the position of the first byte of the key
+            in each logical record of a the specified VSAM data set.
+            If the key is at the beginning of the logical record, the offset is zero.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        volumes : Union[str, list[str]], optional
+            A list of volume serials.
+            When providing multiple volumes, processing will begin with
+            the first volume in the provided list. Offline volumes are not considered.
+            Volumes can always be provided when not using SMS.
+            When using SMS, volumes can be provided when the storage class being used
+            has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
+            Defaults to None.
+        dataset_key_label : str, optional
+            The label for the encryption key used by the system to encrypt the data set.
+            Only applicable when using encrypted datasets.
+            Defaults to None.
+        key_label1 : str, optional
+            The label for the key encrypting key used by the Encryption Key Manager.
+            Only applicable when using encrypted datasets.
+            Defaults to None.
+        key_encoding1 : str, optional
+            How the label for the key encrypting key specified by keylab1 is encoded by the Encryption Key Manager.
+            Valid values are: L, H.
+            Only applicable when using encrypted datasets.
+            Defaults to None.
+        key_label2 : str, optional
+            The label for the key encrypting key used by the Encryption Key Manager.
+            Only applicable when using encrypted datasets.
+            Defaults to None.
+        key_encoding2 : str, optional
+            How the label for the key encrypting key specified by keylab2 is encoded by the Encryption Key Manager.
+            Valid values are: L, H
+            Only applicable when using encrypted datasets.
+            Defaults to None.
 
         Attributes
         ----------
-            disposition : str
-                The expected disposition of the dataset.
-            type : str
-                The type of dataset.
-            primary : int
-                The amount of primary space to allocate for the dataset.
-            secondary : int
-                The amount of secondary space to allocate for the dataset.
-            normal_disposition : str
-                tells the system what to do with the data set after normal termination of the program.
-            conditional_disposition : str
-                Tells the system what to do with the data set after abnormal termination of the program.
-            block_size : int
-                The block size of the data set.
-            directory_blocks : int
-                The number of directory blocks to allocate for the data set.
-            record_format : str
-                The record format of the dataset.
-            record_length : int
-                The length, in bytes, of each record in the data set.
-            storage_class : str
-                The storage class for an SMS-managed dataset.
-                Not valid for datasets that are not SMS-managed.
-                Note that all non-linear VSAM datasets are SMS-managed.
-            data_class : str
-                The data class for an SMS-managed dataset.
-                Optional for SMS-managed datasets that do not match an SMS-rule.
-                Not valid for datasets that are not SMS-managed.
-                Note that all non-linear VSAM datasets are SMS-managed.
-            management_class : str
-                Is the management class for an SMS-managed dataset.
-                Optional for SMS-managed datasets that do not match an SMS-rule.
-                Not valid for datasets that are not SMS-managed.
-                Note that all non-linear VSAM datasets are SMS-managed.
-            key_length : int
-                The key length of a record.
-                Required for Key Sequenced Datasets (KSDS).
-            key_offset : int
-                The key offset is the position of the first byte of the key
-                in each logical record of a the specified VSAM data set.
-                If the key is at the beginning of the logical record, the offset is zero.
-                Required for Key Sequenced Datasets (KSDS).
-            volumes : Union[str, list[str]]
-                A list of volume serials.
-                When providing multiple volumes, processing will begin with
-                the first volume in the provided list. Offline volumes are not considered.
-                Volumes can always be provided when not using SMS.
-                When using SMS, volumes can be provided when the storage class being used
-                has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
-            dataset_key_label : str
-                The label for the encryption key used by the system to encrypt the data set.
-                Only applicable when using encrypted datasets.
-            key_label1 : str
-                The label for the key encrypting key used by the Encryption Key Manager.
-                Only applicable when using encrypted datasets.
-            key_encoding1 : str
-                How the label for the key encrypting key specified by keylab1 is encoded by the Encryption Key Manager.
-                Valid values are: L, H
-                Only applicable when using encrypted datasets.
-            key_label2 : str
-                The label for the key encrypting key used by the Encryption Key Manager.
-                Only applicable when using encrypted datasets.
-            key_encoding2 : str
-                How the label for the key encrypting key specified by keylab2 is encoded by the Encryption Key Manager.
-                Valid values are: L, H
-                Only applicable when using encrypted datasets.
+        disposition : str
+            The expected disposition of the dataset.
+        type : str
+            The type of dataset.
+        primary : int
+            The amount of primary space to allocate for the dataset.
+        secondary : int
+            The amount of secondary space to allocate for the dataset.
+        normal_disposition : str
+            tells the system what to do with the data set after normal termination of the program.
+        conditional_disposition : str
+            Tells the system what to do with the data set after abnormal termination of the program.
+        block_size : int
+            The block size of the data set.
+        directory_blocks : int
+            The number of directory blocks to allocate for the data set.
+        record_format : str
+            The record format of the dataset.
+        record_length : int
+            The length, in bytes, of each record in the data set.
+        storage_class : str
+            The storage class for an SMS-managed dataset.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+        data_class : str
+            The data class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+        management_class : str
+            Is the management class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+        key_length : int
+            The key length of a record.
+            Required for Key Sequenced Datasets (KSDS).
+        key_offset : int
+            The key offset is the position of the first byte of the key
+            in each logical record of a the specified VSAM data set.
+            If the key is at the beginning of the logical record, the offset is zero.
+            Required for Key Sequenced Datasets (KSDS).
+        volumes : Union[str, list[str]]
+            A list of volume serials.
+            When providing multiple volumes, processing will begin with
+            the first volume in the provided list. Offline volumes are not considered.
+            Volumes can always be provided when not using SMS.
+            When using SMS, volumes can be provided when the storage class being used
+            has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
+        dataset_key_label : str
+            The label for the encryption key used by the system to encrypt the data set.
+            Only applicable when using encrypted datasets.
+        key_label1 : str
+            The label for the key encrypting key used by the Encryption Key Manager.
+            Only applicable when using encrypted datasets.
+        key_encoding1 : str
+            How the label for the key encrypting key specified by keylab1 is encoded by the Encryption Key Manager.
+            Valid values are: L, H
+            Only applicable when using encrypted datasets.
+        key_label2 : str
+            The label for the key encrypting key used by the Encryption Key Manager.
+            Only applicable when using encrypted datasets.
+        key_encoding2 : str
+            How the label for the key encrypting key specified by keylab2 is encoded by the Encryption Key Manager.
+            Valid values are: L, H
+            Only applicable when using encrypted datasets.
         """
         super().__init__(dataset_name)
         self.disposition = disposition
@@ -588,8 +588,8 @@ class DatasetDefinition(DataDefinition):
 
         Returns
         -------
-            str
-                String to be used by mvscmd/mvscmdauth.
+        str
+            String to be used by mvscmd/mvscmdauth.
         """
         if not self.disposition:
             return ""
@@ -661,8 +661,8 @@ class VolumeDefinition(DataDefinition):
 
         Parameters
         ----------
-            volume_name : str
-                The volume name to associate with the DD statement.
+        volume_name : str
+            The volume name to associate with the DD statement.
         """
         super().__init__(volume_name)
 
@@ -673,8 +673,8 @@ class VolumeDefinition(DataDefinition):
 
         Returns
         -------
-            str
-                ',vol'
+        str
+            ',vol'
         """
         return ",vol"
 
@@ -692,8 +692,8 @@ class StdoutDefinition(DataDefinition):
 
         Returns
         -------
-            str
-                ''
+        str
+            ''
         """
         return ""
 
@@ -711,8 +711,8 @@ class DummyDefinition(DataDefinition):
 
         Returns
         -------
-            str
-                ''
+        str
+            ''
         """
         return ""
 
@@ -733,26 +733,26 @@ class StdinDefinition(DataDefinition):
 
         Parameters
         ----------
-            content : Union[str, list[str]]
-                The content to write to temporary data set / stdin.
-                Content can be provided as a string or a list of strings where each list item
-                corresponds to a single line.
-            record_format : str, optional
-                The record format to use for the dataset.
-                Valid options are: FB, VB, FBA, VBA, U.
-                Defaults to "FB".
-            space_primary : int, optional
-                The amount of primary space to allocate for the dataset.
-                Defaults to 5.
-            space_secondary : int, optional
-                The amount of secondary space to allocate for the dataset.
-                Defaults to 5.
-            space_type : str, optional
-                The unit of measurement to use when defining primary and secondary space.
-                Defaults to "M".
-            record_length : int, optional
-                The length, in bytes, of each record in the data set.
-                Defaults to 80.
+        content : Union[str, list[str]]
+            The content to write to temporary data set / stdin.
+            Content can be provided as a string or a list of strings where each list item
+            corresponds to a single line.
+        record_format : str, optional
+            The record format to use for the dataset.
+            Valid options are: FB, VB, FBA, VBA, U.
+            Defaults to "FB".
+        space_primary : int, optional
+            The amount of primary space to allocate for the dataset.
+            Defaults to 5.
+        space_secondary : int, optional
+            The amount of secondary space to allocate for the dataset.
+            Defaults to 5.
+        space_type : str, optional
+            The unit of measurement to use when defining primary and secondary space.
+            Defaults to "M".
+        record_length : int, optional
+            The length, in bytes, of each record in the data set.
+            Defaults to 80.
         """
         self.name = None
         name = DataSet.create_temp(
@@ -781,8 +781,8 @@ class StdinDefinition(DataDefinition):
 
         Returns
         -------
-            str
-                ''
+        str
+            ''
         """
         return ""
 
@@ -794,26 +794,26 @@ class InputDefinition(StdinDefinition):
 
     Parameters
     ----------
-        content : Union[str, list[str]]
-            The content to write to temporary data set / stdin.
-            Content can be provided as a string or a list of strings where each list item
-            corresponds to a single line.
-        record_format : str, optional
-            The record format to use for the dataset.
-            Valid options are: FB, VB, FBA, VBA, U.
-            Defaults to "FB".
-        space_primary : int, optional
-            The amount of primary space to allocate for the dataset.
-            Defaults to 5.
-        space_secondary : int, optional
-            The amount of secondary space to allocate for the dataset.
-            Defaults to 5.
-        space_type : str, optional
-            The unit of measurement to use when defining primary and secondary space.
-            Defaults to "M".
-        record_length _ int, optional
-            The length, in bytes, of each record in the data set.
-            Defaults to 80.
+    content : Union[str, list[str]]
+        The content to write to temporary data set / stdin.
+        Content can be provided as a string or a list of strings where each list item
+        corresponds to a single line.
+    record_format : str, optional
+        The record format to use for the dataset.
+        Valid options are: FB, VB, FBA, VBA, U.
+        Defaults to "FB".
+    space_primary : int, optional
+        The amount of primary space to allocate for the dataset.
+        Defaults to 5.
+    space_secondary : int, optional
+        The amount of secondary space to allocate for the dataset.
+        Defaults to 5.
+    space_type : str, optional
+        The unit of measurement to use when defining primary and secondary space.
+        Defaults to "M".
+    record_length _ int, optional
+        The length, in bytes, of each record in the data set.
+        Defaults to 80.
     """
 
     pass
@@ -836,22 +836,22 @@ class OutputDefinition(DataDefinition):
 
         Parameters
         ----------
-            record_format : str, optional
-                The record format to use for the dataset.
-                Valid options are: FB, VB, FBA, VBA, U.
-                Defaults to "VB".
-            space_primary : int, optional
-                The amount of primary space to allocate for the dataset.
-                Defaults to 5.
-            space_secondary : int, optional
-                The amount of secondary space to allocate for the dataset.
-                Defaults to 5.
-            space_type : str, optional
-                The unit of measurement to use when defining primary and secondary space.
-                Defaults to "M".
-            record_length : int, optional
-                The length, in bytes, of each record in the data set.
-                Defaults to 80.
+        record_format : str, optional
+            The record format to use for the dataset.
+            Valid options are: FB, VB, FBA, VBA, U.
+            Defaults to "VB".
+        space_primary : int, optional
+            The amount of primary space to allocate for the dataset.
+            Defaults to 5.
+        space_secondary : int, optional
+            The amount of secondary space to allocate for the dataset.
+            Defaults to 5.
+        space_type : str, optional
+            The unit of measurement to use when defining primary and secondary space.
+            Defaults to "M".
+        record_length : int, optional
+            The length, in bytes, of each record in the data set.
+            Defaults to 80.
         """
         self.name = None
         name = DataSet.create_temp(
@@ -877,8 +877,8 @@ class OutputDefinition(DataDefinition):
 
         Returns
         -------
-            str
-                ''
+        str
+            ''
         """
         return ""
 
@@ -892,8 +892,8 @@ class VIODefinition(DataDefinition):
 
         Parameters
         ----------
-            tmphlq : str, optional
-                HLQ to be used for temporary datasets. Defaults to None.
+        tmphlq : str, optional
+            HLQ to be used for temporary datasets. Defaults to None.
         """
         if tmphlq:
             hlq = tmphlq
@@ -918,7 +918,7 @@ class VIODefinition(DataDefinition):
 
         Returns
         -------
-            str
-                ',vio'
+        str
+            ',vio'
         """
         return ",vio"

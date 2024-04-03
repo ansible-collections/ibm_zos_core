@@ -1221,7 +1221,7 @@ class CopyHandler(object):
         ------
         EncodingConversionError
             When the encoding of a USS file is not
-            able to be converted
+            able to be converted.
         """
         enc_utils = encode.EncodeUtils()
         for path, dirs, files in os.walk(dir_path):
@@ -1579,7 +1579,7 @@ class USSCopyHandler(CopyHandler):
 
         Returns
         -------
-        tuple
+        tuple(str,list[str])
             Destination where the directory was copied to, and
             a list of paths for all subdirectories and files
             that got copied.
@@ -1629,7 +1629,7 @@ class USSCopyHandler(CopyHandler):
 
         Returns
         -------
-        tuple
+        tuple(list[str],list[tuple(str,int)])
             A list of paths for all new subdirectories and files that
             got copied into dest, and a list of the permissions
             for the files and directories already present on the
@@ -1675,7 +1675,7 @@ class USSCopyHandler(CopyHandler):
 
         Returns
         -------
-        list
+        Union[str]
             List of relative paths to all content inside dir.
         """
         original_working_dir = os.getcwd()
@@ -2686,9 +2686,8 @@ def allocate_destination_data_set(
 
     Returns
     -------
-    bool
+    Union(bool, dict)
         True if the data set was created, False otherwise.
-    dict
         Parameters used for the dataset created as name,
         block_size, record_format, record_length, space_primary, space_secondary,
         space_type, type.
@@ -2929,6 +2928,45 @@ def data_set_locked(dataset_name):
 
 
 def run_module(module, arg_def):
+    """Initialize module
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The AnsibleModule object from currently
+        running module.
+    arg_def : dict
+        Arguments.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Source does not exist.
+    fail_json
+        Source is not readable.
+    fail_json
+        Encoding conversion is only valid for USS source.
+    fail_json
+        Destination is not writable.
+    fail_json
+        Any exception.
+    fail_json
+        Incompatible target type for source.
+    fail_json
+        Neither the source or the destination are ASA text files.
+    fail_json
+        Unable to write to dest because a task is accessing the data set.
+    fail_json
+        Alias support for text-based data sets is not available.
+    fail_json
+        Cannot write a partitioned data set (PDS) to a USS file.
+    fail_json
+        Destination already exists on the system, unable to overwrite unless force=True is specified.
+    fail_json
+        Unable to allocate destination data set.
+    """
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
     # when a parameter fails its validation check

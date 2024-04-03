@@ -124,7 +124,7 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             batch=[
                 dict(
                     name=i + "(MEMBER)",
-                    type="MEMBER",
+                    type="member",
                     state='present',
                     replace='yes'
                 ) for i in PDS_NAMES
@@ -185,10 +185,10 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
             batch=[dict(name=i, type='pds', state='present') for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
-            batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES]
+            batch=[dict(name=i + "(MEMBER)", type="member") for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
-            batch=[dict(name=i + "(FILE)", type="MEMBER") for i in PDS_NAMES]
+            batch=[dict(name=i + "(FILE)", type="member") for i in PDS_NAMES]
         )
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
@@ -236,7 +236,7 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = 'USER.FIND.TEST'
     try:
-        hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", size="1k")
+        hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", size="1k")
         find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -344,10 +344,10 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
             batch=[dict(name=i, type='pds', state='present') for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
-            batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES]
+            batch=[dict(name=i + "(MEMBER)", type="member") for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
-            batch=[dict(name=i + "(FILE)", type="MEMBER") for i in PDS_NAMES]
+            batch=[dict(name=i + "(FILE)", type="member") for i in PDS_NAMES]
         )
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.NONE.PDS.*','TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']

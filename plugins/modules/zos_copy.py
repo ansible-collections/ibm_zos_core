@@ -375,7 +375,7 @@ options:
         description:
           - If the destination data set does not exist, this sets the unit of
             measurement to use when defining primary and secondary space.
-          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
         type: str
         choices:
           - k
@@ -387,7 +387,7 @@ options:
       record_format:
         description:
           - If the destination data set does not exist, this sets the format of the
-            data set. (e.g C(FB))
+            data set. (e.g C(fb))
           - Choices are case-sensitive.
         required: false
         choices:
@@ -417,15 +417,15 @@ options:
       key_offset:
         description:
           - The key offset to use when creating a KSDS data set.
-          - I(key_offset) is required when I(type=KSDS).
-          - I(key_offset) should only be provided when I(type=KSDS)
+          - I(key_offset) is required when I(type=ksds).
+          - I(key_offset) should only be provided when I(type=ksds)
         type: int
         required: false
       key_length:
         description:
           - The key length to use when creating a KSDS data set.
-          - I(key_length) is required when I(type=KSDS).
-          - I(key_length) should only be provided when I(type=KSDS)
+          - I(key_length) is required when I(type=ksds).
+          - I(key_length) should only be provided when I(type=ksds)
         type: int
         required: false
       sms_storage_class:
@@ -642,11 +642,11 @@ EXAMPLES = r"""
     remote_src: true
     volume: '222222'
     dest_data_set:
-      type: SEQ
+      type: seq
       space_primary: 10
       space_secondary: 3
-      space_type: K
-      record_format: VB
+      space_type: k
+      record_format: vb
       record_length: 150
 
 - name: Copy a Program Object and its aliases on a remote system to a new PDSE member MYCOBOL
@@ -702,7 +702,7 @@ destination_attributes:
         description:
           Record format of the dataset.
         type: str
-        sample: FB
+        sample: fb
       record_length:
         description:
           Record length of the dataset.
@@ -722,21 +722,21 @@ destination_attributes:
         description:
           Unit of measurement for space.
         type: str
-        sample: K
+        sample: k
       type:
         description:
           Type of dataset allocated.
         type: str
-        sample: PDSE
+        sample: pdse
     sample:
         {
             "block_size": 32760,
-            "record_format": "FB",
+            "record_format": "fb",
             "record_length": 45,
             "space_primary": 2,
             "space_secondary": 1,
-            "space_type": "K",
-            "type": "PDSE"
+            "space_type": "k",
+            "type": "pdse"
         }
 checksum:
     description: SHA256 checksum of the file after running zos_copy.
@@ -2802,7 +2802,7 @@ def run_module(module, arg_def):
 
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
-                dest_ds_type = dest_data_set.get("type")
+                dest_ds_type = dest_data_set.get("type").upper()
             elif executable:
                 """ When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
                 so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
@@ -2810,16 +2810,7 @@ def run_module(module, arg_def):
                 and LIBRARY is not in MVS_PARTITIONED frozen set."""
                 dest_ds_type = "PDSE"
 
-            if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
-                dest_has_asa_chars = True
-            elif not dest_exists and asa_text:
-                dest_has_asa_chars = True
-            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
-                dest_attributes = datasets.list_datasets(dest_name)[0]
-                if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
-                    dest_has_asa_chars = True
-
-            if dest_data_set and (dest_data_set.get('record_format', '') == 'FBA' or dest_data_set.get('record_format', '') == 'VBA'):
+            if dest_data_set and (dest_data_set.get('record_format', '') == 'fba' or dest_data_set.get('record_format', '') == 'vba'):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True

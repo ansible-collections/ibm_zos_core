@@ -332,7 +332,7 @@ def check_mvs_dataset(ds):
 
     Returns
     -------
-    list[bool,str]
+    tuple(bool,str)
         If the data set exists and it's type.
 
     Raises
@@ -367,7 +367,7 @@ def check_file(file):
 
     Returns
     -------
-    list[bool,bool,str]
+    tuple(bool,bool,str)
         If is USS file, MVS dataset, and the dataset type.
 
     Raises

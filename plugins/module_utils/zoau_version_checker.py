@@ -28,13 +28,13 @@ def is_zoau_version_higher_than(min_version_str):
 
     Parameters
     ----------
-        min_version_str : str
-            The minimal desired ZOAU version '#.#.#'.
+    min_version_str : str
+        The minimal desired ZOAU version '#.#.#'.
 
     Returns
     -------
-        bool
-            Whether ZOAU version found was high enough.
+    bool
+        Whether ZOAU version found was high enough.
     """
     if is_valid_version_string(min_version_str):
         # check zoau version on system (already a list)
@@ -87,13 +87,13 @@ def is_valid_version_string(version_str):
 
     Parameters
     ----------
-        min_version_str : str
-            String to be verified is in correct format.
+    min_version_str : str
+        String to be verified is in correct format.
 
     Returns
     -------
-        bool
-            Whether provided str is in correct format.
+    bool
+        Whether provided str is in correct format.
     """
 
     # split string into [major, minor, patch]
@@ -112,9 +112,9 @@ def get_zoau_version_str():
 
     Returns
     -------
-        list[int, int, int]
-            ZOAU version found in format [#,#,#]. There is a
-            provision for a 4th level eg "v1.2.0.1".
+    Union[int, int, int]
+        ZOAU version found in format [#,#,#]. There is a
+        provision for a 4th level eg "v1.2.0.1".
     """
     version_list = (
         ZOAU_API_VERSION.split('.')

@@ -418,26 +418,45 @@ def quotedString_double_quotes(string):
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
-    return string.replace('"', '\"')
+    return string.replace('"', '\\"')
 
 
-def execute_dmod(src, block, marker, force, encoding, module, ins_bef=None, ins_aft=None):
+def check_double_quotes(marker, ins_bef, ins_aft, block):
+    if marker:
+        if '"' in marker:
+            return True
+    if ins_bef:
+        if '"' in ins_bef:
+            return True
+    if ins_aft:
+        if '"' in ins_aft:
+            return True
+    if block:
+        if '"' in block:
+            return True
+    return False
+
+
+def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=None, ins_aft=None):
     block = block.replace('"', '\\"')
     force = "-f" if force else ""
     encoding = "-c {0}".format(encoding) if encoding else ""
     marker = "-m \"{0}\"".format(marker) if marker else ""
-    if ins_aft:
-        if ins_aft == "EOF":
-            opts = f'"$ a\\{block}" "{src}"'
-        else:
-            opts = f'-s -e "/{ins_aft}/a\\{block}/$" -e "$ a\\{block}" "{src}"'
-    elif ins_bef:
-        if ins_bef == "BOF":
-            opts = f' "1 i\\{block}" "{src}" '
-        else:
-            opts = f'-s -e "/{ins_bef}/i\\{block}/$" -e "$ a\\{block}" "{src}"'
+    if state:
+        if ins_aft:
+            if ins_aft == "EOF":
+                opts = f'"$ a\\{block}" "{src}"'
+            else:
+                opts = f'-s -e "/{ins_aft}/a\\{block}/$" -e "$ a\\{block}" "{src}"'
+        elif ins_bef:
+            if ins_bef == "BOF":
+                opts = f' "1 i\\{block}" "{src}" '
+            else:
+                opts = f'-s -e "/{ins_bef}/i\\{block}/$" -e "$ a\\{block}" "{src}"'
 
-    cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
+        cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
+    else:
+        cmd = """dmod -b {0} {1} {2} "//d" {4}""".format(force, encoding, marker, src)
 
     rc, stdout, stderr = module.run_command(cmd)
     cmd = clean_command(cmd)
@@ -614,11 +633,12 @@ def main():
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception as err:
             module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
+    double_quotes_exists = check_double_quotes(marker, ins_bef, ins_aft, block)
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        if '"' in block:
-            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, module=module,
+        if double_quotes_exists:
+            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, True, module=module,
                                    ins_bef=quotedString_double_quotes(ins_bef), ins_aft=quotedString_double_quotes(ins_aft))
             result['rc'] = rc
             result['cmd'] = cmd
@@ -627,9 +647,16 @@ def main():
         else:
             return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
-        return_content = absent(src, marker, encoding, force)
+        if double_quotes_exists:
+            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, False, module=module)
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to remove entry' if rc != 0 else ""
+        else:
+            return_content = absent(src, marker, encoding, force)
     # ZOAU 1.3.0 generate false positive working with double quotes (") the call generate distinct return when using and not
-    if '"' not in block:
+    if not double_quotes_exists:
         stdout = return_content.stdout_response
         stderr = return_content.stderr_response
         rc = return_content.rc

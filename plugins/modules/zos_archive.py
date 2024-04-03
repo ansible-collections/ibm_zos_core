@@ -214,7 +214,7 @@ options:
         description:
           - If the destination data set does not exist, this sets the unit of
             measurement to use when defining primary and secondary space.
-          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
         type: str
         choices:
           - k
@@ -356,7 +356,7 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        terse_pack: "SPACK"
+        terse_pack: "spack"
         use_adrdssu: True
 
 # Use a pattern to store
@@ -795,17 +795,17 @@ class MVSArchive(Archive):
             arguments.update(name=temp_ds)
 
         if record_format is None:
-            arguments.update(record_format="FB")
+            arguments.update(record_format="fb")
         if record_length is None:
             arguments.update(record_length=80)
         if type is None:
-            arguments.update(type="SEQ")
+            arguments.update(type="seq")
         if space_primary is None:
             arguments.update(space_primary=5)
         if space_secondary is None:
             arguments.update(space_secondary=3)
         if space_type is None:
-            arguments.update(space_type="M")
+            arguments.update(space_type="m")
         arguments.pop("self")
         changed = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
@@ -819,8 +819,8 @@ class MVSArchive(Archive):
             name {str} - name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
-        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
+        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
 
@@ -952,15 +952,19 @@ class MVSArchive(Archive):
                     dest_space += int(ds.total_space)
             # space unit returned from listings is bytes
             dest_space = math.ceil(dest_space / 1024)
-            self.dest_data_set.update(space_primary=dest_space, space_type="K")
+            self.dest_data_set.update(space_primary=dest_space, space_type="k")
 
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
         super(AMATerseArchive, self).__init__(module)
         self.pack_arg = module.params.get("format").get("format_options").get("terse_pack")
+        # We store pack_ard in uppercase because the AMATerse command requires
+        # it in uppercase.
         if self.pack_arg is None:
             self.pack_arg = "SPACK"
+        else:
+            self.pack_arg = self.pack_arg.upper()
 
     def add(self, src, archive):
         """
@@ -987,8 +991,8 @@ class AMATerseArchive(MVSArchive):
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
-                type="SEQ",
-                record_format="U",
+                type="seq",
+                record_format="u",
                 record_length=0,
                 tmp_hlq=self.tmphlq,
                 replace=True,
@@ -1006,8 +1010,8 @@ class AMATerseArchive(MVSArchive):
         dest, changed = self._create_dest_data_set(
             name=self.dest,
             replace=True,
-            type='SEQ',
-            record_format='FB',
+            type='seq',
+            record_format='fb',
             record_length=AMATERSE_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
             space_type=self.dest_data_set.get("space_type"))
@@ -1056,8 +1060,8 @@ class XMITArchive(MVSArchive):
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
-                type="SEQ",
-                record_format="U",
+                type="seq",
+                record_format="u",
                 record_length=0,
                 tmp_hlq=self.tmphlq,
                 replace=True,
@@ -1075,8 +1079,8 @@ class XMITArchive(MVSArchive):
         dest, changed = self._create_dest_data_set(
             name=self.dest,
             replace=True,
-            type='SEQ',
-            record_format='FB',
+            type='seq',
+            record_format='fb',
             record_length=XMIT_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
             space_type=self.dest_data_set.get("space_type"))
@@ -1226,7 +1230,7 @@ def run_module():
                         )
                     ),
                     default=dict(
-                        terse_pack="SPACK",
+                        terse_pack="spack",
                         xmit_log_data_set="",
                         use_adrdssu=False),
                 ),
@@ -1234,7 +1238,7 @@ def run_module():
             default=dict(
                 name="",
                 format_options=dict(
-                    terse_pack="SPACK",
+                    terse_pack="spack",
                     xmit_log_data_set="",
                     use_adrdssu=False
                 )
@@ -1249,7 +1253,7 @@ def run_module():
             required=False,
             options=dict(
                 name=dict(arg_type='str', required=False),
-                type=dict(arg_type='str', required=False, default="SEQ"),
+                type=dict(arg_type='str', required=False, default="seq"),
                 space_primary=dict(arg_type='int', required=False),
                 space_secondary=dict(
                     arg_type='int', required=False),

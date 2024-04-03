@@ -177,19 +177,19 @@ def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
 
     Parameters
     ----------
-        operator_cmd : str
-            Command to execute
-        timeout : int
-            Time until it stops whether it finished or not
-        *args : dict
-            Some arguments to pass on
-        **kwargs : dict
-            Some other arguments to pass on
+    operator_cmd : str
+        Command to execute.
+    timeout : int
+        Time until it stops whether it finished or not.
+    *args : dict
+        Some arguments to pass on.
+    **kwargs : dict
+        Some other arguments to pass on.
 
     Returns
     -------
-        tuple(int, str, str, int)
-            Return code, standard output, standard error and time elapsed from start to finish
+    tuple(int, str, str, int)
+        Return code, standard output, standard error and time elapsed from start to finish.
     """
     # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
     timeout_c = 100 * timeout_s
@@ -205,14 +205,18 @@ def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
 
 
 def run_module():
-    """Initialize the module
+    """Initialize the module.
 
     Raises
     ------
-        fail_json: An error ocurred while importing ZOAU.
-        fail_json: Expected response to be more than 2 lines.
-        fail_json: A non-zero return code was received.
-        fail_json: An unexpected error occurred.
+    fail_json
+        An error ocurred while importing ZOAU.
+    fail_json
+        Expected response to be more than 2 lines.
+    fail_json
+        A non-zero return code was received.
+    fail_json
+        An unexpected error occurred.
     """
     module_args = dict(
         cmd=dict(type="str", required=True),
@@ -292,13 +296,13 @@ def parse_params(params):
 
     Parameters
     ----------
-        params : dict
-            Parameters to parse
+    params : dict
+        Parameters to parse.
 
     Returns
     -------
-        dict
-            New parameters
+    dict
+        New parameters.
     """
     arg_defs = dict(
         cmd=dict(arg_type="str", required=True),
@@ -315,14 +319,14 @@ def run_operator_command(params):
 
     Parameters
     ----------
-        params : dict
-            Operator command parameters to pass into the function.
+    params : dict
+        Operator command parameters to pass into the function.
 
     Returns
     -------
-        dict
-            Return code, standard output, standard error, the cmd call
-            and time elapsed from beginning to end.
+    dict
+        Return code, standard output, standard error, the cmd call
+        and time elapsed from beginning to end.
     """
     AnsibleModuleHelper(argument_spec={})
 
@@ -367,17 +371,17 @@ class OperatorCmdError(Error):
 
     Parameters
     ----------
-        cmd : str
-            Command that failed.
-        rc : int
-            Return code.
-        message : str
-            Human readable string describing the exception.
+    cmd : str
+        Command that failed.
+    rc : int
+        Return code.
+    message : str
+        Human readable string describing the exception.
 
     Attributes
     ----------
-        msg : str
-            Human readable string describing the exception.
+    msg : str
+        Human readable string describing the exception.
     """
     def __init__(self, cmd, rc, message):
         self.msg = 'An error occurred executing the operator command "{0}", with RC={1} and response "{2}"'.format(

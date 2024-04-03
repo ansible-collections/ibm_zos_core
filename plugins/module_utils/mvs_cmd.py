@@ -28,18 +28,18 @@ def iebcopy(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IEBCOPY
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IEBCOPY.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IEBCOPY", cmd, dds, authorized)
 
@@ -51,18 +51,18 @@ def iebedit(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IEBEDIT
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IEBEDIT.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IEBEDIT", cmd, dds, authorized)
 
@@ -76,17 +76,17 @@ def iebcompr(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IEBCOMPR
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IEBCOMPR.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns:
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IEBCOMPR", cmd, dds, authorized)
 
@@ -98,18 +98,18 @@ def iebdg(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IEBDG
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IEBDG.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IEBDG", cmd, dds, authorized)
 
@@ -135,18 +135,18 @@ def iebgener(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IEBGENER
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IEBGENER.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IEBGENER", cmd, dds, authorized)
 
@@ -158,18 +158,18 @@ def idcams(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IDCAMS
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IDCAMS.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IDCAMS", cmd, dds, authorized)
 
@@ -184,18 +184,18 @@ def ikjeft01(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IKJEFT01
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IKJEFT01.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IKJEFT01", cmd, dds, authorized)
 
@@ -208,18 +208,18 @@ def iehlist(cmd, dds=None, authorized=False):
 
     Parameters
     ----------
-        cmd : str
-            The command to pass to IEHLIST
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    cmd : str
+        The command to pass to IEHLIST.
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("IEHLIST", cmd, dds, authorized)
 
@@ -233,16 +233,16 @@ def amaterse(cmd="", dds=None, authorized=False):
 
     Parameters
     ----------
-        dds : dict
-            Any DD statements to pass to MVS command
-        authorized : bool
-            Whether the command should be run in authorized
-            mode
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("AMATERSE", "", dds, authorized)
 
@@ -256,8 +256,8 @@ def adrdssu(cmd, dds=None, authorized=False):
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     return _run_mvs_command("ADRDSSU", cmd, dds, authorized)
 
@@ -267,23 +267,23 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
 
     Parameters
     ----------
-        pgm : str
-            The MVS program to run
-        cmd : str
-            The input command to pass to the program
+    pgm : str
+        The MVS program to run.
+    cmd : str
+        The input command to pass to the program.
 
     Keyword Parameters
     ------------------
-        dd : dict
-            The DD definitions required by the program. (Default {None})
-        authorized : bool
-            Indicates whether the MVS program should run
-            as authorized. (Default {False})
+    dd : dict
+        The DD definitions required by the program. (Default {None})
+    authorized : bool
+        Indicates whether the MVS program should run
+        as authorized. (Default {False})
 
     Returns
     -------
-        tuple(int, str, str)
-            A tuple of return code, stdout and stderr
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
     """
     module = AnsibleModuleHelper(argument_spec={})
     sysprint = "sysprint"

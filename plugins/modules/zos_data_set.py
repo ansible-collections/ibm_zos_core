@@ -744,7 +744,7 @@ def get_individual_data_set_parameters(params):
 
     Returns
     -------
-    list
+    Union[dict]
         A list of dicts where each list item
         represents one data set. Each dictionary holds the parameters
         (passed to the zos_data_set module) for the data set which it represents.
@@ -1062,13 +1062,19 @@ def volumes(contents, dependencies):
     dependencies : dict
         Properties of the contents.
 
-    Returns:
-        None -- If the state is absent or contents is none
-        str -- The volume name
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        The volume name.
 
-    Raises:
-        ValueError: Argument is invalid
-        ValueError: Volume is required when state is cataloged
+    Raises
+    ------
+    ValueError
+        Argument is invalid.
+    ValueError
+        Volume is required when state is cataloged.
     """
     if contents is None:
         if dependencies.get("state") == "cataloged":

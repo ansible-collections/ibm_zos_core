@@ -576,8 +576,8 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
     with open(dest_path + "/NEWMEM", "w") as infile:
         infile.write(DUMMY_DATA)
 
-    prev_timestamp = os.path.getmtime(full_path)
-    params = dict(src=pds_name_mem, dest="/tmp/", flat=True)
+    prev_timestamp = os.path.getmtime(dest_path)
+    params = dict(src=pds_name, dest="/tmp/", flat=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

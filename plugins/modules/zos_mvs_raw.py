@@ -2243,7 +2243,7 @@ def get_valid_encodings():
 
     Returns
     -------
-    list[str]
+    Union[str]
         List of all valid encodings on the system.
     """
     module = AnsibleModuleHelper(argument_spec={})
@@ -2326,7 +2326,7 @@ def volumes(contents, dependencies):
 
     Returns
     -------
-    list[str]
+    Union[str]
         The contents returned as a list of volumes.
 
     Raises
@@ -2440,7 +2440,7 @@ def status_group(contents, dependencies):
 
     Returns
     -------
-    list[str]
+    Union[str]
         The access group as expected by mvscmd.
     """
     if not contents:
@@ -2496,7 +2496,7 @@ def build_dd_statements(parms):
 
     Returns
     -------
-    list[DDStatement]
+    Union[DDStatement]
         List of DDStatement objects representing DD statements specified in module parms.
 
     Raises
@@ -2794,7 +2794,7 @@ class RawFileDefinition(FileDefinition):
         **kwargs
     ):
         """Wrapper around FileDefinition to contain information about
-        desired return contents. Initialize RawFileDefinition
+        desired return contents. Initialize RawFileDefinition.
 
         Parameters
         ----------
@@ -2840,7 +2840,7 @@ class RawFileDefinition(FileDefinition):
 class RawInputDefinition(InputDefinition):
     def __init__(self, content="", return_content=None, **kwargs):
         """Wrapper around InputDefinition to contain information about
-        desired return contents. Initialize RawInputDefinition
+        desired return contents. Initialize RawInputDefinition.
 
         Parameters
         ----------
@@ -2856,7 +2856,7 @@ class RawInputDefinition(InputDefinition):
 class RawOutputDefinition(OutputDefinition):
     def __init__(self, return_content=None, **kwargs):
         """Wrapper around OutputDefinition to contain information about
-        desired return contents. Initialize RawOutputDefinition
+        desired return contents. Initialize RawOutputDefinition.
 
         Parameters
         ----------
@@ -2872,7 +2872,7 @@ class RawOutputDefinition(OutputDefinition):
 class ReturnContent(object):
     def __init__(self, type=None, src_encoding=None, response_encoding=None):
         """Holds information about what type of content
-        should be returned for a particular DD, if any. Initialize ReturnContent
+        should be returned for a particular DD, if any. Initialize ReturnContent.
 
         Parameters
         ----------
@@ -3054,7 +3054,7 @@ def gather_backups(dd_statements):
 
     Returns
     -------
-    list[dict]
+    Union[dict]
         List of backups in format expected for response on module completion.
     """
     backups = []
@@ -3074,7 +3074,7 @@ def get_dd_backup(dd_statement):
 
     Returns
     -------
-    list[dict]
+    Union[dict]
         List of backups in format expected for response on module completion.
     """
     dd_backup = []
@@ -3117,7 +3117,7 @@ def get_concatenation_backup(dd_statement):
 
     Returns
     -------
-    list[dict]
+    Union[dict]
         The backup information of a single DD, in format expected for response on module completion.
         Response can contain multiple backups.
     """
@@ -3142,7 +3142,7 @@ def gather_output(dd_statements):
 
     Returns
     -------
-    list[dict]
+    Union[dict]
         The list of DD outputs, in format expected for response on module completion.
     """
     output = []
@@ -3161,7 +3161,7 @@ def get_dd_output(dd_statement):
 
     Returns
     -------
-    list[dict]
+    Union[dict]
         The output of a single DD, in format expected for response on module completion.
     """
     dd_output = []
@@ -3252,7 +3252,7 @@ def get_concatenation_output(dd_statement):
 
     Returns
     -------
-    list[dict]
+    Union[dict]
         The output of a single DD, in the format expected for response on module completion.
         Response can contain multiple outputs.
     """

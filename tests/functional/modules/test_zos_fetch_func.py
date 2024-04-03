@@ -560,23 +560,24 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
     pds_name = get_tmp_ds_name()
     dest_path = "/tmp/" + pds_name
     full_path = dest_path + "/MYDATA"
+    pds_name_mem = pds_name + "(MYDATA)"
     hosts.all.zos_data_set(
         name=pds_name,
         type="PDS",
         space_primary=5,
         space_type="M",
-        record_format="fba",
+        record_format="FBA",
         record_length=25,
     )
-    hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="MEMBER", replace="yes")
+    r = hosts.all.zos_data_set(name=pds_name_mem, type="MEMBER")
     os.mkdir(dest_path)
     with open(full_path, "w") as infile:
         infile.write(DUMMY_DATA)
     with open(dest_path + "/NEWMEM", "w") as infile:
         infile.write(DUMMY_DATA)
 
-    prev_timestamp = os.path.getmtime(dest_path)
-    params = dict(src=pds_name, dest="/tmp/", flat=True)
+    prev_timestamp = os.path.getmtime(full_path)
+    params = dict(src=pds_name_mem, dest="/tmp/", flat=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

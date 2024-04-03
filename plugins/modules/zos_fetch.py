@@ -339,7 +339,7 @@ class FetchHandler:
 
         Returns
         -------
-        list[int]
+        tuple(int,int,int)
             Total size, max_recl and rec_total.
 
         Raises
@@ -583,7 +583,7 @@ class FetchHandler:
 
         Parameters
         ----------
-        src . str
+        src : str
             Source of the dataset.
         is_binary : bool
             If is binary.

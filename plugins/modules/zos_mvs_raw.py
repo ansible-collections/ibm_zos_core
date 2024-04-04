@@ -96,16 +96,16 @@ options:
               - Maps to DSNTYPE on z/OS.
             type: str
             choices:
-              - library
-              - pds
-              - pdse
-              - large
-              - basic
-              - seq
-              - rrds
-              - esds
-              - lds
-              - ksds
+              - LIBRARY
+              - PDS
+              - PDSE
+              - LARGE
+              - BASIC
+              - SEQ
+              - RRDS
+              - ESDS
+              - LDS
+              - KSDS
           disposition:
             description:
               - I(disposition) indicates the status of a data set.
@@ -174,12 +174,12 @@ options:
                 using I(space_primary) and I(space_secondary).
             type: str
             choices:
-              - trk
-              - cyl
-              - b
-              - k
-              - m
-              - g
+              - TRK
+              - CYL
+              - B
+              - K
+              - M
+              - G
           space_primary:
             description:
               - The primary amount of space to allocate for a new data set.
@@ -325,11 +325,11 @@ options:
               - The format and characteristics of the records for new data set.
             type: str
             choices:
-              - u
-              - vb
-              - vba
-              - fb
-              - fba
+              - U
+              - VB
+              - VBA
+              - FB
+              - FBA
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -505,11 +505,11 @@ options:
                 a UNIX file would normally be treated as a stream of bytes.
             type: str
             choices:
-              - u
-              - vb
-              - vba
-              - fb
-              - fba
+              - U
+              - VB
+              - VBA
+              - FB
+              - FBA
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -717,16 +717,16 @@ options:
                       - Maps to DSNTYPE on z/OS.
                     type: str
                     choices:
-                      - library
-                      - pds
-                      - pdse
-                      - large
-                      - basic
-                      - seq
-                      - rrds
-                      - esds
-                      - lds
-                      - ksds
+                      - LIBRARY
+                      - PDS
+                      - PDSE
+                      - LARGE
+                      - BASIC
+                      - SEQ
+                      - RRDS
+                      - ESDS
+                      - LDS
+                      - KSDS
                   disposition:
                     description:
                       - I(disposition) indicates the status of a data set.
@@ -795,12 +795,12 @@ options:
                         using I(space_primary) and I(space_secondary).
                     type: str
                     choices:
-                      - trk
-                      - cyl
-                      - b
-                      - k
-                      - m
-                      - g
+                      - TRK
+                      - CYL
+                      - B
+                      - K
+                      - M
+                      - G
                   space_primary:
                     description:
                       - The primary amount of space to allocate for a new data set.
@@ -946,11 +946,11 @@ options:
                       - The format and characteristics of the records for new data set.
                     type: str
                     choices:
-                      - u
-                      - vb
-                      - vba
-                      - fb
-                      - fba
+                      - U
+                      - VB
+                      - VBA
+                      - FB
+                      - FBA
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1124,11 +1124,11 @@ options:
                         a UNIX file would normally be treated as a stream of bytes.
                     type: str
                     choices:
-                      - u
-                      - vb
-                      - vba
-                      - fb
-                      - fba
+                      - U
+                      - VB
+                      - VBA
+                      - FB
+                      - FBA
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1300,13 +1300,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1324,13 +1324,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1369,13 +1369,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1398,15 +1398,15 @@ EXAMPLES = r"""
           disposition: new
           replace: yes
           backup: yes
-          type: seq
+          type: SEQ
           space_primary: 5
           space_secondary: 1
-          space_type: m
+          space_type: M
           volumes:
             - "000000"
             - "111111"
             - "SCR002"
-          record_format: fb
+          record_format: FB
           return_content:
             type: text
       - dd_input:
@@ -1628,10 +1628,6 @@ ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 backups = []
 
 
-# Use of global tmphlq to keep coherent classes definitions
-g_tmphlq = ""
-
-
 def run_module():
     """Executes all module-related functions.
 
@@ -1651,7 +1647,7 @@ def run_module():
             type="str",
             choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
-        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
+        space_type=dict(type="str", choices=["TRK", "CYL", "B", "K", "M", "G"]),
         space_primary=dict(type="int"),
         space_secondary=dict(type="int"),
         volumes=dict(type="raw"),
@@ -1664,16 +1660,16 @@ def run_module():
         type=dict(
             type="str",
             choices=[
-                "library",
-                "pds",
-                "pdse",
-                "seq",
-                "basic",
-                "large",
-                "ksds",
-                "rrds",
-                "lds",
-                "esds",
+                "LIBRARY",
+                "PDS",
+                "PDSE",
+                "SEQ",
+                "BASIC",
+                "LARGE",
+                "KSDS",
+                "RRDS",
+                "LDS",
+                "ESDS",
             ],
         ),
         encryption_key_1=dict(
@@ -1695,7 +1691,7 @@ def run_module():
         key_length=dict(type="int", no_log=False),
         key_offset=dict(type="int", no_log=False),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1770,7 +1766,7 @@ def run_module():
         ),
         block_size=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1839,8 +1835,7 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
-            global g_tmphlq
-            g_tmphlq = parms.get("tmp_hlq")
+            tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
@@ -1852,6 +1847,7 @@ def run_module():
                 dd_statements=dd_statements,
                 authorized=authorized,
                 verbose=verbose,
+                tmp_hlq=tmphlq,
             )
             if program_response.rc != 0 and program_response.stderr:
                 raise ZOSRawError(
@@ -1894,7 +1890,7 @@ def parse_and_validate_args(params):
             type="str",
             choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
-        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
+        space_type=dict(type="str", choices=["TRK", "CYL", "B", "K", "M", "G"]),
         space_primary=dict(type="int"),
         space_secondary=dict(type="int"),
         volumes=dict(type=volumes),
@@ -1907,16 +1903,16 @@ def parse_and_validate_args(params):
         type=dict(
             type="str",
             choices=[
-                "library",
-                "pds",
-                "pdse",
-                "seq",
-                "basic",
-                "large",
-                "ksds",
-                "rrds",
-                "lds",
-                "esds",
+                "LIBRARY",
+                "PDS",
+                "PDSE",
+                "SEQ",
+                "BASIC",
+                "LARGE",
+                "KSDS",
+                "RRDS",
+                "LDS",
+                "ESDS",
             ],
         ),
         encryption_key_1=dict(
@@ -1940,7 +1936,7 @@ def parse_and_validate_args(params):
             type=key_offset, default=key_offset_default, dependencies=["type"]
         ),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1996,7 +1992,7 @@ def parse_and_validate_args(params):
         ),
         block_size=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
+        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2088,8 +2084,8 @@ def key_length(contents, dependencies):
     """
     if contents is None:
         return contents
-    if contents is not None and dependencies.get("type") != "ksds":
-        raise ValueError('key_length is only valid when "type=ksds".')
+    if contents is not None and dependencies.get("type") != "KSDS":
+        raise ValueError('key_length is only valid when "type=KSDS".')
     if not re.fullmatch(r"[0-9]+", str(contents)):
         raise ValueError(
             'Invalid argument "{0}" for type "key_length".'.format(str(contents))
@@ -2109,8 +2105,8 @@ def key_offset(contents, dependencies):
     """
     if contents is None:
         return contents
-    if contents is not None and dependencies.get("type") != "ksds":
-        raise ValueError('key_offset is only valid when "type=ksds".')
+    if contents is not None and dependencies.get("type") != "KSDS":
+        raise ValueError('key_offset is only valid when "type=KSDS".')
 
     if not re.fullmatch(r"[0-9]+", str(contents)):
         raise ValueError(
@@ -2131,9 +2127,9 @@ def key_length_default(contents, dependencies):
     """
     KEY_LENGTH = 5
     length = None
-    if contents is None and dependencies.get("type") == "ksds":
+    if contents is None and dependencies.get("type") == "KSDS":
         length = KEY_LENGTH
-    elif dependencies.get("type") == "ksds":
+    elif dependencies.get("type") == "KSDS":
         length = contents
     return length
 
@@ -2149,9 +2145,9 @@ def key_offset_default(contents, dependencies):
     """
     KEY_OFFSET = 0
     offset = None
-    if contents is None and dependencies.get("type") == "ksds":
+    if contents is None and dependencies.get("type") == "KSDS":
         offset = KEY_OFFSET
-    elif dependencies.get("type") == "ksds":
+    elif dependencies.get("type") == "KSDS":
         offset = contents
     return offset
 
@@ -2408,7 +2404,7 @@ def build_dd_statements(parms):
     dd_statements = []
     for dd in parms.get("dds"):
         dd_name = get_dd_name(dd)
-        dd = set_extra_attributes_in_dd(dd)
+        dd = set_extra_attributes_in_dd(dd, parms)
         data_definition = build_data_definition(dd)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
@@ -2444,26 +2440,27 @@ def get_dd_name(dd):
     return dd_name
 
 
-def set_extra_attributes_in_dd(dd):
+def set_extra_attributes_in_dd(dd, parms):
     """
-    Set any extra attributes in dds like in global g_tmphlq.
+    Set any extra attributes in dds like in global tmp_hlq.
     Args:
         dd (dict): A single DD parm as specified in module parms.
 
     Returns:
         dd (dict): A single DD parm as specified in module parms.
     """
+    tmphlq = parms.get("tmp_hlq")
     if dd.get("dd_data_set"):
-        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
+        dd.get("dd_data_set")["tmphlq"] = tmphlq
     elif dd.get("dd_input"):
-        dd.get("dd_input")["tmphlq"] = g_tmphlq
+        dd.get("dd_input")["tmphlq"] = tmphlq
     elif dd.get("dd_output"):
-        dd.get("dd_output")["tmphlq"] = g_tmphlq
+        dd.get("dd_output")["tmphlq"] = tmphlq
     elif dd.get("dd_vio"):
-        dd.get("dd_vio")["tmphlq"] = g_tmphlq
+        dd.get("dd_vio")["tmphlq"] = tmphlq
     elif dd.get("dd_concat"):
         for single_dd in dd.get("dd_concat").get("dds", []):
-            set_extra_attributes_in_dd(single_dd)
+            set_extra_attributes_in_dd(single_dd, parms)
     return dd
 
 
@@ -2572,6 +2569,7 @@ class RawDatasetDefinition(DatasetDefinition):
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
+        self.tmphlq = tmphlq
         primary_unit = space_type
         secondary_unit = space_type
         key_label1 = None
@@ -2698,7 +2696,6 @@ class RawFileDefinition(FileDefinition):
         )
 
 
-# TODO: potentially extend the available parameters to end user
 class RawInputDefinition(InputDefinition):
     """Wrapper around InputDefinition to contain information about
     desired return contents.
@@ -2707,7 +2704,7 @@ class RawInputDefinition(InputDefinition):
         InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, content="", return_content=None, **kwargs):
+    def __init__(self, content="", return_content=None, tmphlq="", **kwargs):
         """Initialize RawInputDefinition
 
         Args:
@@ -2715,7 +2712,7 @@ class RawInputDefinition(InputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__(content=content)
+        super().__init__(content=content, tmphlq=tmphlq)
 
 
 class RawOutputDefinition(OutputDefinition):
@@ -2726,7 +2723,7 @@ class RawOutputDefinition(OutputDefinition):
         OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, return_content=None, **kwargs):
+    def __init__(self, return_content=None, tmphlq="", **kwargs):
         """Initialize RawOutputDefinition
 
         Args:
@@ -2734,7 +2731,7 @@ class RawOutputDefinition(OutputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__()
+        super().__init__(tmphlq=tmphlq)
 
 
 class ReturnContent(object):
@@ -2759,28 +2756,6 @@ class ReturnContent(object):
         self.type = type
         self.src_encoding = src_encoding
         self.response_encoding = response_encoding
-
-
-def to_bytes(size, unit):
-    """Convert sizes of various units to bytes.
-
-    Args:
-        size (int): The size to convert.
-        unit (str): The unit of size.
-
-    Returns:
-        int: The size converted to bytes.
-    """
-    num_bytes = 0
-    if unit == "b":
-        num_bytes = size
-    elif unit == "k":
-        num_bytes = size * 1024
-    elif unit == "m":
-        num_bytes = size * 1048576
-    elif unit == "g":
-        num_bytes = size * 1073741824
-    return num_bytes
 
 
 def rename_parms(parms, name_map):
@@ -2839,7 +2814,7 @@ def data_set_exists(name, volumes=None):
 
 
 def run_zos_program(
-    program, parm="", dd_statements=None, authorized=False, verbose=False
+    program, parm="", dd_statements=None, authorized=False, verbose=False, tmp_hlq=None
 ):
     """Run a program on z/OS.
 
@@ -2848,6 +2823,7 @@ def run_zos_program(
         parm (str, optional): Additional argument string if required. Defaults to "".
         dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
         authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
+        tmp_hlq (str, optional): Arguments overwrite variable tmp_hlq
 
     Returns:
         MVSCmdResponse: Holds the response information for program execution.
@@ -2857,11 +2833,11 @@ def run_zos_program(
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
         )
     else:
         response = MVSCmd.execute(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
         )
     return response
 

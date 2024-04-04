@@ -228,6 +228,17 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        The given chdir does not exist on the system.
+    fail_json
+        The script terminated with an error.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             chdir=dict(type='str', required=False),

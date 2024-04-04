@@ -152,7 +152,7 @@ class EncodeUtils(object):
 
         Parameters
         ---------
-        path : str
+        encoding : str
             The encoding.
 
         Returns
@@ -238,10 +238,10 @@ class EncodeUtils(object):
 
         Parameters
         ----------
-        size : str
-            The size of the data set.
         lrecl : int
             The record length of the data set.
+        space_u : str
+            The size of the data set.
 
         Returns
         -------

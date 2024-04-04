@@ -317,14 +317,14 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
 
 - name: Unmount a filesystem.
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: unmounted
     unmount_opts: REMOUNT
     opts: same
@@ -333,7 +333,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     mount_opts: RO
 
@@ -341,7 +341,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     persistent:
         data_store: SYS1.PARMLIB(BPXPRMAA)
@@ -351,7 +351,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     persistent:
         data_store: SYS1.PARMLIB(BPXPRMAA)
@@ -363,7 +363,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     allow_uid: no
 
@@ -371,7 +371,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     opts: nowait
 
@@ -379,7 +379,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     mount_opts: NOSECURITY
 
@@ -387,7 +387,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     automove: AUTOMOVE
     automove_list: I,DEV1,DEV2,DEV3,DEV9
@@ -396,7 +396,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     automove: AUTOMOVE
     automove_list: EXCLUDE,DEV4,DEV5,DEV6,DEV7
@@ -854,7 +854,7 @@ def run_module(module, arg_def):
                 src, path, fs_type
             )
         )
-        if "RO" in mount_opts:
+        if "ro" in mount_opts:
             subcmd = "READ"
         else:
             subcmd = "RDWR"
@@ -882,14 +882,14 @@ def run_module(module, arg_def):
             fullcmd = fullcmd + " NOSETUID"
             parmtext = parmtext + "\n      NOSETUID"
 
-        if "NOWAIT" in mount_opts:
+        if "nowait" in mount_opts:
             fullcmd = fullcmd + " NOWAIT"
             parmtext = parmtext + "\n      NOWAIT"
         else:
             fullcmd = fullcmd + " WAIT"
             parmtext = parmtext + "\n      WAIT"
 
-        if "NOSECURITY" in mount_opts:
+        if "nosecurity" in mount_opts:
             fullcmd = fullcmd + " NOSECURITY"
             parmtext = parmtext + "\n      NOSECURITY"
         else:

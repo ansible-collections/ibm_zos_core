@@ -204,7 +204,7 @@ options:
         description:
           - If the destination data set does not exist, this sets the unit of
             measurement to use when defining primary and secondary space.
-          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
         type: str
         choices:
           - k
@@ -217,7 +217,7 @@ options:
         description:
           - If the destination data set does not exist, this sets the format of
             the
-            data set. (e.g C(FB))
+            data set. (e.g C(fb))
           - Choices are case-sensitive.
         required: false
         choices:
@@ -249,15 +249,15 @@ options:
       key_offset:
         description:
           - The key offset to use when creating a KSDS data set.
-          - I(key_offset) is required when I(type=KSDS).
-          - I(key_offset) should only be provided when I(type=KSDS)
+          - I(key_offset) is required when I(type=ksds).
+          - I(key_offset) should only be provided when I(type=ksds)
         type: int
         required: false
       key_length:
         description:
           - The key length to use when creating a KSDS data set.
-          - I(key_length) is required when I(type=KSDS).
-          - I(key_length) should only be provided when I(type=KSDS)
+          - I(key_length) is required when I(type=ksds).
+          - I(key_length) should only be provided when I(type=ksds)
         type: int
         required: false
       sms_storage_class:
@@ -695,11 +695,11 @@ class MVSUnarchive(Unarchive):
             temp_ds = datasets.tmp_name(high_level_qualifier=hlq)
             arguments.update(name=temp_ds)
         if record_format is None:
-            arguments.update(record_format="FB")
+            arguments.update(record_format="fb")
         if record_length is None:
             arguments.update(record_length=80)
         if type is None:
-            arguments.update(type="SEQ")
+            arguments.update(type="seq")
         if space_primary is None:
             arguments.update(space_primary=self._compute_dest_data_set_size())
         arguments.pop("self")
@@ -802,8 +802,8 @@ class MVSUnarchive(Unarchive):
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.src, temp_ds)
         else:
-            temp_ds, rc = self._create_dest_data_set(type="SEQ",
-                                                     record_format="U",
+            temp_ds, rc = self._create_dest_data_set(type="seq",
+                                                     record_format="u",
                                                      record_length=0,
                                                      tmp_hlq=self.tmphlq,
                                                      replace=True)
@@ -823,7 +823,7 @@ class MVSUnarchive(Unarchive):
         self._get_restored_datasets(out)
 
     def list_archive_content(self):
-        temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+        temp_ds, rc = self._create_dest_data_set(type="seq", record_format="u", record_length=0, tmp_hlq=self.tmphlq, replace=True)
         self.unpack(self.src, temp_ds)
         self._list_content(temp_ds)
         datasets.delete(temp_ds)
@@ -1107,7 +1107,7 @@ def run_module():
             required=False,
             options=dict(
                 name=dict(arg_type='str', required=False),
-                type=dict(arg_type='str', required=False, default="SEQ"),
+                type=dict(arg_type='str', required=False, default="seq"),
                 space_primary=dict(arg_type='int', required=False),
                 space_secondary=dict(
                     arg_type='int', required=False),

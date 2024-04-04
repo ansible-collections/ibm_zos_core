@@ -455,10 +455,16 @@ STATE_INCOMPLETE = 'incomplete'
 def get_archive_handler(module):
     """
     Return the proper archive handler based on archive format.
-    Arguments:
-        format: {str}
-    Returns:
-        Archive: {Archive}
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        Ansible Module.
+
+    Returns
+    -------
+    Archive : Archive
+        The archive format for the module.
 
     """
     format = module.params.get("format").get("name")
@@ -472,10 +478,36 @@ def get_archive_handler(module):
 
 
 def strip_prefix(prefix, string):
+    """Strip prefix.
+
+    Parameters
+    ---------
+    prefix : str
+        Prefix to take out of the string.
+    string : str
+        String with the prefix.
+
+    Returns
+    -------
+    str
+        Given string without the prefix.
+    """
     return string[len(prefix):] if string.startswith(prefix) else string
 
 
 def expand_paths(paths):
+    """Expand paths.
+
+    Parameters
+    ----------
+    paths : list[str]
+        List with the paths.
+
+    Returns
+    -------
+    Union[str]
+        Expanded path.
+    """
     expanded_path = []
     for path in paths:
         if '*' in path or '?' in path:
@@ -487,11 +519,52 @@ def expand_paths(paths):
 
 
 def is_archive(path):
+    """If a path refers to an archive.
+
+    Parameters
+    ----------
+    path : str
+        The path to the archive.
+
+    Returns
+    -------
+    bool
+        If is archive.
+    """
     return re.search(r'\.(tar|tar\.(gz|bz2|xz)|tgz|tbz2|zip|gz|bz2|xz|pax)$', os.path.basename(path), re.IGNORECASE)
 
 
 class Archive():
     def __init__(self, module):
+        """
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            Ansible module to get parameters from.
+
+        Attributes
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        dest : 
+        format : 
+        remove : 
+        changed : 
+        errors : 
+        found : 
+        targets : 
+        archived : 
+        not_found : 
+        force : 
+        sources : 
+        arcroot : 
+        expanded_sources : 
+        expanded_exclude_sources : 
+        dest_state : 
+        state : 
+        xmit_log_data_set : 
+        """
         self.module = module
         self.dest = module.params['dest']
         self.format = module.params.get("format").get("name")
@@ -552,6 +625,13 @@ class Archive():
 
     @property
     def result(self):
+        """Result.
+
+        Returns
+        -------
+        dict
+            Arguments showing the result.
+        """
         return {
             'archived': self.archived,
             'dest': self.dest,

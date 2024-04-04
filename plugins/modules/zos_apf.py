@@ -312,6 +312,30 @@ DS_TYPE = ['PS', 'PO']
 
 
 def backupOper(module, src, backup, tmphlq=None):
+    """Backup operations
+
+    Parameters
+    ----------
+    module : AnsibleModule
+    src : str
+        Source of the file.
+    backup : str
+        Name for the backup file.
+    tmphlq : str
+        The name of the temporary high level qualifier to use.
+
+    Returns
+    -------
+    str
+        Backup name.
+
+    Raises
+    ------
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Creating backup has failed.
+    """
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
@@ -336,6 +360,19 @@ def backupOper(module, src, backup, tmphlq=None):
 
 
 def main():
+    """Initialize the module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Marker length may not exceed 72 characters.
+    fail_json
+        library is required.
+    fail_json
+        An exception occurred.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             library=dict(

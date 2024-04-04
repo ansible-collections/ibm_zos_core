@@ -83,27 +83,22 @@ class EncodeUtils(object):
     def __init__(self):
         """Call the coded character set conversion utility iconv
         to convert a USS file from one coded character set to another.
-
-        Parameters
-        ----------
-        module : AnsibleModule
-            The AnsibleModule object from currently running module.
         """
         self.module = AnsibleModuleHelper(argument_spec={})
         self.tmphlq = None
 
     def _validate_data_set_name(self, ds):
-        """Validate data set name.
+        """Validate data set name using BetterArgParser.
 
         Parameters
         ----------
         ds : str
-            The source dataset.
+            The source data set name.
 
         Returns
         -------
         str
-            Parsed dataset.
+            Parsed data set name.
         """
         arg_defs = dict(
             ds=dict(arg_type="data_set"),
@@ -113,7 +108,7 @@ class EncodeUtils(object):
         return parsed_args.get("ds")
 
     def _validate_path(self, path):
-        """Validate path.
+        """Validate path using BetterArgParser.
 
         Parameters
         ----------
@@ -133,7 +128,7 @@ class EncodeUtils(object):
         return parsed_args.get("path")
 
     def _validate_data_set_or_path(self, path):
-        """Validate data set or path.
+        """Validate data set or path using BetterArgParser.
 
         Parameters
         ----------
@@ -153,7 +148,7 @@ class EncodeUtils(object):
         return parsed_args.get("path")
 
     def _validate_encoding(self, encoding):
-        """Validate encoding.
+        """Validate encoding using BetterArgParser.
 
         Parameters
         ---------
@@ -302,12 +297,12 @@ class EncodeUtils(object):
 
         Parameters
         ----------
-        from_code_set : str
-            The source code set of the string.
-        to_code_set : str
-            The destination code set for the string.
         src : str
             The input string content.
+        from_encoding : str
+            The source code set of the string.
+        to_encoding : str
+            The destination code set for the string.
 
         Returns
         -------
@@ -334,14 +329,14 @@ class EncodeUtils(object):
 
         Parameters
         ----------
-        from_code : str
-            The source code set of the input file.
-        to_code : str
-            The destination code set for the output file.
         src : str
             The input file name, it should be a uss file.
         dest : str
             The output file name, it should be a uss file.
+        from_code : str
+            The source code set of the input file.
+        to_code : str
+            The destination code set for the output file.
 
         Returns
         -------
@@ -402,14 +397,14 @@ class EncodeUtils(object):
 
         Parameters
         ----------
-        from_code : str
-            The source code set of the input path.
-        to_code : str
-            The destination code set for the output path.
         src : str
             The input uss path or a file.
         dest : str
             The output uss path or a file.
+        from_code : str
+            The source code set of the input path.
+        to_code : str
+            The destination code set for the output path.
 
         Returns
         -------
@@ -680,7 +675,6 @@ class TaggingError(Exception):
         super(TaggingError, self).__init__(self.msg)
 
 
-# Verify e variable refer to encoding
 class MoveFileError(Exception):
     def __init__(self, src, dest, e):
         """Error while moving a file.
@@ -692,7 +686,7 @@ class MoveFileError(Exception):
         dest : str
             To where the file moves.
         e : str
-            Encoding.
+            Exception message.
 
         Attributes
         ----------

@@ -113,63 +113,89 @@ class DataSet(object):
     ):
         """Creates data set if it does not already exist.
 
-        Args:
-            name (str): The name of the dataset
-            replace (bool) -- Used to determine behavior when data set already exists.
-            type (str, optional): The type of dataset.
-                    Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                    Defaults to None.
-            space_primary (int, optional): The amount of primary space to allocate for the dataset.
-                    Defaults to None.
-            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-                    Defaults to None.
-            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
-                    Defaults to None.
-            record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: F, FB, VB, FBA, VBA, U.
-                    Defaults to None.
-            record_length (int, optional) The length, in bytes, of each record in the data set.
-                    Defaults to None.
-            block_size (int, optional): The block size to use for the data set.
-                    Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
-                    Defaults to None.
-            key_length (int, optional): The key length of a record.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                    in each logical record of a the specified VSAM data set.
-                    If the key is at the beginning of the logical record, the offset is zero.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset.
-                    Required for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            volumes (Union[str, list[str]], optional): A list of volume serials.
-                    When providing multiple volumes, processing will begin with
-                    the first volume in the provided list. Offline volumes are not considered.
-                    Volumes can always be provided when not using SMS.
-                    When using SMS, volumes can be provided when the storage class being used
-                    has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
-                    Defaults to None.
-            tmp_hlq (str, optional): High level qualifier for temporary datasets.
-            force (bool, optional): Used to determine behavior when performing member operations on a pdse.
-                    Defaults to None.
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        replace : bool
+            Used to determine behavior when data set already exists.
+        type : str, optional
+            The type of dataset.
+            Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
+            Defaults to None.
+        space_primary : int, optional
+            The amount of primary space to allocate for the dataset.
+            Defaults to None.
+        space_secondary : int, optional
+            The amount of secondary space to allocate for the dataset.
+            Defaults to None.
+        space_type : str, optional
+            The unit of measurement to use when defining primary and secondary space.
+            Defaults to None.
+        record_format : str, optional
+            The record format to use for the dataset.
+            Valid options are: F, FB, VB, FBA, VBA, U.
+            Defaults to None.
+        record_length : int, optional
+            The length, in bytes, of each record in the data set.
+            Defaults to None.
+        block_size : int, optional
+            The block size to use for the data set.
+            Defaults to None.
+        directory_blocks : int, optional
+            The number of directory blocks to allocate to the data set.
+            Defaults to None.
+        key_length : int, optional
+            The key length of a record.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        key_offset : int, optional
+            The key offset is the position of the first byte of the key
+            in each logical record of a the specified VSAM data set.
+            If the key is at the beginning of the logical record, the offset is zero.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        sms_storage_class : str, optional
+            The storage class for an SMS-managed dataset.
+            Required for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        sms_data_class : str, optional
+            The data class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        sms_management_class : str, optional
+            The management class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        volumes : Union[str, list[str]], optional
+            A list of volume serials.
+            When providing multiple volumes, processing will begin with
+            the first volume in the provided list. Offline volumes are not considered.
+            Volumes can always be provided when not using SMS.
+            When using SMS, volumes can be provided when the storage class being used
+            has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
+            Defaults to None.
+        tmp_hlq : str, optional
+            High level qualifier for temporary datasets.
+        force : bool, optional
+            Used to determine behavior when performing member operations on a PDSE.
+            Defaults to None.
 
-        Returns:
-            bool -- Indicates if changes were made.
+        Returns
+        -------
+        bool
+            Indicates if changes were made.
+
+        Raises
+        ------
+        DatasetCreateError
+            When data set creation fails.
         """
         arguments = locals()
         arguments.pop("replace", None)
@@ -204,11 +230,17 @@ class DataSet(object):
     def ensure_absent(name, volumes=None):
         """Deletes provided data set if it exists.
 
-        Arguments:
-            name (str) -- The name of the data set to ensure is absent.
-            volumes (list[str]) -- The volumes the data set may reside on.
-        Returns:
-            changed (bool) -- Indicates if changes were made.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to ensure is absent.
+        volumes : list[str]
+            The volumes the data set may reside on.
+
+        Returns
+        -------
+        bool
+            Indicates if changes were made.
         """
         changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes)
         return changed
@@ -218,13 +250,18 @@ class DataSet(object):
     def ensure_member_present(name, replace=False):
         """Creates data set member if it does not already exist.
 
-        Arguments:
-            name (str) -- The name of the data set to ensure is present.
-            replace (bool) -- Used to determine behavior when data set already
-        exists.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to ensure is present.
+        replace : bool
+            Used to determine behavior when data set already
+            exists.
 
-        Returns:
-            bool -- Indicates if changes were made.
+        Returns
+        -------
+        bool
+            Indicates if changes were made.
         """
         if DataSet.data_set_member_exists(name):
             if not replace:
@@ -236,7 +273,18 @@ class DataSet(object):
     @staticmethod
     def ensure_member_absent(name, force=False):
         """Deletes provided data set member if it exists.
-        Returns a boolean indicating if changes were made."""
+        Returns a boolean indicating if changes were made.
+
+        Parameters
+        ----------
+        force : bool
+            Mode to execute.
+
+        Returns
+        -------
+        bool
+            True if the data set member exists.
+        """
         if DataSet.data_set_member_exists(name):
             DataSet.delete_member(name, force)
             return True
@@ -247,12 +295,17 @@ class DataSet(object):
         """Ensure a data set is cataloged. Data set can initially
         be in cataloged or uncataloged state when this function is called.
 
-        Arguments:
-            name (str) -- The data set name to ensure is cataloged.
-            volume (str) -- The volume on which the data set should exist.
+        Parameters
+        ----------
+        name : str
+            The data set name to ensure is cataloged.
+        volume : str
+            The volume on which the data set should exist.
 
-        Returns:
-            bool -- If changes were made.
+        Returns
+        -------
+        bool
+            If changes were made.
         """
         if DataSet.data_set_cataloged(name, None):
             return False
@@ -269,11 +322,15 @@ class DataSet(object):
         """Ensure a data set is uncataloged. Data set can initially
         be in cataloged or uncataloged state when this function is called.
 
-        Arguments:
-            name (str) -- The data set name to ensure is uncataloged.
+        Parameters
+        ----------
+        name : str
+            The data set name to ensure is uncataloged.
 
-        Returns:
-            bool -- If changes were made.
+        Returns
+        -------
+        bool
+            If changes were made.
         """
         if DataSet.data_set_cataloged(name):
             DataSet.uncatalog(name)
@@ -288,21 +345,30 @@ class DataSet(object):
         and VSAM data sets. If `ds_name` has a member (i.e., "DATASET(member)"),
         it will be shortened to just the partitioned data set name.
 
-        Arguments:
-            ds_name {str} -- The name of the data set to allocate. If the ds_name
+        Parameters
+        ----------
+        ds_name : str
+            The name of the data set to allocate. If the ds_name
             is a partitioned member e.g. hlq.llq.ds(mem), only the data set name
-            must be used. See extract_dsname(ds_name) in data_set.py
-            model {str} -- The name of the data set whose allocation parameters
-            should be used to allocate the new data set 'ds_name'
-            executable {bool} -- Whether the new data set should support executables
-            asa_text {bool} -- Whether the new data set should support ASA control
-            characters (have record format FBA)
-            vol {str} -- The volume where data set should be allocated
+            must be used. See extract_dsname(ds_name) in data_set.py.
+        model : str
+            The name of the data set whose allocation parameters
+            should be used to allocate the new data set 'ds_name'.
+        executable : bool
+            Whether the new data set should support executables.
+        asa_text : bool
+            Whether the new data set should support ASA control
+            characters (have record format FBA).
+        vol : str
+            The volume where data set should be allocated.
 
-        Raise:
-            NonExistentSourceError: When the model data set does not exist.
-            MVSCmdExecError: When the call to IKJEFT01 to allocate the
-                            data set fails.
+        Raise
+        -----
+        NonExistentSourceError
+            When the model data set does not exist.
+        MVSCmdExecError
+            When the call to IKJEFT01 to allocate the
+            data set fails.
         """
         if not DataSet.data_set_exists(model):
             raise DatasetNotFoundError(model)
@@ -348,11 +414,17 @@ class DataSet(object):
     def data_set_cataloged(name, volumes=None):
         """Determine if a data set is in catalog.
 
-        Arguments:
-            name (str) -- The data set name to check if cataloged.
+        Parameters
+        ----------
+        name : str
+            The data set name to check if cataloged.
+        volume : str
+            The volume the data set may reside on.
 
-        Returns:
-            bool -- If data is is cataloged.
+        Returns
+        -------
+        bool
+            If data is is cataloged.
         """
 
         name = name.upper()
@@ -376,10 +448,16 @@ class DataSet(object):
     @staticmethod
     def data_set_cataloged_volume_list(name):
         """Get the volume list for a cataloged dataset name.
-        Arguments:
-            name (str) -- The data set name to check if cataloged.
-        Returns:
-            list{str} -- A list of volumes where the dataset is cataloged.
+
+        Parameters
+        ----------
+        name : str
+            The data set name to check if cataloged.
+
+        Returns
+        -------
+        Union[str]
+            A list of volumes where the dataset is cataloged.
         """
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
@@ -404,12 +482,17 @@ class DataSet(object):
         This will check the catalog in addition to
         the volume table of contents.
 
-        Arguments:
-            name (str) -- The data set name to check if exists.
-            volume (str) -- The volume the data set may reside on.
+        Parameters
+        ----------
+        name : str
+            The data set name to check if exists.
+        volume : str
+            The volume the data set may reside on.
 
-        Returns:
-            bool -- If data is found.
+        Returns
+        -------
+        bool
+            If data is found.
         """
         if DataSet.data_set_cataloged(name):
             return True
@@ -421,11 +504,15 @@ class DataSet(object):
     def data_set_member_exists(name):
         """Checks for existence of data set member.
 
-        Arguments:
-            name (str) -- The data set name including member.
+        Parameters
+        ----------
+        name : str
+            The data set name including member.
 
-        Returns:
-            bool -- If data set member exists.
+        Returns
+        -------
+        bool
+            If data set member exists.
         """
         module = AnsibleModuleHelper(argument_spec={})
         rc, stdout, stderr = module.run_command(
@@ -439,12 +526,17 @@ class DataSet(object):
         """Checks for the existence of members from a source data set in
         a destination data set.
 
-        Arguments:
-            src (str) -- The source data set name. The name can contain a wildcard pattern.
-            dest (str) -- The destination data set name.
+        Parameters
+        ----------
+        src : str
+            The source data set name. The name can contain a wildcard pattern.
+        dest : str
+            The destination data set name.
 
-        Returns:
-            bool -- If at least one of the members in src exists in dest.
+        Returns
+        -------
+        bool
+            If at least one of the members in src exists in dest.
         """
         src_members = datasets.list_members(src)
 
@@ -459,11 +551,15 @@ class DataSet(object):
         """Creates a member name for a partitioned data set by taking up to the
         first 8 characters from a filename without its file extension
 
-        Arguments:
-            file_name (str) -- A file name that can include a file extension.
+        Parameters
+        ----------
+        file_name : str
+            A file name that can include a file extension.
 
-        Returns:
-            str -- Member name constructed from the file name.
+        Returns
+        -------
+        str
+            Member name constructed from the file name.
         """
         # Removing the file extension.
         member_name = path.splitext(file_name)[0]
@@ -478,12 +574,17 @@ class DataSet(object):
         destination data set. The file names get converted to the form they
         would take when copied into a partitioned data set.
 
-        Arguments:
-            src (str) -- USS path to a file or a directory.
-            dest (str) -- Name of the destination data set.
+        Parameters
+        ----------
+        src : str
+            USS path to a file or a directory.
+        dest : str
+            Name of the destination data set.
 
-        Returns:
-            bool -- If at least one of the members in src exists in dest.
+        Returns
+        -------
+        bool
+            If at least one of the members in src exists in dest.
         """
         if path.isfile(src):
             files = [path.basename(src)]
@@ -502,16 +603,23 @@ class DataSet(object):
     def data_set_volume(name):
         """Checks the volume where a data set is located.
 
-        Arguments:
-            name (str) -- The name of the data set.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
 
-        Returns:
-            str -- Name of the volume where the data set is.
+        Returns
+        -------
+        str
+            Name of the volume where the data set is.
 
-        Raises:
-            DatasetNotFoundError: When data set cannot be found on the system.
-            DatasetVolumeError: When the function is unable to parse the value
-                                of VOLSER.
+        Raises
+        ------
+        DatasetNotFoundError
+            When data set cannot be found on the system.
+        DatasetVolumeError
+            When the function is unable to parse the value
+            of VOLSER.
         """
         data_set_information = datasets.list_datasets(name)
 
@@ -535,15 +643,21 @@ class DataSet(object):
     def data_set_type(name, volume=None):
         """Checks the type of a data set, data sets must be cataloged.
 
-        Arguments:
-            name (str) -- The name of the data set.
-            volume (str) -- The volume the data set may reside on.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        volume : str
+            The volume the data set may reside on.
 
-        Returns:
-            str -- The type of the data set (one of "PS", "PO", "DA", "KSDS",
-                    "ESDS", "LDS" or "RRDS").
-            None -- If the data set does not exist or ZOAU is not able to determine
-                    the type.
+        Returns
+        -------
+        str
+            The type of the data set (one of "PS", "PO", "DA", "KSDS",
+            "ESDS", "LDS" or "RRDS").
+        None
+            If the data set does not exist or ZOAU is not able to determine
+            the type.
         """
         if not DataSet.data_set_exists(name, volume):
             return None
@@ -580,11 +694,20 @@ class DataSet(object):
     def _get_listcat_data(name):
         """Runs IDCAMS to get the DATA information associated with a data set.
 
-        Arguments:
-            name (str) -- Name of the data set.
+        Parameters
+        ----------
+        name : str
+            Name of the data set.
 
-        Returns:
-            str -- Standard output from IDCAMS.
+        Returns
+        -------
+        str
+            Standard output from IDCAMS.
+
+        Raises
+        ------
+        MVSCmdExecError
+            When IDCAMS fails to get the data.
         """
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
@@ -602,12 +725,17 @@ class DataSet(object):
     def is_empty(name, volume=None):
         """Determines whether a data set is empty.
 
-        Arguments:
-            name (str) -- The name of the data set.
-            volume (str) -- The volume where the data set resides.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        volume : str
+            The volume where the data set resides.
 
-        Returns:
-            bool -- Whether the data set is empty or not.
+        Returns
+        -------
+        bool
+            Whether the data set is empty or not.
         """
         if not DataSet.data_set_exists(name, volume):
             raise DatasetNotFoundError(name)
@@ -627,11 +755,15 @@ class DataSet(object):
     def _pds_empty(name):
         """Determines if a partitioned data set is empty.
 
-        Arguments:
-            name (str) -- The name of the PDS/PDSE.
+        Parameters
+        ----------
+        name : str
+            The name of the PDS/PDSE.
 
-        Returns:
-            bool - If PDS/PDSE is empty.
+        Returns
+        -------
+        bool
+            If PDS/PDSE is empty.
             Returns True if it is empty. False otherwise.
         """
         module = AnsibleModuleHelper(argument_spec={})
@@ -644,11 +776,15 @@ class DataSet(object):
     def _vsam_empty(name):
         """Determines if a VSAM data set is empty.
 
-        Arguments:
-            name (str) -- The name of the VSAM data set.
+        Parameters
+        ----------
+        name : str
+            The name of the VSAM data set.
 
-        Returns:
-            bool - If VSAM data set is empty.
+        Returns
+        -------
+        bool
+            If VSAM data set is empty.
             Returns True if VSAM data set exists and is empty.
             False otherwise.
         """
@@ -670,13 +806,17 @@ class DataSet(object):
     def attempt_catalog_if_necessary(name, volumes):
         """Attempts to catalog a data set if not already cataloged.
 
-        Arguments:
-            name (str) -- The name of the data set.
-            volumes (list[str]) -- The volumes the data set may reside on.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        volumes : list[str]
+            The volumes the data set may reside on.
 
-        Returns:
-            bool -- Whether the data set is now present.
-            bool -- Whether changes were made.
+        Returns
+        -------
+        tuple(bool,bool)
+            Whether the data set is now present. Whether changes were made.
         """
         changed = False
         present = False
@@ -702,13 +842,17 @@ class DataSet(object):
            is needing to be deleted.. Recall, you can have a data set in
            two different volumes, and only one cataloged.
 
-        Arguments:
-            name (str) -- The name of the data set.
-            volumes (list[str]) -- The volumes the data set may reside on.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        volumes : list[str]
+            The volumes the data set may reside on.
 
-        Returns:
-            changed (bool) -- Whether changes were made.
-            present (bool) -- Whether the data set is now present.
+        Returns
+        -------
+        tuple(bool,bool)
+            Whether changes were made. Whether the data set is now present.
         """
 
         changed = False
@@ -805,12 +949,17 @@ class DataSet(object):
     def _is_in_vtoc(name, volume):
         """Determines if data set is in a volume's table of contents.
 
-        Arguments:
-            name (str) -- The name of the data set to search for.
-            volume (str) -- The volume to search the table of contents of.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to search for.
+        volume : str
+            The volume to search the table of contents of.
 
-        Returns:
-            bool -- If data set was found in table of contents for volume.
+        Returns
+        -------
+        bool
+            If data set was found in table of contents for volume.
         """
         data_sets = vtoc.get_volume_entry(volume)
         data_set = vtoc.find_data_set_in_volume_output(name, data_sets)
@@ -845,59 +994,77 @@ class DataSet(object):
     ):
         """Attempts to replace an existing data set.
 
-        Args:
-            name (str): The name of the dataset
-            type (str, optional): The type of dataset.
-                    Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                    Defaults to None.
-            space_primary (int, optional): The amount of primary space to allocate for the dataset.
-                    Defaults to None.
-            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-                    Defaults to None.
-            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
-                    Defaults to None.
-            record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: F, FB, VB, FBA, VBA, U.
-                    Defaults to None.
-            record_length (int, optional) The length, in bytes, of each record in the data set.
-                    Defaults to None.
-            block_size (int, optional): The block size to use for the data set.
-                    Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
-                    Defaults to None.
-            key_length (int, optional): The key length of a record.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                    in each logical record of a the specified VSAM data set.
-                    If the key is at the beginning of the logical record, the offset is zero.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset.
-                    Required for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            volumes (Union[str, list[str]], optional): A list of volume serials.
-                    When providing multiple volumes, processing will begin with
-                    the first volume in the provided list. Offline volumes are not considered.
-                    Volumes can always be provided when not using SMS.
-                    When using SMS, volumes can be provided when the storage class being used
-                    has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
-                    Defaults to None.
-            tmp_hlq (str, optional): High level qualifier for temporary datasets.
-            force (bool, optional): Used to determine behavior when performing member operations on a pdse.
-                    Defaults to None.
+        Parameters
+        ----------
+        name : str
+            The name of the dataset
+        type : str, optional
+            The type of dataset.
+            Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
+            Defaults to None.
+        space_primary : int, optional
+            The amount of primary space to allocate for the dataset.
+            Defaults to None.
+        space_secondary : int, optional
+            The amount of secondary space to allocate for the dataset.
+            Defaults to None.
+        space_type : str, optional
+            The unit of measurement to use when defining primary and secondary space.
+            Defaults to None.
+        record_format : str, optional
+            The record format to use for the dataset.
+            Valid options are: F, FB, VB, FBA, VBA, U.
+            Defaults to None.
+        record_length : int, optional
+            The length, in bytes, of each record in the data set.
+            Defaults to None.
+        block_size : int, optional
+            The block size to use for the data set.
+            Defaults to None.
+        directory_blocks : int, optional
+            The number of directory blocks to allocate to the data set.
+            Defaults to None.
+        key_length : int, optional
+            The key length of a record.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        key_offset : int, optional
+            The key offset is the position of the first byte of the key
+            in each logical record of a the specified VSAM data set.
+            If the key is at the beginning of the logical record, the offset is zero.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        sms_storage_class : str, optional
+            The storage class for an SMS-managed dataset.
+            Required for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        sms_data_class : str, optional
+            The data class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        sms_management_class : str, optional
+            The management class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        volumes : Union[str, list[str]], optional
+            A list of volume serials.
+            When providing multiple volumes, processing will begin with
+            the first volume in the provided list. Offline volumes are not considered.
+            Volumes can always be provided when not using SMS.
+            When using SMS, volumes can be provided when the storage class being used
+            has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
+            Defaults to None.
+        tmp_hlq : str, optional
+            High level qualifier for temporary datasets.
+        force : bool, optional
+            Used to determine behavior when performing member operations on a pdse.
+            Defaults to None.
         """
         arguments = locals()
         DataSet.delete(name)
@@ -905,6 +1072,18 @@ class DataSet(object):
 
     @staticmethod
     def _build_zoau_args(**kwargs):
+        """Build zoau arguments
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Arguments
+
+        Returns
+        -------
+        dict
+            Renamed arguments
+        """
         primary = kwargs.get("space_primary")
         secondary = kwargs.get("space_secondary")
         space_type = kwargs.get("space_type")
@@ -962,61 +1141,81 @@ class DataSet(object):
         datasets.create() to raise exceptions on failure.
         Reasonable default arguments will be set by ZOAU when necessary.
 
-        Args:
-            name (str): The name of the dataset
-            type (str, optional): The type of dataset.
-                    Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                    Defaults to None.
-            space_primary (int, optional): The amount of primary space to allocate for the dataset.
-                    Defaults to None.
-            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-                    Defaults to None.
-            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
-                    Defaults to None.
-            record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: F, FB, VB, FBA, VBA, U.
-                    Defaults to None.
-            record_length (int, optional) The length, in bytes, of each record in the data set.
-                    Defaults to None.
-            block_size (int, optional): The block size to use for the data set.
-                    Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
-                    Defaults to None.
-            key_length (int, optional): The key length of a record.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                    in each logical record of a the specified VSAM data set.
-                    If the key is at the beginning of the logical record, the offset is zero.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset.
-                    Required for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            volumes (Union[str, list[str]], optional): A list of volume serials.
-                    When providing multiple volumes, processing will begin with
-                    the first volume in the provided list. Offline volumes are not considered.
-                    Volumes can always be provided when not using SMS.
-                    When using SMS, volumes can be provided when the storage class being used
-                    has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
-                    Defaults to None.
-            tmp_hlq (str, optional): High level qualifier for temporary datasets.
-            force (bool, optional): Used to determine behavior when performing member operations on a pdse.
-                    Defaults to None.
-        Raises:
-            DatasetCreateError: When data set creation fails.
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        type : str, optional
+            The type of dataset.
+            Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
+            Defaults to None.
+        space_primary : int, optional
+            The amount of primary space to allocate for the dataset.
+            Defaults to None.
+        space_secondary : int, optional
+            The amount of secondary space to allocate for the dataset.
+            Defaults to None.
+        space_type : str, optional
+            The unit of measurement to use when defining primary and secondary space.
+            Defaults to None.
+        record_format : str, optional
+            The record format to use for the dataset.
+            Valid options are: F, FB, VB, FBA, VBA, U.
+            Defaults to None.
+        record_length : int, optional
+            The length, in bytes, of each record in the data set.
+            Defaults to None.
+        block_size : int, optional
+            The block size to use for the data set.
+            Defaults to None.
+        directory_blocks : int, optional
+            The number of directory blocks to allocate to the data set.
+            Defaults to None.
+        key_length : int, optional
+            The key length of a record.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        key_offset : int, optional
+            The key offset is the position of the first byte of the key
+            in each logical record of a the specified VSAM data set.
+            If the key is at the beginning of the logical record, the offset is zero.
+            Required for Key Sequenced Datasets (KSDS).
+            Defaults to None.
+        sms_storage_class : str, optional
+            The storage class for an SMS-managed dataset.
+            Required for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        sms_data_class : str, optional
+            The data class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        sms_management_class : str, optional
+            The management class for an SMS-managed dataset.
+            Optional for SMS-managed datasets that do not match an SMS-rule.
+            Not valid for datasets that are not SMS-managed.
+            Note that all non-linear VSAM datasets are SMS-managed.
+            Defaults to None.
+        volumes : Union[str, list[str]], optional
+            A list of volume serials.
+            When providing multiple volumes, processing will begin with
+            the first volume in the provided list. Offline volumes are not considered.
+            Volumes can always be provided when not using SMS.
+            When using SMS, volumes can be provided when the storage class being used
+            has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
+            Defaults to None.
+        tmp_hlq : str, optional
+            High level qualifier for temporary datasets.
+        force : bool, optional
+            Used to determine behavior when performing member operations on a pdse.
+            Defaults to None.
+        Raises
+        ------
+        DatasetCreateError
+            When data set creation fails.
         """
         original_args = locals()
         formatted_args = DataSet._build_zoau_args(**original_args)
@@ -1046,11 +1245,15 @@ class DataSet(object):
         """A wrapper around zoautil_py
         datasets.delete() to raise exceptions on failure.
 
-        Arguments:
-            name (str) -- The name of the data set to delete.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to delete.
 
-        Raises:
-            DatasetDeleteError: When data set deletion fails.
+        Raises
+        ------
+        DatasetDeleteError
+            When data set deletion fails.
         """
         rc = datasets.delete(name)
         if rc > 0:
@@ -1062,12 +1265,17 @@ class DataSet(object):
         """Create a data set member if the partitioned data set exists.
         Also used to overwrite a data set member if empty replacement is desired.
 
-        Arguments:
-            name (str) -- The data set name, including member name, to create.
+        Parameters
+        ----------
+        name : str
+            The data set name, including member name, to create.
 
-        Raises:
-            DatasetNotFoundError: If data set cannot be found.
-            DatasetMemberCreateError: If member creation fails.
+        Raises
+        ------
+        DatasetNotFoundError
+            If data set cannot be found.
+        DatasetMemberCreateError
+            If member creation fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
         base_dsname = name.split("(")[0]
@@ -1085,11 +1293,15 @@ class DataSet(object):
         """A wrapper around zoautil_py
         datasets.delete_members() to raise exceptions on failure.
 
-        Arguments:
-            name (str) -- The name of the data set, including member name, to delete.
+        Parameters
+        ----------
+        name : str
+            The name of the data set, including member name, to delete.
 
-        Raises:
-            DatasetMemberDeleteError: When data set member deletion fails.
+        Raises
+        ------
+        DatasetMemberDeleteError
+            When data set member deletion fails.
         """
         rc = datasets.delete_members(name, force=force)
         if rc > 0:
@@ -1099,9 +1311,12 @@ class DataSet(object):
     def catalog(name, volumes):
         """Catalog an uncataloged data set
 
-        Arguments:
-            name (str) -- The name of the data set to catalog.
-            volumes (list[str]) -- The volume(s) the data set resides on.
+        PArameters
+        ----------
+        name : str
+            The name of the data set to catalog.
+        volumes : list[str]
+            The volume(s) the data set resides on.
         """
         if DataSet.is_vsam(name, volumes):
             DataSet._catalog_vsam(name, volumes)
@@ -1113,12 +1328,17 @@ class DataSet(object):
     def _catalog_non_vsam(name, volumes):
         """Catalog a non-VSAM data set.
 
-        Arguments:
-            name (str) -- The data set to catalog.
-            volumes (str) -- The volume(s) the data set resides on.
+        Parameters
+        ----------
+        name : str
+            The data set to catalog.
+        volumes : str
+            The volume(s) the data set resides on.
 
-        Raises:
-            DatasetCatalogError: When attempt at catalog fails.
+        Raises
+        ------
+        DatasetCatalogError
+            When attempt at catalog fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._build_non_vsam_catalog_command(
@@ -1136,12 +1356,17 @@ class DataSet(object):
     def _catalog_vsam(name, volumes):
         """Catalog a VSAM data set.
 
-        Arguments:
-            name (str) -- The data set to catalog.
-            volumes (str) -- The volume(s) the data set resides on.
+        Parameters
+        ----------
+        name : str
+            The data set to catalog.
+        volumes : str
+            The volume(s) the data set resides on.
 
-        Raises:
-            DatasetCatalogError: When attempt at catalog fails.
+        Raises
+        ------
+        DatasetCatalogError
+            When attempt at catalog fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
         data_set_name = name.upper()
@@ -1207,8 +1432,10 @@ class DataSet(object):
     def uncatalog(name):
         """Uncatalog a data set.
 
-        Arguments:
-            name (str) -- The name of the data set to uncatalog.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to uncatalog.
         """
         if DataSet.is_vsam(name):
             DataSet._uncatalog_vsam(name)
@@ -1219,11 +1446,15 @@ class DataSet(object):
     def _uncatalog_non_vsam(name):
         """Uncatalog a non-VSAM data set.
 
-        Arguments:
-            name (str) -- The name of the data set to uncatalog.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to uncatalog.
 
-        Raises:
-            DatasetUncatalogError: When uncataloging fails.
+        Raises
+        ------
+        DatasetUncatalogError
+            When uncataloging fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._NON_VSAM_UNCATALOG_COMMAND.format(name)
@@ -1246,11 +1477,15 @@ class DataSet(object):
     def _uncatalog_vsam(name):
         """Uncatalog a VSAM data set.
 
-        Arguments:
-            name (str) -- The name of the data set to uncatalog.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to uncatalog.
 
-        Raises:
-            DatasetUncatalogError: When uncatalog fails.
+        Raises
+        ------
+        DatasetUncatalogError
+            When uncatalog fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
         idcams_input = DataSet._VSAM_UNCATALOG_COMMAND.format(name)
@@ -1269,14 +1504,20 @@ class DataSet(object):
         then VTOC will be used to check data set info. If not in VTOC
         may not return accurate information.
 
-        Arguments:
-            name (str) -- The name of the data set.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
 
-        Keyword Arguments:
-            volumes (list[str]) -- The name(s) of the volume(s). (default: (None))
+        Keyword Parameters
+        ------------------
+        volumes : list[str]
+            The name(s) of the volume(s). (default: (None))
 
-        Returns:
-            bool -- If the data set is VSAM.
+        Returns
+        -------
+        bool
+            If the data set is VSAM.
         """
         if not volumes:
             return DataSet._is_vsam_from_listcat(name)
@@ -1287,12 +1528,17 @@ class DataSet(object):
     def _is_vsam_from_vtoc(name, volume):
         """Use VTOC to determine if a given data set is VSAM.
 
-        Arguments:
-            name (str) -- The name of the data set.
-            volume (str) -- The volume name whose table of contents will be searched.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        volume : str
+            The volume name whose table of contents will be searched.
 
-        Returns:
-            bool -- If the data set is VSAM.
+        Returns
+        -------
+        bool
+            If the data set is VSAM.
         """
         data_sets = vtoc.get_volume_entry(volume)
         vsam_name = name + ".DATA"
@@ -1307,11 +1553,15 @@ class DataSet(object):
     def _is_vsam_from_listcat(name):
         """Use LISTCAT command to determine if a given data set is VSAM.
 
-        Arguments:
-            name (str) -- The name of the data set.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
 
-        Returns:
-            bool -- If the data set is VSAM.
+        Returns
+        -------
+        bool
+            If the data set is VSAM.
         """
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name.upper())
@@ -1326,11 +1576,15 @@ class DataSet(object):
     def temp_name(hlq=""):
         """Get temporary data set name.
 
-        Args:
-            hlq (str, optional): The HLQ to use for the temporary data set. Defaults to "".
+        Parameters
+        ----------
+        hlq : str, optional
+            The HLQ to use for the temporary data set. Defaults to "".
 
-        Returns:
-            str: The temporary data set name.
+        Returns
+        -------
+        str
+            The temporary data set name.
         """
         if not hlq:
             hlq = datasets.get_hlq()
@@ -1350,25 +1604,35 @@ class DataSet(object):
         """Create a temporary data set.
         User is responsible for removing the data set after use.
 
-        Args:
-            hlq (str): The HLQ to use for the temporary data set's name.
-            type (str, optional): The type of dataset.
-                    Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                    Defaults to "SEQ".
-            record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: F, FB, VB, FBA, VBA, U.
-                    Defaults to "FB".
-            space_primary (int, optional): The amount of primary space to allocate for the dataset.
-                    Defaults to 5.
-            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-                    Defaults to 5.
-            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
-                    Defaults to "M".
-            record_length (int, optional): The length, in bytes, of each record in the data set.
-                    Defaults to 80.
+        Parameters
+        ----------
+        hlq : str
+            The HLQ to use for the temporary data set's name.
+        type : str, optional
+            The type of dataset.
+            Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
+            Defaults to "SEQ".
+        record_format : str, optional
+            The record format to use for the dataset.
+            Valid options are: F, FB, VB, FBA, VBA, U.
+            Defaults to "FB".
+        space_primary : int, optional
+            The amount of primary space to allocate for the dataset.
+            Defaults to 5.
+        space_secondary : int, optional
+            The amount of secondary space to allocate for the dataset.
+            Defaults to 5.
+        space_type : str, optional
+            The unit of measurement to use when defining primary and secondary space.
+            Defaults to "M".
+        record_length : int, optional
+            The length, in bytes, of each record in the data set.
+            Defaults to 80.
 
-        Returns:
-            str -- The name of the temporary data set.
+        Returns
+        -------
+        str
+            The name of the temporary data set.
         """
         temp_name = DataSet.temp_name(hlq)
         DataSet.create(
@@ -1386,11 +1650,15 @@ class DataSet(object):
     def format_zfs(name):
         """Format an existing LDS as a ZFS file system.
 
-        Args:
-            name (str): The name of the data set to format.
+        Parameters
+        ----------
+        name : str
+            The name of the data set to format.
 
-        Raises:
-            DatasetFormatError: When data set formatting fails.
+        Raises
+        ------
+        DatasetFormatError
+            When data set formatting fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
         rc, stdout, stderr = module.run_command(
@@ -1405,12 +1673,17 @@ class DataSet(object):
     def write(name, contents):
         """Write text to a data set.
 
-        Arguments:
-            name (str) -- The name of the data set.
-            contents (str) -- The text to write to the data set.
+        Parameters
+        ----------
+        name : str
+            The name of the data set.
+        contents : str
+            The text to write to the data set.
 
-        Raises:
-            DatasetWriteError: When write to the data set fails.
+        Raises
+        ------
+        DatasetWriteError
+            When write to the data set fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
         temp = tempfile.NamedTemporaryFile(delete=True)
@@ -1429,12 +1702,17 @@ class DataSet(object):
         This is necessary because IEHPROGM required
         strict formatting when spanning multiple lines.
 
-        Arguments:
-            name (str) -- The data set to catalog.
-            volumes (list[str]) -- The volume(s) the data set resides on.
+        Parameters
+        ----------
+        name : str
+            The data set to catalog.
+        volumes : list[str]
+            The volume(s) the data set resides on.
 
-        Returns:
-            str -- The command string formatted for use with IEHPROGM.
+        Returns
+        -------
+        str
+            The command string formatted for use with IEHPROGM.
         """
         command_part_1 = DataSet._format_jcl_line(
             "    CATLG DSNAME={0},".format(name))
@@ -1446,16 +1724,22 @@ class DataSet(object):
         """Formats a single line of text to contain EOL character in colums 72,
         which is required for some programs available through JCL.
 
-        Args:
-            string (str): The string to format.
-            eol_char (str, optional): The character to place in column 72 of the string.
-                    Defaults to "X".
-            include_newline (bool, optional): Determines if a newline will be appended
-                    to the end of the formatted string.
-                    Defaults to True.
+        Arguments
+        ---------
+        string : str
+            The string to format.
+        eol_char : str, optional
+            The character to place in column 72 of the string.
+            Defaults to "X".
+        include_newline : bool, optional
+            Determines if a newline will be appended
+            to the end of the formatted string.
+            Defaults to True.
 
-        Returns:
-            str: The string formatted with special character in column 72
+        Returns
+        -------
+        str
+            The string formatted with special character in column 72
         """
         formatted = "{line: <{max_len}}".format(line=string, max_len=71)
         formatted += eol_char
@@ -1467,23 +1751,31 @@ class DataSet(object):
     def _build_volume_string_idcams(volumes):
         """Build string for volume portion of idcams input
 
-        Args:
-            volumes (list[str]): List of volumes used to build string.
+        Parameters
+        ----------
+        volumes : list[str]
+            List of volumes used to build string.
 
-        Returns:
-            str: string built from volumes.
+        Returns
+        -------
+        str
+            string built from volumes.
         """
         return " -\n    ".join(volumes)
 
     @staticmethod
     def _build_volume_string_iehprogm(volumes):
-        """Build string for volume portion of iehprogm input
+        """Build string for volume portion of iehprogm input.
 
-        Args:
-            volumes (list[str]): List of volumes used to build string.
+        Parameters
+        ----------
+        volumes : list[str]
+            List of volumes used to build string.
 
-        Returns:
-            str: string built from volumes.
+        Returns
+        -------
+        str
+            string built from volumes.
         """
         volume_string = ""
         for index, volume in enumerate(volumes):
@@ -1509,8 +1801,10 @@ class DataSetUtils(object):
         a particular data set. Note that the input data set is assumed
         to be cataloged.
 
-        Arguments:
-            data_set {str} -- Name of the input data set
+        Parameters
+        ----------
+        data_set : str
+            Name of the input data set.
         """
         self.module = AnsibleModuleHelper(argument_spec={})
         self.data_set = data_set.upper()
@@ -1524,8 +1818,10 @@ class DataSetUtils(object):
         """Determines whether the input data set exists. The input data
         set can be VSAM or non-VSAM.
 
-        Returns:
-            bool -- If the data set exists
+        Returns
+        -------
+        bool
+            If the data set exists.
         """
         if self.is_uss_path:
             return path.exists(to_bytes(self.path))
@@ -1534,11 +1830,15 @@ class DataSetUtils(object):
     def member_exists(self, member):
         """Determines whether the input data set contains the given member.
 
-        Arguments:
-            member {str} -- The name of the data set member
+        Parameters
+        ----------
+        member : str
+            The name of the data set member.
 
-        Returns:
-            bool -- If the member exists
+        Returns
+        -------
+        bool
+            If the member exists.
         """
         if self.ds_type() == "PO":
             rc, out, err = self.module.run_command(
@@ -1551,17 +1851,24 @@ class DataSetUtils(object):
     def ds_type(self):
         """Retrieves the data set type of the input data set.
 
-        Returns:
-            str  -- Type of the input data set.
-            None -- If the data set does not exist or a non-existent USS file
-
-        Possible return values:
-            'PS'   -- Physical Sequential
-            'PO'   -- Partitioned (PDS or PDS(E))
-            'VSAM' -- Virtual Storage Access Method
-            'DA'   -- Direct Access
-            'IS'   -- Indexed Sequential
-            'USS'  -- USS file or directory
+        Returns
+        -------
+        str
+            Type of the input data set.
+            'PS'
+                Physical Sequential.
+            'PO'
+                Partitioned (PDS or PDS(E)).
+            'VSAM'
+                Virtual Storage Access Method.
+            'DA'
+                Direct Access.
+            'IS'
+                Indexed Sequential.
+            'USS'
+                USS file or directory.
+        None
+            If the data set does not exist or a non-existent USS file.
         """
         if self.is_uss_path and self.exists():
             return "USS"
@@ -1570,12 +1877,17 @@ class DataSetUtils(object):
     def volume(self):
         """Retrieves the volume name where the input data set is stored.
 
-        Returns:
-            str -- Volume where the data set is stored
-            None -- If the data set does not exist
+        Returns
+        -------
+        str
+            Volume where the data set is stored.
+        None
+            If the data set does not exist.
 
-        Raises:
-            AttributeError -- When input data set is a USS file or directory
+        Raises
+        ------
+        AttributeError
+            When input data set is a USS file or directory.
         """
         if self.is_uss_path:
             raise AttributeError(
@@ -1586,12 +1898,17 @@ class DataSetUtils(object):
         """Retrieves the record length of the input data set. Record length
         specifies the length, in bytes, of each record in the data set.
 
-        Returns:
-            int -- The record length, in bytes, of each record
-            None -- If the data set does not exist or the data set is VSAM
+        Returns
+        -------
+        int
+            The record length, in bytes, of each record.
+        None
+            If the data set does not exist or the data set is VSAM.
 
-        Raises:
-            AttributeError -- When input data set is a USS file or directory
+        Raises
+        ------
+        AttributeError
+            When input data set is a USS file or directory.
         """
         if self.is_uss_path:
             raise AttributeError(
@@ -1601,12 +1918,17 @@ class DataSetUtils(object):
     def blksize(self):
         """Retrieves the BLKSIZE of the input data set.
 
-        Returns:
-            int -- The blksize of the input data set
-            None -- If the data set does not exist or the data set is VSAM
+        Returns
+        -------
+        int
+            The blksize of the input data set.
+        None
+            If the data set does not exist or the data set is VSAM.
 
-        Raises:
-            AttributeError -- When input data set is a USS file or directory
+        Raises
+        ------
+        AttributeError
+            When input data set is a USS file or directory.
         """
         if self.is_uss_path:
             raise AttributeError(
@@ -1616,21 +1938,31 @@ class DataSetUtils(object):
     def recfm(self):
         """Retrieves the record format of the input data set.
 
-        Returns:
-            str -- Record format
-            None -- If the data set does not exist or the data set is VSAM
+        Returns
+        -------
+        str
+            Record format.
+            'F'
+                Fixed.
+            'FB'
+                Fixed Blocked.
+            'V'
+                Variable.
+            'VB'
+                Variable Blocked.
+            'U'
+                Undefined.
+            'VBS'
+                Variable Blocked Spanned.
+            'VS'
+                Variable Spanned.
+        None
+            If the data set does not exist or the data set is VSAM.
 
-        Raises:
-            AttributeError -- When input data set is a USS file or directory
-
-        Possible return values:
-            'F'   -- Fixed
-            'FB'  -- Fixed Blocked
-            'V'   -- Variable
-            'VB'  -- Variable Blocked
-            'U'   -- Undefined
-            'VBS' -- Variable Blocked Spanned
-            'VS'  -- Variable Spanned
+        Raises
+        ------
+        AttributeError
+            When input data set is a USS file or directory.
         """
         if self.is_uss_path:
             raise AttributeError(
@@ -1641,8 +1973,17 @@ class DataSetUtils(object):
         """Retrieves information about the input data set using LISTDS and
         LISTCAT commands.
 
-        Returns:
-            dict -- Dictionary containing data set attributes
+        Returns
+        -------
+        dict
+            Dictionary containing data set attributes.
+
+        Raises
+        ------
+        DatasetBusyError
+            The dataset may be open by another user.
+        MVSCmdExecError
+            Another error while executing the command.
         """
         result = dict()
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
@@ -1674,11 +2015,15 @@ class DataSetUtils(object):
     def _process_listds_output(self, output):
         """Parses the output generated by LISTDS command.
 
-        Arguments:
-            output {str} -- The output of LISTDS command
+        Parameters
+        ----------
+        output : str
+            The output of LISTDS command.
 
-        Returns:
-            dict -- Dictionary containing the output parameters of LISTDS
+        Returns
+        -------
+        dict
+            Dictionary containing the output parameters of LISTDS.
         """
         result = dict()
         if "NOT IN CATALOG" in output:
@@ -1701,11 +2046,15 @@ class DataSetUtils(object):
     def _process_listcat_output(self, output):
         """Parses the output generated by LISTCAT command.
 
-        Arguments:
-            output {str} -- The output of LISTCAT command
+        Parameters
+        ----------
+        output : str
+            The output of LISTCAT command.
 
-        Returns:
-            dict -- Dictionary containing the output parameters of LISTCAT
+        Returns
+        -------
+        dict
+            Dictionary containing the output parameters of LISTCAT.
         """
         result = dict()
         if "NOT FOUND" not in output:
@@ -1718,7 +2067,18 @@ class DataSetUtils(object):
 
 
 def is_member(data_set):
-    """Determine whether the input string specifies a data set member"""
+    """Determine whether the input string specifies a data set member.
+
+    Parameters
+    ----------
+    data_set : str
+        Input to search in data set members.
+
+    Returns
+    -------
+    bool
+        If the input is a member of a data set.
+    """
     try:
         arg_def = dict(data_set=dict(arg_type="data_set_member"))
         parser = better_arg_parser.BetterArgParser(arg_def)
@@ -1729,7 +2089,18 @@ def is_member(data_set):
 
 
 def is_data_set(data_set):
-    """Determine whether the input string specifies a data set name"""
+    """Determine whether the input string specifies a data set name.
+
+    Parameters
+    ----------
+    data_set : str
+        Input to search among data set names.
+
+    Returns
+    -------
+    bool
+        If the input is a data set name.
+    """
     try:
         arg_def = dict(data_set=dict(arg_type="data_set_base"))
         parser = better_arg_parser.BetterArgParser(arg_def)
@@ -1740,13 +2111,17 @@ def is_data_set(data_set):
 
 
 def extract_dsname(data_set):
-    """Extract the actual name of the data set from a given input source
+    """Extract the actual name of the data set from a given input source.
 
-    Arguments:
-        data_set {str} -- Input data set name
+    Parameters
+    ----------
+    data_set : str
+        Input data set name.
 
-    Returns:
-        {str} -- The actual name of the data set
+    Returns
+    -------
+    str
+        The actual name of the data set.
     """
     result = ""
     for c in data_set:
@@ -1757,13 +2132,17 @@ def extract_dsname(data_set):
 
 
 def extract_member_name(data_set):
-    """Extract the member name from a given input source
+    """Extract the member name from a given input source.
 
-    Arguments:
-        data_set {str} -- Input source name
+    Parameters
+    ----------
+    data_set : str
+        Input source name.
 
-    Returns:
-        {str} -- The member name
+    Returns
+    -------
+    str
+        The member name.
     """
     start = data_set.find("(")
     member = ""
@@ -1775,7 +2154,13 @@ def extract_member_name(data_set):
 
 
 def temp_member_name():
-    """Generate a temp member name"""
+    """Generate a temp member name.
+
+    Returns
+    -------
+    str
+        The temp name.
+    """
     first_char_set = ascii_uppercase + "#@$"
     rest_char_set = ascii_uppercase + digits + "#@$"
     # using sample as k=1 and k=7 to avoid using random.choice just for oneline import
@@ -1787,6 +2172,20 @@ def temp_member_name():
 
 class DatasetDeleteError(Exception):
     def __init__(self, data_set, rc):
+        """Error during deletion of a data set.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to delete.
+        rc : int
+            Return code.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = 'An error occurred during deletion of data set "{0}". RC={1}'.format(
             data_set, rc
         )
@@ -1795,6 +2194,22 @@ class DatasetDeleteError(Exception):
 
 class DatasetCreateError(Exception):
     def __init__(self, data_set, rc=None, msg=""):
+        """Error during creation of a data set.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to create.
+        rc : int
+            Return code.
+        msg : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         if rc:
             self.msg = (
                 'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
@@ -1812,6 +2227,20 @@ class DatasetCreateError(Exception):
 
 class DatasetMemberDeleteError(Exception):
     def __init__(self, data_set, rc):
+        """Error during deletion of a data set's member.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set and member that it tried to delete.
+        rc : int
+            Return code.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             'An error occurred during deletion of data set member"{0}". RC={1}'.format(
                 data_set, rc
@@ -1822,6 +2251,20 @@ class DatasetMemberDeleteError(Exception):
 
 class DatasetMemberCreateError(Exception):
     def __init__(self, data_set, rc):
+        """Error during creation of a data set's member.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set and member that it tried to create.
+        rc : int
+            Return code.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             'An error occurred during creation of data set member"{0}". RC={1}'.format(
                 data_set, rc
@@ -1832,12 +2275,42 @@ class DatasetMemberCreateError(Exception):
 
 class DatasetNotFoundError(Exception):
     def __init__(self, data_set):
+        """Failed to found the data set.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to find.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = 'The data set "{0}" could not be located.'.format(data_set)
         super().__init__(self.msg)
 
 
 class DatasetCatalogError(Exception):
     def __init__(self, data_set, volumes, rc, message=""):
+        """Error during cataloging of a data set.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to catalog.
+        volumes : list[str]
+            Volume the data set is in.
+        rc : int
+            Return code.
+        message : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = 'An error occurred during cataloging of data set "{0}" on volume(s) "{1}". RC={2}. {3}'.format(
             data_set, ", ".join(volumes), rc, message
         )
@@ -1846,6 +2319,20 @@ class DatasetCatalogError(Exception):
 
 class DatasetUncatalogError(Exception):
     def __init__(self, data_set, rc):
+        """Error during uncaloging of a data set.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to uncatalog.
+        rc : int
+            Return code.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             'An error occurred during uncatalog of data set "{0}". RC={1}'.format(
                 data_set, rc
@@ -1856,6 +2343,22 @@ class DatasetUncatalogError(Exception):
 
 class DatasetWriteError(Exception):
     def __init__(self, data_set, rc, message=""):
+        """Error during write of a data set.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to write.
+        rc : int
+            Return code.
+        msg : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             'An error occurred during write of data set "{0}". RC={1}. {2}'.format(
                 data_set, rc, message
@@ -1866,6 +2369,22 @@ class DatasetWriteError(Exception):
 
 class DatasetFormatError(Exception):
     def __init__(self, data_set, rc, message=""):
+        """Error during formating of a data set.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to format.
+        rc : int
+            Return code.
+        msg : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             'An error occurred during format of data set "{0}". RC={1}. {2}'.format(
                 data_set, rc, message
@@ -1876,6 +2395,22 @@ class DatasetFormatError(Exception):
 
 class MVSCmdExecError(Exception):
     def __init__(self, rc, out, err):
+        """Error during cmd execution.
+
+        Parameters
+        ----------
+        rc : int
+            Return code.
+        out : str
+            Output of the error.
+        err : str
+            The error.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             "Failure during execution of mvscmd; Return code: {0}; "
             "stdout: {1}; stderr: {2}".format(rc, out, err)
@@ -1885,6 +2420,18 @@ class MVSCmdExecError(Exception):
 
 class DatasetVolumeError(Exception):
     def __init__(self, data_set):
+        """Error trying to find of a data set on a volume.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to find.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             "The data set {0} could not be found on a volume in the system.".format(
                 data_set)
@@ -1894,6 +2441,18 @@ class DatasetVolumeError(Exception):
 
 class DatasetBusyError(Exception):
     def __init__(self, data_set):
+        """Error trying to open a dataset due to it being busy.
+
+        Parameters
+        ----------
+        data_set : str
+            Name of the data set that it tried to open.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             "Dataset {0} may already be open by another user. "
             "Close the dataset and try again".format(data_set)

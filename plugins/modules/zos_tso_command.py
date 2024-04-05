@@ -169,7 +169,7 @@ exit rc
 
 
 def copy_rexx_and_run_commands(script, commands, module, max_rc):
-    """Copy rexx and run commands
+    """Copy rexx into a temporary file and run commands.
 
     Parameters
     ----------

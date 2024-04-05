@@ -858,6 +858,8 @@ class MVSUnarchive(Unarchive):
             in each logical record of a the specified VSAM data set.
         sms_storage_class : str
             The storage class for an SMS-managed dataset.
+        sms_data_class : str
+            The data class for an SMS-managed dataset.
         sms_management_class : str
             The management class for an SMS-managed dataset.
         volumes : list[str,list[str]]

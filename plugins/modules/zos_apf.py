@@ -227,7 +227,7 @@ EXAMPLES = r'''
 - name: Remove a library from the APF list and persistence
   zos_apf:
     state: absent
-    library: SOME.SEQUENTIAL.DATASET
+    library: SOME.SEQUENTIAL.DATASETaa
     volume: T12345
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)

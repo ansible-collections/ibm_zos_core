@@ -214,7 +214,7 @@ notes:
 
 
 EXAMPLES = r'''
-- name: Add a library to the APF list.
+- name: Add a library to the APF list
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
     volume: T12345

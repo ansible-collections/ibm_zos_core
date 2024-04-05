@@ -6,13 +6,12 @@ on:
       - dev
       - staging*
 
-    
 jobs:
   check-changelog:
     runs-on: ubuntu-latest
     env:
         PR_BASE: ${{ github.event.pull_request.base.ref }}
-        PR_HEAD: ${{ github.event.pull_request.head.ref }}    
+        PR_HEAD: ${{ github.event.pull_request.head.ref }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4

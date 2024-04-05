@@ -556,6 +556,7 @@ class Archive():
             Whether to remove any added source files, trees or data sets after module
             adds them to the archive.
         changed : bool
+            If there are targeted paths.
         errors : str
             Errors ocurred.
         found : list[str]
@@ -653,7 +654,7 @@ class Archive():
 
     @property
     def result(self):
-        """Result.
+        """Returns a dict with the results.
 
         Returns
         -------

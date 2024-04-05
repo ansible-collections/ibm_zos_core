@@ -362,7 +362,7 @@ def system_type(arg_val, params):
     Returns
     -------
     str
-        arg_val in uppercase.
+        arg_val validated in uppercase.
     """
     regex = "^(?:[a-zA-Z0-9]{1,8})|(?:[a-zA-Z0-9]{0,7}[*])$"
     validate_parameters_based_on_regex(arg_val, regex)
@@ -382,7 +382,7 @@ def message_id_type(arg_val, params):
     Returns
     -------
     str
-        arg_val in uppercase.
+        arg_val validated in uppercase.
     """
     regex = "^(?:[a-zA-Z0-9]{1,})|(?:[a-zA-Z0-9]{0,}[*])$"
     validate_parameters_based_on_regex(arg_val, regex)
@@ -402,7 +402,7 @@ def job_name_type(arg_val, params):
     Returns
     -------
     str
-        arg_val in uppercase.
+        arg_val validated in uppercase.
     """
     regex = "^(?:[a-zA-Z0-9]{1,8})|(?:[a-zA-Z0-9]{0,7}[*])$"
     validate_parameters_based_on_regex(arg_val, regex)
@@ -580,14 +580,14 @@ def handle_conditions(merged_list, condition_type, value):
 
 
 def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
-    """Execute command.
+    """Execute operator command.
 
     Parameters
     ----------
     operator_cmd : str
         Operator command.
-    timeout : int
-        Timeout of the command.
+    timeout_s : int
+        Timeout to wait for the command execution, measured in centiseconds.
     *args : dict
         Arguments for the command.
     **kwargs : dict

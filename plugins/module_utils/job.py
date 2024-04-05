@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,13 +21,19 @@ from timeit import default_timer as timer
 # Only importing this module so we can catch a JSONDecodeError that sometimes happens
 # when a job's output has non-printable chars that conflict with JSON's control
 # chars.
-from json import decoder
+from json import JSONDecodeError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
 )
+
+try:
+    from zoautil_py import exceptions
+except ImportError:
+    exceptions = ZOAUImportError(traceback.format_exc())
+
 
 try:
     # For files that import individual functions from a ZOAU module,
@@ -39,6 +45,18 @@ try:
     from zoautil_py import jobs
 except Exception:
     jobs = ZOAUImportError(traceback.format_exc())
+
+JOB_ERROR_STATUSES = frozenset(["ABEND",      # ZOAU job ended abnormally
+                                "SEC ERROR",  # Security error (legacy Ansible code)
+                                "SEC",        # ZOAU security error
+                                "JCL ERROR",  # Job had a JCL error (legacy Ansible code)
+                                "JCLERR",     # ZOAU job had a JCL error
+                                "CANCELED",   # ZOAU job was cancelled
+                                "CAB",        # ZOAU converter abend
+                                "CNV",        # ZOAU converter error
+                                "SYS",        # ZOAU system failure
+                                "FLU"         # ZOAU job was flushed
+                                ])
 
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
@@ -88,11 +106,6 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
         timeout=timeout,
         start_time=start_time
     )
-
-    # while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
-    #     current_time = timer()
-    #     duration = round(current_time - start_time)
-    #     sleep(1)
 
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
@@ -238,17 +251,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
         # Preserve the original job_id for the failure path
         job_id_temp = job_id
 
-    # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
-    # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
-    # jobs.listing(job_id, owner) in 1.2.0 has owner param, 1.1 does not
-    # jls output has expanded in zoau 1.2.3 and later: jls -l -v shows headers
-    # jobclass=job[5] serviceclass=job[6] priority=job[7] asid=job[8]
-    # creationdatetime=job[9] queueposition=job[10]
-    # starting in zoau 1.2.4, program_name[11] was added. In 1.3.0, include_extended
-    # has to be set to true so we get the program name for a job.
-    # Testing has shown that the program_name impact is minor, so we're removing that option
-
     final_entries = []
+
+    # In 1.3.0, include_extended has to be set to true so we get the program name for a job.
     entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
@@ -276,25 +281,17 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["system"] = ""
             job["owner"] = entry.owner
 
-            job["ret_code"] = dict()
-
             # From v1.3.0, ZOAU sets unavailable job fields as None, instead of '?'.
-            # This new way of constructing msg allows for a better empty message.
-            # "" instead of "None None".
-            job["ret_code"]["msg"] = "{0} {1}".format(
-                entry.status if entry.status else "",
-                entry.return_code if entry.return_code else ""
-            ).strip()
-
+            job["ret_code"] = {}
+            job["ret_code"]["msg"] = entry.status
             job["ret_code"]["msg_code"] = entry.return_code
             job["ret_code"]["code"] = None
             if entry.return_code and len(entry.return_code) > 0:
                 if entry.return_code.isdigit():
                     job["ret_code"]["code"] = int(entry.return_code)
-            job["ret_code"]["msg_text"] = entry.status if entry.status else "?"
+            job["ret_code"]["msg_txt"] = entry.status
 
-            # Beginning in ZOAU v1.3.0, the Job class changes svc_class to
-            # service_class.
+            # Beginning in ZOAU v1.3.0, the Job class changes svc_class to service_class.
             job["svc_class"] = entry.service_class
             job["job_class"] = entry.job_class
             job["priority"] = entry.priority
@@ -310,16 +307,45 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["duration"] = duration
 
             if dd_scan:
-                list_of_dds = jobs.list_dds(entry.job_id)
-                while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
+                # If true, it means the job is not ready for DD queries and the duration and
+                # timeout should apply here instructing the user to add more time
+                is_dd_query_exception = False
+                is_jesjcl = False
+                list_of_dds = []
+
+                try:
+                    list_of_dds = jobs.list_dds(entry.job_id)
+                except exceptions.DDQueryException as err:
+                    if 'BGYSC5201E' in str(err):
+                        is_dd_query_exception = True
+                        pass
+
+                # Check if the Job has JESJCL, if not, its in the JES INPUT queue, thus wait the full wait_time_s.
+                # Idea here is to force a TYPRUN{HOLD|JCLHOLD|COPY} job to go the full wait duration since we have
+                # currently no way to detect them, but if we know the job is one of the JOB_ERROR_STATUS lets
+                # exit the wait time supplied as we know it is a job failure.
+                is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
+                is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
+
+                while ((list_of_dds is None or len(list_of_dds) == 0 or is_dd_query_exception) and
+                        (not is_jesjcl and not is_job_error_status and duration <= timeout)):
                     current_time = timer()
                     duration = round(current_time - start_time)
                     sleep(1)
-                    list_of_dds = jobs.list_dds(entry.job_id)
+                    try:
+                        # Note, in the event of an exception, eg job has TYPRUN=HOLD
+                        # list_of_dds will still be populated with valuable content
+                        list_of_dds = jobs.list_dds(entry.job_id)
+                        is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
+                        is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
+                    except exceptions.DDQueryException as err:
+                        if 'BGYSC5201E' in str(err):
+                            is_dd_query_exception = True
+                            continue
 
                 job["duration"] = duration
-
                 for single_dd in list_of_dds:
+
                     dd = {}
 
                     if "dd_name" not in single_dd:
@@ -360,23 +386,24 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     tmpcont = None
                     if "step_name" in single_dd:
                         if "dd_name" in single_dd:
-                            # In case ZOAU fails when reading the job output, we'll
-                            # add a message to the user telling them of this.
-                            # ZOAU cannot read partial output from a job, so we
-                            # have to make do with nothing from this step if it fails.
+                            # In case ZOAU fails when reading the job output, we'll add a
+                            # message to the user telling them of this. ZOAU cannot read
+                            # partial output from a job, so we have to make do with nothing
+                            # from this step if it fails.
                             try:
                                 tmpcont = jobs.read_output(
                                     entry.job_id,
                                     single_dd["step_name"],
                                     single_dd["dd_name"]
                                 )
-                            except (UnicodeDecodeError, decoder.JSONDecodeError):
+                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) as e:
                                 tmpcont = (
                                     "Non-printable UTF-8 characters were present in this output. "
-                                    "Please access it manually."
+                                    "Please access it from the job log."
                                 )
 
                     dd["content"] = tmpcont.split("\n")
+
                     job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 
                     job["ddnames"].append(dd)
@@ -396,16 +423,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                             tmptext = tmpcont.split("--  N O D E ")[1]
                             job["subsystem"] = (tmptext.split("\n")[
                                                 0]).replace(" ", "")
-
-                    # Extract similar: "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
-                    # then further reduce down to: 'JCL ERROR 029'
-                    if job["ret_code"]["msg_code"] == "?":
-                        if "JOB NOT RUN -" in tmpcont:
-                            tmptext = tmpcont.split(
-                                "JOB NOT RUN -")[1].split("\n")[0]
-                            job["ret_code"]["msg"] = tmptext.strip()
-                            job["ret_code"]["msg_code"] = None
-                            job["ret_code"]["code"] = None
 
             final_entries.append(job)
     if not final_entries:
@@ -439,3 +456,25 @@ def _ddname_pattern(contents, resolve_dependencies):
             )
         )
     return str(contents)
+
+
+def search_dictionaries(key, value, list_of_dictionaries):
+    """ Searches a list of dictionaries given key and returns
+        the value dictionary.
+
+        Arguments:
+            key {str} -- dictionary key to search for.
+            value {str} -- value to match for the dictionary key
+            list {str} -- list of dictionaries
+
+        Returns:
+            dictionary -- dictionary matching the key and value
+
+        Raises:
+            TypeError -- When input is not a list of dictionaries
+    """
+    if not isinstance(list_of_dictionaries, list):
+        raise TypeError(
+            "Unsupported type for 'list_of_dictionaries', must be a list of dictionaries")
+
+    return [element for element in list_of_dictionaries if element[key] == value]

@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_mvs_raw - The module ignored the value of `tmp_hlq` option when creating temporary data sets.
+     Fix now honors the value if provided and uses it as High Level Qualifier for temporary data sets created
+     during the module execution.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1320).

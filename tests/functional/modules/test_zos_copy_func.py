@@ -794,6 +794,12 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_
 @pytest.mark.uss
 @pytest.mark.parametrize("copy_directory", [False, True])
 def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
+    """
+    This test evaluates the behavior of testing copy of a directory when src ends
+    with '/' versus only the dir name. Expectation is that when only dir name is provided
+    that directory is also created on the remote, when directory name ends with '/'
+    this means we only copy that directory contents without creating it on the remote.
+    """
     hosts = ansible_zos_module
     dest_path = "/tmp/new_dir"
 
@@ -1684,7 +1690,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src,
             state="present",
-            type="seq",
+            type="SEQ",
             replace=True
         )
 
@@ -1733,7 +1739,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src,
             state="present",
-            type="seq",
+            type="SEQ",
             replace=True
         )
 
@@ -1784,7 +1790,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src,
             state="present",
-            type="pdse",
+            type="PDSE",
             replace=True
         )
 
@@ -1834,7 +1840,7 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src,
             state="present",
-            type="pdse",
+            type="PDSE",
             replace=True
         )
 
@@ -1884,7 +1890,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src,
             state="present",
-            type="seq",
+            type="SEQ",
             record_format="FBA",
             record_length=80,
             block_size=27920,
@@ -1977,8 +1983,8 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
         hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
         if ds_type == "PDS" or ds_type == "PDSE":
-            hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
-            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
+            hosts.all.zos_data_set(name=src_data_set, state="present", type="MEMBER", replace=True)
+            hosts.all.zos_data_set(name=dest_data_set, state="present", type="MEMBER", replace=True)
         # copy text_in source
         hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
@@ -2266,7 +2272,7 @@ def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="present")
 
         if src["is_file"]:
             copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])
@@ -2294,7 +2300,7 @@ def test_copy_file_to_non_empty_sequential_data_set(ansible_zos_module, src):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="absent")
         hosts.all.zos_copy(content="Inline content", dest=dest)
 
         copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])
@@ -2432,7 +2438,7 @@ def test_copy_ps_to_empty_ps(ansible_zos_module, force):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="present")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
@@ -2458,7 +2464,7 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="absent")
         hosts.all.zos_copy(content="Inline content", dest=dest)
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
@@ -2489,7 +2495,7 @@ def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="absent")
         hosts.all.zos_copy(content=DUMMY_DATA_SPECIAL_CHARS, dest=dest)
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
@@ -2520,7 +2526,7 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="present")
 
         if backup:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup)
@@ -2565,10 +2571,10 @@ def test_copy_file_to_non_existing_member(ansible_zos_module, src):
     try:
         hosts.all.zos_data_set(
             name=data_set,
-            type="pdse",
+            type="PDSE",
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
             replace=True
         )
@@ -2611,14 +2617,14 @@ def test_copy_file_to_existing_member(ansible_zos_module, src):
     try:
         hosts.all.zos_data_set(
             name=data_set,
-            type="pdse",
+            type="PDSE",
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
             replace=True
         )
-        hosts.all.zos_data_set(name=dest, type="member", state="present")
+        hosts.all.zos_data_set(name=dest, type="MEMBER", state="present")
 
         if src["is_file"]:
             copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, force=src["force"], remote_src=src["is_remote"])
@@ -2647,31 +2653,31 @@ def test_copy_file_to_existing_member(ansible_zos_module, src):
 @pytest.mark.seq
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="seq", is_binary=False),
-    dict(type="seq", is_binary=True),
-    dict(type="pds", is_binary=False),
-    dict(type="pds", is_binary=True),
-    dict(type="pdse", is_binary=False),
-    dict(type="pdse", is_binary=True)
+    dict(type="SEQ", is_binary=False),
+    dict(type="SEQ", is_binary=True),
+    dict(type="PDS", is_binary=False),
+    dict(type="PDS", is_binary=True),
+    dict(type="PDSE", is_binary=False),
+    dict(type="PDSE", is_binary=True)
 ])
 def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
     hosts = ansible_zos_module
     src_data_set = get_tmp_ds_name()
-    src = src_data_set if args["type"] == "seq" else "{0}(TEST)".format(src_data_set)
+    src = src_data_set if args["type"] == "SEQ" else "{0}(TEST)".format(src_data_set)
     dest_data_set = get_tmp_ds_name()
     dest = "{0}(MEMBER)".format(dest_data_set)
 
     try:
         hosts.all.zos_data_set(name=src_data_set, type=args["type"])
-        if args["type"] != "seq":
-            hosts.all.zos_data_set(name=src, type="member")
+        if args["type"] != "SEQ":
+            hosts.all.zos_data_set(name=src, type="MEMBER")
 
         hosts.all.shell(
             "decho 'Records for test' '{0}'".format(src),
             executable=SHELL_EXECUTABLE
         )
 
-        hosts.all.zos_data_set(name=dest_data_set, type="pdse", replace=True)
+        hosts.all.zos_data_set(name=dest_data_set, type="PDSE", replace=True)
         copy_result = hosts.all.zos_copy(src=src, dest=dest, is_binary=args["is_binary"], remote_src=True)
 
         verify_copy = hosts.all.shell(
@@ -2694,32 +2700,32 @@ def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
 @pytest.mark.seq
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="seq", force=False),
-    dict(type="seq", force=True),
-    dict(type="pds", force=False),
-    dict(type="pds", force=True),
-    dict(type="pdse", force=False),
-    dict(type="pdse", force=True)
+    dict(type="SEQ", force=False),
+    dict(type="SEQ", force=True),
+    dict(type="PDS", force=False),
+    dict(type="PDS", force=True),
+    dict(type="PDSE", force=False),
+    dict(type="PDSE", force=True)
 ])
 def test_copy_data_set_to_existing_member(ansible_zos_module, args):
     hosts = ansible_zos_module
     src_data_set = get_tmp_ds_name()
-    src = src_data_set if args["type"] == "seq" else "{0}(TEST)".format(src_data_set)
+    src = src_data_set if args["type"] == "SEQ" else "{0}(TEST)".format(src_data_set)
     dest_data_set = get_tmp_ds_name()
     dest = "{0}(MEMBER)".format(dest_data_set)
 
     try:
         hosts.all.zos_data_set(name=src_data_set, type=args["type"])
-        if args["type"] != "seq":
-            hosts.all.zos_data_set(name=src, type="member")
+        if args["type"] != "SEQ":
+            hosts.all.zos_data_set(name=src, type="MEMBER")
 
         hosts.all.shell(
             "decho 'Records for test' '{0}'".format(src),
             executable=SHELL_EXECUTABLE
         )
 
-        hosts.all.zos_data_set(name=dest_data_set, type="pdse", replace=True)
-        hosts.all.zos_data_set(name=dest, type="member")
+        hosts.all.zos_data_set(name=dest_data_set, type="PDSE", replace=True)
+        hosts.all.zos_data_set(name=dest, type="MEMBER")
         copy_result = hosts.all.zos_copy(src=src, dest=dest, force=args["force"], remote_src=True)
 
         verify_copy = hosts.all.shell(
@@ -2838,7 +2844,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.pdse
-@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+@pytest.mark.parametrize("src_type", ["PDS", "PDSE"])
 def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_dir = "/tmp/testdir"
@@ -2854,7 +2860,7 @@ def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
             type=src_type,
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=80,
         )
 
@@ -2877,18 +2883,18 @@ def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
 
 @pytest.mark.seq
 @pytest.mark.pdse
-@pytest.mark.parametrize("src_type", ["seq", "pds", "pdse"])
+@pytest.mark.parametrize("src_type", ["SEQ", "PDS", "PDSE"])
 def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_data_set = get_tmp_ds_name()
-    src = src_data_set if src_type == "seq" else "{0}(TEST)".format(src_data_set)
+    src = src_data_set if src_type == "SEQ" else "{0}(TEST)".format(src_data_set)
     dest_data_set = get_tmp_ds_name()
     dest = "{0}(MEMBER)".format(dest_data_set)
 
     try:
         hosts.all.zos_data_set(name=src_data_set, type=src_type)
-        if src_type != "seq":
-            hosts.all.zos_data_set(name=src, type="member")
+        if src_type != "SEQ":
+            hosts.all.zos_data_set(name=src, type="MEMBER")
 
         hosts.all.shell(
             "decho 'Records for test' '{0}'".format(src),
@@ -2918,10 +2924,10 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
 
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(src_type="pds", dest_type="pds"),
-    dict(src_type="pds", dest_type="pdse"),
-    dict(src_type="pdse", dest_type="pds"),
-    dict(src_type="pdse", dest_type="pdse"),
+    dict(src_type="PDS", dest_type="PDS"),
+    dict(src_type="PDS", dest_type="PDSE"),
+    dict(src_type="PDSE", dest_type="PDS"),
+    dict(src_type="PDSE", dest_type="PDSE"),
 ])
 def test_copy_pds_to_existing_pds(ansible_zos_module, args):
     hosts = ansible_zos_module
@@ -2973,7 +2979,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         hosts.all.zos_data_set(
             name=cobol_src_pds,
             state="present",
-            type="pds",
+            type="PDS",
             space_primary=2,
             record_format="FB",
             record_length=80,
@@ -2984,7 +2990,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         hosts.all.zos_data_set(
             name=src_lib,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3006,7 +3012,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             hosts.all.zos_data_set(
                 name=dest_lib,
                 state="present",
-                type="pdse",
+                type="PDSE",
                 record_format="U",
                 record_length=0,
                 block_size=32760,
@@ -3018,7 +3024,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             hosts.all.zos_data_set(
                 name=dest_lib_aliases,
                 state="present",
-                type="pdse",
+                type="PDSE",
                 record_format="U",
                 record_length=0,
                 block_size=32760,
@@ -3111,7 +3117,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src_lib,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3122,7 +3128,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=cobol_src_pds,
             state="present",
-            type="pds",
+            type="PDS",
             space_primary=2,
             record_format="FB",
             record_length=80,
@@ -3132,7 +3138,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=dest_lib,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3143,7 +3149,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=dest_lib_aliases,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3261,7 +3267,7 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         hosts.all.zos_data_set(
             name=cobol_src_pds,
             state="present",
-            type="pds",
+            type="PDS",
             space_primary=2,
             record_format="FB",
             record_length=80,
@@ -3272,7 +3278,7 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         hosts.all.zos_data_set(
             name=src_lib,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3300,7 +3306,7 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             hosts.all.zos_data_set(
                 name=dest_lib,
                 state="present",
-                type="pdse",
+                type="PDSE",
                 record_format="U",
                 record_length=0,
                 block_size=32760,
@@ -3312,7 +3318,7 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             hosts.all.zos_data_set(
                 name=dest_lib_aliases,
                 state="present",
-                type="pdse",
+                type="PDSE",
                 record_format="U",
                 record_length=0,
                 block_size=32760,
@@ -3453,7 +3459,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         hosts.all.zos_data_set(
             name=cobol_src_pds,
             state="present",
-            type="pds",
+            type="PDS",
             space_primary=2,
             record_format="FB",
             record_length=80,
@@ -3464,7 +3470,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         hosts.all.zos_data_set(
             name=src_lib,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3524,7 +3530,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             hosts.all.zos_data_set(
                 name=dest_lib,
                 state="present",
-                type="pdse",
+                type="PDSE",
                 record_format="U",
                 record_length=0,
                 block_size=32760,
@@ -3615,7 +3621,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=cobol_src_pds,
             state="present",
-            type="pds",
+            type="PDS",
             space_primary=2,
             record_format="FB",
             record_length=80,
@@ -3626,7 +3632,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=src_lib,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3651,7 +3657,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=dest_lib,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3663,7 +3669,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         hosts.all.zos_data_set(
             name=dest_lib_aliases,
             state="present",
-            type="pdse",
+            type="PDSE",
             record_format="U",
             record_length=0,
             block_size=32760,
@@ -3827,7 +3833,7 @@ def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
             hosts.all.zos_data_set(
                 name=dest,
                 state="present",
-                type="pdse",
+                type="PDSE",
                 record_format="U",
                 record_length=0,
                 block_size=32760,
@@ -3878,7 +3884,7 @@ def test_copy_pds_member_with_system_symbol(ansible_zos_module):
         hosts.all.zos_data_set(
             name=dest,
             state="present",
-            type="pdse",
+            type="PDSE",
             replace=True
         )
 
@@ -3914,8 +3920,8 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
     ds_list = ["{0}({1})".format(src, member) for member in member_list]
 
     try:
-        hosts.all.zos_data_set(name=src, type="pds")
-        hosts.all.zos_data_set(name=dest, type="pds")
+        hosts.all.zos_data_set(name=src, type="PDS")
+        hosts.all.zos_data_set(name=dest, type="PDS")
 
         for member in ds_list:
             hosts.all.shell(
@@ -3960,8 +3966,8 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
     dest_ds_list = ["{0}({1})".format(dest, member) for member in member_list]
 
     try:
-        hosts.all.zos_data_set(name=src, type="pds")
-        hosts.all.zos_data_set(name=dest, type="pds")
+        hosts.all.zos_data_set(name=src, type="PDS")
+        hosts.all.zos_data_set(name=dest, type="PDS")
 
         for src_member in src_ds_list:
             hosts.all.shell(
@@ -3994,7 +4000,7 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.pdse
-@pytest.mark.parametrize("ds_type", ["pds", "pdse"])
+@pytest.mark.parametrize("ds_type", ["PDS", "PDSE"])
 def test_copy_member_to_non_existing_uss_file(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
     data_set = get_tmp_ds_name()
@@ -4032,10 +4038,10 @@ def test_copy_member_to_non_existing_uss_file(ansible_zos_module, ds_type):
 @pytest.mark.uss
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(ds_type="pds", force=False),
-    dict(ds_type="pds", force=True),
-    dict(ds_type="pdse", force=False),
-    dict(ds_type="pdse", force=True)
+    dict(ds_type="PDS", force=False),
+    dict(ds_type="PDS", force=True),
+    dict(ds_type="PDSE", force=False),
+    dict(ds_type="PDSE", force=True)
 ])
 def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
     hosts = ansible_zos_module
@@ -4079,7 +4085,7 @@ def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
 @pytest.mark.uss
 @pytest.mark.pdse
 @pytest.mark.aliases
-@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+@pytest.mark.parametrize("src_type", ["PDS", "PDSE"])
 def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
@@ -4124,7 +4130,7 @@ def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
 @pytest.mark.uss
 @pytest.mark.pdse
 @pytest.mark.aliases
-@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+@pytest.mark.parametrize("src_type", ["PDS", "PDSE"])
 def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
@@ -4170,7 +4176,7 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
 
 @pytest.mark.seq
 @pytest.mark.pdse
-@pytest.mark.parametrize("src_type", ["pds", "pdse"])
+@pytest.mark.parametrize("src_type", ["PDS", "PDSE"])
 def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
@@ -4206,10 +4212,10 @@ def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
 @pytest.mark.seq
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="pds", force=False),
-    dict(type="pds", force=True),
-    dict(type="pdse", force=False),
-    dict(type="pdse", force=True),
+    dict(type="PDS", force=False),
+    dict(type="PDS", force=True),
+    dict(type="PDSE", force=False),
+    dict(type="PDSE", force=True),
 ])
 def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
     hosts = ansible_zos_module
@@ -4218,7 +4224,7 @@ def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present", replace=True)
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="present", replace=True)
         hosts.all.zos_data_set(name=src_ds, type=args["type"], state="present")
 
         for data_set in [src, dest]:
@@ -4251,7 +4257,7 @@ def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
 
 @pytest.mark.uss
 @pytest.mark.pdse
-@pytest.mark.parametrize("dest_type", ["pds", "pdse"])
+@pytest.mark.parametrize("dest_type", ["PDS", "PDSE"])
 def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
     hosts = ansible_zos_module
     src = "/etc/profile"
@@ -4262,7 +4268,7 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
             type=dest_type,
             space_primary=5,
             space_type="M",
-            record_format="fba",
+            record_format="FBA",
             record_length=25,
         )
 
@@ -4294,10 +4300,10 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
 
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="pds", backup=None),
-    dict(type="pds", backup="USER.TEST.PDS.BACKUP"),
-    dict(type="pdse", backup=None),
-    dict(type="pdse", backup="USER.TEST.PDSE.BACKUP"),
+    dict(type="PDS", backup=None),
+    dict(type="PDS", backup="USER.TEST.PDS.BACKUP"),
+    dict(type="PDSE", backup=None),
+    dict(type="PDSE", backup="USER.TEST.PDSE.BACKUP"),
 ])
 def test_backup_pds(ansible_zos_module, args):
     hosts = ansible_zos_module
@@ -4343,7 +4349,7 @@ def test_backup_pds(ansible_zos_module, args):
 
 @pytest.mark.seq
 @pytest.mark.pdse
-@pytest.mark.parametrize("src_type", ["seq", "pds", "pdse"])
+@pytest.mark.parametrize("src_type", ["SEQ", "PDS", "PDSE"])
 def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_type):
     hosts = ansible_zos_module
     source = get_tmp_ds_name()
@@ -4359,8 +4365,8 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
 
     try:
         hosts.all.zos_data_set(name=source, type=src_type, state='present')
-        if src_type != "seq":
-            hosts.all.zos_data_set(name=source_member, type="member", state='present')
+        if src_type != "SEQ":
+            hosts.all.zos_data_set(name=source_member, type="MEMBER", state='present')
 
         copy_res = hosts.all.zos_copy(
             src=source,
@@ -4631,7 +4637,7 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
     src_file = "/etc/profile"
     tmphlq = "TMPHLQ"
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        hosts.all.zos_data_set(name=dest, type="SEQ", state="present")
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, force=force)
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmp_hlq=tmphlq, force=force)
 

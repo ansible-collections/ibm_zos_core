@@ -6,7 +6,9 @@ on:
     branches:
       - dev
       - staging*
-    
+    paths:
+      - 'plugins/**'
+
 jobs:
   bandit:
     if: github.event.pull_request.draft == false

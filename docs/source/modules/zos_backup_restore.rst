@@ -200,6 +200,15 @@ hlq
   | **type**: str
 
 
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup data sets.
+
+  The default HLQ is the Ansible user that executes the module and if that is not available, then the value of ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
+
+
 
 
 Examples

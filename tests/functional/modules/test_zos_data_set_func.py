@@ -153,9 +153,9 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
     volume_1 = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
-        # hosts.all.zos_data_set(
-        #      name=dataset, state="cataloged", volumes=volume_1
-        # )
+        hosts.all.zos_data_set(
+             name=dataset, state="cataloged", volumes=volume_1
+        )
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -212,9 +212,9 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
     volume_1 = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
-        # hosts.all.zos_data_set(
-        #     name=dataset, state="cataloged", volumes=volume_1
-        # )
+        hosts.all.zos_data_set(
+            name=dataset, state="cataloged", volumes=volume_1
+        )
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -258,9 +258,9 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
     volume = volumes.get_available_vol()
     dataset = get_tmp_ds_name(2, 2)
     try:
-        # hosts.all.zos_data_set(
-        #     name=dataset, state="cataloged", volumes=volume
-        # )
+        hosts.all.zos_data_set(
+            name=dataset, state="cataloged", volumes=volume
+        )
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -306,9 +306,9 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         volume_1 = volumes.get_available_vol()
         hosts = ansible_zos_module
         dataset = get_tmp_ds_name(2, 2)
-        # hosts.all.zos_data_set(
-        #     name=dataset, state="cataloged", volumes=volume_1
-        # )
+        hosts.all.zos_data_set(
+            name=dataset, state="cataloged", volumes=volume_1
+        )
         hosts.all.zos_data_set(name=dataset, state="absent")
 
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -345,7 +345,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     volume_2 = volumes.get_available_vol()
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name(2, 2)
-    # hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)
+    hosts.all.zos_data_set(name=dataset, state="cataloged", volumes=volume_1)
 
     hosts.all.zos_data_set(name=dataset, state="absent")
 

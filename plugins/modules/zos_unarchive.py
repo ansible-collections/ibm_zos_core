@@ -410,7 +410,7 @@ AMATERSE_RECORD_LENGTH = 1024
 
 class Unarchive():
     def __init__(self, module):
-        """
+        """Handles Unarchive operations.
 
         Parameters
         ----------

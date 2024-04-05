@@ -2,6 +2,7 @@ name: AC Ansible sanity
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - dev
       - staging*
@@ -38,6 +39,7 @@ on:
 
 jobs:
   ansible-sanity:
+    if: ! github.event.pull_request.draft
     runs-on: ubuntu-latest
     env:
       branch: ${{ github.event.pull_request.head.ref }}

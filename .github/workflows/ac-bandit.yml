@@ -2,12 +2,14 @@ name: AC Bandit
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - dev
       - staging*
     
 jobs:
   bandit:
+    if: ! github.event.pull_request.draft
     runs-on: ubuntu-latest
 
     steps:

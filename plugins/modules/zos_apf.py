@@ -312,15 +312,15 @@ DS_TYPE = ['PS', 'PO']
 
 
 def backupOper(module, src, backup, tmphlq=None):
-    """Backup operations
+    """Create a backup for a specified USS file or MVS data set.
 
     Parameters
     ----------
     module : AnsibleModule
     src : str
-        Source of the file.
+        Source USS file or data set to backup.
     backup : str
-        Name for the backup file.
+        Name for the backup.
     tmphlq : str
         The name of the temporary high level qualifier to use.
 

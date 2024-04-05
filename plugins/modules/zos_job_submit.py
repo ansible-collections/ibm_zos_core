@@ -49,10 +49,10 @@ options:
       - uss
       - local
     description:
-      - The JCL location. Supported choices are ``data_set``, ``uss`` or ``local``.
-      - ``data_set`` can be a PDS, PDSE, or sequential data set.
-      - ``uss`` means the JCL location is located in UNIX System Services (USS).
-      - ``local`` means locally to the ansible control node.
+      - The JCL location. Supported choices are C(data_set), C(uss) or C(local).
+      - C(data_set) can be a PDS, PDSE, or sequential data set.
+      - C(uss) means the JCL location is located in UNIX System Services (USS).
+      - C(local) means locally to the ansible control node.
   wait_time_s:
     required: false
     default: 10
@@ -80,7 +80,7 @@ options:
     required: false
     type: str
     description:
-      - The volume serial (VOLSER)is where the data set resides. The option
+      - The volume serial (VOLSER) is where the data set resides. The option
         is required only when the data set is not cataloged on the system.
       - When configured, the L(zos_job_submit,./zos_job_submit.html) will try to
         catalog the data set for the volume serial. If it is not able to, the

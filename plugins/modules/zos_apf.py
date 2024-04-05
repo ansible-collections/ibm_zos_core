@@ -18,7 +18,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: zos_apf
+module: zos_apf.
 version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"

@@ -922,13 +922,48 @@ class MVSArchive(Archive):
 
         Parameters
         ----------
+        name : str
+            Name for the temporary data set.
+        replace : bool
+            Used to determine behavior when data set already exists.
+        type : str
+            Type of the dataset.
+        space_primary : int
+            Size of the source.
+        space_secondary : int
+            The amount of secondary space to allocate for the dataset.
+        space_type : str
+            The unit of measurement to use when defining primary and secondary space.
+        record_format : str
+            The record format to use for the dataset.
+        record_length : int
+            The length, in bytes, of each record in the data set.
+        block_size : int
+            The block size to use for the data set.
+        directory_blocks : int
+            The number of directory blocks to allocate to the data set.
+        key_length : int
+            The key length of a record.
+        key_offset : int
+            The key offset is the position of the first byte of the key
+            in each logical record of a the specified VSAM data set.
+        sms_storage_class : str
+            The storage class for an SMS-managed dataset.
+        sms_data_class : str
+            The data class for an SMS-managed dataset.
+        sms_management_class : str
+            The management class for an SMS-managed dataset.
+        volumes : list[str,list[str]]
+            A list of volume serials.
         tmp_hlq : str
             A HLQ specified by the user for temporary data sets.
+        force : bool
+            Used to determine behavior when performing member operations on a pdse.
 
         Returns
         -------
-        str
-            Name of the temporary data set created.
+        tuple(str,bool)
+            Name of the temporary data set created and if something changed.
         """
         arguments = locals()
         if name is None:

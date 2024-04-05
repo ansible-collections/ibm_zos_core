@@ -88,7 +88,8 @@ options:
       - Use a negative size to find files equal to or less than the specified size.
       - Unqualified values are in bytes but b, k, m, g, and t can be appended to
         specify bytes, kilobytes, megabytes, gigabytes, and terabytes, respectively.
-      - Filtering by size is currently only valid for sequential and partitioned data sets.
+      - Filtering by size is currently only valid for sequential and partitioned data sets,
+        but not for partitioned data sets extended(PDSE).
     required: false
     type: str
   pds_patterns:
@@ -479,7 +480,7 @@ def data_set_attribute_filter(
                 age and not size and _age_filter(ds_age, now, age)
             ) or
             (
-                size and not age and _size_filter(int(out[5]), size)
+                size and not age and _size_filter(int(out[6]), size)
             )
         ):
             filtered_data_sets.add(ds)

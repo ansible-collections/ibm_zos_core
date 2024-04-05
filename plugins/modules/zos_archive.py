@@ -547,22 +547,42 @@ class Archive():
         ----------
         module : AnsibleModule
             AnsibleModule to use.
-        dest : 
-        format : 
-        remove : 
-        changed : 
-        errors : 
-        found : 
-        targets : 
-        archived : 
-        not_found : 
-        force : 
-        sources : 
-        arcroot : 
-        expanded_sources : 
-        expanded_exclude_sources : 
-        dest_state : 
-        state : 
+        dest : str
+            Destination path.
+        format : dict
+            The compression type and corresponding options to use when archiving
+            data.
+        remove : bool
+            Whether to remove any added source files, trees or data sets after module
+            adds them to the archive.
+        changed : bool
+        errors : str
+            Errors ocurred.
+        found : list[str]
+            List of found datasets.
+        targets : list[str]
+            List of paths that are in sources given.
+        archived : list[str]
+            Any files or data sets that were compressed or added to the
+            archive.
+        not_found : list[str]
+            List of paths that are missing from the sources.
+        force : bool
+            If set to true and the remote file or data set dest will be
+            deleted.
+        sources : list[str]
+            List of sources to get files from.
+        arcroot : str
+            If src is a list of USS files, this returns the top most parent
+            folder of the list of files, otherwise is empty.
+        expanded_sources : list[str]
+            The list of matching paths from the src option.
+        expanded_exclude_sources : list[str]
+            The list of matching exclude paths from the exclude option.
+        dest_state : str
+            The state of the dest file or data set.
+        state : str
+            The state of the input C(src).
         xmit_log_data_set : str
             The name of the data set to store xmit log output.
         """
@@ -586,6 +606,13 @@ class Archive():
         self.xmit_log_data_set = ""
 
     def targets_exist(self):
+        """Returns if there are targets or not.
+
+        Returns
+        -------
+        bool
+            If the targets list is not empty.
+        """
         return bool(self.targets)
 
     @abc.abstractmethod
@@ -649,6 +676,27 @@ class Archive():
 
 class USSArchive(Archive):
     def __init__(self, module):
+        """Archive for USS files.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            Ansible module to get parameters from.
+
+        Attributes
+        ----------
+        original_checksums : str
+            The SHA256 hash of the contents of input file.
+        arcroot : str
+            If src is a list of USS files, this returns the top most parent
+            folder of the list of files, otherwise is empty.
+        expanded_sources : list[str]
+            The list of matching paths from the src option.
+        expanded_exclude_sources : list[str]
+            The list of matching exclude paths from the exclude option.
+        sources : list[str]
+            List of sources to get files from.
+        """
         super(USSArchive, self).__init__(module)
         self.original_checksums = self.dest_checksums()
         if len(self.sources) == 1:
@@ -662,16 +710,33 @@ class USSArchive(Archive):
         self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
 
     def dest_exists(self):
+        """Returns if destination path exits.
+
+        Returns
+        -------
+        bool
+            If destination path exists.
+        """
         return os.path.exists(self.dest)
 
     def dest_type(self):
+        """Returns the destination type.
+
+        Returns
+        str
+            "USS".
+        """
         return "USS"
 
     def update_permissions(self):
+        """Updates permissions.
+        """
         file_args = self.module.load_file_common_arguments(self.module.params, path=self.dest)
         self.changed = self.module.set_fs_attributes_if_different(file_args, self.changed)
 
     def find_targets(self):
+        """Classifies paths in source to either targets or not_found based on whether they exist or not.
+        """
         for path in self.sources:
             if os.path.exists(path):
                 self.targets.append(path)
@@ -679,13 +744,17 @@ class USSArchive(Archive):
                 self.not_found.append(path)
 
     def _get_checksums(self, src):
-        """Calculate SHA256 hash for a given file
+        """Calculate SHA256 hash for a given file.
 
-        Arguments:
-            src {str} -- The absolute path of the file
+        Parameters
+        ----------
+        src : str
+            The absolute path of the file.
 
-        Returns:
-            str -- The SHA256 hash of the contents of input file
+        Returns
+        -------
+        str
+            The SHA256 hash of the contents of input file.
         """
         b_src = to_bytes(src)
         if not os.path.exists(b_src) or os.path.isdir(b_src):
@@ -703,16 +772,32 @@ class USSArchive(Archive):
         return hash_digest.hexdigest()
 
     def dest_checksums(self):
+        """Returns destination file checksums if it exists.
+
+        Returns
+        -------
+        str
+            The SHA256 hash of the contents of destination file.
+        """
         if self.dest_exists():
             return self._get_checksums(self.dest)
         return None
 
     def is_different_from_original(self):
+        """Checks if the destination is different from the original based on checksums.
+
+        Returns
+        -------
+        bool
+            If the SHA256 hash of the contents of destination file is different from the original's.
+        """
         if self.original_checksums is not None:
             return self.original_checksums != self.dest_checksums()
         return True
 
     def remove_targets(self):
+        """Removes the archived targets and changes the state accordingly.
+        """
         self.state = STATE_ABSENT
         for target in self.archived:
             if os.path.isdir(target):
@@ -727,6 +812,8 @@ class USSArchive(Archive):
                     self.state = STATE_INCOMPLETE
 
     def archive_targets(self):
+        """Archives targets
+        """
         self.file = self.open(self.dest)
 
         try:
@@ -763,10 +850,21 @@ class USSArchive(Archive):
         self.file.close()
 
     def add(self, source, arcname):
+        """Add source into the destination archive.
+
+        Parameters
+        ----------
+        source : str
+            Source of the file.
+        arcname : str
+            Destination archive name for where to add the source into.
+        """
         self._add(source, arcname)
         self.archived.append(source)
 
     def get_state(self):
+        """Sets dest_state attribute based on if the destination exists, is an archive or any path was not found.
+        """
         if not self.dest_exists():
             self.dest_state = STATE_ABSENT
         else:
@@ -873,6 +971,33 @@ class ZipArchive(USSArchive):
 
 class MVSArchive(Archive):
     def __init__(self, module):
+        """Archive for MVS files.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+
+        Attributes
+        ----------
+        original_checksums : str
+            The SHA256 hash of the contents of input file.
+        use_adrdssu : bool
+            Whether to use Data Facility Storage Management Subsystem data set services
+            program ADRDSSU to uncompress data sets or not.
+        expanded_sources : list[str]
+            The list of matching paths from the src option.
+        expanded_exclude_sources : list[str]
+            The list of matching exclude paths from the exclude option.
+        sources : list[str]
+            List of sources to get files from.
+        dest_dat_set : dict
+            Destination data set.
+        source_size : int
+            Source size.
+        tmphlq : str
+            High level qualifier for temporary datasets.
+        """
         super(MVSArchive, self).__init__(module)
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
@@ -1062,6 +1187,18 @@ class MVSArchive(Archive):
         return rc
 
     def _get_checksums(self, src):
+        """Calculate SHA256 hash for a given file.
+
+        Parameters
+        ----------
+        src : str
+            The absolute path of the file.
+
+        Returns
+        -------
+        str
+            The SHA256 hash of the contents of input file.
+        """
         sha256_cmd = "sha256 \"//'{0}'\"".format(src)
         rc, out, err = self.module.run_command(sha256_cmd)
         checksums = out.split("= ")
@@ -1070,22 +1207,51 @@ class MVSArchive(Archive):
         return None
 
     def dest_checksums(self):
+        """Returns destination file checksums if it exists.
+
+        Returns
+        -------
+        str
+            The SHA256 hash of the contents of destination file.
+        """
         if self.dest_exists():
             return self._get_checksums(self.dest)
         return None
 
     def is_different_from_original(self):
+        """Checks if the destination is different from the original based on checksums.
+
+        Returns
+        -------
+        bool
+            If the SHA256 hash of the contents of destination file is different from the original's.
+        """
         if self.original_checksums is not None:
             return self.original_checksums != self.dest_checksums()
         return True
 
     def dest_type(self):
+        """Returns the destination type.
+
+        Returns
+        str
+            "MVS".
+        """
         return "MVS"
 
     def dest_exists(self):
+        """Returns if destination path exits.
+
+        Returns
+        -------
+        bool
+            If destination path exists.
+        """
         return data_set.DataSet.data_set_exists(self.dest)
 
     def remove_targets(self):
+        """Removes the archived targets and changes the state accordingly.
+        """
         self.state = STATE_ABSENT
         for target in self.archived:
             try:
@@ -1097,6 +1263,18 @@ class MVSArchive(Archive):
         return
 
     def expand_mvs_paths(self, paths):
+        """Expand mvs paths.
+
+        Parameters
+        ----------
+        paths : list[str]
+            List of paths to expand.
+
+        Returns
+        -------
+        Union[str]
+            Extended paths.
+        """
         expanded_path = []
         for path in paths:
             if '*' in path:
@@ -1108,6 +1286,8 @@ class MVSArchive(Archive):
         return expanded_path
 
     def get_state(self):
+        """Sets dest_state attribute based on if the destination exists, is an archive or any path was not found.
+        """
         if not self.dest_exists():
             self.dest_state = STATE_ABSENT
         else:

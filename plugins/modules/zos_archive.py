@@ -536,7 +536,7 @@ def is_archive(path):
 
 class Archive():
     def __init__(self, module):
-        """
+        """Handles archive operations.
 
         Parameters
         ----------
@@ -563,7 +563,8 @@ class Archive():
         expanded_exclude_sources : 
         dest_state : 
         state : 
-        xmit_log_data_set : 
+        xmit_log_data_set : str
+            The name of the data set to store xmit log output.
         """
         self.module = module
         self.dest = module.params['dest']
@@ -777,9 +778,28 @@ class USSArchive(Archive):
 
 class TarArchive(USSArchive):
     def __init__(self, module):
+        """Archive for Tar.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        """
         super(TarArchive, self).__init__(module)
 
     def open(self, path):
+        """Open the archive with the given path.
+
+        Parameters
+        ----------
+        path : str
+            Path of the archive.
+
+        Returns
+        -------
+        TarFile
+            The opened TarFile.
+        """
         if self.format == 'tar':
             file = tarfile.open(path, 'w')
         elif self.format == 'pax':
@@ -789,14 +809,47 @@ class TarArchive(USSArchive):
         return file
 
     def _add(self, source, arcname):
+        """Add source into the destination archive.
+
+        Parameters
+        ----------
+        source : str
+            Source of the file.
+        arcname : str
+            Destination archive name for where to add the source into.
+        """
         self.file.add(source, arcname)
 
 
 class ZipArchive(USSArchive):
     def __init__(self, module):
+        """Archive for Zip.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        """
         super(ZipArchive, self).__init__(module)
 
     def open(self, path):
+        """Open the archive with the given path.
+
+        Parameters
+        ----------
+        path : str
+            Path of the archive.
+
+        Returns
+        -------
+        ZipFile
+            The opened ZipFile.
+
+        Raises
+        ------
+        BadZipFile
+            Improperly compressed zip file, unable to to open file.
+        """
         try:
             file = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, True)
         except zipfile.BadZipFile:
@@ -806,6 +859,15 @@ class ZipArchive(USSArchive):
         return file
 
     def _add(self, source, arcname):
+        """Add source into the destination archive.
+
+        Parameters
+        ----------
+        source : str
+            Source of the file.
+        arcname : str
+            Destination archive name for where to add the source into.
+        """
         self.file.write(source, arcname)
 
 
@@ -829,8 +891,7 @@ class MVSArchive(Archive):
         pass
 
     def find_targets(self):
-        """
-        Finds target datasets in host.
+        """Finds target datasets in host.
         """
         for path in self.sources:
             if data_set.DataSet.data_set_exists(path):
@@ -859,11 +920,15 @@ class MVSArchive(Archive):
     ):
         """Create a temporary data set.
 
-        Arguments:
-            tmp_hlq(str): A HLQ specified by the user for temporary data sets.
+        Parameters
+        ----------
+        tmp_hlq : str
+            A HLQ specified by the user for temporary data sets.
 
-        Returns:
-            str: Name of the temporary data set created.
+        Returns
+        -------
+        str
+            Name of the temporary data set created.
         """
         arguments = locals()
         if name is None:
@@ -891,12 +956,17 @@ class MVSArchive(Archive):
         return arguments["name"], changed
 
     def create_dest_ds(self, name):
-        """
-        Create destination data set to use as an archive.
-        Arguments:
-            name: {str}
-        Returns:
-            name {str} - name of the newly created data set.
+        """Create destination data set to use as an archive.
+
+        Parameters
+        ----------
+        name : str
+            Name for the dataset.
+
+        Returns
+        -------
+        str
+            Name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
         data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
@@ -915,8 +985,22 @@ class MVSArchive(Archive):
         return name
 
     def dump_into_temp_ds(self, temp_ds):
-        """
-        Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
+        """Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
+
+        Parameters
+        ----------
+        temp_ds : str
+            Temporal dataset name.
+
+        Returns
+        -------
+        int
+            Return code.
+
+        Raises
+        ------
+        fail_json
+            Failed executing ADRDSSU to archive.
         """
         dump_cmd = """ DUMP OUTDDNAME(TARGET) -
          OPTIMIZE(4) DS(INCL( - """
@@ -999,10 +1083,15 @@ class MVSArchive(Archive):
 
     def clean_environment(self, data_sets=None, uss_files=None, remove_targets=False):
         """Removes any allocated data sets that won't be needed after module termination.
-        Arguments:
-            data_sets - {list(str)} : list of data sets to remove
-            uss_files - {list(str)} : list of uss files to remove
-            remove_targets - bool : Indicates if already unpacked data sets need to be removed too.
+
+        Parameters
+        ----------
+        data_sets : list(str)
+            list of data sets to remove
+        uss_files : list(str)
+            list of uss files to remove
+        remove_targets : bool
+            Indicates if already unpacked data sets need to be removed too.
         """
         if data_set is not None:
             for ds in data_sets:
@@ -1017,12 +1106,7 @@ class MVSArchive(Archive):
             self.remove_targets()
 
     def compute_dest_size(self):
-        """
-        Calculate the destination data set based on targets found.
-            Arguments:
-
-            Returns:
-                {int} - Destination computed space in kilobytes.
+        """Calculate the destination data set based on targets found. And sets it do space_primary attribute.
         """
         if self.dest_data_set.get("space_primary") is None:
             dest_space = 1
@@ -1037,17 +1121,42 @@ class MVSArchive(Archive):
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
+        """Archive for XMIT.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+
+        Attributes
+        ----------
+        pack_arg : str
+            Compression option for use with the terse format.
+        """
         super(AMATerseArchive, self).__init__(module)
         self.pack_arg = module.params.get("format").get("format_options").get("terse_pack")
         if self.pack_arg is None:
             self.pack_arg = "SPACK"
 
     def add(self, src, archive):
-        """
-        Archive src into archive using AMATERSE program.
-        Arguments:
-            src: {str}
-            archive: {str}
+        """Archive src into archive using AMATERSE program.
+
+        Parameters
+        ----------
+        src : str
+            Source of the archive.
+        archive : str
+            Destination archive.
+
+        Returns
+        -------
+        int
+            Return code.
+
+        Raises
+        ------
+        fail_json
+            Failed executing AMATERSE to archive source.
         """
         dds = {'args': self.pack_arg, 'sysut1': src, 'sysut2': archive}
         rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
@@ -1062,8 +1171,12 @@ class AMATerseArchive(MVSArchive):
         return rc
 
     def archive_targets(self):
-        """
-        Add MVS Datasets to the AMATERSE Archive by creating a temporary dataset and dumping the source datasets into it.
+        """Add MVS Datasets to the AMATERSE Archive by creating a temporary dataset and dumping the source datasets into it.
+
+        Raises
+        ------
+        fail_json
+            To archive multiple source data sets, you must use option 'use_adrdssu=True'.
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
@@ -1098,15 +1211,35 @@ class AMATerseArchive(MVSArchive):
 
 class XMITArchive(MVSArchive):
     def __init__(self, module):
+        """Archive for XMIT.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+
+        Attributes
+        ----------
+        xmit_log_data_set : str
+            The name of the data set to store xmit log output.
+        """
         super(XMITArchive, self).__init__(module)
         self.xmit_log_data_set = module.params.get("format").get("format_options").get("xmit_log_data_set")
 
     def add(self, src, archive):
-        """
-        Archive src into archive using TSO XMIT.
-        Arguments:
-            src: {str}
-            archive: {str}
+        """Archive src into archive using TSO XMIT.
+
+        Parameters
+        ----------
+        src : str
+            Source of the archive.
+        archive : str
+            Destination archive.
+
+        Raises
+        ------
+        fail_json
+            An error occurred while executing 'TSO XMIT' to archive source.
         """
         log_option = "LOGDSNAME({0})".format(self.xmit_log_data_set) if self.xmit_log_data_set else "NOLOG"
         xmit_cmd = """
@@ -1131,8 +1264,12 @@ class XMITArchive(MVSArchive):
         return rc
 
     def archive_targets(self):
-        """
-        Adds MVS Datasets to the TSO XMIT Archive by creating a temporary dataset and dumping the source datasets into it.
+        """Adds MVS Datasets to the TSO XMIT Archive by creating a temporary dataset and dumping the source datasets into it.
+
+        Raises
+        ------
+        fail_json
+            To archive multiple source data sets, you must use option 'use_adrdssu=True'.
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
@@ -1165,13 +1302,21 @@ class XMITArchive(MVSArchive):
         self.clean_environment(data_sets=self.tmp_data_sets)
 
     def get_error_hint(self, output):
-        """
-        Takes a raw TSO XMIT output and parses the abend code and return code to provide an
+        """Takes a raw TSO XMIT output and parses the abend code and return code to provide an
         appropriate error hint for the failure.
         If parsing is not possible then return an empty string.
 
-        Arguments:
-            output (str): Raw TSO XMIT output returned from ikjeft01 when the command fails.
+        Parameters
+        ----------
+        output : str
+            Raw TSO XMIT output returned from ikjeft01 when the command fails.
+
+        Returns
+        -------
+        str
+            Operation failed.
+        str
+            '', if IndexError.
         """
         error_messages = dict(D37={"00000004": "There appears to be a space issue. Ensure that there is adequate space and log data sets are not full."})
 
@@ -1198,6 +1343,15 @@ class XMITArchive(MVSArchive):
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        The file already exists. Use force flag to replace destination.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(type='list', elements='str', required=True),

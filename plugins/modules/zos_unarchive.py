@@ -410,6 +410,44 @@ AMATERSE_RECORD_LENGTH = 1024
 
 class Unarchive():
     def __init__(self, module):
+        """
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+
+        Attributes
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        src : str
+            Source path of the unarchive.
+        dest : str
+            Destination of the unarchive.
+        format : str
+            Name of the format of the module.
+        format_options : list[str]
+            Options of the format of the module.
+        tmphql : str
+            High level qualifier for temporary datasets.
+        force : str
+            Whether force an operation or not.
+        targets : list
+            List of members in the source archive.
+        include : list[str]
+            List of paths to include in extraction.
+        exclude : list[str]
+            List of paths to exclude in extraction.
+        list : bool
+            Whether to execute list_archive_content() or not.
+        changed : bool
+            If there are targeted paths.
+        missing : list
+            Paths that were on include, but are missing from the files in archive.
+        remote_src : bool
+            If the source is remote or not.
+        """
         self.module = module
         self.src = module.params.get("src")
         self.dest = module.params.get("dest")
@@ -436,17 +474,37 @@ class Unarchive():
         pass
 
     def src_exists(self):
+        """If source exist.
+
+        Returns
+        -------
+        bool
+            If source exists.
+        """
         return self.src and os.path.exists(self.src)
 
     def dest_type(self):
+        """The type of destination
+
+        Returns
+        -------
+        str
+            "USS"
+        """
         return "USS"
 
     def dest_unarchived(self):
+        """Destination Unarchived.
+
+        Returns
+        -------
+        bool
+            Boolean expression of the targets attribute.
+        """
         return bool(self.targets)
 
     def update_permissions(self):
-        """
-        Update permissions in unarchived files.
+        """Update permissions in unarchived files.
         """
         for target in self.targets:
             file_name = os.path.join(validation.validate_safe_path(self.dest), validation.validate_safe_path(target))
@@ -455,6 +513,13 @@ class Unarchive():
 
     @property
     def result(self):
+        """Result.
+
+        Returns
+        -------
+        dict
+            Arguments showing the result.
+        """
         return {
             'src': self.src,
             'dest_path': self.dest,
@@ -464,21 +529,39 @@ class Unarchive():
         }
 
     def extract_all(self, members):
+        """Extract all members given.
+
+        Parameters
+        ----------
+        members : list
+            List of members to extract.
+        """
         for member in members:
             self.file.extract(member)
 
 
 class TarUnarchive(Unarchive):
     def __init__(self, module):
+        """Unarchive for tar archives.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        """
         super(TarUnarchive, self).__init__(module)
 
     def open(self, path):
         """Open an archive using tarfile lib for read.
 
-        Arguments:
-            path(str): Path to a tar, pax, gz or bz2 file to be opened.
+        Parameters
+        ----------
+        path : str
+            Path to a tar, pax, gz or bz2 file to be opened.
 
-        Returns:
+        Returns
+        -------
+        TarFile
             Return a TarFile object for the path name.
         """
         if self.format == 'tar':
@@ -492,16 +575,27 @@ class TarUnarchive(Unarchive):
         return file
 
     def list_archive_content(self, path):
+        """Sets a list of members in the source archive to the targets attribute.
+
+        Parameters
+        ----------
+        path : str
+            Path to a tar, pax, gz or bz2 file to list its contents.
+        """
         self.targets = self._list_content(self.src)
 
     def _list_content(self, path):
         """Returns a list of members in an archive.
 
-        Arguments:
-            path(str): Path to a tar, pax, gz or bz2 file to list its contents.
+        Parameters
+        ----------
+        path : str
+            Path to a tar, pax, gz or bz2 file to list its contents.
 
-        Returns:
-            list(str): List of members inside the archive.
+        Returns
+        -------
+        Union[str]
+            List of members inside the archive.
         """
         self.file = self.open(path)
         members = self.file.getnames()
@@ -510,7 +604,6 @@ class TarUnarchive(Unarchive):
 
     def extract_src(self):
         """Unpacks the contents of the archive stored in path into dest folder.
-
         """
         original_working_dir = os.getcwd()
         # The function gets relative paths, so it changes the current working
@@ -543,11 +636,32 @@ class TarUnarchive(Unarchive):
 
 class ZipUnarchive(Unarchive):
     def __init__(self, module):
+        """Unarchive for zip archives.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        """
         super(ZipUnarchive, self).__init__(module)
 
     def open(self, path):
         """Unpacks the contents of the archive stored in path into dest folder.
 
+        Parameters
+        ----------
+        path : str
+            Path to the zip archive.
+
+        Returns
+        -------
+        ZipFile
+            Zip file on the specified path.
+
+        Raises
+        ------
+        BadZipFile
+            Improperly compressed zip file, unable to to open.
         """
         try:
             file = zipfile.ZipFile(path, 'r', zipfile.ZIP_DEFLATED, True)
@@ -558,16 +672,22 @@ class ZipUnarchive(Unarchive):
         return file
 
     def list_archive_content(self):
+        """Sets a list of members in the source archive to the targets attribute.
+        """
         self.targets = self._list_content(self.src)
 
     def _list_content(self, path):
         """Returns a list of members in an archive.
 
-        Arguments:
-            path(str): Path to a tar, pax, gz or bz2 file to list its contents.
+        Parameters
+        ----------
+        path : str
+            Path to a tar, pax, gz or bz2 file to list its contents.
 
-        Returns:
-            list(str): List of members inside the archive.
+        Returns
+        -------
+        Union[str]
+            List of members inside the archive.
         """
         self.file = self.open(path)
         members = self.file.namelist()
@@ -577,11 +697,15 @@ class ZipUnarchive(Unarchive):
     def extract_src(self):
         """Returns a list of members in an archive.
 
-        Arguments:
-            path(str): Path to a tar, pax, gz or bz2 file to list its contents.
+        Parameters
+        ----------
+        path : str
+            Path to a tar, pax, gz or bz2 file to list its contents.
 
-        Returns:
-            list(str): List of members inside the archive.
+        Returns
+        -------
+        Union[str]
+            List of members inside the archive.
         """
         original_working_dir = os.getcwd()
         # The function gets relative paths, so it changes the current working
@@ -614,6 +738,25 @@ class ZipUnarchive(Unarchive):
 
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
+        """Unarchive for MVS archives.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+
+        Attributes
+        ----------
+        volumes : list[str]
+            List of destination volumes.
+        use_adrdssu : bool
+            Whether to use Data Facility Storage Management Subsystem data set services
+            program ADRDSSU to uncompress data sets or not.
+        dest_dat_set : dict
+            Destination data set.
+        source_size : int
+            Source size.
+        """
         super(MVSUnarchive, self).__init__(module)
         self.volumes = self.format_options.get("dest_volumes")
         self.use_adrdssu = self.format_options.get("use_adrdssu")
@@ -622,15 +765,19 @@ class MVSUnarchive(Unarchive):
         self.source_size = 0
 
     def dest_type(self):
+        """Returns the destination type.
+
+        Returns
+        -------
+        str
+            'MVS'
+        """
         return "MVS"
 
     def _compute_dest_data_set_size(self):
-        """
-        Computes the attributes that the destination data set or temporary destination
+        """Computes the attributes that the destination data set or temporary destination
         data set should have in terms of size, record_length, etc.
-        """
 
-        """
         - Size of temporary DS for archive handling.
 
         If remote_src then we can get the source_size from archive on the system.
@@ -644,6 +791,11 @@ class MVSUnarchive(Unarchive):
         but how much? In this case we can add dest_data_set option.
 
         Apparently the only problem is when format name is terse.
+
+        Returns
+        -------
+        int
+            Source size.
         """
 
         # Get the size from the system
@@ -677,11 +829,48 @@ class MVSUnarchive(Unarchive):
     ):
         """Create a temporary data set.
 
-        Arguments:
-            tmp_hlq(str): A HLQ specified by the user for temporary data sets.
+        Parameters
+        ----------
+        name : str
+            Name for the temporary data set.
+        replace : bool
+            Used to determine behavior when data set already exists.
+        type : str
+            Type of the dataset.
+        space_primary : int
+            Size of the source.
+        space_secondary : int
+            The amount of secondary space to allocate for the dataset.
+        space_type : str
+            The unit of measurement to use when defining primary and secondary space.
+        record_format : str
+            The record format to use for the dataset.
+        record_length : int
+            The length, in bytes, of each record in the data set.
+        block_size : int
+            The block size to use for the data set.
+        directory_blocks : int
+            The number of directory blocks to allocate to the data set.
+        key_length : int
+            The key length of a record.
+        key_offset : int
+            The key offset is the position of the first byte of the key
+            in each logical record of a the specified VSAM data set.
+        sms_storage_class : str
+            The storage class for an SMS-managed dataset.
+        sms_management_class : str
+            The management class for an SMS-managed dataset.
+        volumes : list[str,list[str]]
+            A list of volume serials.
+        tmp_hlq : str
+            A HLQ specified by the user for temporary data sets.
+        force : bool
+            Used to determine behavior when performing member operations on a pdse.
 
-        Returns:
-            str: Name of the temporary data set created.
+        Returns
+        -------
+        tuple(str,bool)
+            Name of the temporary data set created and if something changed.
         """
         arguments = locals()
         if name is None:
@@ -704,6 +893,13 @@ class MVSUnarchive(Unarchive):
         return arguments["name"], changed
 
     def _get_include_data_sets_cmd(self):
+        """Get the command with the datasets from the paths in include.
+
+        Returns
+        -------
+        str
+            Command to include the datasets from the paths in include.
+        """
         include_cmd = "INCL( "
         for include_ds in self.include:
             include_cmd += " '{0}', - \n".format(include_ds)
@@ -711,6 +907,13 @@ class MVSUnarchive(Unarchive):
         return include_cmd
 
     def _get_exclude_data_sets_cmd(self):
+        """Get the command with the datasets from the paths in exclude.
+
+        Returns
+        -------
+        str
+            Command to exclude the datasets from the paths in exclude.
+        """
         exclude_cmd = "EXCL( - \n"
         for exclude_ds in self.exclude:
             exclude_cmd += " '{0}', - \n".format(exclude_ds)
@@ -718,6 +921,13 @@ class MVSUnarchive(Unarchive):
         return exclude_cmd
 
     def _get_volumes(self):
+        """Get the command with the volumes.
+
+        Returns
+        -------
+        str
+            Command with the volumes.
+        """
         volumes_cmd = "OUTDYNAM( - \n"
         for volume in self.volumes:
             volumes_cmd += " ('{0}'), - \n".format(volume)
@@ -728,11 +938,15 @@ class MVSUnarchive(Unarchive):
         """
         Calls ADDRSU using RESTORE to unpack the dump datasets.
 
-        Arguments:
-            source(str): Name of the data set to use as archive in ADRDSSU restore operation.
+        Parameters
+        ----------
+        source : str
+            Name of the data set to use as archive in ADRDSSU restore operation.
 
-        Returns:
-            int: Return code result of restore operation.
+        Returns
+        -------
+        int
+            Return code result of restore operation.
         """
         filter = "INCL(**) "
         volumes = ""
@@ -768,9 +982,28 @@ class MVSUnarchive(Unarchive):
         return rc
 
     def src_exists(self):
+        """Checks if the source exists or not
+
+        Returns
+        -------
+        bool
+            If the source exists.
+        """
         return data_set.DataSet.data_set_exists(self.src)
 
     def _get_restored_datasets(self, output):
+        """Gets the datasets that were successfully restored.
+
+        Parameters
+        ----------
+        output : str
+            Output to search the successful datasets from.
+
+        Returns
+        -------
+        Union
+          The list with all the restored datasets.
+        """
         ds_list = list()
         find_ds_list = re.findall(r"SUCCESSFULLY PROCESSED\n(?:.*\n)*", output)
         if find_ds_list:
@@ -779,6 +1012,18 @@ class MVSUnarchive(Unarchive):
         return ds_list
 
     def _get_unrestored_datasets(self, output):
+        """Gets the datasets that were not successfully restored.
+
+        Parameters
+        ----------
+        output : str
+            Output to search the not successful datasets from.
+
+        Returns
+        -------
+        Union
+          The list with all the not restored datasets.
+        """
         ds_list = list()
         output = output.split("SUCCESSFULLY PROCESSED")[0]
         find_ds_list = re.findall(r"NOT PROCESSED FROM THE LOGICALLY FORMATTED DUMP TAPE DUE TO \n(?:.*\n)*", output)
@@ -792,7 +1037,6 @@ class MVSUnarchive(Unarchive):
 
     def extract_src(self):
         """Extract the MVS path contents.
-
         """
         temp_ds = ""
         if not self.use_adrdssu:
@@ -814,12 +1058,21 @@ class MVSUnarchive(Unarchive):
         return
 
     def _list_content(self, source):
+        """Runs a command to get datasets and gives the output to _get_restored_datasets().
+
+        Parameters
+        ----------
+        source : str
+            The source of the archive.
+        """
         restore_cmd = " RESTORE INDD(ARCHIVE) DS(INCL(**)) "
         cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd)
         self._get_restored_datasets(out)
 
     def list_archive_content(self):
+        """Creates a temporary dataset to use in _list_content().
+        """
         temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
         self.unpack(self.src, temp_ds)
         self._list_content(temp_ds)
@@ -829,10 +1082,15 @@ class MVSUnarchive(Unarchive):
 
     def clean_environment(self, data_sets=None, uss_files=None, remove_targets=False):
         """Removes any allocated data sets that won't be needed after module termination.
-        Arguments:
-            data_sets - {list(str)} : list of data sets to remove
-            uss_files - {list(str)} : list of uss files to remove
-            remove_targets - bool : Indicates if already unpacked data sets need to be removed too.
+
+        Parameters
+        ----------
+        data_sets : list[str]
+            List of data sets to remove.
+        uss_files : list[str]
+            List of uss files to remove.
+        remove_targets : bool
+            Indicates if already unpacked data sets need to be removed too.
         """
         if data_set is not None:
             for ds in data_sets:
@@ -847,11 +1105,34 @@ class MVSUnarchive(Unarchive):
 
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
+        """Unarchive for AMATerse archives.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        """
         super(AMATerseUnarchive, self).__init__(module)
 
     def unpack(self, src, dest):
-        """
-        Unpacks using AMATerse, assumes the data set has only been packed once.
+        """Unpacks using AMATerse, assumes the data set has only been packed once.
+
+        Parameters
+        ----------
+        src : str
+            Source of the archive to unpack.
+        dest : str
+            Destination dataset to unpack the file.
+
+        Returns
+        -------
+        int
+            Return code.
+
+        Raises
+        ------
+        fail_json
+            Failed executing AMATERSE to restore source into destination.
         """
         dds = {'args': 'UNPACK', 'sysut1': src, 'sysut2': dest}
         rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
@@ -869,14 +1150,34 @@ class AMATerseUnarchive(MVSUnarchive):
 
 class XMITUnarchive(MVSUnarchive):
     def __init__(self, module):
+        """Unarchive for XMIT archives.
+
+        Parameters
+        ----------
+        module : AnsibleModule
+            AnsibleModule to use.
+        """
         super(XMITUnarchive, self).__init__(module)
 
     def unpack(self, src, dest):
-        """
-        Unpacks using XMIT.
+        """Unpacks using XMIT.
 
-        src is the archive
-        dest is the destination dataset
+        Parameters
+        ----------
+        src : str
+            Is the archive.
+        dest : str
+            Is the destination dataset.
+
+        Returns
+        -------
+        int
+            Return code.
+
+        Raises
+        ------
+        fail_json
+            Failed executing RECEIVE to restore source into destination.
         """
         unpack_cmd = """
         PROFILE NOPROMPT
@@ -897,6 +1198,24 @@ class XMITUnarchive(MVSUnarchive):
 
 
 def get_unarchive_handler(module):
+    """Returns the appropriate class for the format used.
+
+    Parameters
+    ----------
+    Module : AnsibleModule
+        AnsibleModule to use.
+
+    Returns
+    -------
+    TarUnarchive
+        The appropriate object type for 'tar', 'gz', 'bz2' and 'pax' formats.
+    AMATerseUnarchive
+        The appropriate object type for 'terse' format.
+    XMITUnarchive
+        The appropriate object type for 'xmit' format.
+    ZipUnarchive
+        The appropriate object type for any other format.
+    """
     format = module.params.get("format").get("name")
     if format in ["tar", "gz", "bz2", "pax"]:
         return TarUnarchive(module)
@@ -908,6 +1227,26 @@ def get_unarchive_handler(module):
 
 
 def tar_filter(member, dest_path):
+    """Filter for tar format members.
+
+    Parameters
+    ----------
+    member : tarinfo
+        Object containing information about the member.
+    dest_path : str
+        Real destination path the member is in.
+
+    Raises
+    ------
+    AbsolutePathError
+        Unable to extract as the files extracted can not contain an absolute path.
+    OutsideDestinationError
+        Unable to extract to a path which is outside the designated destination.
+    AbsoluteLinkError
+        File is a symlink to an absolute path.
+    LinkOutsideDestinationError
+        Unable to extract, since it would link to a path which is outside the designated destination.
+    """
     name = member.name
     if name.startswith(('/', os.sep)):
         name = member.path.lstrip('/' + os.sep)
@@ -925,6 +1264,22 @@ def tar_filter(member, dest_path):
 
 
 def zip_filter(member, dest_path):
+    """Filter for zip format members.
+
+    Parameters
+    ----------
+    member : tarinfo
+        Object containing information about the member.
+    dest_path : str
+        Real destination path the member is in.
+
+    Raises
+    ------
+    AbsolutePathError
+        Unable to extract as the files extracted can not contain an absolute path.
+    OutsideDestinationError
+        Unable to extract to a path which is outside the designated destination.
+    """
     name = member.filename
     if name.startswith(('/', os.sep)):
         name = name.lstrip('/' + os.sep)
@@ -936,10 +1291,23 @@ def zip_filter(member, dest_path):
 
 
 def sanitize_members(members, dest, format):
-    """
-    Filter inspired by (PEP 706)
+    """Filter inspired by (PEP 706)
         - Refuse to extract any absolute path
         - Refuse to extract any member with leading '/'
+
+    Parameters
+    ----------
+    members : list[tarinfo]
+        List containing information about the members.
+    dest : str
+        Destination path the members are in.
+    format : str
+        Format of the member.
+
+    Returns
+    -------
+    Union[tarinfo]
+        Sanitized members list.
     """
     dest_path = os.path.realpath(dest)
     for member in members:
@@ -952,29 +1320,90 @@ def sanitize_members(members, dest, format):
 
 class AbsolutePathError(Exception):
     def __init__(self, tarinfo):
+        """Unable to extract as the files extracted can not contain an absolute path.
+
+        Parameters
+        ----------
+        tarinfo : tarinfo
+            Information about the tar archive.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = "Unable to extract {0} as the files extracted can not contain an absolute path".format(tarinfo.name)
         super().__init__(self.msg)
 
 
 class OutsideDestinationError(Exception):
     def __init__(self, tarinfo, path):
+        """Unable to extract to a path which is outside the designated destination.
+
+        Parameters
+        ----------
+        tarinfo : tarinfo
+            Information about the tar archive.
+        path : str
+            Path to the directory that was tried to extract into.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = 'Unable to extract {0} to {1}, which is outside the designated destination'.format(tarinfo.name, path)
         super().__init__(self.msg)
 
 
 class AbsoluteLinkError(Exception):
     def __init__(self, tarinfo):
+        """File is a symlink to an absolute path.
+
+        Parameters
+        ----------
+        tarinfo : tarinfo
+            Information about the tar archive.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = '{0} is a symlink to an absolute path'.format(tarinfo.name)
         super().__init__(self.msg)
 
 
 class LinkOutsideDestinationError(Exception):
     def __init__(self, tarinfo, path):
+        """Unable to extract, since it would link to a path which is outside the designated destination.
+
+        Parameters
+        ----------
+        tarinfo : tarinfo
+            Information about the tar archive.
+        path : str
+            Path to the directory that was tried to extract into.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = 'Unable to extract {0} it would link to {1}, which is outside the designated destination'.format(tarinfo.name, path)
         super().__init__()
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Source does not exists, please provide a valid src.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(type='str', required=True),

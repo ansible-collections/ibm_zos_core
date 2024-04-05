@@ -454,6 +454,7 @@ def quotedString(string):
         return string
     return string.replace('"', "")
 
+
 def main():
     """Run the zos_blockinfile module core functions.
 

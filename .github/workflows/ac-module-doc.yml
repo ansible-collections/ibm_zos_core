@@ -39,4 +39,5 @@ jobs:
         run: |
           source venv/venv-2.16/bin/activate
           export ANSIBLE_LIBRARY=/home/runner/work/ibm_zos_core/ibm_zos_core/plugins/modules/
+          ./ac --ac-build
           ./ac --ac-module-doc

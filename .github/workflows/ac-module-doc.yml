@@ -35,4 +35,5 @@ jobs:
       - name: Run ac-module-doc
         run: |
           source venv/venv-2.16/bin/activate
+          pwd
           ./ac --ac-module-doc

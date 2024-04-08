@@ -284,7 +284,7 @@ def get_listcat_information(hosts, name, ds_type):
         name (str) -- Name of the data set.
         ds_type (str) -- Type of data set ("seq", "pds", "pdse", "ksds").
     """
-    if ds_type.upper() == "ksds":
+    if ds_type == "ksds":
         idcams_input = " LISTCAT ENT('{0}') DATA ALL".format(name)
     else:
         idcams_input = " LISTCAT ENTRIES('{0}')".format(name)

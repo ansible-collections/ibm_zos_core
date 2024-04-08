@@ -31,6 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           source venv/venv-2.16/bin/activate
+          pip install ansible
           pip install ansible-doc-extractor
 
       - name: Run ac-module-doc

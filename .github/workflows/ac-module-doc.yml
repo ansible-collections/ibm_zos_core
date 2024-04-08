@@ -1,0 +1,38 @@
+name: AC Module Doc
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/modules/*'
+    branches:
+      - dev
+      - staging*
+
+jobs:
+  module-doc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Set up venv
+        run: |
+          python -m pip install --upgrade pip
+          pip install virtualenv
+          mkdir venv
+          virtualenv venv/venv-2.16
+
+      - name: Install dependencies
+        run: |
+          source venv/venv-2.16/bin/activate
+
+      - name: Run ac-module-doc
+        run: |
+          source venv/venv-2.16/bin/activate
+          ./ac --ac-module-doc

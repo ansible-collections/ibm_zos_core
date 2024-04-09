@@ -2,8 +2,8 @@ name: AC Module Doc
 
 on:
   pull_request:
-#    paths:
-#      - 'plugins/modules/*'
+    paths:
+      - 'plugins/modules/*'
     branches:
       - dev
       - staging*

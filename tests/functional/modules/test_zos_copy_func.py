@@ -4587,7 +4587,7 @@ def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
             assert len(output_lines) == 5
             data_set_attributes = output_lines[2].strip().split()
             assert len(data_set_attributes) == 4
-            assert data_set_attributes[0] == record_format
+            assert data_set_attributes[0] == record_format.upper()
             assert data_set_attributes[1] == str(record_length)
             assert data_set_attributes[2] == str(block_size)
             assert data_set_attributes[3] == "PS"

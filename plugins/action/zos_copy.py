@@ -466,6 +466,16 @@ def _update_result(is_binary, copy_res, original_args, original_src):
             updated_result["dest_created"] = True
             updated_result["destination_attributes"] = dest_data_set_attrs
 
+            # Setting attributes to lower case to conform to docs.
+            # Part of the change to lowercase choices in the collection involves having
+            # a consistent interface that also returns the same values in lowercase.
+            if "record_format" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["record_format"] = updated_result["destination_attributes"]["record_format"].lower()
+            if "space_type" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["space_type"] = updated_result["destination_attributes"]["space_type"].lower()
+            if "type" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["type"] = updated_result["destination_attributes"]["type"].lower()
+
     return updated_result
 
 

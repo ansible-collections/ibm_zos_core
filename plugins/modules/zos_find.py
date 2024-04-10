@@ -31,6 +31,7 @@ description:
 author:
   - "Asif Mahmud (@asifmahmud)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Fernando Flores (@fernandofloresg)"
 options:
   age:
     description:
@@ -88,8 +89,6 @@ options:
       - Use a negative size to find files equal to or less than the specified size.
       - Unqualified values are in bytes but b, k, m, g, and t can be appended to
         specify bytes, kilobytes, megabytes, gigabytes, and terabytes, respectively.
-      - Filtering by size is currently only valid for sequential and partitioned data sets,
-        but not for partitioned data sets extended(PDSE).
     required: false
     type: str
   pds_patterns:

@@ -48,13 +48,13 @@ options:
         description:
             - The type of file system that will be mounted.
             - The physical file systems data set format to perform the logical mount.
-            - The I(fs_type) is required to be uppercase.
+            - The I(fs_type) is required to be lowercase.
         type: str
         choices:
-            - HFS
-            - ZFS
-            - NFS
-            - TFS
+            - hfs
+            - zfs
+            - nfs
+            - tfs
         required: True
     state:
         description:
@@ -168,33 +168,33 @@ options:
               file hierarchy).
         type: str
         choices:
-            - DRAIN
-            - FORCE
-            - IMMEDIATE
-            - NORMAL
-            - REMOUNT
-            - RESET
+            - drain
+            - force
+            - immediate
+            - normal
+            - remount
+            - reset
         required: False
-        default: NORMAL
+        default: normal
     mount_opts:
         description:
             - Options available to the mount.
-            - If I(mount_opts=RO) on a mounted/remount, mount is performed
+            - If I(mount_opts=ro) on a mounted/remount, mount is performed
               read-only.
-            - If I(mount_opts=SAME) and (unmount_opts=REMOUNT), mount is opened
+            - If I(mount_opts=same) and (unmount_opts=remount), mount is opened
               in the same mode as previously opened.
-            - If I(mount_opts=NOWAIT), mount is performed asynchronously.
-            - If I(mount_opts=NOSECURITY), security checks are not enforced for
+            - If I(mount_opts=nowait), mount is performed asynchronously.
+            - If I(mount_opts=nosecurity), security checks are not enforced for
               files in this file system.
         type: str
         choices:
-            - RO
-            - RW
-            - SAME
-            - NOWAIT
-            - NOSECURITY
+            - ro
+            - rw
+            - same
+            - nowait
+            - nosecurity
         required: False
-        default: RW
+        default: rw
     src_params:
         description:
             - Specifies a parameter string to be passed to the file system type.
@@ -206,15 +206,15 @@ options:
         description:
             - If present, tags get written to any untagged file.
             - When the file system is unmounted, the tags are lost.
-            - If I(tag_untagged=NOTEXT) none of the untagged files in the file system are
+            - If I(tag_untagged=notext) none of the untagged files in the file system are
                   automatically converted during file reading and writing.
-            - If I(tag_untagged=TEXT) each untagged file is implicitly marked as
+            - If I(tag_untagged=text) each untagged file is implicitly marked as
                   containing pure text data that can be converted.
             - If this flag is used, use of tag_ccsid is encouraged.
         type: str
         choices:
-            - TEXT
-            - NOTEXT
+            - text
+            - notext
         required: False
     tag_ccsid:
         description:
@@ -271,23 +271,23 @@ options:
               AUTOMOVE where the file system will be randomly moved to another system
               (no system list used).
             - >
-              I(automove=AUTOMOVE) indicates that ownership of the file system can be
+              I(automove=automove) indicates that ownership of the file system can be
               automatically moved to another system participating in a shared file system.
             - >
-              I(automove=NOAUTOMOVE) prevents movement of the file system's ownership in some situations.
+              I(automove=noautomove) prevents movement of the file system's ownership in some situations.
             - >
-              I(automove=UNMOUNT) allows the file system to be unmounted in some situations.
+              I(automove=unmount) allows the file system to be unmounted in some situations.
         type: str
         choices:
-            - AUTOMOVE
-            - NOAUTOMOVE
-            - UNMOUNT
+            - automove
+            - noautomove
+            - unmount
         required: False
-        default: AUTOMOVE
+        default: automove
     automove_list:
         description:
             - >
-              If(automove=AUTOMOVE), this option will be checked.
+              If(automove=automove), this option will be checked.
             - >
               This specifies the list of servers to include or exclude as destinations.
             - >
@@ -317,14 +317,14 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
 
 - name: Unmount a filesystem.
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: unmounted
     unmount_opts: REMOUNT
     opts: same
@@ -333,7 +333,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     mount_opts: RO
 
@@ -341,7 +341,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     persistent:
         data_store: SYS1.PARMLIB(BPXPRMAA)
@@ -351,7 +351,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     persistent:
         data_store: SYS1.PARMLIB(BPXPRMAA)
@@ -363,7 +363,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     allow_uid: no
 
@@ -371,7 +371,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     opts: nowait
 
@@ -379,7 +379,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     mount_opts: NOSECURITY
 
@@ -387,7 +387,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     automove: AUTOMOVE
     automove_list: I,DEV1,DEV2,DEV3,DEV9
@@ -396,7 +396,7 @@ EXAMPLES = r"""
   zos_mount:
     src: SOMEUSER.VVV.ZFS
     path: /u/omvsadm/core
-    fs_type: ZFS
+    fs_type: zfs
     state: mounted
     automove: AUTOMOVE
     automove_list: EXCLUDE,DEV4,DEV5,DEV6,DEV7
@@ -854,7 +854,7 @@ def run_module(module, arg_def):
                 src, path, fs_type
             )
         )
-        if "RO" in mount_opts:
+        if "ro" in mount_opts:
             subcmd = "READ"
         else:
             subcmd = "RDWR"
@@ -882,14 +882,14 @@ def run_module(module, arg_def):
             fullcmd = fullcmd + " NOSETUID"
             parmtext = parmtext + "\n      NOSETUID"
 
-        if "NOWAIT" in mount_opts:
+        if "nowait" in mount_opts:
             fullcmd = fullcmd + " NOWAIT"
             parmtext = parmtext + "\n      NOWAIT"
         else:
             fullcmd = fullcmd + " WAIT"
             parmtext = parmtext + "\n      WAIT"
 
-        if "NOSECURITY" in mount_opts:
+        if "nosecurity" in mount_opts:
             fullcmd = fullcmd + " NOSECURITY"
             parmtext = parmtext + "\n      NOSECURITY"
         else:
@@ -1051,10 +1051,10 @@ def main():
             fs_type=dict(
                 type="str",
                 choices=[
-                    "HFS",
-                    "ZFS",
-                    "NFS",
-                    "TFS",
+                    "hfs",
+                    "zfs",
+                    "nfs",
+                    "tfs",
                 ],
                 required=True,
             ),
@@ -1079,27 +1079,27 @@ def main():
             ),
             unmount_opts=dict(
                 type="str",
-                default="NORMAL",
-                choices=["DRAIN", "FORCE", "IMMEDIATE", "NORMAL", "REMOUNT", "RESET"],
+                default="normal",
+                choices=["drain", "force", "immediate", "normal", "remount", "reset"],
                 required=False,
             ),
             mount_opts=dict(
                 type="str",
-                default="RW",
-                choices=["RO", "RW", "SAME", "NOWAIT", "NOSECURITY"],
+                default="rw",
+                choices=["ro", "rw", "same", "nowait", "nosecurity"],
                 required=False,
             ),
             src_params=dict(type="str", required=False),
             tag_untagged=dict(
-                type="str", choices=["TEXT", "NOTEXT"], required=False
+                type="str", choices=["text", "notext"], required=False
             ),
             tag_ccsid=dict(type="int", required=False),
             allow_uid=dict(type="bool", default=True, required=False),
             sysname=dict(type="str", required=False),
             automove=dict(
                 type="str",
-                default="AUTOMOVE",
-                choices=["AUTOMOVE", "NOAUTOMOVE", "UNMOUNT"],
+                default="automove",
+                choices=["automove", "noautomove", "unmount"],
                 required=False,
             ),
             automove_list=dict(type="str", required=False),
@@ -1114,10 +1114,10 @@ def main():
         fs_type=dict(
             arg_type="str",
             choices=[
-                "HFS",
-                "ZFS",
-                "NFS",
-                "TFS",
+                "hfs",
+                "zfs",
+                "nfs",
+                "tfs",
             ],
             required=True,
         ),
@@ -1139,27 +1139,27 @@ def main():
         ),
         unmount_opts=dict(
             arg_type="str",
-            default="NORMAL",
-            choices=["DRAIN", "FORCE", "IMMEDIATE", "NORMAL", "REMOUNT", "RESET"],
+            default="normal",
+            choices=["drain", "force", "immediate", "normal", "remount", "reset"],
             required=False,
         ),
         mount_opts=dict(
             arg_type="str",
-            default="RW",
-            choices=["RO", "RW", "SAME", "NOWAIT", "NOSECURITY"],
+            default="rw",
+            choices=["ro", "rw", "same", "nowait", "nosecurity"],
             required=False,
         ),
         src_params=dict(arg_type="str", default="", required=False),
         tag_untagged=dict(
-            arg_type="str", choices=["TEXT", "NOTEXT"], required=False
+            arg_type="str", choices=["text", "notext"], required=False
         ),
         tag_ccsid=dict(arg_type="int", required=False),
         allow_uid=dict(arg_type="bool", default=True, required=False),
         sysname=dict(arg_type="str", default="", required=False),
         automove=dict(
             arg_type="str",
-            default="AUTOMOVE",
-            choices=["AUTOMOVE", "NOAUTOMOVE", "UNMOUNT"],
+            default="automove",
+            choices=["automove", "noautomove", "unmount"],
             required=False,
         ),
         automove_list=dict(arg_type="str", default="", required=False),

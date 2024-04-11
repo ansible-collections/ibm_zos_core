@@ -403,7 +403,7 @@ class ActionModule(ActionBase):
             else:
                 module_args = dict(name=dest, state="absent")
                 if is_member(dest):
-                    module_args["type"] = "MEMBER"
+                    module_args["type"] = "member"
                 self._execute_module(
                     module_name="ibm.ibm_zos_core.zos_data_set",
                     module_args=module_args,

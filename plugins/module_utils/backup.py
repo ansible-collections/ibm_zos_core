@@ -349,4 +349,3 @@ class BackupError(Exception):
         self.stdout = stdout
         self.stderr = stderr
         super(BackupError, self).__init__(self.msg)
-        

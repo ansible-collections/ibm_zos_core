@@ -601,7 +601,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
             format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -677,7 +677,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
             format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -763,7 +763,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
             format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -845,7 +845,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
             format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -932,7 +932,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
             format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )

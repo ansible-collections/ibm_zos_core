@@ -402,7 +402,7 @@ def test_user_provided_type_func_with_dependencies_make_fail():
 def test_dependent_required():
     arg_defs = {
         "uppername":{
-            "arg_type":make_uppercase,
+            "arg_type":"str",
             "required":True,
         },
         "verifier":{
@@ -444,7 +444,7 @@ def test_dependent_default(arg_val, expected):
         },
         "verifier":{
             "arg_type":"bool",
-            "required":is_dependency_uppercase,
+            "default":is_dependency_uppercase,
             "dependencies":["uppername"]
         },
     }
@@ -626,7 +626,7 @@ def test_dict_of_dict_fail_on_nested_arg_type():
                             "arg_type":"str"
                         },
                         "number":{
-                            "arg_type":"int"
+                            "arg_type":"str"
                         }
                     },
                 },

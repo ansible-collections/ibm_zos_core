@@ -783,12 +783,12 @@ def data_set_name(contents, dependencies):
     contents : str
         Name of the dataset.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
     None
-        If the dependencies don't have a batch.
+        If the dependencies have a batch.
     str
         The data set name.
 
@@ -845,7 +845,7 @@ def space_type(contents, dependencies):
     contents : str
         Unit of space of the dataset.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
@@ -881,7 +881,7 @@ def sms_class(contents, dependencies):
     contents : str
         Name of the sms class.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
@@ -916,7 +916,7 @@ def valid_when_state_present(contents, dependencies):
     contents : str
         Arguments to be validated.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
@@ -941,7 +941,7 @@ def record_length(contents, dependencies):
     contents : str
         Length of the dataset.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
@@ -984,14 +984,12 @@ def record_format(contents, dependencies):
     contents : str
         Format of the dataset.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
     str
-        'FB' if state is absent or contents is None.
-    str
-        The data set format in uppercase.
+        The data set format in uppercase. Default is 'FB'.
 
     Raises
     ------
@@ -1022,14 +1020,12 @@ def data_set_type(contents, dependencies):
     contents : str
         Type of the dataset.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
     str
-        "PDS" If contents is none.
-    str
-        The data set type in uppercase.
+        The data set type in uppercase. Default is PDS.
 
     Raises
     ------
@@ -1060,7 +1056,7 @@ def volumes(contents, dependencies):
     contents : str
         Name of the volume.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
@@ -1106,7 +1102,7 @@ def key_length(contents, dependencies):
     contents : str
         key_length.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
@@ -1152,7 +1148,7 @@ def key_offset(contents, dependencies):
     contents : str
         Key offset of the data set.
     dependencies : dict
-        Properties of the contents.
+        Any dependencies needed for contents argument to be validated.
 
     Returns
     -------
@@ -1231,7 +1227,7 @@ def parse_and_validate_args(params):
     Parameters
     ----------
     params : dict
-        Params to validate and parse.
+        Params to validated and parsed.
 
     Returns
     -------

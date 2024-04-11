@@ -186,7 +186,7 @@ notes:
   - When more then one block should be handled in a file you must change
     the I(marker) per task.
   - If using ZOAU version 1.3.0 and double quotes (") in the block argument, the module
-    will throw a false negative response. Follow up on the
+    will throw a response without the found argument. Follow up on the
     L(issue in the collection's repository,https://github.com/ansible-collections/ibm_zos_core/issues/1258).
 seealso:
 - module: zos_data_set

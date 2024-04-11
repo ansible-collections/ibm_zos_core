@@ -295,14 +295,14 @@ except Exception:
 
 
 def check_pds_member(ds, mem):
-    """Check pds member.
+    """Check if a member exists in a PDS.
 
     Parameters
     ----------
     ds : str
-        Data set name.
+        PDS data set name.
     mem : str
-        Data set member name.
+        Member name to check if is under PDS.
 
     Returns
     -------

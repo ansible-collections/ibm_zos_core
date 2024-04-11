@@ -388,7 +388,7 @@ class FetchHandler:
         Parameters
         ----------
         ds_name : str
-            Dataset name.
+            VSAM dataset name to be copied into a temp data set.
 
         Returns
         -------
@@ -508,9 +508,7 @@ class FetchHandler:
         Returns
         -------
         str
-            File path if no able to make it.
-        str
-            Provided src.
+            File name with the converted data.
 
         Raises
         ------
@@ -558,7 +556,7 @@ class FetchHandler:
         Returns
         -------
         str
-            File path.
+            USS File containing the encoded content of the input data set.
 
         Raises
         ------
@@ -593,7 +591,7 @@ class FetchHandler:
         Returns
         -------
         str
-            Directory path.
+            Directory path containing the files of the converted data set members.
 
         Raises
         ------
@@ -659,7 +657,7 @@ class FetchHandler:
         Returns
         -------
         str
-            File path.
+            USS File containing the encoded content of the input data set.
 
         Raises
         ------

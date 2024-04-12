@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_find - Filter size failed if a PDS/E matched the pattern. Fix now gets the correct size
+    for PDS/Es.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1443).

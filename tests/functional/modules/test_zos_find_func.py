@@ -118,7 +118,7 @@ def test_find_pds_members_containing_string(ansible_zos_module):
     search_string = "hello"
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='pds') for i in PDS_NAMES]
+            batch=[dict(name=i, type='pds', space_primary=1, space_type="m") for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
             batch=[
@@ -221,8 +221,8 @@ def test_find_data_sets_larger_than_size(ansible_zos_module):
     TEST_PS1 = 'TEST.PS.ONE'
     TEST_PS2 = 'TEST.PS.TWO'
     try:
-        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", space_primary="1", space_type="M")
-        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", space_primary="1", space_type="M")
+        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", space_primary="1", space_type="m")
+        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", space_primary="1", space_type="m")
         find_res = hosts.all.zos_find(patterns=['TEST.PS.*'], size="1k")
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
@@ -236,7 +236,7 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = 'USER.FIND.TEST'
     try:
-        hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", space_primary="1", space_type="K")
+        hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", space_primary="1", space_type="k")
         find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

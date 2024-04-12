@@ -236,7 +236,7 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = 'USER.FIND.TEST'
     try:
-        hosts.all.zos_data_set(name=TEST_PS, state="present", type="SEQ", space_primary="1", space_type="k")
+        hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_primary="1", space_type="k")
         find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

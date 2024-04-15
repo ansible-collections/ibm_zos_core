@@ -19,11 +19,11 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
 import random
-import pytest
-from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 DATA_SET_CONTENTS = "HELLO world"
 DATA_SET_QUALIFIER = "{0}.PRIVATE.TESTDS"
@@ -54,12 +54,12 @@ def create_sequential_data_set_with_contents(
     else:
         results = hosts.all.zos_data_set(name=data_set_name, type="seq")
     assert_module_did_not_fail(results)
-    results = hosts.all.shell(f"decho '{contents}' {data_set_name}")
+    results = hosts.all.shell("decho '{0}' {1}".format(contents, data_set_name))
     assert_module_did_not_fail(results)
 
 
 def create_file_with_contents(hosts, path, contents):
-    results = hosts.all.shell(f"echo '{contents}' > {path}")
+    results = hosts.all.shell("echo '{0}' > {1}".format(contents, path))
     assert_module_did_not_fail(results)
 
 
@@ -135,25 +135,25 @@ def assert_data_set_or_file_does_not_exist(hosts, name):
 
 
 def assert_data_set_exists(hosts, data_set_name):
-    results = hosts.all.shell(f"dls '{data_set_name.upper()}'")
+    results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
         found = search(
-            f"^{data_set_name}$", result.get("stdout"), IGNORECASE | MULTILINE
+            "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )
         assert found
 
 
 def assert_data_set_does_not_exist(hosts, data_set_name):
-    results = hosts.all.shell(f"dls '{data_set_name.upper()}'")
+    results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
         found = search(
-            f"^{data_set_name}$", result.get("stdout"), IGNORECASE | MULTILINE
+            "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )
         assert not found
 
 
 def assert_data_set_exists_on_volume(hosts, data_set_name, volume):
-    results = hosts.all.shell(f"dls -s '{data_set_name.upper()}'")
+    results = hosts.all.shell("dls -s '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
         found = search(
             r"^"
@@ -209,9 +209,7 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_name
-            },
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
             overwrite=overwrite,
             recover=recover,
@@ -246,9 +244,7 @@ def test_backup_of_data_set_when_backup_dest_exists(
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_name
-            },
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
             overwrite=overwrite,
         )
@@ -290,9 +286,7 @@ def test_backup_and_restore_of_data_set(
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_name
-            },
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
             overwrite=overwrite,
             recover=recover,
@@ -340,27 +334,25 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )
-        args = {
-            "operation":"backup",
-            "data_sets":{
-                "include":data_set_name
-            },
-            "backup_name":backup_name,
-            "overwrite":True,
-            "space":space,
-        }
+        args = dict(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=backup_name,
+            overwrite=True,
+            space=space,
+        )
         if space_type:
             args["space_type"] = space_type
         results = hosts.all.zos_backup_restore(**args)
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, backup_name)
-        args = {
-            "operation":"restore",
-            "backup_name":backup_name,
-            "hlq":NEW_HLQ,
-            "overwrite":True,
-            "space":space,
-        }
+        args = dict(
+            operation="restore",
+            backup_name=backup_name,
+            hlq=NEW_HLQ,
+            overwrite=True,
+            space=space,
+        )
         if space_type:
             args["space_type"] = space_type
         results = hosts.all.zos_backup_restore(**args)
@@ -393,9 +385,7 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_name
-            },
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
         )
         assert_module_did_not_fail(results)
@@ -439,9 +429,7 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_include
-            },
+            data_sets=dict(include=data_set_include),
             backup_name=DATA_SET_BACKUP_LOCATION,
         )
         assert_module_did_not_fail(results)
@@ -477,9 +465,7 @@ def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_sets_hlq
-            },
+            data_sets=dict(include=data_sets_hlq),
             backup_name=DATA_SET_BACKUP_LOCATION,
         )
         assert_module_did_not_fail(results)
@@ -517,10 +503,7 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":"ANSIBLE.**",
-                "exclude":data_set_name2
-            },
+            data_sets=dict(include="ANSIBLE.**", exclude=data_set_name2),
             backup_name=DATA_SET_BACKUP_LOCATION,
         )
         assert_module_did_not_fail(results)
@@ -590,9 +573,7 @@ def test_backup_of_data_set_when_data_set_does_not_exist(
         delete_data_set_or_file(hosts, backup_name)
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_name
-            },
+            data_sets=dict(include=data_set_name),
             backup_name=backup_name,
         )
         assert_module_failed(results)
@@ -613,9 +594,7 @@ def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_name
-            },
+            data_sets=dict(include=data_set_name),
             # volume=get_unused_volume_serial(hosts),
             volume="@@@@",
             backup_name=DATA_SET_BACKUP_LOCATION,
@@ -640,9 +619,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            data_sets={
-                "include":data_set_name
-            },
+            data_sets=dict(include=data_set_name),
             backup_name=DATA_SET_BACKUP_LOCATION,
         )
         assert_module_did_not_fail(results)

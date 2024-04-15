@@ -741,17 +741,17 @@ def _dgrep_wrapper(
     Parameters
     ----------
     data_set_pattern : str
-        Data set pattern.
+        Data set pattern where to search for content.
     content : str
-        Content.
+        Content to search across the data sets specified in data_set_pattern.
     ignore_case : bool
-        If ignore case.
+        Whether to ignore case or not.
     line_num : bool
-        If line num.
+        Whether to display line numbers.
     verbose : bool
-        If verbose.
-    context : bool
-        If context.
+        Extra verbosity, prints names of datasets being searched.
+    context : int
+        If context lines are requested, then up to <NUM> lines before and after the matching line are also printed.
 
     Returns
     -------
@@ -786,18 +786,16 @@ def _dls_wrapper(
     ----------
     data_set_pattern : str
         Data set pattern.
-    content : str
-        Content.
     list_details : bool
-        If list details.
+        Display detailed information based on the dataset type.
     u_time : bool
-        If u time.
+        Display last usage time.
     size : bool
-        If size.
+        Display size in list.
     verbose : bool
-        If verbose.
+        Display verbose information.
     migrated : bool
-        If migrated.
+        Display migrated data sets.
 
     Returns
     -------
@@ -829,9 +827,9 @@ def _vls_wrapper(pattern, details=False, verbose=False):
     pattern : str
         Data set pattern.
     details : bool
-        If details.
+        Display detailed information based on the dataset type.
     verbose : bool
-        If verbose.
+        Display verbose information.
 
     Returns
     -------

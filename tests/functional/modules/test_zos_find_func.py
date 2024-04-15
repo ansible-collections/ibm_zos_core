@@ -221,8 +221,8 @@ def test_find_data_sets_larger_than_size(ansible_zos_module):
     TEST_PS1 = 'TEST.PS.ONE'
     TEST_PS2 = 'TEST.PS.TWO'
     try:
-        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", size="5m")
-        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", size="5m")
+        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", space_type="m", space_primary=5)
+        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", space_type="m", space_primary=5)
         find_res = hosts.all.zos_find(patterns=['TEST.PS.*'], size="1k")
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
@@ -236,7 +236,7 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = 'USER.FIND.TEST'
     try:
-        hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", size="1k")
+        hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="k", space_primary=1)
         find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

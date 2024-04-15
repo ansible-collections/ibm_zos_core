@@ -112,7 +112,7 @@ def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None)
     Arguments:
         hosts (object) -- Ansible instance(s) that can call modules.
         name (str) -- Name of the VSAM data set.
-        type (str) -- Type of the VSAM (KSDS, ESDS, RRDS, LDS)
+        type (str) -- Type of the VSAM (ksds, esds, rrds, lds)
         add_data (bool, optional) -- Whether to add records to the VSAM.
         key_length (int, optional) -- Key length (only for KSDS data sets).
         key_offset (int, optional) -- Key offset (only for KSDS data sets).
@@ -300,7 +300,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
 def test_fetch_vsam_empty_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     src_ds = "TEST.VSAM.DATA"
-    create_vsam_data_set(hosts, src_ds, "KSDS", key_length=12, key_offset=0)
+    create_vsam_data_set(hosts, src_ds, "ksds", key_length=12, key_offset=0)
     params = dict(src=src_ds, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + src_ds
     try:

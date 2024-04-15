@@ -491,7 +491,6 @@ def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd=f"cat {params["path"]}")
         for result in results.contacted.values():
@@ -1289,7 +1288,6 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
         hosts.all.shell(cmd="rm -rf " + "/tmp/zos_lineinfile/")
         results = hosts.all.shell(cmd=f"cat \"//'{ds_full_name}'\" | wc -l ")
         for result in results.contacted.values():
-            print(result)
             assert int(result.get("stdout")) != 0
         params["path"] = ds_full_name
         results = hosts.all.zos_blockinfile(**params)

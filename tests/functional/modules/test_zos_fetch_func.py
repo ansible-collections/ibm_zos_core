@@ -370,7 +370,7 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
     TEST_PDS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="pdse")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
-    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="MEMBER")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_PDS

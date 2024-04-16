@@ -89,8 +89,8 @@ def extract_member_name(data_set):
 def create_and_populate_test_ps_vb(ansible_zos_module, name):
     params=dict(
         name=name,
-        type='SEQ',
-        record_format='VB',
+        type='seq',
+        record_format='vb',
         record_length='3180',
         block_size='3190'
     )
@@ -112,7 +112,7 @@ def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None)
     Arguments:
         hosts (object) -- Ansible instance(s) that can call modules.
         name (str) -- Name of the VSAM data set.
-        type (str) -- Type of the VSAM (KSDS, ESDS, RRDS, LDS)
+        type (str) -- Type of the VSAM (ksds, esds, rrds, lds)
         add_data (bool, optional) -- Whether to add records to the VSAM.
         key_length (int, optional) -- Key length (only for KSDS data sets).
         key_offset (int, optional) -- Key offset (only for KSDS data sets).
@@ -188,7 +188,7 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = get_tmp_ds_name()
-    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", size="5m")
+    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="m", space_primary=5)
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
     params = dict(src=TEST_PS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PS
@@ -300,7 +300,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
 def test_fetch_vsam_empty_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     src_ds = "TEST.VSAM.DATA"
-    create_vsam_data_set(hosts, src_ds, "KSDS", key_length=12, key_offset=0)
+    create_vsam_data_set(hosts, src_ds, "ksds", key_length=12, key_offset=0)
     params = dict(src=src_ds, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + src_ds
     try:
@@ -347,7 +347,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
 def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = get_tmp_ds_name()
-    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", size="5m")
+    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="m", space_primary=5)
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
     params = dict(src=TEST_PS, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_PS
@@ -535,7 +535,7 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
 def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = get_tmp_ds_name()
-    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", size="5m")
+    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="m", space_primary=5)
     ds_name = TEST_PS
     hosts.all.zos_data_set(name=TEST_PS, state="present")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))

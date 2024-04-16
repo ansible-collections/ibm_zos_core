@@ -62,7 +62,7 @@ def test_disposition_new(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         return_content=dict(type="text"),
                     ),
                 ),
@@ -86,7 +86,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(
-            name=default_data_set, type="SEQ", state="present", replace=True
+            name=default_data_set, type="seq", state="present", replace=True
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -118,7 +118,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
     default_volume = volumes.get_available_vol()
     default_data_set = get_tmp_ds_name()[:25]
     hosts.all.zos_data_set(
-        name=default_data_set, type="SEQ", state="present", replace=True
+        name=default_data_set, type="seq", state="present", replace=True
     )
     results = hosts.all.zos_mvs_raw(
         program_name="idcams",
@@ -133,12 +133,12 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
                     return_content=dict(type="text"),
                     replace=True,
                     backup=True,
-                    type="SEQ",
+                    type="seq",
                     space_primary=5,
                     space_secondary=1,
-                    space_type="M",
+                    space_type="m",
                     volumes=default_volume,
-                    record_format="FB"
+                    record_format="fb"
                 ),
             ),
             dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
@@ -172,7 +172,7 @@ def test_new_disposition_for_data_set_members(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
                         disposition="new",
-                        type="PDS",
+                        type="pds",
                         directory_blocks=15,
                         return_content=dict(type="text"),
                     ),
@@ -197,7 +197,7 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
         default_data_set = get_tmp_ds_name()
         DEFAULT_DATA_SET_WITH_MEMBER = default_data_set + '(MEM)'
         hosts.all.zos_data_set(
-            name=default_data_set, type="PDS", state="present", replace=True
+            name=default_data_set, type="pds", state="present", replace=True
         )
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -234,7 +234,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
         default_data_set = get_tmp_ds_name()
         results = hosts.all.zos_data_set(
             name=default_data_set,
-            type="SEQ",
+            type="seq",
             state="present",
             replace=True,
             volumes=[volume_1],
@@ -267,11 +267,11 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
 @pytest.mark.parametrize(
     "space_type,primary,secondary,expected",
     [
-        ("TRK", 3, 1, 169992),
-        ("CYL", 3, 1, 2549880),
-        ("B", 3, 1, 56664),
-        ("K", 3, 1, 56664),
-        ("M", 3, 1, 3003192),
+        ("trk", 3, 1, 169992),
+        ("cyl", 3, 1, 2549880),
+        ("b", 3, 1, 56664),
+        ("k", 3, 1, 56664),
+        ("m", 3, 1, 3003192),
     ],
 )
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):
@@ -288,7 +288,7 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         space_primary=primary,
                         space_secondary=secondary,
                         space_type=space_type,
@@ -315,7 +315,7 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
 
 @pytest.mark.parametrize(
     "data_set_type",
-    ["PDS", "PDSE", "LARGE", "BASIC", "SEQ"],
+    ["pds", "pdse", "large", "basic", "seq"],
 )
 def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, volumes_on_systems):
     try:
@@ -351,7 +351,7 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, volumes_on_s
 
 @pytest.mark.parametrize(
     "data_set_type",
-    ["KSDS", "RRDS", "LDS", "ESDS"],
+    ["ksds", "rrds", "lds", "esds"],
 )
 def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_systems):
     try:
@@ -374,7 +374,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_syste
                         volumes=[volume_1],
                     ),
                 )
-                if data_set_type != "KSDS"
+                if data_set_type != "ksds"
                 else dict(
                     dd_data_set=dict(
                         dd_name=SYSPRINT_DD,
@@ -400,7 +400,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_syste
 
 @pytest.mark.parametrize(
     "record_format",
-    ["U", "VB", "VBA", "FB", "FBA"],
+    ["u", "vb", "vba", "fb", "fba"],
 )
 def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
     try:
@@ -453,7 +453,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
         default_data_set = get_tmp_ds_name()
         results = hosts.all.zos_data_set(
             name=default_data_set,
-            type="SEQ",
+            type="seq",
             state="present",
             replace=True,
             volumes=[volume_1],
@@ -505,7 +505,7 @@ def test_return_text_content_encodings(
         default_data_set = get_tmp_ds_name()
         results = hosts.all.zos_data_set(
             name=default_data_set,
-            type="SEQ",
+            type="seq",
             state="present",
             replace=True,
             volumes=[volume_1],
@@ -544,7 +544,7 @@ def test_reuse_existing_data_set(ansible_zos_module):
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(
-            name=default_data_set, type="SEQ", state="present", replace=True
+            name=default_data_set, type="seq", state="present", replace=True
         )
         results = hosts.all.zos_mvs_raw(
             program_name="IDCAMS",
@@ -555,7 +555,7 @@ def test_reuse_existing_data_set(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         reuse=True,
                         return_content=dict(type="text"),
                     ),
@@ -577,7 +577,7 @@ def test_replace_existing_data_set(ansible_zos_module):
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(
-            name=default_data_set, type="SEQ", state="present", replace=True
+            name=default_data_set, type="seq", state="present", replace=True
         )
         results = hosts.all.zos_mvs_raw(
             program_name="IDCAMS",
@@ -588,7 +588,7 @@ def test_replace_existing_data_set(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         replace=True,
                         return_content=dict(type="text"),
                     ),
@@ -619,7 +619,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         replace=True,
                         return_content=dict(type="text"),
                     ),
@@ -636,7 +636,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         replace=True,
                         backup=True,
                         return_content=dict(type="text"),
@@ -687,7 +687,7 @@ def test_input_empty(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         return_content=dict(type="text"),
                     ),
                 ),
@@ -719,7 +719,7 @@ def test_input_large(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         return_content=dict(type="text"),
                     ),
                 ),
@@ -752,7 +752,7 @@ def test_input_provided_as_list(ansible_zos_module):
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                         return_content=dict(type="text"),
                     ),
                 ),
@@ -792,7 +792,7 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                     ),
                 ),
                 dict(
@@ -844,7 +844,7 @@ def test_input_return_text_content_encodings(
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set,
                         disposition="new",
-                        type="SEQ",
+                        type="seq",
                     ),
                 ),
                 dict(
@@ -1164,7 +1164,7 @@ def test_file_record_length(ansible_zos_module, record_length):
 
 @pytest.mark.parametrize(
     "record_format",
-    ["U", "VB", "VBA", "FB", "FBA"],
+    ["u", "vb", "vba", "fb", "fba"],
 )
 def test_file_record_format(ansible_zos_module, record_format):
     try:
@@ -1353,7 +1353,7 @@ def test_concatenation_with_data_set_dd_and_response(ansible_zos_module):
                                 dd_data_set=dict(
                                     data_set_name=default_data_set,
                                     disposition="new",
-                                    type="SEQ",
+                                    type="seq",
                                     return_content=dict(type="text"),
                                 )
                             ),
@@ -1361,7 +1361,7 @@ def test_concatenation_with_data_set_dd_and_response(ansible_zos_module):
                                 dd_data_set=dict(
                                     data_set_name=DEFAULT_DATA_SET_2,
                                     disposition="new",
-                                    type="SEQ",
+                                    type="seq",
                                 )
                             ),
                         ],
@@ -1391,8 +1391,8 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         DEFAULT_DATA_SET_2 = get_tmp_ds_name()
-        hosts.all.zos_data_set(name=default_data_set, state="present", type="SEQ")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="present", type="SEQ")
+        hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="present", type="seq")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
@@ -1405,7 +1405,7 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
                                 dd_data_set=dict(
                                     data_set_name=default_data_set,
                                     disposition="new",
-                                    type="SEQ",
+                                    type="seq",
                                     replace=True,
                                     backup=True,
                                     return_content=dict(type="text"),
@@ -1415,7 +1415,7 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
                                 dd_data_set=dict(
                                     data_set_name=DEFAULT_DATA_SET_2,
                                     disposition="new",
-                                    type="SEQ",
+                                    type="seq",
                                     replace=True,
                                     backup=True,
                                 )
@@ -1462,7 +1462,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
         default_data_set = get_tmp_ds_name()
         DEFAULT_DATA_SET_2 = get_tmp_ds_name()
         DEFAULT_DATA_SET_WITH_MEMBER = default_data_set + '(MEM)'
-        hosts.all.zos_data_set(name=default_data_set, state="present", type="PDS")
+        hosts.all.zos_data_set(name=default_data_set, state="present", type="pds")
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1482,7 +1482,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
                                 dd_data_set=dict(
                                     data_set_name=DEFAULT_DATA_SET_2,
                                     disposition="new",
-                                    type="SEQ",
+                                    type="seq",
                                 )
                             ),
                         ],
@@ -1538,7 +1538,7 @@ def test_concatenation_with_unix_dd_and_response_datasets(ansible_zos_module):
                                 dd_data_set=dict(
                                     data_set_name=DEFAULT_DATA_SET_2,
                                     disposition="new",
-                                    type="SEQ",
+                                    type="seq",
                                 )
                             ),
                         ],
@@ -1766,7 +1766,7 @@ def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_co
     try:
         hosts = ansible_zos_module
         default_data_set = "ANSIBLE.USER.PRIVATE.TEST"
-        hosts.all.zos_data_set(name=default_data_set, state="present", type="SEQ")
+        hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
         results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)

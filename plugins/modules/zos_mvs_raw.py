@@ -2724,7 +2724,7 @@ class RawOutputDefinition(OutputDefinition):
         OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, return_content=None, tmphlq="",  **kwargs):
+    def __init__(self, return_content=None, tmphlq="", **kwargs):
         """Initialize RawOutputDefinition
 
         Args:

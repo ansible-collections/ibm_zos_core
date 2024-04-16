@@ -736,20 +736,27 @@ def get_individual_data_set_parameters(params):
     """Builds a list of data set parameters
     to be used in future operations.
 
-    Arguments:
-        params {dict} -- The parameters from
+    Parameters
+    ----------
+    params : dict
+        The parameters from
         Ansible's AnsibleModule object module.params.
 
-    Raises:
-        ValueError: Raised if top-level parameters "name"
-        and "batch" are both provided.
-        ValueError: Raised if neither top-level parameters "name"
-        or "batch" are provided.
-
-    Returns:
-        [list] -- A list of dicts where each list item
+    Returns
+    -------
+    Union[dict]
+        A list of dicts where each list item
         represents one data set. Each dictionary holds the parameters
         (passed to the zos_data_set module) for the data set which it represents.
+
+    Raises
+    ------
+    ValueError
+        Raised if top-level parameters "name"
+        and "batch" are both provided.
+    ValueError
+        Raised if neither top-level parameters "name"
+        or "batch" are provided.
     """
     if params.get("name") and params.get("batch"):
         raise ValueError(
@@ -769,7 +776,31 @@ def get_individual_data_set_parameters(params):
 # * can be replaced by built-in
 def data_set_name(contents, dependencies):
     """Validates provided data set name(s) are valid.
-    Returns a list containing the name(s) of data sets."""
+    Returns a list containing the name(s) of data sets.
+
+    Parameters
+    ----------
+    contents : str
+        Name of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the dependencies have a batch.
+    str
+        The data set name.
+
+    Raises
+    ------
+    ValueError
+        Data set name must be provided.
+    ValueError
+        Data set and member name must be provided.
+    ValueError
+        A value is invalid.
+    """
     if dependencies.get("batch"):
         return None
     if contents is None:
@@ -807,7 +838,25 @@ def data_set_name(contents, dependencies):
 # * dependent on state
 def space_type(contents, dependencies):
     """Validates provided data set unit of space is valid.
-    Returns the unit of space."""
+    Returns the unit of space.
+
+    Parameters
+    ----------
+    contents : str
+        Unit of space of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    str
+        The data set unit of space.
+
+    Raises
+    ------
+    ValueError
+        Value provided is invalid.
+"""
     if dependencies.get("state") == "absent":
         return "m"
     if contents is None:
@@ -825,7 +874,27 @@ def space_type(contents, dependencies):
 # * dependent on state
 def sms_class(contents, dependencies):
     """Validates provided sms class is of valid length.
-    Returns the sms class."""
+    Returns the sms class.
+
+    Parameters
+    ----------
+    contents : str
+        Name of the sms class.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        The sms class set name.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
     if dependencies.get("state") == "absent" or contents is None:
         return None
     if len(contents) < 1 or len(contents) > 8:
@@ -840,7 +909,22 @@ def sms_class(contents, dependencies):
 
 def valid_when_state_present(contents, dependencies):
     """Ensures no arguments that are invalid when state!=present
-    are allowed."""
+    are allowed.
+
+    Parameters
+    ----------
+    contents : str
+        Arguments to be validated.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        Valid arguments.
+    """
     if dependencies.get("state") == "absent" or contents is None:
         return None
     return contents
@@ -850,7 +934,27 @@ def valid_when_state_present(contents, dependencies):
 # * dependent on format
 def record_length(contents, dependencies):
     """Validates provided record length is valid.
-    Returns the record length as integer."""
+    Returns the record length as integer.
+
+    Parameters
+    ----------
+    contents : str
+        Length of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        The data set length.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
     if dependencies.get("state") == "absent":
         return None
     contents = (
@@ -872,7 +976,26 @@ def record_length(contents, dependencies):
 # * dependent on state
 # * dependent on record_length
 def record_format(contents, dependencies):
-    """Validates data set format is valid."""
+    """Validates data set format is valid.
+    Returns uppercase data set format.
+
+    Parameters
+    ----------
+    contents : str
+        Format of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    str
+        The data set format in uppercase. Default is 'FB'.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
     if dependencies.get("state") == "absent":
         return "fb"
     if contents is None:
@@ -880,7 +1003,7 @@ def record_format(contents, dependencies):
     formats = "|".join(DATA_SET_FORMATS)
     if not re.fullmatch(formats, contents, re.IGNORECASE):
         raise ValueError(
-            "Value {0} is invalid for format argument. format must be of of the following: {1}.".format(
+            "Value {0} is invalid for format argument. format must be one of the following: {1}.".format(
                 contents, ", ".join(DATA_SET_FORMATS)
             )
         )
@@ -889,8 +1012,27 @@ def record_format(contents, dependencies):
 
 # * dependent on state
 def data_set_type(contents, dependencies):
-    """Validates data set type is valid."""
-    # if dependencies.get("state") == "absent" and contents != "member":
+    """Validates data set type is valid.
+    Returns uppercase data set type.
+
+    Parameters
+    ----------
+    contents : str
+        Type of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    str
+        The data set type in uppercase. Default is PDS.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
+    # if dependencies.get("state") == "absent" and contents != "MEMBER":
     #     return None
     if contents is None:
         return "pds"
@@ -907,7 +1049,29 @@ def data_set_type(contents, dependencies):
 # * dependent on state
 def volumes(contents, dependencies):
     """Validates volume is valid.
-    Returns uppercase volume."""
+    Returns uppercase volume.
+
+    Parameters
+    ----------
+    contents : str
+        Name of the volume.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        The volume name.
+
+    Raises
+    ------
+    ValueError
+        Argument is invalid.
+    ValueError
+        Volume is required when state is cataloged.
+    """
     if contents is None:
         if dependencies.get("state") == "cataloged":
             raise ValueError("Volume is required when state==cataloged.")
@@ -931,7 +1095,31 @@ def volumes(contents, dependencies):
 # * dependent on type
 def key_length(contents, dependencies):
     """Validates data set key length is valid.
-    Returns data set key length as integer."""
+    Returns data set key length as integer.
+
+    Parameters
+    ----------
+    contents : str
+        key_length.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    int
+        key_length.
+
+    Raises
+    ------
+    ValueError
+        Argument is invalid.
+    ValueError
+        key_length was not provided when requesting KSDS data set.
+    ValueError
+        key_length can not be provided when type is not KSDS.
+    """
     if dependencies.get("state") == "absent":
         return None
     if dependencies.get("type") == "ksds" and contents is None:
@@ -953,7 +1141,31 @@ def key_length(contents, dependencies):
 # * dependent on key_length
 def key_offset(contents, dependencies):
     """Validates data set key offset is valid.
-    Returns data set key offset as integer."""
+    Returns data set key offset as integer.
+
+    Parameters
+    ----------
+    contents : str
+        Key offset of the data set.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    int
+        Key offset of the data set.
+
+    Raises
+    ------
+    ValueError
+        Argument is invalid.
+    ValueError
+        key_offset was not provided when requesting KSDS data set.
+    ValueError
+        key_offset can not be provided when type is not KSDS.
+    """
     if dependencies.get("state") == "absent":
         return None
     if dependencies.get("type") == "ksds" and contents is None:
@@ -974,7 +1186,22 @@ def key_offset(contents, dependencies):
 
 def perform_data_set_operations(name, state, **extra_args):
     """Calls functions to perform desired operations on
-    one or more data sets. Returns boolean indicating if changes were made."""
+    one or more data sets. Returns boolean indicating if changes were made.
+
+    Parameters
+    ----------
+    name : str
+        Name of the dataset.
+    state : str
+        State of the data sets.
+    **extra_args : dict
+        Properties of the data sets.
+
+    Returns
+    -------
+    bool
+        If changes were made.
+    """
     changed = False
     #  passing in **extra_args forced me to modify the acceptable parameters
     #  for multiple functions in data_set.py including ensure_present, replace
@@ -995,6 +1222,18 @@ def perform_data_set_operations(name, state, **extra_args):
 
 
 def parse_and_validate_args(params):
+    """Parse and validate args.
+
+    Parameters
+    ----------
+    params : dict
+        Params to validated and parsed.
+
+    Returns
+    -------
+    dict
+        Parsed args.
+    """
 
     arg_defs = dict(
         # Used for batch data set args
@@ -1202,6 +1441,13 @@ def parse_and_validate_args(params):
 
 
 def run_module():
+    """Runs the module.
+
+    Raises
+    ------
+    fail_json
+        Any exception during processing of data set params.
+    """
     # TODO: add logic to handle aliases during parsing
 
     module_args = dict(

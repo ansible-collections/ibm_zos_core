@@ -18,7 +18,8 @@ __metaclass__ = type
 import pytest
 import time
 import subprocess
-from pipes import quote
+# from pipes import quote
+from shlex import quote
 from pprint import pprint
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler

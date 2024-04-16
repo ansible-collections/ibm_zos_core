@@ -571,7 +571,7 @@ def mt_backupOper(module, src, backup, tmphlq=None):
     module : AnsibleModule
         AnsibleModule.
     src : str
-        Source of the file.
+        Source USS file or MVS data set.
     backup : str
         Name for the backup.
     tmphlq : str

@@ -52,7 +52,7 @@ wait_time_s
 
   This option is helpful on a busy system requiring more time to execute commands.
 
-  Setting *wait* can instruct if execution should wait the full *wait_time_s*.
+  Setting \ :emphasis:`wait`\  can instruct if execution should wait the full \ :emphasis:`wait\_time\_s`\ .
 
   | **required**: False
   | **type**: int

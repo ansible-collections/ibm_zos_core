@@ -40,7 +40,7 @@ commands
 max_rc
   Specifies the maximum return code allowed for a TSO command.
 
-  If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+  If more than one TSO command is submitted, the \ :emphasis:`max\_rc`\  applies to all TSO commands.
 
   | **required**: False
   | **type**: int
@@ -119,7 +119,7 @@ output
   max_rc
     Specifies the maximum return code allowed for a TSO command.
 
-    If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+    If more than one TSO command is submitted, the \ :emphasis:`max\_rc`\  applies to all TSO commands.
 
     | **returned**: always
     | **type**: int

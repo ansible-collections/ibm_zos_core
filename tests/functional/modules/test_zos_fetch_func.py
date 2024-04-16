@@ -231,7 +231,7 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
     TEST_PDS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="pdse")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
-    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="MEMBER")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
     params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PDS
@@ -322,7 +322,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     TEST_PDS = get_tmp_ds_name()
     hosts.all.zos_data_set(name=TEST_PDS, state="present")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
-    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="MEMBER")
+    hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
     hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
     params = dict(
         src=TEST_PDS_MEMBER, dest="/tmp/", flat=True, is_binary=True
@@ -395,7 +395,7 @@ def test_fetch_sequential_data_set_empty(ansible_zos_module):
     params = dict(src=src, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + src
     try:
-        hosts.all.zos_data_set(name=src, type='SEQ', state='present')
+        hosts.all.zos_data_set(name=src, type='seq', state='present')
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -415,7 +415,7 @@ def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
     pds_name = get_tmp_ds_name()
     hosts.all.zos_data_set(
         name=pds_name,
-        type="PDS",
+        type="pds",
         space_primary=5,
         space_type="m",
         record_format="fba",
@@ -436,7 +436,7 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
     pds_name = get_tmp_ds_name()
     hosts.all.zos_data_set(
         name=pds_name,
-        type="PDS",
+        type="pds",
         space_primary=5,
         space_type="m",
         record_format="fba",
@@ -565,7 +565,7 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
     pds_name_mem = pds_name + "(MYDATA)"
     hosts.all.zos_data_set(
         name=pds_name,
-        type="PDS",
+        type="pds",
         space_primary=5,
         space_type="m",
         record_format="fba",
@@ -628,7 +628,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()[:25]
     dest_path = "/tmp/"+ src
-    hosts.all.zos_data_set(name="OMVSADM." + src, type="SEQ", state="present")
+    hosts.all.zos_data_set(name="OMVSADM." + src, type="seq", state="present")
     params = dict(src=src, dest="/tmp/", flat=True, use_qualifier=True)
     try:
         results = hosts.all.zos_fetch(**params)

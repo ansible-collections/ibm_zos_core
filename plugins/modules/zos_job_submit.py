@@ -1108,7 +1108,9 @@ def assert_valid_return_code(max_rc, job_rc, ret_code, result):
     # should NOT be 'changed=true' even though the user did override the return code,
     # a non-zero return code means the job did not change anything, so set it as
     # result["chagned"]=False,
-    if job_rc != 0:
+    if max_rc and job_rc > max_rc:
+        return False
+    elif job_rc != 0 and max_rc is None:
         return False
 
     return True

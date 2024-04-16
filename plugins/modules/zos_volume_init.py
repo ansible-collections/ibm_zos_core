@@ -230,7 +230,13 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import ickdsf  # 
 
 
 def run_module():
+    """Initialize the module.
 
+    Raises
+    ------
+    fail_json
+        'Index' cannot be False for SMS managed volumes.
+    """
     module_args = dict(
         address=dict(type="str", required=True),
         verify_volid=dict(type="str", required=False),

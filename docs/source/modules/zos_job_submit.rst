@@ -16,9 +16,8 @@ zos_job_submit -- Submit JCL
 
 Synopsis
 --------
-- Submit JCL from a data set, USS, or from the controller.
-- Submit a job and optionally monitor for completion.
-- Optionally, wait a designated time until the job finishes.
+- Submit JCL in a data set, USS file, or file on the controller.
+- Submit a job and monitor for completion.
 - For an uncataloged dataset, specify the volume serial number.
 
 
@@ -43,36 +42,24 @@ src
 
 
 location
-  The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
+  The JCL location. Supported choices are \ :literal:`data\_set`\ , \ :literal:`uss`\  or \ :literal:`local`\ .
 
-  DATA_SET can be a PDS, PDSE, or sequential data set.
+  \ :literal:`data\_set`\  can be a PDS, PDSE, or sequential data set.
 
-  USS means the JCL location is located in UNIX System Services (USS).
+  \ :literal:`uss`\  means the JCL location is located in UNIX System Services (USS).
 
-  LOCAL means locally to the ansible control node.
+  \ :literal:`local`\  means locally to the ansible control node.
 
   | **required**: False
   | **type**: str
-  | **default**: DATA_SET
-  | **choices**: DATA_SET, USS, LOCAL
-
-
-wait
-  Setting this option will yield no change, it is deprecated. There is no no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of tme to wait for a job to execute.
-
-  Configuring wait used by the `zos_job_submit <./zos_job_submit.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
-
-  See option *wait_time_s*.
-
-  | **required**: False
-  | **type**: bool
-  | **default**: False
+  | **default**: data_set
+  | **choices**: data_set, uss, local
 
 
 wait_time_s
-  Option *wait_time_s* is the total time that module `zos_job_submit <./zos_job_submit.html>`_ will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
+  Option \ :emphasis:`wait\_time\_s`\  is the total time that module \ `zos\_job\_submit <./zos_job_submit.html>`__\  will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
 
-  *wait_time_s* is measured in seconds and must be a value greater than 0 and less than 86400.
+  \ :emphasis:`wait\_time\_s`\  is measured in seconds and must be a value greater than 0 and less than 86400.
 
   | **required**: False
   | **type**: int
@@ -97,11 +84,11 @@ return_output
 
 
 volume
-  The volume serial (VOLSER)is where the data set resides. The option is required only when the data set is not cataloged on the system.
+  The volume serial (VOLSER) is where the data set resides. The option is required only when the data set is not cataloged on the system.
 
-  When configured, the `zos_job_submit <./zos_job_submit.html>`_ will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
+  When configured, the \ `zos\_job\_submit <./zos_job_submit.html>`__\  will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
 
-  Ignored for *location=USS* and *location=LOCAL*.
+  Ignored for \ :emphasis:`location=uss`\  and \ :emphasis:`location=local`\ .
 
   | **required**: False
   | **type**: str
@@ -110,7 +97,7 @@ volume
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-  This option is only supported for when *location=LOCAL*.
+  This option is only supported for when \ :emphasis:`location=local`\ .
 
   If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default, otherwise the module will detect the z/OS system encoding.
 
@@ -142,13 +129,13 @@ encoding
 
 
 use_template
-  Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
+  Whether the module should treat \ :literal:`src`\  as a Jinja2 template and render it before continuing with the rest of the module.
 
-  Only valid when ``src`` is a local file or directory.
+  Only valid when \ :literal:`src`\  is a local file or directory.
 
-  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
+  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as \ `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`__\ , such as \ :literal:`playbook\_dir`\ , \ :literal:`ansible\_version`\ , etc.
 
-  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
+  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order \ `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`__\ 
 
   | **required**: False
   | **type**: bool
@@ -158,9 +145,9 @@ use_template
 template_parameters
   Options to set the way Jinja2 will process templates.
 
-  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
+  Jinja2 already sets defaults for the markers it uses, you can find more information at its \ `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`__\ .
 
-  These options are ignored unless ``use_template`` is true.
+  These options are ignored unless \ :literal:`use\_template`\  is true.
 
   | **required**: False
   | **type**: dict
@@ -239,7 +226,7 @@ template_parameters
   trim_blocks
     Whether Jinja2 should remove the first newline after a block is removed.
 
-    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
+    Setting this option to \ :literal:`False`\  will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
 
     | **required**: False
     | **type**: bool
@@ -280,22 +267,22 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Submit JCL in a PDSE member
+   - name: Submit JCL in a PDSE member.
      zos_job_submit:
        src: HLQ.DATA.LLQ(SAMPLE)
-       location: DATA_SET
+       location: data_set
      register: response
 
    - name: Submit JCL in USS with no DDs in the output.
      zos_job_submit:
        src: /u/tester/demo/sample.jcl
-       location: USS
+       location: uss
        return_output: false
 
    - name: Convert local JCL to IBM-037 and submit the job.
      zos_job_submit:
        src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-       location: LOCAL
+       location: local
        encoding:
          from: ISO8859-1
          to: IBM-037
@@ -303,25 +290,25 @@ Examples
    - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
      zos_job_submit:
        src: HLQ.DATA.LLQ(SAMPLE)
-       location: DATA_SET
+       location: data_set
        volume: P2SS01
 
    - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
        src: HLQ.DATA.LLQ(LONGRUN)
-       location: DATA_SET
+       location: data_set
        wait_time_s: 30
 
    - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
        src: HLQ.DATA.LLQ(LONGRUN)
-       location: DATA_SET
+       location: data_set
        wait_time_s: 30
 
    - name: Submit JCL and set the max return code the module should fail on to 16.
      zos_job_submit:
        src: HLQ.DATA.LLQ
-       location: DATA_SET
+       location: data_set
        max_rc: 16
 
 
@@ -331,7 +318,9 @@ Notes
 -----
 
 .. note::
-   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
+   For supported character sets used to encode data, refer to the \ `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`__\ .
+
+   This module uses \ `zos\_copy <./zos_copy.html>`__\  to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
 
 
@@ -344,7 +333,7 @@ Return Values
 
 
 jobs
-  List of jobs output. If no job status is found, this will return an empty ret_code with msg_txt explanation.
+  List of jobs output. If no job status is found, this will return an empty ret\_code with msg\_txt explanation.
 
   | **returned**: success
   | **type**: list
@@ -689,24 +678,52 @@ jobs
           }
 
     msg
-      Return code resulting from the job submission. Jobs that take longer to assign a value can have a value of '?'.
+      Job status resulting from the job submission.
+
+      Job status \`ABEND\` indicates the job ended abnormally.
+
+      Job status \`AC\` indicates the job is active, often a started task or job taking long.
+
+      Job status \`CAB\` indicates a converter abend.
+
+      Job status \`CANCELED\` indicates the job was canceled.
+
+      Job status \`CNV\` indicates a converter error.
+
+      Job status \`FLU\` indicates the job was flushed.
+
+      Job status \`JCLERR\` or \`JCL ERROR\` indicates the JCL has an error.
+
+      Job status \`SEC\` or \`SEC ERROR\` indicates the job as encountered a security error.
+
+      Job status \`SYS\` indicates a system failure.
+
+      Job status \`?\` indicates status can not be determined.
+
+      Jobs where status can not be determined will result in None (NULL).
 
       | **type**: str
-      | **sample**: CC 0000
+      | **sample**: AC
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated as a string. Jobs that take longer to assign a value can have a value of '?'.
+      The return code from the submitted job as a string.
+
+      Jobs which have no return code will result in None (NULL), such is the case of a job that errors or is active.
 
       | **type**: str
 
     msg_txt
-      Returns additional information related to the job. Jobs that take longer to assign a value can have a value of '?'.
+      Returns additional information related to the submitted job.
+
+      Jobs which have no additional information will result in None (NULL).
 
       | **type**: str
-      | **sample**: The job completion code (CC) was not available in the job output, please review the job log."
+      | **sample**: The job JOB00551 was run with special job processing TYPRUN=SCAN. This will result in no completion, return code or job steps and changed will be false.
 
     code
-      Return code converted to an integer value (when possible). For JCL ERRORs, this will be None.
+      The return code converted to an integer value when available.
+
+      Jobs which have no return code will result in None (NULL), such is the case of a job that errors or is active.
 
       | **type**: int
 
@@ -776,11 +793,4 @@ jobs
     | **type**: str
     | **sample**: IEBGENER
 
-
-message
-  This option is being deprecated
-
-  | **returned**: success
-  | **type**: str
-  | **sample**: Submit JCL operation succeeded.
 

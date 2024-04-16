@@ -1,13 +1,22 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2021, 2023                              .
+.. © Copyright IBM Corporation 2020, 2024                              .
 .. ...........................................................................
 
 ========
 Releases
 ========
 
-Version 1.9.0-beta.1
-====================
+Version 1.9.0
+=============
+
+Major Changes
+-------------
+  - IBM Ansible z/OS core collection (**ibm_zos_core**) version 1.9.0 will be the last release to support ZOAU 1.2.x.
+
+    - IBM Ansible z/OS core version 1.9.0 will continue to receive security updates and bug fixes.
+
+  - Starting with IBM Ansible z/OS core version 1.10.0, ZOAU version 1.3.0 will be required.
+  - IBM Open Enterprise SDK for Python version 3.9.x is no longer supported.
 
 Minor Changes
 -------------
@@ -21,7 +30,24 @@ Minor Changes
     - Improved messages in the action plugin.
     - Improved the action plugin performance, flow and use of undocumented variables.
     - Improved the modules handling of ZOAU import errors allowing for the traceback to flow back to the source.
-- ``zos_tso_command`` - Has been updated with a new example demonstrating how to explicitly execute a REXX script in a data set.
+    - Improved job status support, now the supported statuses for property **ret_code[msg]** are:
+
+      - Job status **ABEND** indicates the job ended abnormally.
+      - Job status **AC** indicates the job is active, often a started task or job taking long.
+      - Job status **CAB** indicates a converter abend.
+      - Job status **CANCELED** indicates the job was canceled.
+      - Job status **CNV** indicates a converter error.
+      - Job status **FLU** indicates the job was flushed.
+      - Job status **JCLERR** or **JCL ERROR** indicates the JCL has an error.
+      - Job status **SEC** or **SEC ERROR** indicates the job as encountered a security error.
+      - Job status **SYS** indicates a system failure.
+      - Job status **?** indicates status can not be determined.
+
+- ``zos_tso_command``
+
+    - Has been updated with a new example demonstrating how to explicitly execute a REXX script in a data set.
+    - Has been updated with a new example demonstrating how to chain multiple TSO commands into one invocation using semicolons.
+
 - ``zos_mvs_raw``
 
     - Has been enhanced to ensure that **instream-data** for option **dd_input** contain blanks in columns 1 and 2 while retaining a maximum length
@@ -33,40 +59,69 @@ Minor Changes
 Bugfixes
 --------
 
+- ``zos_apf`` - Fixed an issue that when **operation=list** was selected and more than one data set entry was fetched, only one
+  data set was returned, now the complete list is returned.
+
 - ``zos_copy``
 
-    - Fixed an issue when copying an aliased executable from a data set to a non-existent data set, the destination data sets primary
-      and secondary extents would not match the source data set extent sizes.
+    - Fixed an issue that when copying an aliased executable from a data set to a non-existent data set, the destination
+      datasets primary and secondary extents would not match the source data set extent sizes.
     - Fixed an issue when performing a copy operation to an existing file, the copied file resulted in having corrupted contents.
 
-- ``zos_job_output`` - Fixed an issue that when using a job ID with less than 8 characters would result in a traceback. The fix
+- ``zos_job_submit``
+
+    - Fixed an issue that when no **location** is set, the default is not correctly configured to **location=DATA_SET**.
+    - Fixed an issue that when a JCL error is encountered, the **ret_code[msg_code]** no longer will contain the multi line marker used to coordinate errors.
+    - Fixed an issue that when a response was returned, the property **ret_code[msg_text]** was incorrectly returned over **ret_code[msg_txt]**.
+    - Fixed an issue that when JCL contained **TYPRUN=SCAN**, the module would fail. The module no longer fails and an appropriate message and response is returned.
+    - Fixed an issue that when JCL contained either **TYPRUN=COPY**, **TYPRUN=HOLD**, or **TYPRUN=JCLHOLD** an improper message was returned and the job submission failed.
+      Now the job will fail under the condition that the module has exceeded its wait time and return a proper message.
+    - Fixed an issue where when option **wait_time_s** was used, the duration would be approximately 5 seconds longer than what was reported in the duration.
+      Now the duration is from when the job is submitted to when the module reads the job output.
+
+- ``zos_job_output`` - Fixed an issue that when using a job ID with less than 8 characters, would result in a traceback. The fix
   supports shorter job IDs as well as the use of wildcards.
 
-- ``zos_job_query`` - Fixed an issue that when using a job ID with less than 8 characters would result in a traceback. The fix
+- ``zos_job_query`` - Fixed an issue that when using a job ID with less than 8 characters, would result in a traceback. The fix
   supports shorter job IDs as well as the use of wildcards.
 
 - ``zos_unarchive``
 
-    - Fixed an issue when using a local file with the USS format option that would fail sending it to the managed node.
-    - Fixed an issue that occurred when unarchiving USS files that would leave temporary files behind on the managed node.
+    - Fixed an issue that when using a local file with the USS format option, the module would fail to send the archive to the managed node.
+    - Fixed an issue that occurred when unarchiving USS files, the module would leave temporary files behind on the managed node.
+
+- ``module_utils``
+
+    - ``job.py`` - Improved exception handling and added a message inside the **content** of the **ddname** when a non-printable
+      character (character that can not be converted to UTF-8) is encountered.
+    - ``data_set.py`` - Fixed an issue that when a volser name less than 6 characters was encountered, the volser name was padded with hyphens to have length 6.
+
 
 Known Issues
 ------------
 
 Several modules have reported UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
 
-This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules ``zos_job_submit``, ``zos_job_output``,
-``zos_operator_action_query``` but are not limited to this list. This will be addressed in **ibm_zos_core** version 1.10.0-beta.1. Each case is
-unique, some options to work around the error are below.
+- This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules ``zos_job_submit``, ``zos_job_output``,
+  ``zos_operator_action_query``` but are not limited to this list. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6**.
+- If the appropriate level of ZOAU can not be installed, some options are to:
 
-- Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
-- Add **ignore_errors:true** to the playbook task so the task error will not fail the playbook.
-- If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
-  a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+  - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+  - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+  - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+    job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+  - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended
+and documented **space_primary** option.
+
+In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set,
+this is so that the collection can continue to maintain certified status.
 
 Availability
 ------------
 
+* `Automation Hub`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -75,7 +130,7 @@ Reference
 
 * Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
 * Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.10`_ - `3.12`_
 * Supported by IBM `Z Open Automation Utilities 1.2.5`_ (or later) but prior to version 1.3.
 
 Version 1.8.0
@@ -978,6 +1033,8 @@ Known issues
    https://www.ibm.com/docs/en/python-zos/3.10
 .. _3.11:
    https://www.ibm.com/docs/en/python-zos/3.11
+.. _3.12:
+   https://www.ibm.com/docs/en/python-zos/3.12
 .. _Z Open Automation Utilities 1.1.0:
    https://www.ibm.com/docs/en/zoau/1.1.x
 .. _Z Open Automation Utilities 1.1.1:

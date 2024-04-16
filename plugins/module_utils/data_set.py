@@ -919,7 +919,7 @@ class DataSet(object):
                 secondary += space_type
 
         type = kwargs.get("type")
-        if type and type == "ZFS":
+        if type and type.upper() == "ZFS":
             type = "LDS"
 
         volumes = ",".join(volumes) if volumes else None

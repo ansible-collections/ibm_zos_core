@@ -93,7 +93,7 @@ def assert_args_invalid(zos_backup_restore, arguments):
 
 
 @pytest.mark.parametrize(
-    "space_type", ["K", "M", "G", "TRK", "CYL", "k", "m", "g", "trk", "cyl"]
+    "space_type", ["k", "m", "g", "trk", "cyl"]
 )
 def test_valid_space_types(zos_backup_restore_mocker, space_type):
     valid_args = dict(

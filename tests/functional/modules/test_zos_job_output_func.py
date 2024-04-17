@@ -99,7 +99,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         )
 
         jobs = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
         )
         for job in jobs.contacted.values():
             print(job)
@@ -127,7 +127,7 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         result = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"

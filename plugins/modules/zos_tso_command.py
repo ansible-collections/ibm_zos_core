@@ -135,6 +135,23 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 
 
 def run_tso_command(commands, module, max_rc):
+    """Run tso command.
+
+    Parameters
+    ----------
+    commands : str
+        Commands to run.
+    module : AnsibleModule
+        Ansible module to run the command with.
+    max_rc : int
+        Max return code.
+
+    Returns
+    -------
+    Union[dict]
+        The command result details.
+
+    """
     script = """/* REXX */
 PARSE ARG cmd
 address tso
@@ -152,6 +169,24 @@ exit rc
 
 
 def copy_rexx_and_run_commands(script, commands, module, max_rc):
+    """Copy rexx into a temporary file and run commands.
+
+    Parameters
+    ----------
+    script : str
+        Script to run the command.
+    commands : str
+        Commands to run.
+    module : AnsibleModule
+        Ansible module to run the command with.
+    max_rc : int
+        Max return code.
+
+    Returns
+    -------
+    Union[dict]
+        The command result details.
+    """
     command_detail_json = []
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
@@ -180,6 +215,25 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
 
 
 def list_or_str_type(contents, dependencies):
+    """Checks if a variable contains a string or a list of strings and returns it as a list of strings.
+
+    Parameters
+    ----------
+    contents : str | list[str]
+        String or list of strings.
+    dependencies
+        Unused.
+
+    Returns
+    -------
+    str | Union[str]
+        The parameter given as a list of strings.
+
+    Raises
+    ------
+    ValueError
+        Invalid argument type. Expected "string or list of strings".
+    """
     failed = False
     if isinstance(contents, list):
         for item in contents:
@@ -200,6 +254,17 @@ def list_or_str_type(contents, dependencies):
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        ValueError on BetterArgParser.
+    fail_json
+        Some command(s) failed.
+    fail_json
+        An unexpected error occurred.
+    """
     module_args = dict(
         commands=dict(type="raw", required=True, aliases=["command"]),
         max_rc=dict(type="int", required=False, default=0),

@@ -1,0 +1,3 @@
+trivial:
+  - zos_tso_command - Updated docstrings to numpy style for visual aid to developers.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1391).

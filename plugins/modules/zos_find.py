@@ -479,7 +479,7 @@ def data_set_attribute_filter(
                 age and not size and _age_filter(ds_age, now, age)
             ) or
             (
-                size and not age and _size_filter(int(out[5]), size)
+                size and not age and _size_filter(int(out[6]), size)
             )
         ):
             filtered_data_sets.add(ds)

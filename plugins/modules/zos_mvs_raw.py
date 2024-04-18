@@ -125,9 +125,7 @@ options:
             choices:
               - delete
               - keep
-              - catlg
               - catalog
-              - uncatlg
               - uncatalog
           disposition_abnormal:
             description:
@@ -138,32 +136,30 @@ options:
             choices:
               - delete
               - keep
-              - catlg
               - catalog
-              - uncatlg
               - uncatalog
           reuse:
             description:
-              - Determines if a data set should be reused if I(disposition=NEW) and if a data set with a matching name already exists.
+              - Determines if a data set should be reused if I(disposition=new) and if a data set with a matching name already exists.
               - If I(reuse=true), I(disposition) will be automatically switched to C(SHR).
               - If I(reuse=false), and a data set with a matching name already exists, allocation will fail.
               - Mutually exclusive with I(replace).
-              - I(reuse) is only considered when I(disposition=NEW)
+              - I(reuse) is only considered when I(disposition=new)
             type: bool
             default: false
           replace:
             description:
-              - Determines if a data set should be replaced if I(disposition=NEW) and a data set with a matching name already exists.
+              - Determines if a data set should be replaced if I(disposition=new) and a data set with a matching name already exists.
               - If I(replace=true), the original data set will be deleted, and a new data set created.
               - If I(replace=false), and a data set with a matching name already exists, allocation will fail.
               - Mutually exclusive with I(reuse).
-              - I(replace) is only considered when I(disposition=NEW)
+              - I(replace) is only considered when I(disposition=new)
               - I(replace) will result in loss of all data in the original data set unless I(backup) is specified.
             type: bool
             default: false
           backup:
             description:
-              - Determines if a backup should be made of an existing data set when I(disposition=NEW), I(replace=true),
+              - Determines if a backup should be made of an existing data set when I(disposition=new), I(replace=true),
                 and a data set with the desired name is found.
               - I(backup) is only used when I(replace=true).
             type: bool
@@ -260,8 +256,8 @@ options:
                 description:
                   - How the label for the key encrypting key specified by
                     I(label) is encoded by the Encryption Key Manager.
-                  - I(encoding) can either be set to C(L) for label encoding,
-                    or C(H) for hash encoding.
+                  - I(encoding) can either be set to C(l) for label encoding,
+                    or C(h) for hash encoding.
                   - Maps to KEYCD1 on z/OS.
                 type: str
                 required: true
@@ -289,8 +285,8 @@ options:
                 description:
                   - How the label for the key encrypting key specified by
                     I(label) is encoded by the Encryption Key Manager.
-                  - I(encoding) can either be set to C(L) for label encoding,
-                    or C(H) for hash encoding.
+                  - I(encoding) can either be set to C(l) for label encoding,
+                    or C(h) for hash encoding.
                   - Maps to KEYCD2 on z/OS.
                 type: str
                 required: true
@@ -316,7 +312,7 @@ options:
               - The logical record length. (e.g C(80)).
               - For variable data sets, the length must include the 4-byte prefix area.
               - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
-              - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
+              - Valid values are (1-32760 for non-VSAM,  1-32761 for VSAM).
               - Maps to LRECL on z/OS.
             type: int
             required: false
@@ -746,9 +742,7 @@ options:
                     choices:
                       - delete
                       - keep
-                      - catlg
                       - catalog
-                      - uncatlg
                       - uncatalog
                   disposition_abnormal:
                     description:
@@ -759,32 +753,30 @@ options:
                     choices:
                       - delete
                       - keep
-                      - catlg
                       - catalog
-                      - uncatlg
                       - uncatalog
                   reuse:
                     description:
-                      - Determines if data set should be reused if I(disposition=NEW) and a data set with matching name already exists.
+                      - Determines if data set should be reused if I(disposition=new) and a data set with matching name already exists.
                       - If I(reuse=true), I(disposition) will be automatically switched to C(SHR).
                       - If I(reuse=false), and a data set with a matching name already exists, allocation will fail.
                       - Mutually exclusive with I(replace).
-                      - I(reuse) is only considered when I(disposition=NEW)
+                      - I(reuse) is only considered when I(disposition=new)
                     type: bool
                     default: false
                   replace:
                     description:
-                      - Determines if data set should be replaced if I(disposition=NEW) and a data set with matching name already exists.
+                      - Determines if data set should be replaced if I(disposition=new) and a data set with matching name already exists.
                       - If I(replace=true), the original data set will be deleted, and a new data set created.
                       - If I(replace=false), and a data set with a matching name already exists, allocation will fail.
                       - Mutually exclusive with I(reuse).
-                      - I(replace) is only considered when I(disposition=NEW)
+                      - I(replace) is only considered when I(disposition=new)
                       - I(replace) will result in loss of all data in the original data set unless I(backup) is specified.
                     type: bool
                     default: false
                   backup:
                     description:
-                      - Determines if a backup should be made of existing data set when I(disposition=NEW), I(replace=true),
+                      - Determines if a backup should be made of existing data set when I(disposition=new), I(replace=true),
                         and a data set with the desired name is found.
                       - I(backup) is only used when I(replace=true).
                     type: bool
@@ -881,8 +873,8 @@ options:
                         description:
                           - How the label for the key encrypting key specified by
                             I(label) is encoded by the Encryption Key Manager.
-                          - I(encoding) can either be set to C(L) for label encoding,
-                            or C(H) for hash encoding.
+                          - I(encoding) can either be set to C(l) for label encoding,
+                            or C(h) for hash encoding.
                           - Maps to KEYCD1 on z/OS.
                         type: str
                         required: true
@@ -910,8 +902,8 @@ options:
                         description:
                           - How the label for the key encrypting key specified by
                             I(label) is encoded by the Encryption Key Manager.
-                          - I(encoding) can either be set to C(L) for label encoding,
-                            or C(H) for hash encoding.
+                          - I(encoding) can either be set to C(l) for label encoding,
+                            or C(h) for hash encoding.
                           - Maps to KEYCD2 on z/OS.
                         type: str
                         required: true
@@ -988,7 +980,7 @@ options:
                   path:
                     description:
                       - The path to an existing UNIX file.
-                      - Or provide the path to an new created UNIX file when I(status_group=OCREAT).
+                      - Or provide the path to an new created UNIX file when I(status_group=ocreat).
                       - The provided path must be absolute.
                     required: true
                     type: str
@@ -1628,10 +1620,6 @@ ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 backups = []
 
 
-# Use of global tmphlq to keep coherent classes definitions
-g_tmphlq = ""
-
-
 def run_module():
     """Executes all module-related functions.
 
@@ -1645,11 +1633,11 @@ def run_module():
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
         disposition_abnormal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
         space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
         space_primary=dict(type="int"),
@@ -1839,8 +1827,7 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
-            global g_tmphlq
-            g_tmphlq = parms.get("tmp_hlq")
+            tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
@@ -1852,6 +1839,7 @@ def run_module():
                 dd_statements=dd_statements,
                 authorized=authorized,
                 verbose=verbose,
+                tmp_hlq=tmphlq,
             )
             if program_response.rc != 0 and program_response.stderr:
                 raise ZOSRawError(
@@ -1888,11 +1876,11 @@ def parse_and_validate_args(params):
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
         disposition_abnormal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
         space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
         space_primary=dict(type="int"),
@@ -2408,7 +2396,7 @@ def build_dd_statements(parms):
     dd_statements = []
     for dd in parms.get("dds"):
         dd_name = get_dd_name(dd)
-        dd = set_extra_attributes_in_dd(dd)
+        dd = set_extra_attributes_in_dd(dd, parms)
         data_definition = build_data_definition(dd)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
@@ -2444,26 +2432,27 @@ def get_dd_name(dd):
     return dd_name
 
 
-def set_extra_attributes_in_dd(dd):
+def set_extra_attributes_in_dd(dd, parms):
     """
-    Set any extra attributes in dds like in global g_tmphlq.
+    Set any extra attributes in dds like in global tmp_hlq.
     Args:
         dd (dict): A single DD parm as specified in module parms.
 
     Returns:
         dd (dict): A single DD parm as specified in module parms.
     """
+    tmphlq = parms.get("tmp_hlq")
     if dd.get("dd_data_set"):
-        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
+        dd.get("dd_data_set")["tmphlq"] = tmphlq
     elif dd.get("dd_input"):
-        dd.get("dd_input")["tmphlq"] = g_tmphlq
+        dd.get("dd_input")["tmphlq"] = tmphlq
     elif dd.get("dd_output"):
-        dd.get("dd_output")["tmphlq"] = g_tmphlq
+        dd.get("dd_output")["tmphlq"] = tmphlq
     elif dd.get("dd_vio"):
-        dd.get("dd_vio")["tmphlq"] = g_tmphlq
+        dd.get("dd_vio")["tmphlq"] = tmphlq
     elif dd.get("dd_concat"):
         for single_dd in dd.get("dd_concat").get("dds", []):
-            set_extra_attributes_in_dd(single_dd)
+            set_extra_attributes_in_dd(single_dd, parms)
     return dd
 
 
@@ -2572,6 +2561,7 @@ class RawDatasetDefinition(DatasetDefinition):
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
+        self.tmphlq = tmphlq
         primary_unit = space_type
         secondary_unit = space_type
         key_label1 = None
@@ -2698,7 +2688,6 @@ class RawFileDefinition(FileDefinition):
         )
 
 
-# TODO: potentially extend the available parameters to end user
 class RawInputDefinition(InputDefinition):
     """Wrapper around InputDefinition to contain information about
     desired return contents.
@@ -2707,7 +2696,7 @@ class RawInputDefinition(InputDefinition):
         InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, content="", return_content=None, **kwargs):
+    def __init__(self, content="", return_content=None, tmphlq="", **kwargs):
         """Initialize RawInputDefinition
 
         Args:
@@ -2715,7 +2704,7 @@ class RawInputDefinition(InputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__(content=content)
+        super().__init__(content=content, tmphlq=tmphlq)
 
 
 class RawOutputDefinition(OutputDefinition):
@@ -2726,7 +2715,7 @@ class RawOutputDefinition(OutputDefinition):
         OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, return_content=None, **kwargs):
+    def __init__(self, return_content=None, tmphlq="", **kwargs):
         """Initialize RawOutputDefinition
 
         Args:
@@ -2734,7 +2723,7 @@ class RawOutputDefinition(OutputDefinition):
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__()
+        super().__init__(tmphlq=tmphlq)
 
 
 class ReturnContent(object):
@@ -2759,28 +2748,6 @@ class ReturnContent(object):
         self.type = type
         self.src_encoding = src_encoding
         self.response_encoding = response_encoding
-
-
-def to_bytes(size, unit):
-    """Convert sizes of various units to bytes.
-
-    Args:
-        size (int): The size to convert.
-        unit (str): The unit of size.
-
-    Returns:
-        int: The size converted to bytes.
-    """
-    num_bytes = 0
-    if unit == "b":
-        num_bytes = size
-    elif unit == "k":
-        num_bytes = size * 1024
-    elif unit == "m":
-        num_bytes = size * 1048576
-    elif unit == "g":
-        num_bytes = size * 1073741824
-    return num_bytes
 
 
 def rename_parms(parms, name_map):
@@ -2839,7 +2806,7 @@ def data_set_exists(name, volumes=None):
 
 
 def run_zos_program(
-    program, parm="", dd_statements=None, authorized=False, verbose=False
+    program, parm="", dd_statements=None, authorized=False, verbose=False, tmp_hlq=None
 ):
     """Run a program on z/OS.
 
@@ -2848,6 +2815,7 @@ def run_zos_program(
         parm (str, optional): Additional argument string if required. Defaults to "".
         dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
         authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
+        tmp_hlq (str, optional): Arguments overwrite variable tmp_hlq
 
     Returns:
         MVSCmdResponse: Holds the response information for program execution.
@@ -2857,11 +2825,11 @@ def run_zos_program(
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
         )
     else:
         response = MVSCmd.execute(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
         )
     return response
 

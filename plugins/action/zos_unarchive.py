@@ -87,11 +87,11 @@ class ActionModule(ActionBase):
                 )
                 dest = cmd_res.get("stdout")
                 if dest_data_set.get("space_primary") is None:
-                    dest_data_set.update(space_primary=5, space_type="M")
+                    dest_data_set.update(space_primary=5, space_type="m")
                 if format_name == 'terse':
-                    dest_data_set.update(type='SEQ', record_format='FB', record_length=1024)
+                    dest_data_set.update(type='seq', record_format='fb', record_length=1024)
                 if format_name == 'xmit':
-                    dest_data_set.update(type='SEQ', record_format='FB', record_length=80)
+                    dest_data_set.update(type='seq', record_format='fb', record_length=80)
 
             copy_module_args.update(
                 dict(

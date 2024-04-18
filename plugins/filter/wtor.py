@@ -12,6 +12,61 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
+
+DOCUMENTATION = r"""
+name: filter_wtor_messages
+author: Demetrios Dimatos (@ddimatos)
+version_added: "1.2.0"
+short_description: Filter a list of WTOR messages
+description:
+    - Filter a list of WTOR (write to operator with reply) messages found by
+      module zos_operator_action_query.
+    - Filter using a string or regular expression.
+options:
+    wtor_response:
+      description:
+            - A list containing response property `message_text`, provided the
+              module zos_operator_action_query.
+            - The list can be the outstanding messages found in the  modules
+              response under the `actions` property or the entire module
+              response.
+      type: list
+      required: true
+    text:
+      description:
+            - String of text to match or a regular expression to use as filter criteria.
+      type: str
+      required: true
+    ingore_case:
+      description:
+            - Should the filter enable case sensitivity when performing a match.
+      type: bool
+      required: false
+      default: false
+"""
+
+EXAMPLES = r"""
+- name: Filter actionable messages that match 'IEE094D SPECIFY OPERAND' and if so, set is_specify_operand = true.
+  set_fact:
+    is_specify_operand: "{{ result | ibm.ibm_zos_core.filter_wtor_messages('IEE094D SPECIFY OPERAND') }}"
+  when: result is defined and not result.failed
+
+- name: Evaluate if there are any existing dump messages matching 'IEE094D SPECIFY OPERAND'
+  assert:
+    that:
+        - is_specify_operand is defined
+        - bool_zos_operator_action_continue
+    success_msg: "Found 'IEE094D SPECIFY OPERAND' message."
+    fail_msg: "Did not find 'IEE094D SPECIFY OPERAND' message."
+"""
+
+RETURN = r"""
+  _value:
+    description: A list containing dictionaries matching the WTOR.
+    type: list
+    elements: dict
+"""
+
 import re
 
 

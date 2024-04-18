@@ -1108,7 +1108,7 @@ def run_module():
     module.exit_json(**result)
 
 
-def assert_valid_return_code(max_rc, job_rc, ret_code):
+def assert_valid_return_code(max_rc, job_rc, ret_code, result):
     """Asserts valid return code.
 
     Parameters
@@ -1119,6 +1119,8 @@ def assert_valid_return_code(max_rc, job_rc, ret_code):
         Job return code.
     ret_code : int
         Return code.
+    result : dict()
+        Result dictionary.
 
     Returns
     -------

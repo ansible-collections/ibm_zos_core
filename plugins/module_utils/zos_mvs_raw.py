@@ -18,6 +18,19 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
+    DDStatement,
+    FileDefinition,
+    DatasetDefinition,
+    InputDefinition,
+    OutputDefinition,
+    DummyDefinition,
+    VIODefinition,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    backup as zos_backup,
+)
 
 class MVSCmd(object):
     """Provides an interface to execute authorized and unauthorized MVS commands.
@@ -99,3 +112,199 @@ class MVSCmdResponse(object):
         self.rc = rc
         self.stdout = stdout
         self.stderr = stderr
+
+
+class backups():
+    def __init__():
+        backups = []
+
+class RawDatasetDefinition(DatasetDefinition):
+    """Wrapper around DatasetDefinition to contain information about
+    desired return contents.
+
+    Args:
+        DatasetDefinition (DatasetDefinition): Dataset DD data type to be used in a DDStatement.
+    """
+
+    def __init__(
+        self,
+        data_set_name,
+        disposition="",
+        type=None,
+        space_primary=None,
+        space_secondary=None,
+        space_type=None,
+        disposition_normal=None,
+        disposition_abnormal=None,
+        block_size=None,
+        directory_blocks=None,
+        record_format=None,
+        record_length=None,
+        sms_storage_class=None,
+        sms_data_class=None,
+        sms_management_class=None,
+        key_length=None,
+        key_offset=None,
+        volumes=None,
+        key_label=None,
+        encryption_key_1=None,
+        encryption_key_2=None,
+        reuse=None,
+        replace=None,
+        backup=None,
+        return_content=None,
+        tmphlq=None,
+        **kwargs
+    ):
+        """Initialize RawDatasetDefinition
+
+        Args:
+            data_set_name (str): The name of the data set.
+            disposition (str, optional): The disposition of the data set. Defaults to "".
+            type (str, optional): The type of the data set. Defaults to None.
+            space_primary (int, optional): The primary amount of space of the data set. Defaults to None.
+            space_secondary (int, optional): The secondary amount of space of the data set. Defaults to None.
+            space_type (str, optional): The unit of space to use for primary and secondary space. Defaults to None.
+            disposition_normal (str, optional): What to do with the data set after normal termination of the program. Defaults to None.
+            disposition_abnormal (str, optional): What to do with the data set after abnormal termination of the program. Defaults to None.
+            block_size (int, optional): The block size of the data set. Defaults to None.
+            directory_blocks (int, optional): The number of directory blocks to allocate for the data set. Defaults to None.
+            record_format (str, optional): The record format of the data set. Defaults to None.
+            record_length (int, optional): The length, in bytes, of each record in the data set. Defaults to None.
+            sms_storage_class (str, optional): The storage class for an SMS-managed dataset. Defaults to None.
+            sms_data_class (str, optional): The data class for an SMS-managed dataset. Defaults to None.
+            sms_management_class (str, optional): The management class for an SMS-managed dataset. Defaults to None.
+            key_length (int, optional): The key length of a record. Defaults to None.
+            key_offset (int, optional): The key offset is the position of the first byte of the key
+                in each logical record of a the specified VSAM data set. Defaults to None.
+            volumes (list, optional): A list of volume serials.. Defaults to None.
+            key_label (str, optional): The label for the encryption key used by the system to encrypt the data set. Defaults to None.
+            encryption_key_1 (dict, optional): [description]. Defaults to None.
+            encryption_key_2 (dict, optional): [description]. Defaults to None.
+            reuse (bool, optional): Determines if data set should be reused. Defaults to None.
+            replace (bool, optional): Determines if data set should be replaced. Defaults to None.
+            backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
+                and a data set with the desired name is found.. Defaults to None.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
+            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
+        """
+        self.backup = None
+        self.return_content = ReturnContent(**(return_content or {}))
+        self.tmphlq = tmphlq
+        primary_unit = space_type
+        secondary_unit = space_type
+        key_label1 = None
+        key_encoding1 = None
+        key_label2 = None
+        key_encoding2 = None
+        if encryption_key_1:
+            if encryption_key_1.get("label"):
+                key_label1 = encryption_key_1.get("label")
+            if encryption_key_1.get("encoding"):
+                key_encoding1 = encryption_key_1.get("encoding")
+        if encryption_key_2:
+            if encryption_key_2.get("label"):
+                key_label2 = encryption_key_2.get("label")
+            if encryption_key_2.get("encoding"):
+                key_encoding2 = encryption_key_2.get("encoding")
+
+        should_reuse = False
+        if (reuse or replace) and data_set_exists(data_set_name, volumes):
+            if reuse:
+                should_reuse = True
+            elif replace:
+                if backup:
+                    self.backup = zos_backup.mvs_file_backup(data_set_name, None, tmphlq)
+                    backups.append(
+                        {"original_name": data_set_name, "backup_name": self.backup}
+                    )
+                DataSet.delete(data_set_name)
+
+        if not should_reuse:
+            super().__init__(
+                dataset_name=data_set_name,
+                disposition=disposition,
+                type=type,
+                primary=space_primary,
+                primary_unit=primary_unit,
+                secondary=space_secondary,
+                secondary_unit=secondary_unit,
+                normal_disposition=disposition_normal,
+                conditional_disposition=disposition_abnormal,
+                block_size=block_size,
+                directory_blocks=directory_blocks,
+                record_format=record_format,
+                record_length=record_length,
+                storage_class=sms_storage_class,
+                data_class=sms_data_class,
+                management_class=sms_management_class,
+                key_length=key_length,
+                key_offset=key_offset,
+                volumes=volumes,
+                dataset_key_label=key_label,
+                key_label1=key_label1,
+                key_encoding1=key_encoding1,
+                key_label2=key_label2,
+                key_encoding2=key_encoding2,
+            )
+        else:
+            # TODO: determine if encoding labels are useful for existing data sets
+            super().__init__(
+                dataset_name=data_set_name,
+                disposition="shr",
+                type=type,
+                normal_disposition=disposition_normal,
+                conditional_disposition=disposition_abnormal,
+                volumes=volumes,
+                dataset_key_label=key_label,
+                key_label1=key_label1,
+                key_encoding1=key_encoding1,
+                key_label2=key_label2,
+                key_encoding2=key_encoding2,
+            )
+
+
+class ReturnContent(object):
+    """Holds information about what type of content
+    should be returned for a particular DD, if any.
+
+    Args:
+        object (object): The most base type.
+    """
+
+    def __init__(self, type=None, src_encoding=None, response_encoding=None):
+        """Initialize ReturnContent
+
+        Args:
+            type (str, optional): The type of content to return.
+                    Defaults to None.
+            src_encoding (str, optional): The encoding of the data set or file on the z/OS system.
+                    Defaults to None.
+            response_encoding (str, optional): The encoding to use when returning the contents of the data set or file.
+                    Defaults to None.
+        """
+        self.type = type
+        self.src_encoding = src_encoding
+        self.response_encoding = response_encoding
+
+def data_set_exists(name, volumes=None):
+    """Is used to determine if a data set exists.
+    In addition, if a data set does exist and is uncataloged,
+    the data set will be cataloged.
+
+    Args:
+        name (str): The name of the data set.
+        volumes (list[str], optional): A list of volume serials. Defaults to None.
+
+    Returns:
+        bool: Whether the data set exists or not.
+    """
+    exists = False
+    try:
+        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
+        exists = present
+    except Exception:
+        # Failure locating or cataloging the data set. Go ahead assumming it does not exist.
+        # exists = False to avoid using pass clause which results in bandit warning.
+        exists = False
+    return exists

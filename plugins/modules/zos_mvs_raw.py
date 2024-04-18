@@ -1614,6 +1614,14 @@ else:
 ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 
 
+ACCESS_GROUP_NAME_MAP = {
+    "read_only": "ordonly",
+    "write_only": "owronly",
+    "read_write": "ordwr",
+    "r": "ordonly",
+    "w": "owronly",
+    "rw": "ordwr",
+}
 # hold backup names in easy to access location in
 # in case exception is raised
 # this global list is only used in case of exception
@@ -1785,9 +1793,7 @@ def run_module():
         )
     )
 
-    dd_data_set = dict(
-        type="dict", options=combine_dicts(dd_name_base, dd_data_set_base)
-    )
+    dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
     dd_output = dict(type="dict", options=combine_dicts(dd_name_base, dd_output_base))
@@ -1817,16 +1823,22 @@ def run_module():
     )
 
     # ---------------------------------------------------------------------------- #
+    #                            Validate arguments                                #
+    # ---------------------------------------------------------------------------- #
+
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    parms = parse_and_validate_args(module.params)
+
+    # ---------------------------------------------------------------------------- #
     #                                  Main Logic                                  #
     # ---------------------------------------------------------------------------- #
 
     result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
     dd_statements = []
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
     if not module.check_mode:
         try:
-            parms = parse_and_validate_args(module.params)
             tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
@@ -1856,7 +1868,6 @@ def run_module():
         result = dict(changed=True, dd_names=[], ret_code=dict(code=0))
     to_return = combine_dicts(result, response)
     module.exit_json(**to_return)
-
     # ---------------------------------------------------------------------------- #
 
 
@@ -1933,8 +1944,8 @@ def parse_and_validate_args(params):
             type="dict",
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type=encoding, default="ibm-1047"),
-                response_encoding=dict(type=encoding, default="iso8859-1"),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
             ),
         ),
         reuse=dict(type=reuse, default=False, dependencies=["disposition"]),
@@ -1950,8 +1961,8 @@ def parse_and_validate_args(params):
             type="dict",
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type=encoding, default="ibm-1047"),
-                response_encoding=dict(type=encoding, default="iso8859-1"),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
             ),
         ),
     )
@@ -1962,8 +1973,8 @@ def parse_and_validate_args(params):
             required=True,
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type=encoding, default="ibm-1047"),
-                response_encoding=dict(type=encoding, default="iso8859-1"),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
             ),
         ),
     )
@@ -1989,8 +2000,8 @@ def parse_and_validate_args(params):
             type="dict",
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type=encoding, default="ibm-1047"),
-                response_encoding=dict(type=encoding, default="iso8859-1"),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
             ),
         ),
     )
@@ -2011,9 +2022,7 @@ def parse_and_validate_args(params):
         )
     )
 
-    dd_data_set = dict(
-        type="dict", options=combine_dicts(dd_name_base, dd_data_set_base)
-    )
+    dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
     dd_output = dict(type="dict", options=combine_dicts(dd_name_base, dd_output_base))
@@ -2142,65 +2151,6 @@ def key_offset_default(contents, dependencies):
     elif dependencies.get("type") == "ksds":
         offset = contents
     return offset
-
-
-def encoding(contents, dependencies):
-    """Validates encoding arguments
-
-      Args:
-          contents (str): argument contents
-          dependencies (dict): Any dependent arguments
-
-    Raises:
-        ValueError: Provided encoding not found in list of valid encodings.
-        ValueError: Provided encoding had invalid characters for encoding name.
-
-      Returns:
-          str: valid encoding
-    """
-    encoding = None
-    if contents is None:
-        encoding = None
-    valid_encodings = []
-    if contents:
-        valid_encodings = get_valid_encodings()
-        if valid_encodings:
-            if contents.lower() not in valid_encodings:
-                raise ValueError(
-                    'Provided encoding "{0}" is not valid. Valid encodings are: {1}.'.format(
-                        contents, ", ".join(valid_encodings)
-                    )
-                )
-        else:
-            # if can't get list of encodings perform basic check for bad characters
-            if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE):
-                raise ValueError(
-                    'Provided encoding "{0}" is not valid. Valid encodings are: {1}.'.format(
-                        contents, ", ".join(valid_encodings)
-                    )
-                )
-        encoding = contents
-    return encoding
-
-
-def get_valid_encodings():
-    """Retrieve all valid encodings from the system
-
-    Returns:
-        list[str]: list of all valid encodings on the system
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    valid_encodings = []
-    rc, stdout, stderr = module.run_command("iconv -l")
-    if rc or stderr:
-        return valid_encodings
-    if stdout:
-        # ignores first line of output which will be "Character sets:""
-        stdout_lines = [line.lower() for line in stdout.split("\n")[1:]]
-        for line in stdout_lines:
-            encodings_from_line = line.split()
-            valid_encodings += encodings_from_line
-    return valid_encodings
 
 
 def dd_content(contents, dependencies):
@@ -2368,14 +2318,6 @@ def access_group(contents, dependencies):
     Returns:
         str: The access group as expected by mvscmd.
     """
-    ACCESS_GROUP_NAME_MAP = {
-        "read_only": "ordonly",
-        "write_only": "owronly",
-        "read_write": "ordwr",
-        "r": "ordonly",
-        "w": "owronly",
-        "rw": "ordwr",
-    }
     if contents and ACCESS_GROUP_NAME_MAP.get(contents):
         contents = ACCESS_GROUP_NAME_MAP.get(contents)
     return contents
@@ -2394,9 +2336,11 @@ def build_dd_statements(parms):
         list[DDStatement]: List of DDStatement objects representing DD statements specified in module parms.
     """
     dd_statements = []
+    tmp_hlq = parms.get("tmp_hlq")
     for dd in parms.get("dds"):
-        dd_name = get_dd_name(dd)
-        dd = set_extra_attributes_in_dd(dd, parms)
+        key = get_key(dd)
+        dd_name = dd.get(key).get("dd_name")
+        dd = set_extra_attributes_in_dd(key, tmp_hlq)
         data_definition = build_data_definition(dd)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
@@ -2405,34 +2349,24 @@ def build_dd_statements(parms):
     return dd_statements
 
 
-def get_dd_name(dd):
-    """Get the DD name from a DD parm as specified in module parms.
+def get_key(dd):
+    """Get the DD key from a DD parm as specified in module parms.
 
     Args:
         dd (dict): A single DD parm as specified in module parms.
 
     Returns:
-        str: The DD name.
+        str: The DD key.
     """
-    dd_name = ""
-    if dd.get("dd_data_set"):
-        dd_name = dd.get("dd_data_set").get("dd_name")
-    elif dd.get("dd_unix"):
-        dd_name = dd.get("dd_unix").get("dd_name")
-    elif dd.get("dd_input"):
-        dd_name = dd.get("dd_input").get("dd_name")
-    elif dd.get("dd_output"):
-        dd_name = dd.get("dd_output").get("dd_name")
-    elif dd.get("dd_vio"):
-        dd_name = dd.get("dd_vio").get("dd_name")
-    elif dd.get("dd_dummy"):
-        dd_name = dd.get("dd_dummy").get("dd_name")
-    elif dd.get("dd_concat"):
-        dd_name = dd.get("dd_concat").get("dd_name")
-    return dd_name
+    dd_key = ""
+    keys_list = list(dd.keys())
+    for key in keys_list:
+        if "dd" in key:
+            dd_key = key
+    return dd_key
 
 
-def set_extra_attributes_in_dd(dd, parms):
+def set_extra_attributes_in_dd(dd, tmp_hlq):
     """
     Set any extra attributes in dds like in global tmp_hlq.
     Args:
@@ -2441,22 +2375,15 @@ def set_extra_attributes_in_dd(dd, parms):
     Returns:
         dd (dict): A single DD parm as specified in module parms.
     """
-    tmphlq = parms.get("tmp_hlq")
-    if dd.get("dd_data_set"):
-        dd.get("dd_data_set")["tmphlq"] = tmphlq
-    elif dd.get("dd_input"):
-        dd.get("dd_input")["tmphlq"] = tmphlq
-    elif dd.get("dd_output"):
-        dd.get("dd_output")["tmphlq"] = tmphlq
-    elif dd.get("dd_vio"):
-        dd.get("dd_vio")["tmphlq"] = tmphlq
-    elif dd.get("dd_concat"):
+    if dd == "dd_concat":
         for single_dd in dd.get("dd_concat").get("dds", []):
-            set_extra_attributes_in_dd(single_dd, parms)
+            set_extra_attributes_in_dd(single_dd, tmp_hlq)
+    else:
+        dd.get(dd)["tmphlq"] = tmp_hlq
     return dd
 
 
-def build_data_definition(dd):
+def build_data_definition(dd, key):
     """Build a DataDefinition object for a particular DD parameter.
 
     Args:
@@ -2469,22 +2396,23 @@ def build_data_definition(dd):
               RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
-    if dd.get("dd_data_set"):
+    if key == "dd_data_set":
         data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
-    elif dd.get("dd_unix"):
+    if key == "dd_unix":
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
-    elif dd.get("dd_input"):
+    if key == "dd_input":
         data_definition = RawInputDefinition(**(dd.get("dd_input")))
-    elif dd.get("dd_output"):
+    if key == "dd_output":
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
-    elif dd.get("dd_vio"):
+    if key == "dd_vio":
         data_definition = VIODefinition(dd.get("dd_vio").get("tmphlq"))
-    elif dd.get("dd_dummy"):
+    if key == "dd_dummy":
         data_definition = DummyDefinition()
-    elif dd.get("dd_concat"):
+    if key == "dd_concat":
         data_definition = []
         for single_dd in dd.get("dd_concat").get("dds", []):
-            data_definition.append(build_data_definition(single_dd))
+            key = get_key(single_dd)
+            data_definition.append(build_data_definition(single_dd, key))
     return data_definition
 
 
@@ -2748,38 +2676,6 @@ class ReturnContent(object):
         self.type = type
         self.src_encoding = src_encoding
         self.response_encoding = response_encoding
-
-
-def rename_parms(parms, name_map):
-    """Rename parms based on a provided dictionary.
-
-    Args:
-        parms (dict): The parms before name remapping.
-        name_map (dict): The dictionary to use for name mapping.
-
-    Returns:
-        dict: The parms after name mapping.
-    """
-    renamed_parms = {}
-    for key, value in parms.items():
-        if name_map.get(key):
-            renamed_parms[name_map.get(key)] = value
-        else:
-            renamed_parms[key] = value
-    return renamed_parms
-
-
-def remove_unused_args(parms):
-    """Remove unused arguments from a dictionary.
-    Does not function recursively.
-
-    Args:
-        parms (dict): The dictionary to remove unused arguments from.
-
-    Returns:
-        dict: The dictionary without any unused arguments.
-    """
-    return {key: value for key, value in parms.items() if value is not None}
 
 
 def data_set_exists(name, volumes=None):

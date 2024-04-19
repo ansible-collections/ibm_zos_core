@@ -109,7 +109,7 @@ class ZOAUImportError(object):
 
 class MissingImport(object):
     def __init__(self, import_name=""):
-        """Error when it is unable to import a module due it being missing.
+        """Error when it is unable to import a module due to it being missing.
 
         Parameters
         ----------

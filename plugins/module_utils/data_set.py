@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -184,7 +184,7 @@ class DataSet(object):
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
-                if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
+                if "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
                         name, volumes
                     )

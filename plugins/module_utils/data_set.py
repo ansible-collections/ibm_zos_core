@@ -1368,6 +1368,9 @@ class DataSet(object):
         try:
             gdg_base = match.group(1)
             rel_generation = int(match.group(2))
+            if rel_generation > 0:
+                # Fail if we are trying to resolve a future generation.
+                raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations()
             absolute_name = generations[rel_generation-1]

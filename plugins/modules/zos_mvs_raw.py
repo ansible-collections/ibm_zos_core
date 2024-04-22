@@ -1584,18 +1584,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
     DDStatement,
-    FileDefinition,
-    DatasetDefinition,
-    InputDefinition,
-    OutputDefinition,
     DummyDefinition,
     VIODefinition,
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw import MVSCmd
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    backup as zos_backup,
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw import (
+    MVSCmd,
+    RawDatasetDefinition,
+    RawFileDefinition,
+    RawInputDefinition,
+    RawOutputDefinition,
 )
 
 from ansible.module_utils.basic import AnsibleModule
@@ -1622,10 +1620,6 @@ ACCESS_GROUP_NAME_MAP = {
     "w": "owronly",
     "rw": "ordwr",
 }
-# hold backup names in easy to access location in
-# in case exception is raised
-# this global list is only used in case of exception
-backups = []
 
 
 def run_module():
@@ -1835,12 +1829,13 @@ def run_module():
 
     result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
+    backups = []
     dd_statements = []
 
     if not module.check_mode:
         try:
             tmphlq = parms.get("tmp_hlq")
-            dd_statements = build_dd_statements(parms)
+            dd_statements = build_dd_statements(parms, backups)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
             authorized = parms.get("auth")
@@ -1851,7 +1846,7 @@ def run_module():
                 dd_statements=dd_statements,
                 authorized=authorized,
                 verbose=verbose,
-                tmp_hlq=tmphlq,
+                tmphlq=tmphlq,
             )
             if program_response.rc != 0 and program_response.stderr:
                 raise ZOSRawError(
@@ -1859,7 +1854,7 @@ def run_module():
                     "{0} {1}".format(program_response.stdout, program_response.stderr),
                 )
 
-            response = build_response(program_response.rc, dd_statements)
+            response = build_response(program_response.rc, dd_statements, program_response.stdout)
             result["changed"] = True
         except Exception as e:
             result["backups"] = backups
@@ -2175,6 +2170,49 @@ def dd_content(contents, dependencies):
     return contents
 
 
+def modify_contents(contents):
+    """Return the content of dd_input to a valid form for a JCL program.
+
+    Args:
+        contents (str or list): The string or list with the program.
+
+    Returns:
+        contents: The content in a proper multi line str.
+    """
+    if not isinstance(contents, list):
+        contents = list(contents.split("\n"))
+    contents = prepend_spaces(contents)
+    contents = "\n".join(contents)
+    return contents
+
+
+def prepend_spaces(lines):
+    """Return the array with two spaces at the beggining.
+
+    Args:
+        lines (list): The list with a line of a program.
+
+    Returns:
+        new_lines: The list in a proper two spaces and the code.
+    """
+    module = AnsibleModuleHelper(argument_spec={})
+    for index, line in enumerate(lines):
+        if len(line) > 0:
+            if len(line) > 80:
+                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
+                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                module.fail_json(msg=msg.format(line))
+            else:
+                if len(line) > 1 and line[0] != " " and line[1] != " ":
+                    if len(line) > 78:
+                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
+                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                        module.fail_json(msg=msg.format(line))
+                    else:
+                        lines[index] = "  {0}".format(line)
+    return lines
+
+
 def sms_class(contents, dependencies):
     """Validates provided sms class is of valid length.
 
@@ -2323,7 +2361,7 @@ def access_group(contents, dependencies):
     return contents
 
 
-def build_dd_statements(parms):
+def build_dd_statements(parms, backups):
     """Build a list of DDStatement objects from provided module parms.
 
     Args:
@@ -2336,12 +2374,12 @@ def build_dd_statements(parms):
         list[DDStatement]: List of DDStatement objects representing DD statements specified in module parms.
     """
     dd_statements = []
-    tmp_hlq = parms.get("tmp_hlq")
+    tmphlq = parms.get("tmphlq")
     for dd in parms.get("dds"):
         key = get_key(dd)
         dd_name = dd.get(key).get("dd_name")
-        dd = set_extra_attributes_in_dd(key, tmp_hlq)
-        data_definition = build_data_definition(dd)
+        dd = set_extra_attributes_in_dd(key, tmphlq)
+        data_definition = build_data_definition(dd, key, backups)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
         dd_statement = DDStatement(dd_name, data_definition)
@@ -2366,7 +2404,7 @@ def get_key(dd):
     return dd_key
 
 
-def set_extra_attributes_in_dd(dd, tmp_hlq):
+def set_extra_attributes_in_dd(dd, tmphlq):
     """
     Set any extra attributes in dds like in global tmp_hlq.
     Args:
@@ -2377,13 +2415,13 @@ def set_extra_attributes_in_dd(dd, tmp_hlq):
     """
     if dd == "dd_concat":
         for single_dd in dd.get("dd_concat").get("dds", []):
-            set_extra_attributes_in_dd(single_dd, tmp_hlq)
+            set_extra_attributes_in_dd(single_dd, tmphlq)
     else:
-        dd.get(dd)["tmphlq"] = tmp_hlq
+        dd.get(dd)["tmphlq"] = tmphlq
     return dd
 
 
-def build_data_definition(dd, key):
+def build_data_definition(dd, key, backups):
     """Build a DataDefinition object for a particular DD parameter.
 
     Args:
@@ -2397,15 +2435,21 @@ def build_data_definition(dd, key):
     """
     data_definition = None
     if key == "dd_data_set":
-        data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
+        data_definition = RawDatasetDefinition(
+            **(dd.get("dd_data_set")))
+        backups.append(data_definition.backups)
     if key == "dd_unix":
-        data_definition = RawFileDefinition(**(dd.get("dd_unix")))
+        data_definition = RawFileDefinition(
+            **(dd.get("dd_unix")))
     if key == "dd_input":
-        data_definition = RawInputDefinition(**(dd.get("dd_input")))
+        data_definition = RawInputDefinition(
+            **(dd.get("dd_input")))
     if key == "dd_output":
-        data_definition = RawOutputDefinition(**(dd.get("dd_output")))
+        data_definition = RawOutputDefinition(
+            **(dd.get("dd_output")))
     if key == "dd_vio":
-        data_definition = VIODefinition(dd.get("dd_vio").get("tmphlq"))
+        data_definition = VIODefinition(
+            dd.get("dd_vio").get("tmphlq"))
     if key == "dd_dummy":
         data_definition = DummyDefinition()
     if key == "dd_concat":
@@ -2416,293 +2460,8 @@ def build_data_definition(dd, key):
     return data_definition
 
 
-# TODO: clean up data definition wrapper classes
-class RawDatasetDefinition(DatasetDefinition):
-    """Wrapper around DatasetDefinition to contain information about
-    desired return contents.
-
-    Args:
-        DatasetDefinition (DatasetDefinition): Dataset DD data type to be used in a DDStatement.
-    """
-
-    def __init__(
-        self,
-        data_set_name,
-        disposition="",
-        type=None,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
-        disposition_normal=None,
-        disposition_abnormal=None,
-        block_size=None,
-        directory_blocks=None,
-        record_format=None,
-        record_length=None,
-        sms_storage_class=None,
-        sms_data_class=None,
-        sms_management_class=None,
-        key_length=None,
-        key_offset=None,
-        volumes=None,
-        key_label=None,
-        encryption_key_1=None,
-        encryption_key_2=None,
-        reuse=None,
-        replace=None,
-        backup=None,
-        return_content=None,
-        tmphlq=None,
-        **kwargs
-    ):
-        """Initialize RawDatasetDefinition
-
-        Args:
-            data_set_name (str): The name of the data set.
-            disposition (str, optional): The disposition of the data set. Defaults to "".
-            type (str, optional): The type of the data set. Defaults to None.
-            space_primary (int, optional): The primary amount of space of the data set. Defaults to None.
-            space_secondary (int, optional): The secondary amount of space of the data set. Defaults to None.
-            space_type (str, optional): The unit of space to use for primary and secondary space. Defaults to None.
-            disposition_normal (str, optional): What to do with the data set after normal termination of the program. Defaults to None.
-            disposition_abnormal (str, optional): What to do with the data set after abnormal termination of the program. Defaults to None.
-            block_size (int, optional): The block size of the data set. Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate for the data set. Defaults to None.
-            record_format (str, optional): The record format of the data set. Defaults to None.
-            record_length (int, optional): The length, in bytes, of each record in the data set. Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset. Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset. Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset. Defaults to None.
-            key_length (int, optional): The key length of a record. Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                in each logical record of a the specified VSAM data set. Defaults to None.
-            volumes (list, optional): A list of volume serials.. Defaults to None.
-            key_label (str, optional): The label for the encryption key used by the system to encrypt the data set. Defaults to None.
-            encryption_key_1 (dict, optional): [description]. Defaults to None.
-            encryption_key_2 (dict, optional): [description]. Defaults to None.
-            reuse (bool, optional): Determines if data set should be reused. Defaults to None.
-            replace (bool, optional): Determines if data set should be replaced. Defaults to None.
-            backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
-                and a data set with the desired name is found.. Defaults to None.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
-            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
-        """
-        self.backup = None
-        self.return_content = ReturnContent(**(return_content or {}))
-        self.tmphlq = tmphlq
-        primary_unit = space_type
-        secondary_unit = space_type
-        key_label1 = None
-        key_encoding1 = None
-        key_label2 = None
-        key_encoding2 = None
-        if encryption_key_1:
-            if encryption_key_1.get("label"):
-                key_label1 = encryption_key_1.get("label")
-            if encryption_key_1.get("encoding"):
-                key_encoding1 = encryption_key_1.get("encoding")
-        if encryption_key_2:
-            if encryption_key_2.get("label"):
-                key_label2 = encryption_key_2.get("label")
-            if encryption_key_2.get("encoding"):
-                key_encoding2 = encryption_key_2.get("encoding")
-
-        should_reuse = False
-        if (reuse or replace) and data_set_exists(data_set_name, volumes):
-            if reuse:
-                should_reuse = True
-            elif replace:
-                if backup:
-                    self.backup = zos_backup.mvs_file_backup(data_set_name, None, tmphlq)
-                    backups.append(
-                        {"original_name": data_set_name, "backup_name": self.backup}
-                    )
-                DataSet.delete(data_set_name)
-
-        if not should_reuse:
-            super().__init__(
-                dataset_name=data_set_name,
-                disposition=disposition,
-                type=type,
-                primary=space_primary,
-                primary_unit=primary_unit,
-                secondary=space_secondary,
-                secondary_unit=secondary_unit,
-                normal_disposition=disposition_normal,
-                conditional_disposition=disposition_abnormal,
-                block_size=block_size,
-                directory_blocks=directory_blocks,
-                record_format=record_format,
-                record_length=record_length,
-                storage_class=sms_storage_class,
-                data_class=sms_data_class,
-                management_class=sms_management_class,
-                key_length=key_length,
-                key_offset=key_offset,
-                volumes=volumes,
-                dataset_key_label=key_label,
-                key_label1=key_label1,
-                key_encoding1=key_encoding1,
-                key_label2=key_label2,
-                key_encoding2=key_encoding2,
-            )
-        else:
-            # TODO: determine if encoding labels are useful for existing data sets
-            super().__init__(
-                dataset_name=data_set_name,
-                disposition="shr",
-                type=type,
-                normal_disposition=disposition_normal,
-                conditional_disposition=disposition_abnormal,
-                volumes=volumes,
-                dataset_key_label=key_label,
-                key_label1=key_label1,
-                key_encoding1=key_encoding1,
-                key_label2=key_label2,
-                key_encoding2=key_encoding2,
-            )
-
-
-class RawFileDefinition(FileDefinition):
-    """Wrapper around FileDefinition to contain information about
-    desired return contents.
-
-    Args:
-        FileDefinition (FileDefinition): File DD data type to be used in a DDStatement.
-    """
-
-    def __init__(
-        self,
-        path,
-        disposition_normal=None,
-        disposition_abnormal=None,
-        mode=None,
-        access_group=None,
-        status_group=None,
-        file_data_type=None,
-        record_length=None,
-        block_size=None,
-        record_format=None,
-        return_content=None,
-        **kwargs
-    ):
-        """Initialize RawFileDefinition
-
-        Args:
-            path (str): An absolute UNIX file path.
-            disposition_normal (str, optional): What to do with path after normal program termination. Defaults to None.
-            disposition_abnormal (str, optional): What to do with path after abnormal program termination. Defaults to None.
-            mode (int, optional): The file access attributes for the UNIX file being allocated. Defaults to None.
-            access_group (str, optional): the access mode for UNIX file. Defaults to None.
-            status_group (list[str], optional): The status for UNIX file being allocated. Defaults to None.
-            file_data_type (str, optional): The type of data that is (or will be) stored in the UNIX file. Defaults to None.
-            record_length (int, optional): The specified logical record length for the UNIX file. Defaults to None.
-            block_size (int, optional): the specified block size for the UNIX file being allocated. Defaults to None.
-            record_format (str, optional): The specified record format for the UNIX file. Defaults to None.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
-        """
-        self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__(
-            path_name=path,
-            normal_disposition=disposition_normal,
-            conditional_disposition=disposition_abnormal,
-            path_mode=mode,
-            access_group=access_group,
-            status_group=status_group,
-            file_data=file_data_type,
-            record_length=record_length,
-            block_size=block_size,
-            record_format=record_format,
-        )
-
-
-class RawInputDefinition(InputDefinition):
-    """Wrapper around InputDefinition to contain information about
-    desired return contents.
-
-    Args:
-        InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
-    """
-
-    def __init__(self, content="", return_content=None, tmphlq="", **kwargs):
-        """Initialize RawInputDefinition
-
-        Args:
-            content (str): The content to write to temporary data set / stdin.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
-        """
-        self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__(content=content, tmphlq=tmphlq)
-
-
-class RawOutputDefinition(OutputDefinition):
-    """Wrapper around OutputDefinition to contain information about
-    desired return contents.
-
-    Args:
-        OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
-    """
-
-    def __init__(self, return_content=None, tmphlq="", **kwargs):
-        """Initialize RawOutputDefinition
-
-        Args:
-            content (str): The content to write to temporary data set / stdin.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
-        """
-        self.return_content = ReturnContent(**(return_content or {}))
-        super().__init__(tmphlq=tmphlq)
-
-
-class ReturnContent(object):
-    """Holds information about what type of content
-    should be returned for a particular DD, if any.
-
-    Args:
-        object (object): The most base type.
-    """
-
-    def __init__(self, type=None, src_encoding=None, response_encoding=None):
-        """Initialize ReturnContent
-
-        Args:
-            type (str, optional): The type of content to return.
-                    Defaults to None.
-            src_encoding (str, optional): The encoding of the data set or file on the z/OS system.
-                    Defaults to None.
-            response_encoding (str, optional): The encoding to use when returning the contents of the data set or file.
-                    Defaults to None.
-        """
-        self.type = type
-        self.src_encoding = src_encoding
-        self.response_encoding = response_encoding
-
-
-def data_set_exists(name, volumes=None):
-    """Is used to determine if a data set exists.
-    In addition, if a data set does exist and is uncataloged,
-    the data set will be cataloged.
-
-    Args:
-        name (str): The name of the data set.
-        volumes (list[str], optional): A list of volume serials. Defaults to None.
-
-    Returns:
-        bool: Whether the data set exists or not.
-    """
-    exists = False
-    try:
-        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
-        exists = present
-    except Exception:
-        # Failure locating or cataloging the data set. Go ahead assumming it does not exist.
-        # exists = False to avoid using pass clause which results in bandit warning.
-        exists = False
-    return exists
-
-
 def run_zos_program(
-    program, parm="", dd_statements=None, authorized=False, verbose=False, tmp_hlq=None
+    program, parm="", dd_statements=None, authorized=False, verbose=False, tmphlq=None
 ):
     """Run a program on z/OS.
 
@@ -2711,7 +2470,7 @@ def run_zos_program(
         parm (str, optional): Additional argument string if required. Defaults to "".
         dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
         authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
-        tmp_hlq (str, optional): Arguments overwrite variable tmp_hlq
+        tmphlq (str, optional): Arguments overwrite variable tmp_hlq
 
     Returns:
         MVSCmdResponse: Holds the response information for program execution.
@@ -2721,16 +2480,16 @@ def run_zos_program(
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq
         )
     else:
         response = MVSCmd.execute(
-            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmp_hlq
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose, tmp_hlq=tmphlq
         )
     return response
 
 
-def build_response(rc, dd_statements):
+def build_response(rc, dd_statements, stdout):
     """Build response dictionary to return at module completion.
 
     Args:
@@ -2741,6 +2500,7 @@ def build_response(rc, dd_statements):
         dict: Response dictionary in format expected for response on module completion.
     """
     response = {"ret_code": {"code": rc}}
+    response["stdout"] = stdout
     response["backups"] = gather_backups(dd_statements)
     response["dd_names"] = gather_output(dd_statements)
     return response
@@ -2758,44 +2518,16 @@ def gather_backups(dd_statements):
     """
     backups = []
     for dd_statement in dd_statements:
-        backups += get_dd_backup(dd_statement)
+        if (
+            isinstance(dd_statement.definition, RawDatasetDefinition)
+            and dd_statement.definition.backup
+        ):
+            backup["backup_name"] = dd_statement.definition.backup
+            backup["original_name"] = dd_statement.definition.name
+        elif isinstance(dd_statement.definition, list):
+            dd_backup = get_concatenation_backup(dd_statement)
+            backups.append(dd_backup)
     return backups
-
-
-def get_dd_backup(dd_statement):
-    """Gather backup information for a single data set
-    if the DD is a data set DD and a backup was made.
-
-    Args:
-        dd (DataDefinition): A single DD statement.
-
-    Returns:
-        list[dict]: List of backups in format expected for response on module completion.
-    """
-    dd_backup = []
-    if (
-        isinstance(dd_statement.definition, RawDatasetDefinition)
-        and dd_statement.definition.backup
-    ):
-        dd_backup = [get_data_set_backup(dd_statement)]
-    elif isinstance(dd_statement.definition, list):
-        dd_backup = get_concatenation_backup(dd_statement)
-    return dd_backup
-
-
-def get_data_set_backup(dd_statement):
-    """Get backup of a single data set DD statement.
-
-    Args:
-        dd_statement (DDStatement): A single DD statement.
-
-    Returns:
-        dict: Backup information in format expected for response on module completion.
-    """
-    backup = {}
-    backup["backup_name"] = dd_statement.definition.backup
-    backup["original_name"] = dd_statement.definition.name
-    return backup
 
 
 def get_concatenation_backup(dd_statement):
@@ -3018,49 +2750,6 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         return ""
     else:
         return stdout
-
-
-def modify_contents(contents):
-    """Return the content of dd_input to a valid form for a JCL program.
-
-    Args:
-        contents (str or list): The string or list with the program.
-
-    Returns:
-        contents: The content in a proper multi line str.
-    """
-    if not isinstance(contents, list):
-        contents = list(contents.split("\n"))
-    contents = prepend_spaces(contents)
-    contents = "\n".join(contents)
-    return contents
-
-
-def prepend_spaces(lines):
-    """Return the array with two spaces at the beggining.
-
-    Args:
-        lines (list): The list with a line of a program.
-
-    Returns:
-        new_lines: The list in a proper two spaces and the code.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    for index, line in enumerate(lines):
-        if len(line) > 0:
-            if len(line) > 80:
-                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
-                module.fail_json(msg=msg.format(line))
-            else:
-                if len(line) > 1 and line[0] != " " and line[1] != " ":
-                    if len(line) > 78:
-                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
-                        module.fail_json(msg=msg.format(line))
-                    else:
-                        lines[index] = "  {0}".format(line)
-    return lines
 
 
 class ZOSRawError(Exception):

@@ -19,18 +19,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
-    DDStatement,
     FileDefinition,
     DatasetDefinition,
     InputDefinition,
     OutputDefinition,
-    DummyDefinition,
-    VIODefinition,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as zos_backup,
 )
+
 
 class MVSCmd(object):
     """Provides an interface to execute authorized and unauthorized MVS commands.
@@ -114,10 +112,6 @@ class MVSCmdResponse(object):
         self.stderr = stderr
 
 
-class backups():
-    def __init__():
-        backups = []
-
 class RawDatasetDefinition(DatasetDefinition):
     """Wrapper around DatasetDefinition to contain information about
     desired return contents.
@@ -129,32 +123,32 @@ class RawDatasetDefinition(DatasetDefinition):
     def __init__(
         self,
         data_set_name,
+        backups,
         disposition="",
-        type=None,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
         disposition_normal=None,
         disposition_abnormal=None,
-        block_size=None,
-        directory_blocks=None,
-        record_format=None,
-        record_length=None,
+        space_type=None,
+        space_primary=None,
+        space_secondary=None,
+        volumes=None,
+        sms_management_class=None,
         sms_storage_class=None,
         sms_data_class=None,
-        sms_management_class=None,
-        key_length=None,
-        key_offset=None,
-        volumes=None,
+        block_size=None,
+        directory_blocks=None,
         key_label=None,
+        type=None,
         encryption_key_1=None,
         encryption_key_2=None,
+        key_length=None,
+        key_offset=None,
+        record_length=None,
+        record_format=None,
         reuse=None,
         replace=None,
         backup=None,
         return_content=None,
         tmphlq=None,
-        **kwargs
     ):
         """Initialize RawDatasetDefinition
 
@@ -264,6 +258,108 @@ class RawDatasetDefinition(DatasetDefinition):
             )
 
 
+class RawFileDefinition(FileDefinition):
+    """Wrapper around FileDefinition to contain information about
+    desired return contents.
+
+    Args:
+        FileDefinition (FileDefinition): File DD data type to be used in a DDStatement.
+    """
+
+    def __init__(
+        self,
+        path,
+        disposition_normal=None,
+        disposition_abnormal=None,
+        mode=None,
+        status_group=None,
+        access_group=None,
+        file_data_type=None,
+        block_size=None,
+        record_length=None,
+        record_format=None,
+        return_content=None,
+    ):
+        """Initialize RawFileDefinition
+
+        Args:
+            path (str): An absolute UNIX file path.
+            disposition_normal (str, optional): What to do with path after normal program termination. Defaults to None.
+            disposition_abnormal (str, optional): What to do with path after abnormal program termination. Defaults to None.
+            mode (int, optional): The file access attributes for the UNIX file being allocated. Defaults to None.
+            access_group (str, optional): the access mode for UNIX file. Defaults to None.
+            status_group (list[str], optional): The status for UNIX file being allocated. Defaults to None.
+            file_data_type (str, optional): The type of data that is (or will be) stored in the UNIX file. Defaults to None.
+            record_length (int, optional): The specified logical record length for the UNIX file. Defaults to None.
+            block_size (int, optional): the specified block size for the UNIX file being allocated. Defaults to None.
+            record_format (str, optional): The specified record format for the UNIX file. Defaults to None.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
+        """
+        self.return_content = ReturnContent(**(return_content or {}))
+        super().__init__(
+            path_name=path,
+            normal_disposition=disposition_normal,
+            conditional_disposition=disposition_abnormal,
+            path_mode=mode,
+            access_group=access_group,
+            status_group=status_group,
+            file_data=file_data_type,
+            record_length=record_length,
+            block_size=block_size,
+            record_format=record_format,
+        )
+
+
+class RawInputDefinition(InputDefinition):
+    """Wrapper around InputDefinition to contain information about
+    desired return contents.
+
+    Args:
+        InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
+    """
+
+    def __init__(
+            self,
+            content="",
+            return_content=None,
+            tmphlq=""
+    ):
+        """Initialize RawInputDefinition
+
+        Args:
+            content (str): The content to write to temporary data set / stdin.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+        """
+        self.return_content = ReturnContent(**(return_content or {}))
+        super().__init__(
+            content=content,
+            tmphlq=tmphlq)
+
+
+class RawOutputDefinition(OutputDefinition):
+    """Wrapper around OutputDefinition to contain information about
+    desired return contents.
+
+    Args:
+        OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
+    """
+
+    def __init__(self,
+                 return_content=None,
+                 tmphlq="",
+                 ):
+        """Initialize RawOutputDefinition
+
+        Args:
+            content (str): The content to write to temporary data set / stdin.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+        """
+        self.return_content = ReturnContent(**(return_content or {}))
+        super().__init__(
+            tmphlq=tmphlq
+        )
+
+
 class ReturnContent(object):
     """Holds information about what type of content
     should be returned for a particular DD, if any.
@@ -286,6 +382,7 @@ class ReturnContent(object):
         self.type = type
         self.src_encoding = src_encoding
         self.response_encoding = response_encoding
+
 
 def data_set_exists(name, volumes=None):
     """Is used to determine if a data set exists.

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -114,7 +114,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
 
 def test_zos_job_id_query_short_ids_func(ansible_zos_module):
     hosts = ansible_zos_module
-    qresults = hosts.all.zos_job_query(job_id="STC003")
+    qresults = hosts.all.zos_job_query(job_id="STC00002")
     for qresult in qresults.contacted.values():
         assert qresult.get("jobs") is not None
 

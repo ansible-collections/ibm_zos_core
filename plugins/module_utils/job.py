@@ -386,9 +386,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 try:
                     list_of_dds = jobs.list_dds(entry.job_id)
                 except exceptions.DDQueryException as err:
-                    if 'BGYSC5201E' in str(err):
-                        is_dd_query_exception = True
-                        pass
+                    is_dd_query_exception = True
 
                 # Check if the Job has JESJCL, if not, its in the JES INPUT queue, thus wait the full wait_time_s.
                 # Idea here is to force a TYPRUN{HOLD|JCLHOLD|COPY} job to go the full wait duration since we have
@@ -409,9 +407,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                         is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
                         is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
                     except exceptions.DDQueryException as err:
-                        if 'BGYSC5201E' in str(err):
-                            is_dd_query_exception = True
-                            continue
+                        is_dd_query_exception = True
+                        continue
 
                 job["duration"] = duration
                 for single_dd in list_of_dds:

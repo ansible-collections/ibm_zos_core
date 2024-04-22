@@ -1,3 +1,8 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2024
@@ -15,13 +20,12 @@ from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
+import tempfile
 import ansible.constants
 import ansible.errors
 import ansible.utils
 import pytest
-from pprint import pprint
 from shellescape import quote
-import tempfile
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
@@ -51,19 +55,19 @@ TEMP_PATH = "/tmp/jcl"
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        JDATA_SET_NAME = get_tmp_ds_name()
+        jdata_set_name = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
         hosts.all.zos_data_set(
-            name=JDATA_SET_NAME, state="present", type="pds", replace=True
+            name=jdata_set_name, state="present", type="pds", replace=True
         )
         hosts.all.shell(
-            cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, JDATA_SET_NAME)
+            cmd=f"cp {TEMP_PATH}/SAMPLE \"//'{jdata_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(JDATA_SET_NAME), location="data_set", wait_time_s=10
+            src=f"{jdata_set_name}(SAMPLE)", location="data_set", wait_time_s=10
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -77,26 +81,26 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
 
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=JDATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=jdata_set_name, state="absent")
 
 
 # test to show multi wildcard in Job_name query won't crash the search
 def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        NDATA_SET_NAME = get_tmp_ds_name()
+        ndata_set_name = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCLQ_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
         hosts.all.zos_data_set(
-            name=NDATA_SET_NAME, state="present", type="pds", replace=True
+            name=ndata_set_name, state="present", type="pds", replace=True
         )
         hosts.all.shell(
-            cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, NDATA_SET_NAME)
+            cmd=f"cp {TEMP_PATH}/SAMPLE \"//'{ndata_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src="{0}(SAMPLE)".format(NDATA_SET_NAME), location="data_set", wait_time_s=10
+            src=f"{ndata_set_name}(SAMPLE)", location="data_set", wait_time_s=10
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -109,7 +113,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
 
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=NDATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=ndata_set_name, state="absent")
 
 
 def test_zos_job_id_query_short_ids_func(ansible_zos_module):

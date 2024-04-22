@@ -1,3 +1,8 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
@@ -95,14 +100,13 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
 
         jobs = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         for job in jobs.contacted.values():
-            print(job)
             assert job.get("jobs") is not None
 
         for job in jobs.contacted.values():
@@ -124,10 +128,10 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
         result = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"

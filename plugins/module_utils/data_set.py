@@ -40,10 +40,11 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, exceptions
+    from zoautil_py import datasets, exceptions, gdgs
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
+    gdgs = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -1323,6 +1324,59 @@ class DataSet(object):
         return False
 
     @staticmethod
+    def is_gds_relative_name(name):
+        """Determine if name if a gdg relative name based
+        on the GDS relative name  syntax eg. 'USER.GDG(-2)'.
+
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS relative name.
+
+        Returns
+        -------
+        bool
+            Whether the name is a GDS relative name.
+        """
+        pattern = r'(.+)\(([-+]?\d+)\)'
+        match = re.fullmatch(pattern, name)
+        return bool(match)
+
+    @staticmethod
+    def resolve_gds_absolute_name(relative_name):
+        """Given a GDS relative name, returns its absolute name.
+
+        Parameters
+        ----------
+        relative_name : str
+            GDS relative name to be resolved.
+
+        Returns
+        -------
+        str
+            GDS absolute name.
+
+        Raises
+        ------
+        GDSNameResolveError
+            Error resolving the GDS relative name, either because
+            the name is not a valid GDS syntax or failure to retrieve
+            the GDG data based on the gdg base name.
+        """
+        pattern = r'(.+)\(([-+]?\d+)\)'
+        match = re.search(pattern, relative_name)
+        try:
+            gdg_base = match.group(1)
+            rel_generation = int(match.group(2))
+            gdg = gdgs.GenerationDataGroupView(name=gdg_base)
+            generations = gdg.generations()
+            absolute_name = generations[rel_generation-1]
+        except Exception as e:
+            raise GDSNameResolveError(relative_name)
+
+        return absolute_name
+
+    @staticmethod
     def temp_name(hlq=""):
         """Get temporary data set name.
 
@@ -1897,5 +1951,14 @@ class DatasetBusyError(Exception):
         self.msg = (
             "Dataset {0} may already be open by another user. "
             "Close the dataset and try again".format(data_set)
+        )
+        super().__init__(self.msg)
+
+
+class GDSNameResolveError(Exception):
+    def __init__(self, data_set):
+        self.msg = (
+            "Error resolving relative generation data set name. {0} "
+            "Make sure the generation exists and is active.".format(data_set)
         )
         super().__init__(self.msg)

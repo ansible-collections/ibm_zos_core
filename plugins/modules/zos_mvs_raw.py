@@ -1279,15 +1279,13 @@ backups:
       description: The name of the data set containing the backup of content from data set in original_name.
       type: str
 stdout:
-  The stdout from a USS command or MVS command, if applicable.
+  description: The stdout from a USS command or MVS command, if applicable.
   returned: always
   type: str
-  sample:
 stderr:
-  The stderr of a USS command or MVS command, if applicable.
+  description: The stderr of a USS command or MVS command, if applicable.
   returned: failure
   type: str
-  sample:
 """
 
 EXAMPLES = r"""

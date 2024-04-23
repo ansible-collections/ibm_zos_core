@@ -864,24 +864,25 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         remove_uss_environment(ansible_zos_module)
 
 # Test case base on bug of dataset.blockifile
-# GH Issue #1258 
-#@pytest.mark.uss
-#def test_uss_block_insert_with_doublequotes(ansible_zos_module):
-#    hosts = ansible_zos_module
-#    params = dict(insertafter="sleep 30;", block='cat "//OMVSADMI.CAT"\ncat "//OMVSADM.COPYMEM.TESTS" > test.txt', marker="// {mark} ANSIBLE MANAGED BLOCK", state="present")
-#    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
-#    content = TEST_CONTENT_DOUBLEQUOTES
-#    try:
-#        set_uss_environment(ansible_zos_module, content, full_path)
-#        params["path"] = full_path
-#        results = hosts.all.zos_blockinfile(**params)
-#        for result in results.contacted.values():
-#            assert result.get("changed") == 1
-#        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-#        for result in results.contacted.values():
-#            assert result.get("stdout") == EXPECTED_DOUBLE_QUOTES
-#    finally:
-#        remove_uss_environment(ansible_zos_module)
+# GH Issue #1258
+@pytest.mark.uss
+def test_uss_block_insert_with_doublequotes(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(insertafter="sleep 30;", block='cat "//OMVSADMI.CAT"\ncat "//OMVSADM.COPYMEM.TESTS" > test.txt', marker="// {mark} ANSIBLE MANAGED BLOCK", state="present")
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT_DOUBLEQUOTES
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_DOUBLE_QUOTES
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -1412,6 +1413,7 @@ def test_ds_not_supported(ansible_zos_module, dstype):
         hosts.all.zos_data_set(name=ds_name, state="absent")
 
 
+# Enhancemed #1339
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ["pds","pdse"])
 def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):

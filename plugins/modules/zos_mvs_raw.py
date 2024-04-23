@@ -1278,6 +1278,16 @@ backups:
     backup_name:
       description: The name of the data set containing the backup of content from data set in original_name.
       type: str
+stdout:
+  The stdout from a USS command or MVS command, if applicable.
+  returned: always
+  type: str
+  sample:
+stderr:
+  The stderr of a USS command or MVS command, if applicable.
+  returned: failure
+  type: str
+  sample:
 """
 
 EXAMPLES = r"""
@@ -2500,9 +2510,9 @@ def build_response(rc, dd_statements, stdout):
         dict: Response dictionary in format expected for response on module completion.
     """
     response = {"ret_code": {"code": rc}}
-    response["stdout"] = stdout
     response["backups"] = gather_backups(dd_statements)
     response["dd_names"] = gather_output(dd_statements)
+    response["stdout"] = stdout
     return response
 
 
@@ -2562,7 +2572,7 @@ def gather_output(dd_statements):
     """
     output = []
     for dd_statement in dd_statements:
-        output += get_dd_output(dd_statement)
+        output.append(get_dd_output(dd_statement))
     return output
 
 

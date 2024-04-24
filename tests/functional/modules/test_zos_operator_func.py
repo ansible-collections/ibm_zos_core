@@ -20,16 +20,10 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import time
-
-import ansible.constants
-import ansible.errors
-import ansible.utils
 import pytest
-from pprint import pprint
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker
+    zoau_version_checker,
 )
 
 

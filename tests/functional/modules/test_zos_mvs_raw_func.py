@@ -1,3 +1,8 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2020, 2022
@@ -16,7 +21,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-from pprint import pprint
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -24,11 +28,11 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 DATASET = ""
 EXISTING_DATA_SET = "user.private.proclib"
 DEFAULT_PATH = "/tmp/testdir"
-DEFAULT_PATH_WITH_FILE = "{0}/testfile".format(DEFAULT_PATH)
+DEFAULT_PATH_WITH_FILE = f"{DEFAULT_PATH}/testfile"
 DEFAULT_DD = "MYDD"
 SYSIN_DD = "SYSIN"
 SYSPRINT_DD = "SYSPRINT"
-IDCAMS_STDIN = " LISTCAT ENTRIES('{0}')".format(EXISTING_DATA_SET.upper())
+IDCAMS_STDIN = f" LISTCAT ENTRIES('{EXISTING_DATA_SET.upper()}')"
 IDCAMS_INVALID_STDIN = " hello world #$!@%!#$!@``~~^$*%"
 
 
@@ -41,10 +45,14 @@ def test_failing_name_format(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_mvs_raw(
         program_name="idcams",
-        dds=[dict(dd_data_set=dict(dd_name=DEFAULT_DD, data_set_name="!!^&.BAD.NAME"))],
+        dds=[{
+            "dd_data_set":{
+                "dd_name":DEFAULT_DD,
+                "data_set_name":"!!^&.BAD.NAME"
+            }
+        }],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert "ValueError" in result.get("msg")
 
 
@@ -57,20 +65,26 @@ def test_disposition_new(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
@@ -92,19 +106,25 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition=disposition,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":disposition,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
@@ -125,34 +145,39 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
         auth=True,
         tmp_hlq=tmphlq,
         dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=default_data_set,
-                    disposition="new",
-                    return_content=dict(type="text"),
-                    replace=True,
-                    backup=True,
-                    type="seq",
-                    space_primary=5,
-                    space_secondary=1,
-                    space_type="m",
-                    volumes=default_volume,
-                    record_format="fb"
-                ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            {
+                "dd_data_set":{
+                    "dd_name":SYSPRINT_DD,
+                    "data_set_name":default_data_set,
+                    "disposition":"new",
+                    "return_content":{
+                        "type":"text"
+                    },
+                    "replace":True,
+                    "backup":True,
+                    "type":"seq",
+                    "space_primary":5,
+                    "space_secondary":1,
+                    "space_type":"m",
+                    "volumes":default_volume,
+                    "record_format":"fb"
+                },
+            },
+            {
+                "dd_input":{
+                    "dd_name":SYSIN_DD,
+                    "content":IDCAMS_STDIN
+                }
+            },
         ],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 0
         assert len(result.get("dd_names", [])) > 0
         for backup in result.get("backups"):
             backup.get("backup_name")[:6] == tmphlq
     results = hosts.all.zos_data_set(name=default_data_set, state="absent")
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("changed", False) is True
 
 
@@ -161,27 +186,33 @@ def test_new_disposition_for_data_set_members(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
-        DEFAULT_DATA_SET_WITH_MEMBER = default_data_set + '(MEM)'
+        default_data_set_with_member = default_data_set + '(MEM)'
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
-                        disposition="new",
-                        type="pds",
-                        directory_blocks=15,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set_with_member,
+                        "disposition":"new",
+                        "type":"pds",
+                        "directory_blocks":15,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 8
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
@@ -195,7 +226,7 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
-        DEFAULT_DATA_SET_WITH_MEMBER = default_data_set + '(MEM)'
+        default_data_set_with_member = default_data_set + '(MEM)'
         hosts.all.zos_data_set(
             name=default_data_set, type="pds", state="present", replace=True
         )
@@ -203,19 +234,25 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
-                        disposition=disposition,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set_with_member,
+                        "disposition":disposition,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
@@ -226,7 +263,12 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
     "normal_disposition,changed",
     [("keep", True), ("delete", True), ("catalog", True), ("uncatalog", True)],
 )
-def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, changed, volumes_on_systems):
+def test_normal_dispositions_data_set(
+    ansible_zos_module,
+    normal_disposition,
+    changed,
+    volumes_on_systems
+):
     try:
         hosts = ansible_zos_module
         volumes = Volume_Handler(volumes_on_systems)
@@ -243,21 +285,27 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="shr",
-                        disposition_normal=normal_disposition,
-                        volumes=[volume_1],
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"shr",
+                        "disposition_normal":normal_disposition,
+                        "volumes":[volume_1],
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
@@ -283,31 +331,36 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        space_primary=primary,
-                        space_secondary=secondary,
-                        space_type=space_type,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "space_primary":primary,
+                        "space_secondary":secondary,
+                        "space_type":space_type,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
 
-        results2 = hosts.all.command(cmd="dls -l -s {0}".format(default_data_set))
+        results2 = hosts.all.command(cmd=f"dls -l -s {default_data_set}")
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
 
         for result in results2.contacted.values():
-            pprint(result)
             assert str(expected) in result.get("stdout", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
@@ -328,22 +381,26 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, volumes_on_s
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type=data_set_type,
-                        volumes=[volume_1],
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":data_set_type,
+                        "volumes":[volume_1],
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
-        results = hosts.all.command(cmd="dls {0}".format(default_data_set))
+        results = hosts.all.command(cmd=f"dls {default_data_set}")
 
         for result in results.contacted.values():
-            pprint(result)
             assert "BGYSC1103E" not in result.get("stderr", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
@@ -365,33 +422,38 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_syste
             auth=True,
             dds=[
                 # * ksds requires additional parameters
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type=data_set_type,
-                        volumes=[volume_1],
-                    ),
-                )
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":data_set_type,
+                        "volumes":[volume_1],
+                    },
+                }
                 if data_set_type != "ksds"
-                else dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type=data_set_type,
-                        key_length=5,
-                        key_offset=0,
-                        volumes=[volume_1],
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                else {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":data_set_type,
+                        "key_length":5,
+                        "key_offset":0,
+                        "volumes":[volume_1],
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         # * we hope to see EDC5041I An error was detected at the system level when opening a file.
         # * because that means data set exists and is VSAM so we can't read it
-        results = hosts.all.command(cmd="head \"//'{0}'\"".format(default_data_set))
+        results = hosts.all.command(cmd=f"head \"//'{default_data_set}'\"")
         for result in results.contacted.values():
             assert "EDC5041I" or "EDC5049I" in result.get("stderr", "")
     finally:
@@ -413,24 +475,28 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        record_format=record_format,
-                        volumes=[volume_1],
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "record_format":record_format,
+                        "volumes":[volume_1],
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
 
-        results = hosts.all.command(cmd="dls -l {0}".format(default_data_set))
+        results = hosts.all.command(cmd=f"dls -l {default_data_set}")
 
         for result in results.contacted.values():
-            pprint(result)
-            assert str(" {0} ".format(record_format.upper())) in result.get("stdout", "")
+            assert str(f" {record_format.upper()} ") in result.get("stdout", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
 
@@ -462,21 +528,27 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="shr",
-                        volumes=[volume_1],
-                        return_content=dict(type=return_content_type),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"shr",
+                        "volumes":[volume_1],
+                        "return_content":{
+                            "type":return_content_type
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
@@ -514,24 +586,28 @@ def test_return_text_content_encodings(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="shr",
-                        volumes=[volume_1],
-                        return_content=dict(
-                            type="text",
-                            src_encoding=src_encoding,
-                            response_encoding=response_encoding,
-                        ),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"shr",
+                        "volumes":[volume_1],
+                        "return_content":{
+                            "type":"text",
+                            "src_encoding":src_encoding,
+                            "response_encoding":response_encoding,
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
@@ -550,22 +626,28 @@ def test_reuse_existing_data_set(ansible_zos_module):
             program_name="IDCAMS",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        reuse=True,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "reuse":True,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", 0) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
@@ -583,22 +665,28 @@ def test_replace_existing_data_set(ansible_zos_module):
             program_name="IDCAMS",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        replace=True,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "replace":True,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", 0) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
@@ -614,45 +702,58 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
             program_name="IDCAMS",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        replace=True,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "replace":True,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         results = hosts.all.zos_mvs_raw(
             program_name="IDCAMS",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        replace=True,
-                        backup=True,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "replace":True,
+                        "backup":True,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", 0) == 0
             assert len(result.get("dd_names", [])) > 0
             assert len(result.get("backups", [])) > 0
             assert result.get("backups")[0].get("backup_name") is not None
             results2 = hosts.all.command(
-                cmd="head \"//'{0}'\"".format(result.get("backups")[0].get("backup_name"))
+                cmd=f"head \"//'{result.get("backups")[0].get("backup_name")}'\""
             )
             hosts.all.zos_data_set(
                 name=result.get("backups")[0].get("backup_name"), state="absent"
@@ -662,7 +763,6 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
                 == default_data_set.lower()
             )
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS" in result.get("stdout", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
@@ -682,20 +782,26 @@ def test_input_empty(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content="")),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":""
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
     finally:
@@ -709,25 +815,31 @@ def test_input_large(ansible_zos_module):
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         contents = ""
         for i in range(50000):
-            contents += "this is line {0}\n".format(i)
+            contents += f"this is line {i}\n"
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=contents)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":contents
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            # pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 12
             assert len(result.get("dd_names", [])) > 0
             assert len(result.get("dd_names", [{}])[0].get("content")) > 100000
@@ -747,20 +859,26 @@ def test_input_provided_as_list(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=contents)),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":contents
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            # pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert len(result.get("dd_names", [{}])[0].get("content")) > 100
@@ -787,25 +905,26 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                        return_content=dict(type=return_content_type),
-                    )
-                ),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                        "return_content":{
+                            "type":return_content_type
+                        },
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names", [{}])[0].get("content"))
@@ -839,29 +958,28 @@ def test_input_return_text_content_encodings(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_data_set=dict(
-                        dd_name=SYSPRINT_DD,
-                        data_set_name=default_data_set,
-                        disposition="new",
-                        type="seq",
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                        return_content=dict(
-                            type="text",
-                            src_encoding=src_encoding,
-                            response_encoding=response_encoding,
-                        ),
-                    )
-                ),
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                        "return_content":{
+                            "type":"text",
+                            "src_encoding":src_encoding,
+                            "response_encoding":response_encoding,
+                        },
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names", [{}])[0].get("content"))
@@ -880,22 +998,21 @@ def test_failing_path_name(ansible_zos_module):
         program_name="idcams",
         auth=True,
         dds=[
-            dict(
-                dd_unix=dict(
-                    dd_name=SYSPRINT_DD,
-                    path="1dfa3f4rafwer/f2rfsd",
-                ),
-            ),
-            dict(
-                dd_input=dict(
-                    dd_name=SYSIN_DD,
-                    content=IDCAMS_STDIN,
-                )
-            ),
+            {
+                "dd_unix":{
+                    "dd_name":SYSPRINT_DD,
+                    "path":"1dfa3f4rafwer/f2rfsd",
+                },
+            },
+            {
+                "dd_input":{
+                    "dd_name":SYSIN_DD,
+                    "content":IDCAMS_STDIN,
+                }
+            },
         ],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 8
         assert "ValueError" in result.get("msg", "")
 
@@ -909,26 +1026,24 @@ def test_create_new_file(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
-        results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+        results2 = hosts.all.command(cmd=f"cat {DEFAULT_PATH_WITH_FILE}")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS  SYSTEM" in result.get("stdout", "")
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -943,26 +1058,24 @@ def test_write_to_existing_file(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
-        results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+        results2 = hosts.all.command(cmd=f"cat {DEFAULT_PATH_WITH_FILE}")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS  SYSTEM" in result.get("stdout", "")
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -980,27 +1093,25 @@ def test_file_normal_disposition(ansible_zos_module, normal_disposition, expecte
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        disposition_normal=normal_disposition,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "disposition_normal":normal_disposition,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
         results2 = hosts.all.stat(path=DEFAULT_PATH_WITH_FILE)
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert result.get("stat", {}).get("exists", not expected) is expected
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -1015,27 +1126,25 @@ def test_file_modes(ansible_zos_module, mode, expected):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        mode=mode,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "mode":mode,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
         results2 = hosts.all.stat(path=DEFAULT_PATH_WITH_FILE)
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert result.get("stat", {}).get("mode", "") == expected
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -1057,28 +1166,26 @@ def test_file_path_options(ansible_zos_module, access_group, status_group):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        access_group=access_group,
-                        status_group=status_group,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "access_group":access_group,
+                        "status_group":status_group,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
-        results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+        results2 = hosts.all.command(cmd=f"cat {DEFAULT_PATH_WITH_FILE}")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS  SYSTEM" in result.get("stdout", "")
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -1097,27 +1204,25 @@ def test_file_block_size(ansible_zos_module, block_size):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        block_size=block_size,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "block_size":block_size,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
-        results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+        results2 = hosts.all.command(cmd=f"cat {DEFAULT_PATH_WITH_FILE}")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS  SYSTEM" in result.get("stdout", "")
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -1136,27 +1241,25 @@ def test_file_record_length(ansible_zos_module, record_length):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        record_length=record_length,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "record_length":record_length,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
-        results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+        results2 = hosts.all.command(cmd=f"cat {DEFAULT_PATH_WITH_FILE}")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS  SYSTEM" in result.get("stdout", "")
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -1175,27 +1278,25 @@ def test_file_record_format(ansible_zos_module, record_format):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        record_format=record_format,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "record_format":record_format,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
-        results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+        results2 = hosts.all.command(cmd=f"cat {DEFAULT_PATH_WITH_FILE}")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS  SYSTEM" in result.get("stdout", "")
     finally:
         hosts.all.file(path=DEFAULT_PATH, state="absent")
@@ -1220,23 +1321,24 @@ def test_file_return_content(ansible_zos_module, return_content_type, expected):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        return_content=dict(type=return_content_type),
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "return_content":{
+                            "type":return_content_type
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
@@ -1266,27 +1368,26 @@ def test_file_return_text_content_encodings(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_unix=dict(
-                        dd_name=SYSPRINT_DD,
-                        path=DEFAULT_PATH_WITH_FILE,
-                        return_content=dict(
-                            type="text",
-                            src_encoding=src_encoding,
-                            response_encoding=response_encoding,
-                        ),
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_unix":{
+                        "dd_name":SYSPRINT_DD,
+                        "path":DEFAULT_PATH_WITH_FILE,
+                        "return_content":{
+                            "type":"text",
+                            "src_encoding":src_encoding,
+                            "response_encoding":response_encoding,
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
@@ -1308,21 +1409,20 @@ def test_dummy(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_dummy=dict(
-                        dd_name=SYSPRINT_DD,
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                {
+                    "dd_dummy":{
+                        "dd_name":SYSPRINT_DD,
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) == 0
     finally:
@@ -1338,102 +1438,104 @@ def test_concatenation_with_data_set_dd_and_response(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
-        DEFAULT_DATA_SET_2 = get_tmp_ds_name()
+        default_data_set_2 = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_2, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name=default_data_set,
-                                    disposition="new",
-                                    type="seq",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET_2,
-                                    disposition="new",
-                                    type="seq",
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":default_data_set,
+                                    "disposition":"new",
+                                    "type":"seq",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":default_data_set_2,
+                                    "disposition":"new",
+                                    "type":"seq",
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_2, state="absent")
 
 
 def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
-        DEFAULT_DATA_SET_2 = get_tmp_ds_name()
+        default_data_set_2 = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="present", type="seq")
+        hosts.all.zos_data_set(name=default_data_set_2, state="present", type="seq")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name=default_data_set,
-                                    disposition="new",
-                                    type="seq",
-                                    replace=True,
-                                    backup=True,
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET_2,
-                                    disposition="new",
-                                    type="seq",
-                                    replace=True,
-                                    backup=True,
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":default_data_set,
+                                    "disposition":"new",
+                                    "type":"seq",
+                                    "replace":True,
+                                    "backup":True,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":default_data_set_2,
+                                    "disposition":"new",
+                                    "type":"seq",
+                                    "replace":True,
+                                    "backup":True,
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
 
         for result in results.contacted.values():
-            pprint(result)
             hosts.all.zos_data_set(
                 name=result.get("backups")[0].get("backup_name"), state="absent"
             )
@@ -1446,121 +1548,122 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
             )
             assert (
                 result.get("backups")[1].get("original_name").lower()
-                == DEFAULT_DATA_SET_2.lower()
+                == default_data_set_2.lower()
             )
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_2, state="absent")
 
 
 def test_concatenation_with_data_set_member(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
-        DEFAULT_DATA_SET_2 = get_tmp_ds_name()
-        DEFAULT_DATA_SET_WITH_MEMBER = default_data_set + '(MEM)'
+        default_data_set_2 = get_tmp_ds_name()
+        default_data_set_with_member = default_data_set + '(MEM)'
         hosts.all.zos_data_set(name=default_data_set, state="present", type="pds")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_2, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET_2,
-                                    disposition="new",
-                                    type="seq",
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":default_data_set_with_member,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":default_data_set_2,
+                                    "disposition":"new",
+                                    "type":"seq",
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
         results2 = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(DEFAULT_DATA_SET_WITH_MEMBER)
+            cmd=f"cat \"//'{default_data_set_with_member}'\""
         )
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
         for result in results2.contacted.values():
-            pprint(result)
             assert "IDCAMS" in result.get("stdout", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_2, state="absent")
 
 
 def test_concatenation_with_unix_dd_and_response_datasets(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        DEFAULT_DATA_SET_2 = get_tmp_ds_name()
+        default_data_set_2 = get_tmp_ds_name()
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_2, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_unix=dict(
-                                    path=DEFAULT_PATH_WITH_FILE,
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name=DEFAULT_DATA_SET_2,
-                                    disposition="new",
-                                    type="seq",
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":default_data_set_2,
+                                    "disposition":"new",
+                                    "type":"seq",
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
     finally:
         hosts.all.file(name=DEFAULT_PATH, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
+        hosts.all.zos_data_set(name=default_data_set_2, state="absent")
 
 
 def test_concatenation_with_unix_dd_and_response_uss(ansible_zos_module):
@@ -1572,35 +1675,38 @@ def test_concatenation_with_unix_dd_and_response_uss(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_unix=dict(
-                                    path=DEFAULT_PATH_WITH_FILE,
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_input=dict(
-                                    content="Hello world!",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_input":{
+                                    "content":"Hello world!",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 1
             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
@@ -1615,30 +1721,31 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
         program_name="idcams",
         auth=True,
         dds=[
-            dict(
-                dd_concat=dict(
-                    dd_name=SYSPRINT_DD,
-                    dds=[
-                        dict(
-                            dd_dummy=dict(
-                                path=DEFAULT_PATH_WITH_FILE,
-                                return_content=dict(type="text"),
-                            ),
-                            dd_concat=dict(),
-                        ),
+            {
+                "dd_concat":{
+                    "dd_name":SYSPRINT_DD,
+                    "dds":[
+                        {
+                            "dd_dummy":{
+                                "path":DEFAULT_PATH_WITH_FILE,
+                                "return_content":{
+                                    "type":"text"
+                                },
+                            },
+                            "dd_concat":{},
+                        },
                     ],
-                ),
-            ),
-            dict(
-                dd_input=dict(
-                    dd_name=SYSIN_DD,
-                    content=IDCAMS_STDIN,
-                )
-            ),
+                },
+            },
+            {
+                "dd_input":{
+                    "dd_name":SYSIN_DD,
+                    "content":IDCAMS_STDIN,
+                }
+            },
         ],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == -1
         assert "Unsupported parameters" in result.get("msg", "")
 
@@ -1648,114 +1755,132 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
     [
         (
             [
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_unix=dict(
-                                    path=DEFAULT_PATH_WITH_FILE,
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name="ANSIBLE.USER.PRIVATE.TEST",
-                                    disposition="shr",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_input=dict(
-                                    content="Hello world!",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
+                                    "disposition":"shr",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_input":{
+                                    "content":"Hello world!",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
             2,
             "Hello world!",
         ),
         (
             [
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name="ANSIBLE.USER.PRIVATE.TEST",
-                                    disposition="shr",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_unix=dict(
-                                    path=DEFAULT_PATH_WITH_FILE,
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_input=dict(
-                                    content="Hello world!",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
+                                    "disposition":"shr",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_input":{
+                                    "content":"Hello world!",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
             2,
             "Hello world!",
         ),
         (
             [
-                dict(
-                    dd_concat=dict(
-                        dd_name=SYSPRINT_DD,
-                        dds=[
-                            dict(
-                                dd_input=dict(
-                                    content="Hello world!",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_data_set=dict(
-                                    data_set_name="ANSIBLE.USER.PRIVATE.TEST",
-                                    disposition="shr",
-                                    return_content=dict(type="text"),
-                                )
-                            ),
-                            dict(
-                                dd_unix=dict(
-                                    path=DEFAULT_PATH_WITH_FILE,
-                                    return_content=dict(type="text"),
-                                )
-                            ),
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_input":{
+                                    "content":"Hello world!",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
+                                    "disposition":"shr",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
                         ],
-                    ),
-                ),
-                dict(
-                    dd_input=dict(
-                        dd_name=SYSIN_DD,
-                        content=IDCAMS_STDIN,
-                    )
-                ),
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN,
+                    }
+                },
             ],
             0,
             "IDCAMS",
@@ -1798,7 +1923,6 @@ def test_authorized_program_run_unauthorized(ansible_zos_module):
             dds=[],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 8
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0236E" in result.get("msg", "")
@@ -1817,7 +1941,6 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
             dds=[],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 8
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0215E" in result.get("msg", "")
@@ -1834,16 +1957,17 @@ def test_authorized_program_run_authorized(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_output=dict(
-                        dd_name=SYSPRINT_DD,
-                        return_content=dict(type="text"),
-                    ),
-                ),
+                {
+                    "dd_output":{
+                        "dd_name":SYSPRINT_DD,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
             ],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 16
             assert len(result.get("dd_names", [])) == 1
             assert "BGYSC0236E" not in result.get("msg", "")
@@ -1862,7 +1986,6 @@ def test_unauthorized_program_run_unauthorized(ansible_zos_module):
             dds=[],
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0215E" not in result.get("msg", "")
@@ -1877,7 +2000,6 @@ def test_missing_program_name(ansible_zos_module):
         dds=[],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == -1
         assert len(result.get("dd_names", [])) == 0
         assert "missing required arguments" in result.get("msg", "")
@@ -1892,7 +2014,6 @@ def test_with_parms(ansible_zos_module):
         dds=[],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 0
         assert len(result.get("dd_names", [])) == 0
 
@@ -1903,12 +2024,21 @@ def test_with_multiple_of_same_dd_name(ansible_zos_module):
         pgm="idcams",
         auth=True,
         dds=[
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            {
+                "dd_input":{
+                    "dd_name":SYSIN_DD,
+                    "content":IDCAMS_STDIN
+                }
+            },
+            {
+                "dd_input":{
+                    "dd_name":SYSIN_DD,
+                    "content":IDCAMS_STDIN
+                }
+            },
         ],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 8
         assert len(result.get("dd_names", [])) == 0
         assert "BGYSC0228E" in result.get("msg", "")
@@ -1925,16 +2055,20 @@ def test_vio_as_output(ansible_zos_module):
         program_name="idcams",
         auth=True,
         dds=[
-            dict(
-                dd_vio=dict(
-                    dd_name=SYSPRINT_DD,
-                ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            {
+                "dd_vio":{
+                    "dd_name":SYSPRINT_DD,
+                },
+            },
+            {
+                "dd_input":{
+                    "dd_name":SYSIN_DD,
+                    "content":IDCAMS_STDIN
+                }
+            },
         ],
     )
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("ret_code", {}).get("code", 0) == 0
         assert len(result.get("dd_names", [])) == 0
 
@@ -1953,18 +2087,24 @@ def test_output_dd(ansible_zos_module):
             program_name="idcams",
             auth=True,
             dds=[
-                dict(
-                    dd_output=dict(
-                        dd_name=SYSPRINT_DD,
-                        return_content=dict(type="text"),
-                    ),
-                ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+                {
+                    "dd_output":{
+                        "dd_name":SYSPRINT_DD,
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":IDCAMS_STDIN
+                    }
+                },
             ],
         )
 
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))

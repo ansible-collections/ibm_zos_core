@@ -1,3 +1,8 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2023
@@ -38,12 +43,12 @@ def test_guard_rail_and_setup(ansible_zos_module):
     hosts.all.zos_data_set(name="IMSTESTL.IMS01.SPOOL2", state="absent")
     hosts.all.zos_data_set(name="IMSTESTL.IMS01.SPOOL3", state="absent")
 
-    params = dict(
-        address=TEST_VOL_ADDR,
-        verify_offline=False,
-        volid=TEST_VOL_SER,
-        verify_volid='USER02'
-    )
+    params = {
+        "address":TEST_VOL_ADDR,
+        "verify_offline":False,
+        "volid":TEST_VOL_SER,
+        "verify_volid":'USER02'
+    }
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
@@ -137,7 +142,9 @@ def test_volid_address_assigned_correctly(ansible_zos_module):
     # parameter is correctly assigned to the 'address' parameter.
 
     # Display command to print device status, volser and addr should correspond
-    display_cmd_output = list(hosts.all.zos_operator(cmd=f"D U,VOL={TEST_VOL_SER}").contacted.values())[0]
+    display_cmd_output = list(
+        hosts.all.zos_operator(cmd=f"D U,VOL={TEST_VOL_SER}").contacted.values()
+    )[0]
 
     # zos_operator output contains the command as well, only the last line of
     # the output is relevant for the needs of this test case.
@@ -260,7 +267,8 @@ def test_good_param_values(ansible_zos_module, params):
             'volid': TEST_VOL_SER,
             'vtoc_size': -10
         }, 12),
-        # note - "'vtoc_size': 0" gets treated as vtoc_size wasn't defined and invokes default behavior.
+        # note - "'vtoc_size': 0" gets treated as vtoc_size wasn't defined
+        # and invokes default behavior.
         # volid check - incorrect existing volid
         ({
             'address': TEST_VOL_ADDR,
@@ -362,11 +370,11 @@ def test_no_existing_data_sets_check(ansible_zos_module):
 def test_minimal_params(ansible_zos_module):
     hosts = ansible_zos_module
 
-    params = dict(
-        address=TEST_VOL_ADDR,
-        verify_offline=False,
-        volid=TEST_VOL_SER
-    )
+    params = {
+        "address":TEST_VOL_ADDR,
+        "verify_offline":False,
+        "volid":TEST_VOL_SER
+    }
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")

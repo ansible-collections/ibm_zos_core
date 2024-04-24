@@ -1,3 +1,8 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020, 2023
@@ -64,7 +69,7 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
         assert result.get("changed") is True
     transparency = False
     if any('DUMP COMMAND' in str for str in result.get("content")):
-            transparency = True
+        transparency = True
     assert transparency
 
 
@@ -140,11 +145,10 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
 def test_response_come_back_complete(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd="\\$dspl")
-    res = dict()
+    res = {}
     res["stdout"] = []
     for result in results.contacted.values():
         stdout = result.get('content')
         # HASP646 Only appears in the last line that before did not appears
         last_line = len(stdout)
         assert "HASP646" in stdout[last_line - 1]
-

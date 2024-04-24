@@ -1,3 +1,8 @@
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019 - 2024
@@ -26,7 +31,7 @@ def test_zos_operator_action_query_no_options(ansible_zos_module):
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
 
@@ -41,7 +46,7 @@ def test_zos_operator_action_query_option_message_id(ansible_zos_module):
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
 
@@ -58,7 +63,7 @@ def test_zos_operator_action_query_option_message_id_invalid_abbreviation(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
     for result in results.contacted.values():
@@ -76,7 +81,7 @@ def test_zos_operator_action_query_option_message_id_regex(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
     for result in results.contacted.values():
@@ -133,7 +138,7 @@ def test_zos_operator_action_query_option_system_regex(ansible_zos_module):
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
     for result in results.contacted.values():
@@ -157,7 +162,7 @@ def test_zos_operator_action_query_option_system_regex_and_message_id(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
     for result in results.contacted.values():
@@ -237,7 +242,7 @@ def test_zos_operator_action_query_option_message_filter_one_match(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
     for result in results.contacted.values():
@@ -265,7 +270,7 @@ def test_zos_operator_action_query_option_message_filter_multiple_matches(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
     for result in results.contacted.values():
@@ -292,7 +297,7 @@ def test_zos_operator_action_query_option_message_filter_no_match(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd="{0}cancel".format(action.get("number")))
+                    cmd=f"{action.get("number")}cancel")
     except Exception:
         pass
     for result in results.contacted.values():

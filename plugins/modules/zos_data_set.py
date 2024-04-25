@@ -682,7 +682,7 @@ names:
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet, GenerationDataGroup, MVSDataSet
 from ansible.module_utils.basic import AnsibleModule
 
 import re
@@ -702,6 +702,7 @@ DATA_SET_TYPES = [
     "member",
     "hfs",
     "zfs",
+    "gdg",
 ]
 
 DATA_SET_FORMATS = [
@@ -821,9 +822,17 @@ def data_set_name(contents, dependencies):
         dsname,
         re.IGNORECASE,
     ):
-        if not (
+        if (
             re.fullmatch(
-                r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
+                r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([+-]{0,1}\d{1,4}\)){0,1}$",
+                dsname,
+                re.IGNORECASE,
+            )
+        ):
+            return dsname.upper()
+        elif not (
+            re.fullmatch(
+                r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\(([A-Z$#@]{1}[A-Z0-9$#@]{0,7})\)){0,1}$",
                 dsname,
                 re.IGNORECASE,
             )
@@ -1046,6 +1055,38 @@ def data_set_type(contents, dependencies):
     return contents
 
 
+def limit_type(contents, dependencies):
+    """Validates limit is valid. Limit option is dependent on state.
+    Returns limit.
+
+    Parameters
+    ----------
+    contents : int
+        Limit for GDG type.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    int
+        The limit for GDG type.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
+    if dependencies.get("state") != "present" and dependencies.get("type") == "gdg":
+        raise ValueError("Limit is required when state==present.")
+    if not isinstance(contents, int):
+        raise ValueError(
+            "Value {0} is invalid for limit option. Limit must be an integer from 1 to 255, if extended up to 999.".format(
+                contents
+            )
+        )
+    return contents
+
+
 # * dependent on state
 def volumes(contents, dependencies):
     """Validates volume is valid.
@@ -1184,7 +1225,38 @@ def key_offset(contents, dependencies):
     return contents
 
 
-def perform_data_set_operations(name, state, **extra_args):
+def get_data_set_handler(**params):
+    if params.get("type") == "gdg":
+        return GenerationDataGroup(
+            name=params.get("name"),
+            limit=params.get("limit", None),
+            empty=params.get("empty", None),
+            purge=params.get("purge", None),
+            scratch=params.get("scratch", None),
+            extended=params.get("extended", None),
+            fifo=params.get("fifo", None),
+        )
+    else:
+        return MVSDataSet(
+            name = params.get("name"),
+            record_format = params.get("record_format", None),
+            volumes = params.get("volumes", None),
+            data_set_type = params.get("type", None),
+            block_size = params.get("block_size", None),
+            record_length = params.get("record_length", None),
+            space_primary = params.get("space_primary", None),
+            space_secondary = params.get("space_secondary", None),
+            space_type = params.get("space_type", None),
+            directory_blocks = params.get("directory_blocks", None),
+            key_length = params.get("key_length", None),
+            key_offset = params.get("key_offset", None),
+            sms_storage_class = params.get("sms_storage_class", None),
+            sms_data_class = params.get("sms_data_class", None),
+            sms_management_class = params.get("sms_management_class", None),
+        )
+
+
+def perform_data_set_operations(data_set, state, **extra_args):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
@@ -1206,18 +1278,23 @@ def perform_data_set_operations(name, state, **extra_args):
     #  passing in **extra_args forced me to modify the acceptable parameters
     #  for multiple functions in data_set.py including ensure_present, replace
     #  and create where the force parameter has no bearing.
-    if state == "present" and extra_args.get("type") != "member":
-        changed = DataSet.ensure_present(name, **extra_args)
-    elif state == "present" and extra_args.get("type") == "member":
-        changed = DataSet.ensure_member_present(name, extra_args.get("replace"))
-    elif state == "absent" and extra_args.get("type") != "member":
-        changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
-    elif state == "absent" and extra_args.get("type") == "member":
-        changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
+    replace = extra_args.get("replace")
+    tmp_hlq = extra_args.get("tmp_hlq")
+    force = extra_args.get("force")
+    if state == "present" and data_set.data_set_type == "member":
+        changed = DataSet.ensure_member_present(data_set.name, replace)
+    elif state == "present" and data_set.data_set_type == "gdg":
+        changed = DataSet.ensure_gdg_present(data_set=data_set, replace=replace)
+    elif state == "present":
+        changed = DataSet.ensure_present(data_set=data_set, replace=replace, tmp_hlq=tmp_hlq, force=force)
+    elif state == "absent" and data_set.data_set_type == "member":
+        changed = DataSet.ensure_member_absent(data_set.name, force)
+    elif state == "absent":
+        changed = DataSet.ensure_absent(data_set.name, data_set.volumes)
     elif state == "cataloged":
-        changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
+        changed = DataSet.ensure_cataloged(data_set.name, data_set.volumes)
     elif state == "uncataloged":
-        changed = DataSet.ensure_uncataloged(name)
+        changed = DataSet.ensure_uncataloged(data_set.name)
     return changed
 
 
@@ -1397,6 +1474,14 @@ def parse_and_validate_args(params):
             type="bool",
             default=False,
         ),
+        # GDG options
+        limit=dict(type=limit_type, required=False, dependencies=["state", "type"]),
+        empty=dict(type="bool", required=False),
+        purge=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False),
+        fifo=dict(type="bool", required=False),
+        # End of GDG options
         volumes=dict(
             type=volumes,
             required=False,
@@ -1575,6 +1660,14 @@ def run_module():
             type="bool",
             default=False,
         ),
+        # GDG options
+        limit=dict(type="int", required=False, no_log=False),
+        empty=dict(type="bool", required=False),
+        purge=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False),
+        fifo=dict(type="bool", required=False),
+        # End of GDG options
         volumes=dict(
             type="raw",
             required=False,
@@ -1636,35 +1729,39 @@ def run_module():
 
             for data_set_params in data_set_param_list:
                 # This *appears* redundant, bit the parse_and_validate reinforces the default value for record_type
-                if data_set_params.get("batch") is not None:
-                    for entry in data_set_params.get("batch"):
-                        if entry.get('type') is not None and entry.get("type") in DATA_SET_TYPES_VSAM:
-                            entry["record_format"] = None
-                    if data_set_params.get("type") is not None:
-                        data_set_params["type"] = None
-                    if data_set_params.get("state") is not None:
-                        data_set_params["state"] = None
-                    if data_set_params.get("space_type") is not None:
-                        data_set_params["space_type"] = None
-                    if data_set_params.get("space_primary") is not None:
-                        data_set_params["space_primary"] = None
-                    if data_set_params.get("space_secondary") is not None:
-                        data_set_params["space_secondary"] = None
-                    if data_set_params.get("replace") is not None:
-                        data_set_params["replace"] = None
-                    if data_set_params.get("record_format") is not None:
-                        data_set_params["record_format"] = None
-                else:
-                    if data_set_params.get("type") in DATA_SET_TYPES_VSAM:
-                        if data_set_params.get("record_format") is not None:
-                            data_set_params["record_format"] = None
+                # if data_set_params.get("batch") is not None:
+                #     # for entry in data_set_params.get("batch"):
+                #     #     if entry.get("name") and DataSet.is_gds_relative_name(entry.get("name")):
+                #     #         entry["name"] = DataSet.resolve_gds_absolute_name(entry.get("name"))
+                #     #     if entry.get("type") is not None and entry.get("type") in DATA_SET_TYPES_VSAM:
+                #     #         entry["record_format"] = None
+                #     # if data_set_params.get("type") is not None:
+                #     #     data_set_params["type"] = None
+                #     # if data_set_params.get("state") is not None:
+                #     #     data_set_params["state"] = None
+                #     # if data_set_params.get("space_type") is not None:
+                #     #     data_set_params["space_type"] = None
+                #     # if data_set_params.get("space_primary") is not None:
+                #     #     data_set_params["space_primary"] = None
+                #     # if data_set_params.get("space_secondary") is not None:
+                #     #     data_set_params["space_secondary"] = None
+                #     # if data_set_params.get("replace") is not None:
+                #     #     data_set_params["replace"] = None
+                #     # if data_set_params.get("record_format") is not None:
+                #     #     data_set_params["record_format"] = None
+                # else:
+                #     if data_set_params.get("type") in DATA_SET_TYPES_VSAM:
+                #         if data_set_params.get("record_format") is not None:
+                #             data_set_params["record_format"] = None
+                #         if data_set_params.get("name") and DataSet.is_gds_relative_name(data_set_params.get("name")):
+                #             data_set_params["name"] = DataSet.resolve_gds_absolute_name(data_set_params.get("name"))
 
-                # remove unnecessary empty batch argument
+                data_set = get_data_set_handler(**data_set_params) # this returns MVSDataSet or GenerationDataGroup.
                 result["changed"] = perform_data_set_operations(
-                    **data_set_params
+                    data_set, data_set_params.get("state")
                 ) or result.get("changed", False)
         except Exception as e:
-            module.fail_json(msg=repr(e), **result)
+            module.fail_json(msg=e, **result)
     else:
         if module.params.get("replace"):
             result["changed"] = True

@@ -321,7 +321,7 @@ class DataSet(object):
         # data sets.
         if model_type not in DataSet.MVS_VSAM:
             try:
-                data_set = datasets.list_datasets(model)[0]
+                data_set = datasets.list_datasets(DataSet.escape_data_set_name(model))[0]
             except IndexError:
                 raise AttributeError("Could not retrieve model data set block size.")
             block_size = data_set.block_size
@@ -369,7 +369,7 @@ class DataSet(object):
             if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
-            if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
+            if re.search(r"-\s" + DataSet.escape_data_set_name(name) + r"\s*\n\s+IN-CAT", stdout):
                 return True
 
         return False
@@ -447,7 +447,7 @@ class DataSet(object):
         Returns:
             bool -- If at least one of the members in src exists in dest.
         """
-        src_members = datasets.list_members(src)
+        src_members = datasets.list_members(DataSet.escape_data_set_name(src))
 
         for member in src_members:
             if DataSet.data_set_member_exists("{0}({1})".format(dest, member)):
@@ -514,7 +514,7 @@ class DataSet(object):
             DatasetVolumeError: When the function is unable to parse the value
                                 of VOLSER.
         """
-        data_set_information = datasets.list_datasets(name)
+        data_set_information = datasets.list_datasets(DataSet.escape_data_set_name(name))
 
         if len(data_set_information) > 0:
             return data_set_information[0].volume
@@ -549,7 +549,7 @@ class DataSet(object):
         if not DataSet.data_set_exists(name, volume):
             return None
 
-        data_sets_found = datasets.list_datasets(name)
+        data_sets_found = datasets.list_datasets(DataSet.escape_data_set_name(name))
 
         # Using the organization property when it's a sequential or partitioned
         # dataset. VSAMs are not found by datasets.list_datasets.
@@ -1021,6 +1021,7 @@ class DataSet(object):
         """
         original_args = locals()
         formatted_args = DataSet._build_zoau_args(**original_args)
+        formatted_args["name"] = DataSet.escape_data_set_name(formatted_args["name"])
         try:
             datasets.create(**formatted_args)
         except exceptions._ZOAUExtendableException as create_exception:
@@ -1053,7 +1054,7 @@ class DataSet(object):
         Raises:
             DatasetDeleteError: When data set deletion fails.
         """
-        rc = datasets.delete(name)
+        rc = datasets.delete(DataSet.escape_data_set_name(name))
         if rc > 0:
             raise DatasetDeleteError(name, rc)
 
@@ -1092,7 +1093,7 @@ class DataSet(object):
         Raises:
             DatasetMemberDeleteError: When data set member deletion fails.
         """
-        rc = datasets.delete_members(name, force=force)
+        rc = datasets.delete_members(DataSet.escape_data_set_name(name), force=force)
         if rc > 0:
             raise DatasetMemberDeleteError(name, rc)
 
@@ -1240,7 +1241,7 @@ class DataSet(object):
                 raise DatasetUncatalogError(name, rc)
         finally:
             if temp_name:
-                datasets.delete(temp_name)
+                datasets.delete(DataSet.escape_data_set_name(temp_name))
         return
 
     @staticmethod
@@ -1319,14 +1320,14 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-        if re.search(r"^0CLUSTER[ ]+-+[ ]+" + name + r"[ ]*$", stdout, re.MULTILINE):
+        if re.search(r"^0CLUSTER[ ]+-+[ ]+" + DataSet.escape_data_set_name(name) + r"[ ]*$", stdout, re.MULTILINE):
             return True
         return False
 
     @staticmethod
     def is_gds_relative_name(name):
-        """Determine if name if a gdg relative name based
-        on the GDS relative name  syntax eg. 'USER.GDG(-2)'.
+        """Determine if name is a gdg relative name based
+        on the GDS relative name syntax eg. 'USER.GDG(-2)'.
 
         Parameters
         ----------
@@ -1339,7 +1340,7 @@ class DataSet(object):
             Whether the name is a GDS relative name.
         """
         pattern = r'(.+)\(([-+]?\d+)\)'
-        match = re.fullmatch(pattern, name)
+        match = re.fullmatch(pattern, DataSet.escape_data_set_name(name))
         return bool(match)
 
     @staticmethod
@@ -1364,7 +1365,7 @@ class DataSet(object):
             the GDG data based on the gdg base name.
         """
         pattern = r'(.+)\(([-+]?\d+)\)'
-        match = re.search(pattern, relative_name)
+        match = re.search(pattern, DataSet.escape_data_set_name(relative_name))
         try:
             gdg_base = match.group(1)
             rel_generation = int(match.group(2))
@@ -1378,6 +1379,28 @@ class DataSet(object):
             raise GDSNameResolveError(relative_name)
 
         return absolute_name
+
+    @staticmethod
+    def escape_data_set_name(name):
+        """Escapes special characters ($, @, #) inside a data set name.
+
+        Parameters
+        ----------
+            name : str
+                Name of the data set.
+
+        Returns
+        -------
+            str
+                Escaped data set name.
+        """
+        special_chars = ['$', '@', '#', '-']
+        escaped_name = name.replace('\\', '')
+
+        for char in special_chars:
+            escaped_name = escaped_name.replace(char, f"\{char}")
+
+        return escaped_name
 
     @staticmethod
     def temp_name(hlq=""):

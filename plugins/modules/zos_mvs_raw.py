@@ -1630,6 +1630,9 @@ ACCESS_GROUP_NAME_MAP = {
 }
 
 
+backups = []
+
+
 def run_module():
     """Executes all module-related functions.
 
@@ -1829,7 +1832,6 @@ def run_module():
     # ---------------------------------------------------------------------------- #
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-    parms = parse_and_validate_args(module.params)
 
     # ---------------------------------------------------------------------------- #
     #                                  Main Logic                                  #
@@ -1837,13 +1839,13 @@ def run_module():
 
     result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
-    backups = []
     dd_statements = []
 
     if not module.check_mode:
         try:
+            parms = parse_and_validate_args(module.params)
             tmphlq = parms.get("tmp_hlq")
-            dd_statements = build_dd_statements(parms, backups)
+            dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
             authorized = parms.get("auth")
@@ -2369,7 +2371,7 @@ def access_group(contents, dependencies):
     return contents
 
 
-def build_dd_statements(parms, backups):
+def build_dd_statements(parms):
     """Build a list of DDStatement objects from provided module parms.
 
     Args:
@@ -2384,10 +2386,9 @@ def build_dd_statements(parms, backups):
     dd_statements = []
     tmphlq = parms.get("tmphlq")
     for dd in parms.get("dds"):
-        key = get_key(dd)
-        dd_name = dd.get(key).get("dd_name")
-        dd = set_extra_attributes_in_dd(key, tmphlq)
-        data_definition = build_data_definition(dd, key, backups)
+        dd_name, key = get_dd_name_and_key(dd)
+        dd = set_extra_attributes_in_dd(dd, tmphlq, key)
+        data_definition = build_data_definition(dd)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
         dd_statement = DDStatement(dd_name, data_definition)
@@ -2396,14 +2397,6 @@ def build_dd_statements(parms, backups):
 
 
 def get_key(dd):
-    """Get the DD key from a DD parm as specified in module parms.
-
-    Args:
-        dd (dict): A single DD parm as specified in module parms.
-
-    Returns:
-        str: The DD key.
-    """
     dd_key = ""
     keys_list = list(dd.keys())
     for key in keys_list:
@@ -2412,7 +2405,34 @@ def get_key(dd):
     return dd_key
 
 
-def set_extra_attributes_in_dd(dd, tmphlq):
+def get_dd_name_and_key(dd):
+    dd_name = ""
+    key = ""
+    if dd.get("dd_data_set"):
+        dd_name = dd.get("dd_data_set").get("dd_name")
+        key = "dd_data_set"
+    elif dd.get("dd_unix"):
+        dd_name = dd.get("dd_unix").get("dd_name")
+        key = "dd_unix"
+    elif dd.get("dd_input"):
+        dd_name = dd.get("dd_input").get("dd_name")
+        key = "dd_input"
+    elif dd.get("dd_output"):
+        dd_name = dd.get("dd_output").get("dd_name")
+        key = "dd_output"
+    elif dd.get("dd_vio"):
+        dd_name = dd.get("dd_vio").get("dd_name")
+        key = "dd_vio"
+    elif dd.get("dd_dummy"):
+        dd_name = dd.get("dd_dummy").get("dd_name")
+        key = "dd_dummy"
+    elif dd.get("dd_concat"):
+        dd_name = dd.get("dd_concat").get("dd_name")
+        key = "dd_concat"
+    return dd_name, key
+
+
+def set_extra_attributes_in_dd(dd, tmphlq, key):
     """
     Set any extra attributes in dds like in global tmp_hlq.
     Args:
@@ -2421,15 +2441,16 @@ def set_extra_attributes_in_dd(dd, tmphlq):
     Returns:
         dd (dict): A single DD parm as specified in module parms.
     """
-    if dd == "dd_concat":
+    if key == "dd_concat":
         for single_dd in dd.get("dd_concat").get("dds", []):
-            set_extra_attributes_in_dd(single_dd, tmphlq)
-    else:
-        dd.get(dd)["tmphlq"] = tmphlq
+            key_concat = get_key(single_dd)
+            set_extra_attributes_in_dd(single_dd, tmphlq, key_concat)
+    elif dd.get(key):
+        dd.get(key)["tmphlq"] = tmphlq
     return dd
 
 
-def build_data_definition(dd, key, backups):
+def build_data_definition(dd):
     """Build a DataDefinition object for a particular DD parameter.
 
     Args:
@@ -2442,30 +2463,35 @@ def build_data_definition(dd, key, backups):
               RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
-    if key == "dd_data_set":
+    if dd.get("dd_data_set"):
         data_definition = RawDatasetDefinition(
             **(dd.get("dd_data_set")))
-        backups.append(data_definition.backups)
-    if key == "dd_unix":
+        if data_definition.backup:
+            backups.append(get_backups(data_definition.backup, dd.get("dd_data_set").get("data_set_name")))
+    elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(
             **(dd.get("dd_unix")))
-    if key == "dd_input":
+    elif dd.get("dd_input"):
         data_definition = RawInputDefinition(
             **(dd.get("dd_input")))
-    if key == "dd_output":
+    elif dd.get("dd_output"):
         data_definition = RawOutputDefinition(
             **(dd.get("dd_output")))
-    if key == "dd_vio":
+    elif dd.get("dd_vio"):
         data_definition = VIODefinition(
             dd.get("dd_vio").get("tmphlq"))
-    if key == "dd_dummy":
+    elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
-    if key == "dd_concat":
+    elif dd.get("dd_concat"):
         data_definition = []
         for single_dd in dd.get("dd_concat").get("dds", []):
-            key = get_key(single_dd)
-            data_definition.append(build_data_definition(single_dd, key))
+            data_definition.append(build_data_definition(single_dd))
     return data_definition
+
+
+def get_backups(backup, data_set_name):
+    backups = {"original_name": data_set_name, "backup_name": backup}
+    return backups
 
 
 def run_zos_program(
@@ -2526,16 +2552,44 @@ def gather_backups(dd_statements):
     """
     backups = []
     for dd_statement in dd_statements:
-        if (
-            isinstance(dd_statement.definition, RawDatasetDefinition)
-            and dd_statement.definition.backup
-        ):
-            backup["backup_name"] = dd_statement.definition.backup
-            backup["original_name"] = dd_statement.definition.name
-        elif isinstance(dd_statement.definition, list):
-            dd_backup = get_concatenation_backup(dd_statement)
-            backups.append(dd_backup)
+        backups += get_dd_backup(dd_statement)
     return backups
+
+
+def get_dd_backup(dd_statement):
+    """Gather backup information for a single data set
+    if the DD is a data set DD and a backup was made.
+
+    Args:
+        dd (DataDefinition): A single DD statement.
+
+    Returns:
+        list[dict]: List of backups in format expected for response on module completion.
+    """
+    dd_backup = []
+    if (
+        isinstance(dd_statement.definition, RawDatasetDefinition)
+        and dd_statement.definition.backup
+    ):
+        dd_backup = [get_data_set_backup(dd_statement)]
+    elif isinstance(dd_statement.definition, list):
+        dd_backup = get_concatenation_backup(dd_statement)
+    return dd_backup
+
+
+def get_data_set_backup(dd_statement):
+    """Get backup of a single data set DD statement.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        dict: Backup information in format expected for response on module completion.
+    """
+    backup = {}
+    backup["backup_name"] = dd_statement.definition.backup
+    backup["original_name"] = dd_statement.definition.name
+    return backup
 
 
 def get_concatenation_backup(dd_statement):
@@ -2570,7 +2624,7 @@ def gather_output(dd_statements):
     """
     output = []
     for dd_statement in dd_statements:
-        output.append(get_dd_output(dd_statement))
+        output += get_dd_output(dd_statement)
     return output
 
 

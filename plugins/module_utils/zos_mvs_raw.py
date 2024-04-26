@@ -123,7 +123,6 @@ class RawDatasetDefinition(DatasetDefinition):
     def __init__(
         self,
         data_set_name,
-        backups,
         disposition="",
         disposition_normal=None,
         disposition_abnormal=None,
@@ -149,6 +148,7 @@ class RawDatasetDefinition(DatasetDefinition):
         backup=None,
         return_content=None,
         tmphlq=None,
+        **kwargs
     ):
         """Initialize RawDatasetDefinition
 
@@ -209,9 +209,6 @@ class RawDatasetDefinition(DatasetDefinition):
             elif replace:
                 if backup:
                     self.backup = zos_backup.mvs_file_backup(data_set_name, None, tmphlq)
-                    backups.append(
-                        {"original_name": data_set_name, "backup_name": self.backup}
-                    )
                 DataSet.delete(data_set_name)
 
         if not should_reuse:
@@ -279,6 +276,7 @@ class RawFileDefinition(FileDefinition):
         record_length=None,
         record_format=None,
         return_content=None,
+        **kwargs
     ):
         """Initialize RawFileDefinition
 
@@ -322,7 +320,8 @@ class RawInputDefinition(InputDefinition):
             self,
             content="",
             return_content=None,
-            tmphlq=""
+            tmphlq="",
+            **kwargs
     ):
         """Initialize RawInputDefinition
 
@@ -344,10 +343,12 @@ class RawOutputDefinition(OutputDefinition):
         OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
     """
 
-    def __init__(self,
-                 return_content=None,
-                 tmphlq="",
-                 ):
+    def __init__(
+            self,
+            return_content=None,
+            tmphlq="",
+            **kwargs
+            ):
         """Initialize RawOutputDefinition
 
         Args:

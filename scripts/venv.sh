@@ -339,8 +339,13 @@ discover_python(){
         VERSION_PYTHON=$required_python
     fi
 
-    # Don't use which, it only will find first in path within the script
-    # for python_found in `which python3 | cut -d" " -f3`; do
+    # Note:
+    #   Don't use which, it only will find first in path within the script
+    #   for python_found in `which python3 | cut -d" " -f3`; do
+    #
+    #   The 'pys' array will search for pythons in reverse order, once it finds one that matches
+    #   the requirements-x.xx.env it does not continue searching. Reverse order is important to
+    #   maintain.
     pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
     rc=1
     for py in "${pys[@]}"; do
@@ -517,7 +522,12 @@ ssh_host_credentials(){
 # field in the host_list not equal to none, it will also be copied for jenkins
 ################################################################################
 ssh_copy_key(){
-    sshpass -p "${pass}" ssh-copy-id -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa.pub "${user}"@"${host}" &> /dev/null
+    # sshpass -p "${pass}" ssh-copy-id -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa.pub "${user}"@"${host}" &> /dev/null
+    # Copying all public keys because some of the sytems don't agree on RSA as a mutual signature algorithm
+    for pub in `ls ~/.ssh/*.pub`; do
+        echo "Copying public key ${pub} to host ${host}"
+        sshpass -p "${pass}" ssh-copy-id -o StrictHostKeyChecking=no -i "${pub}" "${user}"@"${host}" &> /dev/null;
+    done
 
     if [ ! -z "$SSH_KEY_PIPELINE" ]; then
         echo "${SSH_KEY_PIPELINE}" | ssh "${user}"@"${host}"  "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"

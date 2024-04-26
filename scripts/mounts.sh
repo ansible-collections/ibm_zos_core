@@ -24,7 +24,16 @@
 # ------------------------------------------------------------------------------
 # Globals
 # ------------------------------------------------------------------------------
-cd $(dirname $0)
+#cd $(dirname $0)
+
+script_directory=$(cd -- "$(dirname -- "$0")" 2>/dev/null && pwd)
+
+# Depending on from where the file is sourced it can result in null so default it to .
+if [ ! -n "$script_directory" ]; then
+	script_directory="."
+fi
+
+cd ${script_directory}
 
 # Current shell, bash returns 'bash'
 CURR_SHELL=`echo $$ $SHELL | cut -d " " -f 2 | sed 's|.*/||'`

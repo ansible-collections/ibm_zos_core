@@ -37,7 +37,7 @@ options:
       - For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
       - If the command contains any special characters ($, \#, etc), they must be escaped using
         double backslashes like \\$.
-      - For example, to display info on a volume ``$abcd`` , the command would have ``cmd="d u,,,\\$abcd"``
+      - For example, to display info on a volume `$abcd`, the command would have `cmd="d u,,,\\$abcd"`
 
     type: str
     required: true

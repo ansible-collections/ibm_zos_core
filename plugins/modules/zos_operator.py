@@ -35,6 +35,8 @@ options:
       - The command to execute.
       - If the command contains single-quotations, another set of single quotes must be added.
       - For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
+      - If the command contains a special character such as $, it must be escaped using double backslashes
+        like \\$.
     type: str
     required: true
   verbose:

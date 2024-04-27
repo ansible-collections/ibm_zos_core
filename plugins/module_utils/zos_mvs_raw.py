@@ -348,7 +348,7 @@ class RawOutputDefinition(OutputDefinition):
             return_content=None,
             tmphlq="",
             **kwargs
-            ):
+        ):
         """Initialize RawOutputDefinition
 
         Args:

@@ -40,3 +40,21 @@ def test_gds_valid_name(gds):
     print(gds)
 
     assert gds["valid_gds"] == DataSet.is_gds_relative_name(gds["name"])
+
+
+special_chars_test_data = [
+    {"name": "USER.SPECIAL.@TEST", "escaped_name" : r"USER.SPECIAL.\@TEST"},
+    {"name": "USER.SPECIAL.A$A", "escaped_name" : r"USER.SPECIAL.A\$A"},
+    {"name": "USER.SPECIAL.$TEST#@", "escaped_name" : r"USER.SPECIAL.\$TEST\#\@"},
+    {"name": "USER.SPECIAL.TEST", "escaped_name" : r"USER.SPECIAL.TEST"},
+    ]
+
+@pytest.mark.parametrize("data_set", special_chars_test_data)
+def test_data_set_name_escaping(data_set):
+    # The 'is_zoau_version_higher_than' function calls 'get_zoau_version_str' to
+    # get the ZOAU version string from the system. We mock that call and provide
+    # our own "system" level ZOAU version str to compare against our provided
+    # minimum ZOAU version string.
+    print(data_set)
+
+    assert data_set["escaped_name"] == DataSet.escape_data_set_name(data_set["name"])

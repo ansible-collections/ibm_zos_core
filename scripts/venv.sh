@@ -103,8 +103,9 @@ echo_requirements(){
         fi
     done
 
-    #for file in `ls requirements-*.sh`; do
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
+    # for file in `ls requirements-*.sh`; do
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -116,9 +117,16 @@ echo_requirements(){
             echo "Unable to source file: $file."
         fi
 
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        echo $venv_name
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            #echo $venv_name
+        fi
 
         for pkg in "${requirements[@]}" ; do
             key=${pkg%%:*}
@@ -127,6 +135,8 @@ echo_requirements(){
                 REQ=${REQ}"$key;\\n"
             elif [ -z "$value" ]; then
                 REQ=${REQ}"$key;\\n"
+            elif [ "$key" = "ansible-core" ] && [ "$value" = "latest" ]; then
+                REQ=${REQ}"https://github.com/ansible/ansible/archive/devel.tar.gz\\n"
             else
                 REQ=${REQ}"$key==$value;\\n"
             fi
@@ -159,11 +169,18 @@ make_venv_dirs(){
     # We should think about the idea of allowing:
     # --force, --synch, --update thus not sure we need this method and better to
     # manage this logic inline to write_req
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
-        # eg extract 2.14 from requirements-2.14.sh file name
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        #echo $venv_name
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            #echo $venv_name
+        fi
         mkdir -p "${VENV_HOME_MANAGED}"/"${venv_name}"
     done
 }
@@ -197,8 +214,9 @@ write_requirements(){
         fi
     done
 
-    #for file in `ls requirements-*.sh`; do
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
+    # for file in `ls requirements-*.sh`; do
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -210,9 +228,17 @@ write_requirements(){
             echo "Unable to source file: $file."
         fi
 
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        echo $venv_name
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+            echo $venv_name
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            echo $venv_name
+        fi
 
         for pkg in "${requirements[@]}" ; do
             key=${pkg%%:*}
@@ -222,6 +248,8 @@ write_requirements(){
                 REQ=${REQ}"$key;\\n"
             elif [ -z "$value" ]; then
                 REQ=${REQ}"$key;\\n"
+            elif [ "$key" = "ansible-core" ] && [ "$value" = "latest" ]; then
+                REQ=${REQ}"https://github.com/ansible/ansible/archive/devel.tar.gz\\n"
             else
                 REQ=${REQ}"$key==$value;\\n"
             fi
@@ -290,11 +318,21 @@ write_requirements(){
 
 create_venv_and_pip_install_req(){
 
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
         unset venv
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        echo $venv_name
+
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            #echo $venv_name
+        fi
+
 
         if [ -f $VENV_HOME_MANAGED/$venv_name/requirements.txt ]; then
             echo ${DIVIDER}

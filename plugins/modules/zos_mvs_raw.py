@@ -96,16 +96,16 @@ options:
               - Maps to DSNTYPE on z/OS.
             type: str
             choices:
-              - LIBRARY
-              - PDS
-              - PDSE
-              - LARGE
-              - BASIC
-              - SEQ
-              - RRDS
-              - ESDS
-              - LDS
-              - KSDS
+              - library
+              - pds
+              - pdse
+              - large
+              - basic
+              - seq
+              - rrds
+              - esds
+              - lds
+              - ksds
           disposition:
             description:
               - I(disposition) indicates the status of a data set.
@@ -125,9 +125,7 @@ options:
             choices:
               - delete
               - keep
-              - catlg
               - catalog
-              - uncatlg
               - uncatalog
           disposition_abnormal:
             description:
@@ -138,32 +136,30 @@ options:
             choices:
               - delete
               - keep
-              - catlg
               - catalog
-              - uncatlg
               - uncatalog
           reuse:
             description:
-              - Determines if a data set should be reused if I(disposition=NEW) and if a data set with a matching name already exists.
+              - Determines if a data set should be reused if I(disposition=new) and if a data set with a matching name already exists.
               - If I(reuse=true), I(disposition) will be automatically switched to C(SHR).
               - If I(reuse=false), and a data set with a matching name already exists, allocation will fail.
               - Mutually exclusive with I(replace).
-              - I(reuse) is only considered when I(disposition=NEW)
+              - I(reuse) is only considered when I(disposition=new)
             type: bool
             default: false
           replace:
             description:
-              - Determines if a data set should be replaced if I(disposition=NEW) and a data set with a matching name already exists.
+              - Determines if a data set should be replaced if I(disposition=new) and a data set with a matching name already exists.
               - If I(replace=true), the original data set will be deleted, and a new data set created.
               - If I(replace=false), and a data set with a matching name already exists, allocation will fail.
               - Mutually exclusive with I(reuse).
-              - I(replace) is only considered when I(disposition=NEW)
+              - I(replace) is only considered when I(disposition=new)
               - I(replace) will result in loss of all data in the original data set unless I(backup) is specified.
             type: bool
             default: false
           backup:
             description:
-              - Determines if a backup should be made of an existing data set when I(disposition=NEW), I(replace=true),
+              - Determines if a backup should be made of an existing data set when I(disposition=new), I(replace=true),
                 and a data set with the desired name is found.
               - I(backup) is only used when I(replace=true).
             type: bool
@@ -174,12 +170,12 @@ options:
                 using I(space_primary) and I(space_secondary).
             type: str
             choices:
-              - TRK
-              - CYL
-              - B
-              - K
-              - M
-              - G
+              - trk
+              - cyl
+              - b
+              - k
+              - m
+              - g
           space_primary:
             description:
               - The primary amount of space to allocate for a new data set.
@@ -260,8 +256,8 @@ options:
                 description:
                   - How the label for the key encrypting key specified by
                     I(label) is encoded by the Encryption Key Manager.
-                  - I(encoding) can either be set to C(L) for label encoding,
-                    or C(H) for hash encoding.
+                  - I(encoding) can either be set to C(l) for label encoding,
+                    or C(h) for hash encoding.
                   - Maps to KEYCD1 on z/OS.
                 type: str
                 required: true
@@ -289,8 +285,8 @@ options:
                 description:
                   - How the label for the key encrypting key specified by
                     I(label) is encoded by the Encryption Key Manager.
-                  - I(encoding) can either be set to C(L) for label encoding,
-                    or C(H) for hash encoding.
+                  - I(encoding) can either be set to C(l) for label encoding,
+                    or C(h) for hash encoding.
                   - Maps to KEYCD2 on z/OS.
                 type: str
                 required: true
@@ -316,7 +312,7 @@ options:
               - The logical record length. (e.g C(80)).
               - For variable data sets, the length must include the 4-byte prefix area.
               - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
-              - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
+              - Valid values are (1-32760 for non-VSAM,  1-32761 for VSAM).
               - Maps to LRECL on z/OS.
             type: int
             required: false
@@ -325,11 +321,11 @@ options:
               - The format and characteristics of the records for new data set.
             type: str
             choices:
-              - U
-              - VB
-              - VBA
-              - FB
-              - FBA
+              - u
+              - vb
+              - vba
+              - fb
+              - fba
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -505,11 +501,11 @@ options:
                 a UNIX file would normally be treated as a stream of bytes.
             type: str
             choices:
-              - U
-              - VB
-              - VBA
-              - FB
-              - FBA
+              - u
+              - vb
+              - vba
+              - fb
+              - fba
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -717,16 +713,16 @@ options:
                       - Maps to DSNTYPE on z/OS.
                     type: str
                     choices:
-                      - LIBRARY
-                      - PDS
-                      - PDSE
-                      - LARGE
-                      - BASIC
-                      - SEQ
-                      - RRDS
-                      - ESDS
-                      - LDS
-                      - KSDS
+                      - library
+                      - pds
+                      - pdse
+                      - large
+                      - basic
+                      - seq
+                      - rrds
+                      - esds
+                      - lds
+                      - ksds
                   disposition:
                     description:
                       - I(disposition) indicates the status of a data set.
@@ -746,9 +742,7 @@ options:
                     choices:
                       - delete
                       - keep
-                      - catlg
                       - catalog
-                      - uncatlg
                       - uncatalog
                   disposition_abnormal:
                     description:
@@ -759,32 +753,30 @@ options:
                     choices:
                       - delete
                       - keep
-                      - catlg
                       - catalog
-                      - uncatlg
                       - uncatalog
                   reuse:
                     description:
-                      - Determines if data set should be reused if I(disposition=NEW) and a data set with matching name already exists.
+                      - Determines if data set should be reused if I(disposition=new) and a data set with matching name already exists.
                       - If I(reuse=true), I(disposition) will be automatically switched to C(SHR).
                       - If I(reuse=false), and a data set with a matching name already exists, allocation will fail.
                       - Mutually exclusive with I(replace).
-                      - I(reuse) is only considered when I(disposition=NEW)
+                      - I(reuse) is only considered when I(disposition=new)
                     type: bool
                     default: false
                   replace:
                     description:
-                      - Determines if data set should be replaced if I(disposition=NEW) and a data set with matching name already exists.
+                      - Determines if data set should be replaced if I(disposition=new) and a data set with matching name already exists.
                       - If I(replace=true), the original data set will be deleted, and a new data set created.
                       - If I(replace=false), and a data set with a matching name already exists, allocation will fail.
                       - Mutually exclusive with I(reuse).
-                      - I(replace) is only considered when I(disposition=NEW)
+                      - I(replace) is only considered when I(disposition=new)
                       - I(replace) will result in loss of all data in the original data set unless I(backup) is specified.
                     type: bool
                     default: false
                   backup:
                     description:
-                      - Determines if a backup should be made of existing data set when I(disposition=NEW), I(replace=true),
+                      - Determines if a backup should be made of existing data set when I(disposition=new), I(replace=true),
                         and a data set with the desired name is found.
                       - I(backup) is only used when I(replace=true).
                     type: bool
@@ -795,12 +787,12 @@ options:
                         using I(space_primary) and I(space_secondary).
                     type: str
                     choices:
-                      - TRK
-                      - CYL
-                      - B
-                      - K
-                      - M
-                      - G
+                      - trk
+                      - cyl
+                      - b
+                      - k
+                      - m
+                      - g
                   space_primary:
                     description:
                       - The primary amount of space to allocate for a new data set.
@@ -881,8 +873,8 @@ options:
                         description:
                           - How the label for the key encrypting key specified by
                             I(label) is encoded by the Encryption Key Manager.
-                          - I(encoding) can either be set to C(L) for label encoding,
-                            or C(H) for hash encoding.
+                          - I(encoding) can either be set to C(l) for label encoding,
+                            or C(h) for hash encoding.
                           - Maps to KEYCD1 on z/OS.
                         type: str
                         required: true
@@ -910,8 +902,8 @@ options:
                         description:
                           - How the label for the key encrypting key specified by
                             I(label) is encoded by the Encryption Key Manager.
-                          - I(encoding) can either be set to C(L) for label encoding,
-                            or C(H) for hash encoding.
+                          - I(encoding) can either be set to C(l) for label encoding,
+                            or C(h) for hash encoding.
                           - Maps to KEYCD2 on z/OS.
                         type: str
                         required: true
@@ -946,11 +938,11 @@ options:
                       - The format and characteristics of the records for new data set.
                     type: str
                     choices:
-                      - U
-                      - VB
-                      - VBA
-                      - FB
-                      - FBA
+                      - u
+                      - vb
+                      - vba
+                      - fb
+                      - fba
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -988,7 +980,7 @@ options:
                   path:
                     description:
                       - The path to an existing UNIX file.
-                      - Or provide the path to an new created UNIX file when I(status_group=OCREAT).
+                      - Or provide the path to an new created UNIX file when I(status_group=ocreat).
                       - The provided path must be absolute.
                     required: true
                     type: str
@@ -1124,11 +1116,11 @@ options:
                         a UNIX file would normally be treated as a stream of bytes.
                     type: str
                     choices:
-                      - U
-                      - VB
-                      - VBA
-                      - FB
-                      - FBA
+                      - u
+                      - vb
+                      - vba
+                      - fb
+                      - fba
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1300,13 +1292,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: SEQ
+          type: seq
           space_primary: 5
           space_secondary: 1
-          space_type: M
+          space_type: m
           volumes:
             - "000000"
-          record_format: FB
+          record_format: fb
           return_content:
             type: text
       - dd_input:
@@ -1324,13 +1316,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: SEQ
+          type: seq
           space_primary: 5
           space_secondary: 1
-          space_type: M
+          space_type: m
           volumes:
             - "000000"
-          record_format: FB
+          record_format: fb
           return_content:
             type: text
       - dd_input:
@@ -1369,13 +1361,13 @@ EXAMPLES = r"""
           data_set_name: mypgm.output.ds
           disposition: new
           reuse: yes
-          type: SEQ
+          type: seq
           space_primary: 5
           space_secondary: 1
-          space_type: M
+          space_type: m
           volumes:
             - "000000"
-          record_format: FB
+          record_format: fb
           return_content:
             type: text
       - dd_input:
@@ -1398,15 +1390,15 @@ EXAMPLES = r"""
           disposition: new
           replace: yes
           backup: yes
-          type: SEQ
+          type: seq
           space_primary: 5
           space_secondary: 1
-          space_type: M
+          space_type: m
           volumes:
             - "000000"
             - "111111"
             - "SCR002"
-          record_format: FB
+          record_format: fb
           return_content:
             type: text
       - dd_input:
@@ -1641,13 +1633,13 @@ def run_module():
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
         disposition_abnormal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
-        space_type=dict(type="str", choices=["TRK", "CYL", "B", "K", "M", "G"]),
+        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
         space_primary=dict(type="int"),
         space_secondary=dict(type="int"),
         volumes=dict(type="raw"),
@@ -1660,16 +1652,16 @@ def run_module():
         type=dict(
             type="str",
             choices=[
-                "LIBRARY",
-                "PDS",
-                "PDSE",
-                "SEQ",
-                "BASIC",
-                "LARGE",
-                "KSDS",
-                "RRDS",
-                "LDS",
-                "ESDS",
+                "library",
+                "pds",
+                "pdse",
+                "seq",
+                "basic",
+                "large",
+                "ksds",
+                "rrds",
+                "lds",
+                "esds",
             ],
         ),
         encryption_key_1=dict(
@@ -1691,7 +1683,7 @@ def run_module():
         key_length=dict(type="int", no_log=False),
         key_offset=dict(type="int", no_log=False),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1766,7 +1758,7 @@ def run_module():
         ),
         block_size=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1884,13 +1876,13 @@ def parse_and_validate_args(params):
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
         disposition_abnormal=dict(
             type="str",
-            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
+            choices=["delete", "keep", "catalog", "uncatalog"],
         ),
-        space_type=dict(type="str", choices=["TRK", "CYL", "B", "K", "M", "G"]),
+        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
         space_primary=dict(type="int"),
         space_secondary=dict(type="int"),
         volumes=dict(type=volumes),
@@ -1903,16 +1895,16 @@ def parse_and_validate_args(params):
         type=dict(
             type="str",
             choices=[
-                "LIBRARY",
-                "PDS",
-                "PDSE",
-                "SEQ",
-                "BASIC",
-                "LARGE",
-                "KSDS",
-                "RRDS",
-                "LDS",
-                "ESDS",
+                "library",
+                "pds",
+                "pdse",
+                "seq",
+                "basic",
+                "large",
+                "ksds",
+                "rrds",
+                "lds",
+                "esds",
             ],
         ),
         encryption_key_1=dict(
@@ -1936,7 +1928,7 @@ def parse_and_validate_args(params):
             type=key_offset, default=key_offset_default, dependencies=["type"]
         ),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1992,7 +1984,7 @@ def parse_and_validate_args(params):
         ),
         block_size=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["U", "VB", "VBA", "FB", "FBA"]),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2084,8 +2076,8 @@ def key_length(contents, dependencies):
     """
     if contents is None:
         return contents
-    if contents is not None and dependencies.get("type") != "KSDS":
-        raise ValueError('key_length is only valid when "type=KSDS".')
+    if contents is not None and dependencies.get("type") != "ksds":
+        raise ValueError('key_length is only valid when "type=ksds".')
     if not re.fullmatch(r"[0-9]+", str(contents)):
         raise ValueError(
             'Invalid argument "{0}" for type "key_length".'.format(str(contents))
@@ -2105,8 +2097,8 @@ def key_offset(contents, dependencies):
     """
     if contents is None:
         return contents
-    if contents is not None and dependencies.get("type") != "KSDS":
-        raise ValueError('key_offset is only valid when "type=KSDS".')
+    if contents is not None and dependencies.get("type") != "ksds":
+        raise ValueError('key_offset is only valid when "type=ksds".')
 
     if not re.fullmatch(r"[0-9]+", str(contents)):
         raise ValueError(
@@ -2127,9 +2119,9 @@ def key_length_default(contents, dependencies):
     """
     KEY_LENGTH = 5
     length = None
-    if contents is None and dependencies.get("type") == "KSDS":
+    if contents is None and dependencies.get("type") == "ksds":
         length = KEY_LENGTH
-    elif dependencies.get("type") == "KSDS":
+    elif dependencies.get("type") == "ksds":
         length = contents
     return length
 
@@ -2145,9 +2137,9 @@ def key_offset_default(contents, dependencies):
     """
     KEY_OFFSET = 0
     offset = None
-    if contents is None and dependencies.get("type") == "KSDS":
+    if contents is None and dependencies.get("type") == "ksds":
         offset = KEY_OFFSET
-    elif dependencies.get("type") == "KSDS":
+    elif dependencies.get("type") == "ksds":
         offset = contents
     return offset
 

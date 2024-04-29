@@ -17,8 +17,8 @@ zos_gather_facts -- Gather z/OS system facts.
 Synopsis
 --------
 - Retrieve variables from target z/OS systems.
-- Variables are added to the *ansible_facts* dictionary, available to playbooks.
-- Apply filters on the *gather_subset* list to reduce the variables that are added to the *ansible_facts* dictionary.
+- Variables are added to the \ :emphasis:`ansible\_facts`\  dictionary, available to playbooks.
+- Apply filters on the \ :emphasis:`gather\_subset`\  list to reduce the variables that are added to the \ :emphasis:`ansible\_facts`\  dictionary.
 - Note, the module will fail fast if any unsupported options are provided. This is done to raise awareness of a failure in an automation setting.
 
 
@@ -32,7 +32,7 @@ Parameters
 gather_subset
   If specified, it will collect facts that come under the specified subset (eg. ipl will return ipl facts). Specifying subsets is recommended to reduce time in gathering facts when the facts needed are in a specific subset.
 
-  The following subsets are available ``ipl``, ``cpu``, ``sys``, and ``iodf``. Depending on the version of ZOAU, additional subsets may be available.
+  The following subsets are available \ :literal:`ipl`\ , \ :literal:`cpu`\ , \ :literal:`sys`\ , and \ :literal:`iodf`\ . Depending on the version of ZOAU, additional subsets may be available.
 
   | **required**: False
   | **type**: list
@@ -41,13 +41,13 @@ gather_subset
 
 
 filter
-  Filter out facts from the *ansible_facts* dictionary.
+  Filter out facts from the \ :emphasis:`ansible\_facts`\  dictionary.
 
-  Uses shell-style `fnmatch <https://docs.python.org/3/library/fnmatch.html>`_ pattern matching to filter out the collected facts.
+  Uses shell-style \ `fnmatch <https://docs.python.org/3/library/fnmatch.html>`__\  pattern matching to filter out the collected facts.
 
-  An empty list means 'no filter', same as providing '*'.
+  An empty list means 'no filter', same as providing '\*'.
 
-  Filtering is performed after the facts are gathered such that no compute is saved when filtering. Filtering only reduces the number of variables that are added to the *ansible_facts* dictionary. To restrict the facts that are collected, refer to the *gather_subset* parameter.
+  Filtering is performed after the facts are gathered such that no compute is saved when filtering. Filtering only reduces the number of variables that are added to the \ :emphasis:`ansible\_facts`\  dictionary. To restrict the facts that are collected, refer to the \ :emphasis:`gather\_subset`\  parameter.
 
   | **required**: False
   | **type**: list

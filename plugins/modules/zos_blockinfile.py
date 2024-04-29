@@ -414,6 +414,73 @@ def quotedString(string):
     return string.replace('"', "")
 
 
+def quotedString_double_quotes(string):
+    # add escape if string was quoted
+    if not isinstance(string, str):
+        return string
+    return string.replace('"', '\\"')
+
+
+def check_double_quotes(marker, ins_bef, ins_aft, block):
+    if marker:
+        if '"' in marker:
+            return True
+    if ins_bef:
+        if '"' in ins_bef:
+            return True
+    if ins_aft:
+        if '"' in ins_aft:
+            return True
+    if block:
+        if '"' in block:
+            return True
+    return False
+
+
+def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=None, ins_aft=None):
+    block = block.replace('"', '\\"')
+    force = "-f" if force else ""
+    encoding = "-c {0}".format(encoding) if encoding else ""
+    marker = "-m \"{0}\"".format(marker) if marker else ""
+    if state:
+        if ins_aft:
+            if ins_aft == "EOF":
+                opts = f'"$ a\\{block}" "{src}"'
+            else:
+                opts = f'-s -e "/{ins_aft}/a\\{block}/$" -e "$ a\\{block}" "{src}"'
+        elif ins_bef:
+            if ins_bef == "BOF":
+                opts = f' "1 i\\{block}" "{src}" '
+            else:
+                opts = f'-s -e "/{ins_bef}/i\\{block}/$" -e "$ a\\{block}" "{src}"'
+
+        cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
+    else:
+        cmd = """dmod -b {0} {1} {2} "//d" {4}""".format(force, encoding, marker, src)
+
+    rc, stdout, stderr = module.run_command(cmd)
+    cmd = clean_command(cmd)
+    return rc, cmd
+
+
+def clean_command(cmd):
+    cmd = cmd.replace('/c\\\\', '')
+    cmd = cmd.replace('/a\\\\', '', )
+    cmd = cmd.replace('/i\\\\', '', )
+    cmd = cmd.replace('$ a\\\\', '', )
+    cmd = cmd.replace('1 i\\\\', '', )
+    cmd = cmd.replace('/c\\', '')
+    cmd = cmd.replace('/a\\', '')
+    cmd = cmd.replace('/i\\', '')
+    cmd = cmd.replace('$ a\\', '')
+    cmd = cmd.replace('1 i\\', '')
+    cmd = cmd.replace('/d', '')
+    cmd = cmd.replace('\\\\d', '')
+    cmd = cmd.replace('\\n', '\n')
+    cmd = cmd.replace('\\"', '"')
+    return cmd
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -553,6 +620,7 @@ def main():
             module.fail_json(msg=message)
         file_type = 0
 
+    return_content = None
     if backup:
         # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
         # setting backup to None if backup_name wasn't provided. if backup=None, Backup module will use
@@ -566,29 +634,47 @@ def main():
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception as err:
             module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
+    double_quotes_exists = check_double_quotes(marker, ins_bef, ins_aft, block)
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
+        if double_quotes_exists:
+            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, True, module=module,
+                                   ins_bef=quotedString_double_quotes(ins_bef), ins_aft=quotedString_double_quotes(ins_aft))
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to insert new entry' if rc != 0 else ""
+        else:
+            return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
-        return_content = absent(src, marker, encoding, force)
-    stdout = return_content.stdout_response
-    stderr = return_content.stderr_response
-    rc = return_content.rc
-    stdout = stdout.replace('/d', '\\\\d')
-    try:
-        # Try to extract information from stdout
-        # The triple double quotes is required for special characters (/_) been scape
-        ret = json.loads("""{0}""".format(stdout))
-    except Exception:
-        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-        if result.get('backup_name'):
-            messageDict['backup_name'] = result['backup_name']
-        module.fail_json(**messageDict)
+        if double_quotes_exists:
+            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, False, module=module)
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to remove entry' if rc != 0 else ""
+        else:
+            return_content = absent(src, marker, encoding, force)
+    # ZOAU 1.3.0 generate false positive working with double quotes (") the call generate distinct return when using and not
+    if not double_quotes_exists:
+        stdout = return_content.stdout_response
+        stderr = return_content.stderr_response
+        rc = return_content.rc
+        stdout = stdout.replace('/d', '\\\\d')
+        try:
+            # Try to extract information from stdout
+            # The triple double quotes is required for special characters (/_) been scape
+            ret = json.loads("""{0}""".format(stdout))
+        except Exception:
+            messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+            if result.get('backup_name'):
+                messageDict['backup_name'] = result['backup_name']
+            module.fail_json(**messageDict)
 
-    result['cmd'] = ret['data']['commands']
-    result['changed'] = ret['data']['changed']
-    result['found'] = ret['data']['found']
+        result['cmd'] = ret['data']['commands']
+        result['changed'] = ret['data']['changed']
+        result['found'] = ret['data']['found']
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
     if len(stderr):

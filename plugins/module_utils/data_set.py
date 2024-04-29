@@ -1338,7 +1338,7 @@ class DataSet(object):
         bool
             Whether the name is a GDS relative name.
         """
-        pattern = r'(.+)\(([-+]?\d+)\)'
+        pattern = r'(.+)\(([\\]?[+-]?\d+)\)'
         match = re.fullmatch(pattern, name)
         return bool(match)
 
@@ -1363,7 +1363,7 @@ class DataSet(object):
             the name is not a valid GDS syntax or failure to retrieve
             the GDG data based on the gdg base name.
         """
-        pattern = r'(.+)\(([-+]?\d+)\)'
+        pattern = r'(.+)\(([\\]?[-+]?\d+)\)'
         match = re.search(pattern, relative_name)
         try:
             gdg_base = match.group(1)
@@ -1796,7 +1796,7 @@ class DataSetUtils(object):
         return result
 
 
-class MVSDataSet(datasets.Dataset):
+class MVSDataSet():
     """
     This class represents a z/OS data set that can be yet to be created or
     already created in the system. It encapsulates the data set attributes
@@ -1807,26 +1807,25 @@ class MVSDataSet(datasets.Dataset):
     def __init__(
         self,
         name: str,
-        raw_name: Union[str, None] = None,
-        data_set_type: Union[str, None] = None,
-        state: Union[str, None] = None,
-        organization: Union[str, None] = None,
-        record_format: Union[str, None] = None,
-        volumes: Union[str, None] = None,
-        block_size: Union[str, int, None] = None,
-        record_length: Union[str, int, None] = None,
-        space_primary: Union[str, int, None] = None,
-        space_secondary: Union[str, int, None] = None,
-        space_type: Union[str, int, None] = None,
-        directory_blocks: Union[str, int, None] = None,
-        key_length: Union[str, int, None] = None,
-        key_offset: Union[str, int, None] = None,
-        sms_storage_class: Union[str, None] = None,
-        sms_data_class: Union[str, None] = None,
-        sms_management_class: Union[str, None] = None,
-        total_space: Union[str, int, None] = None,
-        used_space: Union[str, int, None] = None,
-        last_referenced: Union[str, datetime, None] = None,
+        data_set_type,
+        state,
+        organization,
+        record_format,
+        volumes,
+        block_size,
+        record_length,
+        space_primary,
+        space_secondary,
+        space_type,
+        directory_blocks,
+        key_length,
+        key_offset,
+        sms_storage_class,
+        sms_data_class,
+        sms_management_class,
+        total_space,
+        used_space,
+        last_referenced,
     ):
         super(MVSDataSet, self).__init__(
             name,
@@ -1839,7 +1838,7 @@ class MVSDataSet(datasets.Dataset):
             used_space,
             last_referenced,
         )
-        self.raw_name = raw_name
+        self.raw_name = name
         self.data_set_type = data_set_type
         self.state = state
         self.space_primary = space_primary
@@ -1853,6 +1852,7 @@ class MVSDataSet(datasets.Dataset):
         self.sms_management_class = sms_management_class
         self.volumes = volumes
         # If name has escaped chars or is GDS relative name we clean it.
+        self.name = DataSet.escape_data_set_name(self.name)
         if DataSet.is_gds_relative_name(self.name):
             self.raw_name = self.name
             try:

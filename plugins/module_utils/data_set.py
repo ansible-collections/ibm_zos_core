@@ -41,10 +41,13 @@ except ImportError:
 
 try:
     from zoautil_py import datasets, exceptions, gdgs
+    from zoautil_py.datasets import Dataset
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
+    Dataset = ZOAUImportError(traceback.format_exc())
+
 
 
 class DataSet(object):
@@ -1796,7 +1799,7 @@ class DataSetUtils(object):
         return result
 
 
-class MVSDataSet():
+class MVSDataSet(datasets.Dataset):
     """
     This class represents a z/OS data set that can be yet to be created or
     already created in the system. It encapsulates the data set attributes

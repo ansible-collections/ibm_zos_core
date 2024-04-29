@@ -18,7 +18,6 @@ __metaclass__ = type
 import pytest
 import time
 import subprocess
-# from pipes import quote
 from shlex import quote
 from pprint import pprint
 

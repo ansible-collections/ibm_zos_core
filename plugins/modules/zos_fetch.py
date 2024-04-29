@@ -146,10 +146,11 @@ notes:
     - Fetching HFS or ZFS type data sets is currently not supported.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - L(zos_fetch,./zos_fetch.html) uses SFTP (Secure File Transfer Protocol) for the underlying
-      transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
-      you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
-      to using standard SFTP.
+    - This module uses SFTP (Secure File Transfer Protocol) for the underlying
+      transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the
+      case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling
+      back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for
+      transfers, if not available, the module will fail.
 seealso:
 - module: zos_data_set
 - module: zos_copy
@@ -302,16 +303,50 @@ class FetchHandler:
         self.module = module
 
     def _fail_json(self, **kwargs):
-        """ Wrapper for AnsibleModule.fail_json """
+        """Wrapper for AnsibleModule.fail_json.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Arguments to pass to fail_json().
+        """
         self.module.fail_json(**kwargs)
 
     def _run_command(self, cmd, **kwargs):
-        """ Wrapper for AnsibleModule.run_command """
+        """Wrapper for AnsibleModule.run_command.
+
+        Parameters
+        ----------
+        cmd : str
+            Command to run.
+        **kwargs : dict
+            Arguments to pass to run_command().
+
+        Returns
+        -------
+        tuple(int,str,str)
+            Return code, standard output and standard error.
+        """
         return self.module.run_command(cmd, **kwargs)
 
     def _get_vsam_size(self, vsam):
         """Invoke IDCAMS LISTCAT command to get the record length and space used.
         Then estimate the space used by the VSAM data set.
+
+        Parameters
+        ----------
+        vsam : str
+            VSAM data set name.
+
+        Returns
+        -------
+        tuple(int,int,int)
+            Total size, max_recl and rec_total.
+
+        Raises
+        ------
+        fail_json
+            Unable to obtain data set information.
         """
         space_pri = 0
         total_size = 0
@@ -349,7 +384,27 @@ class FetchHandler:
         return total_size, max_recl, rec_total
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
-        """ Copy VSAM data set to a temporary sequential data set """
+        """Copy VSAM data set to a temporary sequential data set.
+
+        Parameters
+        ----------
+        ds_name : str
+            VSAM dataset name to be copied into a temp data set.
+
+        Returns
+        -------
+        str
+            Temporary dataset name.
+
+        Raises
+        ------
+        fail_json
+            OS error.
+        fail_json
+            cmd error while copying dataset.
+        fail_json
+            Failed to call IDCAMS.
+        """
         mvs_rc = 0
         vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
         # Default in case of max recl being 80 to avoid failures when fetching and empty vsam.
@@ -441,6 +496,25 @@ class FetchHandler:
     def _fetch_uss_file(self, src, is_binary, encoding=None):
         """Convert encoding of a USS file. Return a tuple of temporary file
         name containing converted data.
+
+        Parameters
+        ----------
+        src : str
+            Source of the file.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            File name with the converted data.
+
+        Raises
+        ------
+        fail_json
+            Any exception ocurred while converting encoding.
         """
         file_path = None
         if (not is_binary) and encoding:
@@ -470,6 +544,25 @@ class FetchHandler:
     def _fetch_vsam(self, src, is_binary, encoding=None):
         """Copy the contents of a VSAM to a sequential data set.
         Afterwards, copy that data set to a USS file.
+
+        Parameters
+        ----------
+        src : str
+            Source of the file.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            USS File containing the encoded content of the input data set.
+
+        Raises
+        ------
+        fail_json
+            Unable to delete temporary dataset.
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
         file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
@@ -486,6 +579,27 @@ class FetchHandler:
         """Copy a partitioned data set to a USS directory. If the data set
         is not being fetched in binary mode, encoding for all members inside
         the data set will be converted.
+
+        Parameters
+        ----------
+        src : str
+            Source of the dataset.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            Directory path containing the files of the converted data set members.
+
+        Raises
+        ------
+        fail_json
+            Error copying partitioned dataset to USS.
+        fail_json
+            Error converting encoding of the member.
         """
         dir_path = tempfile.mkdtemp()
         cmd = "cp -B \"//'{0}'\" {1}"
@@ -530,7 +644,28 @@ class FetchHandler:
 
     def _fetch_mvs_data(self, src, is_binary, encoding=None):
         """Copy a sequential data set or a partitioned data set member
-        to a USS file
+        to a USS file.
+
+        Parameters
+        ----------
+        src : str
+            Source of the dataset.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            USS File containing the encoded content of the input data set.
+
+        Raises
+        ------
+        fail_json
+            Unable to copy to USS.
+        fail_json
+            Error converting encoding of the dataset.
         """
         fd, file_path = tempfile.mkstemp()
         os.close(fd)
@@ -570,6 +705,23 @@ class FetchHandler:
 
 
 def run_module():
+    """Runs the module.
+
+    Raises
+    ------
+    fail_json
+        When parameter verification fails.
+    fail_json
+        When the source does not exist or is uncataloged.
+    fail_json
+        When it's unable to determine dataset type.
+    fail_json
+        While gathering dataset information.
+    fail_json
+        When the data set member was not found inside a dataset.
+    fail_json
+        When the file does not have appropriate read permissions.
+    """
     # ********************************************************** #
     #                Module initialization                       #
     # ********************************************************** #

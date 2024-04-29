@@ -168,15 +168,15 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining data set space.
-      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
-      - When I(full_volume=True), I(space_type) defaults to C(G), otherwise default is C(M)
+      - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+      - When I(full_volume=True), I(space_type) defaults to C(g), otherwise default is C(m)
     type: str
     choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+      - k
+      - m
+      - g
+      - cyl
+      - trk
     required: false
     aliases:
       - unit
@@ -233,7 +233,7 @@ EXAMPLES = r"""
       include: user.**
     backup_name: MY.BACKUP.DZP
     space: 100
-    space_type: M
+    space_type: m
 
 - name:
     Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP.DZP,
@@ -245,7 +245,7 @@ EXAMPLES = r"""
     volume: MYVOL1
     backup_name: MY.BACKUP.DZP
     space: 100
-    space_type: M
+    space_type: m
 
 - name: Backup an entire volume, MYVOL1, to the UNIX file /tmp/temp_backup.dzp,
     allocate 1GB for data sets used in backup process.
@@ -255,7 +255,7 @@ EXAMPLES = r"""
     volume: MYVOL1
     full_volume: yes
     space: 1
-    space_type: G
+    space_type: g
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Use z/OS username as new HLQ.
@@ -299,7 +299,7 @@ EXAMPLES = r"""
     full_volume: yes
     backup_name: MY.BACKUP.DZP
     space: 1
-    space_type: G
+    space_type: g
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Specify DB2SMS10 for the SMS storage and management classes to use for the restored
@@ -346,7 +346,7 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"], choices=["K", "M", "G", "CYL", "TRK"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"]),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
@@ -709,12 +709,12 @@ def space_type_type(contents, dependencies):
     """
     if contents is None:
         if dependencies.get("full_volume"):
-            return "G"
+            return "g"
         else:
-            return "M"
-    if not match(r"^(M|G|K|TRK|CYL)$", contents, IGNORECASE):
+            return "m"
+    if not match(r"^(m|g|k|trk|cyl)$", contents, IGNORECASE):
         raise ValueError(
-            'Value {0} is invalid for space_type argument. Valid space types are "K", "M", "G", "TRK" or "CYL".'.format(
+            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk" or "cyl".'.format(
                 contents
             )
         )

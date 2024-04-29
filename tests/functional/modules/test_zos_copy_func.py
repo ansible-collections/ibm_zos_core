@@ -260,7 +260,7 @@ def populate_partitioned_data_set(hosts, name, ds_type, members=None):
     Arguments:
         hosts (object) -- Ansible instance(s) that can call modules.
         name (str) -- Name of the data set.
-        ds_type (str) -- Type of the data set (either PDS or PDSE).
+        ds_type (str) -- Type of the data set (either pds or pdse).
         members (list, optional) -- List of member names to create.
     """
     if not members:
@@ -282,9 +282,9 @@ def get_listcat_information(hosts, name, ds_type):
     Arguments:
         hosts (object) -- Ansible instance(s) that can call modules.
         name (str) -- Name of the data set.
-        ds_type (str) -- Type of data set ("SEQ", "PDS", "PDSE", "KSDS").
+        ds_type (str) -- Type of data set ("seq", "pds", "pdse", "ksds").
     """
-    if ds_type.upper() == "KSDS":
+    if ds_type == "ksds":
         idcams_input = " LISTCAT ENT('{0}') DATA ALL".format(name)
     else:
         idcams_input = " LISTCAT ENTRIES('{0}')".format(name)
@@ -311,7 +311,7 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
     Arguments:
         hosts (object) -- Ansible instance(s) that can call modules.
         name (str) -- Name of the VSAM data set.
-        type (str) -- Type of the VSAM (KSDS, ESDS, RRDS, LDS)
+        type (str) -- Type of the VSAM (ksds, esds, rrds, lds)
         add_data (bool, optional) -- Whether to add records to the VSAM.
         key_length (int, optional) -- Key length (only for KSDS data sets).
         key_offset (int, optional) -- Key offset (only for KSDS data sets).
@@ -321,7 +321,7 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         type=ds_type,
         state="present"
     )
-    if ds_type == "KSDS":
+    if ds_type == "ksds":
         params["key_length"] = key_length
         params["key_offset"] = key_offset
 
@@ -370,7 +370,7 @@ def link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, lo
         # Submit link JCL.
         job_result = hosts.all.zos_job_submit(
             src="/tmp/link.jcl",
-            location="USS",
+            location="uss",
             wait_time_s=60
         )
         for result in job_result.contacted.values():
@@ -794,6 +794,12 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_
 @pytest.mark.uss
 @pytest.mark.parametrize("copy_directory", [False, True])
 def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
+    """
+    This test evaluates the behavior of testing copy of a directory when src ends
+    with '/' versus only the dir name. Expectation is that when only dir name is provided
+    that directory is also created on the remote, when directory name ends with '/'
+    this means we only copy that directory contents without creating it on the remote.
+    """
     hosts = ansible_zos_module
     dest_path = "/tmp/new_dir"
 
@@ -1885,7 +1891,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
             name=src,
             state="present",
             type="seq",
-            record_format="FBA",
+            record_format="fba",
             record_length=80,
             block_size=27920,
             replace=True
@@ -1960,13 +1966,13 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
 
 @pytest.mark.seq
-@pytest.mark.parametrize("ds_type", [ "PDS", "PDSE", "SEQ"])
+@pytest.mark.parametrize("ds_type", [ "pds", "pdse", "seq"])
 def test_copy_dest_lock(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()
     member_1 = "MEM1"
-    if ds_type == "PDS" or ds_type == "PDSE":
+    if ds_type == "pds" or ds_type == "pdse":
         src_data_set = data_set_1 + "({0})".format(member_1)
         dest_data_set = data_set_2 + "({0})".format(member_1)
     else:
@@ -1976,7 +1982,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
         hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
-        if ds_type == "PDS" or ds_type == "PDSE":
+        if ds_type == "pds" or ds_type == "pdse":
             hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
             hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
         # copy text_in source
@@ -2567,7 +2573,7 @@ def test_copy_file_to_non_existing_member(ansible_zos_module, src):
             name=data_set,
             type="pdse",
             space_primary=5,
-            space_type="M",
+            space_type="m",
             record_format="fba",
             record_length=80,
             replace=True
@@ -2613,7 +2619,7 @@ def test_copy_file_to_existing_member(ansible_zos_module, src):
             name=data_set,
             type="pdse",
             space_primary=5,
-            space_type="M",
+            space_type="m",
             record_format="fba",
             record_length=80,
             replace=True
@@ -2853,7 +2859,7 @@ def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
             name=dest,
             type=src_type,
             space_primary=5,
-            space_type="M",
+            space_type="m",
             record_format="fba",
             record_length=80,
         )
@@ -2975,7 +2981,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             state="present",
             type="pds",
             space_primary=2,
-            record_format="FB",
+            record_format="fb",
             record_length=80,
             block_size=3120,
             replace=True,
@@ -2985,11 +2991,11 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             name=src_lib,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
 
@@ -3007,11 +3013,11 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
                 name=dest_lib,
                 state="present",
                 type="pdse",
-                record_format="U",
+                record_format="u",
                 record_length=0,
                 block_size=32760,
                 space_primary=2,
-                space_type="M",
+                space_type="m",
                 replace=True
             )
             # pre-allocate dest loadlib to copy over with an alias.
@@ -3019,11 +3025,11 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
                 name=dest_lib_aliases,
                 state="present",
                 type="pdse",
-                record_format="U",
+                record_format="u",
                 record_length=0,
                 block_size=32760,
                 space_primary=2,
-                space_type="M",
+                space_type="m",
                 replace=True
             )
 
@@ -3112,11 +3118,11 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
             name=src_lib,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
         hosts.all.zos_data_set(
@@ -3124,7 +3130,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
             state="present",
             type="pds",
             space_primary=2,
-            record_format="FB",
+            record_format="fb",
             record_length=80,
             block_size=3120,
             replace=True,
@@ -3133,22 +3139,22 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
             name=dest_lib,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
         hosts.all.zos_data_set(
             name=dest_lib_aliases,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
 
@@ -3263,7 +3269,7 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             state="present",
             type="pds",
             space_primary=2,
-            record_format="FB",
+            record_format="fb",
             record_length=80,
             block_size=3120,
             replace=True,
@@ -3273,11 +3279,11 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             name=src_lib,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
 
@@ -3301,11 +3307,11 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 name=dest_lib,
                 state="present",
                 type="pdse",
-                record_format="U",
+                record_format="u",
                 record_length=0,
                 block_size=32760,
                 space_primary=2,
-                space_type="M",
+                space_type="m",
                 replace=True
             )
             # allocate dest loadlib to copy over with an alias.
@@ -3313,11 +3319,11 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 name=dest_lib_aliases,
                 state="present",
                 type="pdse",
-                record_format="U",
+                record_format="u",
                 record_length=0,
                 block_size=32760,
                 space_primary=2,
-                space_type="M",
+                space_type="m",
                 replace=True
             )
 
@@ -3331,12 +3337,12 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 executable=True,
                 aliases=False,
                 dest_data_set={
-                    'type': "LIBRARY",
-                    'record_format': "U",
+                    'type': "library",
+                    'record_format': "u",
                     'record_length': 0,
                     'block_size': 32760,
                     'space_primary': 2,
-                    'space_type': "M",
+                    'space_type': "m",
                 }
             )
             # copy src loadlib to dest library pds w aliases
@@ -3347,12 +3353,12 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 executable=True,
                 aliases=True,
                 dest_data_set={
-                    'type': "LIBRARY",
-                    'record_format': "U",
+                    'type': "library",
+                    'record_format': "u",
                     'record_length': 0,
                     'block_size': 32760,
                     'space_primary': 2,
-                    'space_type': "M",
+                    'space_type': "m",
                 }
             )
 
@@ -3455,7 +3461,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             state="present",
             type="pds",
             space_primary=2,
-            record_format="FB",
+            record_format="fb",
             record_length=80,
             block_size=3120,
             replace=True,
@@ -3465,11 +3471,11 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             name=src_lib,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
 
@@ -3525,11 +3531,11 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 name=dest_lib,
                 state="present",
                 type="pdse",
-                record_format="U",
+                record_format="u",
                 record_length=0,
                 block_size=32760,
                 space_primary=2,
-                space_type="M",
+                space_type="m",
                 replace=True
             )
 
@@ -3542,12 +3548,12 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
                 executable=True,
                 aliases=False,
                 dest_data_set={
-                    'type': "PDSE",
-                    'record_format': "U",
+                    'type': "pdse",
+                    'record_format': "u",
                     'record_length': 0,
                     'block_size': 32760,
                     'space_primary': 2,
-                    'space_type': "M",
+                    'space_type': "m",
                 }
             )
         else:
@@ -3617,7 +3623,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             state="present",
             type="pds",
             space_primary=2,
-            record_format="FB",
+            record_format="fb",
             record_length=80,
             block_size=3120,
             replace=True,
@@ -3627,11 +3633,11 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             name=src_lib,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
 
@@ -3652,11 +3658,11 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             name=dest_lib,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
         # allocate dest loadlib to copy over with an alias.
@@ -3664,11 +3670,11 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             name=dest_lib_aliases,
             state="present",
             type="pdse",
-            record_format="U",
+            record_format="u",
             record_length=0,
             block_size=32760,
             space_primary=2,
-            space_type="M",
+            space_type="m",
             replace=True
         )
 
@@ -3828,11 +3834,11 @@ def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
                 name=dest,
                 state="present",
                 type="pdse",
-                record_format="U",
+                record_format="u",
                 record_length=0,
                 block_size=32760,
                 space_primary=2,
-                space_type="M",
+                space_type="m",
                 replace=True
             )
         copy_uss_to_mvs_res = hosts.all.zos_copy(
@@ -4261,7 +4267,7 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
         hosts.all.zos_data_set(
             type=dest_type,
             space_primary=5,
-            space_type="M",
+            space_type="m",
             record_format="fba",
             record_length=25,
         )
@@ -4419,8 +4425,8 @@ def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
     dest_ds = get_tmp_ds_name()
 
     try:
-        create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
-        create_vsam_data_set(hosts, dest_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, src_ds, "ksds", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, dest_ds, "ksds", add_data=True, key_length=12, key_offset=0)
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True, force=force)
         verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
@@ -4455,8 +4461,8 @@ def test_backup_ksds(ansible_zos_module, backup):
     backup_name = None
 
     try:
-        create_vsam_data_set(hosts, src, "KSDS", add_data=True, key_length=12, key_offset=0)
-        create_vsam_data_set(hosts, dest, "KSDS", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, src, "ksds", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, dest, "ksds", add_data=True, key_length=12, key_offset=0)
 
         if backup:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, backup_name=backup, remote_src=True, force=True)
@@ -4538,8 +4544,8 @@ def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
     volume = volumes.get_available_vol()
     space_primary = 3
     space_secondary = 2
-    space_type = "K"
-    record_format = "VB"
+    space_type = "k"
+    record_format = "vb"
     record_length = 100
     block_size = 21000
 
@@ -4550,7 +4556,7 @@ def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
             remote_src=True,
             volume=volume,
             dest_data_set=dict(
-                type="SEQ",
+                type="seq",
                 space_primary=space_primary,
                 space_secondary=space_secondary,
                 space_type=space_type,
@@ -4581,7 +4587,7 @@ def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
             assert len(output_lines) == 5
             data_set_attributes = output_lines[2].strip().split()
             assert len(data_set_attributes) == 4
-            assert data_set_attributes[0] == record_format
+            assert data_set_attributes[0] == record_format.upper()
             assert data_set_attributes[1] == str(record_length)
             assert data_set_attributes[2] == str(block_size)
             assert data_set_attributes[3] == "PS"

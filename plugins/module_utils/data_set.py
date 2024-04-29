@@ -1854,15 +1854,15 @@ class MVSDataSet(datasets.Dataset):
         self.sms_data_class = sms_data_class
         self.sms_management_class = sms_management_class
         self.volumes = volumes
+        self.is_gds_active = False
         # If name has escaped chars or is GDS relative name we clean it.
         self.name = DataSet.escape_data_set_name(self.name)
         if DataSet.is_gds_relative_name(self.name):
-            self.raw_name = self.name
             try:
-                self.name = DataSet.resolve_gds_absolute_name(self.raw_name)
+                self.name = DataSet.resolve_gds_absolute_name(self.name)
             except Exception as e:
                 # This means the generation is a positive version so is only used for creation.
-                pass
+                self.is_gds_active = False
 
 
 def is_member(data_set):

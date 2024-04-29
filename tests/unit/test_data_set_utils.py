@@ -48,10 +48,6 @@ special_chars_test_data = [
 
 @pytest.mark.parametrize("data_set", special_chars_test_data)
 def test_data_set_name_escaping(data_set):
-    # The 'is_zoau_version_higher_than' function calls 'get_zoau_version_str' to
-    # get the ZOAU version string from the system. We mock that call and provide
-    # our own "system" level ZOAU version str to compare against our provided
-    # minimum ZOAU version string.
     print(data_set)
 
     assert data_set["escaped_name"] == DataSet.escape_data_set_name(data_set["name"])

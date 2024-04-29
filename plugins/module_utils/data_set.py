@@ -1796,6 +1796,72 @@ class DataSetUtils(object):
         return result
 
 
+class MVSDataSet(datasets.Dataset):
+    """
+    This class represents a z/OS data set that can be yet to be created or
+    already created in the system. It encapsulates the data set attributes
+    to easy access.
+
+    This class extends ZOAU Dataset class.
+    """
+    def __init__(
+        self,
+        name: str,
+        raw_name: Union[str, None] = None,
+        data_set_type: Union[str, None] = None,
+        state: Union[str, None] = None,
+        organization: Union[str, None] = None,
+        record_format: Union[str, None] = None,
+        volumes: Union[str, None] = None,
+        block_size: Union[str, int, None] = None,
+        record_length: Union[str, int, None] = None,
+        space_primary: Union[str, int, None] = None,
+        space_secondary: Union[str, int, None] = None,
+        space_type: Union[str, int, None] = None,
+        directory_blocks: Union[str, int, None] = None,
+        key_length: Union[str, int, None] = None,
+        key_offset: Union[str, int, None] = None,
+        sms_storage_class: Union[str, None] = None,
+        sms_data_class: Union[str, None] = None,
+        sms_management_class: Union[str, None] = None,
+        total_space: Union[str, int, None] = None,
+        used_space: Union[str, int, None] = None,
+        last_referenced: Union[str, datetime, None] = None,
+    ):
+        super(MVSDataSet, self).__init__(
+            name,
+            organization,
+            record_format,
+            volumes,
+            block_size,
+            record_length,
+            total_space,
+            used_space,
+            last_referenced,
+        )
+        self.raw_name = raw_name
+        self.data_set_type = data_set_type
+        self.state = state
+        self.space_primary = space_primary
+        self.space_secondary = space_secondary
+        self.space_type = space_type
+        self.directory_blocks = directory_blocks
+        self.key_length = key_length
+        self.key_offset = key_offset
+        self.sms_storage_class = sms_storage_class
+        self.sms_data_class = sms_data_class
+        self.sms_management_class = sms_management_class
+        self.volumes = volumes
+        # If name has escaped chars or is GDS relative name we clean it.
+        if DataSet.is_gds_relative_name(self.name):
+            self.raw_name = self.name
+            try:
+                self.name = DataSet.resolve_gds_absolute_name(self.raw_name)
+            except Exception as e:
+                # This means the generation is a positive version so is only used for creation.
+                pass
+
+
 def is_member(data_set):
     """Determine whether the input string specifies a data set member"""
     try:

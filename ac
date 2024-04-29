@@ -663,7 +663,7 @@ venv_setup(){
 # TODO: Allow user to specify which venv they can start
 # ------------------------------------------------------------------------------
 #->venv-start:
-## Activate the lastest ansible managed virtual environment or optionally start
+## Activate the latest ansible managed virtual environment or optionally start
 ## by its name.
 ## Usage: ac [--venv-start --name <venv name>]
 ## Example:
@@ -691,7 +691,7 @@ venv_start(){
 # TODO: Allow user to specify which venv they can stop
 # ------------------------------------------------------------------------------
 #->venv-stop:
-## Deactivate the lastest ansible managed virtual environment or optionally deactivate
+## Deactivate the latest ansible managed virtual environment or optionally deactivate
 ## by its name.
 ## Usage: ac [--venv-stop --name <venv name>]]
 ## Example:

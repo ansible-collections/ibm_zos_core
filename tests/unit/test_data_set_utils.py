@@ -21,7 +21,7 @@ from ibm_zos_core.plugins.module_utils.data_set import (
 
 import pytest
 
-gds_test_data = [
+gds_relative_test_data = [
     {"name": "USER.GDG(+1)", "valid_gds" : True},
     {"name": "USER.GDG(-3)", "valid_gds" : True},
     {"name": "USER.GDG(0)", "valid_gds" : True},
@@ -31,12 +31,8 @@ gds_test_data = [
     {"name": "USER.GDG.TEST", "valid_gds" : False},
     ]
 
-@pytest.mark.parametrize("gds", gds_test_data)
-def test_gds_valid_name(gds):
-    # The 'is_zoau_version_higher_than' function calls 'get_zoau_version_str' to
-    # get the ZOAU version string from the system. We mock that call and provide
-    # our own "system" level ZOAU version str to compare against our provided
-    # minimum ZOAU version string.
+@pytest.mark.parametrize("gds", gds_relative_test_data)
+def test_gds_valid_relative_name(gds):
     print(gds)
 
     assert gds["valid_gds"] == DataSet.is_gds_relative_name(gds["name"])

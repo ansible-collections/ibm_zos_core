@@ -203,7 +203,7 @@ class RawDatasetDefinition(DatasetDefinition):
                 key_encoding2 = encryption_key_2.get("encoding")
 
         should_reuse = False
-        if (reuse or replace) and data_set_exists(data_set_name, volumes):
+        if (reuse or replace) and DataSet.data_set_exists(data_set_name, volumes):
             if reuse:
                 should_reuse = True
             elif replace:
@@ -383,26 +383,3 @@ class ReturnContent(object):
         self.type = type
         self.src_encoding = src_encoding
         self.response_encoding = response_encoding
-
-
-def data_set_exists(name, volumes=None):
-    """Is used to determine if a data set exists.
-    In addition, if a data set does exist and is uncataloged,
-    the data set will be cataloged.
-
-    Args:
-        name (str): The name of the data set.
-        volumes (list[str], optional): A list of volume serials. Defaults to None.
-
-    Returns:
-        bool: Whether the data set exists or not.
-    """
-    exists = False
-    try:
-        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
-        exists = present
-    except Exception:
-        # Failure locating or cataloging the data set. Go ahead assumming it does not exist.
-        # exists = False to avoid using pass clause which results in bandit warning.
-        exists = False
-    return exists

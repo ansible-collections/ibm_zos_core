@@ -41,13 +41,11 @@ except ImportError:
 
 try:
     from zoautil_py import datasets, exceptions, gdgs
-    from zoautil_py.datasets import Dataset
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
     Dataset = ZOAUImportError(traceback.format_exc())
-
 
 
 class DataSet(object):
@@ -1376,7 +1374,7 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations()
-            absolute_name = generations[rel_generation-1]
+            absolute_name = generations[rel_generation - 1]
         except Exception as e:
             raise GDSNameResolveError(relative_name)
 
@@ -1400,7 +1398,7 @@ class DataSet(object):
         escaped_name = name.replace('\\', '')
 
         for char in special_chars:
-            escaped_name = escaped_name.replace(char, f"\{char}")
+            escaped_name = escaped_name.replace(char, f"\\{char}")
 
         return escaped_name
 
@@ -1799,17 +1797,16 @@ class DataSetUtils(object):
         return result
 
 
-class MVSDataSet(datasets.Dataset):
+class MVSDataSet():
     """
     This class represents a z/OS data set that can be yet to be created or
     already created in the system. It encapsulates the data set attributes
     to easy access.
 
-    This class extends ZOAU Dataset class.
     """
     def __init__(
         self,
-        name: str,
+        name,
         data_set_type,
         state,
         organization,
@@ -1830,17 +1827,15 @@ class MVSDataSet(datasets.Dataset):
         used_space,
         last_referenced,
     ):
-        super(MVSDataSet, self).__init__(
-            name,
-            organization,
-            record_format,
-            volumes,
-            block_size,
-            record_length,
-            total_space,
-            used_space,
-            last_referenced,
-        )
+        self.name = name,
+        self.organization = organization,
+        self.record_format = record_format,
+        self.volumes = volumes,
+        self.block_size = block_size,
+        self.record_length = record_length,
+        self.total_space = total_space,
+        self.used_space = used_space,
+        self.last_referenced = last_referenced,
         self.raw_name = name
         self.data_set_type = data_set_type
         self.state = state

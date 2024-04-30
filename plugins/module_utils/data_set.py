@@ -42,6 +42,7 @@ except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
+    Dataset = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -1161,8 +1162,8 @@ class DataSet(object):
 
     @staticmethod
     def is_gds_relative_name(name):
-        """Determine if name if a gdg relative name based
-        on the GDS relative name  syntax eg. 'USER.GDG(-2)'.
+        """Determine if name is a gdg relative name based
+        on the GDS relative name syntax eg. 'USER.GDG(-2)'.
 
         Parameters
         ----------
@@ -1174,7 +1175,7 @@ class DataSet(object):
         bool
             Whether the name is a GDS relative name.
         """
-        pattern = r'(.+)\(([-+]?\d+)\)'
+        pattern = r'(.+)\(([\\]?[+-]?\d+)\)'
         match = re.fullmatch(pattern, name)
         return bool(match)
 
@@ -1199,7 +1200,7 @@ class DataSet(object):
             the name is not a valid GDS syntax or failure to retrieve
             the GDG data based on the gdg base name.
         """
-        pattern = r'(.+)\(([-+]?\d+)\)'
+        pattern = r'(.+)\(([\\]?[-+]?\d+)\)'
         match = re.search(pattern, relative_name)
         try:
             gdg_base = match.group(1)
@@ -1209,11 +1210,55 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations()
-            gds = generations[rel_generation-1]
+            gds = generations[rel_generation - 1]
         except Exception as e:
             raise GDSNameResolveError(relative_name)
 
         return gds.name
+
+    @staticmethod
+    def escape_data_set_name(name):
+        """Escapes special characters ($, @, #) inside a data set name.
+
+        Parameters
+        ----------
+            name : str
+                Name of the data set.
+
+        Returns
+        -------
+            str
+                Escaped data set name.
+        """
+        special_chars = ['$', '@', '#', '-']
+        escaped_name = name.replace('\\', '')
+
+        for char in special_chars:
+            escaped_name = escaped_name.replace(char, f"\\{char}")
+
+        return escaped_name
+
+    @staticmethod
+    def escape_data_set_name(name):
+        """Escapes special characters ($, @, #) inside a data set name.
+
+        Parameters
+        ----------
+            name : str
+                Name of the data set.
+
+        Returns
+        -------
+            str
+                Escaped data set name.
+        """
+        special_chars = ['$', '@', '#', '-']
+        escaped_name = name.replace('\\', '')
+
+        for char in special_chars:
+            escaped_name = escaped_name.replace(char, f"\\{char}")
+
+        return escaped_name
 
     @staticmethod
     def temp_name(hlq=""):
@@ -1610,50 +1655,46 @@ class DataSetUtils(object):
         return result
 
 
-class MVSDataSet(datasets.Dataset):
+class MVSDataSet():
     """
     This class represents a z/OS data set that can be yet to be created or
     already created in the system. It encapsulates the data set attributes
     to easy access.
 
-    This class extends ZOAU Dataset class.
     """
     def __init__(
         self,
-        name: str,
-        raw_name: Union[str, None] = None,
-        data_set_type: Union[str, None] = None,
-        state: Union[str, None] = None,
-        organization: Union[str, None] = None,
-        record_format: Union[str, None] = None,
-        volumes: Union[str, None] = None,
-        block_size: Union[str, int, None] = None,
-        record_length: Union[str, int, None] = None,
-        space_primary: Union[str, int, None] = None,
-        space_secondary: Union[str, int, None] = None,
-        space_type: Union[str, int, None] = None,
-        directory_blocks: Union[str, int, None] = None,
-        key_length: Union[str, int, None] = None,
-        key_offset: Union[str, int, None] = None,
-        sms_storage_class: Union[str, None] = None,
-        sms_data_class: Union[str, None] = None,
-        sms_management_class: Union[str, None] = None,
-        total_space: Union[str, int, None] = None,
-        used_space: Union[str, int, None] = None,
-        last_referenced: Union[str, datetime, None] = None,
+        name,
+        data_set_type,
+        state,
+        organization,
+        record_format,
+        volumes,
+        block_size,
+        record_length,
+        space_primary,
+        space_secondary,
+        space_type,
+        directory_blocks,
+        key_length,
+        key_offset,
+        sms_storage_class,
+        sms_data_class,
+        sms_management_class,
+        total_space,
+        used_space,
+        last_referenced,
     ):
-        super(MVSDataSet, self).__init__(
-            name,
-            organization,
-            record_format,
-            volumes,
-            block_size,
-            record_length,
-            total_space,
-            used_space,
-            last_referenced,
-        )
-        self.raw_name = raw_name
+        self.name = name
+        self.organization = organization
+        self.record_format = record_format
+        self.volumes = volumes
+        self.block_size = block_size
+        self.record_length = record_length
+        self.total_space = total_space
+        self.used_space = used_space
+        self.last_referenced = last_referenced
+        self.raw_name = name
         self.data_set_type = data_set_type
         self.state = state
         self.space_primary = space_primary
@@ -1666,37 +1707,15 @@ class MVSDataSet(datasets.Dataset):
         self.sms_data_class = sms_data_class
         self.sms_management_class = sms_management_class
         self.volumes = volumes
+        self.is_gds_active = False
         # If name has escaped chars or is GDS relative name we clean it.
+        self.name = DataSet.escape_data_set_name(self.name)
         if DataSet.is_gds_relative_name(self.name):
-            self.raw_name = self.name
             try:
-                self.name = DataSet.resolve_gds_absolute_name(self.raw_name)
+                self.name = DataSet.resolve_gds_absolute_name(self.name)
             except Exception as e:
                 # This means the generation is a positive version so is only used for creation.
-                pass
-
-
-class GenerationDataGroup():
-    def __init__(
-            self,
-            name,
-            limit,
-            empty,
-            purge,
-            scratch,
-            extended,
-            fifo,
-    ):
-        self.name = name
-        self.limit = limit
-        self.empty = empty
-        self.purge = purge
-        self.scratch = scratch
-        self.extended =extended
-        self.fifo = fifo
-        self.data_set_type = "gdg"
-        # if name needs escaping
-        self.raw_name = name
+                self.is_gds_active = False
 
 
 def is_member(data_set):

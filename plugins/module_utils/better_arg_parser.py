@@ -329,7 +329,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not fullmatch(
-            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
             str(contents),
             IGNORECASE,
         ):
@@ -541,7 +541,8 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not fullmatch(
-            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
+            #  HLQ and all middle level qualifiers.                Last qualifier bef members.    Normal members.                 GDS members.
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
             str(contents),
             IGNORECASE,
         ):

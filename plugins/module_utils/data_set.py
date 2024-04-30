@@ -1827,15 +1827,15 @@ class MVSDataSet():
         used_space,
         last_referenced,
     ):
-        self.name = name,
-        self.organization = organization,
-        self.record_format = record_format,
-        self.volumes = volumes,
-        self.block_size = block_size,
-        self.record_length = record_length,
-        self.total_space = total_space,
-        self.used_space = used_space,
-        self.last_referenced = last_referenced,
+        self.name = name
+        self.organization = organization
+        self.record_format = record_format
+        self.volumes = volumes
+        self.block_size = block_size
+        self.record_length = record_length
+        self.total_space = total_space
+        self.used_space = used_space
+        self.last_referenced = last_referenced
         self.raw_name = name
         self.data_set_type = data_set_type
         self.state = state

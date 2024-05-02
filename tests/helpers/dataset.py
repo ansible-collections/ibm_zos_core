@@ -37,7 +37,7 @@ def get_tmp_ds_name(mlq_size=7, llq_size=7, symbols=False):
         ds += "C" + get_random_qs(llq_size).upper()
     else:
         ds += "C" + get_random_qs(llq_size).upper()
-    return escape_data_set_name(ds)
+    return DataSet.escape_data_set_name(ds)
 
 
 def get_random_q(size=7):

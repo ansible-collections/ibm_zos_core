@@ -100,7 +100,7 @@ Notes
 -----
 
 .. note::
-   Commands may need to use specific prefixes like $, it can be discovered by issuing the following command \ :literal:`D OPDATA,PREFIX`\ .
+   Commands may need to use specific prefixes like $, they can be discovered by issuing the following command \ :literal:`D OPDATA,PREFIX`\ .
 
 
 

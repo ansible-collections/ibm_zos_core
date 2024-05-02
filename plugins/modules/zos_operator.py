@@ -60,7 +60,7 @@ options:
     required: false
     default: 1
 notes:
-    - Commands may need to use specific prefixes like $, it can be discovered by
+    - Commands may need to use specific prefixes like $, they can be discovered by
       issuing the following command C(D OPDATA,PREFIX).
 """
 

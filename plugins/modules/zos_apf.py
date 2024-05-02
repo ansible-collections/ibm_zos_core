@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -538,9 +538,11 @@ def main():
                 vol = d.get('vol')
                 try:
                     if (library and re.match(library, ds)) or (volume and re.match(volume, vol)) or (sms and sms == vol):
-                        result['stdout'] = "{0} {1}\n".format(vol, ds)
+                        operOut = operOut + "{0} {1}\n".format(vol, ds)
                 except re.error:
+                    result['stdout'] = operOut
                     module.exit_json(**result)
+            result['stdout'] = operOut
     module.exit_json(**result)
 
 

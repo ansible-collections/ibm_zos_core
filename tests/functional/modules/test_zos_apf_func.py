@@ -112,7 +112,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module, volumes_with_vvds):
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
         print("\n========================\n")
-        pprint(vars(test_info))
+        pprint(test_info)
         results = hosts.all.zos_apf(**test_info)
         pprint(vars(results))
         print("\n========================\n")

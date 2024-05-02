@@ -1381,8 +1381,8 @@ class DataSet(object):
 
         return absolute_name
 
-    def escape_data_set_name(name):
     @staticmethod
+    def escape_data_set_name(name):
         """Escapes special characters ($, @, #) inside a data set name.
 
         Parameters

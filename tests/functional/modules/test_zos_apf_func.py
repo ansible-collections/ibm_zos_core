@@ -60,12 +60,14 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
         hosts.all.shell(f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
+            print("\n======volume not none====\n")
             cmdStr = "dls -l " + ds + " | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmdStr)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
+            print("\n====persistent populated====\n")
             cmdStr = "mvstmp APFTEST.PRST"
             results = hosts.all.shell(cmd=cmdStr)
             for result in results.contacted.values():
@@ -74,11 +76,23 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
             cmdStr = "dtouch -tseq {0}".format(prstds)
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
+        print("\n====================\n")
+        pprint(test_info)
+        print("\n=======\n")
         results = hosts.all.zos_apf(**test_info)
+        print("\n=======\n")
+        print(vars(results))
+        print("\n====================\n")
         for result in results.contacted.values():
             assert result.get("rc") == 0
         test_info['state'] = 'absent'
+        print("\n====================\n")
+        pprint(test_info)
+        print("\n=======\n")
         results = hosts.all.zos_apf(**test_info)
+        print("\n=======\n")
+        print(vars(results))
+        print("\n====================\n")
         for result in results.contacted.values():
             assert result.get("rc") == 0
     finally:
@@ -156,6 +170,7 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
         results = hosts.all.zos_apf(**test_info)
         pprint(vars(results))
         print( "\n=====================\n")
+
         for result in results.contacted.values():
             assert result.get("rc") == 0
         test_info['state'] = 'absent'

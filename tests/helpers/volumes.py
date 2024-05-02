@@ -98,8 +98,9 @@ def get_volumes(ansible_zos_module, path):
         if "ACTIVATED" in info or "-D U," in info or "UNIT" in info:
             continue
         vol_w_info = info.split()
-        if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
-            storage_online.append(vol_w_info[3])
+        if len(vol_w_info)>3:
+            if vol_w_info[2] == 'O' and vol_w_info[4] == "STRG/RSDNT":
+                storage_online.append(vol_w_info[3])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in storage_online:
         list_volumes.append(vol)

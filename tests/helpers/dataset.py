@@ -19,6 +19,8 @@ import string
 import random
 import time
 import re
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+
 
 def get_tmp_ds_name(mlq_size=7, llq_size=7, symbols=False):
     """ Function or test to ensure random names of datasets
@@ -35,7 +37,7 @@ def get_tmp_ds_name(mlq_size=7, llq_size=7, symbols=False):
         ds += "C" + get_random_qs(llq_size).upper()
     else:
         ds += "C" + get_random_qs(llq_size).upper()
-    return ds
+    return escape_data_set_name(ds)
 
 
 def get_random_q(size=7):

@@ -151,7 +151,11 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
             cmdStr = "dtouch -tseq {0}".format(prstds)
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
+        print( "\n=====================\n")
+        pprint(test_info)
         results = hosts.all.zos_apf(**test_info)
+        pprint(vars(results))
+        print( "\n=====================\n")
         for result in results.contacted.values():
             assert result.get("rc") == 0
         test_info['state'] = 'absent'

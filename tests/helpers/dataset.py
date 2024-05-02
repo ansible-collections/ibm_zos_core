@@ -20,14 +20,21 @@ import random
 import time
 import re
 
-def get_tmp_ds_name(mlq_size=7, llq_size=7):
+def get_tmp_ds_name(mlq_size=7, llq_size=7, symbols=False):
     """ Function or test to ensure random names of datasets
     the values of middle and last qualifier can change size by parameter,
-    but by default includes one letter."""
+    but by default includes one letter.
+    Also includes indication if symbols should be in the string, default=false."""
     ds = "ANSIBLE" + "."
-    ds += "P" + get_random_q(mlq_size).upper() + "."
+    if symbols:
+        ds += "P" + get_random_qs(mlq_size).upper() + "."
+    else:
+        ds += "P" + get_random_q(mlq_size).upper() + "."
     ds += "T" + str(int(time.time()*1000))[-7:] + "."
-    ds += "C" + get_random_q(llq_size).upper()
+    if symbols:
+        ds += "C" + get_random_qs(llq_size).upper()
+    else:
+        ds += "C" + get_random_qs(llq_size).upper()
     return ds
 
 
@@ -35,6 +42,22 @@ def get_random_q(size=7):
     """ Function or test to ensure random hlq of datasets"""
     # Generate the first random hlq of size pass as parameter
     letters =  string.ascii_uppercase + string.digits
+    random_q =  ''.join(random.choice(letters)for iteration in range(size))
+    count = 0
+    # Generate a random HLQ and verify if is valid, if not, repeat the process
+    while  count < 5 and not re.fullmatch(
+    r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})",
+            random_q,
+            re.IGNORECASE,
+        ):
+        random_q =  ''.join(random.choice(letters)for iteration in range(size))
+        count += 1
+    return random_q
+
+def get_random_qs(size=7):
+    """ Function or test to ensure random hlq of datasets, including symbol characters"""
+    # Generate the first random hlq of size pass as parameter
+    letters =  string.ascii_uppercase + string.digits + "$@#"
     random_q =  ''.join(random.choice(letters)for iteration in range(size))
     count = 0
     # Generate a random HLQ and verify if is valid, if not, repeat the process

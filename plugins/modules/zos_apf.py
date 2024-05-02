@@ -465,6 +465,7 @@ def main():
 
     arg_defs = dict(
         library=dict(arg_type='str', required=False, aliases=['lib', 'name']),
+        _orig_library=dict(arg_type='str', required=False, aliases=['orig_lib', 'orig_name']),
         state=dict(arg_type='str', default='present', choices=['absent', 'present']),
         force_dynamic=dict(arg_type='bool', default=False),
         volume=dict(arg_type='str', required=False),
@@ -487,6 +488,7 @@ def main():
             default=None,
             options=dict(
                 library=dict(arg_type='str', required=True, aliases=['lib', 'name']),
+                _orig_library=dict(arg_type='str', required=False, aliases=['orig_lib', 'orig_name']),
                 volume=dict(arg_type='str', required=False),
                 sms=dict(arg_type='bool', required=False, default=False),
             )
@@ -508,7 +510,12 @@ def main():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    library = parsed_args.get('library')
+# ### here  vvvv
+# Change to how 'library' is loaded, so we can escape what needs escaping
+#    library = parsed_args.get('library')
+    _orig_library = parsed_args.get("library")
+    library = DataSet.escape_data_set_name(_orig_library)
+
     state = parsed_args.get('state')
     force_dynamic = parsed_args.get('force_dynamic')
     volume = parsed_args.get('volume')
@@ -547,6 +554,7 @@ def main():
             for item in batch:
                 item['opt'] = opt
                 item['dsname'] = item.get('library')
+                item['_orig_dsname'] = item.get('_orig_library')
                 del item['library']
             ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
         else:

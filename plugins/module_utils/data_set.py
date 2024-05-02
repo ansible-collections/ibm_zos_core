@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -40,10 +40,12 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, exceptions
+    from zoautil_py import datasets, exceptions, gdgs
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
+    gdgs = ZOAUImportError(traceback.format_exc())
+    Dataset = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -184,7 +186,7 @@ class DataSet(object):
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
-                if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
+                if "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
                         name, volumes
                     )
@@ -1323,6 +1325,84 @@ class DataSet(object):
         return False
 
     @staticmethod
+    def is_gds_relative_name(name):
+        """Determine if name is a gdg relative name based
+        on the GDS relative name syntax eg. 'USER.GDG(-2)'.
+
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS relative name.
+
+        Returns
+        -------
+        bool
+            Whether the name is a GDS relative name.
+        """
+        pattern = r'(.+)\(([\\]?[+-]?\d+)\)'
+        match = re.fullmatch(pattern, name)
+        return bool(match)
+
+    @staticmethod
+    def resolve_gds_absolute_name(relative_name):
+        """Given a GDS relative name, returns its absolute name.
+
+        Parameters
+        ----------
+        relative_name : str
+            GDS relative name to be resolved.
+
+        Returns
+        -------
+        str
+            GDS absolute name.
+
+        Raises
+        ------
+        GDSNameResolveError
+            Error resolving the GDS relative name, either because
+            the name is not a valid GDS syntax or failure to retrieve
+            the GDG data based on the gdg base name.
+        """
+        pattern = r'(.+)\(([\\]?[-+]?\d+)\)'
+        match = re.search(pattern, relative_name)
+        try:
+            gdg_base = match.group(1)
+            rel_generation = int(match.group(2))
+            if rel_generation > 0:
+                # Fail if we are trying to resolve a future generation.
+                raise Exception
+            gdg = gdgs.GenerationDataGroupView(name=gdg_base)
+            generations = gdg.generations()
+            absolute_name = generations[rel_generation - 1]
+        except Exception as e:
+            raise GDSNameResolveError(relative_name)
+
+        return absolute_name
+
+    @staticmethod
+    def escape_data_set_name(name):
+        """Escapes special characters ($, @, #) inside a data set name.
+
+        Parameters
+        ----------
+            name : str
+                Name of the data set.
+
+        Returns
+        -------
+            str
+                Escaped data set name.
+        """
+        special_chars = ['$', '@', '#', '-']
+        escaped_name = name.replace('\\', '')
+
+        for char in special_chars:
+            escaped_name = escaped_name.replace(char, f"\\{char}")
+
+        return escaped_name
+
+    @staticmethod
     def temp_name(hlq=""):
         """Get temporary data set name.
 
@@ -1717,6 +1797,69 @@ class DataSetUtils(object):
         return result
 
 
+class MVSDataSet():
+    """
+    This class represents a z/OS data set that can be yet to be created or
+    already created in the system. It encapsulates the data set attributes
+    to easy access.
+
+    """
+    def __init__(
+        self,
+        name,
+        data_set_type,
+        state,
+        organization,
+        record_format,
+        volumes,
+        block_size,
+        record_length,
+        space_primary,
+        space_secondary,
+        space_type,
+        directory_blocks,
+        key_length,
+        key_offset,
+        sms_storage_class,
+        sms_data_class,
+        sms_management_class,
+        total_space,
+        used_space,
+        last_referenced,
+    ):
+        self.name = name
+        self.organization = organization
+        self.record_format = record_format
+        self.volumes = volumes
+        self.block_size = block_size
+        self.record_length = record_length
+        self.total_space = total_space
+        self.used_space = used_space
+        self.last_referenced = last_referenced
+        self.raw_name = name
+        self.data_set_type = data_set_type
+        self.state = state
+        self.space_primary = space_primary
+        self.space_secondary = space_secondary
+        self.space_type = space_type
+        self.directory_blocks = directory_blocks
+        self.key_length = key_length
+        self.key_offset = key_offset
+        self.sms_storage_class = sms_storage_class
+        self.sms_data_class = sms_data_class
+        self.sms_management_class = sms_management_class
+        self.volumes = volumes
+        self.is_gds_active = False
+        # If name has escaped chars or is GDS relative name we clean it.
+        self.name = DataSet.escape_data_set_name(self.name)
+        if DataSet.is_gds_relative_name(self.name):
+            try:
+                self.name = DataSet.resolve_gds_absolute_name(self.name)
+            except Exception as e:
+                # This means the generation is a positive version so is only used for creation.
+                self.is_gds_active = False
+
+
 def is_member(data_set):
     """Determine whether the input string specifies a data set member"""
     try:
@@ -1897,5 +2040,14 @@ class DatasetBusyError(Exception):
         self.msg = (
             "Dataset {0} may already be open by another user. "
             "Close the dataset and try again".format(data_set)
+        )
+        super().__init__(self.msg)
+
+
+class GDSNameResolveError(Exception):
+    def __init__(self, data_set):
+        self.msg = (
+            "Error resolving relative generation data set name. {0} "
+            "Make sure the generation exists and is active.".format(data_set)
         )
         super().__init__(self.msg)

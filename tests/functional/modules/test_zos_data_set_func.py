@@ -967,10 +967,9 @@ def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
 """
 GDG base tests:
 - Create a new GDG.
-- Delete an empty GDG.
-- Try to delete a populated GDG.
+
 - Create a new GDS (src_type: seq, pds, pdse).
-- 
+- Delete an empty GDG.
 
 """
 @pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
@@ -1000,3 +999,35 @@ def test_gdg_create_and_delete(ansible_zos_module, dstype):
             assert result.get("module_stderr") is None
     finally:
         hosts.all.zos_data_set(name=data_set_name, state="absent")
+
+
+def test_gdg_create_jumping_gen(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        data_set_name = "AN$IBLE.TE$T"
+        # results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=1)
+        # for result in results.contacted.values():
+        #     print(result)
+        #     assert result.get("changed") is True
+        #     assert result.get("module_stderr") is None
+        # results = hosts.all.zos_data_set(name=f"{data_set_name}(+10)", state="present", type="seq")
+        # for result in results.contacted.values():
+        #     print(result)
+        #     assert result.get("changed") is True
+        #     assert result.get("module_stderr") is None
+        # results = hosts.all.shell(cmd=f"dls -tGDS AN\$IBLE.TE\$T*")
+        # print(vars(results))
+        # results = hosts.all.zos_data_set(name=f"{data_set_name}(0)", state="absent")
+        # for result in results.contacted.values():
+        #     print(result)
+        #     assert result.get("changed") is True
+        #     assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=data_set_name, state="absent",)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        None
+        # hosts.all.zos_data_set(name=data_set_name, state="absent")
+

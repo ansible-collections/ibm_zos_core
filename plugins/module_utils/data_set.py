@@ -37,7 +37,7 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, exceptions, gdgs
+    from zoautil_py import datasets, exceptions, gdgs, mvscmd
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -309,15 +309,16 @@ class DataSet(object):
         Returns:
             bool -- If data is is cataloged.
         """
-
-        name = name.upper()
+        # We need to unescape because this calls to system can handle 
+        # special characters just fine.
+        name = name.upper().replace("\\", '')
 
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-
+        
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
             if bool(set(volumes) & set(cataloged_volume_list)):

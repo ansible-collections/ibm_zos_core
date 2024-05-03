@@ -1,0 +1,4 @@
+trivial:
+  - module_utils/data_set.py - resolve_gds_absolute_name was returning a ZOAU dataset type instead
+    of string.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1484).

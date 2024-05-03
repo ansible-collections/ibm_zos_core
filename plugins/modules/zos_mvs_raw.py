@@ -1879,11 +1879,15 @@ def run_module():
 def parse_and_validate_args(params):
     """Perform additional argument validation to validate and update input content,
 
-    Args:
-        params (dict): The raw module parameters as provided by AnsibleModule.
+    Parameters
+    ----------
+        params : dict
+               The raw module parameters as provided by AnsibleModule.
 
-    Returns:
-        dict: The module parameters after validation and content updates.
+    Returns
+    -------
+        parsed_args : dict
+                    The module parameters after validation and content updates.
     """
     dd_name_base = dict(dd_name=dict(type="dd", required=True))
 
@@ -2067,12 +2071,17 @@ def combine_dicts(dict1, dict2):
     """Combine two dictionaries.
     Provides clean way to combine two dictionaries in python >= 2
 
-    Args:
-        dict1 (dict): The first dict to add to combine
-        dict2 (dict): The second dict to add to combine
+    Parameters
+    ----------
+        dict1 : dict
+              The first dict to add to combine
+        dict2 : dict
+              The second dict to add to combine
 
-    Returns:
-        dict: The combination of dict1 and dict2.
+    Returns
+    -------
+        merged_dict : dict
+                    The combination of dict1 and dict2.
     """
     merged_dict = dict1.copy()
     merged_dict.update(dict2)
@@ -2081,12 +2090,23 @@ def combine_dicts(dict1, dict2):
 
 def key_length(contents, dependencies):
     """Validates key length
-    Args:
-        contents (int): argument contents
-        dependencies (dict): Any dependent arguments
 
-    Returns:
-        int: provided key length
+    Parameters
+    ----------
+        contents : int
+                 Argument contents
+        dependencies : dict
+                     Any dependent arguments
+
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
+
+    Returns
+    -------
+        contents : int
+                 Provided key length
     """
     if contents is None:
         return contents
@@ -2102,12 +2122,23 @@ def key_length(contents, dependencies):
 
 def key_offset(contents, dependencies):
     """Validates key offset
-    Args:
-        contents (int): argument contents
-        dependencies (dict): Any dependent arguments
 
-    Returns:
-        int: provided key offset
+    Parameters
+    ----------
+        contents : int
+                 Argument contents
+        dependencies : dict
+                     Any dependent arguments
+
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
+
+    Returns
+    -------
+        contents : int
+                 Provided key offset
     """
     if contents is None:
         return contents
@@ -2124,12 +2155,18 @@ def key_offset(contents, dependencies):
 
 def key_length_default(contents, dependencies):
     """Determines default key length
-    Args:
-        contents (int): argument contents
-        dependencies (dict): Any dependent arguments
 
-    Returns:
-        int: default key length
+    Parameters
+    ----------
+        contents : int
+                 Argument contents
+        dependencies : dict
+                     Any dependent arguments
+
+    Returns
+    -------
+        length : int
+               Default key length
     """
     KEY_LENGTH = 5
     length = None
@@ -2142,12 +2179,18 @@ def key_length_default(contents, dependencies):
 
 def key_offset_default(contents, dependencies):
     """Determines default key offset
-    Args:
-        contents (int): argument contents
-        dependencies (dict): Any dependent arguments
 
-    Returns:
-        int: default key offset
+    Parameters
+    ----------
+        contents : int
+                 Argument contents
+        dependencies : dict
+                     Any dependent arguments
+
+    Returns
+    -------
+        offset : int
+               Default key offset
     """
     KEY_OFFSET = 0
     offset = None
@@ -2161,12 +2204,17 @@ def key_offset_default(contents, dependencies):
 def dd_content(contents, dependencies):
     """Reformats dd content arguments
 
-    Args:
-        contents (Union[str, list[str]]): argument contents
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+        contents : Union[str, list[str]]
+                 Argument contents
+        dependencies : dict
+                     Any dependent arguments
 
-    Returns:
-        str: content string to save to data set
+    Returns
+    -------
+        contents : str
+                 Content string to save to data set
     """
     if contents is None:
         return None
@@ -2183,11 +2231,15 @@ def dd_content(contents, dependencies):
 def modify_contents(contents):
     """Return the content of dd_input to a valid form for a JCL program.
 
-    Args:
-        contents (str or list): The string or list with the program.
+    Parameters
+    ----------
+        contents : str or list
+                 The string or list with the program.
 
-    Returns:
-        contents: The content in a proper multi line str.
+    Returns
+    -------
+        contents : str
+                 The content in a proper multi line str.
     """
     if not isinstance(contents, list):
         contents = list(contents.split("\n"))
@@ -2199,11 +2251,20 @@ def modify_contents(contents):
 def prepend_spaces(lines):
     """Return the array with two spaces at the beggining.
 
-    Args:
-        lines (list): The list with a line of a program.
+    Parameters
+    ----------
+        lines : list
+              The list with a line of a program.
 
-    Returns:
-        new_lines: The list in a proper two spaces and the code.
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
+
+    Returns
+    -------
+        new_lines : list[str]
+                  The list in a proper two spaces and the code.
     """
     module = AnsibleModuleHelper(argument_spec={})
     for index, line in enumerate(lines):
@@ -2226,12 +2287,17 @@ def prepend_spaces(lines):
 def sms_class(contents, dependencies):
     """Validates provided sms class is of valid length.
 
-    Args:
-        contents (str): argument contents
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+        contents : str
+                 Argument contents
+        dependencies : dict
+                     Any dependent arguments
 
-    Returns:
-        str: the sms class
+    Returns
+    -------
+        contents : str
+                  the sms class
     """
     if not contents:
         return None
@@ -2248,15 +2314,22 @@ def sms_class(contents, dependencies):
 def volumes(contents, dependencies):
     """Validate volume arguments.
 
-    Args:
-        contents (Union[str, list[str]]): The contents provided for the volume argument.
-        dependencies (dict): Any arguments this argument is dependent on.
+    Parameters
+    ----------
+        contents : Union[str, list[str]]
+                 The contents provided for the volume argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
 
-    Raises:
-        ValueError: When invalid argument provided.
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
 
-    Returns:
-        list[str]: The contents returned as a list of volumes
+    Returns
+    -------
+        contents : list[str]
+                 The contents returned as a list of volumes
     """
     if not contents:
         return None
@@ -2276,15 +2349,22 @@ def volumes(contents, dependencies):
 def reuse(contents, dependencies):
     """Validate reuse argument.
 
-    Args:
-        contents (bool): The contents provided for the reuse argument.
-        dependencies (dict): Any arguments this argument is dependent on.
+    Parameters
+    ----------
+        contents : bool
+                 The contents provided for the reuse argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
 
-    Raises:
-        ValueError: When invalid argument provided.
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
 
-    Returns:
-        bool: The value of reuse.
+    Returns
+    -------
+        contents : bool
+                 The value of reuse.
     """
     if contents is True and dependencies.get("disposition") != "new":
         raise ValueError('Argument "reuse" is only valid when "disposition" is "new".')
@@ -2294,15 +2374,22 @@ def reuse(contents, dependencies):
 def replace(contents, dependencies):
     """Validate replace argument.
 
-    Args:
-        contents (bool): The contents provided for the replace argument.
-        dependencies (dict): Any arguments this argument is dependent on.
+    Parameters
+    ----------
+        contents : bool
+                 The contents provided for the replace argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
 
-    Raises:
-        ValueError: When invalid argument provided.
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
 
-    Returns:
-        bool: The value of replace.
+    Returns
+    -------
+        contents : bool
+                 The value of replace.
     """
     if contents is True and dependencies.get("reuse") is True:
         raise ValueError('Arguments "replace" and "reuse" are mutually exclusive.')
@@ -2316,15 +2403,22 @@ def replace(contents, dependencies):
 def backup(contents, dependencies):
     """Validate backup argument.
 
-    Args:
-        contents (bool): The contents provided for the backup argument.
-        dependencies (dict): Any arguments this argument is dependent on.
+    Parameters
+    ----------
+        contents : bool
+                 The contents provided for the backup argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
 
-    Raises:
-        ValueError: When invalid argument provided.
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
 
-    Returns:
-        bool: The value of backup.
+    Returns
+    -------
+        contents : bool
+                 The value of backup.
     """
     if contents is True and dependencies.get("replace") is False:
         raise ValueError('Argument "backup" is only valid when "replace" is True.')
@@ -2334,12 +2428,17 @@ def backup(contents, dependencies):
 def status_group(contents, dependencies):
     """Validate status group argument.
 
-    Args:
-        contents (list[str]): The contents provided for the status_group argument.
-        dependencies (dict): Any arguments this argument is dependent on.
+    Parameters
+    ----------
+        contents : list[str]
+                 The contents provided for the status_group argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
 
-    Returns:
-        list[str]: The access group as expected by mvscmd.
+    Returns
+    -------
+        contents : list[str]
+                 The access group as expected by mvscmd.
     """
     if not contents:
         return None
@@ -2359,12 +2458,17 @@ def status_group(contents, dependencies):
 def access_group(contents, dependencies):
     """Validate access group argument.
 
-    Args:
-        contents (str): The contents provided for the access_group argument.
-        dependencies (dict): Any arguments this argument is dependent on.
+    Parameters
+    ----------
+        contents : str
+                 The contents provided for the access_group argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
 
-    Returns:
-        str: The access group as expected by mvscmd.
+    Returns
+    -------
+        contents : str
+                 The access group as expected by mvscmd.
     """
     if contents and ACCESS_GROUP_NAME_MAP.get(contents):
         contents = ACCESS_GROUP_NAME_MAP.get(contents)
@@ -2374,14 +2478,20 @@ def access_group(contents, dependencies):
 def build_dd_statements(parms):
     """Build a list of DDStatement objects from provided module parms.
 
-    Args:
-        parms (dict): Module parms after formatting and validation.
+    Parameters
+    ----------
+        parms : dict
+              Module parms after formatting and validation.
 
-    Raises:
-        ValueError: If no data definition can be found matching provided DD type.
+    Raises
+    -------
+        ValueError : None
+             If no data definition can be found matching provided DD type.
 
-    Returns:
-        list[DDStatement]: List of DDStatement objects representing DD statements specified in module parms.
+    Returns
+    -------
+        dd_statements : list[DDStatement]
+                      List of DDStatement objects representing DD statements specified in module parms.
     """
     dd_statements = []
     tmphlq = parms.get("tmphlq")
@@ -2397,6 +2507,18 @@ def build_dd_statements(parms):
 
 
 def get_key(dd):
+    """
+    Get the key of the dd.
+    Parameters
+    ----------
+        dd : dict
+           A single DD parm as specified in module parms.
+
+    Returns
+    -------
+        key : str
+            Type of dd.
+    """
     dd_key = ""
     keys_list = list(dd.keys())
     for key in keys_list:
@@ -2406,6 +2528,20 @@ def get_key(dd):
 
 
 def get_dd_name_and_key(dd):
+    """
+    Get the key and dd_name of the dd.
+    Parameters
+    ----------
+        dd : dict
+           A single DD parm as specified in module parms.
+
+    Returns
+    -------
+        dd_name : str
+                Identifier of the dd.
+        key : str
+            Type of dd.
+    """
     dd_name = ""
     key = ""
     if dd.get("dd_data_set"):
@@ -2435,11 +2571,15 @@ def get_dd_name_and_key(dd):
 def set_extra_attributes_in_dd(dd, tmphlq, key):
     """
     Set any extra attributes in dds like in global tmp_hlq.
-    Args:
-        dd (dict): A single DD parm as specified in module parms.
+    Parameters
+    ----------
+        dd : dict
+           A single DD parm as specified in module parms.
 
-    Returns:
-        dd (dict): A single DD parm as specified in module parms.
+    Returns
+    -------
+        dd : dict
+            A single DD parm as specified in module parms.
     """
     if key == "dd_concat":
         for single_dd in dd.get("dd_concat").get("dds", []):
@@ -2453,14 +2593,16 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
 def build_data_definition(dd):
     """Build a DataDefinition object for a particular DD parameter.
 
-    Args:
-        dd (dict): A single DD parm as specified in module parms.
+    Parameters
+    ----------
+        dd : dict
+           A single DD parm as specified in module parms.
 
-    Returns:
-        Union[list[RawDatasetDefinition, RawFileDefinition,
-              RawInputDefinition],
-              RawDatasetDefinition, RawFileDefinition,
-              RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
+    Returns
+    -------
+        data_definition : Union[list[RawDatasetDefinition, RawFileDefinition,vRawInputDefinition],
+                          RawDatasetDefinition, RawFileDefinition, RawInputDefinition, DummyDefinition]
+                        The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
     if dd.get("dd_data_set"):
@@ -2499,15 +2641,23 @@ def run_zos_program(
 ):
     """Run a program on z/OS.
 
-    Args:
-        program (str): The name of the program to run.
-        parm (str, optional): Additional argument string if required. Defaults to "".
-        dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
-        authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
-        tmphlq (str, optional): Arguments overwrite variable tmp_hlq
+    Parameters
+    ----------
+        program : str
+                The name of the program to run.
+        parm : str, optional
+             Additional argument string if required. Defaults to "".
+        dd_statements : list[DDStatement], optional
+                      DD statements to allocate for the program. Defaults to [].
+        authorized : bool, optional
+                   Determines if program will execute as an authorized user. Defaults to False.
+        tmphlq : str, optional
+               Arguments overwrite variable tmp_hlq
 
-    Returns:
-        MVSCmdResponse: Holds the response information for program execution.
+    Returns
+    -------
+        response : MVSCmdResponse
+                 Holds the response information for program execution.
     """
     if not dd_statements:
         dd_statements = []
@@ -2526,12 +2676,17 @@ def run_zos_program(
 def build_response(rc, dd_statements, stdout):
     """Build response dictionary to return at module completion.
 
-    Args:
-        rc (int): The return code of the program.
-        dd_statements (list[DDStatement]): The DD statements for the program.
+    Parameters
+    ----------
+        rc : int
+           The return code of the program.
+        dd_statements : list[DDStatement]
+                      The DD statements for the program.
 
-    Returns:
-        dict: Response dictionary in format expected for response on module completion.
+    Returns
+    -------
+        response : dict
+                 Response dictionary in format expected for response on module completion.
     """
     response = {"ret_code": {"code": rc}}
     response["backups"] = gather_backups(dd_statements)
@@ -2544,11 +2699,15 @@ def gather_backups(dd_statements):
     """Gather backup information for all data sets which had
     a backup made during module execution.
 
-    Args:
-        dd_statements (list[DDStatement]): The DD statements for the program.
+    Parameters
+    ----------
+        dd_statements : list[DDStatement]
+                      The DD statements for the program.
 
-    Returns:
-        list[dict]: List of backups in format expected for response on module completion.
+    Returns
+    -------
+        backups : list[dict]
+                List of backups in format expected for response on module completion.
     """
     backups = []
     for dd_statement in dd_statements:
@@ -2560,11 +2719,15 @@ def get_dd_backup(dd_statement):
     """Gather backup information for a single data set
     if the DD is a data set DD and a backup was made.
 
-    Args:
-        dd (DataDefinition): A single DD statement.
+    Parameters
+    ----------
+        dd : DataDefinition
+           A single DD statement.
 
-    Returns:
-        list[dict]: List of backups in format expected for response on module completion.
+    Returns
+    -------
+        dd_backup : list[dict]
+                  List of backups in format expected for response on module completion.
     """
     dd_backup = []
     if (
@@ -2580,11 +2743,15 @@ def get_dd_backup(dd_statement):
 def get_data_set_backup(dd_statement):
     """Get backup of a single data set DD statement.
 
-    Args:
-        dd_statement (DDStatement): A single DD statement.
+    Parameters
+    ----------
+        dd_statement : DDStatement
+                     A single DD statement.
 
-    Returns:
-        dict: Backup information in format expected for response on module completion.
+    Returns
+    -------
+        backup : dict
+               Backup information in format expected for response on module completion.
     """
     backup = {}
     backup["backup_name"] = dd_statement.definition.backup
@@ -2595,12 +2762,16 @@ def get_data_set_backup(dd_statement):
 def get_concatenation_backup(dd_statement):
     """Get the backup information for a single concatenation DD statement.
 
-    Args:
-        dd_statement (DDStatement): A single DD statement.
+    Parameters
+    ----------
+        dd_statement : DDStatement
+                     A single DD statement.
 
-    Returns:
-        list[dict]: The backup information of a single DD, in format expected for response on module completion.
-                Response can contain multiple backups.
+    Returns
+    -------
+        dd_backup : list[dict]
+                  The backup information of a single DD, in format expected for response on module completion.
+                  Response can contain multiple backups.
     """
     # create new DDStatement objects for each concat member
     # makes it easier to handle concat and non-concat DDs consistently
@@ -2616,11 +2787,15 @@ def gather_output(dd_statements):
     """Gather DD contents for all DD statements for which
     content was requested.
 
-    Args:
-        dd_statements (list[DDStatement]): The DD statements for the program.
+    Parameters
+    ----------
+        dd_statements : list[DDStatement]
+                      The DD statements for the program.
 
-    Returns:
-        list[dict]: The list of DD outputs, in format expected for response on module completion.
+    Returns
+    -------
+        output : list[dict]
+               The list of DD outputs, in format expected for response on module completion.
     """
     output = []
     for dd_statement in dd_statements:
@@ -2631,11 +2806,15 @@ def gather_output(dd_statements):
 def get_dd_output(dd_statement):
     """Get the output for a single DD statement.
 
-    Args:
-        dd_statement (DDStatement): A single DD statement.
+    Parameters
+    ----------
+        dd_statement : DDStatement
+                     A single DD statement.
 
-    Returns:
-        list[dict]: The output of a single DD, in format expected for response on module completion.
+    Returns
+    -------
+        dd_output : list[dict]
+                  The output of a single DD, in format expected for response on module completion.
     """
     dd_output = []
     if (
@@ -2666,11 +2845,15 @@ def get_dd_output(dd_statement):
 def get_data_set_output(dd_statement):
     """Get the output of a single data set DD statement.
 
-    Args:
-        dd_statement (DDStatement): A single DD statement.
+    Parameters
+    ----------
+        dd_statement : DDStatement
+                     A single DD statement.
 
-    Returns:
-        dict: The output of a single DD, in format expected for response on module completion.
+    Returns
+    -------
+        dd_response : dict
+                    The output of a single DD, in format expected for response on module completion.
     """
     contents = ""
     if dd_statement.definition.return_content.type == "text":
@@ -2688,11 +2871,15 @@ def get_data_set_output(dd_statement):
 def get_unix_file_output(dd_statement):
     """Get the output of a single UNIX file DD statement.
 
-    Args:
-        dd_statement (DDStatement): A single DD statement.
+    Parameters
+    ----------
+        dd_statement : DDStatement
+                     A single DD statement.
 
-    Returns:
-        dict: The output of a single DD, in format expected for response on module completion.
+    Returns
+    -------
+        dd_response : dict
+                    The output of a single DD, in format expected for response on module completion.
     """
     contents = ""
     if dd_statement.definition.return_content.type == "text":
@@ -2710,12 +2897,16 @@ def get_unix_file_output(dd_statement):
 def get_concatenation_output(dd_statement):
     """Get the output of a single concatenation DD statement.
 
-    Args:
-        dd_statement (DDStatement): A single DD statement.
+    Parameters
+    ----------
+        dd_statement : DDStatement
+                     A single DD statement.
 
-    Returns:
-        list[dict]: The output of a single DD, in the format expected for response on module completion.
-                Response can contain multiple outputs.
+    Returns
+    -------
+        dd_response : list[dict]
+                    The output of a single DD, in the format expected for response on module completion.
+                    Response can contain multiple outputs.
     """
     # create new DDStatement objects for each concat member
     # makes it easier to handle concat and non-concat DDs consistently
@@ -2731,13 +2922,19 @@ def build_dd_response(dd_name, name, contents):
     """Gather additional response metrics and format
     as expected for response on module completion.
 
-    Args:
-        dd_name (str): The DD name associated with this response.
-        name (str): The data set or UNIX file name associated with the response.
-        contents (str): The raw contents taken from the data set or UNIX file.
+    Parameters
+    ----------
+        dd_name : str
+                The DD name associated with this response.
+        name : str
+             The data set or UNIX file name associated with the response.
+        contents : str
+                 The raw contents taken from the data set or UNIX file.
 
-    Returns:
-        dict: Response content info of a single DD, in the format expected for response on module completion.
+    Returns
+    -------
+        dd_response : dict
+                    Response content info of a single DD, in the format expected for response on module completion.
     """
     dd_response = {}
     dd_response["dd_name"] = dd_name
@@ -2751,14 +2948,21 @@ def build_dd_response(dd_name, name, contents):
 def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=None):
     """Retrieve the raw contents of a data set.
 
-    Args:
-        name (str): The name of the data set.
-        binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
-        from_encoding (str, optional): The encoding of the data set on the z/OS system. Defaults to None.
-        to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
+    Parameters
+    ----------
+        name : str
+             The name of the data set.
+        binary : bool, optional
+               Determines if contents are retrieved without encoding conversion. Defaults to False.
+        from_encoding : str, optional
+                      The encoding of the data set on the z/OS system. Defaults to None.
+        to_encoding : str, optional
+                    The encoding to receive the data back in. Defaults to None.
 
-    Returns:
-        str: The raw content of the data set.
+    Returns
+    -------
+        quoted_name : str
+                    The raw content of the data set.
     """
     quoted_name = quote(name)
     if "'" not in quoted_name:
@@ -2771,14 +2975,21 @@ def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=Non
 def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
     """Retrieve the raw contents of a UNIX file.
 
-    Args:
-        name (str): The name of the UNIX file.
-        binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
-        from_encoding (str, optional): The encoding of the UNIX file on the z/OS system. Defaults to None.
-        to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
+    Parameters
+    ----------
+        name : str
+             The name of the UNIX file.
+        binary : bool, optional
+               Determines if contents are retrieved without encoding conversion. Defaults to False.
+        from_encoding : str, optional
+                      The encoding of the UNIX file on the z/OS system. Defaults to None.
+        to_encoding : str, optional
+                    The encoding to receive the data back in. Defaults to None.
 
-    Returns:
-        str: The raw content of the UNIX file.
+    Returns
+    -------
+        stdout : str
+               The raw content of the UNIX file.
     """
     return get_content("{0}".format(quote(name)), binary, from_encoding, to_encoding)
 
@@ -2786,14 +2997,21 @@ def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
 def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=None):
     """Retrieve raw contents of a data set or UNIXfile.
 
-    Args:
-        name (str): The name of the data set or UNIX file, formatted and quoted for proper usage in command.
-        binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
-        from_encoding (str, optional): The encoding of the data set or UNIX file on the z/OS system. Defaults to None.
-        to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
+    Parameters
+    ----------
+        name : str
+             The name of the data set or UNIX file, formatted and quoted for proper usage in command.
+        binary : bool, optional
+               Determines if contents are retrieved without encoding conversion. Defaults to False.
+        from_encoding : str, optional
+                      The encoding of the data set or UNIX file on the z/OS system. Defaults to None.
+        to_encoding : str, optional
+                    The encoding to receive the data back in. Defaults to None.
 
-    Returns:
-        str: The raw content of the data set or UNIX file. If unsuccessful in retrieving data, returns empty string.
+    Returns
+    -------
+        stdout : str
+               The raw content of the data set or UNIX file. If unsuccessful in retrieving data, returns empty string.
     """
     module = AnsibleModuleHelper(argument_spec={})
     conversion_command = ""

@@ -38,13 +38,19 @@ class MVSCmd(object):
     def execute(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None):
         """Execute an unauthorized MVS command.
 
-        Args:
-            pgm (str): The name of the program to execute.
-            dds (list[DDStatement]): A list of DDStatement objects.
-            parm (str, optional): Argument string if required by the program. Defaults to "".
+        Parameters
+        ----------
+            pgm : str
+                The name of the program to execute.
+            dds : list[DDStatement]
+                A list of DDStatement objects.
+            parm : str, optional)
+                 Argument string if required by the program. Defaults to "".
 
-        Returns:
-            MVSCmdResponse: The response of the command.
+        Returns
+        -------
+            MVSCmdResponse : object
+                           The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
         command = "mvscmd {0} {1} {2} {3}".format(
@@ -60,14 +66,21 @@ class MVSCmd(object):
     def execute_authorized(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None):
         """Execute an authorized MVS command.
 
-        Args:
-            pgm (str): The name of the program to execute.
-            dds (list[DDStatement]): A list of DDStatement objects.
-            parm (str, optional): Argument string if required by the program. Defaults to "".
-            tmp_hlq (str): The name of the temporary high level qualifier to use for temp data sets.
+        Parameters
+        ----------
+            pgm : str
+                The name of the program to execute.
+            dds : list[DDStatement]
+                A list of DDStatement objects.
+            parm : str, optional
+                 Argument string if required by the program. Defaults to "".
+            tmp_hlq : str
+                    The name of the temporary high level qualifier to use for temp data sets.
 
-        Returns:
-            MVSCmdResponse: The response of the command.
+        Returns
+        -------
+            MVSCmdResponse : object
+                           The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
         command = "mvscmdauth {0} {1} {2} {3} ".format(
@@ -83,13 +96,19 @@ class MVSCmd(object):
     def _build_command(pgm, dds, parm):
         """Build the command string to be used by ZOAU mvscmd/mvscmdauth.
 
-        Args:
-            pgm (str): [description]
-            dds (list[DDStatement]): A list of DDStatement objects.
-            parm (str, optional): Argument string if required by the program. Defaults to "".
+        Parameters
+        ----------
+            pgm : str
+                [description]
+            dds : list[DDStatement]
+                A list of DDStatement objects.
+            parm : str, optional
+                 Argument string if required by the program. Defaults to "".
 
-        Returns:
-            str: Command string formatted as expected by mvscmd/mvscmdauth.
+        Returns
+        -------
+            command : str
+                    Command string formatted as expected by mvscmd/mvscmdauth.
         """
         args_string = ""
         if parm:
@@ -115,9 +134,6 @@ class MVSCmdResponse(object):
 class RawDatasetDefinition(DatasetDefinition):
     """Wrapper around DatasetDefinition to contain information about
     desired return contents.
-
-    Args:
-        DatasetDefinition (DatasetDefinition): Dataset DD data type to be used in a DDStatement.
     """
 
     def __init__(
@@ -150,37 +166,66 @@ class RawDatasetDefinition(DatasetDefinition):
         tmphlq=None,
         **kwargs
     ):
-        """Initialize RawDatasetDefinition
-
+        """
+        DatasetDefinition (DatasetDefinition): Dataset DD data type to be used in a DDStatement.
+        Parameters
+        ----------
         Args:
-            data_set_name (str): The name of the data set.
-            disposition (str, optional): The disposition of the data set. Defaults to "".
-            type (str, optional): The type of the data set. Defaults to None.
-            space_primary (int, optional): The primary amount of space of the data set. Defaults to None.
-            space_secondary (int, optional): The secondary amount of space of the data set. Defaults to None.
-            space_type (str, optional): The unit of space to use for primary and secondary space. Defaults to None.
-            disposition_normal (str, optional): What to do with the data set after normal termination of the program. Defaults to None.
-            disposition_abnormal (str, optional): What to do with the data set after abnormal termination of the program. Defaults to None.
-            block_size (int, optional): The block size of the data set. Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate for the data set. Defaults to None.
-            record_format (str, optional): The record format of the data set. Defaults to None.
-            record_length (int, optional): The length, in bytes, of each record in the data set. Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset. Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset. Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset. Defaults to None.
-            key_length (int, optional): The key length of a record. Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                in each logical record of a the specified VSAM data set. Defaults to None.
-            volumes (list, optional): A list of volume serials.. Defaults to None.
-            key_label (str, optional): The label for the encryption key used by the system to encrypt the data set. Defaults to None.
-            encryption_key_1 (dict, optional): [description]. Defaults to None.
-            encryption_key_2 (dict, optional): [description]. Defaults to None.
-            reuse (bool, optional): Determines if data set should be reused. Defaults to None.
-            replace (bool, optional): Determines if data set should be replaced. Defaults to None.
-            backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
-                and a data set with the desired name is found.. Defaults to None.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
-            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
+            data_set_name : str
+                          The name of the data set.
+            disposition : str, optional
+                        The disposition of the data set. Defaults to "".
+            type : str, optional
+                 The type of the data set. Defaults to None.
+            space_primary : int, optional
+                          The primary amount of space of the data set. Defaults to None.
+            space_secondary : int, optional
+                            The secondary amount of space of the data set. Defaults to None.
+            space_type : str, optional
+                       The unit of space to use for primary and secondary space. Defaults to None.
+            disposition_normal : str, optional
+                               What to do with the data set after normal termination of the program. Defaults to None.
+            disposition_abnormal : str, optional
+                                 What to do with the data set after abnormal termination of the program. Defaults to None.
+            block_size : int, optional
+                       The block size of the data set. Defaults to None.
+            directory_blocks : int, optional
+                             The number of directory blocks to allocate for the data set. Defaults to None.
+            record_format : str, optional
+                          The record format of the data set. Defaults to None.
+            record_length : int, optional
+                          The length, in bytes, of each record in the data set. Defaults to None.
+            sms_storage_class : str, optional
+                              The storage class for an SMS-managed dataset. Defaults to None.
+            sms_data_class : str, optional
+                           The data class for an SMS-managed dataset. Defaults to None.
+            sms_management_class : str, optional
+                                 The management class for an SMS-managed dataset. Defaults to None.
+            key_length : int, optional
+                       The key length of a record. Defaults to None.
+            key_offset : int, optional
+                       The key offset is the position of the first byte of the key
+                       in each logical record of a the specified VSAM data set. Defaults to None.
+            volumes : list, optional
+                    A list of volume serials.. Defaults to None.
+            key_label : str, optional
+                      The label for the encryption key used by the system to encrypt the data set. Defaults to None.
+            encryption_key_1 : dict, optional
+                             [description]. Defaults to None.
+            encryption_key_2 : dict, optional
+                             [description]. Defaults to None.
+            reuse : bool, optional
+                  Determines if data set should be reused. Defaults to None.
+            replace : bool, optional
+                    Determines if data set should be replaced. Defaults to None.
+            backup : bool, optional
+                   Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
+                   and a data set with the desired name is found.. Defaults to None.
+            return_content : dict, optional
+                           Determines how content should be returned to the user. Defaults to None.
+            tmphlq : str, optional
+                   HLQ to be used for temporary datasets. Defaults to None.
+        ----------
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
@@ -258,9 +303,6 @@ class RawDatasetDefinition(DatasetDefinition):
 class RawFileDefinition(FileDefinition):
     """Wrapper around FileDefinition to contain information about
     desired return contents.
-
-    Args:
-        FileDefinition (FileDefinition): File DD data type to be used in a DDStatement.
     """
 
     def __init__(
@@ -278,20 +320,32 @@ class RawFileDefinition(FileDefinition):
         return_content=None,
         **kwargs
     ):
-        """Initialize RawFileDefinition
-
-        Args:
-            path (str): An absolute UNIX file path.
-            disposition_normal (str, optional): What to do with path after normal program termination. Defaults to None.
-            disposition_abnormal (str, optional): What to do with path after abnormal program termination. Defaults to None.
-            mode (int, optional): The file access attributes for the UNIX file being allocated. Defaults to None.
-            access_group (str, optional): the access mode for UNIX file. Defaults to None.
-            status_group (list[str], optional): The status for UNIX file being allocated. Defaults to None.
-            file_data_type (str, optional): The type of data that is (or will be) stored in the UNIX file. Defaults to None.
-            record_length (int, optional): The specified logical record length for the UNIX file. Defaults to None.
-            block_size (int, optional): the specified block size for the UNIX file being allocated. Defaults to None.
-            record_format (str, optional): The specified record format for the UNIX file. Defaults to None.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
+        """
+        FileDefinition (FileDefinition): File DD data type to be used in a DDStatement.
+        Parameters
+        ----------
+            path : str
+                 An absolute UNIX file path.
+            disposition_normal : str, optional
+                               What to do with path after normal program termination. Defaults to None.
+            disposition_abnormal : str, optional
+                                 What to do with path after abnormal program termination. Defaults to None.
+            mode : int, optional
+                 The file access attributes for the UNIX file being allocated. Defaults to None.
+            access_group : str, optional
+                         The access mode for UNIX file. Defaults to None.
+            status_group : list[str], optional
+                         The status for UNIX file being allocated. Defaults to None.
+            file_data_type : str, optional
+                           The type of data that is (or will be) stored in the UNIX file. Defaults to None.
+            record_length : int, optional
+                          The specified logical record length for the UNIX file. Defaults to None.
+            block_size : int, optional
+                       The specified block size for the UNIX file being allocated. Defaults to None.
+            record_format : str, optional
+                          The specified record format for the UNIX file. Defaults to None.
+            return_content : dict, optional
+                           Determines how content should be returned to the user. Defaults to None.
         """
         self.return_content = ReturnContent(**(return_content or {}))
         super().__init__(
@@ -311,9 +365,6 @@ class RawFileDefinition(FileDefinition):
 class RawInputDefinition(InputDefinition):
     """Wrapper around InputDefinition to contain information about
     desired return contents.
-
-    Args:
-        InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
     """
 
     def __init__(
@@ -323,11 +374,14 @@ class RawInputDefinition(InputDefinition):
             tmphlq="",
             **kwargs
     ):
-        """Initialize RawInputDefinition
-
-        Args:
-            content (str): The content to write to temporary data set / stdin.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+        """
+        InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
+        Parameters
+        ----------
+            content : str
+                    The content to write to temporary data set / stdin.
+            return_content : dict, optional
+                           Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
         super().__init__(
@@ -338,9 +392,6 @@ class RawInputDefinition(InputDefinition):
 class RawOutputDefinition(OutputDefinition):
     """Wrapper around OutputDefinition to contain information about
     desired return contents.
-
-    Args:
-        OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
     """
 
     def __init__(
@@ -349,11 +400,14 @@ class RawOutputDefinition(OutputDefinition):
             tmphlq="",
             **kwargs
     ):
-        """Initialize RawOutputDefinition
-
-        Args:
-            content (str): The content to write to temporary data set / stdin.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+        """
+        OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
+        Parameters
+        ----------
+            content : str
+                    The content to write to temporary data set / stdin.
+            return_content : dict, optional
+                           Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
         super().__init__(
@@ -364,21 +418,18 @@ class RawOutputDefinition(OutputDefinition):
 class ReturnContent(object):
     """Holds information about what type of content
     should be returned for a particular DD, if any.
-
-    Args:
-        object (object): The most base type.
     """
 
     def __init__(self, type=None, src_encoding=None, response_encoding=None):
-        """Initialize ReturnContent
-
-        Args:
-            type (str, optional): The type of content to return.
-                    Defaults to None.
-            src_encoding (str, optional): The encoding of the data set or file on the z/OS system.
-                    Defaults to None.
-            response_encoding (str, optional): The encoding to use when returning the contents of the data set or file.
-                    Defaults to None.
+        """
+        Parameters
+        ----------
+            type : str, optional
+                 The type of content to return.
+            src_encoding : str, optional
+                         The encoding of the data set or file on the z/OS system.
+            response_encoding : str, optional
+                              The encoding to use when returning the contents of the data set or file.
         """
         self.type = type
         self.src_encoding = src_encoding

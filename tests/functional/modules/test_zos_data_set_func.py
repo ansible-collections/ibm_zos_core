@@ -963,3 +963,40 @@ def test_data_set_f_formats(ansible_zos_module, formats, volumes_on_systems):
             assert result.get("module_stderr") is None
     finally:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
+"""
+GDG base tests:
+- Create a new GDG.
+- Delete an empty GDG.
+- Try to delete a populated GDG.
+- Create a new GDS (src_type: seq, pds, pdse).
+- 
+
+"""
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_gdg_create_and_delete(ansible_zos_module, dstype):
+    try:
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name()
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(0)", state="absent")
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=data_set_name, state="absent")
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent")

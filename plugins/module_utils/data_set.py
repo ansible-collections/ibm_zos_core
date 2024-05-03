@@ -1210,11 +1210,11 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations()
-            absolute_name = generations[rel_generation - 1]
+            gds = generations[rel_generation - 1]
         except Exception as e:
             raise GDSNameResolveError(relative_name)
 
-        return absolute_name
+        return gds.name
 
     @staticmethod
     def escape_data_set_name(name):
@@ -1694,6 +1694,29 @@ class MVSDataSet():
             except Exception as e:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
+
+
+class GenerationDataGroup():
+    def __init__(
+            self,
+            name,
+            limit,
+            empty,
+            purge,
+            scratch,
+            extended,
+            fifo,
+    ):
+        self.name = name
+        self.limit = limit
+        self.empty = empty
+        self.purge = purge
+        self.scratch = scratch
+        self.extended =extended
+        self.fifo = fifo
+        self.data_set_type = "gdg"
+        self.raw_name = name
+        self.name = DataSet.escape_data_set_name(self.name)
 
 
 def is_member(data_set):

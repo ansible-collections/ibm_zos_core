@@ -1374,11 +1374,11 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations()
-            absolute_name = generations[rel_generation - 1]
-        except Exception as e:
+            gds = generations[rel_generation - 1]
+        except Exception:
             raise GDSNameResolveError(relative_name)
 
-        return absolute_name
+        return gds.name
 
     @staticmethod
     def escape_data_set_name(name):

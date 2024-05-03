@@ -715,7 +715,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
                 result["changed"] = False
                 result["failed"] = True
                 result["msg"] = ("Unable to submit job {0} because the data set could "
-                                 "not be cataloged on the volume {1}.".format(src, volume))
+                                 "not be cataloged on the volume {1}.".format(src_name, volume))
                 module.fail_json(**result)
 
         job_submitted = jobs.submit(src, is_unix=is_unix, **kwargs)
@@ -953,8 +953,11 @@ def run_module():
     duration = 0
     start_time = timer()
     if location == "data_set":
+        # Resolving a relative GDS name and escaping special symbols if needed.
+        src_data = data_set.MVSDataSet(src)
+
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)
+            module, src_data.name, src_name=src_data.raw_name, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)
     elif location == "uss":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, is_unix=True)

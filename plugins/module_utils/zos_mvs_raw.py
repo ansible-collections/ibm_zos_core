@@ -211,9 +211,11 @@ class RawDatasetDefinition(DatasetDefinition):
             key_label : str, optional
                       The label for the encryption key used by the system to encrypt the data set. Defaults to None.
             encryption_key_1 : dict, optional
-                             [description]. Defaults to None.
+                             The label for the key encrypting key used by the Encryption Key Manager and how the label
+                             for the key encrypting key specified.
             encryption_key_2 : dict, optional
-                             [description]. Defaults to None.
+                             The label for the key encrypting key used by the Encryption Key Manager and how the label
+                             for the key encrypting key specified
             reuse : bool, optional
                   Determines if data set should be reused. Defaults to None.
             replace : bool, optional

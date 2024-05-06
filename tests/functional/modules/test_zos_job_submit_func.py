@@ -399,7 +399,7 @@ exit 0;
 """
 
 TEMP_PATH = "/tmp/jcl"
-DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
+DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.x#$xx05"
 
 @pytest.mark.parametrize(
     "location", [

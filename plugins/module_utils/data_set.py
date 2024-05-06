@@ -1375,11 +1375,11 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations()
-            absolute_name = generations[rel_generation - 1]
-        except Exception as e:
+            gds = generations[rel_generation - 1]
+        except Exception:
             raise GDSNameResolveError(relative_name)
 
-        return absolute_name
+        return gds.name
 
     @staticmethod
     def escape_data_set_name(name):
@@ -1808,25 +1808,25 @@ class MVSDataSet():
     def __init__(
         self,
         name,
-        data_set_type,
-        state,
-        organization,
-        record_format,
-        volumes,
-        block_size,
-        record_length,
-        space_primary,
-        space_secondary,
-        space_type,
-        directory_blocks,
-        key_length,
-        key_offset,
-        sms_storage_class,
-        sms_data_class,
-        sms_management_class,
-        total_space,
-        used_space,
-        last_referenced,
+        data_set_type=None,
+        state=None,
+        organization=None,
+        record_format=None,
+        volumes=None,
+        block_size=None,
+        record_length=None,
+        space_primary=None,
+        space_secondary=None,
+        space_type=None,
+        directory_blocks=None,
+        key_length=None,
+        key_offset=None,
+        sms_storage_class=None,
+        sms_data_class=None,
+        sms_management_class=None,
+        total_space=None,
+        used_space=None,
+        last_referenced=None,
     ):
         self.name = name
         self.organization = organization

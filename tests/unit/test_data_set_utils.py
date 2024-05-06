@@ -21,22 +21,21 @@ from ibm_zos_core.plugins.module_utils.data_set import (
 
 import pytest
 
-# This test is temporarily commented because using unit tests will fail, since
-# it tries to import zoau bc a class is inheriting from datasets.Dataset.
-# gds_relative_test_data = [
-#     {"name": "USER.GDG(+1)", "valid_gds" : True},
-#     {"name": "USER.GDG(-3)", "valid_gds" : True},
-#     {"name": "USER.GDG(0)", "valid_gds" : True},
-#     {"name": "USER.GDG(+22)", "valid_gds" : True},
-#     {"name": "USER.GDG(-33)", "valid_gds" : True},
-#     {"name": "USER.GDG(MEMBER)", "valid_gds" : False},
-#     {"name": "USER.GDG.TEST", "valid_gds" : False},
-#     {"name": "USER.GDG(\-33)", "valid_gds": True},
-#     ]
 
-# @pytest.mark.parametrize("gds", gds_relative_test_data)
-# def test_gds_valid_relative_name(gds):
-#     assert gds["valid_gds"] == DataSet.is_gds_relative_name(gds["name"])
+gds_relative_test_data = [
+    {"name": "USER.GDG(+1)", "valid_gds" : True},
+    {"name": "USER.GDG(-3)", "valid_gds" : True},
+    {"name": "USER.GDG(0)", "valid_gds" : True},
+    {"name": "USER.GDG(+22)", "valid_gds" : True},
+    {"name": "USER.GDG(-33)", "valid_gds" : True},
+    {"name": "USER.GDG(MEMBER)", "valid_gds" : False},
+    {"name": "USER.GDG.TEST", "valid_gds" : False},
+    {"name": "USER.GDG(\-33)", "valid_gds": True},
+    ]
+
+@pytest.mark.parametrize("gds", gds_relative_test_data)
+def test_gds_valid_relative_name(gds):
+    assert gds["valid_gds"] == DataSet.is_gds_relative_name(gds["name"])
 
 
 special_chars_test_data = [

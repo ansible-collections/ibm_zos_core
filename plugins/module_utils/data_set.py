@@ -17,22 +17,19 @@ import re
 import tempfile
 import traceback
 from os import path, walk
-from string import ascii_uppercase, digits
 from random import sample
+from string import ascii_uppercase, digits
+from typing import Union, Optional
+from datetime import datetime
+
 # from ansible.module_utils._text import to_bytes
 from ansible.module_utils.common.text.converters import to_bytes
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingImport,
-    ZOAUImportError,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    mvs_cmd,
-)
+    better_arg_parser, mvs_cmd)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import \
+    AnsibleModuleHelper
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingImport, ZOAUImportError)
 
 try:
     from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import vtoc
@@ -40,7 +37,7 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, exceptions, gdgs
+    from zoautil_py import datasets, exceptions, gdgs, mvscmd
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -94,22 +91,8 @@ class DataSet(object):
 
     @staticmethod
     def ensure_present(
-        name,
-        replace,
-        type,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
-        record_format=None,
-        record_length=None,
-        block_size=None,
-        directory_blocks=None,
-        key_length=None,
-        key_offset=None,
-        sms_storage_class=None,
-        sms_data_class=None,
-        sms_management_class=None,
-        volumes=None,
+        data_set,
+        replace=False,
         tmp_hlq=None,
         force=None,
     ):
@@ -118,54 +101,6 @@ class DataSet(object):
         Args:
             name (str): The name of the dataset
             replace (bool) -- Used to determine behavior when data set already exists.
-            type (str, optional): The type of dataset.
-                    Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                    Defaults to None.
-            space_primary (int, optional): The amount of primary space to allocate for the dataset.
-                    Defaults to None.
-            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-                    Defaults to None.
-            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
-                    Defaults to None.
-            record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: F, FB, VB, FBA, VBA, U.
-                    Defaults to None.
-            record_length (int, optional) The length, in bytes, of each record in the data set.
-                    Defaults to None.
-            block_size (int, optional): The block size to use for the data set.
-                    Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
-                    Defaults to None.
-            key_length (int, optional): The key length of a record.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                    in each logical record of a the specified VSAM data set.
-                    If the key is at the beginning of the logical record, the offset is zero.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset.
-                    Required for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            volumes (Union[str, list[str]], optional): A list of volume serials.
-                    When providing multiple volumes, processing will begin with
-                    the first volume in the provided list. Offline volumes are not considered.
-                    Volumes can always be provided when not using SMS.
-                    When using SMS, volumes can be provided when the storage class being used
-                    has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
-                    Defaults to None.
             tmp_hlq (str, optional): High level qualifier for temporary datasets.
             force (bool, optional): Used to determine behavior when performing member operations on a pdse.
                     Defaults to None.
@@ -173,22 +108,20 @@ class DataSet(object):
         Returns:
             bool -- Indicates if changes were made.
         """
-        arguments = locals()
-        arguments.pop("replace", None)
         present = False
         changed = False
-        if DataSet.data_set_cataloged(name):
+        if DataSet.data_set_cataloged(data_set.name):
             present = True
 
         if not present:
             try:
-                DataSet.create(**arguments)
+                DataSet.create(data_set, tmp_hlq=tmp_hlq, force=force)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
                 if "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
-                        name, volumes
+                        data_set.name, data_set.volumes
                     )
                     if present and changed:
                         raise_error = False
@@ -197,9 +130,9 @@ class DataSet(object):
         if present:
             if not replace:
                 return changed
-            DataSet.replace(**arguments)
-        if type.upper() == "ZFS":
-            DataSet.format_zfs(name)
+            DataSet.replace(data_set=data_set, tmp_hlq=tmp_hlq, force=force)
+        if data_set.data_set_type.upper() == "ZFS":
+            DataSet.format_zfs(data_set.name)
         return True
 
     @staticmethod
@@ -283,6 +216,26 @@ class DataSet(object):
         return False
 
     @staticmethod
+    def ensure_gdg_present(
+        data_set,
+        replace=False,
+    ):
+        arguments = vars(data_set)
+        changed = False
+        present = False
+        if gdgs.exists(data_set.name):
+            present = True
+
+        if not present:
+            gdgs.create(**arguments)
+        else:
+            if not replace:
+                return changed
+            DataSet.delete(data_set.name)
+            gdgs.create(**arguments)
+        return True
+
+    @staticmethod
     def allocate_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None):
         """Allocates a data set based on the attributes of a 'model' data set.
         Useful when a data set needs to be created identical to another. Supported
@@ -356,21 +309,22 @@ class DataSet(object):
         Returns:
             bool -- If data is is cataloged.
         """
-
-        name = name.upper()
+        # We need to unescape because this calls to system can handle 
+        # special characters just fine.
+        name = name.upper().replace("\\", '')
 
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-
+        
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
             if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
-            if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
+            if re.search(r"-\s" + re.escape(name) + r"\s*\n\s+IN-CAT", stdout):
                 return True
 
         return False
@@ -827,21 +781,7 @@ class DataSet(object):
 
     @staticmethod
     def replace(
-        name,
-        type,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
-        record_format=None,
-        record_length=None,
-        block_size=None,
-        directory_blocks=None,
-        key_length=None,
-        key_offset=None,
-        sms_storage_class=None,
-        sms_data_class=None,
-        sms_management_class=None,
-        volumes=None,
+        data_set,
         tmp_hlq=None,
         force=None,
     ):
@@ -849,61 +789,12 @@ class DataSet(object):
 
         Args:
             name (str): The name of the dataset
-            type (str, optional): The type of dataset.
-                    Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                    Defaults to None.
-            space_primary (int, optional): The amount of primary space to allocate for the dataset.
-                    Defaults to None.
-            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-                    Defaults to None.
-            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
-                    Defaults to None.
-            record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: F, FB, VB, FBA, VBA, U.
-                    Defaults to None.
-            record_length (int, optional) The length, in bytes, of each record in the data set.
-                    Defaults to None.
-            block_size (int, optional): The block size to use for the data set.
-                    Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
-                    Defaults to None.
-            key_length (int, optional): The key length of a record.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                    in each logical record of a the specified VSAM data set.
-                    If the key is at the beginning of the logical record, the offset is zero.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset.
-                    Required for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            volumes (Union[str, list[str]], optional): A list of volume serials.
-                    When providing multiple volumes, processing will begin with
-                    the first volume in the provided list. Offline volumes are not considered.
-                    Volumes can always be provided when not using SMS.
-                    When using SMS, volumes can be provided when the storage class being used
-                    has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
-                    Defaults to None.
             tmp_hlq (str, optional): High level qualifier for temporary datasets.
             force (bool, optional): Used to determine behavior when performing member operations on a pdse.
                     Defaults to None.
         """
-        arguments = locals()
-        DataSet.delete(name)
-        DataSet.create(**arguments)
+        DataSet.delete(data_set.name)
+        DataSet.create(data_set=data_set, tmp_hlq=tmp_hlq, force=force)
 
     @staticmethod
     def _build_zoau_args(**kwargs):
@@ -920,14 +811,14 @@ class DataSet(object):
             if space_type:
                 secondary += space_type
 
-        type = kwargs.get("type")
-        if type and type.upper() == "ZFS":
+        ds_type = kwargs.get("data_set_type")
+        if ds_type and ds_type.upper() == "ZFS":
             type = "LDS"
 
         volumes = ",".join(volumes) if volumes else None
         kwargs["space_primary"] = primary
         kwargs["space_secondary"] = secondary
-        kwargs["dataset_type"] = type
+        kwargs["dataset_type"] = ds_type
         kwargs["volumes"] = volumes
         kwargs.pop("space_type", None)
         renamed_args = {}
@@ -942,21 +833,7 @@ class DataSet(object):
 
     @staticmethod
     def create(
-        name,
-        type,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
-        record_format=None,
-        record_length=None,
-        block_size=None,
-        directory_blocks=None,
-        key_length=None,
-        key_offset=None,
-        sms_storage_class=None,
-        sms_data_class=None,
-        sms_management_class=None,
-        volumes=None,
+        data_set,
         tmp_hlq=None,
         force=None,
     ):
@@ -965,48 +842,7 @@ class DataSet(object):
         Reasonable default arguments will be set by ZOAU when necessary.
 
         Args:
-            name (str): The name of the dataset
-            type (str, optional): The type of dataset.
-                    Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
-                    Defaults to None.
-            space_primary (int, optional): The amount of primary space to allocate for the dataset.
-                    Defaults to None.
-            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-                    Defaults to None.
-            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
-                    Defaults to None.
-            record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: F, FB, VB, FBA, VBA, U.
-                    Defaults to None.
-            record_length (int, optional) The length, in bytes, of each record in the data set.
-                    Defaults to None.
-            block_size (int, optional): The block size to use for the data set.
-                    Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
-                    Defaults to None.
-            key_length (int, optional): The key length of a record.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            key_offset (int, optional): The key offset is the position of the first byte of the key
-                    in each logical record of a the specified VSAM data set.
-                    If the key is at the beginning of the logical record, the offset is zero.
-                    Required for Key Sequenced Datasets (KSDS).
-                    Defaults to None.
-            sms_storage_class (str, optional): The storage class for an SMS-managed dataset.
-                    Required for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_data_class (str, optional): The data class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
-            sms_management_class (str, optional): The management class for an SMS-managed dataset.
-                    Optional for SMS-managed datasets that do not match an SMS-rule.
-                    Not valid for datasets that are not SMS-managed.
-                    Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
+            name (str): The name of the dataset.
             volumes (Union[str, list[str]], optional): A list of volume serials.
                     When providing multiple volumes, processing will begin with
                     the first volume in the provided list. Offline volumes are not considered.
@@ -1020,23 +856,24 @@ class DataSet(object):
         Raises:
             DatasetCreateError: When data set creation fails.
         """
-        original_args = locals()
+        original_args = vars(data_set)
+        original_args.update({"tmp_hlq": tmp_hlq, "force": force})
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
             datasets.create(**formatted_args)
         except exceptions._ZOAUExtendableException as create_exception:
             raise DatasetCreateError(
-                name,
+                data_set.raw_name,
                 create_exception.response.rc,
                 create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
         except exceptions.DatasetVerificationError as e:
             # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
-            if volumes and len(volumes) > 1:
-                if DataSet.data_set_cataloged(name, volumes):
+            if data_set.volumes and len(data_set.volumes) > 1:
+                if DataSet.data_set_cataloged(data_set.name, data_set.volumes):
                     return 0
             raise DatasetCreateError(
-                name,
+                data_set.raw_name,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
@@ -1374,11 +1211,11 @@ class DataSet(object):
                 raise Exception
             gdg = gdgs.GenerationDataGroupView(name=gdg_base)
             generations = gdg.generations()
-            absolute_name = generations[rel_generation - 1]
+            gds = generations[rel_generation - 1]
         except Exception as e:
             raise GDSNameResolveError(relative_name)
 
-        return absolute_name
+        return gds.name
 
     @staticmethod
     def escape_data_set_name(name):
@@ -1860,6 +1697,29 @@ class MVSDataSet():
             except Exception as e:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
+
+
+class GenerationDataGroup():
+    def __init__(
+            self,
+            name,
+            limit,
+            empty,
+            purge,
+            scratch,
+            extended,
+            fifo,
+    ):
+        self.name = name
+        self.limit = limit
+        self.empty = empty
+        self.purge = purge
+        self.scratch = scratch
+        self.extended =extended
+        self.fifo = fifo
+        self.data_set_type = "gdg"
+        self.raw_name = name
+        self.name = DataSet.escape_data_set_name(self.name)
 
 
 def is_member(data_set):

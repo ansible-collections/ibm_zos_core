@@ -515,6 +515,10 @@ def main():
         if file_type not in DS_TYPE:
             message = "{0} data set type is NOT supported".format(str(file_type))
             module.fail_json(msg=message)
+        dataset = data_set.MVSDataSet(
+            name=src
+        )
+        src = dataset.name
         file_type = 0
     # make sure the default encoding is set if null was passed
     if not encoding:

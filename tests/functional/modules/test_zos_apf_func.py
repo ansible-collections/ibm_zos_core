@@ -76,9 +76,9 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
             cmdStr = "dtouch -tseq {0}".format(prstds)
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
-        print("\n====================\n")
+        print("\n====================79 testinfo\n")
         pprint(test_info)
-        print("\n======= line 81-testinfo\n")
+        print("\n=======\n")
         results = hosts.all.zos_apf(**test_info)
         print("\n======= line 83: results\n")
         print(vars(results))

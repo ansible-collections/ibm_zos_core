@@ -217,13 +217,37 @@ class DataSet(object):
 
     @staticmethod
     def ensure_gdg_present(
-        data_set,
+        gdg,
         replace=False,
     ):
-        arguments = vars(data_set)
+        """Ensure a GDG base is present. It creates it and if there
+        is an existing data set with the same name and replace is true
+        it will delete it an create the gdg base, if replace is False
+        it will fail.
+
+        Parameters
+        ----------
+        gdg : Object
+            GenerationDataGroup Object containing the attributes of the
+            destination Generation Data Group.
+        replace : bool
+            Whether or not to replace an existing data set or gdg
+            and create a new gdg.
+
+        Returns
+        -------
+        bool
+            If changes were made.
+
+        Raises
+        ------
+        DatasetDeleteError
+            When trying to delete an existing gdg or data set fails.
+        """
+        arguments = vars(gdg)
         changed = False
         present = False
-        if gdgs.exists(data_set.name):
+        if gdgs.exists(gdg.name):
             present = True
 
         if not present:
@@ -231,8 +255,28 @@ class DataSet(object):
         else:
             if not replace:
                 return changed
-            DataSet.delete(data_set.name)
+            DataSet.ensure_gdg_absent(gdg, replace)
             gdgs.create(**arguments)
+        return True
+
+    @staticmethod
+    def ensure_gdg_absent(
+        gdg,
+        replace=False,
+    ):
+        """Ensure gdg base is deleted. If replace is True and there is an
+        existing GDG with active generations it will remove them and delete
+        the GDG.
+        """
+        # Try to delete
+        rc = datasets.delete(gdg.name)
+        # If it fails because of active generations check if replace is True
+        if rc > 0:
+            if replace:
+                gdg_view = gdgs.GenerationDataGroupView(name=gdg.name)
+                gdg_view.delete()
+            else:
+                raise DatasetDeleteError(gdg.raw_name, rc)
         return True
 
     @staticmethod
@@ -318,7 +362,7 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-        
+
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
             if bool(set(volumes) & set(cataloged_volume_list)):
@@ -1688,7 +1732,7 @@ class MVSDataSet():
         self.volumes = volumes
         self.is_gds_active = False
         # If name has escaped chars or is GDS relative name we clean it.
-        self.name = DataSet.escape_data_set_name(self.name)
+        # self.name = DataSet.escape_data_set_name(self.name)
         if DataSet.is_gds_relative_name(self.name):
             try:
                 self.name = DataSet.resolve_gds_absolute_name(self.name)
@@ -1717,7 +1761,8 @@ class GenerationDataGroup():
         self.fifo = fifo
         self.data_set_type = "gdg"
         self.raw_name = name
-        self.name = DataSet.escape_data_set_name(self.name)
+        # Removed escaping since is not needed by the GDG python api.
+        # self.name = DataSet.escape_data_set_name(self.name)
 
 
 def is_member(data_set):

@@ -785,7 +785,22 @@ class MVSArchive(Archive):
         Returns:
             str: Name of the temporary data set created.
         """
-        arguments = locals()
+        arguments = {}
+        arguments.update(
+            name=name,
+            data_set_type=type,
+            space_primary=space_primary,
+            space_secondary=space_secondary,
+            space_type=space_type,
+            record_format=record_format,
+            record_length=record_length,
+            block_size=block_size,
+            directory_blocks=directory_blocks,
+            sms_storage_class=sms_storage_class,
+            sms_data_class=sms_data_class,
+            sms_management_class=sms_management_class,
+            volumes=volumes,
+        )
         if name is None:
             if tmp_hlq:
                 hlq = tmp_hlq
@@ -799,15 +814,21 @@ class MVSArchive(Archive):
         if record_length is None:
             arguments.update(record_length=80)
         if type is None:
-            arguments.update(type="seq")
+            arguments.update(data_set_type="seq")
         if space_primary is None:
             arguments.update(space_primary=5)
         if space_secondary is None:
             arguments.update(space_secondary=3)
         if space_type is None:
             arguments.update(space_type="m")
-        arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+
+        ds = data_set.MVSDataSet(**arguments)
+        changed = data_set.DataSet.ensure_present(
+            data_set=ds,
+            replace=replace,
+            tmp_hlq=tmp_hlq,
+            force=force
+        )
         return arguments["name"], changed
 
     def create_dest_ds(self, name):
@@ -819,19 +840,8 @@ class MVSArchive(Archive):
             name {str} - name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
-        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
-        # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
-        # rc, out, err = self.module.run_command(cmd)
-
-        # if not changed:
-        #     self.module.fail_json(
-        #         msg="Failed preparing {0} to be used as an archive".format(name),
-        #         stdout=out,
-        #         stderr=err,
-        #         stdout_lines=cmd,
-        #         rc=rc,
-        #     )
+        ds = data_set.MVSDataSet(name=name, data_set_type='seq', record_format='fb', record_length=record_length)
+        data_set.DataSet.ensure_present(data_set=ds, replace=True)
         return name
 
     def dump_into_temp_ds(self, temp_ds):

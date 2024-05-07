@@ -1330,15 +1330,16 @@ class DataSet(object):
             str -- The name of the temporary data set.
         """
         temp_name = DataSet.temp_name(hlq)
-        DataSet.create(
-            temp_name,
-            type=type,
+        ds = MVSDataSet(
+            name=temp_name,
+            data_set_type=type,
             space_primary=space_primary,
             space_secondary=space_secondary,
             space_type=space_type,
             record_format=record_format,
             record_length=record_length,
         )
+        DataSet.create(data_set=ds)
         return temp_name
 
     @staticmethod

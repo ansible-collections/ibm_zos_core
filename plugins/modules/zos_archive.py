@@ -737,6 +737,8 @@ class MVSArchive(Archive):
         self.expanded_sources = self.expand_mvs_paths(self.sources)
         self.expanded_exclude_sources = self.expand_mvs_paths(module.params['exclude'])
         self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
+        # self.sources is a list of MVSDatasets
+        self.sources = [data_set.DataSet.resolve_gds_absolute_name(ds) if data_set.DataSet.is_gds_relative_name(ds) else ds for ds in self.sources]
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set

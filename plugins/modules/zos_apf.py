@@ -509,8 +509,6 @@ def main():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    # _orig_library = parsed_args.get("library")
-    # library = DataSet.escape_data_set_name(_orig_library)
     library = parsed_args.get("library")
 
     state = parsed_args.get('state')

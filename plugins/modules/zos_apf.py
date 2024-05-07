@@ -59,7 +59,7 @@ options:
       - The identifier for the volume containing the library specified in
         the C(library) parameter. The values must be one the following.
       - 1. The volume serial number.
-      - 2. Six asterisks (******), indicating that the system must use the
+      - 2. Six asterisks C(******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
       - 3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
@@ -176,7 +176,7 @@ options:
             specified on the C(library) parameter. The values must be one of the
             following.
           - 1. The volume serial number
-          - 2. Six asterisks (******), indicating that the system must use the
+          - 2. Six asterisks C(******), indicating that the system must use the
             volume serial number of the current system residence (SYSRES)
             volume.
           - 3. *MCAT*, indicating that the system must use the volume serial

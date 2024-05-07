@@ -547,6 +547,54 @@ options:
           - I(key_length) should only be provided when I(type=ksds)
         type: int
         required: false
+      empty:
+        description:
+          - Sets the I(empty) attribute for Generation Data Groups.
+          - If false removes only the oldest gds entry when a new gds is created that causes gdg limit to be exceeded.
+          - If true removes all gds entries from GDG base when a new gds is created that causes the
+            gdg limit to be exceeded.
+          - Default is false.
+        type: bool
+        required: false
+      extended:
+        description:
+          - Sets the I(extended) attribute for Generation Data Groups.
+          - If false allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+          - If true allow up to 999 generation data sets (gds) to be associated with the gdg.
+          - Default is false.
+        type: bool
+        required: false
+      fifo:
+        description:
+          - Sets the I(fifo) attribute for Generation Data Groups.
+          - If false the order is the newest gds defined to the oldest gds. this is the default value..
+          - If true the order is the oldest gds defined to the newest gds.
+          - Default is false.
+        type: bool
+        required: false
+      limit:
+        description:
+          - Sets the I(limit) attribute for Generation Data Groups.
+          - Specifies the maximum number, from 1 to 255(up to 999 if extended), of gds that can be
+            associated with the gdg being defined.
+          - I(limit) is required when I(type=gdg).
+        type: int
+        required: false
+      purge:
+        description:
+          - Sets the I(purge) attribute for Generation Data Groups.
+          - Specifies whether to override expiration dates when a generation data set (gds)
+            is rolled off and the C(scratch) option is set.
+        type: bool
+        required: false
+      scratch:
+        description:
+          - Sets the I(scratch) attribute for Generation Data Groups.
+          - Specifies what action is to be taken for a generation data set located on disk
+            volumes when the data set is uncataloged from the gdg base as a result of
+            EMPTY/NOEMPTY processing.
+        type: bool
+        required: false
       volumes:
         description:
           - >
@@ -1656,6 +1704,13 @@ def run_module():
                     type="bool",
                     default=False,
                 ),
+                # GDG options
+                limit=dict(type="int", required=False, no_log=False),
+                empty=dict(type="bool", required=False),
+                purge=dict(type="bool", required=False),
+                scratch=dict(type="bool", required=False),
+                extended=dict(type="bool", required=False),
+                fifo=dict(type="bool", required=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
                     type="bool",

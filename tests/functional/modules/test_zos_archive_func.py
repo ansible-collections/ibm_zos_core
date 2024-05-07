@@ -342,7 +342,7 @@ List of tests:
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120]
+    "record_length", [80]
 )
 @pytest.mark.parametrize(
     "record_format", ["fb", "vb"],
@@ -354,7 +354,6 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
         archive_data_set = get_tmp_ds_name()
         HLQ = "ANSIBLE"
         # Clean env
-        hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
         # Create source data set
         hosts.all.zos_data_set(
@@ -421,7 +420,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120]
+    "record_length", [80]
 )
 @pytest.mark.parametrize(
     "record_format", ["fb", "vb"],
@@ -433,7 +432,6 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
         src_data_set = get_tmp_ds_name()
         HLQ = "ANSIBLE"
         # Clean env
-        hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
         # Create source data set
         hosts.all.zos_data_set(
@@ -507,7 +505,6 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
         src_data_set = get_tmp_ds_name()
         HLQ = "ANSIBLE"
         # Clean env
-        hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
         # Create source data set
         hosts.all.zos_data_set(

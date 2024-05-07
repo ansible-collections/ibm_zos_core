@@ -19,8 +19,6 @@ import traceback
 from os import path, walk
 from random import sample
 from string import ascii_uppercase, digits
-from typing import Union, Optional
-from datetime import datetime
 
 # from ansible.module_utils._text import to_bytes
 from ansible.module_utils.common.text.converters import to_bytes
@@ -37,7 +35,7 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, exceptions, gdgs, mvscmd
+    from zoautil_py import datasets, exceptions, gdgs
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -353,7 +351,7 @@ class DataSet(object):
         Returns:
             bool -- If data is is cataloged.
         """
-        # We need to unescape because this calls to system can handle 
+        # We need to unescape because this calls to system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')
 
@@ -1757,7 +1755,7 @@ class GenerationDataGroup():
         self.empty = empty
         self.purge = purge
         self.scratch = scratch
-        self.extended =extended
+        self.extended = extended
         self.fifo = fifo
         self.data_set_type = "gdg"
         self.raw_name = name

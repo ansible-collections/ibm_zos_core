@@ -16,8 +16,8 @@ zos_unarchive -- Unarchive files and data sets in z/OS.
 
 Synopsis
 --------
-- The \ :literal:`zos\_unarchive`\  module unpacks an archive after optionally transferring it to the remote system.
-- For supported archive formats, see option \ :literal:`format`\ .
+- The ``zos_unarchive`` module unpacks an archive after optionally transferring it to the remote system.
+- For supported archive formats, see option ``format``.
 - Supported sources are USS (UNIX System Services) or z/OS data sets.
 - Mixing MVS data sets with USS files for unarchiving is not supported.
 - The archive is sent to the remote as binary, so no encoding is performed.
@@ -33,11 +33,11 @@ Parameters
 src
   The remote absolute path or data set of the archive to be uncompressed.
 
-  \ :emphasis:`src`\  can be a USS file or MVS data set name.
+  *src* can be a USS file or MVS data set name.
 
   USS file paths should be absolute paths.
 
-  MVS data sets supported types are \ :literal:`SEQ`\ , \ :literal:`PDS`\ , \ :literal:`PDSE`\ .
+  MVS data sets supported types are ``SEQ``, ``PDS``, ``PDSE``.
 
   | **required**: True
   | **type**: str
@@ -72,14 +72,14 @@ format
 
       If the data set provided exists, the data set must have the following attributes: LRECL=255, BLKSIZE=3120, and RECFM=VB
 
-      When providing the \ :emphasis:`xmit\_log\_data\_set`\  name, ensure there is adequate space.
+      When providing the *xmit_log_data_set* name, ensure there is adequate space.
 
       | **required**: False
       | **type**: str
 
 
     use_adrdssu
-      If set to true, the \ :literal:`zos\_archive`\  module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after using \ :literal:`xmit`\  or \ :literal:`terse`\ .
+      If set to true, the ``zos_archive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after using ``xmit`` or ``terse``.
 
       | **required**: False
       | **type**: bool
@@ -87,7 +87,7 @@ format
 
 
     dest_volumes
-      When \ :emphasis:`use\_adrdssu=True`\ , specify the volume the data sets will be written to.
+      When *use_adrdssu=True*, specify the volume the data sets will be written to.
 
       If no volume is specified, storage management rules will be used to determine the volume where the file will be unarchived.
 
@@ -103,7 +103,7 @@ format
 dest
   The remote absolute path or data set where the content should be unarchived to.
 
-  \ :emphasis:`dest`\  can be a USS file, directory or MVS data set name.
+  *dest* can be a USS file, directory or MVS data set name.
 
   If dest has missing parent directories, they will not be created.
 
@@ -116,7 +116,7 @@ group
 
   When left unspecified, it uses the current group of the current user unless you are root, in which case it can preserve the previous ownership.
 
-  This option is only applicable if \ :literal:`dest`\  is USS, otherwise ignored.
+  This option is only applicable if ``dest`` is USS, otherwise ignored.
 
   | **required**: False
   | **type**: str
@@ -125,13 +125,13 @@ group
 mode
   The permission of the uncompressed files.
 
-  If \ :literal:`dest`\  is USS, this will act as Unix file mode, otherwise ignored.
+  If ``dest`` is USS, this will act as Unix file mode, otherwise ignored.
 
-  It should be noted that modes are octal numbers. The user must either add a leading zero so that Ansible's YAML parser knows it is an octal number (like \ :literal:`0644`\  or \ :literal:`01777`\ )or quote it (like \ :literal:`'644'`\  or \ :literal:`'1777'`\ ) so Ansible receives a string and can do its own conversion from string into number. Giving Ansible a number without following one of these rules will end up with a decimal number which will have unexpected results.
+  It should be noted that modes are octal numbers. The user must either add a leading zero so that Ansible's YAML parser knows it is an octal number (like ``0644`` or ``01777``)or quote it (like ``'644'`` or ``'1777'``) so Ansible receives a string and can do its own conversion from string into number. Giving Ansible a number without following one of these rules will end up with a decimal number which will have unexpected results.
 
-  The mode may also be specified as a symbolic mode (for example, \`\`u+rwx\`\` or \`\`u=rw,g=r,o=r\`\`) or a special string \`preserve\`.
+  The mode may also be specified as a symbolic mode (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special string `preserve`.
 
-  \ :emphasis:`mode=preserve`\  means that the file will be given the same permissions as the source file.
+  *mode=preserve* means that the file will be given the same permissions as the source file.
 
   | **required**: False
   | **type**: str
@@ -149,7 +149,7 @@ owner
 include
   A list of directories, files or data set names to extract from the archive.
 
-  When \ :literal:`include`\  is set, only those files will we be extracted leaving the remaining files in the archive.
+  When ``include`` is set, only those files will we be extracted leaving the remaining files in the archive.
 
   Mutually exclusive with exclude.
 
@@ -177,7 +177,7 @@ list
 
 
 dest_data_set
-  Data set attributes to customize a \ :literal:`dest`\  data set that the archive will be copied into.
+  Data set attributes to customize a ``dest`` data set that the archive will be copied into.
 
   | **required**: False
   | **type**: dict
@@ -200,18 +200,18 @@ dest_data_set
 
 
   space_primary
-    If the destination \ :emphasis:`dest`\  data set does not exist , this sets the primary space allocated for the data set.
+    If the destination *dest* data set does not exist , this sets the primary space allocated for the data set.
 
-    The unit of space used is set using \ :emphasis:`space\_type`\ .
+    The unit of space used is set using *space_type*.
 
     | **required**: False
     | **type**: int
 
 
   space_secondary
-    If the destination \ :emphasis:`dest`\  data set does not exist , this sets the secondary space allocated for the data set.
+    If the destination *dest* data set does not exist , this sets the secondary space allocated for the data set.
 
-    The unit of space used is set using \ :emphasis:`space\_type`\ .
+    The unit of space used is set using *space_type*.
 
     | **required**: False
     | **type**: int
@@ -220,7 +220,7 @@ dest_data_set
   space_type
     If the destination data set does not exist, this sets the unit of measurement to use when defining primary and secondary space.
 
-    Valid units of size are \ :literal:`k`\ , \ :literal:`m`\ , \ :literal:`g`\ , \ :literal:`cyl`\ , and \ :literal:`trk`\ .
+    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
     | **required**: False
     | **type**: str
@@ -228,7 +228,7 @@ dest_data_set
 
 
   record_format
-    If the destination data set does not exist, this sets the format of the data set. (e.g \ :literal:`fb`\ )
+    If the destination data set does not exist, this sets the format of the data set. (e.g ``fb``)
 
     Choices are case-sensitive.
 
@@ -265,9 +265,9 @@ dest_data_set
   key_offset
     The key offset to use when creating a KSDS data set.
 
-    \ :emphasis:`key\_offset`\  is required when \ :emphasis:`type=ksds`\ .
+    *key_offset* is required when *type=ksds*.
 
-    \ :emphasis:`key\_offset`\  should only be provided when \ :emphasis:`type=ksds`\ 
+    *key_offset* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -276,9 +276,9 @@ dest_data_set
   key_length
     The key length to use when creating a KSDS data set.
 
-    \ :emphasis:`key\_length`\  is required when \ :emphasis:`type=ksds`\ .
+    *key_length* is required when *type=ksds*.
 
-    \ :emphasis:`key\_length`\  should only be provided when \ :emphasis:`type=ksds`\ 
+    *key_length* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -327,7 +327,7 @@ dest_data_set
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary data sets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value \ :literal:`TMPHLQ`\  is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str
@@ -342,9 +342,9 @@ force
 
 
 remote_src
-  If set to true, \ :literal:`zos\_unarchive`\  retrieves the archive from the remote system.
+  If set to true, ``zos_unarchive`` retrieves the archive from the remote system.
 
-  If set to false, \ :literal:`zos\_unarchive`\  searches the local machine (Ansible controller) for the archive.
+  If set to false, ``zos_unarchive`` searches the local machine (Ansible controller) for the archive.
 
   | **required**: False
   | **type**: bool
@@ -404,7 +404,7 @@ Notes
 .. note::
    VSAMs are not supported.
 
-   This module uses \ `zos\_copy <./zos_copy.html>`__\  to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
+   This module uses `zos_copy <./zos_copy.html>`_ to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
 
 

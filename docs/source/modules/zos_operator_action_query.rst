@@ -31,7 +31,7 @@ system
 
   If the system name is not specified, all outstanding messages for that system and for the local systems attached to it are returned.
 
-  A trailing asterisk, (\*) wildcard is supported.
+  A trailing asterisk, (*) wildcard is supported.
 
   | **required**: False
   | **type**: str
@@ -42,7 +42,7 @@ message_id
 
   If the message identifier is not specified, all outstanding messages for all message identifiers are returned.
 
-  A trailing asterisk, (\*) wildcard is supported.
+  A trailing asterisk, (*) wildcard is supported.
 
   | **required**: False
   | **type**: str
@@ -53,7 +53,7 @@ job_name
 
   If the message job name is not specified, all outstanding messages for all job names are returned.
 
-  A trailing asterisk, (\*) wildcard is supported.
+  A trailing asterisk, (*) wildcard is supported.
 
   | **required**: False
   | **type**: str
@@ -69,24 +69,24 @@ message_filter
 
 
   filter
-    Specifies the substring or regex to match to the outstanding messages, see \ :emphasis:`use\_regex`\ .
+    Specifies the substring or regex to match to the outstanding messages, see *use_regex*.
 
     All special characters in a filter string that are not a regex are escaped.
 
-    Valid Python regular expressions are supported. See \ `the official documentation <https://docs.python.org/library/re.html>`__\  for more information.
+    Valid Python regular expressions are supported. See `the official documentation <https://docs.python.org/library/re.html>`_ for more information.
 
-    Regular expressions are compiled with the flag \ :strong:`re.DOTALL`\  which makes the \ :strong:`'.'`\  special character match any character including a newline."
+    Regular expressions are compiled with the flag **re.DOTALL** which makes the **'.'** special character match any character including a newline."
 
     | **required**: True
     | **type**: str
 
 
   use_regex
-    Indicates that the value for \ :emphasis:`filter`\  is a regex or a string to match.
+    Indicates that the value for *filter* is a regex or a string to match.
 
-    If False, the module assumes that \ :emphasis:`filter`\  is not a regex and matches the \ :emphasis:`filter`\  substring on the outstanding messages.
+    If False, the module assumes that *filter* is not a regex and matches the *filter* substring on the outstanding messages.
 
-    If True, the module creates a regex from the \ :emphasis:`filter`\  string and matches it to the outstanding messages.
+    If True, the module creates a regex from the *filter* string and matches it to the outstanding messages.
 
     | **required**: False
     | **type**: bool
@@ -222,7 +222,7 @@ actions
     | **sample**: STC01537
 
   message_text
-    Content of the outstanding message requiring operator action awaiting a reply. If \ :emphasis:`message\_filter`\  is set, \ :emphasis:`message\_text`\  will be filtered accordingly.
+    Content of the outstanding message requiring operator action awaiting a reply. If *message_filter* is set, *message_text* will be filtered accordingly.
 
     | **returned**: success
     | **type**: str

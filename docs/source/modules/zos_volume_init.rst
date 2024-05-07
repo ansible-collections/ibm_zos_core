@@ -17,14 +17,14 @@ zos_volume_init -- Initialize volumes or minidisks.
 Synopsis
 --------
 - Initialize a volume or minidisk on z/OS.
-- \ :emphasis:`zos\_volume\_init`\  will create the volume label and entry into the volume table of contents (VTOC).
+- *zos_volume_init* will create the volume label and entry into the volume table of contents (VTOC).
 - Volumes are used for storing data and executable programs.
 - A minidisk is a portion of a disk that is linked to your virtual machine.
 - A VTOC lists the data sets that reside on a volume, their location, size, and other attributes.
-- \ :emphasis:`zos\_volume\_init`\  uses the ICKDSF command INIT to initialize a volume. In some cases the command could be protected by facility class \`STGADMIN.ICK.INIT\`. Protection occurs when the class is active, and the class profile is defined. Ensure the user executing the Ansible task is permitted to execute ICKDSF command INIT, otherwise, any user can use the command.
-- ICKDSF is an Authorized Program Facility (APF) program on z/OS, \ :emphasis:`zos\_volume\_init`\  will run in authorized mode but if the program ICKDSF is not APF authorized, the task will end.
+- *zos_volume_init* uses the ICKDSF command INIT to initialize a volume. In some cases the command could be protected by facility class `STGADMIN.ICK.INIT`. Protection occurs when the class is active, and the class profile is defined. Ensure the user executing the Ansible task is permitted to execute ICKDSF command INIT, otherwise, any user can use the command.
+- ICKDSF is an Authorized Program Facility (APF) program on z/OS, *zos_volume_init* will run in authorized mode but if the program ICKDSF is not APF authorized, the task will end.
 - Note that defaults set on target z/OS systems may override ICKDSF parameters.
-- If is recommended that data on the volume is backed up as the \ :emphasis:`zos\_volume\_init`\  module will not perform any backups. You can use the \ `zos\_backup\_restore <./zos_backup_restore.html>`__\  module to backup a volume.
+- If is recommended that data on the volume is backed up as the *zos_volume_init* module will not perform any backups. You can use the `zos_backup_restore <./zos_backup_restore.html>`_ module to backup a volume.
 
 
 
@@ -35,9 +35,9 @@ Parameters
 
 
 address
-  \ :emphasis:`address`\  is a 3 or 4 digit hexadecimal number that specifies the address of the volume or minidisk.
+  *address* is a 3 or 4 digit hexadecimal number that specifies the address of the volume or minidisk.
 
-  \ :emphasis:`address`\  can be the number assigned to the device (device number) when it is installed or the virtual address.
+  *address* can be the number assigned to the device (device number) when it is installed or the virtual address.
 
   | **required**: True
   | **type**: str
@@ -46,15 +46,15 @@ address
 verify_volid
   Verify that the volume serial matches what is on the existing volume or minidisk.
 
-  \ :emphasis:`verify\_volid`\  must be 1 to 6 alphanumeric characters or \ :literal:`\*NONE\*`\ .
+  *verify_volid* must be 1 to 6 alphanumeric characters or ``*NONE*``.
 
-  To verify that a volume serial number does not exist, use \ :emphasis:`verify\_volid=\*NONE\*`\ .
+  To verify that a volume serial number does not exist, use *verify_volid=*NONE**.
 
-  If \ :emphasis:`verify\_volid`\  is specified and the volume serial number does not match that found on the volume or minidisk, initialization does not complete.
+  If *verify_volid* is specified and the volume serial number does not match that found on the volume or minidisk, initialization does not complete.
 
-  If \ :emphasis:`verify\_volid=\*NONE\*`\  is specified and a volume serial is found on the volume or minidisk, initialization does not complete.
+  If *verify_volid=*NONE** is specified and a volume serial is found on the volume or minidisk, initialization does not complete.
 
-  Note, this option is \ :strong:`not`\  a boolean, leave it blank to skip the verification.
+  Note, this option is **not** a boolean, leave it blank to skip the verification.
 
   | **required**: False
   | **type**: str
@@ -73,11 +73,11 @@ volid
 
   Expects 1-6 alphanumeric, national ($,#,@) or special characters.
 
-  A \ :emphasis:`volid`\  with less than 6 characters will be padded with spaces.
+  A *volid* with less than 6 characters will be padded with spaces.
 
-  A \ :emphasis:`volid`\  can also be referred to as volser or volume serial number.
+  A *volid* can also be referred to as volser or volume serial number.
 
-  When \ :emphasis:`volid`\  is not specified for a previously initialized volume or minidisk, the volume serial number will remain unchanged.
+  When *volid* is not specified for a previously initialized volume or minidisk, the volume serial number will remain unchanged.
 
   | **required**: False
   | **type**: str
@@ -99,7 +99,7 @@ index
 
   The VTOC index enhances the performance of VTOC access.
 
-  When set to \ :emphasis:`false`\ , no index will be created.
+  When set to *false*, no index will be created.
 
   | **required**: False
   | **type**: bool
@@ -109,7 +109,7 @@ index
 sms_managed
   Specifies that the volume be managed by Storage Management System (SMS).
 
-  If \ :emphasis:`sms\_managed`\  is \ :emphasis:`true`\  then \ :emphasis:`index`\  must also be \ :emphasis:`true`\ .
+  If *sms_managed* is *true* then *index* must also be *true*.
 
   | **required**: False
   | **type**: bool
@@ -127,7 +127,7 @@ verify_volume_empty
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup datasets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value \ :literal:`TMPHLQ`\  is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str

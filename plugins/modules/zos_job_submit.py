@@ -36,7 +36,12 @@ options:
     description:
       - The source file or data set containing the JCL to submit.
       - It could be a physical sequential data set, a partitioned data set
-        qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
+        qualified by a member or a path (e.g. "USER.TEST","USER.JCL(TEST)"),
+        or a generation data set from a generation data group (for example
+        "USER.TEST.GDG(-2)").
+      - When using a generation data set, only already created generations
+        are valid. If either the relative name is positive, or negative but
+        not found, the module will fail.
       - Or a USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or a LOCAL file in ansible control node.
         (e.g "/User/tester/ansible-playbook/sample.jcl")
@@ -50,9 +55,9 @@ options:
       - local
     description:
       - The JCL location. Supported choices are C(data_set), C(uss) or C(local).
-      - C(data_set) can be a PDS, PDSE, or sequential data set.
+      - C(data_set) can be a PDS, PDSE, sequential data set, or a generation data set.
       - C(uss) means the JCL location is located in UNIX System Services (USS).
-      - C(local) means locally to the ansible control node.
+      - C(local) means locally to the Ansible control node.
   wait_time_s:
     required: false
     default: 10
@@ -601,6 +606,16 @@ EXAMPLES = r"""
     src: HLQ.DATA.LLQ
     location: data_set
     max_rc: 16
+
+- name: Submit JCL from the latest generation data set in a generation data group.
+  zos_job_submit:
+    src: HLQ.DATA.GDG(0)
+    location: data_set
+
+- name: Submit JCL from a previous generation data set in a generation data group.
+  zos_job_submit:
+    src: HLQ.DATA.GDG(-2)
+    location: data_set
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (

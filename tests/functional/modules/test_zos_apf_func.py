@@ -78,19 +78,19 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
             test_info['persistent']['data_set_name'] = prstds
         print("\n====================\n")
         pprint(test_info)
-        print("\n=======\n")
+        print("\n======= line 81-testinfo\n")
         results = hosts.all.zos_apf(**test_info)
-        print("\n=======\n")
+        print("\n======= line 83: results\n")
         print(vars(results))
-        print("\n====================\n")
+        print("\n==================== line 85: itemized resultsn")
         for result in results.contacted.values():
             assert result.get("rc") == 0
         test_info['state'] = 'absent'
-        print("\n====================\n")
+        print("\n==================== line 89 info\n")
         pprint(test_info)
         print("\n=======\n")
         results = hosts.all.zos_apf(**test_info)
-        print("\n=======\n")
+        print("\n======= line 93 results\n")
         print(vars(results))
         print("\n====================\n")
         for result in results.contacted.values():

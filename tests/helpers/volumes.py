@@ -77,6 +77,7 @@ def get_volumes(ansible_zos_module, path):
     # is a instance of a class to manage the use.
     hosts = ansible_zos_module
     list_volumes = []
+    all_volumes_list = []
     storage_online = []
     flag = False
     iteration = 5
@@ -90,11 +91,11 @@ def get_volumes(ansible_zos_module, path):
             for volume in all_volumes.contacted.values():
                 temp = volume.get('content')
                 if temp is not None:
-                    all_volumes += temp
-            flag = True if len(all_volumes) > 5 else False
+                    all_volumes_list += temp
+            flag = True if len(all_volumes_list) > 5 else False
         iteration -= 1
     # Check if the volume is of storage and is active on prefer but also online as a correct option
-    for info in all_volumes:
+    for info in all_volumes_list:
         if "ACTIVATED" in info or "-D U," in info or "UNIT" in info:
             continue
         vol_w_info = info.split()

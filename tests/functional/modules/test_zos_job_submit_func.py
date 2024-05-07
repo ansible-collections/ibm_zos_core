@@ -955,6 +955,46 @@ def test_job_from_gdg_source(ansible_zos_module, generation):
         hosts.all.zos_data_set(name=source, state="absent")
 
 
+def test_inexistent_negative_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        # Creating a GDG for the test.
+        source = get_tmp_ds_name()
+        gds_name = f"{source}(-1)"
+        hosts.all.zos_data_set(name=source, state="present", type="gdg", limit=3)
+        # Only creating generation 0.
+        hosts.all.zos_data_set(name=f"{source}(+1)", state="present", type="seq")
+
+        results = hosts.all.zos_job_submit(src=gds_name, location="data_set")
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert "was not found" in result.get("msg")
+    finally:
+        hosts.all.zos_data_set(name=f"{source}(0)", state="absent")
+        hosts.all.zos_data_set(name=source, state="absent")
+
+
+def test_inexistent_positive_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        # Creating a GDG for the test.
+        source = get_tmp_ds_name()
+        gds_name = f"{source}(+1)"
+        hosts.all.zos_data_set(name=source, state="present", type="gdg", limit=3)
+        # Only creating generation 0.
+        hosts.all.zos_data_set(name=gds_name, state="present", type="seq")
+
+        results = hosts.all.zos_job_submit(src=gds_name, location="data_set")
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert "was not found" in result.get("msg")
+    finally:
+        hosts.all.zos_data_set(name=f"{source}(0)", state="absent")
+        hosts.all.zos_data_set(name=source, state="absent")
+
+
 # This test case is related to the following GitHub issues:
 # - https://github.com/ansible-collections/ibm_zos_core/issues/677
 # - https://github.com/ansible-collections/ibm_zos_core/issues/972

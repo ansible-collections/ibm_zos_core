@@ -970,8 +970,13 @@ def run_module():
     if location == "data_set":
         # Resolving a relative GDS name and escaping special symbols if needed.
         src_data = data_set.MVSDataSet(src)
-        if not DataSet.data_set_exists(src_data.name):
-            module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.")
+
+        if data_set.is_member(src_data.name):
+            if not DataSet.data_set_member_exists(src_data.name):
+                module.fail_json(msg=f"Cannot submit job, the data set member {src_data.raw_name} was not found.")
+        else:
+            if not DataSet.data_set_exists(src_data.name):
+                module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.")
 
         job_submitted_id, duration = submit_src_jcl(
             module, src_data.name, src_name=src_data.raw_name, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)

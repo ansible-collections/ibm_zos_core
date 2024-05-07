@@ -19,7 +19,7 @@ import string
 import random
 import time
 import re
-#from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 
 
 def get_tmp_ds_name(mlq_size=7, llq_size=7, symbols=False):
@@ -38,7 +38,7 @@ def get_tmp_ds_name(mlq_size=7, llq_size=7, symbols=False):
     else:
         ds += "C" + get_random_qs(llq_size).upper()
 
-#    return DataSet.escape_data_set_name(ds)
+    return DataSet.escape_data_set_name(ds)
     return(ds)
 
 

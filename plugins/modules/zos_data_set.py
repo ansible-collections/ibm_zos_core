@@ -1389,19 +1389,19 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     if state == "present" and data_set.data_set_type == "member":
         changed = DataSet.ensure_member_present(data_set.name, replace)
     elif state == "present" and data_set.data_set_type == "gdg":
-        changed = DataSet.ensure_gdg_present(gdg=data_set, replace=replace)
+        changed = data_set.ensure_present(replace=replace)
     elif state == "present":
-        changed = DataSet.ensure_present(data_set=data_set, replace=replace, tmp_hlq=tmp_hlq, force=force)
+        changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
     elif state == "absent" and data_set.data_set_type == "member":
         changed = DataSet.ensure_member_absent(data_set.name, force)
     elif state == "absent" and data_set.data_set_type == "gdg":
-        changed = DataSet.ensure_gdg_absent(gdg=data_set, replace=replace)
+        changed = data_set.ensure_absent(replace=replace)
     elif state == "absent":
-        changed = DataSet.ensure_absent(data_set.name, data_set.volumes)
+        changed = data_set.ensure_absent()
     elif state == "cataloged":
-        changed = DataSet.ensure_cataloged(data_set.name, data_set.volumes)
+        changed = data_set.ensure_cataloged()
     elif state == "uncataloged":
-        changed = DataSet.ensure_uncataloged(data_set.name)
+        changed = data_set.ensure_uncataloged()
     return changed
 
 

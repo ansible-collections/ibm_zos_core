@@ -1727,7 +1727,7 @@ class MVSDataSet():
                 self.is_gds_active = False
         if self.data_set_type.upper() in DataSet.MVS_VSAM:
             # When trying to create a new VSAM with a specified record format will fail
-            # with ZOAU 1.3
+            # with ZOAU
             self.record_format = None
 
     def create(self):
@@ -1806,7 +1806,8 @@ class MVSDataSet():
     def catalog(self):
         """Catalog the data set in question.
         """
-        DataSet.catalog(self.name, self.volumes)
+        rc = DataSet.catalog(self.name, self.volumes)
+        return rc
 
     def ensure_uncataloged(self):
         rc = DataSet.ensure_uncataloged(self.name)

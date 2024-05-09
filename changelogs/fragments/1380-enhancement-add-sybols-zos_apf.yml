@@ -1,3 +1,3 @@
-trivial:
+minor_changes:
   - zos_apf - Change input to auto-escape 'library' names containing symbols
     (https://github.com/ansible-collections/ibm_zos_core/pull/1493).

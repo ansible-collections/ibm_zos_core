@@ -778,6 +778,7 @@ class DataSet(object):
     def replace(
         name,
         type,
+        raw_name=None,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -887,7 +888,7 @@ class DataSet(object):
             datasets.create(**formatted_args)
         except exceptions._ZOAUExtendableException as create_exception:
             raise DatasetCreateError(
-                raw_name,
+                raw_name if raw_name else name,
                 create_exception.response.rc,
                 create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
@@ -897,7 +898,7 @@ class DataSet(object):
                 if DataSet.data_set_cataloged(name, volumes):
                     return 0
             raise DatasetCreateError(
-                raw_name,
+                raw_name if raw_name else name,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned

@@ -1725,6 +1725,10 @@ class MVSDataSet():
             except Exception as e:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
+        if self.data_set_type.upper() in DataSet.MVS_VSAM:
+            # When trying to create a new VSAM with a specified record format will fail
+            # with ZOAU 1.3
+            self.record_format = None
 
     def create(self):
         """Creates the data set in question.

@@ -1785,7 +1785,7 @@ class MVSDataSet():
         """Removes the data set.
         """
         rc = DataSet.ensure_absent(self.name, self.volumes)
-        if rc ==  0:
+        if rc == 0:
             self.set_state("absent")
         return rc
 
@@ -1853,7 +1853,7 @@ class GenerationDataGroup():
             scratch=self.scratch,
             extended=self.extended,
             fifo=self.fifo,
-            )
+        )
         self.gdg = gdg
         return True
 
@@ -1896,6 +1896,7 @@ class GenerationDataGroup():
     def clear(self):
         if isinstance(self.gdg, gdgs.GenerationDataGroupView):
             self.gdg.clear()
+
 
 def is_member(data_set):
     """Determine whether the input string specifies a data set member"""

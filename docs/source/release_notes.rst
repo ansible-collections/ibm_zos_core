@@ -6,6 +6,100 @@
 Releases
 ========
 
+Version 1.10.0-beta.1
+=====================
+
+Major Changes
+-------------
+
+- Starting with IBM Ansible z/OS core version 1.10.x, ZOAU version 1.3.0 will be required.
+- Starting with IBM Ansible z/OS core version 1.10.x, all module options are case sensitive,
+  review the porting guide for specifics.
+
+Minor Changes
+-------------
+
+- ``zos_apf`` - Enhanced error messages when an exception is caught.
+- ``zos_backup_restore`` - Add tmp_hlq option to the user interface to override the default high level qualifier (HLQ) for temporary and backup.
+- ``zos_copy`` - Documented module options `group` and `owner`.
+
+Bugfixes
+--------
+
+- ``zos_apf`` - Option **list** previously only returned one data set, now it returns a list of retrieved data sets.
+- ``zos_blockinfile`` - Option **block** when containing double double quotation marks results in a task failure (failed=True); now the module handles this case to avoid failure.
+- ``zos_find`` - Option **size** failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
+- ``zos_job_submit``
+
+    - Did not default to **location=DATA_SET** when no location was defined, now the location defaults to DATA_SET.
+    - Option **max_rc** previously did not influence a modules status, now the option value influences the tasks failure status.
+
+- zos_mvs_raw - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1320).
+
+Porting Guide
+-------------
+
+- ``zos_archive``
+
+  - option **terse_pack** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_backup_restore`` - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_copy``
+
+  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_data_set``
+
+  - option **record_format** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - options inside **batch** no longer accept uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_job_submit`` - option **location** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_mount``
+
+  - option **automove** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **fs_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **mount_opts** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **tag_untagged** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **unmount_opts** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_mvs_raw``
+
+  - options inside **dd_concat** no longer accept uppercase choices, users should replace them with lowercase ones.
+  - suboption **record_format** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **record_format** of **dd_unix** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboptions **disposition_normal** and **disposition_abnormal** of **dd_data_set** no longer accept **catlg** and **uncatlg** as choices. This also applies when defining a **dd_data_set** inside **dd_concat**.
+
+- ``zos_unarchive``
+
+  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.10`_ - `3.12`_
+* Supported by IBM `Z Open Automation Utilities 1.3.0`_ or later.
+
 Version 1.9.0
 =============
 
@@ -1047,6 +1141,8 @@ Known issues
    https://www.ibm.com/docs/en/zoau/1.2.x
 .. _Z Open Automation Utilities 1.2.5:
    https://www.ibm.com/docs/en/zoau/1.2.x
+.. _Z Open Automation Utilities 1.3.0:
+   https://www.ibm.com/docs/en/zoau/1.3.x
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
 .. _z/OS®:

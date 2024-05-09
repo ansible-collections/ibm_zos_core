@@ -869,14 +869,14 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
             results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, type=filesystem)
             temp_dir_name = make_tempfile(hosts, directory=True)
             results2 = hosts.all.command(
-                cmd="mount -t {0} -f {1} {2}".format(
+                cmd="usr/sbin/mount -t {0} -f {1} {2}".format(
                     filesystem, DEFAULT_DATA_SET_NAME, temp_dir_name
                 )
             )
             results3 = hosts.all.shell(cmd="cd {0} ; df .".format(temp_dir_name))
 
             # clean up
-            results4 = hosts.all.command(cmd="unmount {0}".format(temp_dir_name))
+            results4 = hosts.all.command(cmd="usr/sbin/unmount {0}".format(temp_dir_name))
             results5 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
             results6 = hosts.all.file(path=temp_dir_name, state="absent")
 

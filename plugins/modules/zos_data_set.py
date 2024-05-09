@@ -780,7 +780,9 @@ names:
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet, GenerationDataGroup, MVSDataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    DataSet, GenerationDataGroup, MVSDataSet, Member
+)
 from ansible.module_utils.basic import AnsibleModule
 
 import re
@@ -1339,6 +1341,10 @@ def get_data_set_handler(**params):
             extended=params.get("extended", None),
             fifo=params.get("fifo", None),
         )
+    elif params.get("type") == "member":
+        return Member(
+            name=params.get("name")
+        )
     else:
         return MVSDataSet(
             name=params.get("name"),
@@ -1386,14 +1392,12 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     #  passing in **extra_args forced me to modify the acceptable parameters
     #  for multiple functions in data_set.py including ensure_present, replace
     #  and create where the force parameter has no bearing.
-    if state == "present" and data_set.data_set_type == "member":
-        changed = DataSet.ensure_member_present(data_set.name, replace)
-    elif state == "present" and data_set.data_set_type == "gdg":
+    if state == "present" and data_set.data_set_type in ["member", "gdg"]:
         changed = data_set.ensure_present(replace=replace)
     elif state == "present":
         changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
     elif state == "absent" and data_set.data_set_type == "member":
-        changed = DataSet.ensure_member_absent(data_set.name, force)
+        changed = data_set.ensure_absent(force=force)
     elif state == "absent" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_absent(replace=replace)
     elif state == "absent":
@@ -1842,33 +1846,8 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
-                # This *appears* redundant, bit the parse_and_validate reinforces the default value for record_type
-                # if data_set_params.get("batch") is not None:
-                #     # for entry in data_set_params.get("batch"):
-                #     #     if entry.get("name") and DataSet.is_gds_relative_name(entry.get("name")):
-                #     #         entry["name"] = DataSet.resolve_gds_absolute_name(entry.get("name"))
-                #     #     if entry.get("type") is not None and entry.get("type") in DATA_SET_TYPES_VSAM:
-                #     #         entry["record_format"] = None
-                #     # if data_set_params.get("type") is not None:
-                #     #     data_set_params["type"] = None
-                #     # if data_set_params.get("state") is not None:
-                #     #     data_set_params["state"] = None
-                #     # if data_set_params.get("space_type") is not None:
-                #     #     data_set_params["space_type"] = None
-                #     # if data_set_params.get("space_primary") is not None:
-                #     #     data_set_params["space_primary"] = None
-                #     # if data_set_params.get("space_secondary") is not None:
-                #     #     data_set_params["space_secondary"] = None
-                #     # if data_set_params.get("replace") is not None:
-                #     #     data_set_params["replace"] = None
-                #     # if data_set_params.get("record_format") is not None:
-                #     #     data_set_params["record_format"] = None
-                # else:
-                #     if data_set_params.get("type") in DATA_SET_TYPES_VSAM:
-                #         if data_set_params.get("record_format") is not None:
-                #             data_set_params["record_format"] = None
-
-                data_set = get_data_set_handler(**data_set_params)  # this returns MVSDataSet or GenerationDataGroup.
+                # this returns MVSDataSet, Member or GenerationDataGroup
+                data_set = get_data_set_handler(**data_set_params)
                 result["changed"] = perform_data_set_operations(
                     data_set=data_set,
                     state=data_set_params.get("state"),

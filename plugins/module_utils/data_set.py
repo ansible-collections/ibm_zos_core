@@ -824,7 +824,7 @@ class DataSet(object):
 
         ds_type = kwargs.get("type")
         if ds_type and ds_type.upper() == "ZFS":
-            type = "LDS"
+            ds_type = "LDS"
 
         volumes = ",".join(volumes) if volumes else None
         kwargs["space_primary"] = primary
@@ -1725,7 +1725,7 @@ class MVSDataSet():
             except Exception as e:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
-        if self.data_set_type.upper() in DataSet.MVS_VSAM:
+        if self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs":
             # When trying to create a new VSAM with a specified record format will fail
             # with ZOAU
             self.record_format = None
@@ -1824,6 +1824,26 @@ class MVSDataSet():
         if new_state not in self.data_set_possible_states:
             raise ValueError(f"State {self.state} not supported for MVSDataset class.")
         return new_state
+
+
+class Member():
+    def __init__(
+            self,
+            name,
+            data_set_type="member",
+            parent_data_set_type="pds",
+    ):
+        self.name = name
+        self.parent_data_set_type = parent_data_set_type
+        self.data_set_type = data_set_type
+
+    def ensure_absent(self, force):
+        rc = DataSet.ensure_member_absent(self.name, force)
+        return rc
+
+    def ensure_present(self, replace=None):
+        rc = DataSet.ensure_member_present(self.name, replace)
+        return rc
 
 
 class GenerationDataGroup():

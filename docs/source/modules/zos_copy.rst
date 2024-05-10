@@ -635,7 +635,7 @@ Examples
      zos_copy:
        src: /path/to/foo.conf
        dest: /etc/foo.conf
-       mode: 0644
+       mode: "0644"
        group: foo
        owner: bar
 

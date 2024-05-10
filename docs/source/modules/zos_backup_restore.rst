@@ -241,7 +241,7 @@ Examples
        data_sets:
          include: user.**
        backup_name: /tmp/temp_backup.dzp
-       recover: yes
+       recover: true
 
    - name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP.DZP,
        allocate 100MB for data sets used in backup process.
@@ -271,7 +271,7 @@ Examples
        operation: backup
        backup_name: /tmp/temp_backup.dzp
        volume: MYVOL1
-       full_volume: yes
+       full_volume: true
        space: 1
        space_type: g
 
@@ -314,7 +314,7 @@ Examples
      zos_backup_restore:
        operation: restore
        volume: MYVOL2
-       full_volume: yes
+       full_volume: true
        backup_name: MY.BACKUP.DZP
        space: 1
        space_type: g

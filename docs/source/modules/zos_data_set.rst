@@ -588,7 +588,7 @@ Examples
        space_type: m
        record_format: u
        record_length: 25
-       replace: yes
+       replace: true
 
    - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
      zos_data_set:
@@ -599,7 +599,7 @@ Examples
        record_format: u
        record_length: 25
        volumes: "222222"
-       replace: yes
+       replace: true
 
    - name: Create an ESDS data set if it does not exist
      zos_data_set:
@@ -634,7 +634,7 @@ Examples
      zos_data_set:
        name: someds.name.here(mydata)
        type: member
-       replace: yes
+       replace: true
 
    - name: Write a member to an existing PDS; do not replace if member exists
      zos_data_set:
@@ -652,22 +652,22 @@ Examples
        name: someds.name.here(mydata)
        state: absent
        type: member
-       force: yes
+       force: true
 
    - name: Create multiple partitioned data sets and add one or more members to each
      zos_data_set:
        batch:
-         - name:  someds.name.here1
+         - name: someds.name.here1
            type: pds
            space_primary: 5
            space_type: m
            record_format: fb
-           replace: yes
+           replace: true
          - name: someds.name.here1(member1)
            type: member
          - name: someds.name.here2(member1)
            type: member
-           replace: yes
+           replace: true
          - name: someds.name.here2(member2)
            type: member
 

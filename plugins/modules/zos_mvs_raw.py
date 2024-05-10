@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1291,7 +1291,7 @@ EXAMPLES = r"""
           dd_name: sysprint
           data_set_name: mypgm.output.ds
           disposition: new
-          reuse: yes
+          reuse: true
           type: seq
           space_primary: 5
           space_secondary: 1
@@ -1315,7 +1315,7 @@ EXAMPLES = r"""
           dd_name: sysprint
           data_set_name: mypgm.output.ds
           disposition: new
-          reuse: yes
+          reuse: true
           type: seq
           space_primary: 5
           space_secondary: 1
@@ -1360,7 +1360,7 @@ EXAMPLES = r"""
           dd_name: sysprint
           data_set_name: mypgm.output.ds
           disposition: new
-          reuse: yes
+          reuse: true
           type: seq
           space_primary: 5
           space_secondary: 1
@@ -1388,8 +1388,8 @@ EXAMPLES = r"""
           dd_name: sysprint
           data_set_name: mypgm.output.ds
           disposition: new
-          replace: yes
-          backup: yes
+          replace: true
+          backup: true
           type: seq
           space_primary: 5
           space_secondary: 1
@@ -1460,7 +1460,7 @@ EXAMPLES = r"""
 - name: Take a set of data sets and write them to an archive.
   zos_mvs_raw:
     program_name: adrdssu
-    auth: yes
+    auth: true
     dds:
       - dd_data_set:
           dd_name: archive
@@ -1476,7 +1476,7 @@ EXAMPLES = r"""
 - name: Merge two sequential data sets and write them to new data set
   zos_mvs_raw:
     program_name: sort
-    auth: no
+    auth: false
     parm: "MSGPRT=CRITICAL,LIST"
     dds:
       - dd_data_set:
@@ -1507,7 +1507,7 @@ EXAMPLES = r"""
     files.
   zos_mvs_raw:
     pgm: idcams
-    auth: yes
+    auth: true
     dds:
       - dd_concat:
           dd_name: sysprint
@@ -1524,57 +1524,56 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SYS1.*')"
 
-- name: Drop the contents of input dataset into output dataset
-      using REPRO command.
+- name: Drop the contents of input dataset into output dataset using REPRO command.
   zos_mvs_raw:
     pgm: idcams
-    auth: yes
+    auth: true
     dds:
-    - dd_data_set:
-        dd_name: INPUT
-        data_set_name: myhlq.ds1.input
-    - dd_data_set:
-        dd_name: OUTPUT
-        data_set_name: myhlq.ds1.output
-    - dd_input:
-        dd_name: sysin
-        content: |
+      - dd_data_set:
+          dd_name: INPUT
+          data_set_name: myhlq.ds1.input
+      - dd_data_set:
+          dd_name: OUTPUT
+          data_set_name: myhlq.ds1.output
+      - dd_input:
+          dd_name: sysin
+          content: |
             " REPRO -
               INFILE(INPUT) -
               OUTFILE(OUTPUT)"
-    - dd_output:
-        dd_name: sysprint
-        return_content:
-          type: text
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
 
-    - name: Define a cluster using a literal block style indicator
-          with a 2 space indentation.
-      zos_mvs_raw:
-        program_name: idcams
-        auth: yes
-        dds:
-          - dd_output:
-              dd_name: sysprint
-              return_content:
-                type: text
-          - dd_input:
-              dd_name: sysin
-              content: |2
-                DEFINE CLUSTER -
-                          (NAME(ANSIBLE.TEST.VSAM) -
-                          CYL(10 10)  -
-                          FREESPACE(20 20) -
-                          INDEXED -
-                          KEYS(32 0) -
-                          NOERASE -
-                          NONSPANNED -
-                          NOREUSE -
-                          SHAREOPTIONS(3 3) -
-                          SPEED -
-                          UNORDERED -
-                          RECORDSIZE(4086 32600) -
-                          VOLUMES(222222) -
-                          UNIQUE)
+- name: Define a cluster using a literal block style indicator
+      with a 2 space indentation.
+  zos_mvs_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: 2
+            DEFINE CLUSTER -
+                      (NAME(ANSIBLE.TEST.VSAM) -
+                      CYL(10 10)  -
+                      FREESPACE(20 20) -
+                      INDEXED -
+                      KEYS(32 0) -
+                      NOERASE -
+                      NONSPANNED -
+                      NOREUSE -
+                      SHAREOPTIONS(3 3) -
+                      SPEED -
+                      UNORDERED -
+                      RECORDSIZE(4086 32600) -
+                      VOLUMES(222222) -
+                      UNIQUE)
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (

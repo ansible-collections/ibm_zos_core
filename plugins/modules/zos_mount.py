@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -344,8 +344,8 @@ EXAMPLES = r"""
     fs_type: zfs
     state: mounted
     persistent:
-        data_store: SYS1.PARMLIB(BPXPRMAA)
-        comment: For Tape2 project
+      data_store: SYS1.PARMLIB(BPXPRMAA)
+      comment: For Tape2 project
 
 - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
   zos_mount:
@@ -354,10 +354,10 @@ EXAMPLES = r"""
     fs_type: zfs
     state: mounted
     persistent:
-        data_store: SYS1.PARMLIB(BPXPRMAA)
-        backup: Yes
-        backup_name: SYS1.PARMLIB(BPXPRMAB)
-        comment: For Tape2 project
+      data_store: SYS1.PARMLIB(BPXPRMAA)
+      backup: true
+      backup_name: SYS1.PARMLIB(BPXPRMAB)
+      comment: For Tape2 project
 
 - name: Mount a filesystem ignoring uid/gid values.
   zos_mount:
@@ -365,7 +365,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    allow_uid: no
+    allow_uid: false
 
 - name: Mount a filesystem asynchronously (don't wait for completion).
   zos_mount:
@@ -400,7 +400,6 @@ EXAMPLES = r"""
     state: mounted
     automove: AUTOMOVE
     automove_list: EXCLUDE,DEV4,DEV5,DEV6,DEV7
-
 """
 
 RETURN = r"""

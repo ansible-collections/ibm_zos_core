@@ -221,7 +221,7 @@ EXAMPLES = r'''
 - name: Add a library (cataloged) to the APF list and persistence
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
-    force_dynamic: True
+    force_dynamic: true
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
 - name: Remove a library from the APF list and persistence
@@ -239,7 +239,7 @@ EXAMPLES = r'''
     batch:
       - library: SOME.SEQ.DS1
       - library: SOME.SEQ.DS2
-        sms: True
+        sms: true
       - library: SOME.SEQ.DS3
         volume: T12345
 - name: Print the APF list matching library pattern or volume serial number

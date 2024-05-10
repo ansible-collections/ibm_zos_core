@@ -357,7 +357,7 @@ EXAMPLES = r'''
       name: terse
       format_options:
         terse_pack: "spack"
-        use_adrdssu: True
+        use_adrdssu: true
 
 # Use a pattern to store
 - name: Compress data set pattern using xmit

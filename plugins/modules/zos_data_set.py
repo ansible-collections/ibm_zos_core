@@ -1399,7 +1399,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     elif state == "absent" and data_set.data_set_type == "member":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent" and data_set.data_set_type == "gdg":
-        changed = data_set.ensure_absent(replace=replace)
+        changed = data_set.ensure_absent(force=force)
     elif state == "absent":
         changed = data_set.ensure_absent()
     elif state == "cataloged":

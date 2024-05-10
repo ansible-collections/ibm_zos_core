@@ -1866,6 +1866,7 @@ class GenerationDataGroup():
         self.fifo = fifo
         self.data_set_type = "gdg"
         self.raw_name = name
+        self.gdg = None
         # Removed escaping since is not needed by the GDG python api.
         # self.name = DataSet.escape_data_set_name(self.name)
 
@@ -1901,21 +1902,23 @@ class GenerationDataGroup():
             changed = True
         return changed
 
-    def ensure_absent(self, replace):
-        """Ensure gdg base is deleted. If replace is True and there is an
+    def ensure_absent(self, force):
+        """Ensure gdg base is deleted. If force is True and there is an
         existing GDG with active generations it will remove them and delete
         the GDG.
         """
         # Try to delete
         if isinstance(self.gdg, gdgs.GenerationDataGroupView):
             rc = datasets.delete(self.gdg.name)
-            # If it fails because of active generations check if replace is True
+            # If it fails because of active generations check if force is True
             if rc > 0:
-                if replace:
-                    gdg_view = gdgs.GenerationDataGroupView(name=self.gdg.name)
-                    gdg_view.delete()
+                if force:
+                    self.gdg.delete()
                 else:
                     raise DatasetDeleteError(self.raw_name, rc)
+        else:
+            gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+            gdg_view.delete()
         return True
 
     def clear(self):

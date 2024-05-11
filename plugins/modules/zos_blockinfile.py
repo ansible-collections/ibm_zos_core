@@ -456,7 +456,7 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
 
         cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
     else:
-        cmd = """dmod -b {0} {1} {2} "//d" {4}""".format(force, encoding, marker, src)
+        cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
 
     rc, stdout, stderr = module.run_command(cmd)
     cmd = clean_command(cmd)

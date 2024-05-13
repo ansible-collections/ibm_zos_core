@@ -259,7 +259,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             for result in results.contacted.values():
                 vol = result.get("stdout")
             item['volume'] = vol
-        prstds = get_tmp_ds_name(5,5,True)
+        prstds = get_tmp_ds_name(5,5,False)
         cmdStr = "dtouch -tseq {0}".format(prstds)
         hosts.all.shell(cmd=cmdStr)
         test_info['persistent']['data_set_name'] = prstds

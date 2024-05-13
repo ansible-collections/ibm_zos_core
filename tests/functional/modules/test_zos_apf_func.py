@@ -251,7 +251,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
         )
         for item in test_info['batch']:
-            ds = get_tmp_ds_name(1,1,True)
+            ds = get_tmp_ds_name(1,1,False)
             hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
             item['library'] = ds
             cmdStr = "dls -l " + ds + " | awk '{print $5}' "

@@ -980,74 +980,62 @@ def test_gdg_create_and_delete(ansible_zos_module, dstype):
         data_set_name = get_tmp_ds_name()
         results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(name=f"{data_set_name}(0)", state="absent")
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(name=data_set_name, state="absent")
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
-        hosts.all.zos_data_set(name=data_set_name, state="absent")
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True)
 
 
-@pytest.mark.parametrize("char", [ "@", "#", "-", "$"])
-def test_gdg_create_jumping_gen(ansible_zos_module, char):
+def test_gdg_create_and_delete_force(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        data_set_name = f"AN{char}IBLE.TE{char}T"
-        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=1)
+        data_set_name = get_tmp_ds_name()
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(name=f"{data_set_name}(+10)", state="present", type="seq")
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type="seq")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dls -tGDS AN\{char}IBLE.TE\{char}T*")
-        pprint(vars(results))
-        results = hosts.all.zos_data_set(name=f"{data_set_name}(0)", state="absent")
+        results = hosts.all.zos_data_set(name=data_set_name, state="absent", type="gdg")
         for result in results.contacted.values():
-            pprint(result)
-            assert result.get("changed") is True
-            assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(name=data_set_name, state="absent",)
+            assert result.get("changed") is False
+            assert result.get("failed", False) is True
+            assert "DatasetDeleteError" in result.get("msg")
+        results = hosts.all.zos_data_set(name=data_set_name, state="absent", force=True, type="gdg")
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
-        hosts.all.zos_data_set(name=data_set_name, state="absent")
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True, type="gdg")
 
 
-@pytest.mark.parametrize("char", ["#", "$", "-", "@"])
-def test_create_special_chars(ansible_zos_module, char):
+def test_create_special_chars(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        data_set_name = f"AN{char}IBLE.TE{char}T"
+        data_set_name = get_tmp_ds_name(symbols=True)
         results = hosts.all.zos_data_set(name=data_set_name, state="present", type="seq")
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dls -tGDS AN\{char}IBLE.TE\{char}T*")
-        print(vars(results))
+        results = hosts.all.shell(cmd=f"dls ANSIBLE.*")
+        for result in results.contacted.values():
+            assert data_set_name in result.get("stdout")
         results = hosts.all.zos_data_set(name=data_set_name, state="absent",)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:

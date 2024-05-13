@@ -67,6 +67,11 @@ options:
         The module will catalog the original data set on completion, if the attempts to
         catalog fail, no action is taken. Module completes successfully with I(changed=False).
       - >
+        If I(state=absent) and I(type=gdg) and the GDG base has active generations the module
+        will complete successfully with I(changed=False). To remove it option I(force) needs
+        to be used. If the GDG base does not have active generations the module will complete
+        successfully with I(changed=True).
+      - >
         If I(state=present) and the data set does not exist on the managed node,
         create and catalog the data set, module completes successfully with I(changed=True).
       - >
@@ -330,7 +335,9 @@ options:
       - The I(force=True) option enables sharing of data sets through the
         disposition I(DISP=SHR).
       - The I(force=True) only applies to data set members when I(state=absent)
-        and I(type=member).
+        and I(type=member) and when removing a GDG base with active generations.
+      - If I(force=True), I(type=gdg) and I(state=absent) it will force remove
+        a GDG base with active generations.
     type: bool
     required: false
     default: false
@@ -1148,9 +1155,9 @@ def data_set_type(contents, dependencies):
     # raise ValueError (
     #         vars(dependencies)
     #     )
-    if contents == "gdg" and dependencies.get("limit") is None:
+    if contents == "gdg" and dependencies.get("state") == "present" and dependencies.get("limit") is None:
         raise ValueError(
-            "Limit must be provided when data set type is gdg"
+            "Limit must be provided when data set type is gd and state=present."
         )
     types = "|".join(DATA_SET_TYPES)
     if not re.fullmatch(types, contents, re.IGNORECASE):
@@ -1331,6 +1338,16 @@ def key_offset(contents, dependencies):
 
 
 def get_data_set_handler(**params):
+    """Get object initialized based on parameters.
+    Parameters
+    ----------
+    **params
+      Data set parameters.
+
+    Returns
+    -------
+    MVSDataSet or GenerationDataGroup or Member object.
+    """
     if params.get("type") == "gdg":
         return GenerationDataGroup(
             name=params.get("name"),
@@ -1371,8 +1388,8 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
 
     Parameters
     ----------
-    name : str
-        Name of the dataset.
+    data_set : {object | MVSDataSet | Member | GenerationDataGroup }
+        Data set object to perform operations on.
     state : str
         State of the data sets.
     replace : str
@@ -1389,9 +1406,6 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
         If changes were made.
     """
     changed = False
-    #  passing in **extra_args forced me to modify the acceptable parameters
-    #  for multiple functions in data_set.py including ensure_present, replace
-    #  and create where the force parameter has no bearing.
     if state == "present" and data_set.data_set_type in ["member", "gdg"]:
         changed = data_set.ensure_present(replace=replace)
     elif state == "present":

@@ -1908,17 +1908,16 @@ class GenerationDataGroup():
         the GDG.
         """
         # Try to delete
-        if isinstance(self.gdg, gdgs.GenerationDataGroupView):
-            rc = datasets.delete(self.gdg.name)
-            # If it fails because of active generations check if force is True
-            if rc > 0:
-                if force:
+        rc = datasets.delete(self.name)
+        if rc > 0:
+            if force:
+                if isinstance(self.gdg, gdgs.GenerationDataGroupView):
                     self.gdg.delete()
                 else:
-                    raise DatasetDeleteError(self.raw_name, rc)
-        else:
-            gdg_view = gdgs.GenerationDataGroupView(name=self.name)
-            gdg_view.delete()
+                    gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+                    gdg_view.delete()
+            else:
+                raise DatasetDeleteError(self.raw_name, rc)
         return True
 
     def clear(self):

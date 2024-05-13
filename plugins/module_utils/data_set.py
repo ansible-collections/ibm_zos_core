@@ -1803,7 +1803,7 @@ class MVSDataSet():
     """
     This class represents a z/OS data set that can be yet to be created or
     already created in the system. It encapsulates the data set attributes
-    to easy access.
+    to easy access and provides operations to perform in the same data set.
 
     """
     def __init__(
@@ -1862,7 +1862,7 @@ class MVSDataSet():
         if DataSet.is_gds_relative_name(self.name):
             try:
                 self.name = DataSet.resolve_gds_absolute_name(self.name)
-            except Exception as e:
+            except Exception:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
         if self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs":
@@ -1872,6 +1872,11 @@ class MVSDataSet():
 
     def create(self):
         """Creates the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
         """
         arguments = {
             "name" : self.name,
@@ -1897,8 +1902,22 @@ class MVSDataSet():
         DataSet.create(**arguments)
         self.set_state("present")
 
-    def ensure_present(self, tmp_hlq=None, replace=None, force=None):
-        """Creates the data set in question.
+    def ensure_present(self, tmp_hlq=None, replace=False, force=False):
+        """ Make sure that the data set is created or fail creating it.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+        replace : bool
+            Used to determine behavior when data set already exists.
+        force : bool
+            Used to determine behavior when performing member operations on a pdse.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
         """
         arguments = {
             "name" : self.name,
@@ -1927,6 +1946,11 @@ class MVSDataSet():
 
     def ensure_absent(self):
         """Removes the data set.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
         """
         rc = DataSet.ensure_absent(self.name, self.volumes)
         if rc == 0:
@@ -1935,58 +1959,164 @@ class MVSDataSet():
 
     def delete(self):
         """Deletes the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
         """
         DataSet.ensure_absent(self.name, self.volumes)
         self.set_state("absent")
 
     def ensure_cataloged(self):
+        """
+        Ensures the data set is cataloged, if not catalogs it.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
         rc = DataSet.ensure_cataloged(name=self.name, volumes=self.volumes)
+        self.is_cataloged = True
         return rc
 
     def catalog(self):
         """Catalog the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
         """
         rc = DataSet.catalog(self.name, self.volumes)
+        self.is_cataloged = True
         return rc
 
     def ensure_uncataloged(self):
+        """
+        Ensures the data set is uncataloged, if not catalogs it.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
         rc = DataSet.ensure_uncataloged(self.name)
+        self.is_cataloged = False
         return rc
 
     def uncatalog(self):
         """Uncatalog the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
         """
-        DataSet.uncatalog(self.name)
+        rc = DataSet.uncatalog(self.name)
+        self.is_cataloged = False
+        return rc
 
     def set_state(self, new_state):
-        """Used to set the data set state
+        """Used to set the data set state.
+
+        Parameters
+        ----------
+        new_state : str {unknown, present, absent}
+            New state of the data set.
+
+        Returns
+        -------
+            bool
+                If state was set properly.
         """
         if new_state not in self.data_set_possible_states:
             raise ValueError(f"State {self.state} not supported for MVSDataset class.")
-        return new_state
+        return True
 
 
 class Member():
+    """Represents a member on z/OS.
+
+    Attributes
+    ----------
+    name : str
+        Data set member name.
+    parent_data_set_type : str {pds, pdse}
+        Parent data set type.
+    data_set_type : str
+        Member data set type, should always be "member".
+    """
     def __init__(
             self,
             name,
-            data_set_type="member",
             parent_data_set_type="pds",
     ):
         self.name = name
         self.parent_data_set_type = parent_data_set_type
-        self.data_set_type = data_set_type
+        self.data_set_type = "member"
 
     def ensure_absent(self, force):
+        """ Make sure that the member is absent or fail deleting it.
+
+        Parameters
+        ----------
+        force : bool
+            Used to determine behavior when performing member operations on a pdse.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
         rc = DataSet.ensure_member_absent(self.name, force)
         return rc
 
     def ensure_present(self, replace=None):
+        """ Make sure that the member is created or fail creating it.
+
+        Parameters
+        ----------
+        replace : bool
+            Used to determine behavior when member already exists.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
         rc = DataSet.ensure_member_present(self.name, replace)
         return rc
 
 
 class GenerationDataGroup():
+    """Represents a Generation Data Group base in z/OS.
+
+    Attributes
+    ----------
+    name : str
+        The name of the GDG base.
+    limit : int
+        Maximum number of generations associated with this GDG base.
+    empty : bool
+        Empty attribute for the GDG base.
+    purge : bool
+        purge attribute for the GDG base.
+    scratch : bool
+        scratch attribute for the GDG base.
+    extended : bool
+        extended attribute for the GDG base. If extended a GDG base can
+        have up to 999 generations, if not just up to 255.
+    fifo : bool
+        fifo attribute for the GDG base.
+    data_set_type : str
+        data_set_type will always be "gdg"
+    raw_name : str
+        The raw name of the data set.
+    gdg : GenerationDataGroupView
+        ZOAU GenerationDataGroupView object to interact with the GDG base.
+    """
     def __init__(
             self,
             name,
@@ -2010,7 +2140,14 @@ class GenerationDataGroup():
         # Removed escaping since is not needed by the GDG python api.
         # self.name = DataSet.escape_data_set_name(self.name)
 
-    def create(self, replace):
+    def create(self):
+        """Creates the GDG.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
         gdg = gdgs.create(
             name=self.name,
             limit=self.limit,
@@ -2024,6 +2161,17 @@ class GenerationDataGroup():
         return True
 
     def ensure_present(self, replace):
+        """Make sure that the data set is created or fail creating it.
+        Parameters
+        ----------
+        replace : bool
+            Used to determine behavior when member already exists.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
         arguments = vars(self)
         changed = False
         present = False
@@ -2046,6 +2194,15 @@ class GenerationDataGroup():
         """Ensure gdg base is deleted. If force is True and there is an
         existing GDG with active generations it will remove them and delete
         the GDG.
+        Parameters
+        ----------
+        force : bool
+            If the GDG base has active generations, remove them and delete the GDG base.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
         """
         # Try to delete
         rc = datasets.delete(self.name)

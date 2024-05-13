@@ -22,6 +22,8 @@ module: zos_apf
 version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
+  - "Rich Parker (@richp405)"
+  - "Fernando Flores (@fernandofloresg))"
 short_description: Add or remove libraries to Authorized Program Facility (APF)
 description:
   - Adds or removes libraries to Authorized Program Facility (APF).

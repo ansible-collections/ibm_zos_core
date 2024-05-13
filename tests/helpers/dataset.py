@@ -56,11 +56,15 @@ def get_random_q(size=7):
         count += 1
     return random_q
 
+
 def get_random_qs(size=7):
     """ Function or test to ensure random hlq of datasets, including symbol characters"""
     # Generate the first random hlq of size pass as parameter
-    letters =  string.ascii_uppercase + string.digits + "$@#"
+    letters =  string.ascii_uppercase + string.digits
+    special_chars = "$@#-"
     random_q =  ''.join(random.choice(letters)for iteration in range(size))
+    random_char = random_q[random.choice(range(0, size))]
+    random_q = random_q.replace(random_char, random.choice(special_chars))
     count = 0
     # Generate a random HLQ and verify if is valid, if not, repeat the process
     while  count < 5 and not re.fullmatch(
@@ -69,5 +73,8 @@ def get_random_qs(size=7):
             re.IGNORECASE,
         ):
         random_q =  ''.join(random.choice(letters)for iteration in range(size))
+        random_char = random_q[random.choice(range(0, size))]
+        random_q = random_q.replace(random_char, random.choice(special_chars))
         count += 1
     return random_q
+

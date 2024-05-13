@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from shlex import quote
-from pprint import pprint
 
 __metaclass__ = type
 
@@ -111,11 +110,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module, volumes_with_vvds):
             cmdStr = "dtouch -tseq {0}".format(prstds)
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
-        print("\n========================\n")
-        pprint(test_info)
         results = hosts.all.zos_apf(**test_info)
-        pprint(vars(results))
-        print("\n========================\n")
         for result in results.contacted.values():
             assert result.get("rc") == 0
             assert result.get("backup_name")[:6] == tmphlq
@@ -151,11 +146,7 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
             cmdStr = "dtouch -tseq {0}".format(prstds)
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
-        print( "\n=====================\n")
-        pprint(test_info)
         results = hosts.all.zos_apf(**test_info)
-        pprint(vars(results))
-        print( "\n=====================\n")
 
         for result in results.contacted.values():
             assert result.get("rc") == 0
@@ -273,7 +264,6 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         hosts.all.shell(cmd=cmdStr)
         test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("rc") == 0
         add_exptd = add_batch_expected.format(test_info['batch'][0]['library'], test_info['batch'][0]['volume'],
@@ -288,7 +278,6 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         assert actual == add_exptd
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("rc") == 0
         del_exptd = del_expected.replace(" ", "")

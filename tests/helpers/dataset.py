@@ -35,7 +35,7 @@ def get_tmp_ds_name(mlq_size=7, llq_size=7, symbols=False):
     if symbols:
         ds += "C" + get_random_qs(llq_size).upper()
     else:
-        ds += "C" + get_random_qs(llq_size).upper()
+        ds += "C" + get_random_q(llq_size).upper()
 
     return(ds)
 

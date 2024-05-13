@@ -1041,3 +1041,23 @@ def test_create_special_chars(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=data_set_name, state="absent")
 
+
+def test_create_member_special_chars(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name(symbols=True)
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="pds")
+        results = hosts.all.zos_data_set(name=data_set_name+ "(M@M#R)", state="present", type="member")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.shell(cmd=f"dls ANSIBLE.*")
+        for result in results.contacted.values():
+            assert data_set_name in result.get("stdout")
+        results = hosts.all.zos_data_set(name=data_set_name, state="absent",)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent")
+

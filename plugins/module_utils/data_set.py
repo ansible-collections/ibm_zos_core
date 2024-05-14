@@ -1862,6 +1862,7 @@ class MVSDataSet():
         if DataSet.is_gds_relative_name(self.name):
             try:
                 self.name = DataSet.resolve_gds_absolute_name(self.name)
+                self.is_gds_active = True
             except Exception:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False

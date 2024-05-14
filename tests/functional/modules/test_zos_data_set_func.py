@@ -593,7 +593,6 @@ def test_data_member_force_delete(ansible_zos_module):
             type="member"
         )
         for result in results.contacted.values():
-            pprint(result)
             assert result.get("failed") is True
             assert "DatasetMemberDeleteError" in result.get("msg")
 

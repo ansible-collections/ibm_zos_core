@@ -39,6 +39,9 @@ Bugfixes
 Porting Guide
 -------------
 
+This section discusses the behavioral changes between ``ibm_zos_core`` v1.9.0 and ``ibm_zos_core`` v1.10.0-beta.1.
+It is intended to assist in updating your playbooks so this collection will continue to work.
+
 - ``zos_archive``
 
   - option **terse_pack** no longer accepts uppercase choices, users should replace them with lowercase ones.

@@ -36,21 +36,19 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, va
 
 
 def _process_boolean(arg, default=False):
-    """Tries to convert a process to boolean.
+    """Process an argument to a boolean.
 
     Parameters
     ----------
     arg : bool
-        Process to convert.
+        Argument to convert.
     default : bool
         Output in case the operation fails.
 
     Returns
     -------
     bool
-        Argument introduced.
-    bool
-        Introduced fail output,
+        Boolean value.
     """
     try:
         return boolean(arg)

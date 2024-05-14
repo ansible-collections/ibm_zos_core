@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -666,7 +666,6 @@ class VolumeDefinition(DataDefinition):
         """
         super().__init__(volume_name)
 
-# TODO: Fix hardcoded function
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
         to be used by mvscmd/mvscmdauth.
@@ -685,7 +684,6 @@ class StdoutDefinition(DataDefinition):
         """
         super().__init__("*")
 
-# TODO: To verify
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
         to be used by mvscmd/mvscmdauth.
@@ -704,7 +702,6 @@ class DummyDefinition(DataDefinition):
         """
         super().__init__("DUMMY")
 
-# TODO: Check
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
         to be used by mvscmd/mvscmdauth.
@@ -774,7 +771,6 @@ class StdinDefinition(DataDefinition):
         if self.name:
             DataSet.delete(self.name)
 
-# TODO: Check
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
         to be used by mvscmd/mvscmdauth.
@@ -870,7 +866,6 @@ class OutputDefinition(DataDefinition):
         if self.name:
             DataSet.delete(self.name)
 
-# TODO: Check
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
         to be used by mvscmd/mvscmdauth.
@@ -911,7 +906,6 @@ class VIODefinition(DataDefinition):
         except DataSet.DatasetDeleteError:
             pass
 
-# TODO: Check
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
         to be used by mvscmd/mvscmdauth.

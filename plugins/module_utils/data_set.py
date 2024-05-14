@@ -2237,7 +2237,6 @@ class GenerationDataGroup():
         return True
 
 
-
 def is_member(data_set):
     """Determine whether the input string specifies a data set member"""
     try:

@@ -295,33 +295,45 @@ DS_TYPE = ['PS', 'PO']
 
 
 def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, force):
-    """Replace a line with the matching regex pattern
-    Insert a line before/after the matching pattern
-    Insert a line at BOF/EOF
+    """Replace a line with the matching regex pattern.
+    Insert a line before/after the matching pattern.
+    Insert a line at BOF/EOF.
 
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        line: {str} -- The line to insert/replace into the src.
-        regexp: {str} -- The regular expression to look for in every line of the src.
-            If regexp matches, ins_aft/ins_bef will be ignored.
-        ins_aft: {str} -- Insert the line after matching '*regex*' pattern or EOF.
-            choices:
-                - EOF
-                - '*regex*'
-        ins_bef: {str} -- Insert the line before matching '*regex*' pattern or BOF.
-            choices:
-                - BOF
-                - '*regex*'
-        encoding: {str} -- Encoding of the src.
-        first_match: {bool} -- Take the first matching regex pattern.
-        backrefs: {bool} -- Back reference
-        force: {bool} -- force for modify a member part of a task in execution
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    line : str
+        The line to insert/replace into the src.
+    regexp : str
+        The regular expression to look for in every line of the src.
+        If regexp matches, ins_aft/ins_bef will be ignored.
+    ins_aft : str
+        Insert the line after matching '*regex*' pattern or EOF.
+        choices:
+          - EOF
+          - '*regex*'
+    ins_bef : str
+        Insert the line before matching '*regex*' pattern or BOF.
+        choices:
+          - BOF
+          - '*regex*'
+    encoding : str
+        Encoding of the src.
+    first_match : bool
+        Take the first matching regex pattern.
+    backrefs : bool
+        Back reference.
+    force : bool
+        force for modify a member part of a task in execution.
 
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dsed shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the source was modified.
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dsed shell command
+        found {int} -- Number of matching regex pattern
+        changed {bool} -- Indicates if the source was modified.
     """
     return datasets.lineinfile(
         src,
@@ -339,26 +351,46 @@ def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs
 
 
 def absent(src, line, regexp, encoding, force):
-    """Delete lines with matching regex pattern
+    """Delete lines with matching regex pattern.
 
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        line: {str} -- The line to be deleted in the src. If line matches,
-            regexp will be ignored.
-        regexp: {str} -- The regular expression to look for in every line of the src.
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- force for modify a member part of a task in execution
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    line : str
+        The line to be deleted in the src. If line matches,
+        regexp will be ignored.
+    regexp : str
+        The regular expression to look for in every line of the src.
+    encoding : str
+        Encoding of the src.
+    force : bool
+        Force for modify a member part of a task in execution.
 
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dsed shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the source was modified.
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dsed shell command
+        found {int} -- Number of matching regex pattern
+        changed {bool} -- Indicates if the source was modified.
     """
     return datasets.lineinfile(src, line, regex=regexp, encoding=encoding, state=False, debug=True, force=force)
 
 
 def quotedString(string):
+    """Add escape if string was quoted.
+
+    Parameters
+    ----------
+    string : str
+        Given string.
+
+    Returns
+    -------
+    str
+        The string with the quote marks replaced.
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
@@ -366,6 +398,27 @@ def quotedString(string):
 
 
 def main():
+    """Initialize the module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        regexp is required with backrefs=true.
+    fail_json
+        line is required with state=present.
+    fail_json
+        One of line or regexp is required with state=absent.
+    fail_json
+        Source does not exist.
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Creating backup has failed.
+    fail_json
+        dsed return content is NOT in json format.
+    """
     module_args = dict(
         src=dict(
             type='str',

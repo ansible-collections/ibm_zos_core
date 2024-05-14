@@ -5,30 +5,33 @@
 Plugins
 =======
 
-Plugins that come with the **IBM z/OS core collection** augment Ansible's core
+Plugins that come with the **IBM z/OS core collection** complement Ansible's core
 functionality. Ansible uses a plugin architecture to enable a rich, flexible
 and expandable feature set.
 
 Action
 ------
 
-* ``zos_ping``: Manages the REXX source transferred to the z/OS managed node for
-  `zos_ping`_.
-* ``zos_copy``: Used to `copy data`_ from the controller to the z/OS managed
-  node.
-* ``zos_fetch``: Used to `fetch data`_ from the z/OS managed node to the
-  controller.
-* ``zos_job_submit``: Used to `submit a job`_ from the controller and optionally
-  monitor the job completion.
+Action plugins integrate local processing and local data with module functionality.
+Action plugins are executed by default when an associated module is used; no additional
+user action is required, this documentation is reference only.
 
-.. _normal:
-   https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py
+* `zos_copy`_: Used to copy data from the controller to the z/OS manage node.
+* `zos_fetch`_: Used to fetch data from the z/OS managed node to the controller.
+* `zos_job_submit`_: Used to submit a job from the controller to the z/OS manage node.
+* `zos_ping`_: Used to transfer the modules REXX source to the z/OS managed node.
+* `zos_script`_: Used to transfer scripts from the controller to the z/OS manage node.
+* `_zos_unarchive`_: Used to transfer archives from the controller to the z/OS manage node.
+
+.. _zos_copy:
+   modules/zos_copy.html
+.. _zos_fetch:
+   modules/zos_fetch.html
+.. _zos_job_submit:
+   modules/zos_job_submit.html
 .. _zos_ping:
    modules/zos_ping.html
-.. _copy data:
-   modules/zos_copy.html
-.. _fetch data:
-   modules/zos_fetch.html
-.. _submit a job:
-   modules/zos_job_submit.html
-
+.. _zos_script:
+   modules/zos_script.html
+.. _zos_unarchive:
+   modules/zos_unarchive.html

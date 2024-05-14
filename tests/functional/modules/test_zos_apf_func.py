@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+import pprint
 from shlex import quote
 
 __metaclass__ = type
@@ -251,7 +252,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
         )
         for item in test_info['batch']:
-            ds = get_tmp_ds_name(1,1,False)
+            ds = get_tmp_ds_name(1,1,True)
             hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
             item['library'] = ds
             cmdStr = "dls -l " + ds + " | awk '{print $5}' "
@@ -265,6 +266,11 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
+            if result.get("rc") != 0:
+                print( "\n===============\n")
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(test_info)
+                print( "\n===============\n")
             assert result.get("rc") == 0
         add_exptd = add_batch_expected.format(test_info['batch'][0]['library'], test_info['batch'][0]['volume'],
                                                 test_info['batch'][1]['library'], test_info['batch'][1]['volume'],

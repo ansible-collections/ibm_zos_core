@@ -1,3 +1,0 @@
-trivial:
-  - zos_archive - Remove zos_copy dependency from zos_archive test cases.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1156).

@@ -1,3 +1,0 @@
-trivial:
-  - zos_apf - Updated ZOAU imports from the module to capture traceback.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1257).

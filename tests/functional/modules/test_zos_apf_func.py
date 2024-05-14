@@ -270,6 +270,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
                 print( "\n===============\n")
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(test_info)
+                pp.pprint(result)
                 print( "\n===============\n")
             assert result.get("rc") == 0
         add_exptd = add_batch_expected.format(test_info['batch'][0]['library'], test_info['batch'][0]['volume'],

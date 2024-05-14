@@ -40,7 +40,7 @@ commands
 max_rc
   Specifies the maximum return code allowed for a TSO command.
 
-  If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+  If more than one TSO command is submitted, the \ :emphasis:`max\_rc`\  applies to all TSO commands.
 
   | **required**: False
   | **type**: int
@@ -72,7 +72,7 @@ Examples
          - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
        max_rc: 4
 
-   - name: Execute TSO command to run explicitly a REXX script from a data set.
+   - name: Execute TSO command to run a REXX script explicitly from a data set.
      zos_tso_command:
        commands:
          - EXEC HLQ.DATASET.REXX exec
@@ -119,7 +119,7 @@ output
   max_rc
     Specifies the maximum return code allowed for a TSO command.
 
-    If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+    If more than one TSO command is submitted, the \ :emphasis:`max\_rc`\  applies to all TSO commands.
 
     | **returned**: always
     | **type**: int

@@ -324,7 +324,7 @@ class BackupError(Exception):
 
         Parameters
         ----------
-        msg : str
+        message : str
             Human readable string describing the exception.
         rc : int
             Return code.

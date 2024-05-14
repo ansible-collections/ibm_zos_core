@@ -948,11 +948,8 @@ class CopyHandler(object):
             if self.is_binary or self.asa_text:
                 copy_args["options"] = "-B"
 
-            if self.force_lock:
-                copy_args["options"] += " -f"
-
             try:
-                datasets.copy(new_src, dest, **copy_args)
+                datasets.copy(new_src, dest, force=self.force_lock, **copy_args)
             except zoau_exceptions.ZOAUException as copy_exception:
                 raise CopyOperationError(
                     msg="Unable to copy source {0} to {1}".format(new_src, dest),
@@ -1815,11 +1812,8 @@ class PDSECopyHandler(CopyHandler):
             if self.is_binary or self.asa_text:
                 opts["options"] = "-B"
 
-            if self.force_lock:
-                opts["options"] += " -f"
-
             try:
-                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
+                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, force=self.force_lock, **opts)
                 out = ""
                 err = ""
             except zoau_exceptions.ZOAUException as copy_exception:

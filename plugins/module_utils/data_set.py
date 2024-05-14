@@ -2218,8 +2218,24 @@ class GenerationDataGroup():
         return True
 
     def clear(self):
+        """Deletes the active generations without removing the GDG base.
+        Parameters
+        ----------
+        force : bool
+            If the GDG base has active generations, remove them and delete the GDG base.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
         if isinstance(self.gdg, gdgs.GenerationDataGroupView):
             self.gdg.clear()
+        else:
+            gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+            gdg_view.clear()
+        return True
+
 
 
 def is_member(data_set):

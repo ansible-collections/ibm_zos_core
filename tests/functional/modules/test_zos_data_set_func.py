@@ -985,6 +985,14 @@ def test_gdg_create_and_delete(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(-1)", state="absent")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(name=f"{data_set_name}(0)", state="absent")
         for result in results.contacted.values():
             assert result.get("changed") is True

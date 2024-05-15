@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,6 +35,9 @@ options:
       - The command to execute.
       - If the command contains single-quotations, another set of single quotes must be added.
       - For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
+      - If the command contains any special characters ($, &, etc), they must be escaped using
+        double backslashes like \\\$.
+      - For example, to display job by job name the command would be C(cmd:"\\$dj''HELLO''")
     type: str
     required: true
   verbose:
@@ -55,6 +58,9 @@ options:
     type: int
     required: false
     default: 1
+notes:
+    - Commands may need to use specific prefixes like $, they can be discovered by
+      issuing the following command C(D OPDATA,PREFIX).
 """
 
 EXAMPLES = r"""

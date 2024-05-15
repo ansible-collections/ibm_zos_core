@@ -6,7 +6,11 @@ plugins:
   callback: {}
   cliconf: {}
   connection: {}
-  filter: {}
+  filter:
+    filter_wtor_messages:
+      description: Filter a list of WTOR messages
+      name: filter_wtor_messages
+      version_added: 1.2.0
   httpapi: {}
   inventory: {}
   lookup: {}
@@ -131,4 +135,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 1.9.0-beta.1
+version: 1.9.0

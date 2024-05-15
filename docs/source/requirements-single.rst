@@ -2,7 +2,7 @@
 .. Auto generated restructured text                                          .
 .. ...........................................................................
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020                                          .
+.. © Copyright IBM Corporation 2024                                          .
 .. ...........................................................................
 
 ============
@@ -32,7 +32,6 @@ The managed z/OS node is the host that is managed by Ansible, as identified in
 the Ansible inventory. For the **IBM z/OS core collection** to manage the z/OS node,
 some dependencies are required to be installed on z/OS such as:
 
-* `z/OS`_
 * `z/OS`_
 * `z/OS OpenSSH`_
 * `z/OS® shell`_

@@ -705,8 +705,8 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
 def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name()
-        src_data_set = get_tmp_ds_name(5, 4)
+        archive_data_set = get_tmp_ds_name(symbols=True)
+        src_data_set = get_tmp_ds_name(5, 4, symbols=True)
         HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                   base_name=src_data_set,
@@ -751,8 +751,8 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
                     assert ds.get("name") in result.get("archived")
                     assert ds.get("name") not in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd="drm {0}*".format(src_data_set))
-        hosts.all.zos_data_set(name=archive_data_set, state="absent")
+        hosts.all.shell(cmd="drm {0}.*".format(HLQ))
+
 
 @pytest.mark.ds
 @pytest.mark.parametrize(

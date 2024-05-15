@@ -558,7 +558,7 @@ options:
         description:
           - Sets the I(empty) attribute for Generation Data Groups.
           - If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
-          - If true, removes all GDS entries from GDG base when a new GDS is created that causes the
+          - If true, removes all GDS entries from a GDG base when a new GDS is created that causes the
             GDG limit to be exceeded.
           - Default is false.
         type: bool

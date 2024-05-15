@@ -1,10 +1,10 @@
-# Title of Collection
-The **IBM® z/OS® core collection** enables Ansible to interact with z/OS Data Sets and USS files. The collection
+# IBM® z/OS® core collection
+The **IBM z/OS core collection** enables Ansible to interact with z/OS Data Sets and USS files. The collection
 focuses on operating system fundamental operations such as managing encodings, creating data sets and submitting
 jobs.
 
 ### Description
-The **IBM® z/OS® core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z®** offering that brings Ansible Automation to IBM Z®. This collection brings forward the possibility to manage batch jobs, program authorizations, operator operations and execute both JES and MVS commands as well as execute shell, python and REXX scripts. It supports data set creation, searching, copying, fetching and encoding. It provides both archiving and unarchiving of data sets, initializing volumes, performing backups and supports Jinja templating.
+The **IBM z/OS core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z®** offering that brings Ansible Automation to IBM Z®. This collection brings forward the possibility to manage batch jobs, program authorizations, operator operations and execute both JES and MVS commands as well as execute shell, python and REXX scripts. It supports data set creation, searching, copying, fetching and encoding. It provides both archiving and unarchiving of data sets, initializing volumes, performing backups and supports Jinja templating.
 
 System programers can enable pipelines to setup, tear down and deploy applications while system administrators can automate time consuming repetitive tasks inevitably freeing up their time. New z/OS users can find comfort in Ansible's familiarity and expedite their proficiency in record time.
 

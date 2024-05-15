@@ -231,6 +231,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
+
 try:
     from zoautil_py import opercmd
 except Exception:

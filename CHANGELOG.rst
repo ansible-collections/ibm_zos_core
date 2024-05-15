@@ -237,6 +237,177 @@ New Modules
 - ibm.ibm_zos_core.zos_archive - Archive files and data sets on z/OS.
 - ibm.ibm_zos_core.zos_unarchive - Unarchive files and data sets in z/OS.
 
+v1.9.0
+======
+
+Release Summary
+---------------
+
+Release Date: '2024-03-11'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Major Changes
+-------------
+
+- zos_job_submit - when job statuses were read, were limited to AC (active), CC (completed normally), ABEND (ended abnormally) and ? (error unknown), SEC (security error), JCLERROR (job had a jcl error). Now the additional statuses are supported, CANCELLED (job was cancelled), CAB (converter abend), CNV (converter error), SYS (system failure) and FLU (job was flushed). (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+
+Minor Changes
+-------------
+
+- zos_apf - Improves exception handling if there is a failure parsing the command response when operation selected is list. (https://github.com/ansible-collections/ibm_zos_core/pull/1036).
+- zos_copy - Improve zos_copy performance when copying multiple members from one PDS/E to another. (https://github.com/ansible-collections/ibm_zos_core/pull/1176).
+- zos_job_output - When passing a job ID and owner the module take as mutually exclusive. Change now allows the use of a job ID and owner at the same time. (https://github.com/ansible-collections/ibm_zos_core/pull/1078).
+- zos_job_submit - Improve error messages in zos_job_submit to be clearer. (https://github.com/ansible-collections/ibm_zos_core/pull/1074).
+- zos_job_submit - The module had undocumented parameter and uses as temporary file when the location of the file is LOCAL. Change now uses the same name as the src for the temporary file removing the addition of tmp_file to the arguments. (https://github.com/ansible-collections/ibm_zos_core/pull/1091).
+- zos_job_submit - The module handling ZOAU import errors obscured the original traceback when an import error ocurred. Fix now passes correctly the context to the user. (https://github.com/ansible-collections/ibm_zos_core/pull/1091).
+- zos_mvs_raw - when using the dd_input content option for instream-data, if the content was not properly indented according to the program which is generally a blank in columns 1 & 2, those columns would be truncated. Now, when setting instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all content types; string, list of strings and when using a YAML block indicator. (https://github.com/ansible-collections/ibm_zos_core/pull/1057). - zos_mvs_raw - no examples were included with the module that demonstrated using a YAML block indicator, this now includes examples using a YAML block indicator.
+- zos_tso_command - add example for executing explicitly a REXX script from a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1065).
+
+Bugfixes
+--------
+
+- module_utils/job.py - job output containing non-printable characters would crash modules. Fix now handles the error gracefully and returns a message to the user inside `content` of the `ddname` that failed. (https://github.com/ansible-collections/ibm_zos_core/pull/1288).
+- zos_apf - When operation=list was selected and more than one data set entry was fetched, the module only returned one data set. Fix now returns the complete list. (https://github.com/ansible-collections/ibm_zos_core/pull/1236).
+- zos_copy - When copying an executable data set with aliases and destination did not exist, destination data set was created with wrong attributes. Fix now creates destination data set with the same attributes as the source. (https://github.com/ansible-collections/ibm_zos_core/pull/1066).
+- zos_copy - When performing a copy operation to an existing file, the copied file resulted in having corrupted contents. Fix now implements a workaround to not use the specific copy routine that corrupts the file contents. (https://github.com/ansible-collections/ibm_zos_core/pull/1064).
+- zos_data_set - Fixes a small parsing bug in module_utils/data_set function which extracts volume serial(s) from a LISTCAT command output. Previously a leading '-' was left behind for volser strings under 6 chars. (https://github.com/ansible-collections/ibm_zos_core/pull/1247).
+- zos_job_output - When passing a job ID or name less than 8 characters long, the module sent the full stack trace as the module's message. Change now allows the use of a shorter job ID or name, as well as wildcards. (https://github.com/ansible-collections/ibm_zos_core/pull/1078).
+- zos_job_query - The module handling ZOAU import errors obscured the original traceback when an import error ocurred. Fix now passes correctly the context to the user. (https://github.com/ansible-collections/ibm_zos_core/pull/1042).
+- zos_job_query - When passing a job ID or name less than 8 characters long, the module sent the full stack trace as the module's message. Change now allows the use of a shorter job ID or name, as well as wildcards. (https://github.com/ansible-collections/ibm_zos_core/pull/1078).
+- zos_job_submit - Was ignoring the default value for location=DATA_SET, now when location is not specified it will default to DATA_SET. (https://github.com/ansible-collections/ibm_zos_core/pull/1120).
+- zos_job_submit - when a JCL error occurred, the ret_code[msg_code] contained JCLERROR followed by an integer where the integer appeared to be a reason code when actually it is a multi line marker used to coordinate errors spanning more than one line. Now when a JCLERROR occurs, only the JCLERROR is returned for property ret_code[msg_code]. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when a response was returned, it contained an undocumented property; ret_code[msg_text]. Now when a response is returned, it correctly returns property ret_code[msg_txt]. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=copy was used in JCL it would fail the module with an improper message and error condition. While this case continues to be considered a failure, the message has been corrected and it fails under the condition that not enough time has been added to the modules execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=hold was used in JCL it would fail the module with an improper message and error condition. While this case continues to be considered a failure, the message has been corrected and it fails under the condition that not enough time has been added to the modules execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=jchhold was used in JCL it would fail the module with an improper message and error condition. While this case continues to be considered a failure, the message has been corrected and it fails under the condition that not enough time has been added to the modules execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=scan was used in JCL, it would fail the module. Now typrun=scan no longer fails the module and an appropriate message is returned with appropriate return code values. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when wait_time_s was used, the duration would run approximately 5 second longer than reported in the duration. Now the when duration is returned, it is the actual accounting from when the job is submitted to when the module reads the job output. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_operator - The module handling ZOAU import errors obscured the original traceback when an import error ocurred. Fix now passes correctly the context to the user. (https://github.com/ansible-collections/ibm_zos_core/pull/1042).
+- zos_unarchive - Using a local file with a USS format option failed when sending to remote because dest_data_set option had an empty dictionary. Fix now leaves dest_data_set as None when using a USS format option. (https://github.com/ansible-collections/ibm_zos_core/pull/1045).
+- zos_unarchive - When unarchiving USS files, the module left temporary files on the remote. Change now removes temporary files. (https://github.com/ansible-collections/ibm_zos_core/pull/1073).
+
+v1.8.0
+======
+
+Release Summary
+---------------
+
+Release Date: '2023-12-08'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- module_utils/template - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+- zos_archive - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+- zos_archive - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
+- zos_copy -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/962)
+- zos_copy - Add new option `force_lock` that can copy into data sets that are already in use by other processes (DISP=SHR). User needs to use with caution because this is subject to race conditions and can lead to data loss. (https://github.com/ansible-collections/ibm_zos_core/pull/980).
+- zos_copy - includes a new option `executable` that enables copying of executables such as load modules or program objects to both USS and partitioned data sets. When the `dest` option contains a non-existent data set, `zos_copy` will create a data set with the appropriate attributes for an executable. (https://github.com/ansible-collections/ibm_zos_core/pull/804)
+- zos_copy - introduces a new option 'aliases' to enable preservation of member aliases when copying data to partitioned data sets (PDS) destinations from USS or other PDS sources. Copying aliases of text based members to/from USS is not supported. (https://github.com/ansible-collections/ibm_zos_core/pull/1014)
+- zos_fetch - Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/962)
+- zos_job_submit - Change action plugin call from copy to zos_copy. (https://github.com/ansible-collections/ibm_zos_core/pull/951)
+- zos_job_submit - Previous code did not return output, but still requested job data from the target system. This changes to honor return_output=false by not querying the job dd segments at all. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+- zos_operator - Changed system to call 'wait=true' parameter to zoau call. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
+- zos_operator_action_query - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later. (https://github.com/ansible-collections/ibm_zos_core/pull/976)
+- zos_script - Add support for remote_tmp from the Ansible configuration to setup where temporary files will be created, replacing the module option tmp_path. (https://github.com/ansible-collections/ibm_zos_core/pull/1068).
+- zos_tso_command - Add example for executing explicitly a REXX script from a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1072).
+- zos_unarchive -  Add validation into path joins to detect unauthorized path traversals. (https://github.com/ansible-collections/ibm_zos_core/pull/1029)
+- zos_unarchive - Enhanced test cases to use test lines the same length of the record length. (https://github.com/ansible-collections/ibm_zos_core/pull/965)
+
+Deprecated Features
+-------------------
+
+- zos_blockinfile debug - is deprecated in favor of 'as_json' (https://github.com/ansible-collections/ibm_zos_core/pull/904).
+
+Bugfixes
+--------
+
+- zos_copy - Update option limit to include LIBRARY as dest_dataset/suboption value. Documentation updated to reflect this change. (https://github.com/ansible-collections/ibm_zos_core/pull/968).
+- zos_copy - When copying an executable data set from controller to managed node, copy operation failed with an encoding error. Fix now avoids encoding when executable option is selected. (https://github.com/ansible-collections/ibm_zos_core/pull/1079).
+- zos_copy - When copying an executable data set with aliases and destination did not exist, destination data set was created with wrong attributes. Fix now creates destination data set with the same attributes as the source. (https://github.com/ansible-collections/ibm_zos_core/pull/1067).
+- zos_copy - When performing a copy operation to an existing file, the copied file resulted in having corrupted contents. Fix now implements a workaround to not use the specific copy routine that corrupts the file contents. (https://github.com/ansible-collections/ibm_zos_core/pull/1069).
+- zos_job_submit - Temporary files were created in tmp directory. Fix now ensures the deletion of files every time the module run. (https://github.com/ansible-collections/ibm_zos_core/pull/951)
+- zos_job_submit - The last line of the jcl was missing in the input. Fix now ensures the presence of the full input in job_submit. (https://github.com/ansible-collections/ibm_zos_core/pull/952)
+- zos_lineinfile - A duplicate entry was made even if line was already present in the target file. Fix now prevents a duplicate entry if the line already exists in the target file. (https://github.com/ansible-collections/ibm_zos_core/pull/916)
+- zos_operator - The last line of the operator was missing in the response of the module. The fix now ensures the presence of the full output of the operator. https://github.com/ansible-collections/ibm_zos_core/pull/918)
+- zos_operator - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+- zos_operator_action_query - The module was ignoring the wait time argument. The module now passes the wait time argument to ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/1063).
+- zos_unarchive - When zos_unarchive fails during unpack either with xmit or terse it does not clean the temporary data sets created. Fix now removes the temporary data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1054).
+
+Known Issues
+------------
+
+- Several modules have reported UTF8 decoding errors when interacting with results that contain non-printable UTF8 characters in the response. This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules `zos_job_submit`, `zos_job_output`, `zos_operator_action_query` but are not limited to this list. This will be addressed in `ibm_zos_core` version 1.10.0-beta.1. Each case is unique, some options to work around the error are below. - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters. - Add `ignore_errors:true` to the playbook task so the task error will not fail the playbook. - If the error is resulting from a batch job, add `ignore_errors:true` to the task and capture the output into a variable and extract the job ID with a regular expression and then use `zos_job_output` to display the DD without the non-printable character such as the DD `JESMSGLG`. (https://github.com/ansible-collections/ibm_zos_core/issues/677) (https://github.com/ansible-collections/ibm_zos_core/issues/776) (https://github.com/ansible-collections/ibm_zos_core/issues/972)
+- With later versions of `ansible-core` used with `ibm_zos_core` collection a warning has started to appear "Module "ansible.builtin.command" returned non UTF-8 data in the JSON response" that is currently being reviewed. There are no recommendations at this point. (https://github.com/ansible-collections/ibm_zos_core/issues/983)
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_script - Run scripts in z/OS
+
+v1.7.0
+======
+
+Release Summary
+---------------
+
+Release Date: '2023-10-09'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Major Changes
+-------------
+
+- zos_copy - Previously, backups were taken when force was set to false; whether or not a user specified this operation which caused allocation issues with space and permissions. This removes the automatic backup performed and reverts to the original logic in that backups must be initiated by the user. (https://github.com/ansible-collections/ibm_zos_core/pull/896)
+
+Minor Changes
+-------------
+
+- Add support for Jinja2 templates in zos_copy and zos_job_submit when using local source files. (https://github.com/ansible-collections/ibm_zos_core/pull/667)
+- zos_archive - If destination data set space is not provided then the module computes it based on the src list and/or expanded src list based on pattern provided. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+- zos_archive - When xmit faces a space error in xmit operation because of dest or log data set are filled raises an appropriate error hint. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+- zos_copy - Adds block_size, record_format, record_length, space_primary, space_secondary, space_type and type in the return output when the destination data set does not exist and has to be created by the module. (https://github.com/ansible-collections/ibm_zos_core/pull/773)
+- zos_data_set - record format = 'F' has been added to support 'fixed' block records. This allows records that can use the entire block. (https://github.com/ansible-collections/ibm_zos_core/pull/821)
+- zos_job_output - zoau added 'program_name' to their field output starting with v1.2.4.  This enhancement checks for that version and passes the extra column through. (https://github.com/ansible-collections/ibm_zos_core/pull/841)
+- zos_job_query - Adds new fields job_class, svc_class, priority, asid, creation_datetime, and queue_position to the return output when querying or submitting a job. Available when using ZOAU v1.2.3 or greater. (https://github.com/ansible-collections/ibm_zos_core/pull/778)
+- zos_job_query - unnecessary calls were made to find a jobs DDs that incurred unnecessary overhead. This change removes those resulting in a performance increase in job related queries. (https://github.com/ansible-collections/ibm_zos_core/pull/911)
+- zos_job_query - zoau added 'program_name' to their field output starting with v1.2.4.  This enhancement checks for that version and passes the extra column through. (https://github.com/ansible-collections/ibm_zos_core/pull/841)
+- zos_job_submit - zoau added 'program_name' to their field output starting with v1.2.4.  This enhancement checks for that version and passes the extra column through. (https://github.com/ansible-collections/ibm_zos_core/pull/841)
+- zos_unarchive - When copying to remote fails now a proper error message is displayed. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+- zos_unarchive - When copying to remote if space_primary is not defined, then is defaulted to 5M. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+
+Bugfixes
+--------
+
+- module_utils - data_set.py - Reported a failure caused when cataloging a VSAM data set. Fix now corrects how VSAM data sets are cataloged. (https://github.com/ansible-collections/ibm_zos_core/pull/791).
+- zos_archive - Module did not return the proper src state after archiving. Fix now displays the status of the src after the operation. (https://github.com/ansible-collections/ibm_zos_core/pull/930).
+- zos_blockinfile - Test case generate a data set that was not correctly removed. Changes delete the correct data set not only member. (https://github.com/ansible-collections/ibm_zos_core/pull/840)
+- zos_copy - Module returned the dynamic values created with the same dataset type and record format. Fix validate the correct dataset type and record format of target created. (https://github.com/ansible-collections/ibm_zos_core/pull/824)
+- zos_copy - Reported a false positive such that the response would have `changed=true` when copying from a source (src) or destination (dest) data set that was in use (DISP=SHR). This change now displays an appropriate error message and returns `changed=false`. (https://github.com/ansible-collections/ibm_zos_core/pull/794).
+- zos_copy - Reported a warning about the use of _play_context.verbosity.This change corrects the module action to prevent the warning message. (https://github.com/ansible-collections/ibm_zos_core/pull/806).
+- zos_copy - Test case for recursive encoding directories reported a UTF-8 failure. This change ensures proper test coverage for nested directories and file permissions. (https://github.com/ansible-collections/ibm_zos_core/pull/806).
+- zos_copy - Zos_copy did not encode inner content inside subdirectories once the source was copied to the destination. Fix now encodes all content in a source directory, including subdirectories. (https://github.com/ansible-collections/ibm_zos_core/pull/772).
+- zos_copy - kept permissions on target directory when copy overwrote files. The fix now set permissions when mode is given. (https://github.com/ansible-collections/ibm_zos_core/pull/795)
+- zos_data_set - Reported a failure caused when `present=absent` for a VSAM data set leaving behind cluster components. Fix introduces a new logical flow that will evaluate the volumes, compare it to the provided value and if necessary catalog and delete. (https://github.com/ansible-collections/ibm_zos_core/pull/791).
+- zos_fetch - Reported a warning about the use of _play_context.verbosity.This change corrects the module action to prevent the warning message. (https://github.com/ansible-collections/ibm_zos_core/pull/806).
+- zos_job_output - Error message did not specify the job not found. Fix now specifies the job_id or job_name being searched to ensure more information is given back to the user. (https://github.com/ansible-collections/ibm_zos_core/pull/747)
+- zos_operator - Reported a failure caused by unrelated error response. Fix now gives a transparent response of the operator to avoid false negatives. (https://github.com/ansible-collections/ibm_zos_core/pull/762).
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_archive - Archive files and data sets on z/OS.
+- ibm.ibm_zos_core.zos_unarchive - Unarchive files and data sets in z/OS.
+
 v1.6.0
 ======
 

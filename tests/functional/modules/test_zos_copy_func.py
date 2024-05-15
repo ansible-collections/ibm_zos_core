@@ -230,7 +230,6 @@ SH /tmp/disp_shr/pdse-lock '{0}'
 //STDERR DD SYSOUT=*
 //"""
 
-
 def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:

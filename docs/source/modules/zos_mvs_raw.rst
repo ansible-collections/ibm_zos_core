@@ -1748,6 +1748,35 @@ Examples
                          VOLUMES(222222) -
                          UNIQUE)
 
+       - name: Define a cluster using a literal block style indicator
+             with a 2 space indentation.
+         zos_mvs_raw:
+           program_name: idcams
+           auth: yes
+           dds:
+             - dd_output:
+                 dd_name: sysprint
+                 return_content:
+                   type: text
+             - dd_input:
+                 dd_name: sysin
+                 content: |2
+                   DEFINE CLUSTER -
+                             (NAME(ANSIBLE.TEST.VSAM) -
+                             CYL(10 10)  -
+                             FREESPACE(20 20) -
+                             INDEXED -
+                             KEYS(32 0) -
+                             NOERASE -
+                             NONSPANNED -
+                             NOREUSE -
+                             SHAREOPTIONS(3 3) -
+                             SPEED -
+                             UNORDERED -
+                             RECORDSIZE(4086 32600) -
+                             VOLUMES(222222) -
+                             UNIQUE)
+
 
 
 

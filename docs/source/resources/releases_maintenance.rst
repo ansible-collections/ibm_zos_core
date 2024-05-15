@@ -5,7 +5,7 @@ Releases and maintenance
 This table describes the collections release dates, dependency versions and End of Life dates (EOL).
 
 The ``ibm_zos_core`` collection is developed and released on a flexible release cycle; generally each quarter
-a beta is released followed by a GA version.We can extend this cycle to properly implement and test larger
+a beta is released followed by a GA version. We can extend this cycle to properly implement and test larger
 changes before a new release is made available.
 
 These are the component versions available when the collection is made generally available. The underlying
@@ -18,9 +18,9 @@ enters into EOL, then a newer version of ansible-core must be used.
 Support Matrix
 ==============
 +---------+---------------+--------------+---------+-------+---------------+--------------------+----------------------------------------------------------------------------+
-| Version | Released      | ansible-core | Ansible | AAP   | End of Life   | Control Node       | Managed Node                                                               |
+| Version | GA Release    | ansible-core | Ansible | AAP   | End of Life   | Control Node       | Managed Node                                                               |
 +=========+===============+==============+=========+=======+===============+====================+============================================================================+
-| 1.10.x  | 16 May 2024   | >=2.15.x     | >=8.0.x | >=2.4 | 16 May 2026   | Python 3.10 - 3.11 | - z/OS V2R4 - V2R5                                                         |
+| 1.10.x  | In preview    | >=2.15.x     | >=8.0.x | >=2.4 | TBD           | Python 3.10 - 3.11 | - z/OS V2R4 - V2R5                                                         |
 |         |               |              |         |       |               |                    | - z/OS shell                                                               |
 |         |               |              |         |       |               |                    | - IBM Open Enterprise SDK for Python 3.10 - 3.11                           |
 |         |               |              |         |       |               |                    | - IBM Z Open Automation Utilities 1.3.0 or later                           |

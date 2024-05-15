@@ -27,7 +27,7 @@ Before using this collection, you need to install it with the Ansible Galaxy com
 ansible-galaxy collection install ibm.ibm_zos_core
 ```
 
-You can also include it in a requirements.yml file and install it with ansible-galaxy collection install -r requirements.yml, using the format:
+You can also include it in a requirements.yml file and install it with `ansible-galaxy collection install -r requirements.yml`, using the format:
 
 ```
 collections:
@@ -58,17 +58,27 @@ As part of the installation, the collection [requirements](#Requirements) must b
 
 If you are testing a configuration, it can be helpful to set the environment variables in a playbook, an example of that can be reviewed [here](https://github.com/ansible-collections/ibm_zos_core/discussions/657).
 
+To learn more about the ZOAU Python wheel installation method, review the [documentation](https://www.ibm.com/docs/en/zoau/1.3.x?topic=installing-zoau#python-wheel-installation-method). If the wheel is installed using the `--target` option, it will install the package into the specified directory, if the wheel is installed using the `--user` option, it will install the package into the user directory which will then need to have  `PYTHONPATH` configured to where the packages is installed, e.g; `PYTHONPATH: /u/user`.
+
+If the ZOAU Python wheel package is installed using either `--target` or `--user`, uncomment the following line in the environment vars section.
+```
+ZOAU_PYTHONPATH: "{{ path_to_wheel_installation_directory }}"
+```
+
+Using `--target` is recommended, else the wheel will be installed in Python's home directory which may not have write permissions.
+
 The environment variables:
 ```
 PYZ: "path_to_python_installation_on_zos_target"
 ZOAU: "path_to_zoau_installation_on_zos_target"
+# ZOAU_PYTHONPATH: "path_to_zoau_wheel_installation_directory"
 
 ansible_python_interpreter: "{{ PYZ }}/bin/python3"
 
 environment_vars:
   _BPXK_AUTOCVT: "ON"
   ZOAU_HOME: "{{ ZOAU }}"
-  PYTHONPATH: "{{ ZOAU }}/lib"
+  PYTHONPATH: "{{ ZOAU_PYTHONPATH }}"
   LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
   PATH: "{{ ZOAU }}/bin:{{ PYZ }}/bin:/bin:/var/bin"
   _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"

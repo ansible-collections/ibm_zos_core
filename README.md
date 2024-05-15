@@ -1,16 +1,14 @@
 # IBM® z/OS® core collection
-The **IBM z/OS core collection** enables Ansible to interact with z/OS Data Sets and USS files. The collection
-focuses on operating system fundamental operations such as managing encodings, creating data sets and submitting
-jobs.
+The **IBM z/OS core** collection enables Ansible to interact with z/OS Data Sets and USS files. The collection focuses on operating system fundamental operations such as managing encodings, creating data sets, and submitting jobs.
 
 ### Description
-The **IBM z/OS core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z®** offering that brings Ansible Automation to IBM Z®. This collection brings forward the possibility to manage batch jobs, program authorizations, operator operations and execute both JES and MVS commands as well as execute shell, python and REXX scripts. It supports data set creation, searching, copying, fetching and encoding. It provides both archiving and unarchiving of data sets, initializing volumes, performing backups and supports Jinja templating.
+The **IBM z/OS core** collection is part of the **Red Hat® Ansible Certified Content for IBM Z®** offering that brings Ansible automation to IBM Z®. This collection brings forward the possibility to manage batch jobs, perform program authorizations, run operator operations, and execute both JES and MVS commands as well as execute shell, python, and REXX scripts. It supports data set creation, searching, copying, fetching, and encoding. It provides both archiving and unarchiving of data sets, initializing volumes, performing backups and supports Jinja templating.
 
-System programers can enable pipelines to setup, tear down and deploy applications while system administrators can automate time consuming repetitive tasks inevitably freeing up their time. New z/OS users can find comfort in Ansible's familiarity and expedite their proficiency in record time.
+System programmers can enable pipelines to setup, tear down and deploy applications while system administrators can automate time consuming repetitive tasks inevitably freeing up their time. New z/OS users can find comfort in Ansible's familiarity and expedite their proficiency in record time.
 
 ## Requirements
 Before you install the IBM z/OS core collection, you must configure a control node and managed node with a minimum set of requirements.
-The following [table](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/build/html/resources/releases_maintenance.html) details the specific software requirements for the controller and managed Node.
+The following [table](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/build/html/resources/releases_maintenance.html) details the specific software requirements for the controller and managed node.
 
 ### Ansible Controller
 * This release of the collection requires **ansible-core >=2.15** (Ansible >=8.x), for additional requirements such as Python, review the [support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix).
@@ -22,7 +20,7 @@ This release of the collection requires the following:
 * [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) 3.9 - 3.11.
 * [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau) 1.3.0 or later.
 
-### Installation
+## Installation
 Before using this collection, you need to install it with the Ansible Galaxy command-line tool:
 
 ```
@@ -50,7 +48,7 @@ You can also install a specific version of the collection, for example, if you n
 ansible-galaxy collection install ibm.ibm_zos_core:1.0.0
 ```
 
-You can also install a beta version of the collection. A Beta version is only available on Galaxy and is only supported by community until it is promoted to Ansible Automation Platform. Use the following syntax to install a beta version:
+You can also install a beta version of the collection. A beta version is only available on Galaxy and is only supported by the community until it is promoted to General Availability (GA). Use the following syntax to install a beta version:
 
 ```
 ansible-galaxy collection install ibm.ibm_zos_core:1.10.0-beta.1
@@ -82,27 +80,25 @@ environment_vars:
 ```
 
 ## Use Cases
-This section should outline in detail 3-5 common use cases for the collection. These should be informative examples of how the collection has been used, or how you'd like to see it be used.
-
 * Use Case Name: Add a new z/OS User
   * Actors:
     * Application Developer
   * Description:
     * An application developer can submit a new user request for the system admin to approve.
   * Flow:
-    * Verify user does not exist; create home directory, password and passphrase
+    * Verify user does not exist; create home directory, password, and passphrase
     * Create home directory and the user to the system
-    * Provide access to resource, add to system groups and define an alias
+    * Provide access to resource, add to system groups, and define an alias
     * Create the users ISPROF data set
-    * Create user private data set, mount with persistance
+    * Create user private data set, mount with persistence
     * Generate email with login credentials
 * Use Case Name: Automate certificate renewals
   * Actors:
     * System Admin
   * Description:
-    * The system admin can automate certificate renewals, no longer requiring manual intervention.
+    * The system administrator can automate certificate renewals
   * Flow:
-    * Setup and configure and run z/OS Health Checker to generate a report
+    * Setup, configure and run z/OS Health Checker to generate a report
     * Search the Health Checker report for expiring certificates
     * Renew expiring certificates
       * Collect expiring certificate attributes and backup certificate
@@ -114,21 +110,20 @@ This section should outline in detail 3-5 common use cases for the collection. T
   * Actors:
     * Application Developer
   * Description:
-    * An application developer can provision an application runtime that accelerates the delivery of cloud-native applications,
+    * An application developer can provision an application runtime that accelerates the delivery of cloud-native applications.
   * Flow:
     * Create and mount a file system for the Liberty profile.
-    * Creating a Liberty Profile instance with optional configurations.
-    * Enabling z/OS authorized services for the Liberty profile.
-    * Starting an angel process or a server process
+    * Create a Liberty Profile instance with optional configurations.
+    * Enable z/OS authorized services for the Liberty profile.
+    * Start an angel process or a server process
 
-### Testing
-All releases, including beta's will have:
+## Testing
+All releases, including betas will have:
 * 100% success for [Functional](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/functional) tests.
 * 100% success for [Sanity](https://docs.ansible.com/ansible/latest/dev_guide/testing/sanity/index.html#all-sanity-tests) tests as part of [ansible-test](https://docs.ansible.com/ansible/latest/dev_guide/testing.html#run-sanity-tests).
-* 100% success for [pyflakes](https://github.com/PyCQA/pyflakes/blob/main/README.rst) analyzes
+* 100% success for [pyflakes](https://github.com/PyCQA/pyflakes/blob/main/README.rst).
 * 100% success for [ansible-lint](https://ansible.readthedocs.io/projects/lint/) allowing only false positives.
 
-### Environments
 This release of the collection was tested with:
 * ansible-core v2.15.x
 * Python 3.9.x
@@ -136,8 +131,7 @@ This release of the collection was tested with:
 * IBM Z Open Automation Utilities (ZOAU) 1.3.0.x
 * z/OS V2R5
 
-### Known Exceptions
-This release of the collection has no known exceptions or workarounds, but this release does introduce case sensitivity for option values. This release includes a porting guide in the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) to assist with which option values should be migrated to ensure case sensitivity does not affect a module.
+This release introduces case sensitivity for option values and includes a porting guide in the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) to assist with which option values will need to be updated.
 
 ## Contributing
 This community is not currently accepting contributions. However, we encourage you to open [git issues](https://github.com/ansible-collections/ibm_zos_core/issues) for bugs, comments or feature requests and check back periodically for when community contributions will be accepted in the near future.
@@ -149,25 +143,25 @@ If you would like to communicate with this community, you can do so through:
 * GitHub [discussions](https://github.com/ansible-collections/ibm_zos_core/discussions).
 * GitHub [issues](https://github.com/ansible-collections/ibm_zos_core/issues/new/choose).
 * [Ansible Forum](https://forum.ansible.com/), please use the `zos` tag to ensure proper awareness.
-* Discord [System Z Enthusiasts](https://forum.ansible.com/) room [Ansible](https://discord.gg/nKC8F89v).
-* Matrix Ansible room [Ansible z/OS](#ansible-zos:matrix.org).
-* Ansible community [Matrix rooms](https://docs.ansible.com/ansible/latest/community/communication.html#general-channels).
+* Discord [System Z Enthusiasts](https://forum.ansible.com/) room [ansible](https://discord.gg/nKC8F89v).
+* Matrix Ansible room [ansible-zos](#ansible-zos:matrix.org).
+* Ansible community Matrix [rooms](https://docs.ansible.com/ansible/latest/community/communication.html#general-channels).
 
 ## Support
-As Red Hat Ansible [Certified Content](https://catalog.redhat.com/software/search?target_platforms=Red%20Hat%20Ansible%20Automation%20Platform), this collection is entitled to [support](https://access.redhat.com/support/) through [Ansible Automation platform](https://www.redhat.com/en/technologies/management/ansible) (AAP). After creating a Red Hat support case, if it is decided the issue belongs to IBM, Red Hat will ask that [an IBM support case](https://www.ibm.com/mysupport/s/createrecord/NewCase) be created and share the case number with Red Hat so that a collaboration can begin between Red Hat and IBM.
+As Red Hat Ansible [Certified Content](https://catalog.redhat.com/software/search?target_platforms=Red%20Hat%20Ansible%20Automation%20Platform), this collection is entitled to [support](https://access.redhat.com/support/) through [Ansible Automation Platform](https://www.redhat.com/en/technologies/management/ansible) (AAP). After creating a Red Hat support case, if it is determined the issue belongs to IBM, Red Hat will instruct you to create an [IBM support case](https://www.ibm.com/mysupport/s/createrecord/NewCase) and share the case number with Red Hat so that a collaboration can begin between Red Hat and IBM.
 
-If a support case can not be opened with Red Hat and the collection has been obtained either from [Galaxy](https://galaxy.ansible.com/ui/) or [GitHub](https://github.com/ansible-collections/ibm_zos_core), there is community support available at no charge. Community support is limited to the collection; community support does not include any of the Ansible Automation Platform components, [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau), [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) or [ansible-core](https://github.com/ansible/ansible).
+If a support case cannot be opened with Red Hat and the collection has been obtained either from [Galaxy](https://galaxy.ansible.com/ui/) or [GitHub](https://github.com/ansible-collections/ibm_zos_core), there is community support available at no charge. Community support is limited to the collection; community support does not include any of the Ansible Automation Platform components, [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau), [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) or [ansible-core](https://github.com/ansible/ansible).
 
 The current supported versions of this collection can be found listed under the [release section](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
 
 ## Release Notes and Roadmap
-The collections cumulative release notes can be reviewed [here](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html). Note, some collections release before an ansible-core version reaches End of Life (EOL), thus the version of ansible-core that is supported must be a version that is currently supported.
+The collection's cumulative release notes can be reviewed [here](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html). Note, some collections release before an ansible-core version reaches End of Life (EOL), thus the version of ansible-core that is supported must be a version that is currently supported.
 
 For AAP users, to see the supported ansible-core versions, review the [AAP Life Cycle](https://access.redhat.com/support/policy/updates/ansible-automation-platform).
 
 For Galaxy and GitHub users, to see the supported ansible-core versions, review the [ansible-core support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix).
 
-The collections changelogs can be reviewed in the following table.
+The collection's changelogs can be reviewed in the following table.
 | Version | ansible-core | Ansible | Status                     |
 |---------|--------------|---------|----------------------------|
 | 1.11.x  | >=2.16.x     | >=9.0.x | In development (unreleased)|

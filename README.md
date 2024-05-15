@@ -165,7 +165,7 @@ The collection's changelogs can be reviewed in the following table.
 | Version | ansible-core | Ansible | Status                     |
 |---------|--------------|---------|----------------------------|
 | 1.11.x  | >=2.16.x     | >=9.0.x | In development (unreleased)|
-| [1.10.x](https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0-beta.1/CHANGELOG.rst)  | >=2.15.x     | >=8.0.x | In Preview                   |
+| [1.10.x](https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0-beta.1/CHANGELOG.rst)  | >=2.15.x     | >=8.0.x | In preview                   |
 | [1.9.x](https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.0/CHANGELOG.rst)   | >=2.14.x     | >=7.0.x | 05 Feb 2024                |
 | [1.8.x](https://github.com/ansible-collections/ibm_zos_core/blob/v1.8.0/CHANGELOG.rst)   | >=2.14.x     | >=7.0.x | 13 Dec 2023                |
 | [1.7.x](https://github.com/ansible-collections/ibm_zos_core/blob/v1.7.0/CHANGELOG.rst)   | >=2.14.x     | >=7.0.x | 10 Oct 2023                |

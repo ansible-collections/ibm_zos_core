@@ -802,35 +802,50 @@ def run_module():
     # ********************************************************** #
 
     res_args = dict()
-    _fetch_member = "(" in src and src.endswith(")")
-    ds_name = src if not _fetch_member else src[: src.find("(")]
+    src_data_set = None
+
     try:
-        ds_utils = data_set.DataSetUtils(ds_name)
-        if not ds_utils.exists():
+        if "/" in src:
+            src_exists = os.path.exists(b_src)
+        else:
+            src_data_set = data_set.MVSDataSet(src)
+            src_exists = data_set.DataSet.data_set_exists(
+                data_set.extract_dsname(src_data_set.name)
+            )
+
+        if not src_exists:
             if fail_on_missing:
                 module.fail_json(
                     msg=(
                         "The source '{0}' does not exist or is "
-                        "uncataloged".format(ds_name)
+                        "uncataloged.".format(src)
                     )
                 )
-            module.exit_json(
-                note=("Source '{0}' was not found. No data was fetched".format(ds_name))
-            )
-        ds_type = ds_utils.ds_type()
+            else:
+                module.exit_json(
+                    note=("Source '{0}' was not found. No data was fetched.".format(src))
+                )
+
+        ds_type = None
+        if "/" in src:
+            ds_type = "USS"
+        else:
+            ds_type = data_set.DataSet.data_set_type(data_set.extract_dsname(src_data_set.name))
+            fetch_member = data_set.is_member(src_data_set.name)
+
         if not ds_type:
-            module.fail_json(msg="Unable to determine data set type")
+            module.fail_json(msg="Unable to determine source type.")
 
     except Exception as err:
         module.fail_json(
-            msg="Error while gathering data set information", stderr=str(err)
+            msg="Error while gathering source information", stderr=str(err)
         )
 
     # ********************************************************** #
     #                  Fetch a sequential data set               #
     # ********************************************************** #
 
-    if ds_type == "PS":
+    if ds_type in data_set.DataSet.MVS_SEQ:
         file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
         res_args["remote_path"] = file_path
 
@@ -838,16 +853,19 @@ def run_module():
     #    Fetch a partitioned data set or one of its members      #
     # ********************************************************** #
 
-    elif ds_type == "PO":
-        if _fetch_member:
-            member_name = src[src.find("(") + 1: src.find(")")]
-            if not ds_utils.member_exists(member_name):
+    elif ds_type in data_set.DataSet.MVS_PARTITIONED:
+        if fetch_member:
+            if not data_set.DataSet.data_set_member_exists(src_data_set.name):
                 module.fail_json(
                     msg=(
                         "The data set member '{0}' was not found inside data "
                         "set '{1}'"
-                    ).format(member_name, ds_name)
+                    ).format(
+                        data_set.extract_member_name(src_data_set.raw_name),
+                        data_set.extract_dsname(src_data_set.raw_name)
+                    )
                 )
+
             file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
             res_args["remote_path"] = file_path
         else:
@@ -871,11 +889,14 @@ def run_module():
     #                  Fetch a VSAM data set                     #
     # ********************************************************** #
 
-    elif ds_type == "VSAM":
+    elif ds_type in data_set.DataSet.MVS_VSAM:
         file_path = fetch_handler._fetch_vsam(src, is_binary, encoding)
         res_args["remote_path"] = file_path
 
-    res_args["file"] = ds_name
+    if ds_type == "USS":
+        res_args["file"] = src
+    else:
+        res_args["file"] = src_data_set.name
     res_args["ds_type"] = ds_type
     module.exit_json(**res_args)
 

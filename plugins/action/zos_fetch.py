@@ -28,7 +28,12 @@ from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
 
-SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
+SUPPORTED_DS_TYPES = frozenset({
+    "PS", "SEQ", "BASIC",
+    "PO", "PE", "PDS", "PDSE",
+    "VSAM", "KSDS",
+    "USS"
+})
 
 display = Display()
 
@@ -37,10 +42,14 @@ def _update_result(result, src, dest, ds_type="USS", is_binary=False):
     """ Helper function to update output result with the provided values """
     data_set_types = {
         "PS": "Sequential",
+        "SEQ": "Sequential",
+        "BASIC": "Sequential",
         "PO": "Partitioned",
-        "PDSE": "Partitioned Extended",
+        "PDS": "Partitioned",
         "PE": "Partitioned Extended",
+        "PDSE": "Partitioned Extended",
         "VSAM": "VSAM",
+        "KSDS": "VSAM",
         "USS": "USS",
     }
     updated_result = dict((k, v) for k, v in result.items())

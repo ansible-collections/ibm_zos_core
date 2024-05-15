@@ -549,7 +549,6 @@ def main():
         if batch:
             for item in batch:
                 item['opt'] = opt
-                # item['dsname'] = DataSet.escape_data_set_name(item.get('library'))
                 item['dsname'] = item.get('library')
                 del item['library']
             ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)

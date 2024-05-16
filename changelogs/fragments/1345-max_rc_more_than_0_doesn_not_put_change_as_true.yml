@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_job_submit - when the argument max_rc was different than 0 the changed response returned
+    as false. Fix now return a changed response as true when the rc is not 0 and max_rc is above
+    or equal to the value of the job.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1345).

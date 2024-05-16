@@ -44,15 +44,15 @@ class ActionModule(ActionBase):
 
         use_template = _process_boolean(module_args.get("use_template"))
         location = module_args.get("location")
-        if use_template and location != "LOCAL":
+        if use_template and location != "local":
             result.update(dict(
                 failed=True,
                 changed=False,
-                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'LOCAL'".format(location)
+                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'local'".format(location)
             ))
             return result
 
-        if location == "LOCAL":
+        if location == "local":
 
             source = self._task.args.get("src", None)
 

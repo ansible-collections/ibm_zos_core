@@ -431,6 +431,19 @@ except Exception:
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        job_id or job_name or owner not provided.
+    fail_json
+        ZOAU exception.
+    fail_json
+        Any exception while fetching jobs.
+    """
     module_args = dict(
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),

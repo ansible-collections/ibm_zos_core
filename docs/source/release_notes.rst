@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2024                              .
+.. © Copyright IBM Corporation 2020, 2024                                    .
 .. ...........................................................................
 
 ========
@@ -15,6 +15,8 @@ Major Changes
 - Starting with IBM Ansible z/OS core version 1.10.x, ZOAU version 1.3.0 will be required.
 - Starting with IBM Ansible z/OS core version 1.10.x, all module options are case sensitive,
   review the porting guide for specifics.
+- The README has been updated with a new template.
+- The *Reference* section has been renamed to *Requirements" and now includes a support matrix.
 
 Minor Changes
 -------------
@@ -34,7 +36,7 @@ Bugfixes
     - Did not default to **location=DATA_SET** when no location was defined, now the location defaults to DATA_SET.
     - Option **max_rc** previously did not influence a modules status, now the option value influences the tasks failure status.
 
-- zos_mvs_raw - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1320).
+- ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
 
 Porting Guide
 -------------
@@ -95,13 +97,11 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Reference
----------
+Requirements
+------------
 
-* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
-* Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.10`_ - `3.12`_
-* Supported by IBM `Z Open Automation Utilities 1.3.0`_ or later.
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
 Version 1.9.0
 =============
@@ -222,13 +222,11 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Reference
----------
+Requirements
+------------
 
-* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
-* Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.10`_ - `3.12`_
-* Supported by IBM `Z Open Automation Utilities 1.2.5`_ (or later) but prior to version 1.3.
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
 Version 1.8.0
 =============
@@ -308,13 +306,11 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Reference
----------
+Requirements
+------------
 
-* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
-* Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
-* Supported by IBM `Z Open Automation Utilities 1.2.4`_ (or later) but prior to version 1.3.
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
 Version 1.7.0
 =============
@@ -375,13 +371,11 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Reference
----------
+Requirements
+------------
 
-* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
-* Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
-* Supported by IBM `Z Open Automation Utilities 1.2.3`_ (or later) but prior to version 1.3.
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
 Version 1.6.0
 =============
@@ -438,13 +432,11 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Reference
----------
+Requirements
+------------
 
-* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
-* Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
-* Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
 Version 1.5.0
 =============
@@ -554,13 +546,11 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Reference
----------
+Requirements
+------------
 
-* Supported by `z/OS®`_ V2R4 (or later) but prior to version V3R1
-* Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
-* Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
 .. .............................................................................
 .. Global Links
@@ -583,6 +573,8 @@ Reference
    https://www.ibm.com/docs/en/python-zos/3.11
 .. _3.12:
    https://www.ibm.com/docs/en/python-zos/3.12
+.. _Z Open Automation Utilities:
+   https://www.ibm.com/docs/en/zoau/latest
 .. _Z Open Automation Utilities 1.1.0:
    https://www.ibm.com/docs/en/zoau/1.1.x
 .. _Z Open Automation Utilities 1.1.1:
@@ -609,6 +601,8 @@ Reference
    https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
+.. _z/OS core support matrix:
+   https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/build/html/resources/releases_maintenance.html
 
 .. .............................................................................
 .. Playbook Links

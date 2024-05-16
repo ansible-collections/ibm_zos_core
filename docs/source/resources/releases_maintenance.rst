@@ -35,44 +35,46 @@ search on product ID `5698-PA1`_.
 
 Support Matrix
 ==============
-+---------+--------------------------+---------------------------------------------------+---------------+---------------+
-| Version | Controller               | Managed Node                                      | GA            | End of Life   |
-+=========+==========================+===================================================+===============+===============+
-| 1.10.x  |- ansible-core >=2.15.x   |- `z/OS`_ V2R4 - V2Rx                              | In preview    | TBD           |
-|         |- Ansible >=8.0.x         |- `z/OS shell`_                                    |               |               |
-|         |- AAP >=2.4               |- IBM `Open Enterprise SDK for Python`_            |               |               |
-|         |                          |- IBM `Z Open Automation Utilities`_ >=1.3.0       |               |               |
-+---------+--------------------------+---------------------------------------------------+---------------+---------------+
-| 1.9.x   |- ansible-core >=2.14     |- `z/OS`_ V2R4 - V2Rx                              | 05 Feb 2024   | 30 April 2025 |
-|         |- Ansible >=7.0.x         |- `z/OS shell`_                                    |               |               |
-|         |- AAP >=2.3               |- IBM `Open Enterprise SDK for Python`_            |               |               |
-|         |                          |- IBM `Z Open Automation Utilities`_ 1.2.5 - 1.2.x |               |               |
-+---------+--------------------------+---------------------------------------------------+---------------+---------------+
-| 1.8.x   |- ansible-core >=2.14     |- `z/OS`_ V2R4 - V2Rx                              | 13 Dec 2023   | 30 April 2025 |
-|         |- Ansible >=7.0.x         |- `z/OS shell`_                                    |               |               |
-|         |- AAP >=2.3               |- IBM `Open Enterprise SDK for Python`_            |               |               |
-|         |                          |- IBM `Z Open Automation Utilities`_ 1.2.4 - 1.2.x |               |               |
-+---------+--------------------------+---------------------------------------------------+---------------+---------------+
-| 1.7.x   |- ansible-core >=2.14     |- `z/OS`_ V2R4 - V2Rx                              | 10 Oct 2023   | 30 April 2025 |
-|         |- Ansible >=7.0.x         |- `z/OS shell`_                                    |               |               |
-|         |- AAP >=2.3               |- IBM `Open Enterprise SDK for Python`_            |               |               |
-|         |                          |- IBM `Z Open Automation Utilities`_ 1.2.3 - 1.2.x |               |               |
-+---------+--------------------------+---------------------------------------------------+---------------+---------------+
-| 1.6.x   |- ansible-core >=2.9.x    |- `z/OS`_ V2R3 - V2Rx                              | 28 June 2023  | 30 April 2025 |
-|         |- Ansible >=2.9.x         |- `z/OS shell`_                                    |               |               |
-|         |- AAP >=1.2               |- IBM `Open Enterprise SDK for Python`_            |               |               |
-|         |                          |- IBM `Z Open Automation Utilities`_ 1.2.2 - 1.2.x |               |               |
-+---------+--------------------------+---------------------------------------------------+---------------+---------------+
-| 1.5.x   |- ansible-core >=2.9.x    |- `z/OS`_ V2R3 - V2Rx                              | 25 April 2023 | 25 April 2025 |
-|         |- Ansible >=2.9.x         |- `z/OS shell`_                                    |               |               |
-|         |- AAP >=1.2               |- IBM `Open Enterprise SDK for Python`_            |               |               |
-|         |                          |- IBM `Z Open Automation Utilities`_ 1.2.2 - 1.2.x |               |               |
-+---------+--------------------------+---------------------------------------------------+---------------+---------------+
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| Version | Controller                 | Managed Node                                      | GA            | End of Life   |
++=========+============================+===================================================+===============+===============+
+| 1.10.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R4 - V2Rx                              | In preview    | TBD           |
+|         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=2.4              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.0       |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| 1.9.x   |- `ansible-core`_ >=2.14    |- `z/OS`_ V2R4 - V2Rx                              | 05 Feb 2024   | 30 April 2025 |
+|         |- `Ansible`_ >=7.0.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=2.3              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ 1.2.5 - 1.2.x |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| 1.8.x   |- `ansible-core`_ >=2.14    |- `z/OS`_ V2R4 - V2Rx                              | 13 Dec 2023   | 30 April 2025 |
+|         |- `Ansible`_ >=7.0.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=2.3              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ 1.2.4 - 1.2.x |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| 1.7.x   |- `ansible-core`_ >=2.14    |- `z/OS`_ V2R4 - V2Rx                              | 10 Oct 2023   | 30 April 2025 |
+|         |- `Ansible`_ >=7.0.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=2.3              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ 1.2.3 - 1.2.x |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| 1.6.x   |- `ansible-core`_ >=2.9.x   |- `z/OS`_ V2R3 - V2Rx                              | 28 June 2023  | 30 April 2025 |
+|         |- `Ansible`_ >=2.9.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=1.2              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ 1.2.2 - 1.2.x |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| 1.5.x   |- `ansible-core`_ >=2.9.x   |- `z/OS`_ V2R3 - V2Rx                              | 25 April 2023 | 25 April 2025 |
+|         |- `Ansible`_ >=2.9.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=1.2              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ 1.2.2 - 1.2.x |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
 
 .. .............................................................................
 .. Global Links
 .. .............................................................................
 .. _ansible-core support matrix:
+   https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
+.. _AAP:
    https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
 .. _Red Hat Ansible Automation Platform Life Cycle:
    https://access.redhat.com/support/policy/updates/ansible-automation-platform
@@ -90,3 +92,7 @@ Support Matrix
    https://www.ibm.com/support/pages/lifecycle/search?q=5655-PYT
 .. _5698-PA1:
    https://www.ibm.com/support/pages/lifecycle/search?q=5698-PA1
+.. _ansible-core:
+   https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
+.. _Ansible:
+   https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix

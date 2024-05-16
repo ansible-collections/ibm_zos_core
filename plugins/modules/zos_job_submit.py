@@ -662,7 +662,7 @@ JOB_SPECIAL_PROCESSING = frozenset(["TYPRUN"])
 MAX_WAIT_TIME_S = 86400
 
 
-def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=None, start_time=timer()):
+def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_time=timer()):
     """Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
 
         Parameters
@@ -681,9 +681,6 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
             True if JCL is a file in USS, otherwise False; Note that all
             JCL local to a controller is transfered to USS thus would be
             True.
-        volume : str
-            volume the data set JCL is located on that will be cataloged before
-            being submitted.
         start_time : int
             time the JCL started its submission.
 
@@ -719,20 +716,6 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
     result = {}
 
     try:
-        if volume is not None:
-            volumes = [volume]
-            # Get the PDS name to catalog it
-            src_ds_name = data_set.extract_dsname(src)
-            present, changed = DataSet.attempt_catalog_if_necessary(
-                src_ds_name, volumes)
-
-            if not present:
-                result["changed"] = False
-                result["failed"] = True
-                result["msg"] = ("Unable to submit job {0} because the data set could "
-                                 "not be cataloged on the volume {1}.".format(src_name, volume))
-                module.fail_json(**result)
-
         job_submitted = jobs.submit(src, is_unix=is_unix, **kwargs)
 
         # Introducing a sleep to ensure we have the result of job submit carrying the job id.
@@ -967,11 +950,24 @@ def run_module():
     job_submitted_id = None
     duration = 0
     start_time = timer()
+
     if location == "data_set":
         # Resolving a relative GDS name and escaping special symbols if needed.
         src_data = data_set.MVSDataSet(src)
 
-        if data_set.is_member(src_data.name):
+        # Checking that the source is actually present on the system.
+        if volume is not None:
+            volumes = [volume]
+            # Get the data set name to catalog it.
+            src_ds_name = data_set.extract_dsname(src_data.name)
+            present, changed = DataSet.attempt_catalog_if_necessary(src_ds_name, volumes)
+
+            if not present:
+                module.fail_json(
+                    msg=(f"Unable to submit job {src_data.name} because the data set could "
+                         f"not be cataloged on the volume {volume}.")
+                )
+        elif data_set.is_member(src_data.name):
             if not DataSet.data_set_member_exists(src_data.name):
                 module.fail_json(msg=f"Cannot submit job, the data set member {src_data.raw_name} was not found.")
         else:
@@ -979,7 +975,7 @@ def run_module():
                 module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.")
 
         job_submitted_id, duration = submit_src_jcl(
-            module, src_data.name, src_name=src_data.raw_name, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)
+            module, src_data.name, src_name=src_data.raw_name, timeout=wait_time_s, is_unix=False, start_time=start_time)
     elif location == "uss":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, is_unix=True)

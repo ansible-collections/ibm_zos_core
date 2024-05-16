@@ -36,9 +36,9 @@ options:
     description:
       - The source file or data set containing the JCL to submit.
       - It could be a physical sequential data set, a partitioned data set
-        qualified by a member or a path (e.g. C(USER.TEST), V(USER.JCL\(TEST\))),
+        qualified by a member or a path (e.g. C(USER.TEST), V(USER.JCL(TEST\))),
         or a generation data set from a generation data group
-        (for example, V(USER.TEST.GDG\(-2\))).
+        (for example, V(USER.TEST.GDG(-2\))).
       - Or a USS file. (e.g C(/u/tester/demo/sample.jcl))
       - Or a LOCAL file in ansible control node.
         (e.g C(/User/tester/ansible-playbook/sample.jcl))

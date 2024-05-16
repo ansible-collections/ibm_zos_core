@@ -331,6 +331,18 @@ ac_install(){
     fi
 }
 
+# Run a make module doc
+# ------------------------------------------------------------------------------
+#->ac-module-doc:
+## Runs make module-doc to generate the module documentation
+## Usage: ac [--ac-module-doc]
+## Example:
+##  $ ac --ac-module-doc
+ac_module_doc(){
+    message "Running make module-doc"
+    . $VENV_BIN/activate && cd docs/ && make module-doc
+}
+
 # ------------------------------------------------------------------------------
 # Run ansible-lint on the locally checked out GH Branch
 # ------------------------------------------------------------------------------
@@ -753,6 +765,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-changelog"
             ;;
+      --ac-module-doc)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-module-doc"
+            ;;
       --ac-install)
             ensure_managed_venv_exists $1      # Command
             option_submitted="--ac-install"
@@ -914,6 +930,8 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ]
     ac_galaxy_importer
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
     ac_changelog $command
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-module-doc" ] ; then
+    ac_module_doc
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then

@@ -1,0 +1,5 @@
+minor_changes:
+  - zos_data_set - Added support for GDG and GDS relative name notation to create, delete,
+    catalog and uncatalog a data set. Added support for data set names with special characters
+    like $, /#, /- and @.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1504).

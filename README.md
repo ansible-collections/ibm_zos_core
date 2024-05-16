@@ -58,20 +58,18 @@ As part of the installation, the collection [requirements](#Requirements) must b
 
 If you are testing a configuration, it can be helpful to set the environment variables in a playbook, an example of that can be reviewed [here](https://github.com/ansible-collections/ibm_zos_core/discussions/657).
 
-To learn more about the ZOAU Python wheel installation method, review the [documentation](https://www.ibm.com/docs/en/zoau/1.3.x?topic=installing-zoau#python-wheel-installation-method). If the wheel is installed using the `--target` option, it will install the package into the specified directory, if the wheel is installed using the `--user` option, it will install the package into the user directory which will then need to have  `PYTHONPATH` configured to where the packages is installed, e.g; `PYTHONPATH: /u/user`.
+To learn more about the ZOAU Python wheel installation method, review the [documentation](https://www.ibm.com/docs/en/zoau/1.3.x?topic=installing-zoau#python-wheel-installation-method).
 
-If the ZOAU Python wheel package is installed using either `--target` or `--user`, uncomment the following line in the environment vars section.
-```
-ZOAU_PYTHONPATH: "{{ path_to_wheel_installation_directory }}"
-```
+If the wheel is installed using the `--target` option, it will install the package into the specified target directory. The environment variable `PYTHONPATH` will have to be configured to where the packages is installed, e.g; `PYTHONPATH: /usr/zoau/wheels`. Using `--target` is recommended, else the wheel will be installed in Python's home directory which may not have write permissions or persist
+after an update.
 
-Using `--target` is recommended, else the wheel will be installed in Python's home directory which may not have write permissions.
+If the wheel is installed using the `--user` option, it will install the package into the user directory. The environment variable `PYTHONPATH` will have to be configured to where the packages is installed, e.g; `PYTHONPATH: /u/user`
 
-The environment variables:
+Environment variables:
 ```
 PYZ: "path_to_python_installation_on_zos_target"
 ZOAU: "path_to_zoau_installation_on_zos_target"
-# ZOAU_PYTHONPATH: "path_to_zoau_wheel_installation_directory"
+ZOAU_PYTHONPATH: "path_to_zoau_wheel_installation_directory"
 
 ansible_python_interpreter: "{{ PYZ }}/bin/python3"
 

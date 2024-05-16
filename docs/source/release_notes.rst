@@ -31,6 +31,7 @@ Bugfixes
 - ``zos_apf`` - Option **list** previously only returned one data set, now it returns a list of retrieved data sets.
 - ``zos_blockinfile`` - Option **block** when containing double double quotation marks results in a task failure (failed=True); now the module handles this case to avoid failure.
 - ``zos_find`` - Option **size** failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
+
 - ``zos_job_submit``
 
    - Did not default to **location=DATA_SET** when no location was defined, now the location defaults to DATA_SET.

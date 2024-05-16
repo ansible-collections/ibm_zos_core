@@ -16,7 +16,7 @@ Major Changes
 - Starting with IBM Ansible z/OS core version 1.10.x, all module options are case sensitive,
   review the porting guide for specifics.
 - The README has been updated with a new template.
-- The *Reference* section has been renamed to *Requirements" and now includes a support matrix.
+- The **Reference** section has been renamed to **Requirements** and now includes a support matrix.
 
 Minor Changes
 -------------

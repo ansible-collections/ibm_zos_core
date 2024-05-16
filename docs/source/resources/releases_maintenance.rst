@@ -52,5 +52,5 @@ Support Matrix
 | 1.5.x   | 25 April 2023 | >=2.15.x     | >=8.0.x | >=2.4 | 25 April 2025 | Python 3.10 - 3.11  |- z/OS V2R4 - V2R5                                                  |
 |         |               |              |         |       |               |                     |- z/OS shell                                                        |
 |         |               |              |         |       |               |                     |- IBM Open Enterprise SDK for Python 3.10 - 3.11                    |
-|         |               |              |         |       |               |                     |- IBM Z Open Automation Utilities 1.2.4 or later, but prior to 1.3.0|
+|         |               |              |         |       |               |                     |- IBM Z Open Automation Utilities 1.2.2 or later, but prior to 1.3.0|
 +---------+---------------+--------------+---------+-------+---------------+---------------------+--------------------------------------------------------------------+

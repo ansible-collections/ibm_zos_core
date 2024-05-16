@@ -34,8 +34,8 @@ Bugfixes
 
 - ``zos_job_submit``
 
-   - Did not default to **location=DATA_SET** when no location was defined, now the location defaults to DATA_SET.
-   - Option **max_rc** previously did not influence a modules status, now the option value influences the tasks failure status.
+  - Did not default to **location=DATA_SET** when no location was defined, now the location defaults to DATA_SET.
+  - Option **max_rc** previously did not influence a modules status, now the option value influences the tasks failure status.
 
 - ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
 

@@ -75,7 +75,7 @@ Support Matrix
 .. _ansible-core support matrix:
    https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
 .. _AAP:
-   https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
+   https://access.redhat.com/support/policy/updates/ansible-automation-platform
 .. _Red Hat Ansible Automation Platform Life Cycle:
    https://access.redhat.com/support/policy/updates/ansible-automation-platform
 .. _Automation Hub:

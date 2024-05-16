@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019-2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -37,7 +37,7 @@ REPRO = """  REPRO INDATASET({}) -
 
 
 def _validate_data_set_name(ds):
-    """Validate data set name.
+    """Validate data set name using BetterArgParser.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def _validate_data_set_name(ds):
 
 
 def _validate_path(path):
-    """Validate path.
+    """Validate path using BetterArgParser.
 
     Parameters
     ----------

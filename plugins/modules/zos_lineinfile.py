@@ -378,6 +378,88 @@ def absent(src, line, regexp, encoding, force):
     return datasets.lineinfile(src, line, regex=regexp, encoding=encoding, state=False, debug=True, force=force)
 
 
+def execute_dsed(src, state, encoding, module, line=False, first_match=False, force=False, backrefs=False, regex=None, ins_bef=None, ins_aft=None):
+    options = ""
+    force = " -f " if force else ""
+    backrefs= " -r " if backrefs else ""
+    encoding= " -c {0} ".format(encoding)
+    match= "1" if first_match else "$"
+
+    if state:
+        if regex:
+            if ins_aft:
+                if ins_aft == "EOF" or ins_aft == "eof":
+                    options += f' -s -e "/{regex}/c\\{line}/{match}" -e "$ a\\{line}" "{src}" '
+                else:
+                    options += f' -s -e "/{regex}/c\\{line}/{match}" -e "/{ins_aft}/a\\{line}/{match}" -e "$ a\\{line}" "{src}" '
+
+            elif ins_bef:
+                if ins_bef == "BOF" or ins_aft == "bof":
+                    options += f' -s -e "/{regex}/c\\{line}/{match}" -e "1 i\\{line}" "{src}" '
+                else:
+                    options += f' -s -e "/{regex}/c\\{line}/{match}" -e "/{ins_bef}/i\\{line}/{match}" -e "$ a\\{line}" "{src}" '
+            else:
+                options += f' "/{regex}/c\\{line}/{match}" "{src}" '
+        else:
+            if ins_aft:
+                if ins_aft == "EOF" or ins_aft == "eof":
+                    options += f' "$ a\\{line}" "{src}" '
+                else:
+                    options += f' -s -e "/{ins_aft}/a\\{line}/{match}" -e "$ a\\{line}" "{src}" '
+            elif ins_bef:
+                if ins_bef == "BOF" or ins_aft == "bof":
+                    options += f' "1 i\\{line}" "{src}" '
+                else:
+                    options += f' -s -e "/{ins_bef}/i\\{line}/{match}" -e "$ a\\{line}" "{src}" '
+            else:
+                raise ValueError("Incorrect parameters")
+    else:
+        if regex:
+            if line:
+                options += f'-s -e "/{regex}/d" -e "/{line}/d" "{src}" '
+            else:
+                options += f'"/{line}/d" "{src}" '
+        else:
+            options += f'"/{line}/d" "{src}" '
+
+    cmd = "dsedhelper {0}{1}{2}{3}".format(force, backrefs, encoding, options)
+
+    rc, stdout, stderr = module.run_command(cmd)
+    cmd = clean_command(cmd)
+    return rc, cmd, stdout
+
+
+def clean_command(cmd):
+    cmd = cmd.replace('/c\\\\', '')
+    cmd = cmd.replace('/a\\\\', '', )
+    cmd = cmd.replace('/i\\\\', '', )
+    cmd = cmd.replace('$ a\\\\', '', )
+    cmd = cmd.replace('1 i\\\\', '', )
+    cmd = cmd.replace('/c\\', '')
+    cmd = cmd.replace('/a\\', '')
+    cmd = cmd.replace('/i\\', '')
+    cmd = cmd.replace('$ a\\', '')
+    cmd = cmd.replace('1 i\\', '')
+    cmd = cmd.replace('/d', '')
+    cmd = cmd.replace('\\\\d', '')
+    cmd = cmd.replace('\\n', '\n')
+    cmd = cmd.replace('\\"', '"')
+    return cmd
+
+
+def combinations_dsed(file_type, regexp, ins_bef, ins_aft, gdg):
+    if gdg:
+        return True
+    if file_type != "USS":
+        if regexp and ins_bef:
+            return True
+
+        elif regexp and ins_aft:
+            return True
+
+    return False
+
+
 def quotedString(string):
     """Add escape if string was quoted.
 
@@ -476,8 +558,7 @@ def main():
 
     backup = parsed_args.get('backup')
     # if backup_name is provided, update backup variable
-    if parsed_args.get('backup_name') and backup:
-        backup = parsed_args.get('backup_name')
+    backup_name = parsed_args.get('backup_name')
     backrefs = parsed_args.get('backrefs')
     src = parsed_args.get('src')
     firstmatch = parsed_args.get('firstmatch')
@@ -501,7 +582,24 @@ def main():
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
 
+    gdg = False
+    flag_cmd = False
     # analysis the file type
+    if "/" not in src:
+        dataset = data_set.MVSDataSet(
+            name=src
+        )
+        src = dataset.name
+        gdg = dataset.is_gds_active
+    if "(" in src or ")" in src or "+" in src or "-" in src and gdg == False:
+        module.fail_json(msg="{0} does not exist".format(src))
+
+    if backup_name != None:
+        backup_dataset = data_set.MVSDataSet(
+              name=backup_name
+        )
+        backup_name_solve = backup_dataset.name
+
     ds_utils = data_set.DataSetUtils(src)
 
     # Check if dest/src exists
@@ -509,68 +607,74 @@ def main():
         module.fail_json(msg="{0} does not exist".format(src))
 
     file_type = ds_utils.ds_type()
-    if file_type == 'USS':
-        file_type = 1
-    else:
+    if file_type != "USS":
         if file_type not in DS_TYPE:
             message = "{0} data set type is NOT supported".format(str(file_type))
             module.fail_json(msg=message)
-        dataset = data_set.MVSDataSet(
-            name=src
-        )
-        src = dataset.name
-        file_type = 0
     # make sure the default encoding is set if null was passed
     if not encoding:
         encoding = "IBM-1047"
     if backup:
-        # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
-        # setting backup to None if backup_name wasn't provided. if backup=None, Backup module will use
-        # pre-defined naming scheme and return the created destination name.
-        if isinstance(backup, bool):
-            backup = None
-        try:
-            if file_type:
-                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
+        #try:
+            if file_type == "USS":
+                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup_name_solve, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
-        except Exception:
-            module.fail_json(msg="creating backup has failed")
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup_name_solve, tmphlq=tmphlq)
+        #except Exception:
+            #module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a line with matching regex pattern
     # state=absent, delete lines with matching regex pattern
+    flag_cmd = combinations_dsed(file_type, regexp, ins_bef, ins_aft, gdg)
     if parsed_args.get('state') == 'present':
-        return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
-                                 backrefs, force)
+        if flag_cmd:
+            rc, cmd, stodut = execute_dsed(src, state=True, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['stodut'] = stodut
+            result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to insert new entry' if rc != 0 else ""
+        else:
+            return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
+                                    backrefs, force)
     else:
-        return_content = absent(src, quotedString(line), quotedString(regexp), encoding, force)
-    stdout = return_content.stdout_response
-    stderr = return_content.stderr_response
-    rc = return_content.rc
-    stdout = stdout.replace('/c\\', '/c\\\\')
-    stdout = stdout.replace('/a\\', '/a\\\\')
-    stdout = stdout.replace('/i\\', '/i\\\\')
-    stdout = stdout.replace('$ a\\', '$ a\\\\')
-    stdout = stdout.replace('1 i\\', '1 i\\\\')
-    stdout = stdout.replace('/d', '\\\\d')
-    if line:
-        stdout = stdout.replace(line, quotedString(line))
-    if regexp:
-        stdout = stdout.replace(regexp, quotedString(regexp))
-    if ins_aft:
-        stdout = stdout.replace(ins_aft, quotedString(ins_aft))
-    if ins_bef:
-        stdout = stdout.replace(ins_bef, quotedString(ins_bef))
-    try:
-        ret = json.loads(stdout)
-    except Exception:
-        messageDict = dict(msg="dsed return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-        if result.get('backup_name'):
-            messageDict['backup_name'] = result['backup_name']
-        module.fail_json(**messageDict)
+        if flag_cmd:
+            rc, cmd, stodut = execute_dsed(src, state=False, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['stodut'] = stodut
+            result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to insert new entry' if rc != 0 else ""
+        else:
+            return_content = absent(src, quotedString(line), quotedString(regexp), encoding, force)
+    if not flag_cmd:
+        stdout = return_content.stdout_response
+        stderr = return_content.stderr_response
+        rc = return_content.rc
+        stdout = stdout.replace('/c\\', '/c\\\\')
+        stdout = stdout.replace('/a\\', '/a\\\\')
+        stdout = stdout.replace('/i\\', '/i\\\\')
+        stdout = stdout.replace('$ a\\', '$ a\\\\')
+        stdout = stdout.replace('1 i\\', '1 i\\\\')
+        stdout = stdout.replace('/d', '\\\\d')
+        if line:
+            stdout = stdout.replace(line, quotedString(line))
+        if regexp:
+            stdout = stdout.replace(regexp, quotedString(regexp))
+        if ins_aft:
+            stdout = stdout.replace(ins_aft, quotedString(ins_aft))
+        if ins_bef:
+            stdout = stdout.replace(ins_bef, quotedString(ins_bef))
+        try:
+            ret = json.loads(stdout)
+        except Exception:
+            messageDict = dict(msg="dsed return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+            if result.get('backup_name'):
+                messageDict['backup_name'] = result['backup_name']
+            module.fail_json(**messageDict)
 
-    result['cmd'] = ret['cmd']
-    result['changed'] = ret['changed']
-    result['found'] = ret['found']
+        result['cmd'] = ret['cmd']
+        result['changed'] = ret['changed']
+        result['found'] = ret['found']
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
     if len(stderr):

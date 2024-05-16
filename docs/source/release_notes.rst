@@ -22,7 +22,7 @@ Minor Changes
 -------------
 
 - ``zos_apf`` - Enhanced error messages when an exception is caught.
-- ``zos_backup_restore`` - Added option **tmp_hlq** to the user module to override the default high level qualifier (HLQ) for temporary and backup.
+- ``zos_backup_restore`` - Added option **tmp_hlq** to the user module to override the default high level qualifier (HLQ) for temporary and backup data sets.
 - ``zos_copy`` - Documented module options `group` and `owner`.
 
 Bugfixes

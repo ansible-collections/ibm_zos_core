@@ -1868,7 +1868,7 @@ def run_module():
                     force=data_set_params.get("force"),
                 ) or result.get("changed", False)
         except Exception as e:
-            module.fail_json(msg=e, **result)
+            module.fail_json(msg=repr(e), **result)
     else:
         if module.params.get("replace"):
             result["changed"] = True

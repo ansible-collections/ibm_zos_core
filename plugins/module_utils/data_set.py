@@ -20,10 +20,6 @@ from os import path, walk
 from random import sample
 from string import ascii_uppercase, digits
 
-from string import ascii_uppercase, digits
-from typing import Union, Optional
-from datetime import datetime
-
 # from ansible.module_utils._text import to_bytes
 from ansible.module_utils.common.text.converters import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -39,7 +35,7 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, exceptions, gdgs, mvscmd
+    from zoautil_py import datasets, exceptions, gdgs
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -174,20 +170,22 @@ class DataSet(object):
         Returns:
             bool -- Indicates if changes were made.
         """
+        arguments = locals()
+        arguments.pop("replace", None)
         present = False
         changed = False
-        if DataSet.data_set_cataloged(data_set.name):
+        if DataSet.data_set_cataloged(name):
             present = True
 
         if not present:
             try:
-                DataSet.create(data_set, tmp_hlq=tmp_hlq, force=force)
+                DataSet.create(**arguments)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
                 if "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
-                        data_set.name, data_set.volumes
+                        name, volumes
                     )
                     if present and changed:
                         raise_error = False
@@ -196,9 +194,9 @@ class DataSet(object):
         if present:
             if not replace:
                 return changed
-            DataSet.replace(data_set=data_set, tmp_hlq=tmp_hlq, force=force)
-        if data_set.data_set_type.upper() == "ZFS":
-            DataSet.format_zfs(data_set.name)
+            DataSet.replace(**arguments)
+        if type.upper() == "ZFS":
+            DataSet.format_zfs(name)
         return True
 
     @staticmethod
@@ -280,26 +278,6 @@ class DataSet(object):
             DataSet.uncatalog(name)
             return True
         return False
-
-    @staticmethod
-    def ensure_gdg_present(
-        data_set,
-        replace=False,
-    ):
-        arguments = vars(data_set)
-        changed = False
-        present = False
-        if gdgs.exists(data_set.name):
-            present = True
-
-        if not present:
-            gdgs.create(**arguments)
-        else:
-            if not replace:
-                return changed
-            DataSet.delete(data_set.name)
-            gdgs.create(**arguments)
-        return True
 
     @staticmethod
     def allocate_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None):
@@ -384,7 +362,7 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-        
+
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
             if bool(set(volumes) & set(cataloged_volume_list)):
@@ -923,8 +901,9 @@ class DataSet(object):
             force (bool, optional): Used to determine behavior when performing member operations on a pdse.
                     Defaults to None.
         """
-        DataSet.delete(data_set.name)
-        DataSet.create(data_set=data_set, tmp_hlq=tmp_hlq, force=force)
+        arguments = locals()
+        DataSet.delete(name)
+        DataSet.create(**arguments)
 
     @staticmethod
     def _build_zoau_args(**kwargs):
@@ -1043,8 +1022,7 @@ class DataSet(object):
         Raises:
             DatasetCreateError: When data set creation fails.
         """
-        original_args = vars(data_set)
-        original_args.update({"tmp_hlq": tmp_hlq, "force": force})
+        original_args = locals()
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
             datasets.create(**formatted_args)
@@ -1056,8 +1034,8 @@ class DataSet(object):
             )
         except exceptions.DatasetVerificationError as e:
             # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
-            if data_set.volumes and len(data_set.volumes) > 1:
-                if DataSet.data_set_cataloged(data_set.name, data_set.volumes):
+            if volumes and len(volumes) > 1:
+                if DataSet.data_set_cataloged(name, volumes):
                     return 0
             raise DatasetCreateError(
                 raw_name if raw_name else name,

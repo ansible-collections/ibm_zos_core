@@ -1,4 +1,4 @@
-g
+
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_unarchive.py
 
 .. _zos_unarchive_module:

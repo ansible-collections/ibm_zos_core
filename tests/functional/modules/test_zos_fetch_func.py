@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import stat
+import pytest
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
@@ -664,3 +665,63 @@ def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
     finally:
         if os.path.exists(dest_path):
             shutil.rmtree("/tmp/" + remote_host)
+
+
+def test_fetch_sequential_data_set_with_special_chars(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_PS = "USER.TEST.@N$IBLE#"
+
+    hosts.all.zos_data_set(
+        name=TEST_PS,
+        state="present",
+        type="seq",
+        space_type="m",
+        space_primary=5
+    )
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PS}\"")
+    params = dict(src=TEST_PS, dest="/tmp/", flat=True)
+    dest_path = f"/tmp/{TEST_PS}"
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Sequential"
+            assert result.get("module_stderr") is None
+            assert result.get("dest") == dest_path
+            assert os.path.exists(dest_path)
+    finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+
+
+@pytest.mark.parametrize("generation", ["0", "-1"])
+def test_fetch_gds_from_gdg(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+    TEST_GDS = f"{TEST_GDG}({generation})"
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDS}\"")
+    params = dict(src=TEST_GDS, dest="/tmp/", flat=True)
+    dest_path = f"/tmp/{TEST_GDS}"
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Sequential"
+            assert result.get("module_stderr") is None
+            assert result.get("dest") == dest_path
+            assert os.path.exists(dest_path)
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(-1)", state="absent")
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
+        if os.path.exists(dest_path):
+            os.remove(dest_path)

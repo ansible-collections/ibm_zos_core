@@ -1,0 +1,4 @@
+trivial:
+  - tests/functional/modules/test_zos_mount_func.py - migrate code to use
+    ZOAU v1.3.0.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1237).

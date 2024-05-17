@@ -1,0 +1,4 @@
+trivial:
+  - zos_operator_action_query - Update internal functions to account for the change to the
+    unit of measurement of `timeout` now in centiseconds.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1215).

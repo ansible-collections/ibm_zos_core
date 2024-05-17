@@ -36,8 +36,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
-
 display = Display()
 
 

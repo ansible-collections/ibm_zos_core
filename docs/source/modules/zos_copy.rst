@@ -27,19 +27,6 @@ Parameters
 
 
 asa_text
-<<<<<<< HEAD
-  If set to ``true``, indicates that either ``src`` or ``dest`` or both contain ASA control characters.
-
-  When ``src`` is a USS file and ``dest`` is a data set, the copy will preserve ASA control characters in the destination.
-
-  When ``src`` is a data set containing ASA control characters and ``dest`` is a USS file, the copy will put all control characters as plain text in the destination.
-
-  If ``dest`` is a non-existent data set, it will be created with record format Fixed Block with ANSI format (FBA).
-
-  If neither ``src`` or ``dest`` have record format Fixed Block with ANSI format (FBA) or Variable Block with ANSI format (VBA), the module will fail.
-
-  This option is only valid for text files. If ``is_binary`` is ``true`` or ``executable`` is ``true`` as well, the module will fail.
-=======
   If set to \ :literal:`true`\ , indicates that either \ :literal:`src`\  or \ :literal:`dest`\  or both contain ASA control characters.
 
   When \ :literal:`src`\  is a USS file and \ :literal:`dest`\  is a data set, the copy will preserve ASA control characters in the destination.
@@ -51,7 +38,6 @@ asa_text
   If neither \ :literal:`src`\  or \ :literal:`dest`\  have record format Fixed Block with ANSI format (FBA) or Variable Block with ANSI format (VBA), the module will fail.
 
   This option is only valid for text files. If \ :literal:`is\_binary`\  is \ :literal:`true`\  or \ :literal:`executable`\  is \ :literal:`true`\  as well, the module will fail.
->>>>>>> dev
 
   | **required**: False
   | **type**: bool
@@ -105,17 +91,9 @@ dest
 
   If \ :literal:`dest`\  is a nonexistent USS file, it will be created.
 
-<<<<<<< HEAD
-  If ``dest`` is a new USS file or replacement, the file will be appropriately tagged with either the system's default locale or the encoding option defined. If the USS file is a replacement, the user must have write authority to the file either through ownership, group or other permissions, else the module will fail.
-
-  If ``dest`` is a nonexistent data set, it will be created following the process outlined here and in the ``volume`` option.
-
-  If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
-=======
   If \ :literal:`dest`\  is a new USS file or replacement, the file will be appropriately tagged with either the system's default locale or the encoding option defined. If the USS file is a replacement, the user must have write authority to the file either through ownership, group or other permissions, else the module will fail.
 
   If \ :literal:`dest`\  is a nonexistent data set, it will be created following the process outlined here and in the \ :literal:`volume`\  option.
->>>>>>> dev
 
   If \ :literal:`dest`\  is a nonexistent data set, the attributes assigned will depend on the type of \ :literal:`src`\ . If \ :literal:`src`\  is a USS file, \ :literal:`dest`\  will have a Fixed Block (FB) record format and the remaining attributes will be computed. If \ :emphasis:`is\_binary=true`\ , \ :literal:`dest`\  will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. If \ :emphasis:`executable=true`\ ,\ :literal:`dest`\  will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
 
@@ -185,19 +163,11 @@ force
 
 
 force_lock
-<<<<<<< HEAD
-  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force_lock`` to bypass this check and continue with copy.
-
-  If set to ``true`` and destination is a MVS data set opened by another process then zos_copy will try to copy using DISP=SHR.
-
-  Using ``force_lock`` uses operations that are subject to race conditions and can lead to data loss, use with caution.
-=======
   By default, when \ :literal:`dest`\  is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use \ :literal:`force\_lock`\  to bypass this check and continue with copy.
 
   If set to \ :literal:`true`\  and destination is a MVS data set opened by another process then zos\_copy will try to copy using DISP=SHR.
 
   Using \ :literal:`force\_lock`\  uses operations that are subject to race conditions and can lead to data loss, use with caution.
->>>>>>> dev
 
   If a data set member has aliases, and is not a program object, copying that member to a dataset that is in use will result in the aliases not being preserved in the target dataset. When this scenario occurs the module will fail.
 
@@ -217,19 +187,11 @@ ignore_sftp_stderr
 
 
 is_binary
-<<<<<<< HEAD
-  If set to ``true``, indicates that the file or data set to be copied is a binary file or data set.
-
-  When *is_binary=true*, no encoding conversion is applied to the content, all content transferred retains the original state.
-
-  Use *is_binary=true* when copying a Database Request Module (DBRM) to retain the original state of the serialized SQL statements of a program.
-=======
   If set to \ :literal:`true`\ , indicates that the file or data set to be copied is a binary file or data set.
 
   When \ :emphasis:`is\_binary=true`\ , no encoding conversion is applied to the content, all content transferred retains the original state.
 
   Use \ :emphasis:`is\_binary=true`\  when copying a Database Request Module (DBRM) to retain the original state of the serialized SQL statements of a program.
->>>>>>> dev
 
   | **required**: False
   | **type**: bool
@@ -237,17 +199,6 @@ is_binary
 
 
 executable
-<<<<<<< HEAD
-  If set to ``true``, indicates that the file or library to be copied is an executable.
-
-  If the ``src`` executable has an alias, the alias information is also copied. If the ``dest`` is Unix, the alias is not visible in Unix, even though the information is there and will be visible if copied to a library.
-
-  If *executable=true*, and ``dest`` is a data set, it must be a PDS or PDSE (library).
-
-  If ``dest`` is a nonexistent data set, the library attributes assigned will be Undefined (U) record format with a record length of 0, block size of 32760 and the remaining attributes will be computed.
-
-  If ``dest`` is a file, execute permission for the user will be added to the file (``u+x``).
-=======
   If set to \ :literal:`true`\ , indicates that the file or library to be copied is an executable.
 
   If the \ :literal:`src`\  executable has an alias, the alias information is also copied. If the \ :literal:`dest`\  is Unix, the alias is not visible in Unix, even though the information is there and will be visible if copied to a library.
@@ -257,7 +208,6 @@ executable
   If \ :literal:`dest`\  is a nonexistent data set, the library attributes assigned will be Undefined (U) record format with a record length of 0, block size of 32760 and the remaining attributes will be computed.
 
   If \ :literal:`dest`\  is a file, execute permission for the user will be added to the file (\`\`u+x\`\`).
->>>>>>> dev
 
   | **required**: False
   | **type**: bool
@@ -265,15 +215,9 @@ executable
 
 
 aliases
-<<<<<<< HEAD
-  If set to ``true``, indicates that any aliases found in the source (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
-
-  Aliases are implicitly preserved when libraries are copied over to USS destinations. That is, when ``executable=True`` and ``dest`` is a USS file or directory, this option will be ignored.
-=======
   If set to \ :literal:`true`\ , indicates that any aliases found in the source (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
 
   Aliases are implicitly preserved when libraries are copied over to USS destinations. That is, when \ :literal:`executable=True`\  and \ :literal:`dest`\  is a USS file or directory, this option will be ignored.
->>>>>>> dev
 
   Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
 
@@ -295,11 +239,7 @@ group
 
   When left unspecified, it uses the current group of the current user unless you are root, in which case it can preserve the previous ownership.
 
-<<<<<<< HEAD
-  This option is only applicable if ``dest`` is USS, otherwise ignored.
-=======
   This option is only applicable if \ :literal:`dest`\  is USS, otherwise ignored.
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -331,17 +271,6 @@ owner
   | **type**: str
 
 
-owner
-  Name of the user that should own the filesystem object, as would be passed to the chown command.
-
-  When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.
-
-  This option is only applicable if ``dest`` is USS, otherwise ignored.
-
-  | **required**: False
-  | **type**: str
-
-
 remote_src
   If set to \ :literal:`false`\ , the module searches for \ :literal:`src`\  at the local machine.
 
@@ -365,15 +294,9 @@ src
 
   If \ :literal:`src`\  is a directory and ends with "/", the contents of it will be copied into the root of \ :literal:`dest`\ . If it doesn't end with "/", the directory itself will be copied.
 
-<<<<<<< HEAD
-  If ``src`` is a directory or a file, file names will be truncated and/or modified to ensure a valid name for a data set or member.
-
-  If ``src`` is a VSAM data set, ``dest`` must also be a VSAM.
-=======
   If \ :literal:`src`\  is a directory or a file, file names will be truncated and/or modified to ensure a valid name for a data set or member.
 
   If \ :literal:`src`\  is a VSAM data set, \ :literal:`dest`\  must also be a VSAM.
->>>>>>> dev
 
   Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
 
@@ -444,11 +367,7 @@ dest_data_set
   space_type
     If the destination data set does not exist, this sets the unit of measurement to use when defining primary and secondary space.
 
-<<<<<<< HEAD
-    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
-=======
     Valid units of size are \ :literal:`k`\ , \ :literal:`m`\ , \ :literal:`g`\ , \ :literal:`cyl`\ , and \ :literal:`trk`\ .
->>>>>>> dev
 
     | **required**: False
     | **type**: str
@@ -456,11 +375,7 @@ dest_data_set
 
 
   record_format
-<<<<<<< HEAD
-    If the destination data set does not exist, this sets the format of the data set. (e.g ``fb``)
-=======
     If the destination data set does not exist, this sets the format of the data set. (e.g \ :literal:`fb`\ )
->>>>>>> dev
 
     Choices are case-sensitive.
 
@@ -497,15 +412,9 @@ dest_data_set
   key_offset
     The key offset to use when creating a KSDS data set.
 
-<<<<<<< HEAD
-    *key_offset* is required when *type=ksds*.
-
-    *key_offset* should only be provided when *type=ksds*
-=======
     \ :emphasis:`key\_offset`\  is required when \ :emphasis:`type=ksds`\ .
 
     \ :emphasis:`key\_offset`\  should only be provided when \ :emphasis:`type=ksds`\ 
->>>>>>> dev
 
     | **required**: False
     | **type**: int
@@ -514,15 +423,9 @@ dest_data_set
   key_length
     The key length to use when creating a KSDS data set.
 
-<<<<<<< HEAD
-    *key_length* is required when *type=ksds*.
-
-    *key_length* should only be provided when *type=ksds*
-=======
     \ :emphasis:`key\_length`\  is required when \ :emphasis:`type=ksds`\ .
 
     \ :emphasis:`key\_length`\  should only be provided when \ :emphasis:`type=ksds`\ 
->>>>>>> dev
 
     | **required**: False
     | **type**: int
@@ -569,15 +472,6 @@ dest_data_set
 
 
 use_template
-<<<<<<< HEAD
-  Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
-
-  Only valid when ``src`` is a local file or directory.
-
-  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
-
-  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
-=======
   Whether the module should treat \ :literal:`src`\  as a Jinja2 template and render it before continuing with the rest of the module.
 
   Only valid when \ :literal:`src`\  is a local file or directory.
@@ -585,7 +479,6 @@ use_template
   All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as \ `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`__\ , such as \ :literal:`playbook\_dir`\ , \ :literal:`ansible\_version`\ , etc.
 
   If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order \ `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`__\ 
->>>>>>> dev
 
   | **required**: False
   | **type**: bool
@@ -595,15 +488,9 @@ use_template
 template_parameters
   Options to set the way Jinja2 will process templates.
 
-<<<<<<< HEAD
-  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
-
-  These options are ignored unless ``use_template`` is true.
-=======
   Jinja2 already sets defaults for the markers it uses, you can find more information at its \ `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`__\ .
 
   These options are ignored unless \ :literal:`use\_template`\  is true.
->>>>>>> dev
 
   | **required**: False
   | **type**: dict
@@ -682,11 +569,7 @@ template_parameters
   trim_blocks
     Whether Jinja2 should remove the first newline after a block is removed.
 
-<<<<<<< HEAD
-    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
-=======
     Setting this option to \ :literal:`False`\  will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
->>>>>>> dev
 
     | **required**: False
     | **type**: bool
@@ -930,11 +813,7 @@ Notes
 
    This module uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
-<<<<<<< HEAD
-   Beginning in version 1.8.x, zos_copy will no longer attempt to correct a copy of a data type member into a PDSE that contains program objects. You can control this behavior using module option ``executable`` that will signify an executable is being copied into a PDSE with other executables. Mixing data type members with program objects will result in a (FSUM8976,./zos_copy.html) error.
-=======
    Beginning in version 1.8.x, zos\_copy will no longer attempt to correct a copy of a data type member into a PDSE that contains program objects. You can control this behavior using module option \ :literal:`executable`\  that will signify an executable is being copied into a PDSE with other executables. Mixing data type members with program objects will result in a (FSUM8976,./zos\_copy.html) error.
->>>>>>> dev
 
 
 
@@ -969,82 +848,6 @@ dest
 
 dest_created
   Indicates whether the module created the destination.
-<<<<<<< HEAD
-
-  | **returned**: success and if dest was created by the module.
-  | **type**: bool
-  | **sample**:
-
-    .. code-block:: json
-
-        true
-
-destination_attributes
-  Attributes of a dest created by the module.
-
-  | **returned**: success and destination was created by the module.
-  | **type**: dict
-  | **sample**:
-
-    .. code-block:: json
-
-        {
-            "block_size": 32760,
-            "record_format": "fb",
-            "record_length": 45,
-            "space_primary": 2,
-            "space_secondary": 1,
-            "space_type": "k",
-            "type": "pdse"
-        }
-
-  block_size
-    Block size of the dataset.
-
-    | **type**: int
-    | **sample**: 32760
-
-  record_format
-    Record format of the dataset.
-
-    | **type**: str
-    | **sample**: fb
-
-  record_length
-    Record length of the dataset.
-
-    | **type**: int
-    | **sample**: 45
-
-  space_primary
-    Allocated primary space for the dataset.
-
-    | **type**: int
-    | **sample**: 2
-
-  space_secondary
-    Allocated secondary space for the dataset.
-
-    | **type**: int
-    | **sample**: 1
-
-  space_type
-    Unit of measurement for space.
-
-    | **type**: str
-    | **sample**: k
-
-  type
-    Type of dataset allocated.
-
-    | **type**: str
-    | **sample**: pdse
-
-
-checksum
-  SHA256 checksum of the file after running zos_copy.
-
-=======
 
   | **returned**: success and if dest was created by the module.
   | **type**: bool
@@ -1119,7 +922,6 @@ destination_attributes
 checksum
   SHA256 checksum of the file after running zos\_copy.
 
->>>>>>> dev
   | **returned**: When ``validate=true`` and if ``dest`` is USS
   | **type**: str
   | **sample**: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e

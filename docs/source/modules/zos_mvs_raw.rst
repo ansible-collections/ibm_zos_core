@@ -146,11 +146,7 @@ dds
 
 
     reuse
-<<<<<<< HEAD
-      Determines if a data set should be reused if *disposition=new* and if a data set with a matching name already exists.
-=======
       Determines if a data set should be reused if \ :emphasis:`disposition=new`\  and if a data set with a matching name already exists.
->>>>>>> dev
 
       If \ :emphasis:`reuse=true`\ , \ :emphasis:`disposition`\  will be automatically switched to \ :literal:`SHR`\ .
 
@@ -158,11 +154,7 @@ dds
 
       Mutually exclusive with \ :emphasis:`replace`\ .
 
-<<<<<<< HEAD
-      *reuse* is only considered when *disposition=new*
-=======
       \ :emphasis:`reuse`\  is only considered when \ :emphasis:`disposition=new`\ 
->>>>>>> dev
 
       | **required**: False
       | **type**: bool
@@ -170,11 +162,7 @@ dds
 
 
     replace
-<<<<<<< HEAD
-      Determines if a data set should be replaced if *disposition=new* and a data set with a matching name already exists.
-=======
       Determines if a data set should be replaced if \ :emphasis:`disposition=new`\  and a data set with a matching name already exists.
->>>>>>> dev
 
       If \ :emphasis:`replace=true`\ , the original data set will be deleted, and a new data set created.
 
@@ -182,11 +170,7 @@ dds
 
       Mutually exclusive with \ :emphasis:`reuse`\ .
 
-<<<<<<< HEAD
-      *replace* is only considered when *disposition=new*
-=======
       \ :emphasis:`replace`\  is only considered when \ :emphasis:`disposition=new`\ 
->>>>>>> dev
 
       \ :emphasis:`replace`\  will result in loss of all data in the original data set unless \ :emphasis:`backup`\  is specified.
 
@@ -196,11 +180,7 @@ dds
 
 
     backup
-<<<<<<< HEAD
-      Determines if a backup should be made of an existing data set when *disposition=new*, *replace=true*, and a data set with the desired name is found.
-=======
       Determines if a backup should be made of an existing data set when \ :emphasis:`disposition=new`\ , \ :emphasis:`replace=true`\ , and a data set with the desired name is found.
->>>>>>> dev
 
       \ :emphasis:`backup`\  is only used when \ :emphasis:`replace=true`\ .
 
@@ -335,11 +315,7 @@ dds
       encoding
         How the label for the key encrypting key specified by \ :emphasis:`label`\  is encoded by the Encryption Key Manager.
 
-<<<<<<< HEAD
-        *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
-=======
         \ :emphasis:`encoding`\  can either be set to \ :literal:`l`\  for label encoding, or \ :literal:`h`\  for hash encoding.
->>>>>>> dev
 
         Maps to KEYCD1 on z/OS.
 
@@ -374,11 +350,7 @@ dds
       encoding
         How the label for the key encrypting key specified by \ :emphasis:`label`\  is encoded by the Encryption Key Manager.
 
-<<<<<<< HEAD
-        *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
-=======
         \ :emphasis:`encoding`\  can either be set to \ :literal:`l`\  for label encoding, or \ :literal:`h`\  for hash encoding.
->>>>>>> dev
 
         Maps to KEYCD2 on z/OS.
 
@@ -690,15 +662,9 @@ dds
 
       If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-<<<<<<< HEAD
-      If a multi-line string is provided, use the proper block scalar style. YAML supports both `literal <https://yaml.org/spec/1.2.2/#literal-style>`_ and `folded <https://yaml.org/spec/1.2.2/#line-folding>`_ scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; *content: | 2* is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`_ indicators  "+" and "-" as well.
-
-      When using the *content* option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all *content* types; string, list of strings and when using a YAML block indicator.
-=======
       If a multi-line string is provided, use the proper block scalar style. YAML supports both \ `literal <https://yaml.org/spec/1.2.2/#literal-style>`__\  and \ `folded <https://yaml.org/spec/1.2.2/#line-folding>`__\  scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; \ :emphasis:`content: | 2`\  is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block \ `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`__\  indicators  "+" and "-" as well.
 
       When using the \ :emphasis:`content`\  option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all \ :emphasis:`content`\  types; string, list of strings and when using a YAML block indicator.
->>>>>>> dev
 
       | **required**: True
       | **type**: raw
@@ -915,11 +881,7 @@ dds
 
 
         reuse
-<<<<<<< HEAD
-          Determines if data set should be reused if *disposition=new* and a data set with matching name already exists.
-=======
           Determines if data set should be reused if \ :emphasis:`disposition=new`\  and a data set with matching name already exists.
->>>>>>> dev
 
           If \ :emphasis:`reuse=true`\ , \ :emphasis:`disposition`\  will be automatically switched to \ :literal:`SHR`\ .
 
@@ -927,11 +889,7 @@ dds
 
           Mutually exclusive with \ :emphasis:`replace`\ .
 
-<<<<<<< HEAD
-          *reuse* is only considered when *disposition=new*
-=======
           \ :emphasis:`reuse`\  is only considered when \ :emphasis:`disposition=new`\ 
->>>>>>> dev
 
           | **required**: False
           | **type**: bool
@@ -939,11 +897,7 @@ dds
 
 
         replace
-<<<<<<< HEAD
-          Determines if data set should be replaced if *disposition=new* and a data set with matching name already exists.
-=======
           Determines if data set should be replaced if \ :emphasis:`disposition=new`\  and a data set with matching name already exists.
->>>>>>> dev
 
           If \ :emphasis:`replace=true`\ , the original data set will be deleted, and a new data set created.
 
@@ -951,11 +905,7 @@ dds
 
           Mutually exclusive with \ :emphasis:`reuse`\ .
 
-<<<<<<< HEAD
-          *replace* is only considered when *disposition=new*
-=======
           \ :emphasis:`replace`\  is only considered when \ :emphasis:`disposition=new`\ 
->>>>>>> dev
 
           \ :emphasis:`replace`\  will result in loss of all data in the original data set unless \ :emphasis:`backup`\  is specified.
 
@@ -965,11 +915,7 @@ dds
 
 
         backup
-<<<<<<< HEAD
-          Determines if a backup should be made of existing data set when *disposition=new*, *replace=true*, and a data set with the desired name is found.
-=======
           Determines if a backup should be made of existing data set when \ :emphasis:`disposition=new`\ , \ :emphasis:`replace=true`\ , and a data set with the desired name is found.
->>>>>>> dev
 
           \ :emphasis:`backup`\  is only used when \ :emphasis:`replace=true`\ .
 
@@ -1104,11 +1050,7 @@ dds
           encoding
             How the label for the key encrypting key specified by \ :emphasis:`label`\  is encoded by the Encryption Key Manager.
 
-<<<<<<< HEAD
-            *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
-=======
             \ :emphasis:`encoding`\  can either be set to \ :literal:`l`\  for label encoding, or \ :literal:`h`\  for hash encoding.
->>>>>>> dev
 
             Maps to KEYCD1 on z/OS.
 
@@ -1143,11 +1085,7 @@ dds
           encoding
             How the label for the key encrypting key specified by \ :emphasis:`label`\  is encoded by the Encryption Key Manager.
 
-<<<<<<< HEAD
-            *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
-=======
             \ :emphasis:`encoding`\  can either be set to \ :literal:`l`\  for label encoding, or \ :literal:`h`\  for hash encoding.
->>>>>>> dev
 
             Maps to KEYCD2 on z/OS.
 
@@ -1253,11 +1191,7 @@ dds
         path
           The path to an existing UNIX file.
 
-<<<<<<< HEAD
-          Or provide the path to an new created UNIX file when *status_group=ocreat*.
-=======
           Or provide the path to an new created UNIX file when \ :emphasis:`status\_group=ocreat`\ .
->>>>>>> dev
 
           The provided path must be absolute.
 
@@ -1449,15 +1383,9 @@ dds
 
           If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-<<<<<<< HEAD
-          If a multi-line string is provided, use the proper block scalar style. YAML supports both `literal <https://yaml.org/spec/1.2.2/#literal-style>`_ and `folded <https://yaml.org/spec/1.2.2/#line-folding>`_ scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; *content: | 2* is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`_ indicators  "+" and "-" as well.
-
-          When using the *content* option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all *content* types; string, list of strings and when using a YAML block indicator.
-=======
           If a multi-line string is provided, use the proper block scalar style. YAML supports both \ `literal <https://yaml.org/spec/1.2.2/#literal-style>`__\  and \ `folded <https://yaml.org/spec/1.2.2/#line-folding>`__\  scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; \ :emphasis:`content: | 2`\  is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block \ `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`__\  indicators  "+" and "-" as well.
 
           When using the \ :emphasis:`content`\  option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all \ :emphasis:`content`\  types; string, list of strings and when using a YAML block indicator.
->>>>>>> dev
 
           | **required**: True
           | **type**: raw
@@ -1820,35 +1748,6 @@ Examples
                          VOLUMES(222222) -
                          UNIQUE)
 
-       - name: Define a cluster using a literal block style indicator
-             with a 2 space indentation.
-         zos_mvs_raw:
-           program_name: idcams
-           auth: yes
-           dds:
-             - dd_output:
-                 dd_name: sysprint
-                 return_content:
-                   type: text
-             - dd_input:
-                 dd_name: sysin
-                 content: |2
-                   DEFINE CLUSTER -
-                             (NAME(ANSIBLE.TEST.VSAM) -
-                             CYL(10 10)  -
-                             FREESPACE(20 20) -
-                             INDEXED -
-                             KEYS(32 0) -
-                             NOERASE -
-                             NONSPANNED -
-                             NOREUSE -
-                             SHAREOPTIONS(3 3) -
-                             SPEED -
-                             UNORDERED -
-                             RECORDSIZE(4086 32600) -
-                             VOLUMES(222222) -
-                             UNIQUE)
-
 
 
 
@@ -1861,8 +1760,6 @@ Notes
    1. \ `zos\_mvs\_raw <./zos_mvs_raw.html>`__\  module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
 
    2. \ `zos\_mvs\_raw <./zos_mvs_raw.html>`__\  module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
-
-   3. When executing a program, refer to the programs documentation as each programs requirments can vary fom DDs, instream-data indentation and continuation characters.
 
    3. When executing a program, refer to the programs documentation as each programs requirments can vary fom DDs, instream-data indentation and continuation characters.
 
@@ -1944,4 +1841,16 @@ backups
 
     | **type**: str
 
+
+stdout
+  The stdout from a USS command or MVS command, if applicable.
+
+  | **returned**: always
+  | **type**: str
+
+stderr
+  The stderr of a USS command or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: str
 

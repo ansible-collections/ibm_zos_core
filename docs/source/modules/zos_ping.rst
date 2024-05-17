@@ -44,11 +44,7 @@ Notes
 -----
 
 .. note::
-<<<<<<< HEAD
-   This module is written in REXX and relies on the SCP protocol to transfer the source to the managed z/OS node and encode it in the managed nodes default encoding, eg IBM-1047. Starting with OpenSSH 9.0, it switches from SCP to use SFTP by default, meaning transfers are no longer treated as text and are transferred as binary preserving the source files encoding resulting in a module failure. If you are using OpenSSH 9.0 (ssh -V) or later, you can instruct SSH to use SCP by adding the entry ``scp_extra_args="-O"`` into the ini file named ``ansible.cfg``.
-=======
    This module is written in REXX and relies on the SCP protocol to transfer the source to the managed z/OS node and encode it in the managed nodes default encoding, eg IBM-1047. Starting with OpenSSH 9.0, it switches from SCP to use SFTP by default, meaning transfers are no longer treated as text and are transferred as binary preserving the source files encoding resulting in a module failure. If you are using OpenSSH 9.0 (ssh -V) or later, you can instruct SSH to use SCP by adding the entry \ :literal:`scp\_extra\_args="-O"`\  into the ini file named \ :literal:`ansible.cfg`\ .
->>>>>>> dev
 
 
 

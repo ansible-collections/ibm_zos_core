@@ -62,11 +62,7 @@ volume
 
   1. The volume serial number.
 
-<<<<<<< HEAD
-  2. Six asterisks ``******``, indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
-=======
-  2. Six asterisks (\*\*\*\*\*\*), indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
->>>>>>> dev
+  2. Six asterisks \ :literal:`\*\*\*\*\*\*`\ , indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
 
   3. \*MCAT\*, indicating that the system must use the volume serial number of the volume containing the master catalog.
 
@@ -136,8 +132,6 @@ persistent
 
     The timestamp (\<timestamp\>) used in the default marker follows the '+%Y%m%d-%H%M%S' date format
 
-    The timestamp (<timestamp>) used in the default marker follows the '+%Y%m%d-%H%M%S' date format
-
     | **required**: False
     | **type**: str
     | **default**: /* {mark} ANSIBLE MANAGED BLOCK <timestamp> \*/
@@ -195,11 +189,7 @@ batch
 
     1. The volume serial number
 
-<<<<<<< HEAD
-    2. Six asterisks ``******``, indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
-=======
-    2. Six asterisks (\*\*\*\*\*\*), indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
->>>>>>> dev
+    2. Six asterisks \ :literal:`\*\*\*\*\*\*`\ , indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
 
     3. \*MCAT\*, indicating that the system must use the volume serial number of the volume containing the master catalog.
 

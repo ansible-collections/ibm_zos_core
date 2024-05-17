@@ -182,15 +182,9 @@ space
 space_type
   The unit of measurement to use when defining data set space.
 
-<<<<<<< HEAD
-  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
-
-  When *full_volume=True*, *space_type* defaults to ``g``, otherwise default is ``m``
-=======
   Valid units of size are \ :literal:`k`\ , \ :literal:`m`\ , \ :literal:`g`\ , \ :literal:`cyl`\ , and \ :literal:`trk`\ .
 
   When \ :emphasis:`full\_volume=True`\ , \ :emphasis:`space\_type`\  defaults to \ :literal:`g`\ , otherwise default is \ :literal:`m`\ 
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -209,11 +203,7 @@ hlq
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup data sets.
 
-<<<<<<< HEAD
-  The default HLQ is the Ansible user that executes the module and if that is not available, then the value of ``TMPHLQ`` is used.
-=======
   The default HLQ is the Ansible user that executes the module and if that is not available, then the value of \ :literal:`TMPHLQ`\  is used.
->>>>>>> dev
 
   | **required**: False
   | **type**: str

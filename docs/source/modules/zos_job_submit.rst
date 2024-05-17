@@ -42,15 +42,6 @@ src
 
 
 location
-<<<<<<< HEAD
-  The JCL location. Supported choices are ``data_set``, ``uss`` or ``local``.
-
-  ``data_set`` can be a PDS, PDSE, or sequential data set.
-
-  ``uss`` means the JCL location is located in UNIX System Services (USS).
-
-  ``local`` means locally to the ansible control node.
-=======
   The JCL location. Supported choices are \ :literal:`data\_set`\ , \ :literal:`uss`\  or \ :literal:`local`\ .
 
   \ :literal:`data\_set`\  can be a PDS, PDSE, or sequential data set.
@@ -58,7 +49,6 @@ location
   \ :literal:`uss`\  means the JCL location is located in UNIX System Services (USS).
 
   \ :literal:`local`\  means locally to the ansible control node.
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -98,11 +88,7 @@ volume
 
   When configured, the \ `zos\_job\_submit <./zos_job_submit.html>`__\  will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
 
-<<<<<<< HEAD
-  Ignored for *location=uss* and *location=local*.
-=======
   Ignored for \ :emphasis:`location=uss`\  and \ :emphasis:`location=local`\ .
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -111,11 +97,7 @@ volume
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-<<<<<<< HEAD
-  This option is only supported for when *location=local*.
-=======
   This option is only supported for when \ :emphasis:`location=local`\ .
->>>>>>> dev
 
   If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default, otherwise the module will detect the z/OS system encoding.
 
@@ -147,15 +129,6 @@ encoding
 
 
 use_template
-<<<<<<< HEAD
-  Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
-
-  Only valid when ``src`` is a local file or directory.
-
-  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
-
-  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
-=======
   Whether the module should treat \ :literal:`src`\  as a Jinja2 template and render it before continuing with the rest of the module.
 
   Only valid when \ :literal:`src`\  is a local file or directory.
@@ -163,7 +136,6 @@ use_template
   All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as \ `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`__\ , such as \ :literal:`playbook\_dir`\ , \ :literal:`ansible\_version`\ , etc.
 
   If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order \ `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`__\ 
->>>>>>> dev
 
   | **required**: False
   | **type**: bool
@@ -173,15 +145,9 @@ use_template
 template_parameters
   Options to set the way Jinja2 will process templates.
 
-<<<<<<< HEAD
-  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
-
-  These options are ignored unless ``use_template`` is true.
-=======
   Jinja2 already sets defaults for the markers it uses, you can find more information at its \ `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`__\ .
 
   These options are ignored unless \ :literal:`use\_template`\  is true.
->>>>>>> dev
 
   | **required**: False
   | **type**: dict
@@ -260,11 +226,7 @@ template_parameters
   trim_blocks
     Whether Jinja2 should remove the first newline after a block is removed.
 
-<<<<<<< HEAD
-    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
-=======
     Setting this option to \ :literal:`False`\  will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
->>>>>>> dev
 
     | **required**: False
     | **type**: bool
@@ -359,8 +321,6 @@ Notes
    For supported character sets used to encode data, refer to the \ `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`__\ .
 
    This module uses \ `zos\_copy <./zos_copy.html>`__\  to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
-
-   This module uses `zos_copy <./zos_copy.html>`_ to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
 
 
@@ -720,27 +680,6 @@ jobs
     msg
       Job status resulting from the job submission.
 
-<<<<<<< HEAD
-      Job status `ABEND` indicates the job ended abnormally.
-
-      Job status `AC` indicates the job is active, often a started task or job taking long.
-
-      Job status `CAB` indicates a converter abend.
-
-      Job status `CANCELED` indicates the job was canceled.
-
-      Job status `CNV` indicates a converter error.
-
-      Job status `FLU` indicates the job was flushed.
-
-      Job status `JCLERR` or `JCL ERROR` indicates the JCL has an error.
-
-      Job status `SEC` or `SEC ERROR` indicates the job as encountered a security error.
-
-      Job status `SYS` indicates a system failure.
-
-      Job status `?` indicates status can not be determined.
-=======
       Job status \`ABEND\` indicates the job ended abnormally.
 
       Job status \`AC\` indicates the job is active, often a started task or job taking long.
@@ -760,7 +699,6 @@ jobs
       Job status \`SYS\` indicates a system failure.
 
       Job status \`?\` indicates status can not be determined.
->>>>>>> dev
 
       Jobs where status can not be determined will result in None (NULL).
 

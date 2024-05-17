@@ -315,11 +315,7 @@ Return Values
 
 
 changed
-<<<<<<< HEAD
-  Indicates if the source was modified. Value of 1 represents `true`, otherwise `false`.
-=======
   Indicates if the source was modified. Value of 1 represents \`true\`, otherwise \`false\`.
->>>>>>> dev
 
   | **returned**: success
   | **type**: bool

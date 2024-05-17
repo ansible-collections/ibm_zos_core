@@ -32,11 +32,7 @@ name
 
   If \ :emphasis:`name`\  is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
 
-<<<<<<< HEAD
-  Required if *type=member* or *state!=present* and not using *batch*.
-=======
   Required if \ :emphasis:`type=member`\  or \ :emphasis:`state!=present`\  and not using \ :emphasis:`batch`\ .
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -51,11 +47,7 @@ state
   If \ :emphasis:`state=absent`\  and the data set does exist on the managed node, remove the data set, module completes successfully with \ :emphasis:`changed=True`\ .
 
 
-<<<<<<< HEAD
-  If *state=absent* and *type=member* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
-=======
   If \ :emphasis:`state=absent`\  and \ :emphasis:`type=member`\  and \ :emphasis:`force=True`\ , the data set will be opened with \ :emphasis:`DISP=SHR`\  such that the entire data set can be accessed by other processes while the specified member is deleted.
->>>>>>> dev
 
 
   If \ :emphasis:`state=absent`\  and \ :emphasis:`volumes`\  is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied \ :emphasis:`name`\  and \ :emphasis:`volumes`\ . If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with \ :emphasis:`changed=True`\ .
@@ -67,6 +59,9 @@ state
   If \ :emphasis:`state=absent`\  and \ :emphasis:`volumes`\  is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided \ :emphasis:`volumes`\ . If the volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with \ :emphasis:`changed=False`\ .
 
 
+  If \ :emphasis:`state=absent`\  and \ :emphasis:`type=gdg`\  and the GDG base has active generations the module will complete successfully with \ :emphasis:`changed=False`\ . To remove it option \ :emphasis:`force`\  needs to be used. If the GDG base does not have active generations the module will complete successfully with \ :emphasis:`changed=True`\ .
+
+
   If \ :emphasis:`state=present`\  and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with \ :emphasis:`changed=True`\ .
 
 
@@ -76,11 +71,7 @@ state
   If \ :emphasis:`state=present`\  and \ :emphasis:`replace=False`\  and the data set is present on the managed node, no action taken, module completes successfully with \ :emphasis:`changed=False`\ .
 
 
-<<<<<<< HEAD
-  If *state=present* and *type=member* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
-=======
   If \ :emphasis:`state=present`\  and \ :emphasis:`type=member`\  and the member does not exist in the data set, create a member formatted to store data, module completes successfully with \ :emphasis:`changed=True`\ . Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
->>>>>>> dev
 
 
   If \ :emphasis:`state=cataloged`\  and \ :emphasis:`volumes`\  is provided and the data set is already cataloged, no action taken, module completes successfully with \ :emphasis:`changed=False`\ .
@@ -105,22 +96,16 @@ state
 
 
 type
-<<<<<<< HEAD
-  The data set type to be used when creating a data set. (e.g ``pdse``).
-
-  ``member`` expects to be used with an existing partitioned data set.
-=======
   The data set type to be used when creating a data set. (e.g \ :literal:`pdse`\ ).
 
   \ :literal:`member`\  expects to be used with an existing partitioned data set.
->>>>>>> dev
 
   Choices are case-sensitive.
 
   | **required**: False
   | **type**: str
   | **default**: pds
-  | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs
+  | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs, gdg
 
 
 space_primary
@@ -146,11 +131,7 @@ space_secondary
 space_type
   The unit of measurement to use when defining primary and secondary space.
 
-<<<<<<< HEAD
-  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
-=======
   Valid units of size are \ :literal:`k`\ , \ :literal:`m`\ , \ :literal:`g`\ , \ :literal:`cyl`\ , and \ :literal:`trk`\ .
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -163,11 +144,7 @@ record_format
 
   Choices are case-sensitive.
 
-<<<<<<< HEAD
-  When *type=ksds*, *type=esds*, *type=rrds*, *type=lds* or *type=zfs* then *record_format=None*, these types do not have a default *record_format*.
-=======
   When \ :emphasis:`type=ksds`\ , \ :emphasis:`type=esds`\ , \ :emphasis:`type=rrds`\ , \ :emphasis:`type=lds`\  or \ :emphasis:`type=zfs`\  then \ :emphasis:`record\_format=None`\ , these types do not have a default \ :emphasis:`record\_format`\ .
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -242,15 +219,9 @@ directory_blocks
 key_offset
   The key offset to use when creating a KSDS data set.
 
-<<<<<<< HEAD
-  *key_offset* is required when *type=ksds*.
-
-  *key_offset* should only be provided when *type=ksds*
-=======
   \ :emphasis:`key\_offset`\  is required when \ :emphasis:`type=ksds`\ .
 
   \ :emphasis:`key\_offset`\  should only be provided when \ :emphasis:`type=ksds`\ 
->>>>>>> dev
 
   | **required**: False
   | **type**: int
@@ -259,18 +230,80 @@ key_offset
 key_length
   The key length to use when creating a KSDS data set.
 
-<<<<<<< HEAD
-  *key_length* is required when *type=ksds*.
-
-  *key_length* should only be provided when *type=ksds*
-=======
   \ :emphasis:`key\_length`\  is required when \ :emphasis:`type=ksds`\ .
 
   \ :emphasis:`key\_length`\  should only be provided when \ :emphasis:`type=ksds`\ 
->>>>>>> dev
 
   | **required**: False
   | **type**: int
+
+
+empty
+  Sets the \ :emphasis:`empty`\  attribute for Generation Data Groups.
+
+  If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+
+  If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
+
+  Default is false.
+
+  | **required**: False
+  | **type**: bool
+
+
+extended
+  Sets the \ :emphasis:`extended`\  attribute for Generation Data Groups.
+
+  If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+
+  If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+
+  Default is false.
+
+  | **required**: False
+  | **type**: bool
+
+
+fifo
+  Sets the \ :emphasis:`fifo`\  attribute for Generation Data Groups.
+
+  If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+
+  If true, the order is the oldest GDS defined to the newest GDS.
+
+  Default is false.
+
+  | **required**: False
+  | **type**: bool
+
+
+limit
+  Sets the \ :emphasis:`limit`\  attribute for Generation Data Groups.
+
+  Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
+
+  \ :emphasis:`limit`\  is required when \ :emphasis:`type=gdg`\ .
+
+  | **required**: False
+  | **type**: int
+
+
+purge
+  Sets the \ :emphasis:`purge`\  attribute for Generation Data Groups.
+
+  Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the \ :literal:`scratch`\  option is set.
+
+  | **required**: False
+  | **type**: bool
+
+
+scratch
+  Sets the \ :emphasis:`scratch`\  attribute for Generation Data Groups.
+
+  Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+
+  | **required**: False
+  | **type**: bool
 
 
 volumes
@@ -323,11 +356,9 @@ force
 
   The \ :emphasis:`force=True`\  option enables sharing of data sets through the disposition \ :emphasis:`DISP=SHR`\ .
 
-<<<<<<< HEAD
-  The *force=True* only applies to data set members when *state=absent* and *type=member*.
-=======
-  The \ :emphasis:`force=True`\  only applies to data set members when \ :emphasis:`state=absent`\  and \ :emphasis:`type=member`\ .
->>>>>>> dev
+  The \ :emphasis:`force=True`\  only applies to data set members when \ :emphasis:`state=absent`\  and \ :emphasis:`type=member`\  and when removing a GDG base with active generations.
+
+  If \ :emphasis:`force=True`\ , \ :emphasis:`type=gdg`\  and \ :emphasis:`state=absent`\  it will force remove a GDG base with active generations.
 
   | **required**: False
   | **type**: bool
@@ -347,11 +378,7 @@ batch
 
     If \ :emphasis:`name`\  is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
 
-<<<<<<< HEAD
-    Required if *type=member* or *state!=present*
-=======
     Required if \ :emphasis:`type=member`\  or \ :emphasis:`state!=present`\ 
->>>>>>> dev
 
     | **required**: False
     | **type**: str
@@ -366,11 +393,7 @@ batch
     If \ :emphasis:`state=absent`\  and the data set does exist on the managed node, remove the data set, module completes successfully with \ :emphasis:`changed=True`\ .
 
 
-<<<<<<< HEAD
-    If *state=absent* and *type=member* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
-=======
     If \ :emphasis:`state=absent`\  and \ :emphasis:`type=member`\  and \ :emphasis:`force=True`\ , the data set will be opened with \ :emphasis:`DISP=SHR`\  such that the entire data set can be accessed by other processes while the specified member is deleted.
->>>>>>> dev
 
 
     If \ :emphasis:`state=absent`\  and \ :emphasis:`volumes`\  is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied \ :emphasis:`name`\  and \ :emphasis:`volumes`\ . If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with \ :emphasis:`changed=True`\ .
@@ -391,11 +414,7 @@ batch
     If \ :emphasis:`state=present`\  and \ :emphasis:`replace=False`\  and the data set is present on the managed node, no action taken, module completes successfully with \ :emphasis:`changed=False`\ .
 
 
-<<<<<<< HEAD
-    If *state=present* and *type=member* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
-=======
     If \ :emphasis:`state=present`\  and \ :emphasis:`type=member`\  and the member does not exist in the data set, create a member formatted to store data, module completes successfully with \ :emphasis:`changed=True`\ . Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
->>>>>>> dev
 
 
     If \ :emphasis:`state=cataloged`\  and \ :emphasis:`volumes`\  is provided and the data set is already cataloged, no action taken, module completes successfully with \ :emphasis:`changed=False`\ .
@@ -420,22 +439,16 @@ batch
 
 
   type
-<<<<<<< HEAD
-    The data set type to be used when creating a data set. (e.g ``pdse``)
-
-    ``member`` expects to be used with an existing partitioned data set.
-=======
     The data set type to be used when creating a data set. (e.g \ :literal:`pdse`\ )
 
     \ :literal:`member`\  expects to be used with an existing partitioned data set.
->>>>>>> dev
 
     Choices are case-sensitive.
 
     | **required**: False
     | **type**: str
     | **default**: pds
-    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs, gdg
 
 
   space_primary
@@ -461,11 +474,7 @@ batch
   space_type
     The unit of measurement to use when defining primary and secondary space.
 
-<<<<<<< HEAD
-    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
-=======
     Valid units of size are \ :literal:`k`\ , \ :literal:`m`\ , \ :literal:`g`\ , \ :literal:`cyl`\ , and \ :literal:`trk`\ .
->>>>>>> dev
 
     | **required**: False
     | **type**: str
@@ -478,11 +487,7 @@ batch
 
     Choices are case-sensitive.
 
-<<<<<<< HEAD
-    When *type=ksds*, *type=esds*, *type=rrds*, *type=lds* or *type=zfs* then *record_format=None*, these types do not have a default *record_format*.
-=======
     When \ :emphasis:`type=ksds`\ , \ :emphasis:`type=esds`\ , \ :emphasis:`type=rrds`\ , \ :emphasis:`type=lds`\  or \ :emphasis:`type=zfs`\  then \ :emphasis:`record\_format=None`\ , these types do not have a default \ :emphasis:`record\_format`\ .
->>>>>>> dev
 
     | **required**: False
     | **type**: str
@@ -557,15 +562,9 @@ batch
   key_offset
     The key offset to use when creating a KSDS data set.
 
-<<<<<<< HEAD
-    *key_offset* is required when *type=ksds*.
-
-    *key_offset* should only be provided when *type=ksds*
-=======
     \ :emphasis:`key\_offset`\  is required when \ :emphasis:`type=ksds`\ .
 
     \ :emphasis:`key\_offset`\  should only be provided when \ :emphasis:`type=ksds`\ 
->>>>>>> dev
 
     | **required**: False
     | **type**: int
@@ -574,18 +573,80 @@ batch
   key_length
     The key length to use when creating a KSDS data set.
 
-<<<<<<< HEAD
-    *key_length* is required when *type=ksds*.
-
-    *key_length* should only be provided when *type=ksds*
-=======
     \ :emphasis:`key\_length`\  is required when \ :emphasis:`type=ksds`\ .
 
     \ :emphasis:`key\_length`\  should only be provided when \ :emphasis:`type=ksds`\ 
->>>>>>> dev
 
     | **required**: False
     | **type**: int
+
+
+  empty
+    Sets the \ :emphasis:`empty`\  attribute for Generation Data Groups.
+
+    If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+
+    If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
+
+    Default is false.
+
+    | **required**: False
+    | **type**: bool
+
+
+  extended
+    Sets the \ :emphasis:`extended`\  attribute for Generation Data Groups.
+
+    If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+
+    If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+
+    Default is false.
+
+    | **required**: False
+    | **type**: bool
+
+
+  fifo
+    Sets the \ :emphasis:`fifo`\  attribute for Generation Data Groups.
+
+    If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+
+    If true, the order is the oldest GDS defined to the newest GDS.
+
+    Default is false.
+
+    | **required**: False
+    | **type**: bool
+
+
+  limit
+    Sets the \ :emphasis:`limit`\  attribute for Generation Data Groups.
+
+    Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
+
+    \ :emphasis:`limit`\  is required when \ :emphasis:`type=gdg`\ .
+
+    | **required**: False
+    | **type**: int
+
+
+  purge
+    Sets the \ :emphasis:`purge`\  attribute for Generation Data Groups.
+
+    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the \ :literal:`scratch`\  option is set.
+
+    | **required**: False
+    | **type**: bool
+
+
+  scratch
+    Sets the \ :emphasis:`scratch`\  attribute for Generation Data Groups.
+
+    Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+
+    | **required**: False
+    | **type**: bool
 
 
   volumes
@@ -629,11 +690,7 @@ batch
 
     The \ :emphasis:`force=True`\  option enables sharing of data sets through the disposition \ :emphasis:`DISP=SHR`\ .
 
-<<<<<<< HEAD
-    The *force=True* only applies to data set members when *state=absent* and *type=member*.
-=======
     The \ :emphasis:`force=True`\  only applies to data set members when \ :emphasis:`state=absent`\  and \ :emphasis:`type=member`\ .
->>>>>>> dev
 
     | **required**: False
     | **type**: bool
@@ -718,11 +775,7 @@ Examples
      zos_data_set:
        name: someds.name.here(mydata)
        type: member
-<<<<<<< HEAD
        replace: true
-=======
-       replace: yes
->>>>>>> dev
 
    - name: Write a member to an existing PDS; do not replace if member exists
      zos_data_set:
@@ -740,20 +793,12 @@ Examples
        name: someds.name.here(mydata)
        state: absent
        type: member
-<<<<<<< HEAD
        force: true
-=======
-       force: yes
->>>>>>> dev
 
    - name: Create multiple partitioned data sets and add one or more members to each
      zos_data_set:
        batch:
-<<<<<<< HEAD
          - name: someds.name.here1
-=======
-         - name:  someds.name.here1
->>>>>>> dev
            type: pds
            space_primary: 5
            space_type: m
@@ -763,11 +808,7 @@ Examples
            type: member
          - name: someds.name.here2(member1)
            type: member
-<<<<<<< HEAD
            replace: true
-=======
-           replace: yes
->>>>>>> dev
          - name: someds.name.here2(member2)
            type: member
 

@@ -20,11 +20,7 @@ Synopsis
 - Sources for archiving must be on the remote z/OS system.
 - Supported sources are USS (UNIX System Services) or z/OS data sets.
 - The archive remains on the remote z/OS system.
-<<<<<<< HEAD
-- For supported archive formats, see option ``format``.
-=======
 - For supported archive formats, see option \ :literal:`format`\ .
->>>>>>> dev
 
 
 
@@ -39,11 +35,7 @@ src
 
   USS file paths should be absolute paths.
 
-<<<<<<< HEAD
-  MVS data sets supported types are: ``SEQ``, ``PDS``, ``PDSE``.
-=======
   MVS data sets supported types are: \ :literal:`SEQ`\ , \ :literal:`PDS`\ , \ :literal:`PDSE`\ .
->>>>>>> dev
 
   VSAMs are not supported.
 
@@ -76,11 +68,7 @@ format
 
 
     terse_pack
-<<<<<<< HEAD
-      Compression option for use with the terse format, *name=terse*.
-=======
       Compression option for use with the terse format, \ :emphasis:`name=terse`\ .
->>>>>>> dev
 
       Pack will compress records in a data set so that the output results in lossless data compression.
 
@@ -100,22 +88,14 @@ format
 
       If the data set provided exists, the data set must have the following attributes: LRECL=255, BLKSIZE=3120, and RECFM=VB
 
-<<<<<<< HEAD
-      When providing the *xmit_log_data_set* name, ensure there is adequate space.
-=======
       When providing the \ :emphasis:`xmit\_log\_data\_set`\  name, ensure there is adequate space.
->>>>>>> dev
 
       | **required**: False
       | **type**: str
 
 
     use_adrdssu
-<<<<<<< HEAD
-      If set to true, the ``zos_archive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to compress data sets into a portable format before using ``xmit`` or ``terse``.
-=======
       If set to true, the \ :literal:`zos\_archive`\  module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to compress data sets into a portable format before using \ :literal:`xmit`\  or \ :literal:`terse`\ .
->>>>>>> dev
 
       | **required**: False
       | **type**: bool
@@ -127,21 +107,6 @@ format
 dest
   The remote absolute path or data set where the archive should be created.
 
-<<<<<<< HEAD
-  *dest* can be a USS file or MVS data set name.
-
-  If *dest* has missing parent directories, they will be created.
-
-  If *dest* is a nonexistent USS file, it will be created.
-
-  If *dest* is an existing file or data set and *force=true*, the existing *dest* will be deleted and recreated with attributes defined in the *dest_data_set* option or computed by the module.
-
-  If *dest* is an existing file or data set and *force=false* or not specified, the module exits with a note to the user.
-
-  Destination data set attributes can be set using *dest_data_set*.
-
-  Destination data set space will be calculated based on space of source data sets provided and/or found by expanding the pattern name. Calculating space can impact module performance. Specifying space attributes in the *dest_data_set* option will improve performance.
-=======
   \ :emphasis:`dest`\  can be a USS file or MVS data set name.
 
   If \ :emphasis:`dest`\  has missing parent directories, they will be created.
@@ -155,7 +120,6 @@ dest
   Destination data set attributes can be set using \ :emphasis:`dest\_data\_set`\ .
 
   Destination data set space will be calculated based on space of source data sets provided and/or found by expanding the pattern name. Calculating space can impact module performance. Specifying space attributes in the \ :emphasis:`dest\_data\_set`\  option will improve performance.
->>>>>>> dev
 
   | **required**: True
   | **type**: str
@@ -164,15 +128,9 @@ dest
 exclude
   Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude from src list and glob expansion.
 
-<<<<<<< HEAD
-  Patterns (wildcards) can contain one of the following, `?`, `*`.
-
-  * matches everything.
-=======
   Patterns (wildcards) can contain one of the following, \`?\`, \`\*\`.
 
   \* matches everything.
->>>>>>> dev
 
   ? matches any single character.
 
@@ -186,11 +144,7 @@ group
 
   When left unspecified, it uses the current group of the current use unless you are root, in which case it can preserve the previous ownership.
 
-<<<<<<< HEAD
-  This option is only applicable if ``dest`` is USS, otherwise ignored.
-=======
   This option is only applicable if \ :literal:`dest`\  is USS, otherwise ignored.
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -199,15 +153,6 @@ group
 mode
   The permission of the destination archive file.
 
-<<<<<<< HEAD
-  If ``dest`` is USS, this will act as Unix file mode, otherwise ignored.
-
-  It should be noted that modes are octal numbers. The user must either add a leading zero so that Ansible's YAML parser knows it is an octal number (like ``0644`` or ``01777``)or quote it (like ``'644'`` or ``'1777'``) so Ansible receives a string and can do its own conversion from string into number. Giving Ansible a number without following one of these rules will end up with a decimal number which will have unexpected results.
-
-  The mode may also be specified as a symbolic mode (for example, 'u+rwx' or 'u=rw,g=r,o=r') or a special string 'preserve'.
-
-  *mode=preserve* means that the file will be given the same permissions as the src file.
-=======
   If \ :literal:`dest`\  is USS, this will act as Unix file mode, otherwise ignored.
 
   It should be noted that modes are octal numbers. The user must either add a leading zero so that Ansible's YAML parser knows it is an octal number (like \ :literal:`0644`\  or \ :literal:`01777`\ )or quote it (like \ :literal:`'644'`\  or \ :literal:`'1777'`\ ) so Ansible receives a string and can do its own conversion from string into number. Giving Ansible a number without following one of these rules will end up with a decimal number which will have unexpected results.
@@ -215,7 +160,6 @@ mode
   The mode may also be specified as a symbolic mode (for example, 'u+rwx' or 'u=rw,g=r,o=r') or a special string 'preserve'.
 
   \ :emphasis:`mode=preserve`\  means that the file will be given the same permissions as the src file.
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -226,22 +170,14 @@ owner
 
   When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.
 
-<<<<<<< HEAD
-  This option is only applicable if ``dest`` is USS, otherwise ignored.
-=======
   This option is only applicable if \ :literal:`dest`\  is USS, otherwise ignored.
->>>>>>> dev
 
   | **required**: False
   | **type**: str
 
 
 remove
-<<<<<<< HEAD
-  Remove any added source files , trees or data sets after module `zos_archive <./zos_archive.html>`_ adds them to the archive. Source files, trees and data sets are identified with option *src*.
-=======
   Remove any added source files , trees or data sets after module \ `zos\_archive <./zos_archive.html>`__\  adds them to the archive. Source files, trees and data sets are identified with option \ :emphasis:`src`\ .
->>>>>>> dev
 
   | **required**: False
   | **type**: bool
@@ -249,11 +185,7 @@ remove
 
 
 dest_data_set
-<<<<<<< HEAD
-  Data set attributes to customize a ``dest`` data set to be archived into.
-=======
   Data set attributes to customize a \ :literal:`dest`\  data set to be archived into.
->>>>>>> dev
 
   | **required**: False
   | **type**: dict
@@ -276,30 +208,18 @@ dest_data_set
 
 
   space_primary
-<<<<<<< HEAD
-    If the destination *dest* data set does not exist , this sets the primary space allocated for the data set.
-
-    The unit of space used is set using *space_type*.
-=======
     If the destination \ :emphasis:`dest`\  data set does not exist , this sets the primary space allocated for the data set.
 
     The unit of space used is set using \ :emphasis:`space\_type`\ .
->>>>>>> dev
 
     | **required**: False
     | **type**: int
 
 
   space_secondary
-<<<<<<< HEAD
-    If the destination *dest* data set does not exist , this sets the secondary space allocated for the data set.
-
-    The unit of space used is set using *space_type*.
-=======
     If the destination \ :emphasis:`dest`\  data set does not exist , this sets the secondary space allocated for the data set.
 
     The unit of space used is set using \ :emphasis:`space\_type`\ .
->>>>>>> dev
 
     | **required**: False
     | **type**: int
@@ -308,11 +228,7 @@ dest_data_set
   space_type
     If the destination data set does not exist, this sets the unit of measurement to use when defining primary and secondary space.
 
-<<<<<<< HEAD
-    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
-=======
     Valid units of size are \ :literal:`k`\ , \ :literal:`m`\ , \ :literal:`g`\ , \ :literal:`cyl`\ , and \ :literal:`trk`\ .
->>>>>>> dev
 
     | **required**: False
     | **type**: str
@@ -320,11 +236,7 @@ dest_data_set
 
 
   record_format
-<<<<<<< HEAD
-    If the destination data set does not exist, this sets the format of the data set. (e.g ``FB``)
-=======
     If the destination data set does not exist, this sets the format of the data set. (e.g \ :literal:`FB`\ )
->>>>>>> dev
 
     Choices are case-sensitive.
 
@@ -401,30 +313,18 @@ dest_data_set
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary data sets.
 
-<<<<<<< HEAD
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value ``TMPHLQ`` is used.
-=======
   The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value \ :literal:`TMPHLQ`\  is used.
->>>>>>> dev
 
   | **required**: False
   | **type**: str
 
 
 force
-<<<<<<< HEAD
-  If set to ``true`` and the remote file or data set ``dest`` will be deleted. Otherwise it will be created with the ``dest_data_set`` attributes or default values if ``dest_data_set`` is not specified.
-
-  If set to ``false``, the file or data set will only be copied if the destination does not exist.
-
-  If set to ``false`` and destination exists, the module exits with a note to the user.
-=======
   If set to \ :literal:`true`\  and the remote file or data set \ :literal:`dest`\  will be deleted. Otherwise it will be created with the \ :literal:`dest\_data\_set`\  attributes or default values if \ :literal:`dest\_data\_set`\  is not specified.
 
   If set to \ :literal:`false`\ , the file or data set will only be copied if the destination does not exist.
 
   If set to \ :literal:`false`\  and destination exists, the module exits with a note to the user.
->>>>>>> dev
 
   | **required**: False
   | **type**: bool
@@ -474,11 +374,7 @@ Examples
          name: terse
          format_options:
            terse_pack: "spack"
-<<<<<<< HEAD
            use_adrdssu: true
-=======
-           use_adrdssu: True
->>>>>>> dev
 
    # Use a pattern to store
    - name: Compress data set pattern using xmit
@@ -496,19 +392,11 @@ Notes
 -----
 
 .. note::
-<<<<<<< HEAD
-   This module does not perform a send or transmit operation to a remote node. If you want to transport the archive you can use zos_fetch to retrieve to the controller and then zos_copy or zos_unarchive for copying to a remote or send to the remote and then unpack the archive respectively.
-
-   When packing and using ``use_adrdssu`` flag the module will take up to two times the space indicated in ``dest_data_set``.
-
-   tar, zip, bz2 and pax are archived using python ``tarfile`` library which uses the latest version available for each format, for compatibility when opening from system make sure to use the latest available version for the intended format.
-=======
    This module does not perform a send or transmit operation to a remote node. If you want to transport the archive you can use zos\_fetch to retrieve to the controller and then zos\_copy or zos\_unarchive for copying to a remote or send to the remote and then unpack the archive respectively.
 
    When packing and using \ :literal:`use\_adrdssu`\  flag the module will take up to two times the space indicated in \ :literal:`dest\_data\_set`\ .
 
    tar, zip, bz2 and pax are archived using python \ :literal:`tarfile`\  library which uses the latest version available for each format, for compatibility when opening from system make sure to use the latest available version for the intended format.
->>>>>>> dev
 
 
 
@@ -528,15 +416,6 @@ Return Values
 
 
 state
-<<<<<<< HEAD
-  The state of the input ``src``.
-
-  ``absent`` when the source files or data sets were removed.
-
-  ``present`` when the source files or data sets were not removed.
-
-  ``incomplete`` when ``remove`` was true and the source files or data sets were not removed.
-=======
   The state of the input \ :literal:`src`\ .
 
   \ :literal:`absent`\  when the source files or data sets were removed.
@@ -544,23 +423,11 @@ state
   \ :literal:`present`\  when the source files or data sets were not removed.
 
   \ :literal:`incomplete`\  when \ :literal:`remove`\  was true and the source files or data sets were not removed.
->>>>>>> dev
 
   | **returned**: always
   | **type**: str
 
 dest_state
-<<<<<<< HEAD
-  The state of the *dest* file or data set.
-
-  ``absent`` when the file does not exist.
-
-  ``archive`` when the file is an archive.
-
-  ``compress`` when the file is compressed, but not an archive.
-
-  ``incomplete`` when the file is an archive, but some files under *src* were not found.
-=======
   The state of the \ :emphasis:`dest`\  file or data set.
 
   \ :literal:`absent`\  when the file does not exist.
@@ -570,7 +437,6 @@ dest_state
   \ :literal:`compress`\  when the file is compressed, but not an archive.
 
   \ :literal:`incomplete`\  when the file is an archive, but some files under \ :emphasis:`src`\  were not found.
->>>>>>> dev
 
   | **returned**: success
   | **type**: str
@@ -588,11 +454,7 @@ archived
   | **type**: list
 
 arcroot
-<<<<<<< HEAD
-  If ``src`` is a list of USS files, this returns the top most parent folder of the list of files, otherwise is empty.
-=======
   If \ :literal:`src`\  is a list of USS files, this returns the top most parent folder of the list of files, otherwise is empty.
->>>>>>> dev
 
   | **returned**: always
   | **type**: str

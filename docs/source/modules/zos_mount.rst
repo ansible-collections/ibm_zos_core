@@ -53,11 +53,7 @@ fs_type
 
   The physical file systems data set format to perform the logical mount.
 
-<<<<<<< HEAD
-  The *fs_type* is required to be lowercase.
-=======
   The \ :emphasis:`fs\_type`\  is required to be lowercase.
->>>>>>> dev
 
   | **required**: True
   | **type**: str
@@ -160,15 +156,6 @@ unmount_opts
 mount_opts
   Options available to the mount.
 
-<<<<<<< HEAD
-  If *mount_opts=ro* on a mounted/remount, mount is performed read-only.
-
-  If *mount_opts=same* and (unmount_opts=remount), mount is opened in the same mode as previously opened.
-
-  If *mount_opts=nowait*, mount is performed asynchronously.
-
-  If *mount_opts=nosecurity*, security checks are not enforced for files in this file system.
-=======
   If \ :emphasis:`mount\_opts=ro`\  on a mounted/remount, mount is performed read-only.
 
   If \ :emphasis:`mount\_opts=same`\  and (unmount\_opts=remount), mount is opened in the same mode as previously opened.
@@ -176,7 +163,6 @@ mount_opts
   If \ :emphasis:`mount\_opts=nowait`\ , mount is performed asynchronously.
 
   If \ :emphasis:`mount\_opts=nosecurity`\ , security checks are not enforced for files in this file system.
->>>>>>> dev
 
   | **required**: False
   | **type**: str
@@ -198,15 +184,9 @@ tag_untagged
 
   When the file system is unmounted, the tags are lost.
 
-<<<<<<< HEAD
-  If *tag_untagged=notext* none of the untagged files in the file system are automatically converted during file reading and writing.
-
-  If *tag_untagged=text* each untagged file is implicitly marked as containing pure text data that can be converted.
-=======
   If \ :emphasis:`tag\_untagged=notext`\  none of the untagged files in the file system are automatically converted during file reading and writing.
 
   If \ :emphasis:`tag\_untagged=text`\  each untagged file is implicitly marked as containing pure text data that can be converted.
->>>>>>> dev
 
   If this flag is used, use of tag\_ccsid is encouraged.
 
@@ -260,15 +240,6 @@ automove
   These parameters apply only in a sysplex where systems are exploiting the shared file system capability. They specify what happens to the ownership of a file system when a shutdown, PFS termination, dead system takeover, or file system move occurs. The default setting is AUTOMOVE where the file system will be randomly moved to another system (no system list used).
 
 
-<<<<<<< HEAD
-  *automove=automove* indicates that ownership of the file system can be automatically moved to another system participating in a shared file system.
-
-
-  *automove=noautomove* prevents movement of the file system's ownership in some situations.
-
-
-  *automove=unmount* allows the file system to be unmounted in some situations.
-=======
   \ :emphasis:`automove=automove`\  indicates that ownership of the file system can be automatically moved to another system participating in a shared file system.
 
 
@@ -276,7 +247,6 @@ automove
 
 
   \ :emphasis:`automove=unmount`\  allows the file system to be unmounted in some situations.
->>>>>>> dev
 
 
   | **required**: False

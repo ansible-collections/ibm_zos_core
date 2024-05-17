@@ -8,7 +8,7 @@ System programmers can enable pipelines to setup, tear down and deploy applicati
 
 ## Requirements
 Before you install the IBM z/OS core collection, you must configure a control node and managed node with a minimum set of requirements.
-The following [table](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/build/html/resources/releases_maintenance.html) details the specific software requirements for the controller and managed node.
+The following [table](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/releases_maintenance.html) details the specific software requirements for the controller and managed node.
 
 ### Ansible Controller
 * This release of the collection requires **ansible-core >=2.15** (Ansible >=8.x), for additional requirements such as Python, review the [support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix).

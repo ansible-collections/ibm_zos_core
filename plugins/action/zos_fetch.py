@@ -26,7 +26,7 @@ from ansible.errors import AnsibleError
 from ansible.utils.display import Display
 from ansible import cli
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation, data_set
 
 SUPPORTED_DS_TYPES = frozenset({
     "PS", "SEQ", "BASIC",
@@ -148,7 +148,7 @@ class ActionModule(ActionBase):
             return result
 
         ds_type = None
-        fetch_member = "(" in src and src.endswith(")")
+        fetch_member = data_set.is_member(src)
         if fetch_member:
             member_name = src[src.find("(") + 1: src.find(")")]
         src = self._connection._shell.join_path(src)

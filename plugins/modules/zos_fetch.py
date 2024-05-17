@@ -817,38 +817,54 @@ def run_module():
 
     res_args = dict()
     src_data_set = None
+    ds_type = None
 
     try:
-        if "/" in src:
+        # Checking the source actually exists on the system.
+        if "/" in src: # USS
             src_exists = os.path.exists(b_src)
-        else:
+        else: # MVS
             src_data_set = data_set.MVSDataSet(src)
-            src_exists = data_set.DataSet.data_set_exists(
-                data_set.extract_dsname(src_data_set.name)
-            )
+            is_member = data_set.is_member(src_data_set.name)
+
+            if is_member:
+                src_exists = data_set.DataSet.data_set_member_exists(src_data_set.name)
+            else:
+                src_exists = data_set.DataSet.data_set_exists(
+                    data_set.extract_dsname(src_data_set.name)
+                )
 
         if not src_exists:
             if fail_on_missing:
-                module.fail_json(
-                    msg=(
-                        "The source '{0}' does not exist or is "
-                        "uncataloged.".format(src)
+                if is_member:
+                    module.fail_json(
+                        msg=(
+                            "The data set member '{0}' was not found inside data "
+                            "set '{1}'"
+                        ).format(
+                            data_set.extract_member_name(src_data_set.raw_name),
+                            data_set.extract_dsname(src_data_set.raw_name)
+                        )
                     )
-                )
+                else:
+                    module.fail_json(
+                        msg=(
+                            "The source '{0}' does not exist or is "
+                            "uncataloged.".format(src)
+                        )
+                    )
             else:
                 module.exit_json(
                     note=("Source '{0}' was not found. No data was fetched.".format(src))
                 )
 
-        ds_type = None
         if "/" in src:
             ds_type = "USS"
         else:
             ds_type = data_set.DataSet.data_set_type(data_set.extract_dsname(src_data_set.name))
-            fetch_member = data_set.is_member(src_data_set.name)
 
         if not ds_type:
-            module.fail_json(msg="Unable to determine source type.")
+            module.fail_json(msg="Unable to determine source type. No data was fetched.")
 
     except Exception as err:
         module.fail_json(
@@ -860,7 +876,7 @@ def run_module():
     # ********************************************************** #
 
     if ds_type in data_set.DataSet.MVS_SEQ:
-        file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
+        file_path = fetch_handler._fetch_mvs_data(src_data_set.name, is_binary, encoding)
         res_args["remote_path"] = file_path
 
     # ********************************************************** #
@@ -868,23 +884,12 @@ def run_module():
     # ********************************************************** #
 
     elif ds_type in data_set.DataSet.MVS_PARTITIONED:
-        if fetch_member:
-            if not data_set.DataSet.data_set_member_exists(src_data_set.name):
-                module.fail_json(
-                    msg=(
-                        "The data set member '{0}' was not found inside data "
-                        "set '{1}'"
-                    ).format(
-                        data_set.extract_member_name(src_data_set.raw_name),
-                        data_set.extract_dsname(src_data_set.raw_name)
-                    )
-                )
-
-            file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
+        if is_member:
+            file_path = fetch_handler._fetch_mvs_data(src_data_set.name, is_binary, encoding)
             res_args["remote_path"] = file_path
         else:
             res_args["remote_path"] = fetch_handler._fetch_pdse(
-                src, is_binary, encoding
+                src_data_set.name, is_binary, encoding
             )
 
     # ********************************************************** #
@@ -904,7 +909,7 @@ def run_module():
     # ********************************************************** #
 
     elif ds_type in data_set.DataSet.MVS_VSAM:
-        file_path = fetch_handler._fetch_vsam(src, is_binary, encoding)
+        file_path = fetch_handler._fetch_vsam(src_data_set.name, is_binary, encoding)
         res_args["remote_path"] = file_path
 
     if ds_type == "USS":

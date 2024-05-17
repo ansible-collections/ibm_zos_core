@@ -25,7 +25,7 @@ body:
     id: modules
     attributes:
       label: Ansible module
-      description: Select which modules are being reported in this bug. You can select more than one.
+      description: Select which modules are being reported in this enhancement or feature. You can select more than one.
       multiple: true
       options:
         - zos_apf

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -229,15 +229,14 @@ EXAMPLES = r"""
     src: /tmp/src/somefile
     regexp: '^(.*)User(\d+)m(.*)$'
     line: '\1APPUser\3'
-    backrefs: yes
+    backrefs: true
 
 - name: Add a line to a member while a task is in execution
   zos_lineinfile:
     src: SOME.PARTITIONED.DATA.SET(DATA)
     insertafter: EOF
     line: 'Should be a working test now'
-    force: True
-
+    force: true
 """
 
 RETURN = r"""
@@ -275,18 +274,19 @@ backup_name:
     sample: /path/to/file.txt.2015-02-03@04:15~
 """
 import json
+import traceback
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 
 try:
     from zoautil_py import datasets
 except Exception:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
@@ -294,40 +294,52 @@ DS_TYPE = ['PS', 'PO']
 
 
 def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, force):
-    """Replace a line with the matching regex pattern
-    Insert a line before/after the matching pattern
-    Insert a line at BOF/EOF
+    """Replace a line with the matching regex pattern.
+    Insert a line before/after the matching pattern.
+    Insert a line at BOF/EOF.
 
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        line: {str} -- The line to insert/replace into the src.
-        regexp: {str} -- The regular expression to look for in every line of the src.
-            If regexp matches, ins_aft/ins_bef will be ignored.
-        ins_aft: {str} -- Insert the line after matching '*regex*' pattern or EOF.
-            choices:
-                - EOF
-                - '*regex*'
-        ins_bef: {str} -- Insert the line before matching '*regex*' pattern or BOF.
-            choices:
-                - BOF
-                - '*regex*'
-        encoding: {str} -- Encoding of the src.
-        first_match: {bool} -- Take the first matching regex pattern.
-        backrefs: {bool} -- Back reference
-        force: {bool} -- force for modify a member part of a task in execution
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    line : str
+        The line to insert/replace into the src.
+    regexp : str
+        The regular expression to look for in every line of the src.
+        If regexp matches, ins_aft/ins_bef will be ignored.
+    ins_aft : str
+        Insert the line after matching '*regex*' pattern or EOF.
+        choices:
+          - EOF
+          - '*regex*'
+    ins_bef : str
+        Insert the line before matching '*regex*' pattern or BOF.
+        choices:
+          - BOF
+          - '*regex*'
+    encoding : str
+        Encoding of the src.
+    first_match : bool
+        Take the first matching regex pattern.
+    backrefs : bool
+        Back reference.
+    force : bool
+        force for modify a member part of a task in execution.
 
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dsed shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the source was modified.
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dsed shell command
+        found {int} -- Number of matching regex pattern
+        changed {bool} -- Indicates if the source was modified.
     """
     return datasets.lineinfile(
         src,
         line,
         regex=regexp,
-        ins_aft=ins_aft,
-        ins_bef=ins_bef,
+        insert_after=ins_aft,
+        insert_before=ins_bef,
         encoding=encoding,
         first_match=first_match,
         backref=backrefs,
@@ -338,26 +350,46 @@ def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs
 
 
 def absent(src, line, regexp, encoding, force):
-    """Delete lines with matching regex pattern
+    """Delete lines with matching regex pattern.
 
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        line: {str} -- The line to be deleted in the src. If line matches,
-            regexp will be ignored.
-        regexp: {str} -- The regular expression to look for in every line of the src.
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- force for modify a member part of a task in execution
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    line : str
+        The line to be deleted in the src. If line matches,
+        regexp will be ignored.
+    regexp : str
+        The regular expression to look for in every line of the src.
+    encoding : str
+        Encoding of the src.
+    force : bool
+        Force for modify a member part of a task in execution.
 
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dsed shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the source was modified.
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dsed shell command
+        found {int} -- Number of matching regex pattern
+        changed {bool} -- Indicates if the source was modified.
     """
     return datasets.lineinfile(src, line, regex=regexp, encoding=encoding, state=False, debug=True, force=force)
 
 
 def quotedString(string):
+    """Add escape if string was quoted.
+
+    Parameters
+    ----------
+    string : str
+        Given string.
+
+    Returns
+    -------
+    str
+        The string with the quote marks replaced.
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
@@ -365,6 +397,27 @@ def quotedString(string):
 
 
 def main():
+    """Initialize the module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        regexp is required with backrefs=true.
+    fail_json
+        line is required with state=present.
+    fail_json
+        One of line or regexp is required with state=absent.
+    fail_json
+        Source does not exist.
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Creating backup has failed.
+    fail_json
+        dsed return content is NOT in json format.
+    """
     module_args = dict(
         src=dict(
             type='str',
@@ -488,36 +541,36 @@ def main():
     stdout = return_content.stdout_response
     stderr = return_content.stderr_response
     rc = return_content.rc
+    stdout = stdout.replace('/c\\', '/c\\\\')
+    stdout = stdout.replace('/a\\', '/a\\\\')
+    stdout = stdout.replace('/i\\', '/i\\\\')
+    stdout = stdout.replace('$ a\\', '$ a\\\\')
+    stdout = stdout.replace('1 i\\', '1 i\\\\')
+    stdout = stdout.replace('/d', '\\\\d')
+    if line:
+        stdout = stdout.replace(line, quotedString(line))
+    if regexp:
+        stdout = stdout.replace(regexp, quotedString(regexp))
+    if ins_aft:
+        stdout = stdout.replace(ins_aft, quotedString(ins_aft))
+    if ins_bef:
+        stdout = stdout.replace(ins_bef, quotedString(ins_bef))
     try:
-        # change the return string to be loadable by json.loads()
-        stdout = stdout.replace('/c\\', '/c\\\\')
-        stdout = stdout.replace('/a\\', '/a\\\\')
-        stdout = stdout.replace('/i\\', '/i\\\\')
-        stdout = stdout.replace('$ a\\', '$ a\\\\')
-        stdout = stdout.replace('1 i\\', '1 i\\\\')
-        if line:
-            stdout = stdout.replace(line, quotedString(line))
-        if regexp:
-            stdout = stdout.replace(regexp, quotedString(regexp))
-        if ins_aft:
-            stdout = stdout.replace(ins_aft, quotedString(ins_aft))
-        if ins_bef:
-            stdout = stdout.replace(ins_bef, quotedString(ins_bef))
-        # Try to extract information from return_content
         ret = json.loads(stdout)
-        result['cmd'] = ret['cmd']
-        result['changed'] = ret['changed']
-        result['found'] = ret['found']
-        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
-        # That information will be given with 'changed' and 'found'
-        if len(stderr):
-            result['stderr'] = str(stderr)
-            result['rc'] = rc
     except Exception:
         messageDict = dict(msg="dsed return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):
             messageDict['backup_name'] = result['backup_name']
         module.fail_json(**messageDict)
+
+    result['cmd'] = ret['cmd']
+    result['changed'] = ret['changed']
+    result['found'] = ret['found']
+    # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+    # That information will be given with 'changed' and 'found'
+    if len(stderr):
+        result['stderr'] = str(stderr)
+        result['rc'] = rc
     module.exit_json(**result)
 
 

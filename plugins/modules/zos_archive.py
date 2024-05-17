@@ -81,8 +81,8 @@ options:
             type: str
             required: false
             choices:
-              - PACK
-              - SPACK
+              - pack
+              - spack
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.
@@ -193,9 +193,9 @@ options:
           - Organization of the destination
         type: str
         required: false
-        default: SEQ
+        default: seq
         choices:
-          - SEQ
+          - seq
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -214,28 +214,28 @@ options:
         description:
           - If the destination data set does not exist, this sets the unit of
             measurement to use when defining primary and secondary space.
-          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
         type: str
         choices:
-          - K
-          - M
-          - G
-          - CYL
-          - TRK
+          - k
+          - m
+          - g
+          - cyl
+          - trk
         required: false
       record_format:
         description:
           - If the destination data set does not exist, this sets the format of
             the
             data set. (e.g C(FB))
-          - Choices are case-insensitive.
+          - Choices are case-sensitive.
         required: false
         choices:
-          - FB
-          - VB
-          - FBA
-          - VBA
-          - U
+          - fb
+          - vb
+          - fba
+          - vba
+          - u
         type: str
       record_length:
         description:
@@ -356,8 +356,8 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        terse_pack: "SPACK"
-        use_adrdssu: True
+        terse_pack: "spack"
+        use_adrdssu: true
 
 # Use a pattern to store
 - name: Compress data set pattern using xmit
@@ -424,7 +424,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     mvs_cmd,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 import os
 import tarfile
@@ -433,13 +433,14 @@ import abc
 import glob
 import re
 import math
+import traceback
 from hashlib import sha256
 
 
 try:
     from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 XMIT_RECORD_LENGTH = 80
 AMATERSE_RECORD_LENGTH = 1024
@@ -789,24 +790,22 @@ class MVSArchive(Archive):
             if tmp_hlq:
                 hlq = tmp_hlq
             else:
-                rc, hlq, err = self.module.run_command("hlq")
-                hlq = hlq.replace('\n', '')
-            cmd = "mvstmphelper {0}.DZIP".format(hlq)
-            rc, temp_ds, err = self.module.run_command(cmd)
-            arguments.update(name=temp_ds.replace('\n', ''))
+                hlq = datasets.get_hlq()
+            temp_ds = datasets.tmp_name(high_level_qualifier=hlq)
+            arguments.update(name=temp_ds)
 
         if record_format is None:
-            arguments.update(record_format="FB")
+            arguments.update(record_format="fb")
         if record_length is None:
             arguments.update(record_length=80)
         if type is None:
-            arguments.update(type="SEQ")
+            arguments.update(type="seq")
         if space_primary is None:
             arguments.update(space_primary=5)
         if space_secondary is None:
             arguments.update(space_secondary=3)
         if space_type is None:
-            arguments.update(space_type="M")
+            arguments.update(space_type="m")
         arguments.pop("self")
         changed = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
@@ -820,8 +819,8 @@ class MVSArchive(Archive):
             name {str} - name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
-        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='SEQ', record_format='FB', record_length=record_length)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
+        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
 
@@ -902,8 +901,8 @@ class MVSArchive(Archive):
         expanded_path = []
         for path in paths:
             if '*' in path:
-                e_paths = datasets.listing(path)
-                e_paths = [path.name for path in e_paths]
+                # list_dataset_names returns a list of data set names or empty.
+                e_paths = datasets.list_dataset_names(path)
             else:
                 e_paths = [path]
             expanded_path.extend(e_paths)
@@ -946,22 +945,26 @@ class MVSArchive(Archive):
                 {int} - Destination computed space in kilobytes.
         """
         if self.dest_data_set.get("space_primary") is None:
-            dest_space = 0
+            dest_space = 1
             for target in self.targets:
-                data_sets = datasets.listing(target)
+                data_sets = datasets.list_datasets(target)
                 for ds in data_sets:
-                    dest_space += int(ds.to_dict().get("total_space"))
+                    dest_space += int(ds.total_space)
             # space unit returned from listings is bytes
             dest_space = math.ceil(dest_space / 1024)
-            self.dest_data_set.update(space_primary=dest_space, space_type="K")
+            self.dest_data_set.update(space_primary=dest_space, space_type="k")
 
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
         super(AMATerseArchive, self).__init__(module)
         self.pack_arg = module.params.get("format").get("format_options").get("terse_pack")
+        # We store pack_ard in uppercase because the AMATerse command requires
+        # it in uppercase.
         if self.pack_arg is None:
             self.pack_arg = "SPACK"
+        else:
+            self.pack_arg = self.pack_arg.upper()
 
     def add(self, src, archive):
         """
@@ -988,8 +991,8 @@ class AMATerseArchive(MVSArchive):
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
-                type="SEQ",
-                record_format="U",
+                type="seq",
+                record_format="u",
                 record_length=0,
                 tmp_hlq=self.tmphlq,
                 replace=True,
@@ -1007,8 +1010,8 @@ class AMATerseArchive(MVSArchive):
         dest, changed = self._create_dest_data_set(
             name=self.dest,
             replace=True,
-            type='SEQ',
-            record_format='FB',
+            type='seq',
+            record_format='fb',
             record_length=AMATERSE_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
             space_type=self.dest_data_set.get("space_type"))
@@ -1057,8 +1060,8 @@ class XMITArchive(MVSArchive):
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
-                type="SEQ",
-                record_format="U",
+                type="seq",
+                record_format="u",
                 record_length=0,
                 tmp_hlq=self.tmphlq,
                 replace=True,
@@ -1076,8 +1079,8 @@ class XMITArchive(MVSArchive):
         dest, changed = self._create_dest_data_set(
             name=self.dest,
             replace=True,
-            type='SEQ',
-            record_format='FB',
+            type='seq',
+            record_format='fb',
             record_length=XMIT_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
             space_type=self.dest_data_set.get("space_type"))
@@ -1138,7 +1141,7 @@ def run_module():
                         options=dict(
                             terse_pack=dict(
                                 type='str',
-                                choices=['PACK', 'SPACK'],
+                                choices=['pack', 'spack'],
                             ),
                             xmit_log_data_set=dict(
                                 type='str',
@@ -1164,9 +1167,9 @@ def run_module():
                     ),
                     type=dict(
                         type='str',
-                        choices=['SEQ'],
+                        choices=['seq'],
                         required=False,
-                        default="SEQ",
+                        default="seq",
                     ),
                     space_primary=dict(
                         type='int', required=False),
@@ -1174,12 +1177,12 @@ def run_module():
                         type='int', required=False),
                     space_type=dict(
                         type='str',
-                        choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                        choices=['k', 'm', 'g', 'cyl', 'trk'],
                         required=False,
                     ),
                     record_format=dict(
                         type='str',
-                        choices=["FB", "VB", "FBA", "VBA", "U"],
+                        choices=["fb", "vb", "fba", "vba", "u"],
                         required=False
                     ),
                     record_length=dict(type='int', required=False),
@@ -1215,7 +1218,7 @@ def run_module():
                         terse_pack=dict(
                             type='str',
                             required=False,
-                            choices=['PACK', 'SPACK'],
+                            choices=['pack', 'spack'],
                         ),
                         xmit_log_data_set=dict(
                             type='str',
@@ -1227,7 +1230,7 @@ def run_module():
                         )
                     ),
                     default=dict(
-                        terse_pack="SPACK",
+                        terse_pack="spack",
                         xmit_log_data_set="",
                         use_adrdssu=False),
                 ),
@@ -1235,7 +1238,7 @@ def run_module():
             default=dict(
                 name="",
                 format_options=dict(
-                    terse_pack="SPACK",
+                    terse_pack="spack",
                     xmit_log_data_set="",
                     use_adrdssu=False
                 )
@@ -1250,7 +1253,7 @@ def run_module():
             required=False,
             options=dict(
                 name=dict(arg_type='str', required=False),
-                type=dict(arg_type='str', required=False, default="SEQ"),
+                type=dict(arg_type='str', required=False, default="seq"),
                 space_primary=dict(arg_type='int', required=False),
                 space_secondary=dict(
                     arg_type='int', required=False),

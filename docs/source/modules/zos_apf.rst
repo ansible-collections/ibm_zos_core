@@ -62,7 +62,7 @@ volume
 
   1. The volume serial number.
 
-  2. Six asterisks (******), indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
+  2. Six asterisks ``******``, indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
 
   3. *MCAT*, indicating that the system must use the volume serial number of the volume containing the master catalog.
 
@@ -189,7 +189,7 @@ batch
 
     1. The volume serial number
 
-    2. Six asterisks (******), indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
+    2. Six asterisks ``******``, indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
 
     3. *MCAT*, indicating that the system must use the volume serial number of the volume containing the master catalog.
 
@@ -225,7 +225,7 @@ Examples
    - name: Add a library (cataloged) to the APF list and persistence
      zos_apf:
        library: SOME.SEQUENTIAL.DATASET
-       force_dynamic: True
+       force_dynamic: true
        persistent:
          data_set_name: SOME.PARTITIONED.DATASET(MEM)
    - name: Remove a library from the APF list and persistence
@@ -243,7 +243,7 @@ Examples
        batch:
          - library: SOME.SEQ.DS1
          - library: SOME.SEQ.DS2
-           sms: True
+           sms: true
          - library: SOME.SEQ.DS3
            volume: T12345
    - name: Print the APF list matching library pattern or volume serial number

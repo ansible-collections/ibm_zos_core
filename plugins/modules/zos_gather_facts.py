@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2022, 2023
+# Copyright (c) IBM Corporation 2022, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -108,30 +108,45 @@ ansible_facts:
 """
 
 from fnmatch import fnmatch
-import json
+import traceback
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    ZOAUImportError,
+)
 
-def zinfo_cmd_string_builder(gather_subset):
-    """Builds a command string for 'zinfo' based off the gather_subset list.
-    Arguments:
-        gather_subset {list} -- A list of subsets to pass in.
-    Returns:
-        [str] -- A string that contains a command line argument for calling
-                 zinfo with the appropriate options.
-        [None] -- An invalid value was received for the subsets.
+try:
+    from zoautil_py import zsystem
+except ImportError:
+    zsystem = ZOAUImportError(traceback.format_exc())
+
+
+def zinfo_facts_list_builder(gather_subset):
+    """Builds a list of strings to pass into 'zinfo' based off the
+        gather_subset list.
+
+    Parameters
+    ----------
+    gather_subset : list
+        A list of subsets to pass in.
+
+    Returns
+    -------
+    Union[str]
+        A list of strings that contains sanitized subsets.
+    None
+        An invalid value was received for the subsets.
     """
     if gather_subset is None or 'all' in gather_subset:
-        return "zinfo -j -a"
+        return ["all"]
 
     # base value
-    zinfo_arg_string = "zinfo -j"
+    subsets_list = []
 
-    # build full string
     for subset in gather_subset:
         # remove leading/trailing spaces
         subset = subset.strip()
@@ -141,19 +156,25 @@ def zinfo_cmd_string_builder(gather_subset):
         # sanitize subset against malicious (probably alphanumeric only?)
         if not subset.isalnum():
             return None
-        zinfo_arg_string += " -t " + subset
+        subsets_list.append(subset)
 
-    return zinfo_arg_string
+    return subsets_list
 
 
 def flatten_zinfo_json(zinfo_dict):
     """Removes one layer of mapping in the dictionary. Top-level keys
         correspond to zinfo subsets and are removed.
-    Arguments:
-        zinfo_dict {dict} -- A dictionary that contains the parsed result from
-                             the zinfo json string.
-    Returns:
-        [dict] -- A flattened dictionary.
+
+    Parameters
+    ----------
+    zinfo_dict : dict
+        A dictionary that contains the parsed result from
+        the zinfo json string.
+
+    Returns
+    -------
+    dict
+        A flattened dictionary.
     """
     d = {}
     for subset in list(zinfo_dict):
@@ -164,13 +185,20 @@ def flatten_zinfo_json(zinfo_dict):
 def apply_filter(zinfo_dict, filter_list):
     """Returns a dictionary that contains only the keys which fit the specified
        filters.
-    Arguments:
-        zinfo_dict {dict} -- A flattened dictionary that contains results from
-                             zinfo.
-        filter_list {list} -- A string list of shell wildcard patterns (i.e.
-                              'filters') to apply to the zinfo_dict keys.
-    Returns:
-        [dict] -- A dictionary with keys that are filtered out.
+
+    Parameters
+    ----------
+    zinfo_dict : dict
+        A flattened dictionary that contains results from
+        zinfo.
+    filter_list : list
+        A string list of shell wildcard patterns (i.e.
+        'filters') to apply to the zinfo_dict keys.
+
+    Returns
+    -------
+    dict
+        A dictionary with keys that are filtered out.
     """
 
     if filter_list is None or filter_list == [] or '*' in filter_list:
@@ -185,6 +213,19 @@ def apply_filter(zinfo_dict, filter_list):
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        The zos_gather_facts module requires ZOAU >= 1.3.0.
+    fail_json
+        An invalid subset was passed to Ansible.
+    fail_json
+        An invalid subset was detected.
+    fail_json
+        An exception has occurred. Unable to gather facts.
+    """
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
         gather_subset=dict(
@@ -214,59 +255,36 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    if not zoau_version_checker.is_zoau_version_higher_than("1.2.1"):
+    if not zoau_version_checker.is_zoau_version_higher_than("1.3.0"):
         module.fail_json(
-            ("The zos_gather_facts module requires ZOAU >= 1.2.1. Please "
+            ("The zos_gather_facts module requires ZOAU >= 1.3.0. Please "
              "upgrade the ZOAU version on the target node.")
         )
 
     gather_subset = module.params['gather_subset']
 
-    # build out zinfo command with correct options
+    # build out list of strings to pass to zinfo python api.
     # call this whether or not gather_subsets list is empty/valid/etc
-    # rely on the function to report back errors. Note the function only
+    # rely on the helper function to report back errors. Note the function only
     # returns None if there's malicious or improperly formatted subsets.
-    # Invalid subsets are caught when the actual zinfo command is run.
-    cmd = zinfo_cmd_string_builder(gather_subset)
-    if not cmd:
+    # Invalid subsets are caught when the actual zinfo function is run.
+    facts_list = zinfo_facts_list_builder(gather_subset)
+    if not facts_list:
         module.fail_json(msg="An invalid subset was passed to Ansible.")
-
-    rc, fcinfo_out, err = module.run_command(cmd, encoding=None)
-
-    decode_str = fcinfo_out.decode('utf-8')
-
-    # We DO NOT return a partial list. Instead we FAIL FAST since we are
-    # targeting automation -- quiet but well-intended error messages may easily
-    # be skipped
-    if rc != 0:
-        # there are 3 known error messages in zinfo, if neither gets
-        # triggered then we send out this generic zinfo error message.
-        err_msg = ('An exception has occurred in Z Open Automation Utilities '
-                   '(ZOAU) utility \'zinfo\'. See \'zinfo_err_msg\' for '
-                   'additional details.')
-        # triggered by invalid optarg eg "zinfo -q"
-        if 'BGYSC5201E' in err.decode('utf-8'):
-            err_msg = ('Invalid call to zinfo. See \'zinfo_err_msg\' for '
-                       'additional details.')
-        # triggered when optarg does not get expected arg eg "zinfo -t"
-        elif 'BGYSC5202E' in err.decode('utf-8'):
-            err_msg = ('Invalid call to zinfo. Possibly missing a valid subset'
-                       ' See \'zinfo_err_msg\' for additional details.')
-        # triggered by illegal subset eg "zinfo -t abc"
-        elif 'BGYSC5203E' in err.decode('utf-8'):
-            err_msg = ('An invalid subset was detected. See \'zinfo_err_msg\' '
-                       'for additional details.')
-
-        module.fail_json(msg=err_msg, zinfo_err_msg=err)
 
     zinfo_dict = {}  # to track parsed zinfo facts.
 
     try:
-        zinfo_dict = json.loads(decode_str)
-    except json.JSONDecodeError:
-        # tell user something else for this error? This error is thrown when
-        # Python doesn't like the json string it parsed from zinfo.
-        module.fail_json(msg="Unsupported JSON format for the output.")
+        zinfo_dict = zsystem.zinfo(json=True, facts=facts_list)
+    except ValueError:
+        err_msg = 'An invalid subset was detected.'
+        module.fail_json(msg=err_msg)
+    except Exception as e:
+        err_msg = (
+            'An exception has occurred. Unable to gather facts. '
+            'See stderr for more details.'
+        )
+        module.fail_json(msg=err_msg, stderr=str(e))
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
     flattened_d = flatten_zinfo_json(zinfo_dict)

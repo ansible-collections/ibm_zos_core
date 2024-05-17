@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2022
+# Copyright (c) IBM Corporation 2022, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -120,7 +120,6 @@ def test_with_gather_subset_bad(ansible_zos_module, gather_subset):
 
     for result in results.contacted.values():
         assert result is not None
-        assert re.match(r'^BGYSC5203E', result.get('zinfo_err_msg'))
         assert re.match(r'^An invalid subset', result.get('msg'))
 
 

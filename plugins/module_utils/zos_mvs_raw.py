@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,7 +24,7 @@ class MVSCmd(object):
     """
 
     @staticmethod
-    def execute(pgm, dds, parm="", debug=False, verbose=False):
+    def execute(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None):
         """Execute an unauthorized MVS command.
 
         Args:
@@ -36,9 +36,10 @@ class MVSCmd(object):
             MVSCmdResponse: The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        command = "mvscmd {0} {1} {2} ".format(
+        command = "mvscmd {0} {1} {2} {3}".format(
             "-d" if debug else "",
             "-v" if verbose else "",
+            "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
         rc, out, err = module.run_command(command)
@@ -64,7 +65,6 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
-
         rc, out, err = module.run_command(command)
         return MVSCmdResponse(rc, out, err)
 

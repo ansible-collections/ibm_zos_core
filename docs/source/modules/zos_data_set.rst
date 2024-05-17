@@ -32,7 +32,7 @@ name
 
   If *name* is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
 
-  Required if *type=MEMBER* or *state!=present* and not using *batch*.
+  Required if *type=member* or *state!=present* and not using *batch*.
 
   | **required**: False
   | **type**: str
@@ -47,7 +47,7 @@ state
   If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
 
 
-  If *state=absent* and *type=MEMBER* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
+  If *state=absent* and *type=member* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
 
 
   If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
@@ -68,7 +68,7 @@ state
   If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
 
 
-  If *state=present* and *type=MEMBER* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
+  If *state=present* and *type=member* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
 
 
   If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
@@ -93,16 +93,16 @@ state
 
 
 type
-  The data set type to be used when creating a data set. (e.g ``pdse``)
+  The data set type to be used when creating a data set. (e.g ``pdse``).
 
-  ``MEMBER`` expects to be used with an existing partitioned data set.
+  ``member`` expects to be used with an existing partitioned data set.
 
-  Choices are case-insensitive.
+  Choices are case-sensitive.
 
   | **required**: False
   | **type**: str
-  | **default**: PDS
-  | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, LIBRARY, BASIC, LARGE, MEMBER, HFS, ZFS
+  | **default**: pds
+  | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs
 
 
 space_primary
@@ -128,25 +128,25 @@ space_secondary
 space_type
   The unit of measurement to use when defining primary and secondary space.
 
-  Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
   | **required**: False
   | **type**: str
-  | **default**: M
-  | **choices**: K, M, G, CYL, TRK
+  | **default**: m
+  | **choices**: k, m, g, cyl, trk
 
 
 record_format
   The format of the data set. (e.g ``FB``)
 
-  Choices are case-insensitive.
+  Choices are case-sensitive.
 
-  When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
+  When *type=ksds*, *type=esds*, *type=rrds*, *type=lds* or *type=zfs* then *record_format=None*, these types do not have a default *record_format*.
 
   | **required**: False
   | **type**: str
-  | **default**: FB
-  | **choices**: FB, VB, FBA, VBA, U, F
+  | **default**: fb
+  | **choices**: fb, vb, fba, vba, u, f
 
 
 sms_storage_class
@@ -216,9 +216,9 @@ directory_blocks
 key_offset
   The key offset to use when creating a KSDS data set.
 
-  *key_offset* is required when *type=KSDS*.
+  *key_offset* is required when *type=ksds*.
 
-  *key_offset* should only be provided when *type=KSDS*
+  *key_offset* should only be provided when *type=ksds*
 
   | **required**: False
   | **type**: int
@@ -227,9 +227,9 @@ key_offset
 key_length
   The key length to use when creating a KSDS data set.
 
-  *key_length* is required when *type=KSDS*.
+  *key_length* is required when *type=ksds*.
 
-  *key_length* should only be provided when *type=KSDS*
+  *key_length* should only be provided when *type=ksds*
 
   | **required**: False
   | **type**: int
@@ -285,7 +285,7 @@ force
 
   The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
 
-  The *force=True* only applies to data set members when *state=absent* and *type=MEMBER*.
+  The *force=True* only applies to data set members when *state=absent* and *type=member*.
 
   | **required**: False
   | **type**: bool
@@ -305,7 +305,7 @@ batch
 
     If *name* is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
 
-    Required if *type=MEMBER* or *state!=present*
+    Required if *type=member* or *state!=present*
 
     | **required**: False
     | **type**: str
@@ -320,7 +320,7 @@ batch
     If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
 
 
-    If *state=absent* and *type=MEMBER* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
+    If *state=absent* and *type=member* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
 
 
     If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
@@ -341,7 +341,7 @@ batch
     If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
 
 
-    If *state=present* and *type=MEMBER* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
+    If *state=present* and *type=member* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
 
 
     If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
@@ -366,16 +366,16 @@ batch
 
 
   type
-    The data set type to be used when creating a data set. (e.g ``PDSE``)
+    The data set type to be used when creating a data set. (e.g ``pdse``)
 
-    ``MEMBER`` expects to be used with an existing partitioned data set.
+    ``member`` expects to be used with an existing partitioned data set.
 
-    Choices are case-insensitive.
+    Choices are case-sensitive.
 
     | **required**: False
     | **type**: str
-    | **default**: PDS
-    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, LIBRARY, BASIC, LARGE, MEMBER, HFS, ZFS
+    | **default**: pds
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs
 
 
   space_primary
@@ -401,25 +401,25 @@ batch
   space_type
     The unit of measurement to use when defining primary and secondary space.
 
-    Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
     | **required**: False
     | **type**: str
-    | **default**: M
-    | **choices**: K, M, G, CYL, TRK
+    | **default**: m
+    | **choices**: k, m, g, cyl, trk
 
 
   record_format
     The format of the data set. (e.g ``FB``)
 
-    Choices are case-insensitive.
+    Choices are case-sensitive.
 
-    When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
+    When *type=ksds*, *type=esds*, *type=rrds*, *type=lds* or *type=zfs* then *record_format=None*, these types do not have a default *record_format*.
 
     | **required**: False
     | **type**: str
-    | **default**: FB
-    | **choices**: FB, VB, FBA, VBA, U, F
+    | **default**: fb
+    | **choices**: fb, vb, fba, vba, u, f
 
 
   sms_storage_class
@@ -489,9 +489,9 @@ batch
   key_offset
     The key offset to use when creating a KSDS data set.
 
-    *key_offset* is required when *type=KSDS*.
+    *key_offset* is required when *type=ksds*.
 
-    *key_offset* should only be provided when *type=KSDS*
+    *key_offset* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -500,9 +500,9 @@ batch
   key_length
     The key length to use when creating a KSDS data set.
 
-    *key_length* is required when *type=KSDS*.
+    *key_length* is required when *type=ksds*.
 
-    *key_length* should only be provided when *type=KSDS*
+    *key_length* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -549,7 +549,7 @@ batch
 
     The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
 
-    The *force=True* only applies to data set members when *state=absent* and *type=MEMBER*.
+    The *force=True* only applies to data set members when *state=absent* and *type=member*.
 
     | **required**: False
     | **type**: bool
@@ -576,7 +576,7 @@ Examples
        name: someds.name.here
        type: pds
        space_primary: 5
-       space_type: M
+       space_type: m
        record_format: fba
        record_length: 25
 
@@ -585,21 +585,21 @@ Examples
        name: someds.name.here
        type: pds
        space_primary: 5
-       space_type: M
+       space_type: m
        record_format: u
        record_length: 25
-       replace: yes
+       replace: true
 
    - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
      zos_data_set:
        name: someds.name.here
        type: pds
        space_primary: 5
-       space_type: M
+       space_type: m
        record_format: u
        record_length: 25
        volumes: "222222"
-       replace: yes
+       replace: true
 
    - name: Create an ESDS data set if it does not exist
      zos_data_set:
@@ -633,43 +633,43 @@ Examples
    - name: Write a member to an existing PDS; replace if member exists
      zos_data_set:
        name: someds.name.here(mydata)
-       type: MEMBER
-       replace: yes
+       type: member
+       replace: true
 
    - name: Write a member to an existing PDS; do not replace if member exists
      zos_data_set:
        name: someds.name.here(mydata)
-       type: MEMBER
+       type: member
 
    - name: Remove a member from an existing PDS
      zos_data_set:
        name: someds.name.here(mydata)
        state: absent
-       type: MEMBER
+       type: member
 
    - name: Remove a member from an existing PDS/E by opening with disposition DISP=SHR
      zos_data_set:
        name: someds.name.here(mydata)
        state: absent
-       type: MEMBER
-       force: yes
+       type: member
+       force: true
 
    - name: Create multiple partitioned data sets and add one or more members to each
      zos_data_set:
        batch:
-         - name:  someds.name.here1
-           type: PDS
+         - name: someds.name.here1
+           type: pds
            space_primary: 5
-           space_type: M
+           space_type: m
            record_format: fb
-           replace: yes
+           replace: true
          - name: someds.name.here1(member1)
-           type: MEMBER
+           type: member
          - name: someds.name.here2(member1)
-           type: MEMBER
-           replace: yes
+           type: member
+           replace: true
          - name: someds.name.here2(member2)
-           type: MEMBER
+           type: member
 
    - name: Catalog a data set present on volume 222222 if it is uncataloged.
      zos_data_set:

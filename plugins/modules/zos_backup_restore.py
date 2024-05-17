@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -168,15 +168,15 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining data set space.
-      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
-      - When I(full_volume=True), I(space_type) defaults to C(G), otherwise default is C(M)
+      - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+      - When I(full_volume=True), I(space_type) defaults to C(g), otherwise default is C(m)
     type: str
     choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+      - k
+      - m
+      - g
+      - cyl
+      - trk
     required: false
     aliases:
       - unit
@@ -186,6 +186,14 @@ options:
       - Defaults to running user's username.
     type: str
     required: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        data sets.
+      - The default HLQ is the Ansible user that executes the module and if
+        that is not available, then the value of C(TMPHLQ) is used.
+    required: false
+    type: str
 """
 
 RETURN = r""""""
@@ -215,7 +223,7 @@ EXAMPLES = r"""
     data_sets:
       include: user.**
     backup_name: /tmp/temp_backup.dzp
-    recover: yes
+    recover: true
 
 - name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP.DZP,
     allocate 100MB for data sets used in backup process.
@@ -225,7 +233,7 @@ EXAMPLES = r"""
       include: user.**
     backup_name: MY.BACKUP.DZP
     space: 100
-    space_type: M
+    space_type: m
 
 - name:
     Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP.DZP,
@@ -237,7 +245,7 @@ EXAMPLES = r"""
     volume: MYVOL1
     backup_name: MY.BACKUP.DZP
     space: 100
-    space_type: M
+    space_type: m
 
 - name: Backup an entire volume, MYVOL1, to the UNIX file /tmp/temp_backup.dzp,
     allocate 1GB for data sets used in backup process.
@@ -245,9 +253,9 @@ EXAMPLES = r"""
     operation: backup
     backup_name: /tmp/temp_backup.dzp
     volume: MYVOL1
-    full_volume: yes
+    full_volume: true
     space: 1
-    space_type: G
+    space_type: g
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Use z/OS username as new HLQ.
@@ -288,10 +296,10 @@ EXAMPLES = r"""
   zos_backup_restore:
     operation: restore
     volume: MYVOL2
-    full_volume: yes
+    full_volume: true
     backup_name: MY.BACKUP.DZP
     space: 1
-    space_type: G
+    space_type: g
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Specify DB2SMS10 for the SMS storage and management classes to use for the restored
@@ -312,15 +320,16 @@ from ansible.module_utils.basic import AnsibleModule
 from re import match, search, IGNORECASE
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 from os import path
-
+import traceback
 try:
-    from zoautil_py import datasets, exceptions
+    from zoautil_py import datasets
+    from zoautil_py import exceptions as zoau_exceptions
 except ImportError:
-    datasets = MissingZOAUImport()
-    exceptions = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
 def main():
@@ -337,7 +346,7 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"], choices=["K", "M", "G", "CYL", "TRK"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"]),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
@@ -347,6 +356,7 @@ def main():
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
+        tmp_hlq=dict(type="str", required=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -365,6 +375,7 @@ def main():
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
+        tmp_hlq = params.get("tmp_hlq")
 
         if operation == "backup":
             backup(
@@ -380,6 +391,7 @@ def main():
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
+                tmp_hlq=tmp_hlq,
             )
         else:
             restore(
@@ -396,6 +408,7 @@ def main():
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
+                tmp_hlq=tmp_hlq,
             )
         result["changed"] = True
 
@@ -444,6 +457,7 @@ def parse_and_validate_args(params):
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
+        tmp_hlq=dict(type=hlq_type, required=False),
     )
 
     parsed_args = BetterArgParser(arg_defs).parse_args(params)
@@ -466,6 +480,7 @@ def backup(
     space_type,
     sms_storage_class,
     sms_management_class,
+    tmp_hlq,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -482,10 +497,11 @@ def backup(
         space_type (str): The unit of measurement to use when defining data set space.
         sms_storage_class (str): Specifies the storage class to use.
         sms_management_class (str): Specifies the management class to use.
+        tmp_hlq (str): Specifies the tmp hlq to temporary datasets
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
-    datasets.zip(**zoau_args)
+    datasets.dzip(**zoau_args)
 
 
 def restore(
@@ -502,6 +518,7 @@ def restore(
     space_type,
     sms_storage_class,
     sms_management_class,
+    tmp_hlq,
 ):
     """[summary]
 
@@ -523,23 +540,26 @@ def restore(
         space_type (str): The unit of measurement to use when defining data set space.
         sms_storage_class (str): Specifies the storage class to use.
         sms_management_class (str): Specifies the management class to use.
+        tmp_hlq (str): : Specifies the tmp hlq to temporary datasets
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
-    response = datasets._unzip(**zoau_args)
+    output = ""
+    try:
+        rc = datasets.dunzip(**zoau_args)
+    except zoau_exceptions.ZOAUException as dunzip_exception:
+        output = dunzip_exception.response.stdout_response
+        output = output + dunzip_exception.response.stderr_response
+        rc = get_real_rc(output)
     failed = False
-    true_rc = response.rc
-    if response.rc > 0:
-        output = response.stdout_response + response.stderr_response
-        true_rc = get_real_rc(output) or true_rc
-    if true_rc > 0 and true_rc <= 4:
+    if rc > 0 and rc <= 4:
         if recover is not True:
             failed = True
-    elif true_rc > 0:
+    elif rc > 4:
         failed = True
     if failed:
-        raise exceptions.ZOAUException(
-            "%s,RC=%s" % (response.stderr_response, response.rc)
+        raise zoau_exceptions.ZOAUException(
+            "{0}, RC={1}".format(output, rc)
         )
 
 
@@ -631,7 +651,7 @@ def hlq_default(contents, dependencies):
     """
     hlq = None
     if dependencies.get("operation") == "restore":
-        hlq = datasets.hlq()
+        hlq = datasets.get_hlq()
     return hlq
 
 
@@ -689,12 +709,12 @@ def space_type_type(contents, dependencies):
     """
     if contents is None:
         if dependencies.get("full_volume"):
-            return "G"
+            return "g"
         else:
-            return "M"
-    if not match(r"^(M|G|K|TRK|CYL)$", contents, IGNORECASE):
+            return "m"
+    if not match(r"^(m|g|k|trk|cyl)$", contents, IGNORECASE):
         raise ValueError(
-            'Value {0} is invalid for space_type argument. Valid space types are "K", "M", "G", "TRK" or "CYL".'.format(
+            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk" or "cyl".'.format(
                 contents
             )
         )
@@ -791,6 +811,10 @@ def to_dzip_args(**kwargs):
         if kwargs.get("space_type"):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
+
+    if kwargs.get("tmp_hlq"):
+        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+
     return zoau_args
 
 
@@ -844,7 +868,10 @@ def to_dunzip_args(**kwargs):
         zoau_args["size"] = size
 
     if kwargs.get("hlq"):
-        zoau_args["hlq"] = kwargs.get("hlq")
+        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
+
+    if kwargs.get("tmp_hlq"):
+        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
     return zoau_args
 

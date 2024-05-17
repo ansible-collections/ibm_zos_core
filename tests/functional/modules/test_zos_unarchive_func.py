@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -352,16 +352,16 @@ List of tests:
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ", members=[""]),
-        dict(dstype="PDS", members=["MEM1", "MEM2"]),
-        dict(dstype="PDSE", members=["MEM1", "MEM2"]),
+        dict(dstype="seq", members=[""]),
+        dict(dstype="pds", members=["MEM1", "MEM2"]),
+        dict(dstype="pdse", members=["MEM1", "MEM2"]),
         ]
 )
 @pytest.mark.parametrize(
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
+    "record_format", ["fb", "vb",],
 )
 def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, record_length, record_format):
     try:
@@ -370,7 +370,6 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
         DATASET = get_tmp_ds_name(3)
         HLQ = "ANSIBLE"
         # Clean env
-        hosts.all.zos_data_set(name=DATASET, state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
         # Create source data set
         hosts.all.zos_data_set(
@@ -379,18 +378,20 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True
         )
         # Create members if needed
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
                     type="member",
-                    state="present"
+                    state="present",
+                    replace=True
                 )
         # Write some content into src the same size of the record,
         # need to reduce 4 from V and VB due to RDW
-        if record_format in ["V", "VB"]:
+        if record_format in ["v", "vb"]:
             test_line = "a" * (record_length - 4)
         else:
             test_line = "a" * record_length
@@ -403,13 +404,13 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
 
         format_dict = dict(name=format)
         if format == "terse":
-            format_dict["format_options"] = dict(terse_pack="SPACK")
+            format_dict["format_options"] = dict(terse_pack="spack")
         archive_result = hosts.all.zos_archive(
             src=DATASET,
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
             dest_data_set=dict(name=DATASET,
-                               type="SEQ",
+                               type="seq",
                                record_format=record_format,
                                record_length=record_length),
         )
@@ -462,16 +463,16 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ", members=[""]),
-        dict(dstype="PDS", members=["MEM1", "MEM2"]),
-        dict(dstype="PDSE", members=["MEM1", "MEM2"]),
+        dict(dstype="seq", members=[""]),
+        dict(dstype="pds", members=["MEM1", "MEM2"]),
+        dict(dstype="pdse", members=["MEM1", "MEM2"]),
         ]
 )
 @pytest.mark.parametrize(
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
+    "record_format", ["fb", "vb",],
 )
 def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:
@@ -480,7 +481,6 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
         DATASET = get_tmp_ds_name(3)
         HLQ = "ANSIBLE"
         # Clean env
-        hosts.all.zos_data_set(name=DATASET, state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
         # Create source data set
         hosts.all.zos_data_set(
@@ -489,18 +489,20 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True
         )
         # Create members if needed
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
                     type="member",
-                    state="present"
+                    state="present",
+                    replace=True
                 )
         # Write some content into src the same size of the record,
         # need to reduce 4 from V and VB due to RDW
-        if record_format in ["V", "VB"]:
+        if record_format in ["v", "vb"]:
             test_line = "a" * (record_length - 4)
         else:
             test_line = "a" * record_length
@@ -514,7 +516,7 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
         format_dict = dict(name=format)
         format_dict["format_options"] = dict(use_adrdssu=True)
         if format == "terse":
-            format_dict["format_options"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="spack")
         archive_result = hosts.all.zos_archive(
             src=DATASET,
             dest=MVS_DEST_ARCHIVE,
@@ -561,9 +563,9 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ"),
-        dict(dstype="PDS"),
-        dict(dstype="PDSE"),
+        dict(dstype="seq"),
+        dict(dstype="pds"),
+        dict(dstype="pdse"),
         ]
 )
 def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format, data_set):
@@ -577,7 +579,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
                                     n=1,
                                     type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -595,10 +597,10 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
 
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
-            format_dict["format_options"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -637,9 +639,9 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ"),
-        dict(dstype="PDS"),
-        dict(dstype="PDSE"),
+        dict(dstype="seq"),
+        dict(dstype="pds"),
+        dict(dstype="pdse"),
         ]
 )
 def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module, format, data_set):
@@ -653,7 +655,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
                                     n=2,
                                     type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -671,10 +673,10 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
 
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
-            format_dict["format_options"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -723,9 +725,9 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ"),
-        dict(dstype="PDS"),
-        dict(dstype="PDSE"),
+        dict(dstype="seq"),
+        dict(dstype="pds"),
+        dict(dstype="pdse"),
         ]
 )
 def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module, format, data_set):
@@ -739,7 +741,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
                                     n=2,
                                     type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -757,10 +759,10 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
 
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
-            format_dict["format_options"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -805,9 +807,9 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module,
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ"),
-        dict(dstype="PDS"),
-        dict(dstype="PDSE"),
+        dict(dstype="seq"),
+        dict(dstype="pds"),
+        dict(dstype="pdse"),
         ]
 )
 def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_set):
@@ -821,7 +823,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
                                     n=2,
                                     type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -839,10 +841,10 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
 
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
-            format_dict["format_options"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -882,9 +884,9 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_s
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ"),
-        dict(dstype="PDS"),
-        dict(dstype="PDSE"),
+        dict(dstype="seq"),
+        dict(dstype="pds"),
+        dict(dstype="pdse"),
         ]
 )
 @pytest.mark.parametrize(
@@ -908,7 +910,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
                                     n=1,
                                     type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -926,10 +928,10 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
 
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
-            format_dict["format_options"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         hosts.all.zos_archive(
-            src=""" "{0}*" """.format(DATASET),
+            src="{0}*".format(DATASET),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -970,16 +972,16 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(dstype="SEQ", members=[""]),
-        dict(dstype="PDS", members=["MEM1", "MEM2"]),
-        dict(dstype="PDSE", members=["MEM1", "MEM2"]),
+        dict(dstype="seq", members=[""]),
+        dict(dstype="pds", members=["MEM1", "MEM2"]),
+        dict(dstype="pdse", members=["MEM1", "MEM2"]),
         ]
 )
 @pytest.mark.parametrize(
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
+    "record_format", ["fb", "vb",],
 )
 def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, data_set, record_length, record_format):
     try:
@@ -1000,7 +1002,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
             record_format=record_format,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["PDS", "PDSE"]:
+        if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{DATASET}({member})",
@@ -1009,7 +1011,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
                 )
         # Write some content into src the same size of the record,
         # need to reduce 4 from V and VB due to RDW
-        if record_format in ["V", "VB"]:
+        if record_format in ["v", "vb"]:
             test_line = "a" * (record_length - 4)
         else:
             test_line = "a" * record_length
@@ -1023,7 +1025,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
         format_dict = dict(name=format)
         format_dict["format_options"] = dict(use_adrdssu=True)
         if format == "terse":
-            format_dict["format_options"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="spack")
         archive_result = hosts.all.zos_archive(
             src=DATASET,
             dest=MVS_DEST_ARCHIVE,

@@ -59,7 +59,7 @@ options:
       - The identifier for the volume containing the library specified in
         the C(library) parameter. The values must be one the following.
       - 1. The volume serial number.
-      - 2. Six asterisks (******), indicating that the system must use the
+      - 2. Six asterisks C(******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
       - 3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
@@ -176,7 +176,7 @@ options:
             specified on the C(library) parameter. The values must be one of the
             following.
           - 1. The volume serial number
-          - 2. Six asterisks (******), indicating that the system must use the
+          - 2. Six asterisks C(******), indicating that the system must use the
             volume serial number of the current system residence (SYSRES)
             volume.
           - 3. *MCAT*, indicating that the system must use the volume serial
@@ -221,7 +221,7 @@ EXAMPLES = r'''
 - name: Add a library (cataloged) to the APF list and persistence
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
-    force_dynamic: True
+    force_dynamic: true
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
 - name: Remove a library from the APF list and persistence
@@ -239,7 +239,7 @@ EXAMPLES = r'''
     batch:
       - library: SOME.SEQ.DS1
       - library: SOME.SEQ.DS2
-        sms: True
+        sms: true
       - library: SOME.SEQ.DS3
         volume: T12345
 - name: Print the APF list matching library pattern or volume serial number
@@ -292,17 +292,19 @@ backup_name:
 
 import re
 import json
+from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
+import traceback
 
 try:
     from zoautil_py import zsystem
 except Exception:
-    Datasets = MissingZOAUImport()
+    zsystem = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
@@ -310,6 +312,30 @@ DS_TYPE = ['PS', 'PO']
 
 
 def backupOper(module, src, backup, tmphlq=None):
+    """Create a backup for a specified USS file or MVS data set.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+    src : str
+        Source USS file or data set to backup.
+    backup : str
+        Name for the backup.
+    tmphlq : str
+        The name of the temporary high level qualifier to use.
+
+    Returns
+    -------
+    str
+        Backup name.
+
+    Raises
+    ------
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Creating backup has failed.
+    """
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
@@ -334,6 +360,19 @@ def backupOper(module, src, backup, tmphlq=None):
 
 
 def main():
+    """Initialize the module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Marker length may not exceed 72 characters.
+    fail_json
+        library is required.
+    fail_json
+        An exception occurred.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             library=dict(
@@ -522,6 +561,12 @@ def main():
     result['rc'] = operRc
     result['stdout'] = operOut
     if operation == 'list':
+        try:
+            data = json.loads(operOut)
+            data_sets = data["data"]["datasets"]
+        except Exception as e:
+            err_msg = "An exception occurred. See stderr for more details."
+            module.fail_json(msg=err_msg, stderr=to_text(e), rc=operErr)
         if not library:
             library = ""
         if not volume:
@@ -529,20 +574,26 @@ def main():
         if sms:
             sms = "*SMS*"
         if library or volume or sms:
-            try:
-                data = json.loads(operOut)
-            except json.JSONDecodeError:
-                module.exit_json(**result)
-            for d in data[2:]:
+            ds_list = ""
+            for d in data_sets:
                 ds = d.get('ds')
                 vol = d.get('vol')
                 try:
                     if (library and re.match(library, ds)) or (volume and re.match(volume, vol)) or (sms and sms == vol):
-                        operOut = operOut + "{0} {1}\n".format(vol, ds)
+                        ds_list = ds_list + "{0} {1}\n".format(vol, ds)
                 except re.error:
-                    result['stdout'] = operOut
                     module.exit_json(**result)
-            result['stdout'] = operOut
+            result['stdout'] = ds_list
+        else:
+            """
+            ZOAU 1.3 changed the output from apf, having the data set list inside a new "data" tag.
+            To keep consistency with previous ZOAU versions now we have to filter the json response.
+            """
+            try:
+                result['stdout'] = json.dumps(data.get("data"))
+            except Exception as e:
+                err_msg = "An exception occurred. See stderr for more details."
+                module.fail_json(msg=err_msg, stderr=to_text(e), rc=operErr)
     module.exit_json(**result)
 
 

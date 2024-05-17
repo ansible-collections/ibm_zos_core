@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -121,7 +121,7 @@ EXAMPLES = r"""
       system: mv29
       message_filter:
           filter: ^.*IMS.*$
-          use_regex: yes
+          use_regex: true
 """
 
 RETURN = r"""
@@ -219,11 +219,16 @@ actions:
 
 from ansible.module_utils.basic import AnsibleModule
 import re
+import traceback
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -233,10 +238,19 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 try:
     from zoautil_py import opercmd
 except Exception:
-    opercmd = MissingZOAUImport()
+    opercmd = ZOAUImportError(traceback.format_exc())
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        A non-zero return code was received while querying the operator.
+    fail_json
+        An unexpected error occurred.
+    """
     module_args = dict(
         system=dict(type="str", required=False),
         message_id=dict(type="str", required=False),
@@ -272,7 +286,7 @@ def run_module():
 
         cmdtxt = "d r,a,s"
 
-        cmd_result_a = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+        cmd_result_a = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
         if cmd_result_a.rc > 0:
             module.fail_json(
@@ -287,7 +301,7 @@ def run_module():
 
         cmdtxt = "d r,a,jn"
 
-        cmd_result_b = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
+        cmd_result_b = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
 
         if cmd_result_b.rc > 0:
             module.fail_json(
@@ -316,6 +330,18 @@ def run_module():
 
 
 def parse_params(params):
+    """Parse parameters using BetterArgParser.
+
+    Parameters
+    ----------
+    params : dict
+        Parameters to parse.
+
+    Returns
+    -------
+    dict
+        Parsed parameters.
+    """
     arg_defs = dict(
         system=dict(arg_type=system_type, required=False),
         message_id=dict(arg_type=message_id_type, required=False),
@@ -328,24 +354,85 @@ def parse_params(params):
 
 
 def system_type(arg_val, params):
+    """System type.
+
+    Parameters
+    ----------
+    arg_val : str
+        Argument to validate.
+    params : dict
+        Not used, but obligatory for BetterArgParser.
+
+    Returns
+    -------
+    str
+        arg_val validated in uppercase.
+    """
     regex = "^(?:[a-zA-Z0-9]{1,8})|(?:[a-zA-Z0-9]{0,7}[*])$"
     validate_parameters_based_on_regex(arg_val, regex)
     return arg_val.upper()
 
 
 def message_id_type(arg_val, params):
+    """Message id type.
+
+    Parameters
+    ----------
+    arg_val : str
+        Argument to validate.
+    params : dict
+        Not used, but obligatory for BetterArgParser.
+
+    Returns
+    -------
+    str
+        arg_val validated in uppercase.
+    """
     regex = "^(?:[a-zA-Z0-9]{1,})|(?:[a-zA-Z0-9]{0,}[*])$"
     validate_parameters_based_on_regex(arg_val, regex)
     return arg_val.upper()
 
 
 def job_name_type(arg_val, params):
+    """Job name type.
+
+    Parameters
+    ----------
+    arg_val : str
+        Argument to validate.
+    params : dict
+        Not used, but obligatory for BetterArgParser.
+
+    Returns
+    -------
+    str
+        arg_val validated in uppercase.
+    """
     regex = "^(?:[a-zA-Z0-9]{1,8})|(?:[a-zA-Z0-9]{0,7}[*])$"
     validate_parameters_based_on_regex(arg_val, regex)
     return arg_val.upper()
 
 
 def message_filter_type(arg_val, params):
+    """Message filter type.
+
+    Parameters
+    ----------
+    arg_val : str
+        Argument to validate.
+    params : dict
+        Not used, but obligatory for BetterArgParser.
+
+    Returns
+    -------
+    str
+        regex of the given argument.
+
+    Raises
+    ------
+    ValidationError
+        An error occurred during validate the input parameters.
+    """
     try:
         filter_text = arg_val.get("filter")
         use_regex = arg_val.get("use_regex")
@@ -363,6 +450,25 @@ def message_filter_type(arg_val, params):
 
 
 def validate_parameters_based_on_regex(value, regex):
+    """Validate parameters based on regex.
+
+    Parameters
+    ----------
+    value : str
+        Argument to compare to regex pattern.
+    regex : str
+        Regex to get pattern from.
+
+    Returns
+    -------
+    str
+        The value given.
+
+    Raises
+    ------
+    ValidationError
+        An error occurred during validate the input parameters.
+    """
     pattern = re.compile(regex)
     if pattern.fullmatch(value):
         pass
@@ -372,7 +478,20 @@ def validate_parameters_based_on_regex(value, regex):
 
 
 def find_required_request(merged_list, params):
-    """Find the request given the options provided."""
+    """Find the request given the options provided.
+
+    Parameters
+    ----------
+    merged_list : list
+        Merged list to search.
+    params : dict
+        Parameters to get for the function.
+
+    Returns
+    -------
+    Union
+        Filtered list.
+    """
     requests = filter_requests(merged_list, params)
     return requests
 
@@ -380,9 +499,24 @@ def find_required_request(merged_list, params):
 def create_merge_list(message_a, message_b, message_filter):
     """Merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'.
     For example, if we have:
-    'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO'OR 'CANCEL'"
+    'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
     'd r,a,jn' response like:"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
-    the results will be merged so that a full list of information returned on condition"""
+    the results will be merged so that a full list of information returned on condition.
+
+    Parameters
+    ----------
+    message_a : str
+        Result coming from command 'd r,a,s'.
+    message_b : str
+        Result coming from command 'd r,a,jn'.
+    message_filter : str
+        Message filter.
+
+    Returns
+    -------
+    Union
+        Merge of the result of message_a and the result of message_b.
+    """
     list_a = parse_result_a(message_a, message_filter)
     list_b = parse_result_b(message_b, message_filter)
     merged_list = merge_list(list_a, list_b)
@@ -390,40 +524,87 @@ def create_merge_list(message_a, message_b, message_filter):
 
 
 def filter_requests(merged_list, params):
-    """filter the request given the params provided."""
+    """Filter the request given the params provided.
+
+    Parameters
+    ----------
+    merged_list : list
+        Merged list to filter.
+    params : dict
+        Parameters to get for the function.
+
+    Returns
+    -------
+    Union
+        Filtered list.
+    """
     system = params.get("system")
     message_id = params.get("message_id")
     job_name = params.get("job_name")
     newlist = merged_list
-
     if system:
         newlist = handle_conditions(newlist, "system", system)
     if job_name:
         newlist = handle_conditions(newlist, "job_name", job_name)
     if message_id:
         newlist = handle_conditions(newlist, "message_id", message_id)
-
     return newlist
 
 
-def handle_conditions(list, condition_type, value):
+def handle_conditions(merged_list, condition_type, value):
+    """Handle conditions.
+
+    Parameters
+    ----------
+    merged_list : list[dict]
+        List to check.
+    condition_type : str
+        Condition type to check.
+    value
+        Value to check for.
+
+    Returns
+    -------
+    Union[dict]
+        The new list.
+    """
     # regex = re.compile(condition_values)
     newlist = []
-    for dict in list:
-        if value.endswith("*"):
-            exist = dict.get(condition_type).startswith(value.rstrip("*"))
-        else:
-            exist = dict.get(condition_type) == value
+    exist = False
+    for message in merged_list:
+        if message.get(condition_type) is not None:
+            if value.endswith("*"):
+                exist = message.get(condition_type).startswith(value.rstrip("*"))
+            else:
+                exist = message.get(condition_type) == value
 
         if exist:
-            newlist.append(dict)
+            newlist.append(message)
     return newlist
 
 
-def execute_command(operator_cmd, timeout=1, *args, **kwargs):
+def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+    """Execute operator command.
 
-    # response = opercmd.execute(operator_cmd)
-    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+    Parameters
+    ----------
+    operator_cmd : str
+        Operator command.
+    timeout_s : int
+        Timeout to wait for the command execution, measured in centiseconds.
+    *args : dict
+        Arguments for the command.
+    **kwargs : dict
+        More arguments for the command.
+
+    Returns
+    -------
+    OperatorQueryResult
+        The result of the command.
+    """
+    # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
+    timeout_c = 100 * timeout_s
+    response = opercmd.execute(operator_cmd, timeout_c, *args, **kwargs)
 
     rc = response.rc
     stdout = response.stdout_response
@@ -432,6 +613,20 @@ def execute_command(operator_cmd, timeout=1, *args, **kwargs):
 
 
 def match_raw_message(msg, message_filter):
+    """Match raw message.
+
+    Parameters
+    ----------
+    msg : str
+        Message to match.
+    message_filter : str
+        Filter for the message.
+
+    Return
+    ------
+    bool
+        If the pattern matches msg.
+    """
     pattern = re.compile(message_filter, re.DOTALL)
     return pattern.match(msg)
 
@@ -441,7 +636,20 @@ def parse_result_a(result, message_filter):
     there are usually two formats:
      - line with job_id: 810 R MV2D     JOB58389 &810 ARC0055A REPLY 'GO' OR 'CANCEL'
      - line without job_id: 574 R MV28              *574 IXG312E OFFLOAD DELAYED FOR..
-    also the request contains multiple lines, we need to handle that as well"""
+    also the request contains multiple lines, we need to handle that as well.
+
+    Parameters
+    ----------
+    result : str
+        Result coming from command 'd r,a,s'.
+    message_filter : str
+        Message filter.
+
+    Returns
+    -------
+    Union[dict[str,str]]
+        Resulting list.
+    """
 
     dict_temp = {}
     list = []
@@ -473,7 +681,20 @@ def parse_result_a(result, message_filter):
 def parse_result_b(result, message_filter):
     """Parse the result that comes from command 'd r,a,jn', the main purpose
     to use this command is to get the job_name and message id, which is not
-    included in 'd r,a,s'"""
+    included in 'd r,a,s'
+
+    Parameters
+    ----------
+    result : str
+        Result coming from command 'd r,a,jn'.
+    message_filter : str
+        Message filter.
+
+    Returns
+    -------
+    Union[dict[str,str]]
+        Resulting list.
+    """
 
     dict_temp = {}
     list = []
@@ -505,6 +726,20 @@ def parse_result_b(result, message_filter):
 
 
 def merge_list(list_a, list_b):
+    """Merge lists.
+
+    Parameters
+    ----------
+    list_a : list
+        First list to be merged.
+    list_b : list
+        Second list to be merged.
+
+    Returns
+    -------
+    Union
+        Merged of list_a and list_b.
+    """
     merged_list = []
     for dict_a in list_a:
         for dict_b in list_b:
@@ -521,6 +756,18 @@ class Error(Exception):
 
 class ValidationError(Error):
     def __init__(self, message):
+        """An error occurred during validate the input parameters.
+
+        Parameters
+        ----------
+        message : str
+            Message of the error that ocurred.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = (
             'An error occurred during validate the input parameters: "{0}"'.format(
                 message
@@ -537,12 +784,27 @@ class OperatorQueryResult:
     ):
         """Response object class to manage the result from executing a command
         to query for actionable messages. Class will also generate a message
-        by concatenating stdout and stderr
+        by concatenating stdout and stderr.
 
-        Arguments:
-            rc {str} -- The return code
-            stdout {str} -- The standard out of the command run
-            stderr {str} -- The standard error of the command run
+        Parameters
+        ----------
+        rc : str
+            The return code.
+        stdout : str
+            The standard out of the command run.
+        stderr : str
+            The standard error of the command run.
+
+        Attributes
+        ----------
+        rc : str
+            The return code.
+        stdout : str
+            The standard out of the command run.
+        stderr : str
+            The standard error of the command run.
+        message : str
+            The standard out of the command run.
         """
         self.rc = rc
         self.stdout = stdout

@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,11 +10,11 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-
+import traceback
 __metaclass__ = type
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
@@ -22,7 +22,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import D
 try:
     from zoautil_py import datasets
 except ImportError:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
 
 space_units = {"b": "", "kb": "k", "mb": "m", "gb": "g"}
 
@@ -651,8 +651,8 @@ class VIODefinition(DataDefinition):
         if tmphlq:
             hlq = tmphlq
         else:
-            hlq = datasets.hlq()
-        name = datasets.tmp_name(hlq)
+            hlq = datasets.get_hlq()
+        name = datasets.tmp_name(high_level_qualifier=hlq)
         super().__init__(name)
 
     def __del__(self):

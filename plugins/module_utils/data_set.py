@@ -15,6 +15,7 @@ __metaclass__ = type
 
 import re
 import tempfile
+import traceback
 from os import path, walk
 from string import ascii_uppercase, digits
 from random import sample
@@ -24,8 +25,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
     MissingImport,
+    ZOAUImportError,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -39,9 +40,10 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, exceptions
 except ImportError:
-    datasets = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    exceptions = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -175,13 +177,14 @@ class DataSet(object):
         changed = False
         if DataSet.data_set_cataloged(name):
             present = True
+
         if not present:
             try:
                 DataSet.create(**arguments)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
-                if "Error Code: 0x4704" in e.msg:
+                if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
                         name, volumes
                     )
@@ -316,7 +319,11 @@ class DataSet(object):
         # Now adding special parameters for sequential and partitioned
         # data sets.
         if model_type not in DataSet.MVS_VSAM:
-            block_size = datasets.listing(model)[0].block_size
+            try:
+                data_set = datasets.list_datasets(model)[0]
+            except IndexError:
+                raise AttributeError("Could not retrieve model data set block size.")
+            block_size = data_set.block_size
             alloc_cmd = """{0} -
             BLKSIZE({1})""".format(alloc_cmd, block_size)
 
@@ -349,6 +356,7 @@ class DataSet(object):
         """
 
         name = name.upper()
+
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
@@ -505,7 +513,7 @@ class DataSet(object):
             DatasetVolumeError: When the function is unable to parse the value
                                 of VOLSER.
         """
-        data_set_information = datasets.listing(name)
+        data_set_information = datasets.list_datasets(name)
 
         if len(data_set_information) > 0:
             return data_set_information[0].volume
@@ -540,12 +548,12 @@ class DataSet(object):
         if not DataSet.data_set_exists(name, volume):
             return None
 
-        data_sets_found = datasets.listing(name)
+        data_sets_found = datasets.list_datasets(name)
 
-        # Using the DSORG property when it's a sequential or partitioned
-        # dataset. VSAMs are not found by datasets.listing.
+        # Using the organization property when it's a sequential or partitioned
+        # dataset. VSAMs are not found by datasets.list_datasets.
         if len(data_sets_found) > 0:
-            return data_sets_found[0].dsorg
+            return data_sets_found[0].organization
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
@@ -911,13 +919,13 @@ class DataSet(object):
                 secondary += space_type
 
         type = kwargs.get("type")
-        if type and type == "ZFS":
+        if type and type.upper() == "ZFS":
             type = "LDS"
 
         volumes = ",".join(volumes) if volumes else None
         kwargs["space_primary"] = primary
         kwargs["space_secondary"] = secondary
-        kwargs["type"] = type
+        kwargs["dataset_type"] = type
         kwargs["volumes"] = volumes
         kwargs.pop("space_type", None)
         renamed_args = {}
@@ -951,7 +959,7 @@ class DataSet(object):
         force=None,
     ):
         """A wrapper around zoautil_py
-        Dataset.create() to raise exceptions on failure.
+        datasets.create() to raise exceptions on failure.
         Reasonable default arguments will be set by ZOAU when necessary.
 
         Args:
@@ -1012,17 +1020,31 @@ class DataSet(object):
         """
         original_args = locals()
         formatted_args = DataSet._build_zoau_args(**original_args)
-        response = datasets._create(**formatted_args)
-        if response.rc > 0:
+        try:
+            datasets.create(**formatted_args)
+        except exceptions._ZOAUExtendableException as create_exception:
             raise DatasetCreateError(
-                name, response.rc, response.stdout_response + response.stderr_response
+                name,
+                create_exception.response.rc,
+                create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
-        return response.rc
+        except exceptions.DatasetVerificationError:
+            # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
+            if volumes and len(volumes) > 1:
+                if DataSet.data_set_cataloged(name, volumes):
+                    return 0
+            raise DatasetCreateError(
+                name,
+                msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
+            )
+        # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
+        # response.rc now we just return 0 if nothing failed
+        return 0
 
     @staticmethod
     def delete(name):
         """A wrapper around zoautil_py
-        Dataset.delete() to raise exceptions on failure.
+        datasets.delete() to raise exceptions on failure.
 
         Arguments:
             name (str) -- The name of the data set to delete.
@@ -1061,7 +1083,7 @@ class DataSet(object):
     @staticmethod
     def delete_member(name, force=False):
         """A wrapper around zoautil_py
-        Dataset.delete_members() to raise exceptions on failure.
+        datasets.delete_members() to raise exceptions on failure.
 
         Arguments:
             name (str) -- The name of the data set, including member name, to delete.
@@ -1311,7 +1333,7 @@ class DataSet(object):
             str: The temporary data set name.
         """
         if not hlq:
-            hlq = datasets.hlq()
+            hlq = datasets.get_hlq()
         temp_name = datasets.tmp_name(hlq)
         return temp_name
 
@@ -1772,12 +1794,19 @@ class DatasetDeleteError(Exception):
 
 
 class DatasetCreateError(Exception):
-    def __init__(self, data_set, rc, msg=""):
-        self.msg = (
-            'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
-                data_set, rc, msg
+    def __init__(self, data_set, rc=None, msg=""):
+        if rc:
+            self.msg = (
+                'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
+                    data_set, rc, msg
+                )
             )
-        )
+        else:
+            self.msg = (
+                'An error occurred during creation of data set "{0}". {1}'.format(
+                    data_set, msg
+                )
+            )
         super().__init__(self.msg)
 
 

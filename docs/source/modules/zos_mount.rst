@@ -53,11 +53,11 @@ fs_type
 
   The physical file systems data set format to perform the logical mount.
 
-  The *fs_type* is required to be uppercase.
+  The *fs_type* is required to be lowercase.
 
   | **required**: True
   | **type**: str
-  | **choices**: HFS, ZFS, NFS, TFS
+  | **choices**: hfs, zfs, nfs, tfs
 
 
 state
@@ -149,25 +149,25 @@ unmount_opts
 
   | **required**: False
   | **type**: str
-  | **default**: NORMAL
-  | **choices**: DRAIN, FORCE, IMMEDIATE, NORMAL, REMOUNT, RESET
+  | **default**: normal
+  | **choices**: drain, force, immediate, normal, remount, reset
 
 
 mount_opts
   Options available to the mount.
 
-  If *mount_opts=RO* on a mounted/remount, mount is performed read-only.
+  If *mount_opts=ro* on a mounted/remount, mount is performed read-only.
 
-  If *mount_opts=SAME* and (unmount_opts=REMOUNT), mount is opened in the same mode as previously opened.
+  If *mount_opts=same* and (unmount_opts=remount), mount is opened in the same mode as previously opened.
 
-  If *mount_opts=NOWAIT*, mount is performed asynchronously.
+  If *mount_opts=nowait*, mount is performed asynchronously.
 
-  If *mount_opts=NOSECURITY*, security checks are not enforced for files in this file system.
+  If *mount_opts=nosecurity*, security checks are not enforced for files in this file system.
 
   | **required**: False
   | **type**: str
-  | **default**: RW
-  | **choices**: RO, RW, SAME, NOWAIT, NOSECURITY
+  | **default**: rw
+  | **choices**: ro, rw, same, nowait, nosecurity
 
 
 src_params
@@ -184,15 +184,15 @@ tag_untagged
 
   When the file system is unmounted, the tags are lost.
 
-  If *tag_untagged=NOTEXT* none of the untagged files in the file system are automatically converted during file reading and writing.
+  If *tag_untagged=notext* none of the untagged files in the file system are automatically converted during file reading and writing.
 
-  If *tag_untagged=TEXT* each untagged file is implicitly marked as containing pure text data that can be converted.
+  If *tag_untagged=text* each untagged file is implicitly marked as containing pure text data that can be converted.
 
   If this flag is used, use of tag_ccsid is encouraged.
 
   | **required**: False
   | **type**: str
-  | **choices**: TEXT, NOTEXT
+  | **choices**: text, notext
 
 
 tag_ccsid
@@ -240,23 +240,23 @@ automove
   These parameters apply only in a sysplex where systems are exploiting the shared file system capability. They specify what happens to the ownership of a file system when a shutdown, PFS termination, dead system takeover, or file system move occurs. The default setting is AUTOMOVE where the file system will be randomly moved to another system (no system list used).
 
 
-  *automove=AUTOMOVE* indicates that ownership of the file system can be automatically moved to another system participating in a shared file system.
+  *automove=automove* indicates that ownership of the file system can be automatically moved to another system participating in a shared file system.
 
 
-  *automove=NOAUTOMOVE* prevents movement of the file system's ownership in some situations.
+  *automove=noautomove* prevents movement of the file system's ownership in some situations.
 
 
-  *automove=UNMOUNT* allows the file system to be unmounted in some situations.
+  *automove=unmount* allows the file system to be unmounted in some situations.
 
 
   | **required**: False
   | **type**: str
-  | **default**: AUTOMOVE
-  | **choices**: AUTOMOVE, NOAUTOMOVE, UNMOUNT
+  | **default**: automove
+  | **choices**: automove, noautomove, unmount
 
 
 automove_list
-  If(automove=AUTOMOVE), this option will be checked.
+  If(automove=automove), this option will be checked.
 
 
   This specifies the list of servers to include or exclude as destinations.
@@ -293,14 +293,14 @@ Examples
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
 
    - name: Unmount a filesystem.
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: unmounted
        unmount_opts: REMOUNT
        opts: same
@@ -309,7 +309,7 @@ Examples
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
        mount_opts: RO
 
@@ -317,37 +317,37 @@ Examples
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
        persistent:
-           data_store: SYS1.PARMLIB(BPXPRMAA)
-           comment: For Tape2 project
+         data_store: SYS1.PARMLIB(BPXPRMAA)
+         comment: For Tape2 project
 
    - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
        persistent:
-           data_store: SYS1.PARMLIB(BPXPRMAA)
-           backup: Yes
-           backup_name: SYS1.PARMLIB(BPXPRMAB)
-           comment: For Tape2 project
+         data_store: SYS1.PARMLIB(BPXPRMAA)
+         backup: true
+         backup_name: SYS1.PARMLIB(BPXPRMAB)
+         comment: For Tape2 project
 
    - name: Mount a filesystem ignoring uid/gid values.
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
-       allow_uid: no
+       allow_uid: false
 
    - name: Mount a filesystem asynchronously (don't wait for completion).
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
        opts: nowait
 
@@ -355,7 +355,7 @@ Examples
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
        mount_opts: NOSECURITY
 
@@ -363,7 +363,7 @@ Examples
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
        automove: AUTOMOVE
        automove_list: I,DEV1,DEV2,DEV3,DEV9
@@ -372,11 +372,10 @@ Examples
      zos_mount:
        src: SOMEUSER.VVV.ZFS
        path: /u/omvsadm/core
-       fs_type: ZFS
+       fs_type: zfs
        state: mounted
        automove: AUTOMOVE
        automove_list: EXCLUDE,DEV4,DEV5,DEV6,DEV7
-
 
 
 

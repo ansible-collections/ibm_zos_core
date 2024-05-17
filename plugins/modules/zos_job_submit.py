@@ -42,27 +42,17 @@ options:
         (e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
     required: false
-    default: DATA_SET
+    default: data_set
     type: str
     choices:
-      - DATA_SET
-      - USS
-      - LOCAL
+      - data_set
+      - uss
+      - local
     description:
-      - The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
-      - DATA_SET can be a PDS, PDSE, or sequential data set.
-      - USS means the JCL location is located in UNIX System Services (USS).
-      - LOCAL means locally to the ansible control node.
-  wait:
-    required: false
-    default: false
-    type: bool
-    description:
-      - Setting this option will yield no change, it is disabled. There is no
-        need to set I(wait); setting I(wait_times_s) is the correct way to
-        configure the amount of time to wait for a job to execute.
-      - This option will be removed in ibm.ibm_zos_core collection version 1.10.0
-      - See option I(wait_time_s).
+      - The JCL location. Supported choices are C(data_set), C(uss) or C(local).
+      - C(data_set) can be a PDS, PDSE, or sequential data set.
+      - C(uss) means the JCL location is located in UNIX System Services (USS).
+      - C(local) means locally to the ansible control node.
   wait_time_s:
     required: false
     default: 10
@@ -90,17 +80,17 @@ options:
     required: false
     type: str
     description:
-      - The volume serial (VOLSER)is where the data set resides. The option
+      - The volume serial (VOLSER) is where the data set resides. The option
         is required only when the data set is not cataloged on the system.
       - When configured, the L(zos_job_submit,./zos_job_submit.html) will try to
         catalog the data set for the volume serial. If it is not able to, the
         module will fail.
-      - Ignored for I(location=USS) and I(location=LOCAL).
+      - Ignored for I(location=uss) and I(location=local).
   encoding:
     description:
       - Specifies which encoding the local JCL file should be converted from
         and to, before submitting the job.
-      - This option is only supported for when I(location=LOCAL).
+      - This option is only supported for when I(location=local).
       - If this parameter is not provided, and the z/OS systems default encoding
         can not be identified, the JCL file will be converted from UTF-8 to
         IBM-1047 by default, otherwise the module will detect the z/OS system
@@ -244,16 +234,20 @@ jobs:
             - Job status `SEC` or `SEC ERROR` indicates the job as encountered a security error.
             - Job status `SYS` indicates a system failure.
             - Job status `?` indicates status can not be determined.
+            - Jobs where status can not be determined will result in None (NULL).
           type: str
           sample: AC
         msg_code:
           description:
             - The return code from the submitted job as a string.
+            - Jobs which have no return code will result in None (NULL), such
+              is the case of a job that errors or is active.
           type: str
           sample: 0000
         msg_txt:
           description:
-             Returns additional information related to the submitted job.
+            - Returns additional information related to the submitted job.
+            - Jobs which have no additional information will result in None (NULL).
           type: str
           sample: The job JOB00551 was run with special job processing TYPRUN=SCAN.
                   This will result in no completion, return code or job steps and
@@ -261,8 +255,8 @@ jobs:
         code:
           description:
             - The return code converted to an integer value when available.
-            - Jobs which have no return code will return NULL, such is the case
-              of a job that errors or is active.
+            - Jobs which have no return code will result in None (NULL), such
+              is the case of a job that errors or is active.
           type: int
           sample: 0
         steps:
@@ -561,30 +555,25 @@ jobs:
               "system": "STL1"
           }
      ]
-message:
-  description: This option is being deprecated
-  returned: success
-  type: str
-  sample: Submit JCL operation succeeded.
 """
 
 EXAMPLES = r"""
-- name: Submit JCL in a PDSE member
+- name: Submit JCL in a PDSE member.
   zos_job_submit:
     src: HLQ.DATA.LLQ(SAMPLE)
-    location: DATA_SET
+    location: data_set
   register: response
 
 - name: Submit JCL in USS with no DDs in the output.
   zos_job_submit:
     src: /u/tester/demo/sample.jcl
-    location: USS
+    location: uss
     return_output: false
 
 - name: Convert local JCL to IBM-037 and submit the job.
   zos_job_submit:
     src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-    location: LOCAL
+    location: local
     encoding:
       from: ISO8859-1
       to: IBM-037
@@ -592,25 +581,25 @@ EXAMPLES = r"""
 - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
   zos_job_submit:
     src: HLQ.DATA.LLQ(SAMPLE)
-    location: DATA_SET
+    location: data_set
     volume: P2SS01
 
 - name: Submit a long running PDS job and wait up to 30 seconds for completion.
   zos_job_submit:
     src: HLQ.DATA.LLQ(LONGRUN)
-    location: DATA_SET
+    location: data_set
     wait_time_s: 30
 
 - name: Submit a long running PDS job and wait up to 30 seconds for completion.
   zos_job_submit:
     src: HLQ.DATA.LLQ(LONGRUN)
-    location: DATA_SET
+    location: data_set
     wait_time_s: 30
 
 - name: Submit JCL and set the max return code the module should fail on to 16.
   zos_job_submit:
     src: HLQ.DATA.LLQ
-    location: DATA_SET
+    location: data_set
     max_rc: 16
 """
 
@@ -621,7 +610,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
-    job_output, search_dictionaries, JOB_ERROR_STATUS
+    job_output, search_dictionaries, JOB_ERROR_STATUSES
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -633,6 +622,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text
 from timeit import default_timer as timer
 from os import remove
 import traceback
@@ -640,9 +630,9 @@ from time import sleep
 import re
 
 try:
-    from zoautil_py import exceptions
+    from zoautil_py import exceptions as zoau_exceptions
 except ImportError:
-    exceptions = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import jobs
@@ -650,40 +640,64 @@ except Exception:
     jobs = ZOAUImportError(traceback.format_exc())
 
 
-JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
+JOB_STATUSES = list(dict.fromkeys(JOB_ERROR_STATUSES))
+JOB_STATUSES.append("CC")
+
 JOB_SPECIAL_PROCESSING = frozenset(["TYPRUN"])
 MAX_WAIT_TIME_S = 86400
 
 
-def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None, start_time=timer()):
-    """ Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
+def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=None, start_time=timer()):
+    """Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
 
-        Arguments:
-            module - module instnace to access the module api
-            src (str)       - JCL, can be relative or absolute paths either on controller or USS
-                            - Data set, can be PS, PDS, PDSE Member
-            src_name (str)  - the src name that was provided in the module because through
-                              the runtime src could be replace with a temporary file name
-            timeout (int)   - how long to wait in seconds for a job to complete
-            hfs (boolean)   - True if JCL is a file in USS, otherwise False; Note that all
-                              JCL local to a controller is transfered to USS thus would be
-                              True
-            volume (str)    - volume the data set JCL is located on that will be cataloged before
-                              being submitted
-            start_time      - time the JCL started its submission
+        Parameters
+        ----------
+        module: AnsibleModule
+            module instance to access the module api.
+        src : str
+            JCL, can be relative or absolute paths either on controller or USS
+            - Data set, can be PS, PDS, PDSE Member.
+        src_name : str
+            The src name that was provided in the module because through
+            the runtime src could be replace with a temporary file name.
+        timeout : int
+            How long to wait in seconds for a job to complete.
+        is_unix : bool
+            True if JCL is a file in USS, otherwise False; Note that all
+            JCL local to a controller is transfered to USS thus would be
+            True.
+        volume : str
+            volume the data set JCL is located on that will be cataloged before
+            being submitted.
+        start_time : int
+            time the JCL started its submission.
 
-        Returns:
-            job_submitted_id  - the JCL job ID returned from submitting a job, else if no
-                                job submits, None will be returned
-            duration          - how long the job ran for in this method
+        Returns
+        -------
+        str
+            the JCL job ID returned from submitting a job, else if no
+            job submits, None will be returned.
+        int
+            how long the job ran for in this method.
+
+        Raises
+        ------
+        fail_json
+            Unable to submit job because the data set could not be cataloged on the volume.
+        fail_json
+            Unable to submit job, the job submission has failed.
+        fail_json
+            The JCL has been submitted but there was an error while fetching its status.
+        fail_json
+            The job has been submitted and no job id was returned.
     """
 
     kwargs = {
-        "timeout": timeout,
-        "hfs": hfs,
+        # Since every fetch retry waits for a second before continuing,
+        # we can just pass the timeout (also in seconds) to this arg.
+        "fetch_max_retries": timeout,
     }
 
-    wait = True  # Wait is always true because the module requires wait_time_s > 0
     present = False
     duration = 0
     job_submitted = None
@@ -704,9 +718,9 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        job_submitted = jobs.submit(src, wait, None, **kwargs)
+        job_submitted = jobs.submit(src, is_unix=is_unix, **kwargs)
 
-        # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
+        # Introducing a sleep to ensure we have the result of job submit carrying the job id.
         while (job_submitted is None and duration <= timeout):
             current_time = timer()
             duration = round(current_time - start_time)
@@ -716,69 +730,87 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
         # which is what ZOAU sends back, opitonally we can check the 'status' as
         # that is sent back as `AC` when the job is not complete but the problem
         # with monitoring 'AC' is that STARTED tasks never exit the AC status.
+        job_fetched = None
+        job_fetch_rc = None
+        job_fetch_status = None
+
         if job_submitted:
-            job_listing_rc = jobs.listing(job_submitted.id)[0].rc
-            job_listing_status = jobs.listing(job_submitted.id)[0].status
+            try:
+                job_fetched = jobs.fetch_multiple(job_submitted.job_id)[0]
+                job_fetch_rc = job_fetched.return_code
+                job_fetch_status = job_fetched.status
+            except zoau_exceptions.JobFetchException:
+                pass
 
             # Before moving forward lets ensure our job has completed but if we see
-            # status that matches one in JOB_ERROR_STATUS, don't wait, let the code
+            # status that matches one in JOB_STATUSES, don't wait, let the code
             # drop through and get analyzed in the main as it will scan the job ouput
-            # Any match to JOB_ERROR_STATUS ends our processing and wait times
-            while (job_listing_status not in JOB_ERROR_STATUS and
-                    job_listing_status == 'AC' and
-                    ((job_listing_rc is None or len(job_listing_rc) == 0 or
-                      job_listing_rc == '?') and duration < timeout)):
+            # Any match to JOB_STATUSES ends our processing and wait times
+            while (job_fetch_status not in JOB_STATUSES and
+                    job_fetch_status == 'AC' and
+                    ((job_fetch_rc is None or len(job_fetch_rc) == 0 or
+                      job_fetch_rc == '?') and duration < timeout)):
                 current_time = timer()
                 duration = round(current_time - start_time)
                 sleep(1)
-                job_listing_rc = jobs.listing(job_submitted.id)[0].rc
-                job_listing_status = jobs.listing(job_submitted.id)[0].status
+                try:
+                    job_fetched = jobs.fetch_multiple(job_submitted.job_id)[0]
+                    job_fetch_rc = job_fetched.return_code
+                    job_fetch_status = job_fetched.status
+                # Allow for jobs that need more time to be fectched to run the wait_time_s
+                except zoau_exceptions.JobFetchException as err:
+                    if duration >= timeout:
+                        raise err
+                    else:
+                        continue
 
-    # ZOAU throws a ZOAUException when the job sumbission fails thus there is no
+    # ZOAU throws a JobSubmitException when the job sumbission fails thus there is no
     # JCL RC to share with the user, if there is a RC, that will be processed
     # in the job_output parser.
-    except exceptions.ZOAUException as err:
+    except zoau_exceptions.JobSubmitException as err:
         result["changed"] = False
         result["failed"] = True
-        result["stderr"] = str(err)
+        result["stderr"] = to_text(err)
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("Unable to submit job {0}, the job submission has failed. "
                          "Without the job id, the error can not be determined. "
                          "Consider using module `zos_job_query` to poll for the "
                          "job by name or review the system log for purged jobs "
-                         "resulting from an abend.".format(src_name))
+                         "resulting from an abend. Standard error may have "
+                         "additional information.".format(src_name))
         module.fail_json(**result)
 
-    # ZOAU throws a JobSubmitException when timeout has execeeded in that no job_id
-    # has been returned within the allocated time.
-    except exceptions.JobSubmitException as err:
+    # ZOAU throws a JobFetchException when it is unable to fetch a job.
+    # This could happen while trying to fetch a job still running.
+    except zoau_exceptions.JobFetchException as err:
         result["changed"] = False
         result["failed"] = False
-        result["stderr"] = str(err)
+        result["stderr"] = to_text(err)
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
-        result["msg"] = ("The JCL has been submitted {0} and no job id was returned "
-                         "within the allocated time of {1} seconds. Consider using "
-                         " module zos_job_query to poll for a long running "
-                         "jobs or increasing the value for "
-                         "`wait_times_s`.".format(src_name, str(timeout)))
+        result["job_id"] = job_submitted.job_id
+        _msg_detail = "the job with status {0}".format(job_fetch_status) if job_fetch_status else "its status"
+        result["msg"] = ("The JCL has been submitted {0} with ID {1} but there was an "
+                         "error while fetching {2} within the allocated time of {3} "
+                         "seconds. Consider using module zos_job_query to poll for the "
+                         "job for more information. Standard error may have additional "
+                         "information.".format(src_name, job_submitted.job_id, _msg_detail, str(timeout)))
         module.fail_json(**result)
 
-    # Between getting a job_submitted and the jobs.listing(job_submitted.id)[0].rc
+    # Between getting a job_submitted and the jobs.fetch_multiple(job_submitted.job_id)[0].return_code
     # is enough time for the system to purge an invalid job, so catch it and let
     # it fall through to the catchall.
     except IndexError:
         job_submitted = None
 
     # There appears to be a small fraction of time when ZOAU has a handle on the
-    # job and and suddenly its purged, this check is to ensure the job is there
+    # job and suddenly its purged, this check is to ensure the job is there
     # long after the purge else we throw an error here if its been purged.
     if job_submitted is None:
         result["changed"] = False
         result["failed"] = True
         result["duration"] = duration
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["job_id"] = job_submitted.job_id if job_submitted else None
         result["msg"] = ("The job {0} has been submitted and no job id was returned "
                          "within the allocated time of {1} seconds. Without the "
                          "job id, the error can not be determined, consider using "
@@ -787,19 +819,25 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
                          "abend.".format(src_name, str(timeout)))
         module.fail_json(**result)
 
-    return job_submitted.id if job_submitted else None, duration
+    return job_submitted.job_id if job_submitted else None, duration
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        The value for option 'wait_time_s' is not valid.
+    """
     module_args = dict(
         src=dict(type="str", required=True),
-        wait=dict(type="bool", required=False, default=False,
-                  removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
         location=dict(
             type="str",
-            default="DATA_SET",
-            choices=["DATA_SET", "USS", "LOCAL"],
+            default="data_set",
+            choices=["data_set", "uss", "local"],
         ),
         encoding=dict(
             type="dict",
@@ -866,12 +904,10 @@ def run_module():
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
-        wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
-                  removed_from_collection='ibm.ibm_zos_core'),
         location=dict(
             arg_type="str",
-            default="DATA_SET",
-            choices=["DATA_SET", "USS", "LOCAL"],
+            default="data_set",
+            choices=["data_set", "uss", "local"],
         ),
         from_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
@@ -898,12 +934,11 @@ def run_module():
     # Extract values from set module options
     location = parsed_args.get("location")
     volume = parsed_args.get("volume")
-    parsed_args.get("wait")
     src = parsed_args.get("src")
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    temp_file = parsed_args.get("src") if location == "LOCAL" else None
+    temp_file = parsed_args.get("src") if location == "local" else None
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
@@ -917,15 +952,15 @@ def run_module():
     job_submitted_id = None
     duration = 0
     start_time = timer()
-    if location == "DATA_SET":
+    if location == "data_set":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
-    elif location == "USS":
+            module, src, src_name=src, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)
+    elif location == "uss":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, hfs=True)
-    elif location == "LOCAL":
+            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
+    elif location == "local":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, hfs=True)
+            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
 
     # Explictly pass None for the unused args else a default of '*' will be
     # used and return undersirable results
@@ -959,7 +994,7 @@ def run_module():
                 result["jobs"] = job_output_txt
                 job_ret_code = job_output_txt[0].get("ret_code")
                 job_ret_code.update({"msg_txt": _msg_suffix})
-            result["msg"] = _msg + _msg_suffix
+            result["msg"] = _msg
             module.exit_json(**result)
 
         # Job has submitted, the module changed the managed node
@@ -970,31 +1005,25 @@ def run_module():
             job_ret_code = job_output_txt[0].get("ret_code")
 
             if job_ret_code:
-                job_msg = job_ret_code.get("msg")
-                job_code = job_ret_code.get("code")
-
-                # ret_code["msg"] should never be empty where a ret_code["code"] can be None,
-                # for example, ret_code["msg"] could be populated with an ABEND which has
-                # no corresponding ret_code["code"], if empty something is severe.
-                if job_msg is None:
-                    _msg = ("Unable to find a 'msg' in the 'ret_code' dictionary, "
-                            "please review the job log.")
-                    result["stderr"] = _msg
-                    raise Exception(_msg)
+                job_ret_code_msg = job_ret_code.get("msg")
+                job_ret_code_code = job_ret_code.get("code")
+                job_ret_code_msg_code = job_ret_code.get("msg_code")
 
                 if return_output is True and max_rc is not None:
-                    is_changed = assert_valid_return_code(max_rc, job_code, job_ret_code)
+                    is_changed = assert_valid_return_code(max_rc, job_ret_code_code, job_ret_code, result)
 
-                if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
-                    # If the job_msg doesn't have a CC, it is an improper completion (error/abend)
-                    if re.search("^(?:CC)", job_msg) is None:
-                        _msg = ("The job completion code (CC) was not in the job log. "
-                                "Please review the error {0} and the job log.".format(job_msg))
-                        result["stderr"] = _msg
-                        raise Exception(_msg)
+                if job_ret_code_msg is not None:
+                    if re.search("^(?:{0})".format("|".join(JOB_STATUSES)), job_ret_code_msg):
+                        # If the job_ret_code_msg doesn't have a CC (completion code), the job failed.
+                        if re.search("^(?:CC)", job_ret_code_msg) is None:
+                            _msg = ("The job completion code (CC) was not in the job log. "
+                                    "please review the job log for status {0}.".format(job_ret_code_msg))
+                            result["stderr"] = _msg
+                            job_ret_code.update({"msg_txt": _msg})
+                            raise Exception(_msg)
 
-                if job_code is None:
-                    # If there is no job_code (Job return code) it may NOT be an error,
+                if job_ret_code_code is None:
+                    # If there is no job_ret_code_code (Job return code) it may NOT be an error,
                     # some jobs will never return have an RC, eg Jobs with TYPRUN=*,
                     # Started tasks (which are not supported) so further analyze the
                     # JESJCL DD to figure out if its a TYPRUN job
@@ -1005,11 +1034,15 @@ def run_module():
                     # Its possible jobs don't have a JESJCL which are active and this would
                     # cause an index out of range error.
                     if not jes_jcl_dd:
-                        raise Exception("The job return code was not available in the job log, "
-                                        "please review the job log and status {0}.".format(job_msg))
+                        _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
+                        _msg = ("The job return code was not available in the job log, "
+                                "please review the job log{0}".format(_msg_detail))
+                        job_ret_code.update({"msg_txt": _msg})
+                        raise Exception(_msg)
 
                     jes_jcl_dd_content = jes_jcl_dd[0].get("content")
                     jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
+
                     # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
                     special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
                                                            .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
@@ -1024,12 +1057,24 @@ def run_module():
                                              .format(job_submitted_id, special_processing_keyword[0])})
                         is_changed = False
                     else:
-                        raise Exception("The job return code was not available in the job log, "
-                                        "please review the job log and error {0}.".format(job_msg))
+                        # The job_ret_code_code is None at this point, but the job_ret_code_msg_code could be populated
+                        # so check both and provide a proper response.
 
-                elif job_code != 0 and max_rc is None:
-                    raise Exception("The job return code {0} was non-zero in the "
-                                    "job output, this job has failed.".format(str(job_code)))
+                        if job_ret_code_msg_code is None:
+                            _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
+                            _msg = ("The job return code was not available in the job log, "
+                                    "please review the job log{0}".format(_msg_detail))
+                            job_ret_code.update({"msg_txt": _msg})
+                            raise Exception(_msg)
+
+                        # raise Exception("The job return code was not available in the job log, "
+                        #                 "please review the job log and error {0}.".format(job_ret_code_msg))
+                elif job_ret_code_code != 0 and max_rc is None:
+                    _msg = ("The job return code {0} was non-zero in the "
+                            "job output, this job has failed.".format(str(job_ret_code_code)))
+                    job_ret_code.update({"msg_txt": _msg})
+                    result["stderr"] = _msg
+                    raise Exception(_msg)
 
                 if not return_output:
                     for job in result.get("jobs", []):
@@ -1044,18 +1089,13 @@ def run_module():
             result["stderr"] = _msg
             result["jobs"] = None
             raise Exception(_msg)
-
     except Exception as err:
         result["failed"] = True
         result["changed"] = False
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "there was an error, please review "
                          "the error for further details: {1}".format
-                         (str(job_submitted_id), str(err)))
-        if job_output_txt:
-            job_ret_code = job_output_txt[0].get("ret_code")
-            if job_ret_code:
-                job_ret_code.update({"msg_txt": str(err)})
+                         (str(job_submitted_id), to_text(err)))
         module.exit_json(**result)
 
     finally:
@@ -1068,33 +1108,68 @@ def run_module():
     module.exit_json(**result)
 
 
-def assert_valid_return_code(max_rc, job_rc, ret_code):
+def assert_valid_return_code(max_rc, job_rc, ret_code, result):
+    """Asserts valid return code.
+
+    Parameters
+    ----------
+    max_rc : int
+        Max return code.
+    joc_rc : int
+        Job return code.
+    ret_code : int
+        Return code.
+    result : dict()
+        Result dictionary.
+
+    Returns
+    -------
+    bool
+        If job_rc is not 0.
+
+    Raises
+    ------
+    Exception
+        The job return code was not available in the jobs output.
+    Exception
+        The job return code for the submitted job is greater than the value set for option 'max_rc'.
+    Exception
+        The step return code for the submitted job is greater than the value set for option 'max_rc'.
+    """
+
     if job_rc is None:
         raise Exception(
             "The job return code (ret_code[code]) was not available in the jobs output, "
             "this job has failed.")
 
     if job_rc > max_rc:
-        raise Exception("The job return code, 'ret_code[code]' {0} for the submitted job is "
-                        "greater than the value set for option 'max_rc' {1}. "
-                        "Increase the value for 'max_rc' otherwise this job submission "
-                        "has failed.".format(str(job_rc), str(max_rc)))
+        _msg = ("The job return code, 'ret_code[code]' {0} for the submitted job is "
+                "greater than the value set for option 'max_rc' {1}. "
+                "Increase the value for 'max_rc' otherwise this job submission "
+                "has failed.".format(str(job_rc), str(max_rc)))
+        ret_code.update({"msg_txt": _msg})
+        result["stderr"] = _msg
+        raise Exception(_msg)
 
     for step in ret_code["steps"]:
         step_cc_rc = int(step["step_cc"])
         step_name_for_rc = step["step_name"]
         if step_cc_rc > max_rc:
-            raise Exception("The step name {0} with return code {1} for the submitted job is "
-                            "greater than the value set for option 'max_rc' {2}. "
-                            "Increase the value for 'max_rc' otherwise this job submission "
-                            "has failed.".format(step_name_for_rc, str(step_cc_rc), str(max_rc)))
-
+            _msg = ("The step name {0} with return code {1} for the submitted job is "
+                    "greater than the value set for option 'max_rc' {2}. "
+                    "Increase the value for 'max_rc' otherwise this job submission "
+                    "has failed.".format(step_name_for_rc, str(step_cc_rc), str(max_rc)))
+            ret_code.update({"msg_txt": _msg})
+            result["stderr"] = _msg
+            raise Exception(_msg)
     # If there is NO exception rasied it means that max_rc is larger than the
     # actual RC from the submitted job. In this case, the ansible changed status
     # should NOT be 'changed=true' even though the user did override the return code,
     # a non-zero return code means the job did not change anything, so set it as
     # result["chagned"]=False,
-    if job_rc != 0:
+    if max_rc and job_rc > max_rc:
+        return False
+    elif job_rc != 0 and max_rc is None:
         return False
 
     return True

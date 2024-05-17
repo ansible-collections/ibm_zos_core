@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -272,7 +272,7 @@ rc:
 import tempfile
 import re
 import os
-
+import traceback
 from math import ceil
 from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
@@ -286,16 +286,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     validation,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
+    ZOAUImportError,
 )
 
 
 try:
-    from zoautil_py import datasets, mvscmd, types
+    from zoautil_py import datasets, mvscmd, ztypes
 except Exception:
-    datasets = MissingZOAUImport()
-    mvscmd = MissingZOAUImport()
-    types = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    mvscmd = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 class FetchHandler:
@@ -303,16 +303,50 @@ class FetchHandler:
         self.module = module
 
     def _fail_json(self, **kwargs):
-        """ Wrapper for AnsibleModule.fail_json """
+        """Wrapper for AnsibleModule.fail_json.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Arguments to pass to fail_json().
+        """
         self.module.fail_json(**kwargs)
 
     def _run_command(self, cmd, **kwargs):
-        """ Wrapper for AnsibleModule.run_command """
+        """Wrapper for AnsibleModule.run_command.
+
+        Parameters
+        ----------
+        cmd : str
+            Command to run.
+        **kwargs : dict
+            Arguments to pass to run_command().
+
+        Returns
+        -------
+        tuple(int,str,str)
+            Return code, standard output and standard error.
+        """
         return self.module.run_command(cmd, **kwargs)
 
     def _get_vsam_size(self, vsam):
         """Invoke IDCAMS LISTCAT command to get the record length and space used.
         Then estimate the space used by the VSAM data set.
+
+        Parameters
+        ----------
+        vsam : str
+            VSAM data set name.
+
+        Returns
+        -------
+        tuple(int,int,int)
+            Total size, max_recl and rec_total.
+
+        Raises
+        ------
+        fail_json
+            Unable to obtain data set information.
         """
         space_pri = 0
         total_size = 0
@@ -350,7 +384,27 @@ class FetchHandler:
         return total_size, max_recl, rec_total
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
-        """ Copy VSAM data set to a temporary sequential data set """
+        """Copy VSAM data set to a temporary sequential data set.
+
+        Parameters
+        ----------
+        ds_name : str
+            VSAM dataset name to be copied into a temp data set.
+
+        Returns
+        -------
+        str
+            Temporary dataset name.
+
+        Raises
+        ------
+        fail_json
+            OS error.
+        fail_json
+            cmd error while copying dataset.
+        fail_json
+            Failed to call IDCAMS.
+        """
         mvs_rc = 0
         vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
         # Default in case of max recl being 80 to avoid failures when fetching and empty vsam.
@@ -374,23 +428,23 @@ class FetchHandler:
 
             dd_statements = []
             dd_statements.append(
-                types.DDStatement(
-                    name="sysin", definition=types.DatasetDefinition(sysin)
+                ztypes.DDStatement(
+                    name="sysin", definition=ztypes.DatasetDefinition(sysin)
                 )
             )
             dd_statements.append(
-                types.DDStatement(
-                    name="input", definition=types.DatasetDefinition(ds_name)
+                ztypes.DDStatement(
+                    name="input", definition=ztypes.DatasetDefinition(ds_name)
                 )
             )
             dd_statements.append(
-                types.DDStatement(
-                    name="output", definition=types.DatasetDefinition(out_ds_name)
+                ztypes.DDStatement(
+                    name="output", definition=ztypes.DatasetDefinition(out_ds_name)
                 )
             )
             dd_statements.append(
-                types.DDStatement(
-                    name="sysprint", definition=types.FileDefinition(sysprint)
+                ztypes.DDStatement(
+                    name="sysprint", definition=ztypes.FileDefinition(sysprint)
                 )
             )
 
@@ -442,6 +496,25 @@ class FetchHandler:
     def _fetch_uss_file(self, src, is_binary, encoding=None):
         """Convert encoding of a USS file. Return a tuple of temporary file
         name containing converted data.
+
+        Parameters
+        ----------
+        src : str
+            Source of the file.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            File name with the converted data.
+
+        Raises
+        ------
+        fail_json
+            Any exception ocurred while converting encoding.
         """
         file_path = None
         if (not is_binary) and encoding:
@@ -471,6 +544,25 @@ class FetchHandler:
     def _fetch_vsam(self, src, is_binary, encoding=None):
         """Copy the contents of a VSAM to a sequential data set.
         Afterwards, copy that data set to a USS file.
+
+        Parameters
+        ----------
+        src : str
+            Source of the file.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            USS File containing the encoded content of the input data set.
+
+        Raises
+        ------
+        fail_json
+            Unable to delete temporary dataset.
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
         file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
@@ -487,6 +579,27 @@ class FetchHandler:
         """Copy a partitioned data set to a USS directory. If the data set
         is not being fetched in binary mode, encoding for all members inside
         the data set will be converted.
+
+        Parameters
+        ----------
+        src : str
+            Source of the dataset.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            Directory path containing the files of the converted data set members.
+
+        Raises
+        ------
+        fail_json
+            Error copying partitioned dataset to USS.
+        fail_json
+            Error converting encoding of the member.
         """
         dir_path = tempfile.mkdtemp()
         cmd = "cp -B \"//'{0}'\" {1}"
@@ -531,7 +644,28 @@ class FetchHandler:
 
     def _fetch_mvs_data(self, src, is_binary, encoding=None):
         """Copy a sequential data set or a partitioned data set member
-        to a USS file
+        to a USS file.
+
+        Parameters
+        ----------
+        src : str
+            Source of the dataset.
+        is_binary : bool
+            If is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            USS File containing the encoded content of the input data set.
+
+        Raises
+        ------
+        fail_json
+            Unable to copy to USS.
+        fail_json
+            Error converting encoding of the dataset.
         """
         fd, file_path = tempfile.mkstemp()
         os.close(fd)
@@ -571,6 +705,23 @@ class FetchHandler:
 
 
 def run_module():
+    """Runs the module.
+
+    Raises
+    ------
+    fail_json
+        When parameter verification fails.
+    fail_json
+        When the source does not exist or is uncataloged.
+    fail_json
+        When it's unable to determine dataset type.
+    fail_json
+        While gathering dataset information.
+    fail_json
+        When the data set member was not found inside a dataset.
+    fail_json
+        When the file does not have appropriate read permissions.
+    """
     # ********************************************************** #
     #                Module initialization                       #
     # ********************************************************** #
@@ -585,14 +736,13 @@ def run_module():
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
-            local_charset=dict(type="str"),
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
 
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
-        module.params["src"] = datasets.hlq() + "." + src
+        module.params["src"] = datasets.get_hlq() + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #
@@ -607,7 +757,7 @@ def run_module():
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
-    if not module.params.get("encoding") and not module.params.get("is_binary"):
+    if not module.params.get("encoding").get("from") and not module.params.get("is_binary"):
         mvs_src = data_set.is_data_set(src)
         remote_charset = encode.Defaults.get_default_system_charset()
 
@@ -615,10 +765,13 @@ def run_module():
             "from": encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
             if mvs_src
             else remote_charset,
-            "to": module.params.get("local_charset"),
+            "to": module.params.get("encoding").get("to"),
         }
 
-    if module.params.get("encoding"):
+    # We check encoding 'from' and 'to' because if the user pass both arguments of encoding,
+    # we honor those but encoding 'to' is an argument that the code obtain any time.
+    # Encoding will not be null and will generate problems as encoding 'from' could came empty.
+    if module.params.get("encoding").get("from") and module.params.get("encoding").get("to"):
         module.params.update(
             dict(
                 from_encoding=module.params.get("encoding").get("from"),

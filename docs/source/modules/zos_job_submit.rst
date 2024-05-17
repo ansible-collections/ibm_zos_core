@@ -42,30 +42,18 @@ src
 
 
 location
-  The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
+  The JCL location. Supported choices are ``data_set``, ``uss`` or ``local``.
 
-  DATA_SET can be a PDS, PDSE, or sequential data set.
+  ``data_set`` can be a PDS, PDSE, or sequential data set.
 
-  USS means the JCL location is located in UNIX System Services (USS).
+  ``uss`` means the JCL location is located in UNIX System Services (USS).
 
-  LOCAL means locally to the ansible control node.
+  ``local`` means locally to the ansible control node.
 
   | **required**: False
   | **type**: str
-  | **default**: DATA_SET
-  | **choices**: DATA_SET, USS, LOCAL
-
-
-wait
-  Setting this option will yield no change, it is disabled. There is no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of time to wait for a job to execute.
-
-  This option will be removed in ibm.ibm_zos_core collection version 1.10.0
-
-  See option *wait_time_s*.
-
-  | **required**: False
-  | **type**: bool
-  | **default**: False
+  | **default**: data_set
+  | **choices**: data_set, uss, local
 
 
 wait_time_s
@@ -96,11 +84,11 @@ return_output
 
 
 volume
-  The volume serial (VOLSER)is where the data set resides. The option is required only when the data set is not cataloged on the system.
+  The volume serial (VOLSER) is where the data set resides. The option is required only when the data set is not cataloged on the system.
 
   When configured, the `zos_job_submit <./zos_job_submit.html>`_ will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
 
-  Ignored for *location=USS* and *location=LOCAL*.
+  Ignored for *location=uss* and *location=local*.
 
   | **required**: False
   | **type**: str
@@ -109,7 +97,7 @@ volume
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-  This option is only supported for when *location=LOCAL*.
+  This option is only supported for when *location=local*.
 
   If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default, otherwise the module will detect the z/OS system encoding.
 
@@ -279,22 +267,22 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Submit JCL in a PDSE member
+   - name: Submit JCL in a PDSE member.
      zos_job_submit:
        src: HLQ.DATA.LLQ(SAMPLE)
-       location: DATA_SET
+       location: data_set
      register: response
 
    - name: Submit JCL in USS with no DDs in the output.
      zos_job_submit:
        src: /u/tester/demo/sample.jcl
-       location: USS
+       location: uss
        return_output: false
 
    - name: Convert local JCL to IBM-037 and submit the job.
      zos_job_submit:
        src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-       location: LOCAL
+       location: local
        encoding:
          from: ISO8859-1
          to: IBM-037
@@ -302,25 +290,25 @@ Examples
    - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
      zos_job_submit:
        src: HLQ.DATA.LLQ(SAMPLE)
-       location: DATA_SET
+       location: data_set
        volume: P2SS01
 
    - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
        src: HLQ.DATA.LLQ(LONGRUN)
-       location: DATA_SET
+       location: data_set
        wait_time_s: 30
 
    - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
        src: HLQ.DATA.LLQ(LONGRUN)
-       location: DATA_SET
+       location: data_set
        wait_time_s: 30
 
    - name: Submit JCL and set the max return code the module should fail on to 16.
      zos_job_submit:
        src: HLQ.DATA.LLQ
-       location: DATA_SET
+       location: data_set
        max_rc: 16
 
 
@@ -712,16 +700,22 @@ jobs
 
       Job status `?` indicates status can not be determined.
 
+      Jobs where status can not be determined will result in None (NULL).
+
       | **type**: str
       | **sample**: AC
 
     msg_code
       The return code from the submitted job as a string.
 
+      Jobs which have no return code will result in None (NULL), such is the case of a job that errors or is active.
+
       | **type**: str
 
     msg_txt
       Returns additional information related to the submitted job.
+
+      Jobs which have no additional information will result in None (NULL).
 
       | **type**: str
       | **sample**: The job JOB00551 was run with special job processing TYPRUN=SCAN. This will result in no completion, return code or job steps and changed will be false.
@@ -729,7 +723,7 @@ jobs
     code
       The return code converted to an integer value when available.
 
-      Jobs which have no return code will return NULL, such is the case of a job that errors or is active.
+      Jobs which have no return code will result in None (NULL), such is the case of a job that errors or is active.
 
       | **type**: int
 
@@ -799,11 +793,4 @@ jobs
     | **type**: str
     | **sample**: IEBGENER
 
-
-message
-  This option is being deprecated
-
-  | **returned**: success
-  | **type**: str
-  | **sample**: Submit JCL operation succeeded.
 

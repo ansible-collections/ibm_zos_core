@@ -31,33 +31,32 @@ body:
     id: collection-version
     attributes:
       label: IBM z/OS Ansible core Version
-      description: Which version of z/OS Ansible core collection are you reporting a documentation bug. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
+      description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version).
       multiple: false
       options:
-        - v1.9.0
-        - v1.9.0-beta.1
+        - v1.12.0
+        - v1.12.0-beta.1
+        - v1.11.0
+        - v1.11.0-beta.1
+        - v1.10.0
+        - v1.10.0-beta.1
+        - v1.9.0 (default)
         - v1.8.0
-        - v1.8.0-beta.1
         - v1.7.0
-        - v1.7.0-beta.1
         - v1.6.0
-        - v1.6.0-beta.1
         - v1.5.0
-        - v1.4.1
-        - v1.3.6
-        - v1.2.1
-        - v1.1.0
-        - v1.0.0
+      default: 6
     validations:
       required: false
   - type: dropdown
     id: modules
     attributes:
       label: Ansible module
-      description: Select which modules are being reported in this doc issue. You can select more than one.
+      description: Select which modules are being reported in this bug. You can select more than one.
       multiple: true
       options:
         - zos_apf
+        - zos_archive
         - zos_backup_restore
         - zos_blockinfile
         - zos_copy
@@ -77,5 +76,7 @@ body:
         - zos_ping
         - zos_script
         - zos_tso_command
+        - zos_unarchive
+        - zos_volume_init
     validations:
       required: false

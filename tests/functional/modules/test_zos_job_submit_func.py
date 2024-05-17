@@ -163,7 +163,7 @@ JCL_FILE_CONTENTS_NO_DSN = """//*
 //******************************************************************************
 //* Job containing a non existent DSN that will force an error.
 //* Returns:
-//*   ret_code->(code=null, msg=JCLERR ?, msg_text=JCLERR, msg_code=?)
+//*   ret_code->(code=null, msg=JCLERR, msg_txt=JCLERR, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00532 but there was an error,
 //*           please review the error for further details: The job completion
 //*           code (CC) was not in the job log. Please review the error
@@ -198,7 +198,7 @@ JCL_FILE_CONTENTS_JCL_ERROR_INT = """//*
 //* Another job containing no job card resulting in a JCLERROR with an value. It
 //* won't always be 952, it will increment.
 //* Returns:
-//*   ret_code->(code=null, msg=JCL ERROR  952, msg_text=JCLERR, msg_code=null)
+//*   ret_code->(code=null, msg=JCLERR, msg_text=JCLERR, msg_code=null)
 //*   msg --> The JCL submitted with job id JOB00728 but there was an error,
 //*           please review the error for further details: The job completion
 //*           code (CC) was not in the job log. Please review the error
@@ -238,7 +238,7 @@ JCL_FILE_CONTENTS_TYPRUN_SCAN = """//*
 //* not actually run the JCL. The job will be put on the H output queue, DDs
 //* JESJCL and JESMSGLG are available. Ansible considers this a passing job.
 //* Returns:
-//*   ret_code->(code=null, msg=TYPRUN=SCAN, msg_text=<msg>, msg_code=null)
+//*   ret_code->(code=null, msg=TYPRUN=SCAN, msg_txt=<msg>, msg_code=null)
 //*   msg --> The job JOB00551 was run with special job processing TYPRUN=SCAN.
 //*           This will result in no completion, return code or job steps and
 //*           changed will be false."
@@ -264,7 +264,7 @@ JCL_FILE_CONTENTS_TYPRUN_COPY = """//*
 //* JESMSGLG and JESJCLIN are available. Ansible considers this a failing job
 //* given currently the jobs status can not be determined so it times out.
 //* Returns:
-//*   ret_code->(code=null, msg=?, msg_text=<msg>, msg_code=?)
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
 //*           running job that exceeded its maximum wait time of 10 second(s).
 //*           Consider using module zos_job_query to poll for a long running
@@ -286,11 +286,11 @@ JCL_FILE_CONTENTS_TYPRUN_HOLD = """//*
 //******************************************************************************
 //* Job containing a TYPRUN=HOLD will cause JES to hold this JCL without
 //* executing it until a special event occurs at which time, the operator will
-//* release the job from HOLD and allow the job to to continue processing.
+//* release the job from HOLD and allow the job to continue processing.
 //* Ansible considers this a failing job
 //* given currently the jobs status can not be determined so it times out.
 //* Returns:
-//*   ret_code->(code=null, msg=AC, msg_text=<msg>, msg_code=?)
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
 //*           running job that exceeded its maximum wait time of 10 second(s).
 //*           Consider using module zos_job_query to poll for a long running
@@ -317,7 +317,7 @@ JCL_FILE_CONTENTS_TYPRUN_JCLHOLD = """//*
 //* Ansible considers this a failing job
 //* given currently the jobs status can not be determined so it times out.
 //* Returns:
-//*   ret_code->(code=null, msg=AC, msg_text=<msg>, msg_code=?)
+//*   ret_code->(code=None, msg=None, msg_txt=<msg>, msg_code=None)
 //*   msg --> The JCL submitted with job id JOB00555 but appears to be a long
 //*           running job that exceeded its maximum wait time of 10 second(s).
 //*           Consider using module zos_job_query to poll for a long running
@@ -342,15 +342,34 @@ JCL_FULL_INPUT = """//HLQ0  JOB MSGLEVEL=(1,1),
 C_SRC_INVALID_UTF8 = """#include <stdio.h>
 int main()
 {
-    /* Generate and print all EBCDIC characters to stdout to
-     * ensure non-printable chars can be handled by Python.
-     * This will included the non-printable hex from DBB docs:
-     * nl=0x15, cr=0x0D, lf=0x25, shiftOut=0x0E, shiftIn=0x0F
-    */
+    unsigned char a=0x64;
+    unsigned char b=0x2A;
+    unsigned char c=0xB8;
+    unsigned char d=0xFF;
+    unsigned char e=0x81;
+    unsigned char f=0x82;
+    unsigned char g=0x83;
+    unsigned char h=0x00;
+    /* The following are non-printables from DBB. */
+    unsigned char nl=0x15;
+    unsigned char cr=0x0D;
+    unsigned char lf=0x25;
+    unsigned char shiftOut=0x0E;
+    unsigned char shiftIn=0x0F;
 
-    for (int i = 0; i <= 255; i++) {
-        printf("Hex 0x%X is character: (%c)\\\\n",i,(char)(i));
-    }
+    printf("Value of a: Hex: %X, character: %c",a,a);
+    printf("Value of b: Hex: %X, character: %c",b,b);
+    printf("Value of c: Hex: %X, character: %c",c,c);
+    printf("Value of d: Hex: %X, character: %c",d,d);
+    printf("Value of e: Hex: %X, character: %c",e,e);
+    printf("Value of f: Hex: %X, character: %c",f,f);
+    printf("Value of g: Hex: %X, character: %c",g,g);
+    printf("Value of h: Hex: %X, character: %c",h,h);
+    printf("Value of NL: Hex: %X, character: %c",nl,nl);
+    printf("Value of CR: Hex: %X, character: %c",cr,cr);
+    printf("Value of LF: Hex: %X, character: %c",lf,lf);
+    printf("Value of Shift-Out: Hex: %X, character: %c",shiftOut,shiftOut);
+    printf("Value of Shift-In: Hex: %X, character: %c",shiftIn,shiftIn);
 
     return 0;
 }
@@ -359,7 +378,7 @@ int main()
 JCL_INVALID_UTF8_CHARS_EXC = """//*
 //******************************************************************************
 //* Job that runs a C program that returns characters outside of the UTF-8 range
-//* expected by Python. This job tests a bugfix present in ZOAU v1.2.5.6 and
+//* expected by Python. This job tests a bugfix present in ZOAU v1.3.0 and
 //* later that deals properly with these chars.
 //* The JCL needs to be formatted to give it the directory where the C program
 //* is located.
@@ -392,8 +411,8 @@ def test_job_submit_PDS(ansible_zos_module, location):
     """
     Test zos_job_submit with a PDS(MEMBER), also test the default
     value for 'location', ensure it works with and without the
-    value "DATA_SET". If default_location is True, then don't
-    pass a 'location:DATA_SET' allow its default to come through.
+    value "data_set". If default_location is True, then don't
+    pass a 'location:data_set' allow its default to come through.
     """
     try:
         results = None
@@ -403,19 +422,21 @@ def test_job_submit_PDS(ansible_zos_module, location):
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
+
         hosts.all.zos_data_set(
             name=data_set_name, state="present", type="pds", replace=True
         )
+
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
         )
         if bool(location.get("default_location")):
             results = hosts.all.zos_job_submit(
-                src="{0}(SAMPLE)".format(data_set_name), wait=True
+                src="{0}(SAMPLE)".format(data_set_name), wait_time_s=30
             )
         else:
             results = hosts.all.zos_job_submit(
-                src="{0}(SAMPLE)".format(data_set_name), location="DATA_SET", wait=True
+                src="{0}(SAMPLE)".format(data_set_name), location="data_set", wait_time_s=30
             )
 
         for result in results.contacted.values():
@@ -423,8 +444,8 @@ def test_job_submit_PDS(ansible_zos_module, location):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
     finally:
-        hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=data_set_name, state="absent")
+       hosts.all.file(path=TEMP_PATH, state="absent")
+       hosts.all.zos_data_set(name=data_set_name, state="absent")
 
 
 def test_job_submit_PDS_special_characters(ansible_zos_module):
@@ -444,8 +465,7 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
         )
         results = hosts.all.zos_job_submit(
             src="{0}(SAMPLE)".format(DATA_SET_NAME_SPECIAL_CHARS),
-            location="DATA_SET",
-            wait=True,
+            location="data_set",
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -464,7 +484,7 @@ def test_job_submit_USS(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
         )
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -479,9 +499,10 @@ def test_job_submit_LOCAL(ansible_zos_module):
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="local", wait_time_s=10)
 
     for result in results.contacted.values():
+        print(result)
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
         assert result.get("changed") is True
@@ -492,7 +513,7 @@ def test_job_submit_LOCAL_extraR(ansible_zos_module):
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_BACKSLASH_R)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="local", wait_time_s=10)
 
     for result in results.contacted.values():
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -505,7 +526,7 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_BAD)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="local", wait_time_s=10)
 
     for result in results.contacted.values():
         # Expecting: The job completion code (CC) was not in the job log....."
@@ -537,7 +558,7 @@ def test_job_submit_PDS_volume(ansible_zos_module, volumes_on_systems):
             name=data_set_name, state="uncataloged", type="pds"
         )
 
-        results = hosts.all.zos_job_submit(src=data_set_name+"(SAMPLE)", location="DATA_SET", volume=volume_1)
+        results = hosts.all.zos_job_submit(src=data_set_name+"(SAMPLE)", location="data_set", volume=volume_1)
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
@@ -568,7 +589,7 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
 
         hosts = ansible_zos_module
         results = hosts.all.zos_job_submit(src=data_set_name+"(BPXSLEEP)",
-                    location="DATA_SET", wait_time_s=wait_time_s)
+                    location="data_set", wait_time_s=wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -601,7 +622,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
 
         hosts = ansible_zos_module
         results = hosts.all.zos_job_submit(src=data_set_name+"(BPXSLEEP)",
-                    location="DATA_SET", wait_time_s=wait_time_s)
+                    location="data_set", wait_time_s=wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -634,7 +655,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
 
         hosts = ansible_zos_module
         results = hosts.all.zos_job_submit(src=data_set_name+"(BPXSLEEP)",
-                    location="DATA_SET", wait_time_s=wait_time_s)
+                    location="data_set", wait_time_s=wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("msg") is not None
@@ -661,7 +682,7 @@ def test_job_submit_max_rc(ansible_zos_module, args):
             f.write(JCL_FILE_CONTENTS_RC_8)
 
         results = hosts.all.zos_job_submit(
-            src=tmp_file.name, location="LOCAL", max_rc=args["max_rc"], wait_time_s=args["wait_time_s"]
+            src=tmp_file.name, location="local", max_rc=args["max_rc"], wait_time_s=args["wait_time_s"]
         )
 
         for result in results.contacted.values():
@@ -674,10 +695,7 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 #Expecting: - "The job return code 8 was non-zero in the job output, this job has failed"
                 #           - Consider using module zos_job_query to poll for a long running job or
                 #             increase option \\'wait_times_s` to a value greater than 10.",
-                if result.get('duration'):
-                    duration = result.get('duration')
-                else:
-                    duration = 0
+                duration = result.get('duration')
 
                 if duration >= args["wait_time_s"]:
                     re.search(r'long running job', repr(result.get("msg")))
@@ -694,11 +712,11 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 assert re.search(r'the submitted job is greater than the value set for option', repr(result.get("msg")))
 
             elif args["max_rc"] == 12:
-                # Will not fail but changed will be false for the non-zero RC, there
-                # are other possibilities like an ABEND or JCL ERROR will fail this even
+                # Will not fail and as the max_rc is set to 12 and the rc is 8 is a change true
+                # there are other possibilities like an ABEND or JCL ERROR will fail this even
                 # with a MAX RC
                 assert result.get("msg") is None
-                assert result.get('changed') is False
+                assert result.get('changed') is True
                 assert result.get("jobs")[0].get("ret_code").get("code") < 12
     finally:
         hosts.all.file(path=tmp_file.name, state="absent")
@@ -752,7 +770,7 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
 
         results = hosts.all.zos_job_submit(
             src=tmp_file.name,
-            location="LOCAL",
+            location="local",
             use_template=True,
             template_parameters=args["options"]
         )
@@ -774,7 +792,12 @@ def test_job_submit_full_input(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FULL_INPUT), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait_time_s=20, volume=None
+            src="{0}/SAMPLE".format(TEMP_PATH),
+            location="uss",
+            volume=None,
+            # This job used to set wait=True, but since it has been deprecated
+            # and removed, it now waits up to 30 seconds.
+            wait_time_s=30
         )
         for result in results.contacted.values():
             print(result)
@@ -789,7 +812,7 @@ def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_NO_DSN)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, wait_time_s=20, location="LOCAL")
+    results = hosts.all.zos_job_submit(src=tmp_file.name, wait_time_s=20, location="local")
     import pprint
     for result in results.contacted.values():
         assert result.get("changed") is False
@@ -797,21 +820,19 @@ def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
         assert result.get("jobs")[0].get("job_id") is not None
 
 
-# Should have a JCL ERROR <int>
 def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS_INVALID_USER)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL")
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="local")
 
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert re.search(r'return code was not available', repr(result.get("msg")))
-        assert re.search(r'status SEC', repr(result.get("msg")))
+        assert re.search(r'please review the error for further details', repr(result.get("msg")))
+        assert re.search(r'please review the job log for status SEC', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
-        assert re.search(r'please review the job log', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
-        assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg")))
+        assert re.search(r'please review the job log for status SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
 
 
 def test_job_submit_local_jcl_typrun_scan(ansible_zos_module):
@@ -820,7 +841,7 @@ def test_job_submit_local_jcl_typrun_scan(ansible_zos_module):
         f.write(JCL_FILE_CONTENTS_TYPRUN_SCAN)
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(src=tmp_file.name,
-                                       location="LOCAL",
+                                       location="local",
                                        wait_time_s=20,
                                        encoding={
                                             "from": "UTF-8",
@@ -841,7 +862,7 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         f.write(JCL_FILE_CONTENTS_TYPRUN_COPY)
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(src=tmp_file.name,
-                                       location="LOCAL",
+                                       location="local",
                                        wait_time_s=20,
                                        encoding={
                                             "from": "UTF-8",
@@ -854,8 +875,8 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         assert result.get("jobs")[0].get("job_id") is not None
         assert re.search(r'please review the job log', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
         assert result.get("jobs")[0].get("ret_code").get("code") is None
-        assert result.get("jobs")[0].get("ret_code").get("msg") == "?"
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "?"
+        assert result.get("jobs")[0].get("ret_code").get("msg") is None
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
@@ -864,7 +885,7 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
         f.write(JCL_FILE_CONTENTS_TYPRUN_HOLD)
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(src=tmp_file.name,
-                                       location="LOCAL",
+                                       location="local",
                                        wait_time_s=20,
                                        encoding={
                                             "from": "UTF-8",
@@ -876,7 +897,7 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
         assert re.search(r'long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
         assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "?"
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
@@ -885,7 +906,7 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
         f.write(JCL_FILE_CONTENTS_TYPRUN_JCLHOLD)
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(src=tmp_file.name,
-                                       location="LOCAL",
+                                       location="local",
                                        wait_time_s=20,
                                        encoding={
                                             "from": "UTF-8",
@@ -897,7 +918,8 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
         assert re.search(r'long running job', repr(result.get("jobs")[0].get("ret_code").get("msg_txt")))
         assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "?"
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
+
 
 # This test case is related to the following GitHub issues:
 # - https://github.com/ansible-collections/ibm_zos_core/issues/677
@@ -920,12 +942,11 @@ def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
 
         results = hosts.all.zos_job_submit(
             src=tmp_file.name,
-            location="LOCAL",
+            location="local",
             wait_time_s=15
         )
 
         for result in results.contacted.values():
-            print(result)
             # We shouldn't get an error now that ZOAU handles invalid/unprintable
             # UTF-8 chars correctly.
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"

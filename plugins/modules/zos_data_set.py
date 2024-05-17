@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,14 +24,16 @@ short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
-author: "Blake Becker (@blakeinate)"
+author:
+  - "Blake Becker (@blakeinate)"
+  - "Rich Parker (@richp405)"
 options:
   name:
     description:
       - The name of the data set being managed. (e.g C(USER.TEST))
       - If I(name) is not provided, a randomized data set name will be generated
         with the HLQ matching the module-runners username.
-      - Required if I(type=MEMBER) or I(state!=present) and not using I(batch).
+      - Required if I(type=member) or I(state!=present) and not using I(batch).
     type: str
     required: false
   state:
@@ -44,7 +46,7 @@ options:
         If I(state=absent) and the data set does exist on the managed node,
         remove the data set, module completes successfully with I(changed=True).
       - >
-        If I(state=absent) and I(type=MEMBER) and I(force=True), the data set
+        If I(state=absent) and I(type=member) and I(force=True), the data set
         will be opened with I(DISP=SHR) such that the entire data set can be
         accessed by other processes while the specified member is deleted.
       - >
@@ -75,7 +77,7 @@ options:
         If I(state=present) and I(replace=False) and the data set is present
         on the managed node, no action taken, module completes successfully with I(changed=False).
       - >
-        If I(state=present) and I(type=MEMBER) and the member does not exist in the data set,
+        If I(state=present) and I(type=member) and the member does not exist in the data set,
         create a member formatted to store data, module completes successfully with I(changed=True).
         Note, a PDSE does not allow a mixture of formats such that there is
         executables (program objects) and data. The member created is formatted to store data,
@@ -107,26 +109,26 @@ options:
       - uncataloged
   type:
     description:
-      - The data set type to be used when creating a data set. (e.g C(pdse))
-      - C(MEMBER) expects to be used with an existing partitioned data set.
-      - Choices are case-insensitive.
+      - The data set type to be used when creating a data set. (e.g C(pdse)).
+      - C(member) expects to be used with an existing partitioned data set.
+      - Choices are case-sensitive.
     required: false
     type: str
     choices:
-      - KSDS
-      - ESDS
-      - RRDS
-      - LDS
-      - SEQ
-      - PDS
-      - PDSE
-      - LIBRARY
-      - BASIC
-      - LARGE
-      - MEMBER
-      - HFS
-      - ZFS
-    default: PDS
+      - ksds
+      - esds
+      - rrds
+      - lds
+      - seq
+      - pds
+      - pdse
+      - library
+      - basic
+      - large
+      - member
+      - hfs
+      - zfs
+    default: pds
   space_primary:
     description:
       - The amount of primary space to allocate for the dataset.
@@ -144,33 +146,35 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining primary and secondary space.
-      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+      - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
     type: str
     choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+      - k
+      - m
+      - g
+      - cyl
+      - trk
     required: false
-    default: M
+    default: m
   record_format:
     description:
       - The format of the data set. (e.g C(FB))
-      - Choices are case-insensitive.
-      - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or I(type=ZFS)
+      - Choices are case-sensitive.
+      - When I(type=ksds), I(type=esds), I(type=rrds), I(type=lds) or I(type=zfs)
         then I(record_format=None), these types do not have a default
         I(record_format).
     required: false
     choices:
-      - FB
-      - VB
-      - FBA
-      - VBA
-      - U
-      - F
+      - fb
+      - vb
+      - fba
+      - vba
+      - u
+      - f
     type: str
-    default: FB
+    default: fb
+    aliases:
+      - format
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -179,6 +183,8 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
+    aliases:
+      - data_class
   sms_data_class:
     description:
       - The data class for an SMS-managed dataset.
@@ -215,15 +221,15 @@ options:
   key_offset:
     description:
       - The key offset to use when creating a KSDS data set.
-      - I(key_offset) is required when I(type=KSDS).
-      - I(key_offset) should only be provided when I(type=KSDS)
+      - I(key_offset) is required when I(type=ksds).
+      - I(key_offset) should only be provided when I(type=ksds)
     type: int
     required: false
   key_length:
     description:
       - The key length to use when creating a KSDS data set.
-      - I(key_length) is required when I(type=KSDS).
-      - I(key_length) should only be provided when I(type=KSDS)
+      - I(key_length) is required when I(type=ksds).
+      - I(key_length) should only be provided when I(type=ksds)
     type: int
     required: false
   volumes:
@@ -275,7 +281,7 @@ options:
       - The I(force=True) option enables sharing of data sets through the
         disposition I(DISP=SHR).
       - The I(force=True) only applies to data set members when I(state=absent)
-        and I(type=MEMBER).
+        and I(type=member).
     type: bool
     required: false
     default: false
@@ -291,7 +297,7 @@ options:
           - The name of the data set being managed. (e.g C(USER.TEST))
           - If I(name) is not provided, a randomized data set name will be generated
             with the HLQ matching the module-runners username.
-          - Required if I(type=MEMBER) or I(state!=present)
+          - Required if I(type=member) or I(state!=present)
         type: str
         required: false
       state:
@@ -304,7 +310,7 @@ options:
             If I(state=absent) and the data set does exist on the managed node,
             remove the data set, module completes successfully with I(changed=True).
           - >
-            If I(state=absent) and I(type=MEMBER) and I(force=True), the data
+            If I(state=absent) and I(type=member) and I(force=True), the data
             set will be opened with I(DISP=SHR) such that the entire data set
             can be accessed by other processes while the specified member is
             deleted.
@@ -336,7 +342,7 @@ options:
             If I(state=present) and I(replace=False) and the data set is present
             on the managed node, no action taken, module completes successfully with I(changed=False).
           - >
-            If I(state=present) and I(type=MEMBER) and the member does not exist in the data set,
+            If I(state=present) and I(type=member) and the member does not exist in the data set,
             create a member formatted to store data, module completes successfully with I(changed=True).
             Note, a PDSE does not allow a mixture of formats such that there is
             executables (program objects) and data. The member created is formatted to store data,
@@ -368,26 +374,26 @@ options:
           - uncataloged
       type:
         description:
-          - The data set type to be used when creating a data set. (e.g C(PDSE))
-          - C(MEMBER) expects to be used with an existing partitioned data set.
-          - Choices are case-insensitive.
+          - The data set type to be used when creating a data set. (e.g C(pdse))
+          - C(member) expects to be used with an existing partitioned data set.
+          - Choices are case-sensitive.
         required: false
         type: str
         choices:
-          - KSDS
-          - ESDS
-          - RRDS
-          - LDS
-          - SEQ
-          - PDS
-          - PDSE
-          - LIBRARY
-          - BASIC
-          - LARGE
-          - MEMBER
-          - HFS
-          - ZFS
-        default: PDS
+          - ksds
+          - esds
+          - rrds
+          - lds
+          - seq
+          - pds
+          - pdse
+          - library
+          - basic
+          - large
+          - member
+          - hfs
+          - zfs
+        default: pds
       space_primary:
         description:
           - The amount of primary space to allocate for the dataset.
@@ -405,33 +411,35 @@ options:
       space_type:
         description:
           - The unit of measurement to use when defining primary and secondary space.
-          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
         type: str
         choices:
-          - K
-          - M
-          - G
-          - CYL
-          - TRK
+          - k
+          - m
+          - g
+          - cyl
+          - trk
         required: false
-        default: M
+        default: m
       record_format:
         description:
           - The format of the data set. (e.g C(FB))
-          - Choices are case-insensitive.
-          - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or
-            I(type=ZFS) then I(record_format=None), these types do not have a
+          - Choices are case-sensitive.
+          - When I(type=ksds), I(type=esds), I(type=rrds), I(type=lds) or
+            I(type=zfs) then I(record_format=None), these types do not have a
             default I(record_format).
         required: false
         choices:
-          - FB
-          - VB
-          - FBA
-          - VBA
-          - U
-          - F
+          - fb
+          - vb
+          - fba
+          - vba
+          - u
+          - f
         type: str
-        default: FB
+        default: fb
+        aliases:
+          - format
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -440,6 +448,8 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
+        aliases:
+          - data_class
       sms_data_class:
         description:
           - The data class for an SMS-managed dataset.
@@ -476,15 +486,15 @@ options:
       key_offset:
         description:
           - The key offset to use when creating a KSDS data set.
-          - I(key_offset) is required when I(type=KSDS).
-          - I(key_offset) should only be provided when I(type=KSDS)
+          - I(key_offset) is required when I(type=ksds).
+          - I(key_offset) should only be provided when I(type=ksds)
         type: int
         required: false
       key_length:
         description:
           - The key length to use when creating a KSDS data set.
-          - I(key_length) is required when I(type=KSDS).
-          - I(key_length) should only be provided when I(type=KSDS)
+          - I(key_length) is required when I(type=ksds).
+          - I(key_length) should only be provided when I(type=ksds)
         type: int
         required: false
       volumes:
@@ -529,7 +539,7 @@ options:
           - The I(force=True) option enables sharing of data sets through the
             disposition I(DISP=SHR).
           - The I(force=True) only applies to data set members when
-            I(state=absent) and I(type=MEMBER).
+            I(state=absent) and I(type=member).
         type: bool
         required: false
         default: false
@@ -547,7 +557,7 @@ EXAMPLES = r"""
     name: someds.name.here
     type: pds
     space_primary: 5
-    space_type: M
+    space_type: m
     record_format: fba
     record_length: 25
 
@@ -556,21 +566,21 @@ EXAMPLES = r"""
     name: someds.name.here
     type: pds
     space_primary: 5
-    space_type: M
+    space_type: m
     record_format: u
     record_length: 25
-    replace: yes
+    replace: true
 
 - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
   zos_data_set:
     name: someds.name.here
     type: pds
     space_primary: 5
-    space_type: M
+    space_type: m
     record_format: u
     record_length: 25
     volumes: "222222"
-    replace: yes
+    replace: true
 
 - name: Create an ESDS data set if it does not exist
   zos_data_set:
@@ -604,43 +614,43 @@ EXAMPLES = r"""
 - name: Write a member to an existing PDS; replace if member exists
   zos_data_set:
     name: someds.name.here(mydata)
-    type: MEMBER
-    replace: yes
+    type: member
+    replace: true
 
 - name: Write a member to an existing PDS; do not replace if member exists
   zos_data_set:
     name: someds.name.here(mydata)
-    type: MEMBER
+    type: member
 
 - name: Remove a member from an existing PDS
   zos_data_set:
     name: someds.name.here(mydata)
     state: absent
-    type: MEMBER
+    type: member
 
 - name: Remove a member from an existing PDS/E by opening with disposition DISP=SHR
   zos_data_set:
     name: someds.name.here(mydata)
     state: absent
-    type: MEMBER
-    force: yes
+    type: member
+    force: true
 
 - name: Create multiple partitioned data sets and add one or more members to each
   zos_data_set:
     batch:
-      - name:  someds.name.here1
-        type: PDS
+      - name: someds.name.here1
+        type: pds
         space_primary: 5
-        space_type: M
+        space_type: m
         record_format: fb
-        replace: yes
+        replace: true
       - name: someds.name.here1(member1)
-        type: MEMBER
+        type: member
       - name: someds.name.here2(member1)
-        type: MEMBER
-        replace: yes
+        type: member
+        replace: true
       - name: someds.name.here2(member2)
-        type: MEMBER
+        type: member
 
 - name: Catalog a data set present on volume 222222 if it is uncataloged.
   zos_data_set:
@@ -679,44 +689,44 @@ import re
 
 # CONSTANTS
 DATA_SET_TYPES = [
-    "KSDS",
-    "ESDS",
-    "RRDS",
-    "LDS",
-    "SEQ",
-    "PDS",
-    "PDSE",
-    "BASIC",
-    "LARGE",
-    "LIBRARY",
-    "MEMBER",
-    "HFS",
-    "ZFS",
+    "ksds",
+    "esds",
+    "rrds",
+    "lds",
+    "seq",
+    "pds",
+    "pdse",
+    "basic",
+    "large",
+    "library",
+    "member",
+    "hfs",
+    "zfs",
 ]
 
 DATA_SET_FORMATS = [
-    "FB",
-    "VB",
-    "FBA",
-    "VBA",
-    "U",
-    "F",
+    "fb",
+    "vb",
+    "fba",
+    "vba",
+    "u",
+    "f",
 ]
 
 DEFAULT_RECORD_LENGTHS = {
-    "FB": 80,
-    "FBA": 80,
-    "VB": 137,
-    "VBA": 137,
-    "U": 0,
+    "fb": 80,
+    "fba": 80,
+    "vb": 137,
+    "vba": 137,
+    "u": 0,
 }
 
 DATA_SET_TYPES_VSAM = [
-    "KSDS",
-    "ESDS",
-    "RRDS",
-    "LDS",
-    "ZFS",
+    "ksds",
+    "esds",
+    "rrds",
+    "lds",
+    "zfs",
 ]
 
 # ------------- Functions to validate arguments ------------- #
@@ -726,20 +736,27 @@ def get_individual_data_set_parameters(params):
     """Builds a list of data set parameters
     to be used in future operations.
 
-    Arguments:
-        params {dict} -- The parameters from
+    Parameters
+    ----------
+    params : dict
+        The parameters from
         Ansible's AnsibleModule object module.params.
 
-    Raises:
-        ValueError: Raised if top-level parameters "name"
-        and "batch" are both provided.
-        ValueError: Raised if neither top-level parameters "name"
-        or "batch" are provided.
-
-    Returns:
-        [list] -- A list of dicts where each list item
+    Returns
+    -------
+    Union[dict]
+        A list of dicts where each list item
         represents one data set. Each dictionary holds the parameters
         (passed to the zos_data_set module) for the data set which it represents.
+
+    Raises
+    ------
+    ValueError
+        Raised if top-level parameters "name"
+        and "batch" are both provided.
+    ValueError
+        Raised if neither top-level parameters "name"
+        or "batch" are provided.
     """
     if params.get("name") and params.get("batch"):
         raise ValueError(
@@ -759,20 +776,44 @@ def get_individual_data_set_parameters(params):
 # * can be replaced by built-in
 def data_set_name(contents, dependencies):
     """Validates provided data set name(s) are valid.
-    Returns a list containing the name(s) of data sets."""
+    Returns a list containing the name(s) of data sets.
+
+    Parameters
+    ----------
+    contents : str
+        Name of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the dependencies have a batch.
+    str
+        The data set name.
+
+    Raises
+    ------
+    ValueError
+        Data set name must be provided.
+    ValueError
+        Data set and member name must be provided.
+    ValueError
+        A value is invalid.
+    """
     if dependencies.get("batch"):
         return None
     if contents is None:
         if dependencies.get("state") != "present":
             raise ValueError('Data set name must be provided when "state!=present"')
-        if dependencies.get("type") != "MEMBER":
+        if dependencies.get("type") != "member":
             tmphlq = dependencies.get("tmp_hlq")
             if tmphlq is None:
                 tmphlq = ""
             contents = DataSet.temp_name(tmphlq)
         else:
             raise ValueError(
-                'Data set and member name must be provided when "type=MEMBER"'
+                'Data set and member name must be provided when "type=member"'
             )
     dsname = str(contents)
     if not re.fullmatch(
@@ -786,7 +827,7 @@ def data_set_name(contents, dependencies):
                 dsname,
                 re.IGNORECASE,
             )
-            and dependencies.get("type") == "MEMBER"
+            and dependencies.get("type") == "member"
         ):
             raise ValueError(
                 "Value {0} is invalid for data set argument.".format(dsname)
@@ -797,15 +838,33 @@ def data_set_name(contents, dependencies):
 # * dependent on state
 def space_type(contents, dependencies):
     """Validates provided data set unit of space is valid.
-    Returns the unit of space."""
+    Returns the unit of space.
+
+    Parameters
+    ----------
+    contents : str
+        Unit of space of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    str
+        The data set unit of space.
+
+    Raises
+    ------
+    ValueError
+        Value provided is invalid.
+"""
     if dependencies.get("state") == "absent":
-        return None
+        return "m"
     if contents is None:
         return None
-    match = re.fullmatch(r"(M|G|K|TRK|CYL)", contents, re.IGNORECASE)
+    match = re.fullmatch(r"(m|g|k|trk|cyl)", contents, re.IGNORECASE)
     if not match:
         raise ValueError(
-            'Value {0} is invalid for space_type argument. Valid space types are "K", "M", "G", "TRK" or "CYL".'.format(
+            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk" or "cyl".'.format(
                 contents
             )
         )
@@ -815,7 +874,27 @@ def space_type(contents, dependencies):
 # * dependent on state
 def sms_class(contents, dependencies):
     """Validates provided sms class is of valid length.
-    Returns the sms class."""
+    Returns the sms class.
+
+    Parameters
+    ----------
+    contents : str
+        Name of the sms class.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        The sms class set name.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
     if dependencies.get("state") == "absent" or contents is None:
         return None
     if len(contents) < 1 or len(contents) > 8:
@@ -830,7 +909,22 @@ def sms_class(contents, dependencies):
 
 def valid_when_state_present(contents, dependencies):
     """Ensures no arguments that are invalid when state!=present
-    are allowed."""
+    are allowed.
+
+    Parameters
+    ----------
+    contents : str
+        Arguments to be validated.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        Valid arguments.
+    """
     if dependencies.get("state") == "absent" or contents is None:
         return None
     return contents
@@ -840,7 +934,27 @@ def valid_when_state_present(contents, dependencies):
 # * dependent on format
 def record_length(contents, dependencies):
     """Validates provided record length is valid.
-    Returns the record length as integer."""
+    Returns the record length as integer.
+
+    Parameters
+    ----------
+    contents : str
+        Length of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        The data set length.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
     if dependencies.get("state") == "absent":
         return None
     contents = (
@@ -863,29 +977,65 @@ def record_length(contents, dependencies):
 # * dependent on record_length
 def record_format(contents, dependencies):
     """Validates data set format is valid.
-    Returns uppercase data set format."""
+    Returns uppercase data set format.
+
+    Parameters
+    ----------
+    contents : str
+        Format of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    str
+        The data set format in uppercase. Default is 'FB'.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
     if dependencies.get("state") == "absent":
-        return None
+        return "fb"
     if contents is None:
-        return None
+        return "fb"
     formats = "|".join(DATA_SET_FORMATS)
     if not re.fullmatch(formats, contents, re.IGNORECASE):
         raise ValueError(
-            "Value {0} is invalid for format argument. format must be of of the following: {1}.".format(
+            "Value {0} is invalid for format argument. format must be one of the following: {1}.".format(
                 contents, ", ".join(DATA_SET_FORMATS)
             )
         )
-    return contents.upper()
+    return contents
 
 
 # * dependent on state
 def data_set_type(contents, dependencies):
     """Validates data set type is valid.
-    Returns uppercase data set type."""
+    Returns uppercase data set type.
+
+    Parameters
+    ----------
+    contents : str
+        Type of the dataset.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    str
+        The data set type in uppercase. Default is PDS.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
     # if dependencies.get("state") == "absent" and contents != "MEMBER":
     #     return None
     if contents is None:
-        return "PDS"
+        return "pds"
     types = "|".join(DATA_SET_TYPES)
     if not re.fullmatch(types, contents, re.IGNORECASE):
         raise ValueError(
@@ -893,13 +1043,35 @@ def data_set_type(contents, dependencies):
                 contents, ", ".join(DATA_SET_TYPES)
             )
         )
-    return contents.upper()
+    return contents
 
 
 # * dependent on state
 def volumes(contents, dependencies):
     """Validates volume is valid.
-    Returns uppercase volume."""
+    Returns uppercase volume.
+
+    Parameters
+    ----------
+    contents : str
+        Name of the volume.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    str
+        The volume name.
+
+    Raises
+    ------
+    ValueError
+        Argument is invalid.
+    ValueError
+        Volume is required when state is cataloged.
+    """
     if contents is None:
         if dependencies.get("state") == "cataloged":
             raise ValueError("Volume is required when state==cataloged.")
@@ -923,13 +1095,37 @@ def volumes(contents, dependencies):
 # * dependent on type
 def key_length(contents, dependencies):
     """Validates data set key length is valid.
-    Returns data set key length as integer."""
+    Returns data set key length as integer.
+
+    Parameters
+    ----------
+    contents : str
+        key_length.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    int
+        key_length.
+
+    Raises
+    ------
+    ValueError
+        Argument is invalid.
+    ValueError
+        key_length was not provided when requesting KSDS data set.
+    ValueError
+        key_length can not be provided when type is not KSDS.
+    """
     if dependencies.get("state") == "absent":
         return None
-    if dependencies.get("type") == "KSDS" and contents is None:
+    if dependencies.get("type") == "ksds" and contents is None:
         raise ValueError("key_length is required when requesting KSDS data set.")
-    if dependencies.get("type") != "KSDS" and contents is not None:
-        raise ValueError("key_length is only valid when type=KSDS.")
+    if dependencies.get("type") != "ksds" and contents is not None:
+        raise ValueError("key_length is only valid when type=ksds.")
     if contents is None:
         return None
     contents = int(contents)
@@ -945,13 +1141,37 @@ def key_length(contents, dependencies):
 # * dependent on key_length
 def key_offset(contents, dependencies):
     """Validates data set key offset is valid.
-    Returns data set key offset as integer."""
+    Returns data set key offset as integer.
+
+    Parameters
+    ----------
+    contents : str
+        Key offset of the data set.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    None
+        If the state is absent or contents is none.
+    int
+        Key offset of the data set.
+
+    Raises
+    ------
+    ValueError
+        Argument is invalid.
+    ValueError
+        key_offset was not provided when requesting KSDS data set.
+    ValueError
+        key_offset can not be provided when type is not KSDS.
+    """
     if dependencies.get("state") == "absent":
         return None
-    if dependencies.get("type") == "KSDS" and contents is None:
+    if dependencies.get("type") == "ksds" and contents is None:
         raise ValueError("key_offset is required when requesting KSDS data set.")
-    if dependencies.get("type") != "KSDS" and contents is not None:
-        raise ValueError("key_offset is only valid when type=KSDS.")
+    if dependencies.get("type") != "ksds" and contents is not None:
+        raise ValueError("key_offset is only valid when type=ksds.")
     if contents is None:
         return None
     contents = int(contents)
@@ -966,18 +1186,33 @@ def key_offset(contents, dependencies):
 
 def perform_data_set_operations(name, state, **extra_args):
     """Calls functions to perform desired operations on
-    one or more data sets. Returns boolean indicating if changes were made."""
+    one or more data sets. Returns boolean indicating if changes were made.
+
+    Parameters
+    ----------
+    name : str
+        Name of the dataset.
+    state : str
+        State of the data sets.
+    **extra_args : dict
+        Properties of the data sets.
+
+    Returns
+    -------
+    bool
+        If changes were made.
+    """
     changed = False
     #  passing in **extra_args forced me to modify the acceptable parameters
     #  for multiple functions in data_set.py including ensure_present, replace
     #  and create where the force parameter has no bearing.
-    if state == "present" and extra_args.get("type") != "MEMBER":
+    if state == "present" and extra_args.get("type") != "member":
         changed = DataSet.ensure_present(name, **extra_args)
-    elif state == "present" and extra_args.get("type") == "MEMBER":
+    elif state == "present" and extra_args.get("type") == "member":
         changed = DataSet.ensure_member_present(name, extra_args.get("replace"))
-    elif state == "absent" and extra_args.get("type") != "MEMBER":
+    elif state == "absent" and extra_args.get("type") != "member":
         changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
-    elif state == "absent" and extra_args.get("type") == "MEMBER":
+    elif state == "absent" and extra_args.get("type") == "member":
         changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
     elif state == "cataloged":
         changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
@@ -986,33 +1221,19 @@ def perform_data_set_operations(name, state, **extra_args):
     return changed
 
 
-def fix_old_size_arg(params):
-    """ for backwards compatibility with old styled size argument """
-    match = None
-    if params.get("size"):
-        match = re.fullmatch(
-            r"([1-9][0-9]*)(M|G|K|TRK|CYL)", str(params.get("size")), re.IGNORECASE
-        )
-        if not match:
-            raise ValueError(
-                'Value {0} is invalid for size argument. Valid size measurements are "K", "M", "G", "TRK" or "CYL".'.format(
-                    str(params.get("size"))
-                )
-            )
-    if params.get("space_primary"):
-        match = re.fullmatch(
-            r"([1-9][0-9]*)(M|G|K|TRK|CYL)",
-            str(params.get("space_primary")),
-            re.IGNORECASE,
-        )
-    if match:
-        params["space_primary"] = int(match.group(1))
-        params["space_type"] = match.group(2)
-    return params
-
-
 def parse_and_validate_args(params):
-    params = fix_old_size_arg(params)
+    """Parse and validate args.
+
+    Parameters
+    ----------
+    params : dict
+        Params to validated and parsed.
+
+    Returns
+    -------
+    dict
+        Parsed args.
+    """
 
     arg_defs = dict(
         # Used for batch data set args
@@ -1030,9 +1251,18 @@ def parse_and_validate_args(params):
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type=data_set_type, required=False, dependencies=["state"]),
+                type=dict(
+                    type=data_set_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=DATA_SET_TYPES,
+                ),
                 space_type=dict(
-                    type=space_type, required=False, dependencies=["state"]
+                    type=space_type,
+                    required=False,
+                    dependencies=["state"],
+                    choices=["k", "m", "g", "cyl", "trk"],
+                    default="m",
                 ),
                 space_primary=dict(type="int", required=False, dependencies=["state"]),
                 space_secondary=dict(
@@ -1042,7 +1272,9 @@ def parse_and_validate_args(params):
                     type=record_format,
                     required=False,
                     dependencies=["state"],
+                    choices=["fb", "vb", "fba", "vba", "u", "f"],
                     aliases=["format"],
+                    default="fb",
                 ),
                 sms_management_class=dict(
                     type=sms_class, required=False, dependencies=["state"]
@@ -1114,14 +1346,22 @@ def parse_and_validate_args(params):
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
         type=dict(type=data_set_type, required=False, dependencies=["state"]),
-        space_type=dict(type=space_type, required=False, dependencies=["state"]),
+        space_type=dict(
+            type=space_type,
+            required=False,
+            dependencies=["state"],
+            choices=["k", "m", "g", "cyl", "trk"],
+            default="m",
+        ),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
         record_format=dict(
             type=record_format,
             required=False,
             dependencies=["state"],
+            choices=["fb", "vb", "fba", "vba", "u", "f"],
             aliases=["format"],
+            default="fb",
         ),
         sms_management_class=dict(
             type=sms_class, required=False, dependencies=["state"]
@@ -1179,7 +1419,7 @@ def parse_and_validate_args(params):
             # ["batch", "space_type"],
             # ["batch", "space_primary"],
             # ["batch", "space_secondary"],
-            ["batch", "record_format"],
+            # ["batch", "record_format"],
             ["batch", "sms_management_class"],
             ["batch", "sms_storage_class"],
             ["batch", "sms_data_class"],
@@ -1201,6 +1441,13 @@ def parse_and_validate_args(params):
 
 
 def run_module():
+    """Runs the module.
+
+    Raises
+    ------
+    fail_json
+        Any exception during processing of data set params.
+    """
     # TODO: add logic to handle aliases during parsing
 
     module_args = dict(
@@ -1218,11 +1465,27 @@ def run_module():
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type="str", required=False, default="PDS"),
-                space_type=dict(type="str", required=False, default="M"),
-                space_primary=dict(type="int", required=False, aliases=["size"], default=5),
+                type=dict(
+                    type="str",
+                    required=False,
+                    default="pds",
+                    choices=DATA_SET_TYPES,
+                ),
+                space_type=dict(
+                    type="str",
+                    required=False,
+                    default="m",
+                    choices=["k", "m", "g", "cyl", "trk"],
+                ),
+                space_primary=dict(type="int", required=False, default=5),
                 space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+                record_format=dict(
+                    type="str",
+                    required=False,
+                    aliases=["format"],
+                    default="fb",
+                    choices=["fb", "vb", "fba", "vba", "u", "f"],
+                ),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1267,11 +1530,27 @@ def run_module():
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
-        type=dict(type="str", required=False, default="PDS"),
-        space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        type=dict(
+            type="str",
+            required=False,
+            default="pds",
+            choices=DATA_SET_TYPES,
+        ),
+        space_type=dict(
+            type="str",
+            required=False,
+            default="m",
+            choices=["k", "m", "g", "cyl", "trk"],
+        ),
+        space_primary=dict(type="int", required=False, default=5),
         space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+        record_format=dict(
+            type="str",
+            required=False,
+            aliases=["format"],
+            choices=["fb", "vb", "fba", "vba", "u", "f"],
+            default="fb"
+        ),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
@@ -1319,9 +1598,10 @@ def run_module():
     # This evaluation will always occur as a result of the limitation on the
     # better arg parser, this will serve as a solution for now and ensure
     # the non-batch and batch arguments are correctly set
+    # This section is copied down inside if/check_mode false, so it modifies after the arg parser
     if module.params.get("batch") is not None:
         for entry in module.params.get("batch"):
-            if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
+            if entry.get('type') is not None and entry.get("type") in DATA_SET_TYPES_VSAM:
                 entry["record_format"] = None
         if module.params.get("type") is not None:
             module.params["type"] = None
@@ -1338,9 +1618,11 @@ def run_module():
         if module.params.get("record_format") is not None:
             module.params["record_format"] = None
     elif module.params.get("type") is not None:
-        if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
+        if module.params.get("type") in DATA_SET_TYPES_VSAM:
             # For VSAM types set the value to nothing and let the code manage it
-            module.params["record_format"] = None
+            # module.params["record_format"] = None
+            if module.params.get("record_format") is not None:
+                del module.params["record_format"]
 
     if not module.check_mode:
         try:
@@ -1353,6 +1635,30 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
+                # This *appears* redundant, bit the parse_and_validate reinforces the default value for record_type
+                if data_set_params.get("batch") is not None:
+                    for entry in data_set_params.get("batch"):
+                        if entry.get('type') is not None and entry.get("type") in DATA_SET_TYPES_VSAM:
+                            entry["record_format"] = None
+                    if data_set_params.get("type") is not None:
+                        data_set_params["type"] = None
+                    if data_set_params.get("state") is not None:
+                        data_set_params["state"] = None
+                    if data_set_params.get("space_type") is not None:
+                        data_set_params["space_type"] = None
+                    if data_set_params.get("space_primary") is not None:
+                        data_set_params["space_primary"] = None
+                    if data_set_params.get("space_secondary") is not None:
+                        data_set_params["space_secondary"] = None
+                    if data_set_params.get("replace") is not None:
+                        data_set_params["replace"] = None
+                    if data_set_params.get("record_format") is not None:
+                        data_set_params["record_format"] = None
+                else:
+                    if data_set_params.get("type") in DATA_SET_TYPES_VSAM:
+                        if data_set_params.get("record_format") is not None:
+                            data_set_params["record_format"] = None
+
                 # remove unnecessary empty batch argument
                 result["changed"] = perform_data_set_operations(
                     **data_set_params

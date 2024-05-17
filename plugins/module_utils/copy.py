@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019-2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -283,7 +283,15 @@ def copy_asa_pds2uss(src, dest):
         str -- The stderr after the copy command executed successfully
     """
     from os import path
-    from zoautil_py import datasets
+    import traceback
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+        ZOAUImportError,
+    )
+
+    try:
+        from zoautil_py import datasets
+    except Exception:
+        datasets = ZOAUImportError(traceback.format_exc())
 
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)

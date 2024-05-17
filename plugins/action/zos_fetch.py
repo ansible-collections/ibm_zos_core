@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019-2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -107,7 +107,7 @@ class ActionModule(ActionBase):
 
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
-        encoding = self._task.args.get('encoding')
+        encoding = self._task.args.get('encoding', None)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
@@ -219,9 +219,13 @@ class ActionModule(ActionBase):
         #                Execute module on remote host               #
         # ********************************************************** #
         new_module_args = self._task.args.copy()
-        new_module_args.update(
-            dict(local_charset=encode.Defaults.get_default_system_charset())
-        )
+        encoding_to = None
+        if encoding:
+            encoding_to = encoding.get("to", None)
+        if encoding is None or encoding_to is None:
+            new_module_args.update(
+                dict(encoding=dict(to=encode.Defaults.get_default_system_charset()))
+            )
         remote_path = None
         try:
             fetch_res = self._execute_module(

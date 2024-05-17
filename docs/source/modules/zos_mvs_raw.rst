@@ -134,7 +134,7 @@ dds
 
       | **required**: False
       | **type**: str
-      | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
+      | **choices**: delete, keep, catalog, uncatalog
 
 
     disposition_abnormal
@@ -142,11 +142,11 @@ dds
 
       | **required**: False
       | **type**: str
-      | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
+      | **choices**: delete, keep, catalog, uncatalog
 
 
     reuse
-      Determines if a data set should be reused if *disposition=NEW* and if a data set with a matching name already exists.
+      Determines if a data set should be reused if *disposition=new* and if a data set with a matching name already exists.
 
       If *reuse=true*, *disposition* will be automatically switched to ``SHR``.
 
@@ -154,7 +154,7 @@ dds
 
       Mutually exclusive with *replace*.
 
-      *reuse* is only considered when *disposition=NEW*
+      *reuse* is only considered when *disposition=new*
 
       | **required**: False
       | **type**: bool
@@ -162,7 +162,7 @@ dds
 
 
     replace
-      Determines if a data set should be replaced if *disposition=NEW* and a data set with a matching name already exists.
+      Determines if a data set should be replaced if *disposition=new* and a data set with a matching name already exists.
 
       If *replace=true*, the original data set will be deleted, and a new data set created.
 
@@ -170,7 +170,7 @@ dds
 
       Mutually exclusive with *reuse*.
 
-      *replace* is only considered when *disposition=NEW*
+      *replace* is only considered when *disposition=new*
 
       *replace* will result in loss of all data in the original data set unless *backup* is specified.
 
@@ -180,7 +180,7 @@ dds
 
 
     backup
-      Determines if a backup should be made of an existing data set when *disposition=NEW*, *replace=true*, and a data set with the desired name is found.
+      Determines if a backup should be made of an existing data set when *disposition=new*, *replace=true*, and a data set with the desired name is found.
 
       *backup* is only used when *replace=true*.
 
@@ -315,7 +315,7 @@ dds
       encoding
         How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
 
-        *encoding* can either be set to ``L`` for label encoding, or ``H`` for hash encoding.
+        *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
 
         Maps to KEYCD1 on z/OS.
 
@@ -350,7 +350,7 @@ dds
       encoding
         How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
 
-        *encoding* can either be set to ``L`` for label encoding, or ``H`` for hash encoding.
+        *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
 
         Maps to KEYCD2 on z/OS.
 
@@ -389,7 +389,7 @@ dds
 
       Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0.
 
-      Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
+      Valid values are (1-32760 for non-VSAM,  1-32761 for VSAM).
 
       Maps to LRECL on z/OS.
 
@@ -869,7 +869,7 @@ dds
 
           | **required**: False
           | **type**: str
-          | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
+          | **choices**: delete, keep, catalog, uncatalog
 
 
         disposition_abnormal
@@ -877,11 +877,11 @@ dds
 
           | **required**: False
           | **type**: str
-          | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
+          | **choices**: delete, keep, catalog, uncatalog
 
 
         reuse
-          Determines if data set should be reused if *disposition=NEW* and a data set with matching name already exists.
+          Determines if data set should be reused if *disposition=new* and a data set with matching name already exists.
 
           If *reuse=true*, *disposition* will be automatically switched to ``SHR``.
 
@@ -889,7 +889,7 @@ dds
 
           Mutually exclusive with *replace*.
 
-          *reuse* is only considered when *disposition=NEW*
+          *reuse* is only considered when *disposition=new*
 
           | **required**: False
           | **type**: bool
@@ -897,7 +897,7 @@ dds
 
 
         replace
-          Determines if data set should be replaced if *disposition=NEW* and a data set with matching name already exists.
+          Determines if data set should be replaced if *disposition=new* and a data set with matching name already exists.
 
           If *replace=true*, the original data set will be deleted, and a new data set created.
 
@@ -905,7 +905,7 @@ dds
 
           Mutually exclusive with *reuse*.
 
-          *replace* is only considered when *disposition=NEW*
+          *replace* is only considered when *disposition=new*
 
           *replace* will result in loss of all data in the original data set unless *backup* is specified.
 
@@ -915,7 +915,7 @@ dds
 
 
         backup
-          Determines if a backup should be made of existing data set when *disposition=NEW*, *replace=true*, and a data set with the desired name is found.
+          Determines if a backup should be made of existing data set when *disposition=new*, *replace=true*, and a data set with the desired name is found.
 
           *backup* is only used when *replace=true*.
 
@@ -1050,7 +1050,7 @@ dds
           encoding
             How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
 
-            *encoding* can either be set to ``L`` for label encoding, or ``H`` for hash encoding.
+            *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
 
             Maps to KEYCD1 on z/OS.
 
@@ -1085,7 +1085,7 @@ dds
           encoding
             How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
 
-            *encoding* can either be set to ``L`` for label encoding, or ``H`` for hash encoding.
+            *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
 
             Maps to KEYCD2 on z/OS.
 
@@ -1191,7 +1191,7 @@ dds
         path
           The path to an existing UNIX file.
 
-          Or provide the path to an new created UNIX file when *status_group=OCREAT*.
+          Or provide the path to an new created UNIX file when *status_group=ocreat*.
 
           The provided path must be absolute.
 
@@ -1464,7 +1464,7 @@ Examples
              dd_name: sysprint
              data_set_name: mypgm.output.ds
              disposition: new
-             reuse: yes
+             reuse: true
              type: seq
              space_primary: 5
              space_secondary: 1
@@ -1488,7 +1488,7 @@ Examples
              dd_name: sysprint
              data_set_name: mypgm.output.ds
              disposition: new
-             reuse: yes
+             reuse: true
              type: seq
              space_primary: 5
              space_secondary: 1
@@ -1533,7 +1533,7 @@ Examples
              dd_name: sysprint
              data_set_name: mypgm.output.ds
              disposition: new
-             reuse: yes
+             reuse: true
              type: seq
              space_primary: 5
              space_secondary: 1
@@ -1561,8 +1561,8 @@ Examples
              dd_name: sysprint
              data_set_name: mypgm.output.ds
              disposition: new
-             replace: yes
-             backup: yes
+             replace: true
+             backup: true
              type: seq
              space_primary: 5
              space_secondary: 1
@@ -1633,7 +1633,7 @@ Examples
    - name: Take a set of data sets and write them to an archive.
      zos_mvs_raw:
        program_name: adrdssu
-       auth: yes
+       auth: true
        dds:
          - dd_data_set:
              dd_name: archive
@@ -1649,7 +1649,7 @@ Examples
    - name: Merge two sequential data sets and write them to new data set
      zos_mvs_raw:
        program_name: sort
-       auth: no
+       auth: false
        parm: "MSGPRT=CRITICAL,LIST"
        dds:
          - dd_data_set:
@@ -1680,7 +1680,7 @@ Examples
        files.
      zos_mvs_raw:
        pgm: idcams
-       auth: yes
+       auth: true
        dds:
          - dd_concat:
              dd_name: sysprint
@@ -1697,57 +1697,56 @@ Examples
              dd_name: sysin
              content: " LISTCAT ENTRIES('SYS1.*')"
 
-   - name: Drop the contents of input dataset into output dataset
-         using REPRO command.
+   - name: Drop the contents of input dataset into output dataset using REPRO command.
      zos_mvs_raw:
        pgm: idcams
-       auth: yes
+       auth: true
        dds:
-       - dd_data_set:
-           dd_name: INPUT
-           data_set_name: myhlq.ds1.input
-       - dd_data_set:
-           dd_name: OUTPUT
-           data_set_name: myhlq.ds1.output
-       - dd_input:
-           dd_name: sysin
-           content: |
+         - dd_data_set:
+             dd_name: INPUT
+             data_set_name: myhlq.ds1.input
+         - dd_data_set:
+             dd_name: OUTPUT
+             data_set_name: myhlq.ds1.output
+         - dd_input:
+             dd_name: sysin
+             content: |
                " REPRO -
                  INFILE(INPUT) -
                  OUTFILE(OUTPUT)"
-       - dd_output:
-           dd_name: sysprint
-           return_content:
-             type: text
+         - dd_output:
+             dd_name: sysprint
+             return_content:
+               type: text
 
-       - name: Define a cluster using a literal block style indicator
-             with a 2 space indentation.
-         zos_mvs_raw:
-           program_name: idcams
-           auth: yes
-           dds:
-             - dd_output:
-                 dd_name: sysprint
-                 return_content:
-                   type: text
-             - dd_input:
-                 dd_name: sysin
-                 content: |2
-                   DEFINE CLUSTER -
-                             (NAME(ANSIBLE.TEST.VSAM) -
-                             CYL(10 10)  -
-                             FREESPACE(20 20) -
-                             INDEXED -
-                             KEYS(32 0) -
-                             NOERASE -
-                             NONSPANNED -
-                             NOREUSE -
-                             SHAREOPTIONS(3 3) -
-                             SPEED -
-                             UNORDERED -
-                             RECORDSIZE(4086 32600) -
-                             VOLUMES(222222) -
-                             UNIQUE)
+   - name: Define a cluster using a literal block style indicator
+         with a 2 space indentation.
+     zos_mvs_raw:
+       program_name: idcams
+       auth: true
+       dds:
+         - dd_output:
+             dd_name: sysprint
+             return_content:
+               type: text
+         - dd_input:
+             dd_name: sysin
+             content: 2
+               DEFINE CLUSTER -
+                         (NAME(ANSIBLE.TEST.VSAM) -
+                         CYL(10 10)  -
+                         FREESPACE(20 20) -
+                         INDEXED -
+                         KEYS(32 0) -
+                         NOERASE -
+                         NONSPANNED -
+                         NOREUSE -
+                         SHAREOPTIONS(3 3) -
+                         SPEED -
+                         UNORDERED -
+                         RECORDSIZE(4086 32600) -
+                         VOLUMES(222222) -
+                         UNIQUE)
 
 
 

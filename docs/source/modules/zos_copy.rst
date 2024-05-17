@@ -91,7 +91,7 @@ dest
 
   If ``dest`` is a nonexistent USS file, it will be created.
 
-  If ``dest`` is a new USS file or replacement, the file will be appropriately tagged with either the system's default locale or the encoding option defined. If the USS file is a replacement, the user must have write authority to the file either through ownership, group or other permissions, else the copy will fail.
+  If ``dest`` is a new USS file or replacement, the file will be appropriately tagged with either the system's default locale or the encoding option defined. If the USS file is a replacement, the user must have write authority to the file either through ownership, group or other permissions, else the module will fail.
 
   If ``dest`` is a nonexistent data set, it will be created following the process outlined here and in the ``volume`` option.
 
@@ -132,7 +132,7 @@ encoding
   to
     The encoding to be converted to
 
-    | **required**: True
+    | **required**: False
     | **type**: str
 
 
@@ -234,6 +234,17 @@ local_follow
   | **default**: True
 
 
+group
+  Name of the group that will own the file system objects.
+
+  When left unspecified, it uses the current group of the current user unless you are root, in which case it can preserve the previous ownership.
+
+  This option is only applicable if ``dest`` is USS, otherwise ignored.
+
+  | **required**: False
+  | **type**: str
+
+
 mode
   The permission of the destination file or directory.
 
@@ -244,6 +255,17 @@ mode
   The mode may also be specified as a symbolic mode (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special string `preserve`.
 
   *mode=preserve* means that the file will be given the same permissions as the source file.
+
+  | **required**: False
+  | **type**: str
+
+
+owner
+  Name of the user that should own the filesystem object, as would be passed to the chown command.
+
+  When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.
+
+  This option is only applicable if ``dest`` is USS, otherwise ignored.
 
   | **required**: False
   | **type**: str
@@ -321,7 +343,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC, LIBRARY
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library
 
 
   space_primary
@@ -345,21 +367,21 @@ dest_data_set
   space_type
     If the destination data set does not exist, this sets the unit of measurement to use when defining primary and secondary space.
 
-    Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
     | **required**: False
     | **type**: str
-    | **choices**: K, M, G, CYL, TRK
+    | **choices**: k, m, g, cyl, trk
 
 
   record_format
-    If the destination data set does not exist, this sets the format of the data set. (e.g ``FB``)
+    If the destination data set does not exist, this sets the format of the data set. (e.g ``fb``)
 
-    Choices are case-insensitive.
+    Choices are case-sensitive.
 
     | **required**: False
     | **type**: str
-    | **choices**: FB, VB, FBA, VBA, U
+    | **choices**: fb, vb, fba, vba, u
 
 
   record_length
@@ -390,9 +412,9 @@ dest_data_set
   key_offset
     The key offset to use when creating a KSDS data set.
 
-    *key_offset* is required when *type=KSDS*.
+    *key_offset* is required when *type=ksds*.
 
-    *key_offset* should only be provided when *type=KSDS*
+    *key_offset* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -401,9 +423,9 @@ dest_data_set
   key_length
     The key length to use when creating a KSDS data set.
 
-    *key_length* is required when *type=KSDS*.
+    *key_length* is required when *type=ksds*.
 
-    *key_length* should only be provided when *type=KSDS*
+    *key_length* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -613,7 +635,7 @@ Examples
      zos_copy:
        src: /path/to/foo.conf
        dest: /etc/foo.conf
-       mode: 0644
+       mode: "0644"
        group: foo
        owner: bar
 
@@ -743,11 +765,11 @@ Examples
        remote_src: true
        volume: '222222'
        dest_data_set:
-         type: SEQ
+         type: seq
          space_primary: 10
          space_secondary: 3
-         space_type: K
-         record_format: VB
+         space_type: k
+         record_format: vb
          record_length: 150
 
    - name: Copy a Program Object and its aliases on a remote system to a new PDSE member MYCOBOL
@@ -846,12 +868,12 @@ destination_attributes
 
         {
             "block_size": 32760,
-            "record_format": "FB",
+            "record_format": "fb",
             "record_length": 45,
             "space_primary": 2,
             "space_secondary": 1,
-            "space_type": "K",
-            "type": "PDSE"
+            "space_type": "k",
+            "type": "pdse"
         }
 
   block_size
@@ -864,7 +886,7 @@ destination_attributes
     Record format of the dataset.
 
     | **type**: str
-    | **sample**: FB
+    | **sample**: fb
 
   record_length
     Record length of the dataset.
@@ -888,13 +910,13 @@ destination_attributes
     Unit of measurement for space.
 
     | **type**: str
-    | **sample**: K
+    | **sample**: k
 
   type
     Type of dataset allocated.
 
     | **type**: str
-    | **sample**: PDSE
+    | **sample**: pdse
 
 
 checksum

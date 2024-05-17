@@ -195,8 +195,8 @@ dest_data_set
 
     | **required**: False
     | **type**: str
-    | **default**: SEQ
-    | **choices**: SEQ, PDS, PDSE
+    | **default**: seq
+    | **choices**: seq, pds, pdse
 
 
   space_primary
@@ -220,21 +220,21 @@ dest_data_set
   space_type
     If the destination data set does not exist, this sets the unit of measurement to use when defining primary and secondary space.
 
-    Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
     | **required**: False
     | **type**: str
-    | **choices**: K, M, G, CYL, TRK
+    | **choices**: k, m, g, cyl, trk
 
 
   record_format
-    If the destination data set does not exist, this sets the format of the data set. (e.g ``FB``)
+    If the destination data set does not exist, this sets the format of the data set. (e.g ``fb``)
 
-    Choices are case-insensitive.
+    Choices are case-sensitive.
 
     | **required**: False
     | **type**: str
-    | **choices**: FB, VB, FBA, VBA, U
+    | **choices**: fb, vb, fba, vba, u
 
 
   record_length
@@ -265,9 +265,9 @@ dest_data_set
   key_offset
     The key offset to use when creating a KSDS data set.
 
-    *key_offset* is required when *type=KSDS*.
+    *key_offset* is required when *type=ksds*.
 
-    *key_offset* should only be provided when *type=KSDS*
+    *key_offset* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -276,9 +276,9 @@ dest_data_set
   key_length
     The key length to use when creating a KSDS data set.
 
-    *key_length* is required when *type=KSDS*.
+    *key_length* is required when *type=ksds*.
 
-    *key_length* should only be provided when *type=KSDS*
+    *key_length* should only be provided when *type=ksds*
 
     | **required**: False
     | **type**: int
@@ -392,8 +392,8 @@ Examples
        format:
          name: xmit
          format_options:
-           use_adrdssu: True
-       list: True
+           use_adrdssu: true
+       list: true
 
 
 

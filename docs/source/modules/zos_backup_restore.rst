@@ -182,19 +182,28 @@ space
 space_type
   The unit of measurement to use when defining data set space.
 
-  Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
-  When *full_volume=True*, *space_type* defaults to ``G``, otherwise default is ``M``
+  When *full_volume=True*, *space_type* defaults to ``g``, otherwise default is ``m``
 
   | **required**: False
   | **type**: str
-  | **choices**: K, M, G, CYL, TRK
+  | **choices**: k, m, g, cyl, trk
 
 
 hlq
   Specifies the new HLQ to use for the data sets being restored.
 
   Defaults to running user's username.
+
+  | **required**: False
+  | **type**: str
+
+
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup data sets.
+
+  The default HLQ is the Ansible user that executes the module and if that is not available, then the value of ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str
@@ -232,7 +241,7 @@ Examples
        data_sets:
          include: user.**
        backup_name: /tmp/temp_backup.dzp
-       recover: yes
+       recover: true
 
    - name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP.DZP,
        allocate 100MB for data sets used in backup process.
@@ -242,7 +251,7 @@ Examples
          include: user.**
        backup_name: MY.BACKUP.DZP
        space: 100
-       space_type: M
+       space_type: m
 
    - name:
        Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP.DZP,
@@ -254,7 +263,7 @@ Examples
        volume: MYVOL1
        backup_name: MY.BACKUP.DZP
        space: 100
-       space_type: M
+       space_type: m
 
    - name: Backup an entire volume, MYVOL1, to the UNIX file /tmp/temp_backup.dzp,
        allocate 1GB for data sets used in backup process.
@@ -262,9 +271,9 @@ Examples
        operation: backup
        backup_name: /tmp/temp_backup.dzp
        volume: MYVOL1
-       full_volume: yes
+       full_volume: true
        space: 1
-       space_type: G
+       space_type: g
 
    - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
        Use z/OS username as new HLQ.
@@ -305,10 +314,10 @@ Examples
      zos_backup_restore:
        operation: restore
        volume: MYVOL2
-       full_volume: yes
+       full_volume: true
        backup_name: MY.BACKUP.DZP
        space: 1
-       space_type: G
+       space_type: g
 
    - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
        Specify DB2SMS10 for the SMS storage and management classes to use for the restored

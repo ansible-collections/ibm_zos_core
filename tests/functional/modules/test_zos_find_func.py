@@ -34,8 +34,8 @@ VSAM_NAMES = [
 ]
 
 GDG_NAMES = [
-    "TEST.FIND.GDG.FUNCTEST(0)",
-    "TEST.FIND.GDG.FUNCTEST(1)",
+    "TEST.FIND.GDG.FUNCTEST.FIRST(0)",
+    "TEST.FIND.GDG.FUNCTEST.SECOND(0)",
 ]
 
 DATASET_TYPES = ['seq', 'pds', 'pdse']
@@ -67,9 +67,13 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
     hosts = ansible_zos_module
     search_string = "hello"
     try:
-        hosts.all.zos_data_set(
+        result=hosts.all.zos_data_set(
             batch=[dict(name=i, type='gdg', state='present') for i in GDG_NAMES]
         )
+        print("\n================\n")
+        print(vars(result))
+        print("\n================\n")
+
         for ds in GDG_NAMES:
             hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
 
@@ -88,7 +92,7 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, state='absent') for i in SEQ_NAMES]
+            batch=[dict(name=i, state='absent') for i in GDG_NAMES]
         )
 
 

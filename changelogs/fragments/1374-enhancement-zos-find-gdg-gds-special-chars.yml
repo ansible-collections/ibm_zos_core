@@ -1,0 +1,3 @@
+minor_changes:
+  - zos_find - added support for GDG/GDS and special characters
+    (https://github.com/ansible-collections/ibm_zos_core/pull/xxxx).

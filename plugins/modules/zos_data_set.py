@@ -1520,6 +1520,10 @@ def parse_and_validate_args(params):
                     type="bool",
                     default=False,
                 ),
+                limit=dict(
+                    type=limit_type,
+                    required=False,
+                ),
                 volumes=dict(
                     type=volumes,
                     required=False,

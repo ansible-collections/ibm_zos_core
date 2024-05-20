@@ -1,9 +1,26 @@
-==============================
-ibm.ibm_zos_core Release Notes
-==============================
+================================
+ibm.ibm\_zos\_core Release Notes
+================================
 
 .. contents:: Topics
 
+v1.9.1
+======
+
+Release Summary
+---------------
+
+Release Date: '2024-06-20'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Bugfixes
+--------
+
+- zos_find - Filter size failed if a PDS/E matched the pattern. Fix now gets the correct size for PDS/Es. (https://github.com/ansible-collections/ibm_zos_core/pull/1450).
+- zos_mvs_raw - The module ignored the value of `tmp_hlq` option when creating temporary data sets. Fix now honors the value if provided and uses it as High Level Qualifier for temporary data sets created during the module execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1463).
 
 v1.9.0
 ======
@@ -336,7 +353,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
-
 Bugfixes
 --------
 
@@ -359,7 +375,6 @@ This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Major Changes
 -------------
@@ -432,7 +447,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Minor Changes
 -------------
 
@@ -461,7 +475,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -486,7 +499,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -504,7 +516,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
-
 
 Bugfixes
 --------
@@ -539,7 +550,6 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
     **z/OS** target to find the latest supported configuration and generate
     inventory and a variables configuration.
   - Automate software management with SMP/E Playbooks
-
 
 Minor Changes
 -------------
@@ -618,7 +628,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Minor Changes
 -------------

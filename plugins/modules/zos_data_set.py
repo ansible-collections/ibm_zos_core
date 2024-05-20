@@ -1155,7 +1155,7 @@ def data_set_type(contents, dependencies):
 
     if contents == "gdg" and dependencies.get("state") == "present" and dependencies.get("limit") is None:
         raise ValueError(
-            "Limit must be provided when data set type is gdg and state=present."
+            "Limit must be provided when data set type is gdg and state=present. \nc={0}\nd={1}\n".format(contents, dependencies)
         )
     types = "|".join(DATA_SET_TYPES)
     if not re.fullmatch(types, contents, re.IGNORECASE):
@@ -1454,7 +1454,7 @@ def parse_and_validate_args(params):
                 type=dict(
                     type=data_set_type,
                     required=False,
-                    dependencies=["state","limit"],
+                    dependencies=["state", "limit"],
                     choices=DATA_SET_TYPES,
                 ),
                 space_type=dict(

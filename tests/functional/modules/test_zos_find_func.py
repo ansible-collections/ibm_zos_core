@@ -34,8 +34,8 @@ VSAM_NAMES = [
 ]
 
 GDG_NAMES = [
-    "TEST.FIND.GDG.FUNCTEST.FIRST(0)",
-    "TEST.FIND.GDG.FUNCTEST.SECOND(0)",
+    "TEST.FIND.GDG.FUNCTEST.FIRST",
+    "TEST.FIND.GDG.FUNCTEST.SECOND",
 ]
 
 DATASET_TYPES = ['seq', 'pds', 'pdse']
@@ -75,7 +75,8 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
                 name=i,
                 type='gdg',
                 state='present',
-                limit=5
+                limit=5,
+                force=True
             )
             print("\n================ {0}\n".format(i))
             print(vars(result))

@@ -1454,7 +1454,7 @@ def parse_and_validate_args(params):
                 type=dict(
                     type=data_set_type,
                     required=False,
-                    dependencies=["state"],
+                    dependencies=["state","limit"],
                     choices=DATA_SET_TYPES,
                 ),
                 space_type=dict(

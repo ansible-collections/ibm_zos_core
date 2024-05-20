@@ -10,3 +10,4 @@ Resources
    :maxdepth: 1
 
    character_set
+   releases_maintenance

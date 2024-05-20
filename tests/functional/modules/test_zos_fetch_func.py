@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import stat
+import re
 import pytest
 
 from hashlib import sha256
@@ -642,7 +643,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
-        hosts.all.zos_data_set(src="OMVSADM." + src, state="absent")
+        hosts.all.zos_data_set(name="OMVSADM." + src, state="absent")
 
 
 def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
@@ -708,7 +709,7 @@ def test_fetch_gds_from_gdg(ansible_zos_module, generation):
 
     hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDS}\"")
     params = dict(src=TEST_GDS, dest="/tmp/", flat=True)
-    dest_path = f"/tmp/{TEST_GDS}"
+    dest_path = ""
 
     try:
         results = hosts.all.zos_fetch(**params)
@@ -716,12 +717,21 @@ def test_fetch_gds_from_gdg(ansible_zos_module, generation):
             assert result.get("changed") is True
             assert result.get("data_set_type") == "Sequential"
             assert result.get("module_stderr") is None
-            assert result.get("dest") == dest_path
+
+            # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+            dest_path = result.get("dest", "")
+            dest_pattern = r"G[0-9]+V[0-9]+"
+
+            assert TEST_GDG in dest_path
+            assert re.fullmatch(dest_pattern, dest_path.split(".")[-1])
             assert os.path.exists(dest_path)
     finally:
         hosts.all.zos_data_set(name=f"{TEST_GDG}(-1)", state="absent")
         hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
         hosts.all.zos_data_set(name=TEST_GDG, state="absent")
 
-        if os.path.exists(dest_path):
+        if dest_path != "" and os.path.exists(dest_path):
             os.remove(dest_path)
+
+# TODO: add negative GDS test (asking for a +1)
+# TODO: add test for fetching a whole GDG

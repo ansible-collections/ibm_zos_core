@@ -755,8 +755,10 @@ def run_module():
     )
 
     src = module.params.get("src")
+    hlq = None
     if module.params.get("use_qualifier"):
-        module.params["src"] = datasets.get_hlq() + "." + src
+        hlq = datasets.get_hlq()
+        module.params["src"] = hlq + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #
@@ -916,6 +918,13 @@ def run_module():
         res_args["file"] = src
     else:
         res_args["file"] = src_data_set.name
+
+        # Removing the HLQ since the user is probably not expecting it. The module
+        # hasn't returned it ever since it was originally written. Changes made to
+        # add GDG/GDS support started leaving the HLQ behind in the file name.
+        if hlq:
+            res_args["file"] = res_args["file"].replace(f"{hlq}.", "")
+
     res_args["ds_type"] = ds_type
     module.exit_json(**res_args)
 

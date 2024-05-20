@@ -33,6 +33,11 @@ VSAM_NAMES = [
     "TEST.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
+GDG_NAMES = [
+    "TEST.FIND.GDG.FUNCTEST(0)",
+    "TEST.FIND.GDG.FUNCTEST(1)",
+]
+
 DATASET_TYPES = ['seq', 'pds', 'pdse']
 
 
@@ -56,6 +61,35 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
         executable='/bin/sh',
         stdin=alloc_cmd,
     )
+
+
+def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "hello"
+    try:
+        hosts.all.zos_data_set(
+            batch=[dict(name=i, type='gdg', state='present') for i in GDG_NAMES]
+        )
+        for ds in GDG_NAMES:
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
+
+        find_res = hosts.all.zos_find(
+            patterns=['TEST.FIND.GDG.*.*'],
+            contains=search_string
+        )
+        print("\n================\n")
+        print(vars(find_res))
+        print("\n================\n")
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                assert ds.get('name') in GDG_NAMES
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(
+            batch=[dict(name=i, state='absent') for i in SEQ_NAMES]
+        )
 
 
 def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):

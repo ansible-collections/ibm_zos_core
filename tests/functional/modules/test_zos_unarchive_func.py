@@ -572,8 +572,8 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
 def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name()
-        DATASET = get_tmp_ds_name(3,3)
+        MVS_DEST_ARCHIVE = get_tmp_ds_name(symbols=True)
+        DATASET = get_tmp_ds_name(3,3,symbols=True)
         HLQ ="ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -594,7 +594,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name").replace('$', '\\$')))
 
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
@@ -606,7 +606,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
             format=format_dict,
         )
         # remote data_sets from host
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd="drm {0}*".format(DATASET.replace("$", "/$")))
 
         if format == "terse":
             del format_dict["format_options"]["terse_pack"]

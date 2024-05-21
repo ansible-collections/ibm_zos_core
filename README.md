@@ -15,11 +15,11 @@ The following [table](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_co
 
 ### Ansible Controller
 
-* This release of the collection requires **ansible-core >=2.15** (Ansible >=8.x), for additional requirements such as Python, review the [support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix).
+This release of the collection requires **ansible-core >=2.15** (Ansible >=8.x), for additional requirements such as Python, review the [support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix).
 
 ### Managed Node
 
-This release of the collection requires the following:
+This release of the collection requires the following
 * [z/OS](https://www.ibm.com/docs/en/zos) V2R4 (or later) but prior to version V3R1.
 * [z/OS shell](https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm).
 * [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) 3.9 - 3.11.
@@ -33,6 +33,7 @@ Before using this collection, you need to install it with the Ansible Galaxy com
 ansible-galaxy collection install ibm.ibm_zos_core
 ```
 
+<p>&nbsp;</p>
 You can also include it in a requirements.yml file and install it with `ansible-galaxy collection install -r requirements.yml`, using the format:
 
 ```sh
@@ -40,36 +41,43 @@ collections:
   - name: ibm.ibm_zos_core
 ```
 
+<p>&nbsp;</p>
 Note that if you install the collection from Ansible Galaxy, it will not be upgraded automatically when you upgrade the Ansible package.
-
 To upgrade the collection to the latest available version, run the following command:
 
 ```sh
 ansible-galaxy collection install ibm.ibm_zos_core --upgrade
 ```
 
+<p>&nbsp;</p>
 You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax to install version 1.0.0:
 
 ```sh
 ansible-galaxy collection install ibm.ibm_zos_core:1.0.0
 ```
 
+<p>&nbsp;</p>
 You can also install a beta version of the collection. A beta version is only available on Galaxy and is only supported by the community until it is promoted to General Availability (GA). Use the following syntax to install a beta version:
 
 ```sh
 ansible-galaxy collection install ibm.ibm_zos_core:1.10.0-beta.1
 ```
 
+<p>&nbsp;</p>
 As part of the installation, the collection [requirements](#Requirements) must be made available to Ansible through the use of [environment variables](https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/zos_core/configuration_guide.md#environment-variables). The preferred configuration is to place the environment variables in `group_vars` and `host_vars`, you can find examples of this configuration under any [playbook project](https://github.com/IBM/z_ansible_collections_samples), for example, review the **data set** example [configuration](https://github.com/IBM/z_ansible_collections_samples/tree/main/zos_concepts/data_sets/data_set_basics#configuration) documentation.
 
+<p>&nbsp;</p>
 If you are testing a configuration, it can be helpful to set the environment variables in a playbook, an example of that can be reviewed [here](https://github.com/ansible-collections/ibm_zos_core/discussions/657).
 
+<p>&nbsp;</p>
 To learn more about the ZOAU Python wheel installation method, review the [documentation](https://www.ibm.com/docs/en/zoau/1.3.x?topic=installing-zoau#python-wheel-installation-method).
 
+<p>&nbsp;</p>
 If the wheel is installed using the `--target` option, it will install the package into the specified target directory. The environment variable `PYTHONPATH` will have to be configured to where the packages is installed, e.g; `PYTHONPATH: /usr/zoau/wheels`. Using `--target` is recommended, else the wheel will be installed in Python's home directory which may not have write permissions or persist
 after an update.
 
-If the wheel is installed using the `--user` option, it will install the package into the user directory. The environment variable `PYTHONPATH` will have to be configured to where the packages is installed, e.g; `PYTHONPATH: /u/user`
+<p>&nbsp;</p>
+If the wheel is installed using the `--user` option, it will install the package into the user directory. The environment variable `PYTHONPATH` will have to be configured to where the packages is installed, e.g; `PYTHONPATH: /u/user`.
 
 Environment variables:
 
@@ -135,18 +143,21 @@ environment_vars:
 
 ## Testing
 
-All releases, including betas will have:
-* 100% success for [Functional](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/functional) tests.
-* 100% success for [Sanity](https://docs.ansible.com/ansible/latest/dev_guide/testing/sanity/index.html#all-sanity-tests) tests as part of [ansible-test](https://docs.ansible.com/ansible/latest/dev_guide/testing.html#run-sanity-tests).
-* 100% success for [pyflakes](https://github.com/PyCQA/pyflakes/blob/main/README.rst).
-* 100% success for [ansible-lint](https://ansible.readthedocs.io/projects/lint/) allowing only false positives.
+All releases, including betas will meet the following test criteria.
 
-This release of the collection was tested with:
-* ansible-core v2.15.x
-* Python 3.9.x
-* IBM Open Enterprise SDK for Python 3.11.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.0.x
-* z/OS V2R5
+  * 100% success for [Functional](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/functional) tests.
+  * 100% success for [Sanity](https://docs.ansible.com/ansible/latest/dev_guide/testing/sanity/index.html#all-sanity-tests) tests as part of [ansible-test](https://docs.ansible.com/ansible/latest/dev_guide/testing.html#run-sanity-tests).
+  * 100% success for [pyflakes](https://github.com/PyCQA/pyflakes/blob/main/README.rst).
+  * 100% success for [ansible-lint](https://ansible.readthedocs.io/projects/lint/) allowing only false positives.
+
+<p>&nbsp;</p>
+This release of the collection was tested with following dependencies.
+
+  * ansible-core v2.15.x
+  * Python 3.9.x
+  * IBM Open Enterprise SDK for Python 3.11.x
+  * IBM Z Open Automation Utilities (ZOAU) 1.3.0.x
+  * z/OS V2R5
 
 This release introduces case sensitivity for option values and includes a porting guide in the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) to assist with which option values will need to be updated.
 
@@ -156,22 +167,25 @@ This community is not currently accepting contributions. However, we encourage y
 
 Review the [development docs](https://ibm.github.io/z_ansible_collections_doc/zhmc-ansible-modules/docs/source/development.html#development) to learn how you can create an environment and test the collections modules.
 
-### Communicating with the IBM z/OS core community
+## Communication
 
-If you would like to communicate with this community, you can do so through:
-* GitHub [discussions](https://github.com/ansible-collections/ibm_zos_core/discussions).
-* GitHub [issues](https://github.com/ansible-collections/ibm_zos_core/issues/new/choose).
-* [Ansible Forum](https://forum.ansible.com/), please use the `zos` tag to ensure proper awareness.
-* Discord [System Z Enthusiasts](https://forum.ansible.com/) room [ansible](https://discord.gg/nKC8F89v).
-* Matrix Ansible room [ansible-zos](#ansible-zos:matrix.org).
-* Ansible community Matrix [rooms](https://docs.ansible.com/ansible/latest/community/communication.html#general-channels).
+If you would like to communicate with this community, you can do so through the following options.
+
+  * GitHub [discussions](https://github.com/ansible-collections/ibm_zos_core/discussions).
+  * GitHub [issues](https://github.com/ansible-collections/ibm_zos_core/issues/new/choose).
+  * [Ansible Forum](https://forum.ansible.com/), please use the `zos` tag to ensure proper awareness.
+  * Discord [System Z Enthusiasts](https://forum.ansible.com/) room [ansible](https://discord.gg/nKC8F89v).
+  * Matrix Ansible room [ansible-zos](#ansible-zos:matrix.org).
+  * Ansible community Matrix [rooms](https://docs.ansible.com/ansible/latest/community/communication.html#general-channels).
 
 ## Support
 
 As Red Hat Ansible [Certified Content](https://catalog.redhat.com/software/search?target_platforms=Red%20Hat%20Ansible%20Automation%20Platform), this collection is entitled to [support](https://access.redhat.com/support/) through [Ansible Automation Platform](https://www.redhat.com/en/technologies/management/ansible) (AAP). After creating a Red Hat support case, if it is determined the issue belongs to IBM, Red Hat will instruct you to create an [IBM support case](https://www.ibm.com/mysupport/s/createrecord/NewCase) and share the case number with Red Hat so that a collaboration can begin between Red Hat and IBM.
 
+<p>&nbsp;</p>
 If a support case cannot be opened with Red Hat and the collection has been obtained either from [Galaxy](https://galaxy.ansible.com/ui/) or [GitHub](https://github.com/ansible-collections/ibm_zos_core), there is community support available at no charge. Community support is limited to the collection; community support does not include any of the Ansible Automation Platform components, [IBM Z Open Automation Utilities](https://www.ibm.com/docs/en/zoau), [IBM Open Enterprise SDK for Python](https://www.ibm.com/products/open-enterprise-python-zos) or [ansible-core](https://github.com/ansible/ansible).
 
+<p>&nbsp;</p>
 The current supported versions of this collection can be found listed under the [release section](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
 
 ## Release Notes and Roadmap
@@ -182,6 +196,7 @@ For AAP users, to see the supported ansible-core versions, review the [AAP Life 
 
 For Galaxy and GitHub users, to see the supported ansible-core versions, review the [ansible-core support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix).
 
+<p>&nbsp;</p>
 The collection's changelogs can be reviewed in the following table.
 
 | Version | ansible-core | Ansible | Status                     |

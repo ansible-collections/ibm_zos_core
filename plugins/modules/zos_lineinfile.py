@@ -381,9 +381,9 @@ def absent(src, line, regexp, encoding, force):
 def execute_dsed(src, state, encoding, module, line=False, first_match=False, force=False, backrefs=False, regex=None, ins_bef=None, ins_aft=None):
     options = ""
     force = " -f " if force else ""
-    backrefs= " -r " if backrefs else ""
-    encoding= " -c {0} ".format(encoding)
-    match= "1" if first_match else "$"
+    backrefs = " -r " if backrefs else ""
+    encoding = " -c {0} ".format(encoding)
+    match = "1" if first_match else "$"
 
     if state:
         if regex:
@@ -448,8 +448,8 @@ def clean_command(cmd):
 
 
 def check_special_characters(src):
-  special_characters = "$@#-"
-  return  any(character in special_characters for character in src)
+    special_characters = "$@#-"
+    return any(character in special_characters for character in src)
 
 
 def quotedString(string):
@@ -586,7 +586,7 @@ def main():
         src = dataset.name
         gdg = dataset.is_gds_active
 
-    if "(" in src and ")" in src or "+" in src or "-" in src and gdg == False:
+    if "(" in src and ")" in src or "+" in src or "-" in src and gdg is False:
         module.fail_json(msg="{0} does not exist".format(src))
 
     spch = check_special_characters(src)
@@ -620,7 +620,8 @@ def main():
     # state=absent, delete lines with matching regex pattern
     if parsed_args.get('state') == 'present':
         if dmod_exec:
-            rc, cmd, stodut = execute_dsed(src, state=True, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
+            rc, cmd, stodut = execute_dsed(src, state=True, encoding=encoding, module=module, line=line, first_match=firstmatch,
+                                           force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
             result['rc'] = rc
             result['cmd'] = cmd
             result['stodut'] = stodut
@@ -628,10 +629,11 @@ def main():
             stderr = 'Failed to insert new entry' if rc != 0 else ""
         else:
             return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
-                                    backrefs, force)
+                                     backrefs, force)
     else:
         if dmod_exec:
-            rc, cmd, stodut = execute_dsed(src, state=False, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
+            rc, cmd, stodut = execute_dsed(src, state=False, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force,
+                                           backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
             result['rc'] = rc
             result['cmd'] = cmd
             result['stodut'] = stodut

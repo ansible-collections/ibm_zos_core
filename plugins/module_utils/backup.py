@@ -359,19 +359,19 @@ class BackupError(Exception):
 
 
 def is_gds_relative_name(name):
-        """Determine if name is a gdg relative name based
-        on the GDS relative name syntax eg. 'USER.GDG(-2)'.
+    """Determine if name is a gdg relative name based
+    on the GDS relative name syntax eg. 'USER.GDG(-2)'.
 
-        Parameters
-        ----------
-        name : str
-            Data set name to determine if is a GDS relative name.
+    Parameters
+    ----------
+    name : str
+        Data set name to determine if is a GDS relative name.
 
-        Returns
-        -------
-        bool
-            Whether the name is a GDS relative name.
-        """
-        pattern = r'(.+)\(([\\]?[+]\d+)\)'
-        match = re.fullmatch(pattern, name)
-        return bool(match)
+    Returns
+    -------
+    bool
+        Whether the name is a GDS relative name.
+    """
+    pattern = r'(.+)\(([\\]?[+]\d+)\)'
+    match = re.fullmatch(pattern, name)
+    return bool(match)

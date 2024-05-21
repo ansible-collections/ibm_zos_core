@@ -399,7 +399,7 @@ exit 0;
 """
 
 TEMP_PATH = "/tmp/jcl"
-DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
+DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.x#$xx05"
 
 @pytest.mark.parametrize(
     "location", [
@@ -460,7 +460,7 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
-                TEMP_PATH, DATA_SET_NAME_SPECIAL_CHARS
+                TEMP_PATH, DATA_SET_NAME_SPECIAL_CHARS.replace('$', '\$')
             )
         )
         results = hosts.all.zos_job_submit(
@@ -920,6 +920,79 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
         assert result.get("jobs")[0].get("ret_code").get("code") is None
         assert result.get("jobs")[0].get("ret_code").get("msg") == "AC"
         assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
+
+
+@pytest.mark.parametrize("generation", ["0", "-1"])
+def test_job_from_gdg_source(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+
+    try:
+        # Creating a GDG for the test.
+        source = get_tmp_ds_name()
+        gds_name = f"{source}({generation})"
+        hosts.all.zos_data_set(name=source, state="present", type="gdg", limit=3)
+        hosts.all.zos_data_set(name=f"{source}(+1)", state="present", type="seq")
+        hosts.all.zos_data_set(name=f"{source}(+1)", state="present", type="seq")
+
+        # Copying the JCL to the GDS.
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+        )
+        hosts.all.shell(
+            cmd="dcp '{0}/SAMPLE' '{1}'".format(TEMP_PATH, gds_name)
+        )
+
+        results = hosts.all.zos_job_submit(src=gds_name, location="data_set")
+        for result in results.contacted.values():
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+            assert result.get("jobs")[0].get("ret_code").get("code") == 0
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.zos_data_set(name=f"{source}(0)", state="absent")
+        hosts.all.zos_data_set(name=f"{source}(-1)", state="absent")
+        hosts.all.zos_data_set(name=source, state="absent")
+
+
+def test_inexistent_negative_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        # Creating a GDG for the test.
+        source = get_tmp_ds_name()
+        gds_name = f"{source}(-1)"
+        hosts.all.zos_data_set(name=source, state="present", type="gdg", limit=3)
+        # Only creating generation 0.
+        hosts.all.zos_data_set(name=f"{source}(+1)", state="present", type="seq")
+
+        results = hosts.all.zos_job_submit(src=gds_name, location="data_set")
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert "was not found" in result.get("msg")
+    finally:
+        hosts.all.zos_data_set(name=f"{source}(0)", state="absent")
+        hosts.all.zos_data_set(name=source, state="absent")
+
+
+def test_inexistent_positive_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        # Creating a GDG for the test.
+        source = get_tmp_ds_name()
+        gds_name = f"{source}(+1)"
+        hosts.all.zos_data_set(name=source, state="present", type="gdg", limit=3)
+        # Only creating generation 0.
+        hosts.all.zos_data_set(name=gds_name, state="present", type="seq")
+
+        results = hosts.all.zos_job_submit(src=gds_name, location="data_set")
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert "was not found" in result.get("msg")
+    finally:
+        hosts.all.zos_data_set(name=f"{source}(0)", state="absent")
+        hosts.all.zos_data_set(name=source, state="absent")
 
 
 # This test case is related to the following GitHub issues:

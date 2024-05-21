@@ -344,13 +344,21 @@ DS_TYPE = ['PS', 'PO']
 
 
 def transformBlock(block, indentation_char, indentation_spaces):
-    """Prepends the specified number of spaces to the block in all lines
-    Arguments:
-        block: {str} -- The block text to be transformed.
-        indentation_char: {str} -- The indentation char to be used.
-        indentation_spaces: {int} -- Number of times the indentation char to prepend.
-    Returns:
-        block: {str} -- The text block after applying the necessary transformations.
+    """Prepends the specified number of spaces to the block in all lines.
+
+    Parameters
+    ----------
+    block : str
+        The block text to be transformed.
+    indentation_char : str
+        The indentation char to be used.
+    indentation_spaces : int
+        Number of times the indentation char to prepend.
+
+    Returns
+    -------
+    str
+        The text block after applying the necessary transformations.
     """
     blocklines = block.splitlines()
     # Prepend spaces transformation
@@ -364,50 +372,83 @@ def transformBlock(block, indentation_char, indentation_spaces):
 
 
 def present(src, block, marker, ins_aft, ins_bef, encoding, force):
-    """Replace a block with the matching regex pattern
-    Insert a block before/after the matching pattern
-    Insert a block at BOF/EOF
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        block: {str} -- The block to insert/replace into the src.
-        marker: {str} -- The block will be inserted/updated with the markers.
-        ins_aft: {str} -- Insert the block after matching '*regex*' pattern or EOF.
-            choices:
-                - EOF
-                - '*regex*'
-        ins_bef: {str} -- Insert the block before matching '*regex*' pattern or BOF.
-            choices:
-                - BOF
-                - '*regex*'
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- If not empty passes True option to dmod cmd.
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dmod shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the destination was modified.
+    """Replace a block with the matching regex pattern.
+    Insert a block before/after the matching pattern.
+    Insert a block at BOF/EOF.
+
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    block : str
+        The block to insert/replace into the src.
+    marker : str
+        The block will be inserted/updated with the markers.
+    ins_aft : str
+        Insert the block after matching '*regex*' pattern or EOF.
+        choices:
+            - EOF
+            - '*regex*'
+    ins_bef : str
+        Insert the block before matching '*regex*' pattern or BOF.
+        choices:
+            - BOF
+            - '*regex*'
+    encoding : str
+        Encoding of the src.
+    force : bool
+        If not empty passes True option to dmod cmd.
+
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dmod shell command.
+        found {int} -- Number of matching regex pattern.
+        changed {bool} -- Indicates if the destination was modified.
     """
     return datasets.blockinfile(src, True, block=block, marker=marker, insert_after=ins_aft,
                                 insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
 
 
 def absent(src, marker, encoding, force):
-    """Delete blocks with matching regex pattern
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        marker: {str} -- Identifies the block to be removed.
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- If not empty passes the value True option to dmod cmd.
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dmod shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the destination was modified.
+    """Delete blocks with matching regex pattern.
+
+    Parameter
+    ---------
+    src : str
+        The z/OS USS file or data set to modify.
+    marker : str
+        Identifies the block to be removed.
+    encoding : str
+        Encoding of the src.
+    force : bool
+        If not empty passes the value True option to dmod cmd.
+
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dmod shell command.
+        found {int} -- Number of matching regex pattern.
+        changed {bool} -- Indicates if the destination was modified.
     """
     return datasets.blockinfile(src, False, marker=marker, encoding=encoding, force=force, as_json=True)
 
 
 def quotedString(string):
+    """Deletes the quote mark on strings.
+
+    Parameters
+    ----------
+    string : str
+        String to delete quote marks from.
+
+    Returns
+    -------
+    str
+        String without the quote marks.
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
@@ -482,6 +523,25 @@ def clean_command(cmd):
 
 
 def main():
+    """Run the zos_blockinfile module core functions.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Block is required with state=present.
+    fail_json
+        Marker should have {mark}.
+    fail_json
+        src does NOT exist.
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Unable to allocate backup.
+    fail_json
+        ZOAU dmod return content is NOT in json format.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(

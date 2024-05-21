@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
+import re
 from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -97,8 +98,11 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
         # added the check for a sub-mmember, just in this case
         if not bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
-        elif "(" not in bk_dsn:
-            bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
+        else:
+            if is_gds_relative_name(bk_dsn):
+                bk_dsn = datasets.create(bk_dsn)
+            if "(" not in bk_dsn:
+                bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
 
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         try:
@@ -128,7 +132,10 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             except exceptions.ZOAUException as copy_exception:
                 cp_rc = copy_exception.response.rc
         else:
-            cp_rc = _copy_ds(dsn, bk_dsn)
+            if is_gds_relative_name(bk_dsn):
+                cp_rc = datasets.copy(dsn, bk_dsn)
+            else:
+                cp_rc = _copy_ds(dsn, bk_dsn)
 
         if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()
@@ -242,8 +249,8 @@ def _copy_ds(ds, bk_ds):
     module = AnsibleModuleHelper(argument_spec={})
     _allocate_model(bk_ds, ds)
     repro_cmd = """  REPRO -
-    INDATASET({0}) -
-    OUTDATASET({1})""".format(
+    INDATASET('{0}') -
+    OUTDATASET('{1}')""".format(
         ds, bk_ds
     )
     rc, out, err = module.run_command(
@@ -349,3 +356,22 @@ class BackupError(Exception):
         self.stdout = stdout
         self.stderr = stderr
         super(BackupError, self).__init__(self.msg)
+
+
+def is_gds_relative_name(name):
+        """Determine if name is a gdg relative name based
+        on the GDS relative name syntax eg. 'USER.GDG(-2)'.
+
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS relative name.
+
+        Returns
+        -------
+        bool
+            Whether the name is a GDS relative name.
+        """
+        pattern = r'(.+)\(([\\]?[+]\d+)\)'
+        match = re.fullmatch(pattern, name)
+        return bool(match)

@@ -1026,7 +1026,7 @@ class DataSet(object):
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
             datasets.create(**formatted_args)
-        except exceptions._ZOAUExtendableException as create_exception:
+        except exceptions.ZOAUException as create_exception:
             raise DatasetCreateError(
                 raw_name if raw_name else name,
                 create_exception.response.rc,
@@ -1727,6 +1727,7 @@ class DataSetUtils(object):
             dict -- Dictionary containing data set attributes
         """
         result = dict()
+        self.data_set = self.data_set.upper().replace("\\", '')
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
             "  LISTDS '{0}'".format(self.data_set), authorized=True
         )
@@ -1866,7 +1867,7 @@ class MVSDataSet():
             except Exception:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
-        if self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs":
+        if self.data_set_type and self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs":
             # When trying to create a new VSAM with a specified record format will fail
             # with ZOAU
             self.record_format = None

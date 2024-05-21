@@ -606,19 +606,27 @@ def main():
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
+    gdg = False
     # analysis the file type
+    if "/" not in src:
+        dataset = data_set.MVSDataSet(
+            name=src
+        )
+        src = dataset.name
+        gdg = dataset.name
+
+    if "(" in src or ")" in src or "+" in src or "-" in src and gdg == False:
+        module.fail_json(msg="{0} does not exist".format(src))
     ds_utils = data_set.DataSetUtils(src)
     if not ds_utils.exists():
         message = "{0} does NOT exist".format(str(src))
         module.fail_json(msg=message)
     file_type = ds_utils.ds_type()
-    if file_type == 'USS':
-        file_type = 1
-    else:
+
+    if file_type != "USS":
         if file_type not in DS_TYPE:
             message = "{0} data set type is NOT supported".format(str(file_type))
             module.fail_json(msg=message)
-        file_type = 0
 
     return_content = None
     if backup:
@@ -628,7 +636,7 @@ def main():
         if isinstance(backup, bool):
             backup = None
         try:
-            if file_type:
+            if file_type == "USS":
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)

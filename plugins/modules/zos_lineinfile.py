@@ -447,9 +447,9 @@ def clean_command(cmd):
     return cmd
 
 
-#def check_special_characters(src):
-#  special_characters = "$@#-"
-#  return  any(character in special_characters for character in src)
+def check_special_characters(src):
+  special_characters = "$@#-"
+  return  any(character in special_characters for character in src)
 
 
 def quotedString(string):
@@ -575,6 +575,9 @@ def main():
             module.fail_json(msg='one of line or regexp is required with state=absent')
 
     gdg = False
+    spch = False
+    dmod_exec = False
+
     # analysis the file type
     if "/" not in src:
         dataset = data_set.MVSDataSet(
@@ -585,6 +588,9 @@ def main():
 
     if "(" in src and ")" in src or "+" in src or "-" in src and gdg == False:
         module.fail_json(msg="{0} does not exist".format(src))
+
+    spch = check_special_characters(src)
+    dmod_exec = spch or gdg
 
     ds_utils = data_set.DataSetUtils(src)
 
@@ -613,7 +619,7 @@ def main():
     # state=present, insert/replace a line with matching regex pattern
     # state=absent, delete lines with matching regex pattern
     if parsed_args.get('state') == 'present':
-        if gdg:
+        if dmod_exec:
             rc, cmd, stodut = execute_dsed(src, state=True, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
             result['rc'] = rc
             result['cmd'] = cmd
@@ -624,7 +630,7 @@ def main():
             return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
                                     backrefs, force)
     else:
-        if gdg:
+        if dmod_exec:
             rc, cmd, stodut = execute_dsed(src, state=False, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
             result['rc'] = rc
             result['cmd'] = cmd
@@ -633,7 +639,7 @@ def main():
             stderr = 'Failed to insert new entry' if rc != 0 else ""
         else:
             return_content = absent(src, quotedString(line), quotedString(regexp), encoding, force)
-    if not gdg:
+    if not dmod_exec:
         stdout = return_content.stdout_response
         stderr = return_content.stderr_response
         rc = return_content.rc

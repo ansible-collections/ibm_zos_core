@@ -22,6 +22,15 @@ Bugfixes
 - zos_find - Filter size failed if a PDS/E matched the pattern. Fix now gets the correct size for PDS/Es. (https://github.com/ansible-collections/ibm_zos_core/pull/1450).
 - zos_mvs_raw - The module ignored the value of `tmp_hlq` option when creating temporary data sets. Fix now honors the value if provided and uses it as High Level Qualifier for temporary data sets created during the module execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1463).
 
+Known Issues
+------------
+
+- zos_job_output - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response; upgrade to ZOAU 1.2.5.6 or later to resolve (https://github.com/ansible-collections/ibm_zos_core/issues/677).
+- zos_job_submit - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response; upgrade to ZOAU 1.2.5.6 or later to resolve. (https://github.com/ansible-collections/ibm_zos_core/issues/677).
+- zos_job_submit - when setting 'location' to 'LOCAL' and not specifying an from and to encodings, the modules defaults are not read leaving the file in its original encoding; Explicitly set the encodings instead (https://github.com/ansible-collections/ibm_zos_core/issues/1513).
+- zos_job_submit - when submitting JCL, the response value returned for 'byte_count' is incorrect (https://github.com/ansible-collections/ibm_zos_core/issues/1508).
+- zos_operator_action_query - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response; upgrade to ZOAU 1.2.5.6 or later to resolve (https://github.com/ansible-collections/ibm_zos_core/issues/677).
+
 v1.9.0
 ======
 

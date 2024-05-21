@@ -83,7 +83,7 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
             print("\n================\n")
 
         for ds in GDG_NAMES:
-            result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\(0\)\" ")
+            result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(0)\" ")
             print("\n================ {0}\n".format(ds))
             print(vars(result))
 

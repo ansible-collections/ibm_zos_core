@@ -447,17 +447,9 @@ def clean_command(cmd):
     return cmd
 
 
-def combinations_dsed(file_type, regexp, ins_bef, ins_aft, gdg):
-    if gdg:
-        return True
-    if file_type != "USS":
-        if regexp and ins_bef:
-            return True
-
-        elif regexp and ins_aft:
-            return True
-
-    return False
+#def check_special_characters(src):
+#  special_characters = "$@#-"
+#  return  any(character in special_characters for character in src)
 
 
 def quotedString(string):
@@ -557,8 +549,8 @@ def main():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
     backup = parsed_args.get('backup')
-    # if backup_name is provided, update backup variable
-    backup_name = parsed_args.get('backup_name')
+    if parsed_args.get('backup_name') and backup:
+        backup = parsed_args.get('backup_name')
     backrefs = parsed_args.get('backrefs')
     src = parsed_args.get('src')
     firstmatch = parsed_args.get('firstmatch')
@@ -583,7 +575,6 @@ def main():
             module.fail_json(msg='one of line or regexp is required with state=absent')
 
     gdg = False
-    flag_cmd = False
     # analysis the file type
     if "/" not in src:
         dataset = data_set.MVSDataSet(
@@ -591,14 +582,9 @@ def main():
         )
         src = dataset.name
         gdg = dataset.is_gds_active
-    if "(" in src or ")" in src or "+" in src or "-" in src and gdg == False:
-        module.fail_json(msg="{0} does not exist".format(src))
 
-    if backup_name != None:
-        backup_dataset = data_set.MVSDataSet(
-              name=backup_name
-        )
-        backup_name_solve = backup_dataset.name
+    if "(" in src and ")" in src or "+" in src or "-" in src and gdg == False:
+        module.fail_json(msg="{0} does not exist".format(src))
 
     ds_utils = data_set.DataSetUtils(src)
 
@@ -615,18 +601,19 @@ def main():
     if not encoding:
         encoding = "IBM-1047"
     if backup:
-        #try:
+        if isinstance(backup, bool):
+            backup = None
+        try:
             if file_type == "USS":
-                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup_name_solve, compress=False)
+                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup_name_solve, tmphlq=tmphlq)
-        #except Exception:
-            #module.fail_json(msg="creating backup has failed")
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+        except Exception:
+            module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a line with matching regex pattern
     # state=absent, delete lines with matching regex pattern
-    flag_cmd = combinations_dsed(file_type, regexp, ins_bef, ins_aft, gdg)
     if parsed_args.get('state') == 'present':
-        if flag_cmd:
+        if gdg:
             rc, cmd, stodut = execute_dsed(src, state=True, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
             result['rc'] = rc
             result['cmd'] = cmd
@@ -637,7 +624,7 @@ def main():
             return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
                                     backrefs, force)
     else:
-        if flag_cmd:
+        if gdg:
             rc, cmd, stodut = execute_dsed(src, state=False, encoding=encoding, module=module, line=line, first_match=firstmatch, force=force, backrefs=backrefs, regex=regexp, ins_bef=ins_bef, ins_aft=ins_aft)
             result['rc'] = rc
             result['cmd'] = cmd
@@ -646,7 +633,7 @@ def main():
             stderr = 'Failed to insert new entry' if rc != 0 else ""
         else:
             return_content = absent(src, quotedString(line), quotedString(regexp), encoding, force)
-    if not flag_cmd:
+    if not gdg:
         stdout = return_content.stdout_response
         stderr = return_content.stderr_response
         rc = return_content.rc

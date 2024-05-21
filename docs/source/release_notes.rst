@@ -31,7 +31,7 @@ controller and z/OS managed node dependencies.
 Known Issues
 ------------
 
-- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default
+- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
 
 - ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.

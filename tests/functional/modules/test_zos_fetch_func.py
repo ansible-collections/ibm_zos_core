@@ -733,5 +733,27 @@ def test_fetch_gds_from_gdg(ansible_zos_module, generation):
         if dest_path != "" and os.path.exists(dest_path):
             os.remove(dest_path)
 
-# TODO: add negative GDS test (asking for a +1)
+
+def test_error_fetch_inexistent_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+    TEST_GDS = f"{TEST_GDG}(+1)"
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    params = dict(src=TEST_GDS, dest="/tmp/", flat=True)
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+            assert "does not exist" in result.get("msg", "")
+
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
 # TODO: add test for fetching a whole GDG
+# TODO: add test for member inside GDS

@@ -78,7 +78,7 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
             #     limit=5,
             #     force=True
             # )
-            print("\n================ (all)\n"))
+            print("\n================ (all)\n")
             print(vars(result))
             print("\n================\n")
 

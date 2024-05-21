@@ -833,7 +833,7 @@ def run_module():
                 src_exists = data_set.DataSet.data_set_member_exists(src_data_set.name)
             else:
                 src_exists = data_set.DataSet.data_set_exists(
-                    data_set.extract_dsname(src_data_set.name)
+                    src_data_set.name
                 )
 
         if not src_exists:

@@ -67,24 +67,21 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
     hosts = ansible_zos_module
     search_string = "hello"
     try:
+        result=hosts.all.zos_data_set(
+            batch=[dict(name=ds, type='gdg', state='present', limit=5) for ds in GDG_NAMES]
+        )
+        print("\n================ (all)\n")
+        print(vars(result))
+        print("\n================\n")
+
         for ds in GDG_NAMES:
-            result=hosts.all.zos_data_set(
-                batch=[dict(name=i, type='gdg', state='present', limit=5) for i in GDG_NAMES]
-            )
-            # result=hosts.all.zos_data_set(
-            #     name=ds,
-            #     type='gdg',
-            #     state='present',
-            #     limit=5,
-            #     force=True
-            # )
-            print("\n================ (all)\n")
+            result = hosts.all.zos_data_set(name=f"{ds}(+1)", state="present", type="seq")
+            print("\n================ gen1 {0}\n".format(ds))
             print(vars(result))
-            print("\n================\n")
 
         for ds in GDG_NAMES:
             result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(0)\" ")
-            print("\n================ {0}\n".format(ds))
+            print("\n================ decho {0}\n".format(ds))
             print(vars(result))
 
         find_res = hosts.all.zos_find(

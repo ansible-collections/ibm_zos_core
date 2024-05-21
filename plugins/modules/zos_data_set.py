@@ -1527,23 +1527,29 @@ def parse_and_validate_args(params):
                     dependencies=["state"],
                 ),
                 limit=dict(
-                  type="int",
-                  required=False),
+                    type="int",
+                    required=False
+                ),
                 empty=dict(
-                  type="bool",
-                  required=False),
+                    type="bool",
+                    required=False
+                ),
                 purge=dict(
                     type="bool",
-                    required=False),
+                    required=False
+                ),
                 scratch=dict(
                     type="bool",
-                    required=False),
+                    required=False
+                ),
                 extended=dict(
                     type="bool",
-                    required=False),
+                    required=False
+                ),
                 fifo=dict(
                     type="bool",
-                    required=False),
+                    required=False
+                ),
                 force=dict(
                     type="bool",
                     required=False,

@@ -67,35 +67,32 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
     hosts = ansible_zos_module
     search_string = "hello"
     try:
-        result=hosts.all.zos_data_set(
+        hosts.all.zos_data_set(
             batch=[dict(name=ds, type='gdg', state='present', limit=5) for ds in GDG_NAMES]
         )
-        print("\n================ (all)\n")
-        print(vars(result))
-        print("\n================\n")
 
         for ds in GDG_NAMES:
-            result = hosts.all.zos_data_set(name=f"{ds}(+1)", state="present", type="seq")
-            print("\n================ gen1 {0}\n".format(ds))
-            print(vars(result))
+            hosts.all.zos_data_set(name=f"{ds}(+1)", state="present", type="seq")
 
         for ds in GDG_NAMES:
-            result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(0)\" ")
-            print("\n================ decho {0}\n".format(ds))
-            print(vars(result))
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(0)\" ")
 
         find_res = hosts.all.zos_find(
             patterns=['TEST.FIND.GDG.*.*'],
             contains=search_string
         )
-        print("\n================\n")
-        print(vars(find_res))
-        print("\n================\n")
+
+        for val in find_res.contacted.values():
+            print("\n" + vars(val))
+
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):
-                assert ds.get('name') in GDG_NAMES
+                pieces = ds.get('name').split(".")
+                pieces.pop()
+                testname = pieces.join(".")
+                assert testname in GDG_NAMES
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
         hosts.all.zos_data_set(

@@ -83,9 +83,6 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
         )
 
         for val in find_res.contacted.values():
-            print("\n" + vars(val))
-
-        for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):

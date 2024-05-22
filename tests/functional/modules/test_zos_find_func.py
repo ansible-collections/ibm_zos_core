@@ -96,7 +96,7 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
             batch=[dict(name=f"{ds}(+1)", type='seq', state='absent', force=True) for ds in GDG_NAMES]
         )
         hosts.all.zos_data_set(
-            batch=[dict(name=ds, type='gdg', state='absent', force=True) for ds in GDG_NAMES]
+            batch=[dict(name=ds, type='gdg', state='absent',) for ds in GDG_NAMES]
         )
 
 
@@ -176,13 +176,16 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             ]
         )
         for ds in PDS_NAMES:
-            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
+            result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
+            print("\n------- decho to {ds}\n")
+            print(vars(result))
 
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'],
             contains=search_string,
             patterns=['.*']
         )
+        print("\n========\n")
         print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) != 0

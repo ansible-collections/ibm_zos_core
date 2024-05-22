@@ -36,6 +36,20 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, va
 
 
 def _process_boolean(arg, default=False):
+    """Process an argument to a boolean.
+
+    Parameters
+    ----------
+    arg : bool
+        Argument to convert.
+    default : bool
+        Output in case the operation fails.
+
+    Returns
+    -------
+    bool
+        Boolean value.
+    """
     try:
         return boolean(arg)
     except TypeError:
@@ -46,15 +60,21 @@ def create_template_environment(template_parameters, src, template_encoding=None
     """Parses boolean parameters for Jinja2 and returns a TemplateRenderer
     instance.
 
-    Arguments:
-        template_parametrs (dict): Parameters for creating the template environment.
-        src (str): Local path where the templates are located.
-        template_encoding (dict, optional): encoding used by the templates. If not
-                given, the default locale set in the system will be used.
+    Parameters
+    ----------
+    template_parameters : dict
+        Parameters for creating the template environment.
+    src : str
+        Local path where the templates are located.
+    template_encoding : dict, optional
+        Encoding used by the templates. If not
+        given, the default locale set in the system will be used.
 
-    Returns:
-        TemplateRenderer -- Object with a new template environment ready to
-                render the templates found in src.
+    Returns
+    -------
+    TemplateRenderer
+        Object with a new template environment ready to
+        render the templates found in src.
     """
     if template_parameters.get("lstrip_blocks"):
         template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
@@ -72,13 +92,6 @@ def create_template_environment(template_parameters, src, template_encoding=None
 
 
 class TemplateRenderer:
-    """This class implements functionality to load and render Jinja2
-    templates. To add support for Jinja2 in a module, you need to include
-    the template.py doc fragment, add the options for configuring the Jinja2
-    environment to the module's options, and instantiate this class to
-    render templates inside an action plugin.
-    """
-
     _ALLOWED_NEWLINE_DELIMITERS = ["\n", "\r", "\r\n"]
     _FIXABLE_NEWLINE_DELIMITERS = ["\\n", "\\r", "\\r\\n"]
     _NEWLINE_DELIMITER_SWAP = {
@@ -105,45 +118,79 @@ class TemplateRenderer:
         newline_sequence="\n",
         auto_reload=False,
     ):
-        """Initializes a new TemplateRenderer object with a Jinja2
+        """This class implements functionality to load and render Jinja2
+        templates. To add support for Jinja2 in a module, you need to include
+        the template.py doc fragment, add the options for configuring the Jinja2
+        environment to the module's options, and instantiate this class to
+        render templates inside an action plugin.
+
+        Initializes a new TemplateRenderer object with a Jinja2
         environment that can use templates from a given directory.
         More information about Jinja2 templates and environments can
         be found at https://jinja.palletsprojects.com/en/3.0.x/api/.
 
-        Arguments:
-            template_path (str): Path to a Jinja2 template file or directory.
-            encoding (str): Encoding for rendered templates.
-            variable_start_string (str, optional): Marker for the beginning of
-                    a statement to print a variable in Jinja2.
-            variable_end_string (str, optional): Marker for the end of
-                    a statement to print a variable in Jinja2.
-            block_start_string (str, optional): Marker for the beginning of
-                    a block in Jinja2.
-            block_end_string (str, optional): Marker for the end of a block
-                    in Jinja2.
-            comment_start_string (str, optional): Marker for the beginning of
-                    a comment in Jinja2.
-            comment_end_string (str, optional): Marker for the end of a comment
-                    in Jinja2.
-            line_statement_prefix (str, optional): Prefix used by Jinja2 to identify
-                    line-based statements.
-            line_comment_prefix (str, optional): Prefix used by Jinja2 to identify
-                    comment lines.
-            lstrip_blocks (bool, optional): Whether Jinja2 should strip leading spaces
-                    from the start of a line to a block.
-            trim_blocks (bool, optional): Whether Jinja2 should remove the first
-                    newline after a block is removed.
-            keep_trailing_newline (bool, optional): Whether Jinja2 should keep the
-                    first trailing newline at the end of a template after rendering.
-            newline_sequence (str, optional): Sequence that starts a newline in a
-                    template. Valid values are '\n', '\r', '\r\n'.
-            auto_reload (bool, optional): Whether to reload a template file when it
-                    has changed after creating the Jinja2 environment.
+        Parameters
+        ----------
+        template_path : str
+            Path to a Jinja2 template file or directory.
+        encoding : str
+            Encoding for rendered templates.
+        variable_start_string : str, optional
+            Marker for the beginning of
+            a statement to print a variable in Jinja2.
+        variable_end_string : str, optional
+            Marker for the end of
+            a statement to print a variable in Jinja2.
+        block_start_string : str, optional
+            Marker for the beginning of
+            a block in Jinja2.
+        block_end_string : str, optional
+            Marker for the end of a block
+            in Jinja2.
+        comment_start_string : str, optional
+            Marker for the beginning of
+            a comment in Jinja2.
+        comment_end_string : str, optional
+            Marker for the end of a comment
+            in Jinja2.
+        line_statement_prefix : str, optional
+            Prefix used by Jinja2 to identify
+            line-based statements.
+        line_comment_prefix : str, optional
+            Prefix used by Jinja2 to identify
+            comment lines.
+        lstrip_blocks : bool, optional
+            Whether Jinja2 should strip leading spaces
+            from the start of a line to a block.
+        trim_blocks : bool, optional
+            Whether Jinja2 should remove the first
+            newline after a block is removed.
+        keep_trailing_newline : bool, optional
+            Whether Jinja2 should keep the
+            first trailing newline at the end of a template after rendering.
+        newline_sequence : str, optional
+            Sequence that starts a newline in a
+            template. Valid values are '\n', '\r', '\r\n'.
+        auto_reload : bool, optional
+            Whether to reload a template file when it
+            has changed after creating the Jinja2 environment.
 
-        Raises:
-            FileNotFoundError: When template_path points to a non-existent
-                    file or directory.
-            ValueError: When the newline sequence is not valid.
+        Attributes
+        ----------
+        encoding : str
+            Encoding for rendered templates.
+        template_dir : str
+            Dir with the template path.
+        templating_env : jinja2.environment
+            Environment created with the arguments as input.
+
+        Raises
+        ------
+        FileNotFoundError
+            When template_path points to a non-existent
+            file or directory.
+        ValueError
+            When the newline sequence is not valid.
         """
         if not path.exists(template_path):
             raise FileNotFoundError("The template path {0} does not exist".format(
@@ -191,26 +238,38 @@ class TemplateRenderer:
         """Loads a template from the templates directory and renders
         it using the Jinja2 environment configured in the object.
 
-        Arguments:
-            file_path (str): Relative path (from the template directory)
-                    to a template.
-            variables (dict): Dictionary containing the variables and
-                    their values that will be substituted in the template.
+        Parameters
+        ----------
+        file_path : str
+            Relative path (from the template directory)
+            to a template.
+        variables : dict
+            Dictionary containing the variables and
+            their values that will be substituted in the template.
 
-        Returns:
-            tuple -- Filepath to a temporary directory that contains the
-                    rendered template, and the complete filepath to the
-                    rendered template.
+        Returns
+        -------
+        tuple(str,str)
+            Filepath to a temporary directory that contains the
+            rendered template, and the complete filepath to the
+            rendered template.
 
-        Raises:
-            TemplateNotFound: When the template file doesn't exist in the
-                    template directory.
-            TemplateError: When rendering of the template fails.
-            FileExistsError: When there is an error while trying to create the
-                    temp directory for rendered templates.
-            PermissionError: When there is an error accessing the temp directory.
-            IOError: When there is an error writing the rendered template.
-            ValueError: When there is an error writing the rendered template.
+        Raises
+        ------
+        TemplateNotFound
+            When the template file doesn't exist in the
+            template directory.
+        TemplateError
+            When rendering of the template fails.
+        FileExistsError
+            When there is an error while trying to create the
+            temp directory for rendered templates.
+        PermissionError
+            When there is an error accessing the temp directory.
+        IOError
+            When there is an error writing the rendered template.
+        ValueError
+            When there is an error writing the rendered template.
         """
         try:
             template = self.templating_env.get_template(file_path)
@@ -259,26 +318,38 @@ class TemplateRenderer:
         """Loads all templates from a directory and renders
         them using the Jinja2 environment configured in the object.
 
-        Arguments:
-            variables (dict): Dictionary containing the variables and
-                    their values that will be substituted in the template.
+        Parameters
+        ----------
+        variables : dict
+            Dictionary containing the variables and
+            their values that will be substituted in the template.
 
-        Returns:
-            tuple -- Filepath to a temporary directory that contains the
-                    rendered templates, and the complete filepath to the
-                    rendered templates' directory.
+        Returns
+        -------
+        tuple(str,str)
+            Filepath to a temporary directory that contains the
+            rendered templates, and the complete filepath to the
+            rendered templates' directory.
 
-        Raises:
-            TemplateNotFound: When the template file doesn't exist in the
-                    template directory.
-            TemplateError: When rendering of the template fails.
-            FileExistsError: When there is an error while trying to create the
-                    temp directory for rendered templates.
-            PermissionError: When there is an error accessing the temp directory.
-            OSError: When there is an error while trying to create the
-                    temp directory for rendered templates.
-            IOError: When there is an error writing the rendered template.
-            ValueError: When there is an error writing the rendered template.
+        Raises
+        ------
+        TemplateNotFound
+            When the template file doesn't exist in the
+            template directory.
+        TemplateError
+            When rendering of the template fails.
+        FileExistsError
+            When there is an error while trying to create the
+            temp directory for rendered templates.
+        PermissionError
+            When there is an error accessing the temp directory.
+        OSError
+            When there is an error while trying to create the
+            temp directory for rendered templates.
+        IOError
+            When there is an error writing the rendered template.
+        ValueError
+            When there is an error writing the rendered template.
         """
         try:
             temp_parent_dir = tempfile.mkdtemp()

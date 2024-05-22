@@ -56,7 +56,6 @@ def get_random_q(size=7):
         count += 1
     return random_q
 
-
 def get_random_qs(size=7):
     """ Function or test to ensure random hlq of datasets, including symbol characters"""
     # Generate the first random hlq of size pass as parameter
@@ -77,4 +76,3 @@ def get_random_qs(size=7):
         random_q = random_q.replace(random_char, random.choice(special_chars))
         count += 1
     return random_q
-

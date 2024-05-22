@@ -17,22 +17,17 @@ import re
 import tempfile
 import traceback
 from os import path, walk
-from string import ascii_uppercase, digits
 from random import sample
+from string import ascii_uppercase, digits
+
 # from ansible.module_utils._text import to_bytes
 from ansible.module_utils.common.text.converters import to_bytes
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingImport,
-    ZOAUImportError,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    mvs_cmd,
-)
+    better_arg_parser, mvs_cmd)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import \
+    AnsibleModuleHelper
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingImport, ZOAUImportError)
 
 try:
     from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import vtoc
@@ -97,6 +92,7 @@ class DataSet(object):
         name,
         replace,
         type,
+        raw_name=None,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -116,8 +112,8 @@ class DataSet(object):
         """Creates data set if it does not already exist.
 
         Args:
-            name (str): The name of the dataset
-            replace (bool) -- Used to determine behavior when data set already exists.
+            name (str): The name of the dataset.
+            raw_name (str): Original name without escaping or gds name resolve operations performed.
             type (str, optional): The type of dataset.
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to None.
@@ -166,6 +162,7 @@ class DataSet(object):
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
+            replace (bool) -- Used to determine behavior when data set already exists.
             tmp_hlq (str, optional): High level qualifier for temporary datasets.
             force (bool, optional): Used to determine behavior when performing member operations on a pdse.
                     Defaults to None.
@@ -356,8 +353,9 @@ class DataSet(object):
         Returns:
             bool -- If data is is cataloged.
         """
-
-        name = name.upper()
+        # We need to unescape because this calls to system can handle
+        # special characters just fine.
+        name = name.upper().replace("\\", '')
 
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
@@ -370,7 +368,7 @@ class DataSet(object):
             if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
-            if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
+            if re.search(r"-\s" + re.escape(name) + r"\s*\n\s+IN-CAT", stdout):
                 return True
 
         return False
@@ -829,6 +827,7 @@ class DataSet(object):
     def replace(
         name,
         type,
+        raw_name=None,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -848,7 +847,8 @@ class DataSet(object):
         """Attempts to replace an existing data set.
 
         Args:
-            name (str): The name of the dataset
+            name (str): The name of the dataset.
+            raw_name (str): Original name without escaping or gds name resolve operations performed.
             type (str, optional): The type of dataset.
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to None.
@@ -920,14 +920,14 @@ class DataSet(object):
             if space_type:
                 secondary += space_type
 
-        type = kwargs.get("type")
-        if type and type.upper() == "ZFS":
-            type = "LDS"
+        ds_type = kwargs.get("type")
+        if ds_type and ds_type.upper() == "ZFS":
+            ds_type = "LDS"
 
         volumes = ",".join(volumes) if volumes else None
         kwargs["space_primary"] = primary
         kwargs["space_secondary"] = secondary
-        kwargs["dataset_type"] = type
+        kwargs["dataset_type"] = ds_type
         kwargs["volumes"] = volumes
         kwargs.pop("space_type", None)
         renamed_args = {}
@@ -944,6 +944,7 @@ class DataSet(object):
     def create(
         name,
         type,
+        raw_name=None,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -965,7 +966,8 @@ class DataSet(object):
         Reasonable default arguments will be set by ZOAU when necessary.
 
         Args:
-            name (str): The name of the dataset
+            name (str): The name of the dataset.
+            raw_name (str): Original name without escaping or gds name resolve operations performed.
             type (str, optional): The type of dataset.
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to None.
@@ -1026,7 +1028,7 @@ class DataSet(object):
             datasets.create(**formatted_args)
         except exceptions._ZOAUExtendableException as create_exception:
             raise DatasetCreateError(
-                name,
+                raw_name if raw_name else name,
                 create_exception.response.rc,
                 create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
@@ -1036,7 +1038,7 @@ class DataSet(object):
                 if DataSet.data_set_cataloged(name, volumes):
                     return 0
             raise DatasetCreateError(
-                name,
+                raw_name if raw_name else name,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
@@ -1801,12 +1803,13 @@ class MVSDataSet():
     """
     This class represents a z/OS data set that can be yet to be created or
     already created in the system. It encapsulates the data set attributes
-    to easy access.
+    to easy access and provides operations to perform in the same data set.
 
     """
     def __init__(
         self,
         name,
+        escape_name=False,
         data_set_type=None,
         state=None,
         organization=None,
@@ -1826,7 +1829,10 @@ class MVSDataSet():
         total_space=None,
         used_space=None,
         last_referenced=None,
+        is_cataloged=None,
     ):
+        # Different class variables
+        self.data_set_possible_states = {"unknown", "present", "absent"}
         self.name = name
         self.organization = organization
         self.record_format = record_format
@@ -1850,14 +1856,388 @@ class MVSDataSet():
         self.sms_management_class = sms_management_class
         self.volumes = volumes
         self.is_gds_active = False
+        self.is_cataloged = False
+
         # If name has escaped chars or is GDS relative name we clean it.
-        self.name = DataSet.escape_data_set_name(self.name)
+        if escape_name:
+            self.name = DataSet.escape_data_set_name(self.name)
         if DataSet.is_gds_relative_name(self.name):
             try:
                 self.name = DataSet.resolve_gds_absolute_name(self.name)
-            except Exception as e:
+                self.is_gds_active = True
+            except Exception:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
+        if self.data_set_type and (self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs"):
+            # When trying to create a new VSAM with a specified record format will fail
+            # with ZOAU
+            self.record_format = None
+
+    def create(self):
+        """Creates the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        arguments = {
+            "name" : self.name,
+            "raw_name" : self.raw_name,
+            "replace" : self.replace,
+            "type" : self.data_set_type,
+            "space_primary" : self.space_primary,
+            "space_secondary" : self.space_secondary,
+            "space_type" : self.space_type,
+            "record_format" : self.record_format,
+            "record_length" : self.record_length,
+            "block_size" : self.block_size,
+            "directory_blocks" : self.directory_blocks,
+            "key_length" : self.key_length,
+            "key_offset" : self.key_offset,
+            "sms_storage_class" : self.sms_storage_class,
+            "sms_data_class" : self.sms_data_class,
+            "sms_management_class" : self.sms_management_class,
+            "volumes" : self.volumes,
+            "tmp_hlq" : self.tmp_hlq,
+            "force" : self.force,
+        }
+        DataSet.create(**arguments)
+        self.set_state("present")
+
+    def ensure_present(self, tmp_hlq=None, replace=False, force=False):
+        """ Make sure that the data set is created or fail creating it.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+        replace : bool
+            Used to determine behavior when data set already exists.
+        force : bool
+            Used to determine behavior when performing member operations on a pdse.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        arguments = {
+            "name" : self.name,
+            "raw_name" : self.raw_name,
+            "type" : self.data_set_type,
+            "space_primary" : self.space_primary,
+            "space_secondary" : self.space_secondary,
+            "space_type" : self.space_type,
+            "record_format" : self.record_format,
+            "record_length" : self.record_length,
+            "block_size" : self.block_size,
+            "directory_blocks" : self.directory_blocks,
+            "key_length" : self.key_length,
+            "key_offset" : self.key_offset,
+            "sms_storage_class" : self.sms_storage_class,
+            "sms_data_class" : self.sms_data_class,
+            "sms_management_class" : self.sms_management_class,
+            "volumes" : self.volumes,
+            "replace" : replace,
+            "tmp_hlq" : tmp_hlq,
+            "force" : force,
+        }
+        rc = DataSet.ensure_present(**arguments)
+        self.set_state("present")
+        return rc
+
+    def ensure_absent(self):
+        """Removes the data set.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSet.ensure_absent(self.name, self.volumes)
+        if rc == 0:
+            self.set_state("absent")
+        return rc
+
+    def delete(self):
+        """Deletes the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        DataSet.ensure_absent(self.name, self.volumes)
+        self.set_state("absent")
+
+    def ensure_cataloged(self):
+        """
+        Ensures the data set is cataloged, if not catalogs it.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSet.ensure_cataloged(name=self.name, volumes=self.volumes)
+        self.is_cataloged = True
+        return rc
+
+    def catalog(self):
+        """Catalog the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSet.catalog(self.name, self.volumes)
+        self.is_cataloged = True
+        return rc
+
+    def ensure_uncataloged(self):
+        """
+        Ensures the data set is uncataloged, if not catalogs it.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSet.ensure_uncataloged(self.name)
+        self.is_cataloged = False
+        return rc
+
+    def uncatalog(self):
+        """Uncatalog the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSet.uncatalog(self.name)
+        self.is_cataloged = False
+        return rc
+
+    def set_state(self, new_state):
+        """Used to set the data set state.
+
+        Parameters
+        ----------
+        new_state : str {unknown, present, absent}
+            New state of the data set.
+
+        Returns
+        -------
+            bool
+                If state was set properly.
+        """
+        if new_state not in self.data_set_possible_states:
+            raise ValueError(f"State {self.state} not supported for MVSDataset class.")
+        return True
+
+
+class Member():
+    """Represents a member on z/OS.
+
+    Attributes
+    ----------
+    name : str
+        Data set member name.
+    parent_data_set_type : str {pds, pdse}
+        Parent data set type.
+    data_set_type : str
+        Member data set type, should always be "member".
+    """
+    def __init__(
+            self,
+            name,
+            parent_data_set_type="pds",
+    ):
+        self.name = name
+        self.parent_data_set_type = parent_data_set_type
+        self.data_set_type = "member"
+
+    def ensure_absent(self, force):
+        """ Make sure that the member is absent or fail deleting it.
+
+        Parameters
+        ----------
+        force : bool
+            Used to determine behavior when performing member operations on a pdse.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSet.ensure_member_absent(self.name, force)
+        return rc
+
+    def ensure_present(self, replace=None):
+        """ Make sure that the member is created or fail creating it.
+
+        Parameters
+        ----------
+        replace : bool
+            Used to determine behavior when member already exists.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSet.ensure_member_present(self.name, replace)
+        return rc
+
+
+class GenerationDataGroup():
+    """Represents a Generation Data Group base in z/OS.
+
+    Attributes
+    ----------
+    name : str
+        The name of the GDG base.
+    limit : int
+        Maximum number of generations associated with this GDG base.
+    empty : bool
+        Empty attribute for the GDG base.
+    purge : bool
+        purge attribute for the GDG base.
+    scratch : bool
+        scratch attribute for the GDG base.
+    extended : bool
+        extended attribute for the GDG base. If extended a GDG base can
+        have up to 999 generations, if not just up to 255.
+    fifo : bool
+        fifo attribute for the GDG base.
+    data_set_type : str
+        data_set_type will always be "gdg"
+    raw_name : str
+        The raw name of the data set.
+    gdg : GenerationDataGroupView
+        ZOAU GenerationDataGroupView object to interact with the GDG base.
+    """
+    def __init__(
+            self,
+            name,
+            limit,
+            empty=False,
+            purge=False,
+            scratch=False,
+            extended=False,
+            fifo=False,
+    ):
+        self.name = name
+        self.limit = limit
+        self.empty = empty
+        self.purge = purge
+        self.scratch = scratch
+        self.extended = extended
+        self.fifo = fifo
+        self.data_set_type = "gdg"
+        self.raw_name = name
+        self.gdg = None
+        # Removed escaping since is not needed by the GDG python api.
+        # self.name = DataSet.escape_data_set_name(self.name)
+
+    def create(self):
+        """Creates the GDG.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        gdg = gdgs.create(
+            name=self.name,
+            limit=self.limit,
+            empty=self.empty,
+            purge=self.purge,
+            scratch=self.scratch,
+            extended=self.extended,
+            fifo=self.fifo,
+        )
+        self.gdg = gdg
+        return True
+
+    def ensure_present(self, replace):
+        """Make sure that the data set is created or fail creating it.
+        Parameters
+        ----------
+        replace : bool
+            Used to determine behavior when member already exists.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        arguments = vars(self)
+        changed = False
+        present = False
+        gdg = None
+        if gdgs.exists(arguments.get("name")):
+            present = True
+
+        if not present:
+            gdg = gdgs.create(**arguments)
+        else:
+            if not replace:
+                return changed
+            changed = self.ensure_absent()
+            gdg = gdgs.create(**arguments)
+        if isinstance(gdg, gdgs.GenerationDataGroupView):
+            changed = True
+        return changed
+
+    def ensure_absent(self, force):
+        """Ensure gdg base is deleted. If force is True and there is an
+        existing GDG with active generations it will remove them and delete
+        the GDG.
+        Parameters
+        ----------
+        force : bool
+            If the GDG base has active generations, remove them and delete the GDG base.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        # Try to delete
+        rc = datasets.delete(self.name)
+        if rc > 0:
+            if force:
+                if isinstance(self.gdg, gdgs.GenerationDataGroupView):
+                    self.gdg.delete()
+                else:
+                    gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+                    gdg_view.delete()
+            else:
+                raise DatasetDeleteError(self.raw_name, rc)
+        return True
+
+    def clear(self):
+        """Deletes the active generations without removing the GDG base.
+        Parameters
+        ----------
+        force : bool
+            If the GDG base has active generations, remove them and delete the GDG base.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        if isinstance(self.gdg, gdgs.GenerationDataGroupView):
+            self.gdg.clear()
+        else:
+            gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+            gdg_view.clear()
+        return True
 
 
 def is_member(data_set):

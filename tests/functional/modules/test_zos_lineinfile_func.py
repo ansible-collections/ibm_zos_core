@@ -745,7 +745,8 @@ def test_special_characters_ds_insert_line(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["src"]))
+        src = ds_name.replace('$', "\$")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(src))
         for result in results.contacted.values():
             assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
 
@@ -756,6 +757,7 @@ def test_special_characters_ds_insert_line(ansible_zos_module):
             print(result)
             assert result.get("changed") == 1
             assert result.get("rc") == 0
+        backup = backup.replace('$', "\$")
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
         for result in results.contacted.values():
             assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"

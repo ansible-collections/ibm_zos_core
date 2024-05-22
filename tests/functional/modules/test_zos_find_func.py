@@ -88,7 +88,7 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
             for ds in val.get('data_sets'):
                 pieces = ds.get('name').split(".")
                 pieces.pop()
-                testname = ".".join(pieces".")
+                testname = ".".join(pieces)
                 assert testname in GDG_NAMES
             assert val.get('matched') == len(val.get('data_sets'))
     finally:

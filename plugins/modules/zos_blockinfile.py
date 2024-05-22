@@ -675,7 +675,7 @@ def main():
         src = dataset.name
         gdg = dataset.name
 
-    if "(" in src or ")" in src or "+" in src or "-" in src and gdg is False:
+    if ("(" in src and ")" in src) and ("+" in src or "-" in src) and gdg is False:
         module.fail_json(msg="{0} does not exist".format(src))
     ds_utils = data_set.DataSetUtils(src)
     if not ds_utils.exists():

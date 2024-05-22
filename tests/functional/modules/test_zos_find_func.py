@@ -93,7 +93,10 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, state='absent') for i in GDG_NAMES]
+            batch=[dict(name=f"{ds}(+1)", type='seq', state='absent', force=True) for ds in GDG_NAMES]
+        )
+        hosts.all.zos_data_set(
+            batch=[dict(name=ds, type='gdg', state='absent', force=True) for ds in GDG_NAMES]
         )
 
 

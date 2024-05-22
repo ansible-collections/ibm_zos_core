@@ -1,9 +1,35 @@
-==============================
-ibm.ibm_zos_core Release Notes
-==============================
+================================
+ibm.ibm\_zos\_core Release Notes
+================================
 
 .. contents:: Topics
 
+v1.9.1
+======
+
+Release Summary
+---------------
+
+Release Date: '2024-05-20'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Bugfixes
+--------
+
+- zos_find - Filter size failed if a PDS/E matched the pattern. Fix now gets the correct size for PDS/Es. (https://github.com/ansible-collections/ibm_zos_core/pull/1450).
+- zos_mvs_raw - The module ignored the value of `tmp_hlq` option when creating temporary data sets. Fix now honors the value if provided and uses it as High Level Qualifier for temporary data sets created during the module execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1463).
+
+Known Issues
+------------
+
+- zos_job_output - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response; upgrade to ZOAU 1.2.5.6 or later to resolve (https://github.com/ansible-collections/ibm_zos_core/issues/677).
+- zos_job_submit - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response; upgrade to ZOAU 1.2.5.6 or later to resolve. (https://github.com/ansible-collections/ibm_zos_core/issues/677).
+- zos_job_submit - when setting 'location' to 'LOCAL' and not specifying an from and to encodings, the modules defaults are not read leaving the file in its original encoding; Explicitly set the encodings instead (https://github.com/ansible-collections/ibm_zos_core/issues/1513).
+- zos_job_submit - when submitting JCL, the response value returned for 'byte_count' is incorrect (https://github.com/ansible-collections/ibm_zos_core/issues/1508).
+- zos_operator_action_query - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response; upgrade to ZOAU 1.2.5.6 or later to resolve (https://github.com/ansible-collections/ibm_zos_core/issues/677).
 
 v1.9.0
 ======
@@ -336,7 +362,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
-
 Bugfixes
 --------
 
@@ -359,7 +384,6 @@ This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Major Changes
 -------------
@@ -432,7 +456,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Minor Changes
 -------------
 
@@ -461,7 +484,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -486,7 +508,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -504,7 +525,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
-
 
 Bugfixes
 --------
@@ -539,7 +559,6 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
     **z/OS** target to find the latest supported configuration and generate
     inventory and a variables configuration.
   - Automate software management with SMP/E Playbooks
-
 
 Minor Changes
 -------------
@@ -618,7 +637,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Minor Changes
 -------------

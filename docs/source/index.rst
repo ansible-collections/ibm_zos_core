@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2021                                          .
+.. © Copyright IBM Corporation 2020, 2024                                          .
 .. ...........................................................................
 
 ========================
@@ -90,10 +90,9 @@ ansible-doc to automate tasks on z/OS.
    community_guides
    license
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
 
-
-
-
-
-
-
+   reference/documentation
+   reference/community

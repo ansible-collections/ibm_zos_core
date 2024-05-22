@@ -723,7 +723,7 @@ def test_gdd_ds_insert_line(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
 
-        params["src"] = ds_name + "(-2)"
+        params["src"] = ds_name + "(-3)"
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 0

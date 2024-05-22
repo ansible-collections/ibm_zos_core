@@ -660,7 +660,7 @@ controller and z/OS managed node dependencies.
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
 .. _z/OS core support matrix:
-   https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/build/html/resources/releases_maintenance.html
+   https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/releases_maintenance.html
 
 .. .............................................................................
 .. Playbook Links

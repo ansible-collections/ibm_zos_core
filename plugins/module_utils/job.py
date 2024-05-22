@@ -385,7 +385,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                 try:
                     list_of_dds = jobs.list_dds(entry.job_id)
-                except exceptions.DDQueryException as err:
+                except exceptions.DDQueryException:
                     is_dd_query_exception = True
 
                 # Check if the Job has JESJCL, if not, its in the JES INPUT queue, thus wait the full wait_time_s.
@@ -406,7 +406,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                         list_of_dds = jobs.list_dds(entry.job_id)
                         is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
                         is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
-                    except exceptions.DDQueryException as err:
+                    except exceptions.DDQueryException:
                         is_dd_query_exception = True
                         continue
 
@@ -463,7 +463,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                                     single_dd["step_name"],
                                     single_dd["dd_name"]
                                 )
-                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) as e:
+                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError):
                                 tmpcont = (
                                     "Non-printable UTF-8 characters were present in this output. "
                                     "Please access it from the job log."

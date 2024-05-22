@@ -967,8 +967,8 @@ class CopyHandler(object):
         """Copy source to a sequential data set.
 
         Parameters
-        src : str
         ----------
+        src : str
             Path to USS file or data set name.
         temp_path : str
             Path to the location where the control node

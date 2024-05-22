@@ -3031,49 +3031,6 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         return stdout
 
 
-def modify_contents(contents):
-    """Return the content of dd_input to a valid form for a JCL program.
-
-    Args:
-        contents (str or list): The string or list with the program.
-
-    Returns:
-        contents: The content in a proper multi line str.
-    """
-    if not isinstance(contents, list):
-        contents = list(contents.split("\n"))
-    contents = prepend_spaces(contents)
-    contents = "\n".join(contents)
-    return contents
-
-
-def prepend_spaces(lines):
-    """Return the array with two spaces at the beggining.
-
-    Args:
-        lines (list): The list with a line of a program.
-
-    Returns:
-        new_lines: The list in a proper two spaces and the code.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    for index, line in enumerate(lines):
-        if len(line) > 0:
-            if len(line) > 80:
-                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
-                module.fail_json(msg=msg.format(line))
-            else:
-                if len(line) > 1 and line[0] != " " and line[1] != " ":
-                    if len(line) > 78:
-                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
-                        module.fail_json(msg=msg.format(line))
-                    else:
-                        lines[index] = "  {0}".format(line)
-    return lines
-
-
 class ZOSRawError(Exception):
     def __init__(self, program="", error=""):
         self.msg = "An error occurred during execution of z/OS program {0}. {1}".format(

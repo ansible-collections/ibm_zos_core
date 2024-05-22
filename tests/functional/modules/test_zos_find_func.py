@@ -438,7 +438,7 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):
-                assert ds.get('name') in SEQ_NAMES
+                assert ds.get('name') in SPECIAL_NAMES
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
         hosts.all.zos_data_set(

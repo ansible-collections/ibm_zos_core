@@ -1278,11 +1278,17 @@ class MVSArchive(Archive):
         """
         expanded_path = []
         for path in paths:
+            e_path = []
             if '*' in path:
                 # list_dataset_names returns a list of data set names or empty.
                 e_paths = datasets.list_dataset_names(path)
             else:
                 e_paths = [path]
+
+            # resolve GDS relative names
+            for index, e_path in enumerate(e_paths):
+                if data_set.DataSet.is_gds_relative_name(e_path):
+                    e_paths[index] = data_set.DataSet.resolve_gds_absolute_name(e_path)
             expanded_path.extend(e_paths)
         return expanded_path
 

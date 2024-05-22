@@ -319,7 +319,7 @@ def test_find_vsam_pattern(ansible_zos_module):
         for vsam in VSAM_NAMES:
             create_vsam_ksds(vsam, hosts)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.VSAM.*.*'], resource_type='cluster'
+            patterns=['TEST.FIND.VSAM.FUNCTEST.*'], resource_type='cluster'
         )
         print(vars(find_res))
         for val in find_res.contacted.values():
@@ -342,7 +342,7 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
             create_vsam_ksds(vsam, hosts, volume=volume_1)
         create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=[volume_1], resource_type='cluster'
+            patterns=['TEST.FIND.VSAM.*.*'], volumes=[volume_1], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

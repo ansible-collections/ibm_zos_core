@@ -577,6 +577,7 @@ def main():
     gdg = False
     spch = False
     dmod_exec = False
+    return_content = ""
 
     # analysis the file type
     if "/" not in src:

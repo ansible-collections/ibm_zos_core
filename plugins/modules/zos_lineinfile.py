@@ -448,7 +448,7 @@ def clean_command(cmd):
 
 
 def check_special_characters(src):
-    special_characters = ['$','@','#','-']
+    special_characters = ['$', '@', '#', '-']
     return any(character in special_characters for character in src)
 
 

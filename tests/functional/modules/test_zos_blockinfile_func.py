@@ -1338,7 +1338,8 @@ def test_special_characters_ds_insert_block(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["src"]))
+        src = ds_name.replace('#', "\#")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(src))
         for result in results.contacted.values():
             assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
 
@@ -1348,6 +1349,7 @@ def test_special_characters_ds_insert_block(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") == 1
             assert result.get("rc") == 0
+        backup = backup.replace('#', "\#")
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
         for result in results.contacted.values():
             assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"

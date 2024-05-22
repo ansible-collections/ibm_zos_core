@@ -421,15 +421,17 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
     search_string = "hello"
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='seq', state='present') for i in SPECIAL_NAMES]
+            batch=[dict(name=ds, type='seq', state='present') for ds in SPECIAL_NAMES]
         )
         for ds in SPECIAL_NAMES:
-            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
+            dsn = ds.replace("$", "\\$")
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{dsn}\" ")
 
         find_res = hosts.all.zos_find(
             patterns=['TEST.FIND.SPEC.*.*'],
             contains=search_string
         )
+        print("\n------find results\n")
         print(vars(find_res))
         for val in find_res.contacted.values():
             assert val.get('msg') is None

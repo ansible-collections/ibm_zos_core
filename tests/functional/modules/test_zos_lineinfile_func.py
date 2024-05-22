@@ -1064,7 +1064,7 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
         # Run lineinfle module with same params again, ensure duplicate entry is not made into file
         hosts.all.zos_lineinfile(**params)
         results = hosts.all.shell(cmd="""dgrep -c 'ZOAU_ROOT=/usr/lpp/zoautil/v10' "{0}" """.format(params["path"]))
-        response = params["path"] + " " + "1"
+        response = params["path"] + "          " + "1"
         for result in results.contacted.values():
             assert result.get("stdout") == response
     finally:

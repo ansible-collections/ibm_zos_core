@@ -133,7 +133,6 @@ def assert_data_set_or_file_does_not_exist(hosts, name):
 def assert_data_set_exists(hosts, data_set_name):
     results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
-        print(result)
         found = search(
             "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )

@@ -38,6 +38,13 @@ GDG_NAMES = [
     "TEST.FIND.GDG.FUNCTEST.SECOND",
 ]
 
+SPECIAL_NAMES = [
+    "TEST.FIND.SPEC.FU$CTEST.FIRST",
+    "TEST.FIND.SPEC.FU#CTEST.SECOND",
+    "TEST.FIND.SPEC.FUNCT-ST.THIRD",
+    "TEST.FIND.SPEC.FUNCTS@T.FOURTH"
+]
+
 DATASET_TYPES = ['seq', 'pds', 'pdse']
 
 
@@ -409,4 +416,31 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(
             batch=[dict(name=i, state='absent') for i in PDS_NAMES]
+        )
+
+
+def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "hello"
+    try:
+        hosts.all.zos_data_set(
+            batch=[dict(name=i, type='seq', state='present') for i in SPECIAL_NAMES]
+        )
+        for ds in SPECIAL_NAMES:
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
+
+        find_res = hosts.all.zos_find(
+            patterns=['TEST.FIND.SPEC.*.*'],
+            contains=search_string
+        )
+        print(vars(find_res))
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                assert ds.get('name') in SEQ_NAMES
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(
+            batch=[dict(name=i, state='absent') for i in SPECIAL_NAMES]
         )

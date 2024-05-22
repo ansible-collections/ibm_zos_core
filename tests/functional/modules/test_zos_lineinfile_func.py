@@ -463,7 +463,7 @@ def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
 @pytest.mark.uss
 def test_uss_line_absent(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
+    params = dict(regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/usr/lpp/zoautil/v100", state="absent")
     full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
@@ -471,6 +471,7 @@ def test_uss_line_absent(ansible_zos_module):
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
@@ -861,7 +862,7 @@ def test_special_characters_ds_insert_line(ansible_zos_module):
 def test_ds_line_absent(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
+    params = dict(regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/usr/lpp/zoautil/v100", state="absent")
     ds_name = get_tmp_ds_name()
     temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT

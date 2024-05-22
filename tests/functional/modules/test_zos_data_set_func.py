@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -178,7 +178,6 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl, volumes_on_syst
             assert result.get("changed") is True
         # verify second uncatalog shows uncatalog already performed
         results = hosts.all.zos_data_set(name=dataset, state="uncataloged")
-
         for result in results.contacted.values():
             assert result.get("changed") is False
         # recatalog the data set

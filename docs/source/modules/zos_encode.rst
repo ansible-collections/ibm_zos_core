@@ -143,8 +143,8 @@ Examples
        encoding:
          from: IBM-1047
          to: ISO8859-1
-       backup: yes
-       backup_compress: yes
+       backup: true
+       backup_compress: true
 
    - name: Convert file encoding from IBM-1047 to ISO8859-1 to a directory
      zos_encode:
@@ -252,7 +252,6 @@ Examples
        encoding:
          from: ISO8859-1
          to: IBM-1047
-
 
 
 

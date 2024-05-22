@@ -448,7 +448,7 @@ def clean_command(cmd):
 
 
 def check_special_characters(src):
-    special_characters = "$@#-"
+    special_characters = ['$','@','#','-']
     return any(character in special_characters for character in src)
 
 
@@ -589,9 +589,6 @@ def main():
     if ("(" in src and ")" in src) and ("+" in src or "-" in src) and gdg is False:
         module.fail_json(msg="{0} does not exist".format(src))
 
-    spch = check_special_characters(src)
-    dmod_exec = spch or gdg
-
     ds_utils = data_set.DataSetUtils(src)
 
     # Check if dest/src exists
@@ -600,9 +597,12 @@ def main():
 
     file_type = ds_utils.ds_type()
     if file_type != "USS":
+        spch = check_special_characters(src)
         if file_type not in DS_TYPE:
             message = "{0} data set type is NOT supported".format(str(file_type))
             module.fail_json(msg=message)
+
+    dmod_exec = spch or gdg
     # make sure the default encoding is set if null was passed
     if not encoding:
         encoding = "IBM-1047"

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -497,7 +497,7 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
 
         cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
     else:
-        cmd = """dmod -b {0} {1} {2} "//d" {4}""".format(force, encoding, marker, src)
+        cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
 
     rc, stdout, stderr = module.run_command(cmd)
     cmd = clean_command(cmd)

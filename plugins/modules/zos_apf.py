@@ -59,7 +59,7 @@ options:
       - The identifier for the volume containing the library specified in
         the C(library) parameter. The values must be one the following.
       - 1. The volume serial number.
-      - 2. Six asterisks (******), indicating that the system must use the
+      - 2. Six asterisks C(******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
       - 3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
@@ -176,7 +176,7 @@ options:
             specified on the C(library) parameter. The values must be one of the
             following.
           - 1. The volume serial number
-          - 2. Six asterisks (******), indicating that the system must use the
+          - 2. Six asterisks C(******), indicating that the system must use the
             volume serial number of the current system residence (SYSRES)
             volume.
           - 3. *MCAT*, indicating that the system must use the volume serial
@@ -221,7 +221,7 @@ EXAMPLES = r'''
 - name: Add a library (cataloged) to the APF list and persistence
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
-    force_dynamic: True
+    force_dynamic: true
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
 - name: Remove a library from the APF list and persistence
@@ -239,7 +239,7 @@ EXAMPLES = r'''
     batch:
       - library: SOME.SEQ.DS1
       - library: SOME.SEQ.DS2
-        sms: True
+        sms: true
       - library: SOME.SEQ.DS3
         volume: T12345
 - name: Print the APF list matching library pattern or volume serial number

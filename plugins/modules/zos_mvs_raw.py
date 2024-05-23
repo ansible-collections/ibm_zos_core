@@ -1603,7 +1603,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw impor
     RawInputDefinition,
     RawOutputDefinition,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -2546,6 +2546,8 @@ def get_dd_name_and_key(dd):
     key = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
+        data_set_name = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"))
+        dd["dd_data_set"]["data_set_name"] = data_set_name
         key = "dd_data_set"
     elif dd.get("dd_unix"):
         dd_name = dd.get("dd_unix").get("dd_name")
@@ -2588,6 +2590,18 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     elif dd.get(key):
         dd.get(key)["tmphlq"] = tmphlq
     return dd
+
+
+def resolve_data_set_names(dataset):
+    gdg = False
+    data = data_set.MVSDataSet(
+        name=src
+    )
+    src = data.name
+    gdg = data.is_gds_active
+    if ("(" in dataset and ")" in dataset) and ("+" in dataset or "-" in dataset) and gdg is False:
+        raise ValueError("{0} does not exist".format(dataset))
+    return src
 
 
 def build_data_definition(dd):

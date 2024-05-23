@@ -118,7 +118,6 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
             patterns=['TEST.FIND.SEQ.*.*'],
             contains=search_string
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
@@ -181,16 +180,12 @@ def test_find_pds_members_containing_string(ansible_zos_module):
         )
         for ds in PDS_NAMES:
             result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
-            print("\n------- decho to {ds}\n")
-            print(vars(result))
 
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'],
             contains=search_string,
             patterns=['.*']
         )
-        print("\n========\n")
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):
@@ -219,7 +214,6 @@ def test_exclude_data_sets_from_matched_list(ansible_zos_module):
             patterns=['TEST.FIND.SEQ.*.*'],
             excludes=['.*THIRD$']
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             for ds in val.get('data_sets'):
@@ -245,7 +239,6 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):
@@ -262,7 +255,6 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
         patterns=['IMSTESTL.IMS01.RESTART', 'IMSTESTL.IMS01.LGMSGL'],
         age='2d'
     )
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 2
         assert val.get('matched') == 2
@@ -308,7 +300,6 @@ def test_find_data_sets_in_volume(ansible_zos_module):
         find_res = hosts.all.zos_find(
             patterns=[data_set_name], volumes=[volume]
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) >= 1
             assert val.get('matched') >= 1
@@ -325,7 +316,6 @@ def test_find_vsam_pattern(ansible_zos_module):
         find_res = hosts.all.zos_find(
             patterns=['TEST.FIND.VSAM.FUNCTEST.*'], resource_type='cluster'
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
@@ -375,7 +365,6 @@ def test_find_invalid_size_indicator_fails(ansible_zos_module):
 def test_find_non_existent_data_sets(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(patterns=['TEST.FIND.NONE.*.*'])
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
@@ -384,7 +373,6 @@ def test_find_non_existent_data_sets(ansible_zos_module):
 def test_find_non_existent_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(pds_paths=['TEST.NONE.PDS.*'], patterns=['.*'])
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
@@ -405,7 +393,6 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.NONE.PDS.*','TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):
@@ -431,8 +418,6 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
             patterns=['TEST.FIND.SPEC.*.*'],
             contains=search_string
         )
-        print("\n------find results\n")
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0

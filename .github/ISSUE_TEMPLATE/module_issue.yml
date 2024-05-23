@@ -32,6 +32,6 @@ body:
           - As a < type of user >, I want < some goal > so that < some reason >.
         Examples:
           - As a z/OS System Admin, I can grow zFS aggregates with Ansible so that my data sets don't fill up.
-          - As a Junior developer, I want to be able to zip and unzip arives using Ansible, so that I don't have to perform operations elsewhere.
+          - As a Junior developer, I want to be able to zip and unzip archives using Ansible, so that I don't have to perform operations elsewhere.
     validations:
       required: false

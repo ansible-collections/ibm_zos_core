@@ -540,8 +540,8 @@ class DataSet(object):
             volume (str) -- The volume the data set may reside on.
 
         Returns:
-            str -- The type of the data set (one of "PS", "PO", "DA", "KSDS",
-                    "ESDS", "LDS" or "RRDS").
+            str -- The type of the data set (one of "PS", "PO", "DA", "GDG",
+                    "KSDS", "ESDS", "LDS" or "RRDS").
             None -- If the data set does not exist or ZOAU is not able to determine
                     the type.
         """
@@ -551,9 +551,14 @@ class DataSet(object):
         data_sets_found = datasets.list_datasets(name)
 
         # Using the organization property when it's a sequential or partitioned
-        # dataset. VSAMs are not found by datasets.list_datasets.
+        # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
         if len(data_sets_found) > 0:
             return data_sets_found[0].organization
+
+        # Now trying to list GDGs through gdgs.
+        data_sets_found = gdgs.list_gdg_names(name)
+        if len(data_sets_found) > 0:
+            return "GDG"
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.

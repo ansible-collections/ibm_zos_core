@@ -32,6 +32,7 @@ SUPPORTED_DS_TYPES = frozenset({
     "PS", "SEQ", "BASIC",
     "PO", "PE", "PDS", "PDSE",
     "VSAM", "KSDS",
+    "GDG",
     "USS"
 })
 
@@ -50,6 +51,7 @@ def _update_result(result, src, dest, ds_type="USS", is_binary=False):
         "PDSE": "Partitioned Extended",
         "VSAM": "VSAM",
         "KSDS": "VSAM",
+        "GDG": "Generation Data Group",
         "USS": "USS",
     }
     updated_result = dict((k, v) for k, v in result.items())
@@ -284,6 +286,12 @@ class ActionModule(ActionBase):
                     ] = "Destination must be a directory to fetch a partitioned data set"
                     result["failed"] = True
                     return result
+                if ds_type == "GDG" and os.path.isfile(dest):
+                    result[
+                        "msg"
+                    ] = "Destination must be a directory to fetch a generation data group"
+                    result["failed"] = True
+                    return result
 
                 fetch_content = self._transfer_remote_content(
                     dest,
@@ -294,7 +302,7 @@ class ActionModule(ActionBase):
                 if fetch_content.get("msg"):
                     return fetch_content
 
-                if validate_checksum and ds_type != "PO" and not is_binary:
+                if validate_checksum and ds_type != "GDG" and ds_type != "PO" and not is_binary:
                     new_checksum = _get_file_checksum(dest)
                     result["changed"] = local_checksum != new_checksum
                     result["checksum"] = new_checksum
@@ -334,7 +342,7 @@ class ActionModule(ActionBase):
         result = dict()
         _sftp_action = 'get'
 
-        if src_type == "PO":
+        if src_type == "PO" or src_type == "GDG":
             _sftp_action += ' -r'    # add '-r` to clone the source trees
 
         # To support multiple Ansible versions we must do some version detection and act accordingly
@@ -427,6 +435,6 @@ class ActionModule(ActionBase):
         # do not remove the original file.
         if not (src_type == "USS" and not encoding):
             rm_cmd = "rm -r {0}".format(remote_path)
-            if src_type != "PO":
+            if src_type != "PO" and src_type != "GDG":
                 rm_cmd = rm_cmd.replace(" -r", "")
             self._connection.exec_command(rm_cmd)

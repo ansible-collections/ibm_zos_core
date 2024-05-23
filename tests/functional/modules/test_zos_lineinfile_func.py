@@ -675,7 +675,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
@@ -698,7 +698,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 #    finally:
 #        remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
@@ -721,7 +721,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 #    finally:
 #        remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
@@ -744,7 +744,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 #    finally:
 #        remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -512,7 +512,7 @@ EXAMPLES = r"""
   zos_copy:
     src: /path/to/foo.conf
     dest: /etc/foo.conf
-    mode: 0644
+    mode: "0644"
     group: foo
     owner: bar
 

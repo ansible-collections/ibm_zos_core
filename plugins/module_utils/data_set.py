@@ -1814,6 +1814,7 @@ class MVSDataSet():
     def __init__(
         self,
         name,
+        escape_name=False,
         data_set_type=None,
         state=None,
         organization=None,
@@ -1863,7 +1864,8 @@ class MVSDataSet():
         self.is_cataloged = False
 
         # If name has escaped chars or is GDS relative name we clean it.
-        # self.name = DataSet.escape_data_set_name(self.name)
+        if escape_name:
+            self.name = DataSet.escape_data_set_name(self.name)
         if DataSet.is_gds_relative_name(self.name):
             try:
                 self.name = DataSet.resolve_gds_absolute_name(self.name)

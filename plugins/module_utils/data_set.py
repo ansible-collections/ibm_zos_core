@@ -1346,6 +1346,25 @@ class DataSet(object):
         return bool(match)
 
     @staticmethod
+    def is_gds_positive_relative_name(name):
+        """Determine if name is a gdg relative name based
+        on the GDS relative name syntax eg. 'USER.GDG(-2)'.
+
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS relative name.
+
+        Returns
+        -------
+        bool
+            Whether the name is a GDS relative name.
+        """
+        pattern = r'(.+)\(([\\]?[+]\d+)\)'
+        match = re.fullmatch(pattern, name)
+        return bool(match)
+
+    @staticmethod
     def resolve_gds_absolute_name(relative_name):
         """Given a GDS relative name, returns its absolute name.
 

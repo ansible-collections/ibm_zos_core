@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
-import re
 from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -99,7 +98,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
         if not bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
         else:
-            if is_gds_relative_name(bk_dsn):
+            if DataSet.is_gds_positive_relative_name(bk_dsn):
                 bk_dsn = datasets.create(bk_dsn)
             if "(" not in bk_dsn:
                 bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
@@ -132,7 +131,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             except exceptions.ZOAUException as copy_exception:
                 cp_rc = copy_exception.response.rc
         else:
-            if is_gds_relative_name(bk_dsn):
+            if DataSet.is_gds_positive_relative_name(bk_dsn):
                 cp_rc = datasets.copy(dsn, bk_dsn)
             else:
                 cp_rc = _copy_ds(dsn, bk_dsn)
@@ -356,22 +355,3 @@ class BackupError(Exception):
         self.stdout = stdout
         self.stderr = stderr
         super(BackupError, self).__init__(self.msg)
-
-
-def is_gds_relative_name(name):
-    """Determine if name is a gdg relative name based
-    on the GDS relative name syntax eg. 'USER.GDG(-2)'.
-
-    Parameters
-    ----------
-    name : str
-        Data set name to determine if is a GDS relative name.
-
-    Returns
-    -------
-    bool
-        Whether the name is a GDS relative name.
-    """
-    pattern = r'(.+)\(([\\]?[+]\d+)\)'
-    match = re.fullmatch(pattern, name)
-    return bool(match)

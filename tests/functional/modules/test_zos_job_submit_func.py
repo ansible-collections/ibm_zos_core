@@ -807,7 +807,6 @@ def test_job_submit_full_input(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 
-
 def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
@@ -1003,14 +1002,12 @@ def test_inexistent_positive_gds(ansible_zos_module):
 def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-
         # Copy C source and compile it.
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/noprint.c".format(quote(C_SRC_INVALID_UTF8), TEMP_PATH)
         )
         hosts.all.shell(cmd="xlc -o {0}/noprint {0}/noprint.c".format(TEMP_PATH))
-
         # Create local JCL and submit it.
         tmp_file = tempfile.NamedTemporaryFile(delete=True)
         with open(tmp_file.name, "w") as f:

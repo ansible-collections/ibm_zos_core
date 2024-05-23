@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+from ibm_zos_core.plugins.module_utils.data_set import DataSet
 import pytest
 
 SEQ_NAMES = [

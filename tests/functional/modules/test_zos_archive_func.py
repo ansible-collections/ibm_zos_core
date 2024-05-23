@@ -918,6 +918,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
 
+
 @pytest.mark.ds
 @pytest.mark.parametrize(
     "format", [
@@ -925,7 +926,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
         "xmit",
         ])
 @pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
-def test_gdg_create_and_delete(ansible_zos_module, dstype, format):
+def test_gdg_archive(ansible_zos_module, dstype, format):
     try:
         HLQ = "ANSIBLE"
         hosts = ansible_zos_module
@@ -948,7 +949,7 @@ def test_gdg_create_and_delete(ansible_zos_module, dstype, format):
             format_dict["format_options"] = dict(terse_pack="spack")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            src=f"{data_set_name}*",
+            src=[f"{data_set_name}(0)",f"{data_set_name}(-1)" ],
             dest=archive_data_set,
             format=format_dict,
         )

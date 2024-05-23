@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023 - 2024
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -98,16 +98,6 @@ options:
                 unit name has been specified.
             type: list
             elements: str
-          target_gds:
-            description:
-              - TGTGDS specifies in what status, during a data set operation,
-                that DFSMSdss is to place nonpreallocated SMS-managed GDG
-                data sets.
-            choices:
-              - active
-              - deferred
-              - rolledoff
-              - source
   dest:
     description:
       - The remote absolute path or data set where the content should be unarchived to.
@@ -366,8 +356,8 @@ EXAMPLES = r'''
     format:
       name: xmit
       format_options:
-        use_adrdssu: True
-    list: True
+        use_adrdssu: true
+    list: true
 '''
 
 RETURN = r'''
@@ -630,7 +620,6 @@ class MVSUnarchive(Unarchive):
         super(MVSUnarchive, self).__init__(module)
         self.volumes = self.format_options.get("dest_volumes")
         self.use_adrdssu = self.format_options.get("use_adrdssu")
-        self.target_gds = self.format_options.get("target_gds")
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
         self.source_size = 0
@@ -738,16 +727,6 @@ class MVSUnarchive(Unarchive):
         volumes_cmd += " ) - \n"
         return volumes_cmd
 
-    def _get_target_gds(self):
-        """Build target gds adrdssu command.
-
-        Returns
-        -------
-        str
-            Command built with target gds attribute.
-        """
-        return "TGTGDS({0}) - \n".format(self.target_gds.upper())
-
     def _restore(self, source):
         """
         Calls ADDRSU using RESTORE to unpack the dump datasets.
@@ -767,14 +746,12 @@ class MVSUnarchive(Unarchive):
             filter = self._get_exclude_data_sets_cmd()
         if self.volumes:
             volumes = self._get_volumes()
-        target_gds = self._get_target_gds() if self.target_gds else ""
         restore_cmd = """ RESTORE INDD(ARCHIVE) -
                           DS( -
                             {0} ) -
                             {1} -
                         CATALOG -
-                            {2} -
-                        {3} """.format(filter, volumes, target_gds, force)
+                        {2} """.format(filter, volumes, force)
         dds = dict(archive="{0},old".format(source))
         rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
         self._get_restored_datasets(out)
@@ -1032,10 +1009,6 @@ def run_module():
                             use_adrdssu=dict(
                                 type='bool',
                                 default=False,
-                            ),
-                            target_gds=dict(
-                                type='str',
-                                choices=['active', 'deferred', 'rolledoff', 'source']
                             )
                         )
                     ),
@@ -1123,10 +1096,6 @@ def run_module():
                             type='bool',
                             default=False,
                         ),
-                        target_gds=dict(
-                            type='str',
-                            choices=['active', 'deferred', 'rolledoff', 'source']
-                        )
                     ),
                     default=dict(xmit_log_data_set=""),
                 )

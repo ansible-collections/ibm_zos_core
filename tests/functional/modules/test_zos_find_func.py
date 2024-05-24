@@ -16,6 +16,9 @@ __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ibm_zos_core.plugins.module_utils.data_set import zos_data_set
+
+
 import pytest
 
 SEQ_NAMES = [

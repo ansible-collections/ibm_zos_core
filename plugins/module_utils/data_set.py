@@ -1026,7 +1026,7 @@ class DataSet(object):
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
             datasets.create(**formatted_args)
-        except exceptions.ZOAUException as create_exception:
+        except exceptions._ZOAUExtendableException as create_exception:
             raise DatasetCreateError(
                 raw_name if raw_name else name,
                 create_exception.response.rc,

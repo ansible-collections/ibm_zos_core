@@ -411,7 +411,7 @@ def execute_dsed(src, state, encoding, module, line=False, first_match=False, fo
                 else:
                     options += f' -s -e "/{ins_bef}/i\\{line}/{match}" -e "$ a\\{line}" "{src}" '
             else:
-                raise ValueError("Incorrect parameters")
+                raise ValueError("Incorrect parameters required regex and/or ins_aft or ins_bef")
     else:
         if regex:
             if line:
@@ -424,11 +424,11 @@ def execute_dsed(src, state, encoding, module, line=False, first_match=False, fo
     cmd = "dsedhelper {0}{1}{2}{3}".format(force, backrefs, encoding, options)
 
     rc, stdout, stderr = module.run_command(cmd)
-    cmd = clean_command(cmd)
+    cmd = clean_command_output(cmd)
     return rc, cmd, stdout
 
 
-def clean_command(cmd):
+def clean_command_output(cmd):
     cmd = cmd.replace('/c\\\\', '')
     cmd = cmd.replace('/a\\\\', '', )
     cmd = cmd.replace('/i\\\\', '', )
@@ -573,8 +573,8 @@ def main():
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
 
-    gdg = False
-    spch = False
+    gds = False
+    has_special_chars = False
     dmod_exec = False
     return_content = ""
 
@@ -584,10 +584,10 @@ def main():
             name=src
         )
         src = dataset.name
-        gdg = dataset.is_gds_active
+        gds = dataset.is_gds_active
 
-    if ("(" in src and ")" in src) and ("+" in src or "-" in src) and gdg is False:
-        module.fail_json(msg="{0} does not exist".format(src))
+    if data_set.DataSet.is_gds_relative_name(src) and gds is False:
+        module.fail_json(msg="{0} does not exist (1)".format(src))
 
     ds_utils = data_set.DataSetUtils(src)
 
@@ -597,12 +597,12 @@ def main():
 
     file_type = ds_utils.ds_type()
     if file_type != "USS":
-        spch = check_special_characters(src)
+        has_special_chars = check_special_characters(src)
         if file_type not in DS_TYPE:
             message = "{0} data set type is NOT supported".format(str(file_type))
             module.fail_json(msg=message)
 
-    dmod_exec = spch or gdg
+    dmod_exec = has_special_chars or gds
     # make sure the default encoding is set if null was passed
     if not encoding:
         encoding = "IBM-1047"

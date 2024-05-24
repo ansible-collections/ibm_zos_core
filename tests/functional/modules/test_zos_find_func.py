@@ -15,6 +15,12 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+from ibm_zos_core.plugins.module_utils.data_set import DataSet
+
+import ibm_zos_core.plugins.modules.zos_data_set
+# from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+
+
 import pytest
 
 SEQ_NAMES = [
@@ -31,6 +37,18 @@ PDS_NAMES = [
 
 VSAM_NAMES = [
     "TEST.FIND.VSAM.FUNCTEST.FIRST"
+]
+
+GDG_NAMES = [
+    "TEST.FIND.GDG.FUNCTEST.FIRST",
+    "TEST.FIND.GDG.FUNCTEST.SECOND",
+]
+
+SPECIAL_NAMES = [
+    "TEST.FIND.SPEC.FU$CTEST.FIRST",
+    "TEST.FIND.SPEC.FU#CTEST.SECOND",
+    "TEST.FIND.SPEC.FUNCT-ST.THIRD",
+    "TEST.FIND.SPEC.FUNCTS@T.FOURTH"
 ]
 
 DATASET_TYPES = ['seq', 'pds', 'pdse']
@@ -58,6 +76,40 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
     )
 
 
+def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "hello"
+    try:
+        hosts.all.zos_data_set(
+            batch=[dict(name=ds, type='gdg', state='present', limit=5) for ds in GDG_NAMES]
+        )
+
+        for ds in GDG_NAMES:
+            hosts.all.zos_data_set(name=f"{ds}(+1)", state="present", type="seq")
+
+        for ds in GDG_NAMES:
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(0)\" ")
+
+        find_res = hosts.all.zos_find(
+            patterns=['TEST.FIND.GDG.*.*'],
+            contains=search_string
+        )
+
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                pieces = ds.get('name').split(".")
+                pieces.pop()
+                testname = ".".join(pieces)
+                assert testname in GDG_NAMES
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(
+            batch=[dict(name=ds, type='gdg', state='absent', force=True) for ds in GDG_NAMES]
+        )
+
+
 def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
     hosts = ansible_zos_module
     search_string = "hello"
@@ -72,7 +124,6 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
             patterns=['TEST.FIND.SEQ.*.*'],
             contains=search_string
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
@@ -134,14 +185,13 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             ]
         )
         for ds in PDS_NAMES:
-            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
+            result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
 
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'],
             contains=search_string,
             patterns=['.*']
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):
@@ -170,7 +220,6 @@ def test_exclude_data_sets_from_matched_list(ansible_zos_module):
             patterns=['TEST.FIND.SEQ.*.*'],
             excludes=['.*THIRD$']
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             for ds in val.get('data_sets'):
@@ -196,7 +245,6 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):
@@ -213,7 +261,6 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
         patterns=['IMSTESTL.IMS01.RESTART', 'IMSTESTL.IMS01.LGMSGL'],
         age='2d'
     )
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 2
         assert val.get('matched') == 2
@@ -259,7 +306,6 @@ def test_find_data_sets_in_volume(ansible_zos_module):
         find_res = hosts.all.zos_find(
             patterns=[data_set_name], volumes=[volume]
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) >= 1
             assert val.get('matched') >= 1
@@ -274,9 +320,8 @@ def test_find_vsam_pattern(ansible_zos_module):
         for vsam in VSAM_NAMES:
             create_vsam_ksds(vsam, hosts)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.VSAM.*.*'], resource_type='cluster'
+            patterns=['TEST.FIND.VSAM.FUNCTEST.*'], resource_type='cluster'
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
@@ -297,7 +342,7 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
             create_vsam_ksds(vsam, hosts, volume=volume_1)
         create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=[volume_1], resource_type='cluster'
+            patterns=['TEST.FIND.VSAM.*.*'], volumes=[volume_1], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -326,7 +371,6 @@ def test_find_invalid_size_indicator_fails(ansible_zos_module):
 def test_find_non_existent_data_sets(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(patterns=['TEST.FIND.NONE.*.*'])
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
@@ -335,7 +379,6 @@ def test_find_non_existent_data_sets(ansible_zos_module):
 def test_find_non_existent_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(pds_paths=['TEST.NONE.PDS.*'], patterns=['.*'])
-    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
@@ -356,7 +399,6 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.NONE.PDS.*','TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
         )
-        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):
@@ -364,4 +406,31 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(
             batch=[dict(name=i, state='absent') for i in PDS_NAMES]
+        )
+
+
+def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "hello"
+    try:
+        hosts.all.zos_data_set(
+            batch=[dict(name=ds, type='seq', state='present') for ds in SPECIAL_NAMES]
+        )
+        for ds in SPECIAL_NAMES:
+            dsn = ds.replace("$", "\\$")
+            hosts.all.shell(cmd=f"decho '{search_string}' \"{dsn}\" ")
+
+        find_res = hosts.all.zos_find(
+            patterns=['TEST.FIND.SPEC.*.*'],
+            contains=search_string
+        )
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                assert ds.get('name') in SPECIAL_NAMES
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(
+            batch=[dict(name=i, state='absent') for i in SPECIAL_NAMES]
         )

@@ -1454,7 +1454,7 @@ def parse_and_validate_args(params):
                 type=dict(
                     type=data_set_type,
                     required=False,
-                    dependencies=["state"],
+                    dependencies=["state", "limit"],
                     choices=DATA_SET_TYPES,
                 ),
                 space_type=dict(
@@ -1526,6 +1526,11 @@ def parse_and_validate_args(params):
                     aliases=["volume"],
                     dependencies=["state"],
                 ),
+                limit=dict(type="int", required=False),
+                empty=dict(type="bool", required=False),
+                purge=dict(type="bool", required=False),
+                scratch=dict(type="bool", required=False),
+                extended=dict(type="bool", required=False),
                 force=dict(
                     type="bool",
                     required=False,

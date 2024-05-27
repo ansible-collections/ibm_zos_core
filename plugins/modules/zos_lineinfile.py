@@ -237,6 +237,20 @@ EXAMPLES = r"""
     insertafter: EOF
     line: 'Should be a working test now'
     force: true
+
+- name: Add a line to a gds
+  zos_lineinfile:
+    src: SOME.PARTITIONED(-2)
+    insertafter: EOF
+    line: 'Should be a working test now'
+
+- name: Add a line to dataset and backup in a new generation of gds
+  zos_lineinfile:
+    src: SOME.PARTITIONED.TEST
+    insertafter: EOF
+    backup: True
+    backup_name: PARTITIONED.GDG(+1)
+    line: 'Should be a working test now'
 """
 
 RETURN = r"""

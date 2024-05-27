@@ -279,6 +279,20 @@ EXAMPLES = r'''
     marker_begin: "Begin Ansible Block Insertion 2"
     marker_end: "End Ansible Block Insertion 2"
     block: "{{ CONTENT }}"
+
+- name: Add a block to a gds
+  zos_blockinfile:
+    src: SYS1.SOME.PARTITIONED(0)
+    insertafter: EOF
+    block: "{{ CONTENT }}"
+
+- name: Add a block to dataset and backup in a new generation of gds
+  zos_blockinfile:
+    src: SOME.PARTITIONED.TEST
+    insertbefore: BOF
+    backup: True
+    backup_name: SYS1.GDG(+1)
+    block: "{{ CONTENT }}"
 '''
 
 RETURN = r"""

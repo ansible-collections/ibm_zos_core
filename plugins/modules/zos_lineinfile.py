@@ -421,7 +421,7 @@ def execute_dsed(src, state, encoding, module, line=False, first_match=False, fo
         else:
             options += f'"/{line}/d" "{src}" '
 
-    cmd = "dsedhelper {0}{1}{2}{3}".format(force, backrefs, encoding, options)
+    cmd = "dsed {0}{1}{2}{3}".format(force, backrefs, encoding, options)
 
     rc, stdout, stderr = module.run_command(cmd)
     cmd = clean_command_output(cmd)
@@ -573,7 +573,7 @@ def main():
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
 
-    gds = False
+    is_gds = False
     has_special_chars = False
     dmod_exec = False
     return_content = ""
@@ -584,9 +584,9 @@ def main():
             name=src
         )
         src = dataset.name
-        gds = dataset.is_gds_active
+        is_gds = dataset.is_gds_active
 
-    if data_set.DataSet.is_gds_relative_name(src) and gds is False:
+    if data_set.DataSet.is_gds_relative_name(src) and is_gds is False:
         module.fail_json(msg="{0} does not exist (1)".format(src))
 
     ds_utils = data_set.DataSetUtils(src)
@@ -602,7 +602,7 @@ def main():
             message = "{0} data set type is NOT supported".format(str(file_type))
             module.fail_json(msg=message)
 
-    dmod_exec = has_special_chars or gds
+    dmod_exec = has_special_chars or is_gds
     # make sure the default encoding is set if null was passed
     if not encoding:
         encoding = "IBM-1047"

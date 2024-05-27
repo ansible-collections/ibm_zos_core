@@ -97,9 +97,8 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
         # added the check for a sub-mmember, just in this case
         if not bk_dsn or "(" not in bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
-        elif DataSet.is_gds_relative_name(bk_dsn):
-            if DataSet.is_gds_positive_relative_name(bk_dsn):
-                bk_dsn = datasets.create(bk_dsn)
+        elif DataSet.is_gds_positive_relative_name(bk_dsn):
+            bk_dsn = datasets.create(bk_dsn)
 
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         try:

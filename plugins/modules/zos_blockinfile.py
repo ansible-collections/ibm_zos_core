@@ -666,16 +666,14 @@ def main():
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
-    gdg = False
     # analysis the file type
     if "/" not in src:
         dataset = data_set.MVSDataSet(
             name=src
         )
         src = dataset.name
-        gdg = dataset.name
 
-    if data_set.DataSet.is_gds_relative_name(src) and gdg is False:
+    if data_set.DataSet.is_gds_relative_name(src):
         module.fail_json(msg="{0} does not exist".format(src))
 
     ds_utils = data_set.DataSetUtils(src)

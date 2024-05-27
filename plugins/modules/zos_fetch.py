@@ -895,9 +895,9 @@ def run_module():
 
     try:
         # Checking the source actually exists on the system.
-        if "/" in src: # USS
+        if "/" in src:  # USS
             src_exists = os.path.exists(b_src)
-        else: # MVS
+        else:  # MVS
             src_data_set = data_set.MVSDataSet(src)
             is_member = data_set.is_member(src_data_set.name)
 

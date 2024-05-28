@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023 - 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -356,8 +356,8 @@ EXAMPLES = r'''
     format:
       name: xmit
       format_options:
-        use_adrdssu: true
-    list: true
+        use_adrdssu: True
+    list: True
 '''
 
 RETURN = r'''
@@ -623,6 +623,8 @@ class MVSUnarchive(Unarchive):
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
         self.source_size = 0
+        if data_set.DataSet.is_gds_relative_name(self.src):
+            self.src = data_set.DataSet.resolve_gds_absolute_name(self.src)
 
     def dest_type(self):
         return "MVS"
@@ -709,14 +711,14 @@ class MVSUnarchive(Unarchive):
     def _get_include_data_sets_cmd(self):
         include_cmd = "INCL( "
         for include_ds in self.include:
-            include_cmd += " '{0}', - \n".format(include_ds)
+            include_cmd += " '{0}', - \n".format(include_ds.upper())
         include_cmd += " ) - \n"
         return include_cmd
 
     def _get_exclude_data_sets_cmd(self):
         exclude_cmd = "EXCL( - \n"
         for exclude_ds in self.exclude:
-            exclude_cmd += " '{0}', - \n".format(exclude_ds)
+            exclude_cmd += " '{0}', - \n".format(exclude_ds.upper())
         exclude_cmd += " ) - \n"
         return exclude_cmd
 
@@ -1143,12 +1145,12 @@ def run_module():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
     unarchive = get_unarchive_handler(module)
 
+    if not unarchive.src_exists():
+        module.fail_json(msg="{0} does not exists, please provide a valid src.".format(module.params.get("src")))
+
     if unarchive.list:
         unarchive.list_archive_content()
         module.exit_json(**unarchive.result)
-
-    if not unarchive.src_exists():
-        module.fail_json(msg="{0} does not exists, please provide a valid src.".format(module.params.get("src")))
 
     unarchive.extract_src()
 

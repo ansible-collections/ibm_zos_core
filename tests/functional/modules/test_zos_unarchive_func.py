@@ -1109,7 +1109,7 @@ def test_mvs_unarchive_fail_copy_remote_src(ansible_zos_module):
         "xmit",
         ])
 @pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
-def test_gdg_archive(ansible_zos_module, dstype, format):
+def test_gdg_unarchive(ansible_zos_module, dstype, format):
     try:
         HLQ = "ANSIBLE"
         hosts = ansible_zos_module
@@ -1146,17 +1146,37 @@ def test_gdg_archive(ansible_zos_module, dstype, format):
                 assert archive_data_set in c_result.get("stdout")
         hosts.all.zos_data_set(
             batch=[
-                {"name": f"{data_set_name}(0)", "state": "absent", "type": "gdg"},
                 {"name": f"{data_set_name}(-1)", "state": "absent", "type": "gdg"},
+                {"name": f"{data_set_name}(0)", "state": "absent", "type": "gdg"},
             ]
         )
+        target_ds_list = [f"{data_set_name}.G0001V00", f"{data_set_name}.G0002V00"]
+        if dstype in ["pds", "pdse"]:
+            target_member_list = []
+            for ds in target_ds_list:
+                target_member_list.extend(
+                    create_multiple_members(ansible_zos_module=hosts,
+                                        pds_name=ds,
+                                        member_base_name="MEM",
+                                        n=2
+                    )
+                )
+            ds_to_write = target_member_list
+        # Write some content into src
+        test_line = "this is a test line"
+        for ds in ds_to_write:
+            hosts.all.shell(cmd="decho '{0}' '{1}'".format(test_line, ds))
+
+        if format == "terse":
+            del format_dict["format_options"]["terse_pack"]
+
         unarchive_result = hosts.all.zos_unarchive(
             src=archive_data_set,
             format=format_dict,
+            remote_src=True
         )
         for result in unarchive_result.contacted.values():
             assert result.get("changed") is True
-            assert result.get("dest") == archive_data_set
             assert len(result.get("missing")) == 0
             assert f"{data_set_name}.G0001V00" in result.get("targets")
             assert f"{data_set_name}.G0002V00" in result.get("targets")

@@ -35,7 +35,7 @@ options:
       - The remote absolute path or data set of the archive to be uncompressed.
       - I(src) can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
-      - MVS data sets supported types are C(SEQ), C(PDS), C(PDSE).
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
     type: str
     required: true
   format:
@@ -145,6 +145,7 @@ options:
     description:
       - A list of directories, files or data set names to extract from the
         archive.
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
       - When C(include) is set, only those files will we be extracted leaving
         the remaining files in the archive.
       - Mutually exclusive with exclude.
@@ -155,6 +156,7 @@ options:
     description:
       - List the directory and file or data set names that you would like to
         exclude from the unarchive action.
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
       - Mutually exclusive with include.
     type: list
     elements: str
@@ -348,6 +350,13 @@ EXAMPLES = r'''
     exclude:
       - USER.ARCHIVE.TEST1
       - USER.ARCHIVE.TEST2
+
+# Unarchive a GDS
+- name: Unarchive a terse data set and excluding data sets from unpacking.
+  zos_unarchive:
+    src: "USER.ARCHIVE(0)"
+    format:
+      name: terse
 
 # List option
 - name: List content from XMIT

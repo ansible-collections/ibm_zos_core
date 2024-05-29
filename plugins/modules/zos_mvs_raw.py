@@ -2546,8 +2546,9 @@ def get_dd_name_and_key(dd):
     key = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
-        data_set_name = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"))
-        dd["dd_data_set"]["data_set_name"] = data_set_name
+        data_set_name = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
+                                               dd.get("dd_data_set").get("disposition"))
+        dd.get("dd_data_set")["data_set_name"] = data_set_name
         key = "dd_data_set"
     elif dd.get("dd_unix"):
         dd_name = dd.get("dd_unix").get("dd_name")
@@ -2592,16 +2593,27 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     return dd
 
 
-def resolve_data_set_names(dataset):
-    gdg = False
-    data = data_set.MVSDataSet(
-        name=src
-    )
-    src = data.name
-    gdg = data.is_gds_active
-    if ("(" in dataset and ")" in dataset) and ("+" in dataset or "-" in dataset) and gdg is False:
-        raise ValueError("{0} does not exist".format(dataset))
-    return src
+def resolve_data_set_names(dataset, disposition):
+    if data_set.DataSet.is_gds_relative_name(dataset):
+        if data_set.DataSet.is_gds_positive_relative_name(dataset):
+            if disposition and disposition == "new":
+                return dataset
+            else:
+                raise ("To generate a new gds as {0} required disposition new".format(dataset))
+        else:
+            data = data_set.MVSDataSet(
+                name=dataset
+            )
+            src = data.name
+            if data.is_gds_active:
+                if disposition and disposition == "new":
+                    raise ("Gds {0} already create, incorrect parameters {1} and {2}".format(src, "disposition", "data_set_name"))
+                else:
+                    return src
+            else:
+                raise ("{0} does not exist".format(src))
+    else:
+        return dataset
 
 
 def build_data_definition(dd):

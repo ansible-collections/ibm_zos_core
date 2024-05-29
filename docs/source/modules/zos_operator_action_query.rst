@@ -128,7 +128,7 @@ Examples
          system: mv29
          message_filter:
              filter: ^.*IMS.*$
-             use_regex: yes
+             use_regex: true
 
 
 

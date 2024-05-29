@@ -514,13 +514,21 @@ def run_module():
         else:
             is_mvs_src = True
             src_data_set = data_set.MVSDataSet(src)
-            if not data_set.DataSet.data_set_exists(data_set.extract_dsname(src_data_set.name)):
+            is_name_member = data_set.is_member(src_data_set.name)
+            dest_exists = False
+
+            if not is_name_member:
+                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name)
+            else:
+                dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(src_data_set.name))
+
+            if not dest_exists:
                 raise EncodeError(
                     "Data set {0} is not cataloged, please check data set provided in"
                     "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
                 )
 
-            if data_set.is_member(src_data_set.name):
+            if is_name_member:
                 if not data_set.DataSet.data_set_member_exists(src_data_set.name):
                     raise EncodeError("Cannot find member {0} in {1}".format(
                         data_set.extract_member(src_data_set.raw_name),

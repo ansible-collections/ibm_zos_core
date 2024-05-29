@@ -16,6 +16,7 @@ from shellescape import quote
 from pprint import pprint
 from os import path
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+import pytest
 
 __metaclass__ = type
 
@@ -1005,3 +1006,30 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+
+
+@pytest.mark.parametrize("generation", ["-1", "+1"])
+def test_gdg_encoding_conversion_with_invalid_generation(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name(3, 2)
+
+    try:
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        results = hosts.all.zos_encode(
+            src=f"{ds_name}({generation})",
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("msg") is not None
+            assert "not cataloged" in result.get("msg")
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+    finally:
+        hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")

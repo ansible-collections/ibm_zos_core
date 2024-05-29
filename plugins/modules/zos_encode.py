@@ -494,6 +494,8 @@ def run_module():
     is_mvs_dest = False
     ds_type_src = None
     ds_type_dest = None
+    src_data_set = None
+    dest_data_set = None
     convert_rc = False
     changed = False
 
@@ -554,7 +556,7 @@ def run_module():
                     if not data_set.DataSet.data_set_exists(data_set.extract_dsname(dest_data_set.name)):
                         raise EncodeError(
                             "Data set {0} is not cataloged, please check data set provided in"
-                            "the dest option.".format(data_set.extract_dsname(src_data_set.raw_name))
+                            "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
                         )
                     ds_type_dest = "PS"
                 else:
@@ -575,14 +577,17 @@ def run_module():
                     raise EncodeError("Failed when creating the {0}".format(dest))
         result["dest"] = dest
 
+        new_src = src_data_set.name if src_data_set else src
+        new_dest = dest_data_set.name if dest_data_set else dest
+
         # Check if the dest is required to be backup before conversion
         if backup:
             if is_uss_dest:
                 backup_name = zos_backup.uss_file_backup(
-                    dest, backup_name, backup_compress
+                    new_dest, backup_name, backup_compress
                 )
             if is_mvs_dest:
-                backup_name = zos_backup.mvs_file_backup(dest, backup_name, tmphlq)
+                backup_name = zos_backup.mvs_file_backup(new_dest, backup_name, tmphlq)
             result["backup_name"] = backup_name
 
         eu = encode.EncodeUtils()
@@ -607,12 +612,12 @@ def run_module():
 
         if is_uss_src and is_uss_dest:
             convert_rc = eu.uss_convert_encoding_prev(
-                src, dest, from_encoding, to_encoding
+                new_src, new_dest, from_encoding, to_encoding
             )
         else:
             convert_rc = eu.mvs_convert_encoding(
-                src,
-                dest,
+                new_src,
+                new_dest,
                 from_encoding,
                 to_encoding,
                 src_type=ds_type_src,
@@ -621,12 +626,12 @@ def run_module():
 
         if convert_rc:
             if is_uss_dest:
-                eu.uss_tag_encoding(dest, to_encoding)
+                eu.uss_tag_encoding(new_dest, to_encoding)
 
             changed = True
-            result = dict(changed=changed, src=src, dest=dest, backup_name=backup_name)
+            result = dict(changed=changed, src=new_src, dest=new_dest, backup_name=backup_name)
         else:
-            result = dict(src=src, dest=dest, changed=changed, backup_name=backup_name)
+            result = dict(src=new_src, dest=new_dest, changed=changed, backup_name=backup_name)
     except encode.TaggingError as e:
         module.fail_json(
             msg=e.msg,

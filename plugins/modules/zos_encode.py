@@ -503,9 +503,34 @@ def run_module():
 
     try:
         # Check the src is a USS file/path or an MVS data set
-        is_uss_src, is_mvs_src, ds_type_src = check_file(src)
-        if is_uss_src:
-            verify_uss_path_exists(src)
+        # is_uss_src, is_mvs_src, ds_type_src = check_file(src)
+
+        if path.sep in src:
+            is_uss_src = True
+            # ds_type_src = "USS"
+            verify_uss_path_exists(src)  # This can raise an exception.
+        else:
+            is_mvs_src = True
+            src_data_set = data_set.MVSDataSet(src)
+            if not data_set.DataSet.data_set_exists(data_set.extract_dsname(src_data_set.name)):
+                raise EncodeError(
+                    "Data set {0} is not cataloged, please check data set provided in"
+                    "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
+                )
+
+            if data_set.is_member(src_data_set.name):
+                if not data_set.DataSet.data_set_member_exists(src_data_set.name):
+                    raise EncodeError("Cannot find member {0} in {1}".format(
+                        data_set.extract_member(src_data_set.raw_name),
+                        data_set.extract_dsname(src_data_set.raw_name)
+                    ))
+                ds_type_src = "PS"
+            else:
+                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name)
+
+            if not ds_type_src:
+                raise EncodeError("Unable to determine data set type of {0}".format(src_data_set.raw_name))
+
         result["src"] = src
 
         # Check the dest is a USS file/path or an MVS data set
@@ -516,7 +541,25 @@ def run_module():
             is_mvs_dest = is_mvs_src
             ds_type_dest = ds_type_src
         else:
-            is_uss_dest, is_mvs_dest, ds_type_dest = check_file(dest)
+            # is_uss_dest, is_mvs_dest, ds_type_dest = check_file(dest)
+
+            if path.sep in dest:
+                is_uss_dest = True
+                # ds_type_dest = "USS"
+            else:
+                is_mvs_dest = True
+                dest_data_set = data_set.MVSDataSet(dest)
+
+                if data_set.is_member(dest_data_set.name):
+                    if not data_set.DataSet.data_set_exists(data_set.extract_dsname(dest_data_set.name)):
+                        raise EncodeError(
+                            "Data set {0} is not cataloged, please check data set provided in"
+                            "the dest option.".format(data_set.extract_dsname(src_data_set.raw_name))
+                        )
+                    ds_type_dest = "PS"
+                else:
+                    ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name)
+
             if (not is_uss_dest) and (path.sep in dest):
                 try:
                     if path.isfile(src) or ds_type_src in ["PS", "VSAM"]:

@@ -217,6 +217,15 @@ EXAMPLES = r"""
       exclude: user.private.*
     backup_name: MY.BACKUP.DZP
 
+- name: Backup a list of GDDs to data set my.backup.dzp
+  zos_backup_restore:
+    operation: backup
+    data_sets:
+      include:
+        - user.gdg(-1)
+        - user.gdg(0)
+    backup_name: my.backup.dzp
+
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
   zos_backup_restore:
     operation: backup
@@ -312,18 +321,18 @@ EXAMPLES = r"""
     sms_management_class: DB2SMS10
 """
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-from ansible.module_utils.basic import AnsibleModule
-
-from re import match, search, IGNORECASE
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
-from os import path
 import traceback
+from os import path
+from re import IGNORECASE, match, search
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import \
+    BetterArgParser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
+    DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
+
 try:
     from zoautil_py import datasets
     from zoautil_py import exceptions as zoau_exceptions
@@ -386,8 +395,8 @@ def main():
         if operation == "backup":
             backup(
                 backup_name=backup_name,
-                include_data_sets=data_sets.get("include"),
-                exclude_data_sets=data_sets.get("exclude"),
+                include_data_sets=resolve_gds_name_if_any(data_sets.get("include")),
+                exclude_data_sets=resolve_gds_name_if_any(data_sets.get("exclude")),
                 volume=volume,
                 full_volume=full_volume,
                 temp_volume=temp_volume,
@@ -419,8 +428,29 @@ def main():
         result["changed"] = True
 
     except Exception as e:
-        module.fail_json(msg=repr(e), **result)
+        # module.fail_json(msg=repr(e), **result)
+        module.fail_json(msg=e, **result)
     module.exit_json(**result)
+
+
+def resolve_gds_name_if_any(data_set_list):
+    """Resolve all gds names in a list, if no gds relative name is found then
+    the original name will be kept.
+    Parameters
+    ----------
+    data_set_list : list
+        List of data set names.
+
+    Returns
+    -------
+    list
+        List of data set names with resolved gds names.
+    """
+    if isinstance(data_set_list, list):
+        for index, name in enumerate(data_set_list):
+            if DataSet.is_gds_relative_name(name):
+                data_set_list[index] = DataSet.resolve_gds_absolute_name(name)
+    return data_set_list
 
 
 def parse_and_validate_args(params):
@@ -442,8 +472,8 @@ def parse_and_validate_args(params):
             required=False,
             type="dict",
             options=dict(
-                include=dict(type=data_set_pattern_type, required=False),
-                exclude=dict(type=data_set_pattern_type, required=False),
+                include=dict(type='list', elements='data_set', required=False),
+                exclude=dict(type='list', elements='data_set', required=False),
             ),
         ),
         space=dict(
@@ -461,7 +491,7 @@ def parse_and_validate_args(params):
         volume=dict(type="volume", required=False, dependencies=["data_sets"]),
         full_volume=dict(type=full_volume_type, default=False, dependencies=["volume"]),
         temp_volume=dict(type="volume", required=False, aliases=["dest_volume"]),
-        backup_name=dict(type=backup_name_type, required=False),
+        backup_name=dict(type='data_set_or_path', required=False),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),

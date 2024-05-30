@@ -475,8 +475,8 @@ def parse_and_validate_args(params):
             required=False,
             type="dict",
             options=dict(
-                include=dict(type='list', elements='data_set', required=False),
-                exclude=dict(type='list', elements='data_set', required=False),
+                include=dict(type=data_set_pattern_type, required=False),
+                exclude=dict(type=data_set_pattern_type, required=False),
             ),
         ),
         space=dict(
@@ -695,7 +695,7 @@ def data_set_pattern_type(contents, dependencies):
         )
     for pattern in contents:
         if not match(
-            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
             str(pattern),
             IGNORECASE,
         ):

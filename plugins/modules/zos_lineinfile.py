@@ -36,6 +36,8 @@ options:
       - The location can be a UNIX System Services (USS) file,
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
+      - Generation data set (GDS) relative name of generation already
+        created SOME.CREATION(-1).
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -127,6 +129,7 @@ options:
         if I(backup=true).
       - The backup file name will be return on either success or failure
         of module execution such that data can be retrieved.
+      - Use generation data set (GDS) relative positive name SOME.CREATION(+1)
     required: false
     type: bool
     default: false
@@ -240,16 +243,16 @@ EXAMPLES = r"""
 
 - name: Add a line to a gds
   zos_lineinfile:
-    src: SOME.PARTITIONED(-2)
+    src: SOME.CREATION(-2)
     insertafter: EOF
     line: 'Should be a working test now'
 
 - name: Add a line to dataset and backup in a new generation of gds
   zos_lineinfile:
-    src: SOME.PARTITIONED.TEST
+    src: SOME.CREATION.TEST
     insertafter: EOF
     backup: True
-    backup_name: PARTITIONED.GDG(+1)
+    backup_name: CREATION.GDS(+1)
     line: 'Should be a working test now'
 """
 
@@ -392,6 +395,49 @@ def absent(src, line, regexp, encoding, force):
 
 
 def execute_dsed(src, state, encoding, module, line=False, first_match=False, force=False, backrefs=False, regex=None, ins_bef=None, ins_aft=None):
+    """Execute in terminal dsed command directly
+
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    state : bool
+        Determine if will add or delete the line.
+    encoding : str
+        Encoding of the src.
+    module : obj
+        Object to execute the command.
+    line : str
+        The line to insert/replace into the src.
+    regex : str
+        The regular expression to look for in every line of the src.
+        If regexp matches, ins_aft/ins_bef will be ignored.
+    ins_aft : str
+        Insert the line after matching '*regex*' pattern or EOF.
+        choices:
+          - EOF
+          - '*regex*'
+    ins_bef : str
+        Insert the line before matching '*regex*' pattern or BOF.
+        choices:
+          - BOF
+          - '*regex*'
+    first_match : bool
+        Take the first matching regex pattern.
+    backrefs : bool
+        Back reference.
+    force : bool
+        force for modify a member part of a task in execution.
+
+    Returns
+    -------
+    int
+        RC of the execution of the command.
+    cmd
+        Command executed.
+    stdout
+        Stdout of the command execution.
+    """
     options = ""
     force = " -f " if force else ""
     backrefs = " -r " if backrefs else ""
@@ -443,6 +489,18 @@ def execute_dsed(src, state, encoding, module, line=False, first_match=False, fo
 
 
 def clean_command_output(cmd):
+    """Deletes escaped characters from the str.
+
+    Parameters
+    ----------
+    cmd : str
+        Command to clean any escaped characters.
+
+    Returns
+    -------
+    str
+        Command without escaped character.
+    """
     cmd = cmd.replace('/c\\\\', '')
     cmd = cmd.replace('/a\\\\', '', )
     cmd = cmd.replace('/i\\\\', '', )
@@ -461,6 +519,19 @@ def clean_command_output(cmd):
 
 
 def check_special_characters(src):
+    """Verify if the string contains special characters
+    such as $ @ # -.
+
+    Parameters
+    ----------
+    string : str
+        Given string.
+
+    Returns
+    -------
+    bool
+        If the string match any special character.
+    """
     special_characters = ['$', '@', '#', '-']
     return any(character in special_characters for character in src)
 

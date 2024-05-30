@@ -38,6 +38,8 @@ options:
       - The location can be a UNIX System Services (USS) file,
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
+      - Generation data set (GDS) relative name of generation already
+        created SOME.CREATION(-1).
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -110,6 +112,7 @@ options:
       - When set to C(true), the module creates a backup file or data set.
       - The backup file name will be returned on either success or failure of
         module execution such that data can be retrieved.
+      - Use generation data set (GDS) relative positive name SOME.CREATION(+1)
     required: false
     type: bool
     default: false
@@ -282,16 +285,16 @@ EXAMPLES = r'''
 
 - name: Add a block to a gds
   zos_blockinfile:
-    src: SYS1.SOME.PARTITIONED(0)
+    src: TEST.SOME.CREATION(0)
     insertafter: EOF
     block: "{{ CONTENT }}"
 
 - name: Add a block to dataset and backup in a new generation of gds
   zos_blockinfile:
-    src: SOME.PARTITIONED.TEST
+    src: SOME.CREATION.TEST
     insertbefore: BOF
     backup: True
-    backup_name: SYS1.GDG(+1)
+    backup_name: CREATION.GDS(+1)
     block: "{{ CONTENT }}"
 '''
 
@@ -470,6 +473,18 @@ def quotedString(string):
 
 
 def quotedString_double_quotes(string):
+    """Deletes the quote mark on strings.
+
+    Parameters
+    ----------
+    string : str
+        String to modify quote marks from.
+
+    Returns
+    -------
+    str
+        String scaping the quote marks.
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
@@ -477,6 +492,25 @@ def quotedString_double_quotes(string):
 
 
 def check_double_quotes(marker, ins_bef, ins_aft, block):
+    """Verify the content of strings to determine if double
+      quotes are in the string.
+
+    Parameters
+    ----------
+    marker : str
+        String to verify quote marks from.
+    ins_bef : str
+        String to verify quote marks from.
+    ins_aft : str
+        String to verify quote marks from.
+    block : str
+        String to verify quote marks from.
+
+    Returns
+    -------
+    bool
+        If any string contain double quotes.
+    """
     if marker:
         if '"' in marker:
             return True
@@ -493,6 +527,42 @@ def check_double_quotes(marker, ins_bef, ins_aft, block):
 
 
 def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=None, ins_aft=None):
+    """Execute in terminal dmod command directly.
+
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    block : str
+        The block to insert/replace into the src.
+    marker : str
+        The block will be inserted/updated with the markers.
+    force : bool
+        If not empty passes True option to dmod cmd.
+    encoding : str
+        Encoding of the src.
+    state : bool
+        Determine if will add or delete the block.
+    module : obj
+        Object to execute the command.
+    ins_bef : str
+        Insert the block before matching '*regex*' pattern or BOF.
+        choices:
+            - BOF
+            - '*regex*'
+    ins_aft : str
+        Insert the block after matching '*regex*' pattern or EOF.
+        choices:
+            - EOF
+            - '*regex*'
+
+    Returns
+    -------
+    int
+        RC of the execution of the command.
+    cmd
+        Command executed.
+    """
     block = block.replace('"', '\\"')
     force = "-f" if force else ""
     encoding = "-c {0}".format(encoding) if encoding else ""
@@ -519,6 +589,18 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
 
 
 def clean_command(cmd):
+    """Deletes escaped characters from the str.
+
+    Parameters
+    ----------
+    cmd : str
+        Command to clean any escaped characters.
+
+    Returns
+    -------
+    str
+        Command without escaped characters.
+    """
     cmd = cmd.replace('/c\\\\', '')
     cmd = cmd.replace('/a\\\\', '', )
     cmd = cmd.replace('/i\\\\', '', )

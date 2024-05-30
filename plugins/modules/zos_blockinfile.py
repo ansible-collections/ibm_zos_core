@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -344,13 +344,21 @@ DS_TYPE = ['PS', 'PO']
 
 
 def transformBlock(block, indentation_char, indentation_spaces):
-    """Prepends the specified number of spaces to the block in all lines
-    Arguments:
-        block: {str} -- The block text to be transformed.
-        indentation_char: {str} -- The indentation char to be used.
-        indentation_spaces: {int} -- Number of times the indentation char to prepend.
-    Returns:
-        block: {str} -- The text block after applying the necessary transformations.
+    """Prepends the specified number of spaces to the block in all lines.
+
+    Parameters
+    ----------
+    block : str
+        The block text to be transformed.
+    indentation_char : str
+        The indentation char to be used.
+    indentation_spaces : int
+        Number of times the indentation char to prepend.
+
+    Returns
+    -------
+    str
+        The text block after applying the necessary transformations.
     """
     blocklines = block.splitlines()
     # Prepend spaces transformation
@@ -364,57 +372,176 @@ def transformBlock(block, indentation_char, indentation_spaces):
 
 
 def present(src, block, marker, ins_aft, ins_bef, encoding, force):
-    """Replace a block with the matching regex pattern
-    Insert a block before/after the matching pattern
-    Insert a block at BOF/EOF
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        block: {str} -- The block to insert/replace into the src.
-        marker: {str} -- The block will be inserted/updated with the markers.
-        ins_aft: {str} -- Insert the block after matching '*regex*' pattern or EOF.
-            choices:
-                - EOF
-                - '*regex*'
-        ins_bef: {str} -- Insert the block before matching '*regex*' pattern or BOF.
-            choices:
-                - BOF
-                - '*regex*'
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- If not empty passes True option to dmod cmd.
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dmod shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the destination was modified.
+    """Replace a block with the matching regex pattern.
+    Insert a block before/after the matching pattern.
+    Insert a block at BOF/EOF.
+
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    block : str
+        The block to insert/replace into the src.
+    marker : str
+        The block will be inserted/updated with the markers.
+    ins_aft : str
+        Insert the block after matching '*regex*' pattern or EOF.
+        choices:
+            - EOF
+            - '*regex*'
+    ins_bef : str
+        Insert the block before matching '*regex*' pattern or BOF.
+        choices:
+            - BOF
+            - '*regex*'
+    encoding : str
+        Encoding of the src.
+    force : bool
+        If not empty passes True option to dmod cmd.
+
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dmod shell command.
+        found {int} -- Number of matching regex pattern.
+        changed {bool} -- Indicates if the destination was modified.
     """
     return datasets.blockinfile(src, True, block=block, marker=marker, insert_after=ins_aft,
                                 insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
 
 
 def absent(src, marker, encoding, force):
-    """Delete blocks with matching regex pattern
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        marker: {str} -- Identifies the block to be removed.
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- If not empty passes the value True option to dmod cmd.
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dmod shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the destination was modified.
+    """Delete blocks with matching regex pattern.
+
+    Parameter
+    ---------
+    src : str
+        The z/OS USS file or data set to modify.
+    marker : str
+        Identifies the block to be removed.
+    encoding : str
+        Encoding of the src.
+    force : bool
+        If not empty passes the value True option to dmod cmd.
+
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dmod shell command.
+        found {int} -- Number of matching regex pattern.
+        changed {bool} -- Indicates if the destination was modified.
     """
     return datasets.blockinfile(src, False, marker=marker, encoding=encoding, force=force, as_json=True)
 
 
 def quotedString(string):
+    """Deletes the quote mark on strings.
+
+    Parameters
+    ----------
+    string : str
+        String to delete quote marks from.
+
+    Returns
+    -------
+    str
+        String without the quote marks.
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
     return string.replace('"', "")
 
 
+def quotedString_double_quotes(string):
+    # add escape if string was quoted
+    if not isinstance(string, str):
+        return string
+    return string.replace('"', '\\"')
+
+
+def check_double_quotes(marker, ins_bef, ins_aft, block):
+    if marker:
+        if '"' in marker:
+            return True
+    if ins_bef:
+        if '"' in ins_bef:
+            return True
+    if ins_aft:
+        if '"' in ins_aft:
+            return True
+    if block:
+        if '"' in block:
+            return True
+    return False
+
+
+def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=None, ins_aft=None):
+    block = block.replace('"', '\\"')
+    force = "-f" if force else ""
+    encoding = "-c {0}".format(encoding) if encoding else ""
+    marker = "-m \"{0}\"".format(marker) if marker else ""
+    if state:
+        if ins_aft:
+            if ins_aft == "EOF":
+                opts = f'"$ a\\{block}" "{src}"'
+            else:
+                opts = f'-s -e "/{ins_aft}/a\\{block}/$" -e "$ a\\{block}" "{src}"'
+        elif ins_bef:
+            if ins_bef == "BOF":
+                opts = f' "1 i\\{block}" "{src}" '
+            else:
+                opts = f'-s -e "/{ins_bef}/i\\{block}/$" -e "$ a\\{block}" "{src}"'
+
+        cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
+    else:
+        cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
+
+    rc, stdout, stderr = module.run_command(cmd)
+    cmd = clean_command(cmd)
+    return rc, cmd
+
+
+def clean_command(cmd):
+    cmd = cmd.replace('/c\\\\', '')
+    cmd = cmd.replace('/a\\\\', '', )
+    cmd = cmd.replace('/i\\\\', '', )
+    cmd = cmd.replace('$ a\\\\', '', )
+    cmd = cmd.replace('1 i\\\\', '', )
+    cmd = cmd.replace('/c\\', '')
+    cmd = cmd.replace('/a\\', '')
+    cmd = cmd.replace('/i\\', '')
+    cmd = cmd.replace('$ a\\', '')
+    cmd = cmd.replace('1 i\\', '')
+    cmd = cmd.replace('/d', '')
+    cmd = cmd.replace('\\\\d', '')
+    cmd = cmd.replace('\\n', '\n')
+    cmd = cmd.replace('\\"', '"')
+    return cmd
+
+
 def main():
+    """Run the zos_blockinfile module core functions.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Block is required with state=present.
+    fail_json
+        Marker should have {mark}.
+    fail_json
+        src does NOT exist.
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Unable to allocate backup.
+    fail_json
+        ZOAU dmod return content is NOT in json format.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(
@@ -553,6 +680,7 @@ def main():
             module.fail_json(msg=message)
         file_type = 0
 
+    return_content = None
     if backup:
         # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
         # setting backup to None if backup_name wasn't provided. if backup=None, Backup module will use
@@ -566,29 +694,47 @@ def main():
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception as err:
             module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
+    double_quotes_exists = check_double_quotes(marker, ins_bef, ins_aft, block)
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
+        if double_quotes_exists:
+            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, True, module=module,
+                                   ins_bef=quotedString_double_quotes(ins_bef), ins_aft=quotedString_double_quotes(ins_aft))
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to insert new entry' if rc != 0 else ""
+        else:
+            return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
-        return_content = absent(src, marker, encoding, force)
-    stdout = return_content.stdout_response
-    stderr = return_content.stderr_response
-    rc = return_content.rc
-    stdout = stdout.replace('/d', '\\\\d')
-    try:
-        # Try to extract information from stdout
-        # The triple double quotes is required for special characters (/_) been scape
-        ret = json.loads("""{0}""".format(stdout))
-    except Exception:
-        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-        if result.get('backup_name'):
-            messageDict['backup_name'] = result['backup_name']
-        module.fail_json(**messageDict)
+        if double_quotes_exists:
+            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, False, module=module)
+            result['rc'] = rc
+            result['cmd'] = cmd
+            result['changed'] = True if rc == 0 else False
+            stderr = 'Failed to remove entry' if rc != 0 else ""
+        else:
+            return_content = absent(src, marker, encoding, force)
+    # ZOAU 1.3.0 generate false positive working with double quotes (") the call generate distinct return when using and not
+    if not double_quotes_exists:
+        stdout = return_content.stdout_response
+        stderr = return_content.stderr_response
+        rc = return_content.rc
+        stdout = stdout.replace('/d', '\\\\d')
+        try:
+            # Try to extract information from stdout
+            # The triple double quotes is required for special characters (/_) been scape
+            ret = json.loads("""{0}""".format(stdout))
+        except Exception:
+            messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+            if result.get('backup_name'):
+                messageDict['backup_name'] = result['backup_name']
+            module.fail_json(**messageDict)
 
-    result['cmd'] = ret['data']['commands']
-    result['changed'] = ret['data']['changed']
-    result['found'] = ret['data']['found']
+        result['cmd'] = ret['data']['commands']
+        result['changed'] = ret['data']['changed']
+        result['found'] = ret['data']['found']
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
     if len(stderr):

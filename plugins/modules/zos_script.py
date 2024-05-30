@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -116,11 +116,12 @@ notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
   - This module uses L(zos_copy,./zos_copy.html) to copy local scripts to
-    the remote machine.
-  - L(zos_copy,./zos_copy.html) uses SFTP (Secure File Transfer Protocol)
-    for the underlying transfer protocol; Co:Z SFTP is not supported. In
-    the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from
-    using Co:Z thus falling back to using standard SFTP.
+    the remote machine which uses SFTP (Secure File Transfer Protocol) for the
+    underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not
+    supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS
+    from using Co:Z thus falling back to using standard SFTP. If the module detects
+    SCP, it will temporarily use SFTP for transfers, if not available, the module
+    will fail.
   - This module executes scripts inside z/OS UNIX System Services. For
     running REXX scripts contained in data sets or CLISTs, consider issuing a TSO
     command with L(zos_tso_command,./zos_tso_command.html).
@@ -228,6 +229,17 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        The given chdir does not exist on the system.
+    fail_json
+        The script terminated with an error.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             chdir=dict(type='str', required=False),

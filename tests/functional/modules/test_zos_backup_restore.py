@@ -307,16 +307,16 @@ def test_backup_and_restore_of_data_set(
 @pytest.mark.parametrize(
     "backup_name,space,space_type",
     [
-        (DATA_SET_BACKUP_LOCATION, 10, "M"),
-        (DATA_SET_BACKUP_LOCATION, 10000, "K"),
+        (DATA_SET_BACKUP_LOCATION, 10, "m"),
+        (DATA_SET_BACKUP_LOCATION, 10000, "k"),
         (DATA_SET_BACKUP_LOCATION, 10, None),
-        (DATA_SET_BACKUP_LOCATION, 2, "CYL"),
-        (DATA_SET_BACKUP_LOCATION, 10, "TRK"),
-        (UNIX_BACKUP_LOCATION, 10, "M"),
-        (UNIX_BACKUP_LOCATION, 10000, "K"),
+        (DATA_SET_BACKUP_LOCATION, 2, "cyl"),
+        (DATA_SET_BACKUP_LOCATION, 10, "trk"),
+        (UNIX_BACKUP_LOCATION, 10, "m"),
+        (UNIX_BACKUP_LOCATION, 10000, "k"),
         (UNIX_BACKUP_LOCATION, 10, None),
-        (UNIX_BACKUP_LOCATION, 2, "CYL"),
-        (UNIX_BACKUP_LOCATION, 10, "TRK"),
+        (UNIX_BACKUP_LOCATION, 2, "cyl"),
+        (UNIX_BACKUP_LOCATION, 10, "trk"),
     ],
 )
 def test_backup_and_restore_of_data_set_various_space_measurements(
@@ -721,7 +721,7 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
 #             backup_name=DATA_SET_BACKUP_LOCATION,
 #             overwrite=True,
 #             space=500,
-#             space_type="M",
+#             space_type="m",
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
@@ -734,7 +734,7 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
 #             full_volume=True,
 #             sms_storage_class="DB2SMS10",
 #             space=500,
-#             space_type="M",
+#             space_type="m",
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_exists_on_volume(hosts, data_set_name, VOLUME)

@@ -224,7 +224,7 @@ def set_ds_environment(ansible_zos_module, TEMP_FILE, DS_NAME, DS_TYPE, CONTENT)
     hosts = ansible_zos_module
     hosts.all.shell(cmd="echo \"{0}\" > {1}".format(CONTENT, TEMP_FILE))
     hosts.all.zos_data_set(name=DS_NAME, type=DS_TYPE)
-    if DS_TYPE in ["PDS", "PDSE"]:
+    if DS_TYPE in ["pds", "pdse"]:
         DS_FULL_NAME = DS_NAME + "(MEM)"
         hosts.all.zos_data_set(name=DS_FULL_NAME, state="present", type="member")
         cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), DS_FULL_NAME)
@@ -238,10 +238,11 @@ def set_ds_environment(ansible_zos_module, TEMP_FILE, DS_NAME, DS_TYPE, CONTENT)
 def remove_ds_environment(ansible_zos_module, DS_NAME):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DS_NAME, state="absent")
+
 # supported data set types
-DS_TYPE = ['SEQ', 'PDS', 'PDSE']
+DS_TYPE = ['seq', 'pds', 'pdse']
 # not supported data set types
-NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
+NS_DS_TYPE = ['esds', 'rrds', 'lds']
 # The encoding will be only use on a few test
 ENCODING = [ 'ISO8859-1', 'UTF-8']
 
@@ -674,7 +675,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
@@ -697,7 +698,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 #    finally:
 #        remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
@@ -720,7 +721,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 #    finally:
 #        remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
@@ -743,7 +744,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 #    finally:
 #        remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244
+#GH Issue #1244 / JIRA NAZARE-10439
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):
@@ -793,7 +794,7 @@ def test_ds_line_absent(ansible_zos_module, dstype):
 def test_ds_tmp_hlq_option(ansible_zos_module):
     # This TMPHLQ only works with sequential datasets
     hosts = ansible_zos_module
-    ds_type = "SEQ"
+    ds_type = "seq"
     kwargs = dict(backup_name=r"TMPHLQ\..")
     params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ")
     content = TEST_CONTENT
@@ -848,7 +849,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
     content = TEST_CONTENT
-    if ds_type == "SEQ":
+    if ds_type == "seq":
         params["path"] = default_data_set_name+".{0}".format(MEMBER_2)
     else:
         params["path"] = default_data_set_name+"({0})".format(MEMBER_2)
@@ -865,7 +866,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
             ]
         )
         # write memeber to verify cases
-        if ds_type in ["PDS", "PDSE"]:
+        if ds_type in ["pds", "pdse"]:
             cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), params["path"])
         else:
             cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), params["path"])
@@ -900,7 +901,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
 
 
 @pytest.mark.ds
-@pytest.mark.parametrize("dstype", ["PDS","PDSE"])
+@pytest.mark.parametrize("dstype", ["pds","pdse"])
 def test_ds_line_force_fail(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
@@ -1022,7 +1023,7 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, temp_file))
         hosts.all.shell(cmd=f"iconv -f IBM-1047 -t {params['encoding']} temp_file > temp_file ")
         hosts.all.zos_data_set(name=ds_name, type=ds_type)
-        if ds_type in ["PDS", "PDSE"]:
+        if ds_type in ["pds", "pdse"]:
             ds_full_name = ds_name + "(MEM)"
             hosts.all.zos_data_set(name=ds_full_name, state="present", type="member")
             cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file), ds_full_name)

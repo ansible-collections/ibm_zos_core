@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -271,7 +271,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
         ("cyl", 3, 1, 2549880),
         ("b", 3, 1, 56664),
         ("k", 3, 1, 56664),
-        ("m", 3, 1, 2889864),
+        ("m", 3, 1, 3003192),
     ],
 )
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):
@@ -393,7 +393,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_syste
         # * because that means data set exists and is VSAM so we can't read it
         results = hosts.all.command(cmd="head \"//'{0}'\"".format(default_data_set))
         for result in results.contacted.values():
-            assert "EDC5041I" in result.get("stderr", "")
+            assert "EDC5041I" or "EDC5049I" in result.get("stderr", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
 

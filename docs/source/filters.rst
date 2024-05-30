@@ -5,13 +5,9 @@
 Filters
 =======
 
-Filters in Ansible are from Jinja2, and are used to transform data inside
-a template expression. The templates operate on the Ansible controller, and not
-on the target host. Therefore, filters execute on the controller as they augment
-the data locally.
-
-Jinja2 ships with many filters as does Ansible, and also allows users to add
-their own custom filters.
+Filters are used to transform data inside a template expression. The templates
+operate on the Ansible controller, not on the managed node. Therefore,
+filters execute on the controller as they augment the data locally.
 
 The **IBM z/OS core collection** includes filters and their usage in sample
 playbooks. Unlike collections that can be identified at the top level using the

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
@@ -89,7 +89,7 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
     srcfn = create_sourcefile(hosts, volume_1)
     try:
         mount_result = hosts.all.zos_mount(
-            src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted"
+            src=srcfn, path="/pythonx", fs_type="zfs", state="mounted"
         )
         for result in mount_result.values():
             assert result.get("rc") == 0
@@ -99,7 +99,7 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
         hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
@@ -112,10 +112,10 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
     volume_1 = volumes.get_available_vol()
     srcfn = create_sourcefile(hosts, volume_1)
     try:
-        hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted")
+        hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
         # The duplication here is intentional... want to make sure it is seen
         mount_result = hosts.all.zos_mount(
-            src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted"
+            src=srcfn, path="/pythonx", fs_type="zfs", state="mounted"
         )
         for result in mount_result.values():
             assert result.get("rc") == 0
@@ -125,7 +125,7 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
         hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
@@ -137,9 +137,9 @@ def test_remount(ansible_zos_module, volumes_on_systems):
     volume_1 = volumes.get_available_vol()
     srcfn = create_sourcefile(hosts, volume_1)
     try:
-        hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted")
+        hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
         mount_result = hosts.all.zos_mount(
-            src=srcfn, path="/pythonx", fs_type="ZFS", state="remounted"
+            src=srcfn, path="/pythonx", fs_type="zfs", state="remounted"
         )
         for result in mount_result.values():
             assert result.get("rc") == 0
@@ -148,7 +148,7 @@ def test_remount(ansible_zos_module, volumes_on_systems):
         hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
@@ -180,7 +180,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
         name=dest,
         type="pdse",
         space_primary=5,
-        space_type="M",
+        space_type="m",
         record_format="fba",
         record_length=80,
     )
@@ -196,7 +196,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
         mount_result = hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="mounted",
             persistent=dict(data_store=dest_path),
         )
@@ -209,7 +209,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
         hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="absent",
         )
         hosts.all.file(path=tmp_file_filename, state="absent")
@@ -219,7 +219,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             state="absent",
             type="pdse",
             space_primary=5,
-            space_type="M",
+            space_type="m",
             record_format="fba",
             record_length=80,
         )
@@ -264,7 +264,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
         name=dest,
         type="pdse",
         space_primary=5,
-        space_type="M",
+        space_type="m",
         record_format="fba",
         record_length=80,
     )
@@ -283,7 +283,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
         mount_result = hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="mounted",
             persistent=dict(
                 data_store=dest_path,
@@ -326,7 +326,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
         hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="absent",
         )
         hosts.all.file(path=tmp_file_filename, state="absent")
@@ -337,7 +337,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             state="absent",
             type="pdse",
             space_primary=5,
-            space_type="M",
+            space_type="m",
             record_format="fba",
             record_length=80,
         )
@@ -349,7 +349,7 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
     srcfn = create_sourcefile(hosts, volume_1)
     try:
         mount_result = hosts.all.zos_mount(
-            src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted"
+            src=srcfn, path="/pythonx", fs_type="zfs", state="mounted"
         )
         for result in mount_result.values():
             assert result.get("rc") == 0
@@ -358,11 +358,11 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
     finally:
         tmphlq = "TMPHLQ"
         persist_data_set = get_tmp_ds_name()
-        hosts.all.zos_data_set(name=persist_data_set, state="present", type="SEQ")
+        hosts.all.zos_data_set(name=persist_data_set, state="present", type="seq")
         unmount_result = hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
-            fs_type="ZFS",
+            fs_type="zfs",
             state="absent",
             tmp_hlq=tmphlq,
             persistent=dict(data_store=persist_data_set, backup=True)

@@ -1347,8 +1347,8 @@ class DataSet(object):
 
     @staticmethod
     def is_gds_positive_relative_name(name):
-        """Determine if name is a gdg relative name based
-        on the GDS relative name syntax eg. 'USER.GDG(-2)'.
+        """Determine if name is a gdg relative positive name
+        based on the GDS relative name syntax eg. 'USER.GDG(+1)'.
         Parameters
         ----------
         name : str
@@ -1356,7 +1356,7 @@ class DataSet(object):
         Returns
         -------
         bool
-            Whether the name is a GDS relative name.
+            Whether the name is a GDS positive relative name.
         """
         pattern = r'(.+)\(([\\]?[+]\d+)\)'
         match = re.fullmatch(pattern, name)

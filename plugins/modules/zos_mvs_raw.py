@@ -88,6 +88,8 @@ options:
           data_set_name:
             description:
               - The data set name.
+              - A data set name can be a GDS relative name.
+              - When using GDS relative name and it is a positive generation, disposition new must be used.
             type: str
             required: false
           type:
@@ -705,6 +707,8 @@ options:
                   data_set_name:
                     description:
                       - The data set name.
+                      - A data set name can be a GDS relative name.
+                      - When using GDS relative name and it is a positive generation, disposition new must be used.
                     type: str
                     required: false
                   type:
@@ -1582,6 +1586,37 @@ EXAMPLES = r"""
                       RECORDSIZE(4086 32600) -
                       VOLUMES(222222) -
                       UNIQUE)
+
+- name: List data sets matching pattern in catalog,
+    save output to a new generation of gdgs.
+  zos_mvs_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: TEST.CREATION(+1)
+          disposition: new
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: List data sets matching pattern in catalog,
+    save output to a gds already created.
+  zos_mvs_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: TEST.CREATION(-2)
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -2593,6 +2628,19 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
 
 
 def resolve_data_set_names(dataset, disposition):
+    """Resolve cases for data set names as relative gds or positive
+      that could be accepted if disposition is new.
+      Parameters
+      ----------
+      dataset : str
+          Data set name to determine if is a GDS relative name or regular name.
+      disposition : str
+          Disposition of data set for it creation.
+      Returns
+      -------
+      str
+          The absolute name of dataset or relative positive if disposition is new.
+    """
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
             if disposition and disposition == "new":

@@ -51,6 +51,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to include in the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to include when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -68,6 +69,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to exclude from the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to exclude when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -117,6 +119,7 @@ options:
       - There are no enforced conventions for backup names.
         However, using a common extension like C(.dzp) for UNIX files and C(.DZP) for data sets will
         improve readability.
+      - GDS relative names are supported when I(operation=restore).
     type: str
     required: True
   recover:

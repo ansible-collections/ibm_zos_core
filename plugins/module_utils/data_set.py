@@ -1032,7 +1032,7 @@ class DataSet(object):
                 create_exception.response.rc,
                 create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
-        except exceptions.DatasetVerificationError as e:
+        except exceptions.DatasetVerificationError:
             # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
             if volumes and len(volumes) > 1:
                 if DataSet.data_set_cataloged(name, volumes):
@@ -1342,6 +1342,23 @@ class DataSet(object):
             Whether the name is a GDS relative name.
         """
         pattern = r'(.+)\(([\\]?[+-]?\d+)\)'
+        match = re.fullmatch(pattern, name)
+        return bool(match)
+
+    @staticmethod
+    def is_gds_positive_relative_name(name):
+        """Determine if name is a gdg relative positive name
+        based on the GDS relative name syntax eg. 'USER.GDG(+1)'.
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS relative name.
+        Returns
+        -------
+        bool
+            Whether the name is a GDS positive relative name.
+        """
+        pattern = r'(.+)\(([\\]?[+]\d+)\)'
         match = re.fullmatch(pattern, name)
         return bool(match)
 
@@ -1727,6 +1744,7 @@ class DataSetUtils(object):
             dict -- Dictionary containing data set attributes
         """
         result = dict()
+        self.data_set = self.data_set.upper().replace("\\", '')
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
             "  LISTDS '{0}'".format(self.data_set), authorized=True
         )
@@ -1809,6 +1827,7 @@ class MVSDataSet():
     def __init__(
         self,
         name,
+        escape_name=False,
         data_set_type=None,
         state=None,
         organization=None,
@@ -1858,7 +1877,8 @@ class MVSDataSet():
         self.is_cataloged = False
 
         # If name has escaped chars or is GDS relative name we clean it.
-        # self.name = DataSet.escape_data_set_name(self.name)
+        if escape_name:
+            self.name = DataSet.escape_data_set_name(self.name)
         if DataSet.is_gds_relative_name(self.name):
             try:
                 self.name = DataSet.resolve_gds_absolute_name(self.name)
@@ -1866,7 +1886,7 @@ class MVSDataSet():
             except Exception:
                 # This means the generation is a positive version so is only used for creation.
                 self.is_gds_active = False
-        if self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs":
+        if self.data_set_type and (self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs"):
             # When trying to create a new VSAM with a specified record format will fail
             # with ZOAU
             self.record_format = None

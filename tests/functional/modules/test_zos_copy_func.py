@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -229,7 +229,6 @@ SH /tmp/disp_shr/pdse-lock '{0}'
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
 //"""
-
 
 def populate_dir(dir_path):
     for i in range(5):

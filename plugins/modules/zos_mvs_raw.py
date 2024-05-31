@@ -2646,7 +2646,7 @@ def resolve_data_set_names(dataset, disposition):
             if disposition and disposition == "new":
                 return dataset
             else:
-                raise ("To generate a new gds as {0} required disposition new".format(dataset))
+                raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:
             data = data_set.MVSDataSet(
                 name=dataset

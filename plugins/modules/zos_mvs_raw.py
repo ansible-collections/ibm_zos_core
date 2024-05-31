@@ -2654,7 +2654,7 @@ def resolve_data_set_names(dataset, disposition):
             src = data.name
             if data.is_gds_active:
                 if disposition and disposition == "new":
-                    raise ("GDS {0} already created, use a positive generation when disposition  '{1}' is used.".format(src, "disposition", "data_set_name"))
+                    raise ("Gds {0} already create, incorrect parameters for disposition and data_set_name".format(src))
                 else:
                     return src
             else:

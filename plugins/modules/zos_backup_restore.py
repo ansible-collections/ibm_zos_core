@@ -494,7 +494,7 @@ def parse_and_validate_args(params):
         volume=dict(type="volume", required=False, dependencies=["data_sets"]),
         full_volume=dict(type=full_volume_type, default=False, dependencies=["volume"]),
         temp_volume=dict(type="volume", required=False, aliases=["dest_volume"]),
-        backup_name=dict(type='data_set_or_path', required=False),
+        backup_name=dict(type=backup_name_type, required=False),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
@@ -695,7 +695,7 @@ def data_set_pattern_type(contents, dependencies):
         )
     for pattern in contents:
         if not match(
-            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
+            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
             str(pattern),
             IGNORECASE,
         ):
@@ -865,7 +865,7 @@ def backup_name_type(contents, dependencies):
     if contents is None:
         return None
     if not match(
-        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
         str(contents),
         IGNORECASE,
     ):

@@ -1029,6 +1029,29 @@ def test_gdg_create_and_delete_force(ansible_zos_module):
         hosts.all.zos_data_set(name=data_set_name, state="absent", force=True, type="gdg")
 
 
+def test_gdg_create_and_delete_force(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name(2,2, symbols=True)
+        data_set_list = [f"{data_set_name}A", f"{data_set_name}B", f"{data_set_name}C"]
+        results = hosts.all.zos_data_set(
+            batch=[
+                {"name":data_set_list[0], "state":"present", "type":"gdg", "limit":3},
+                {"name":data_set_list[1], "state":"present", "type":"gdg", "limit":3},
+                {"name":data_set_list[2], "state":"present", "type":"gdg", "limit":3},
+            ]
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.shell(cmd=f"dls -tGDG ANSIBLE.*")
+        for result in results.contacted.values():
+            for ds_name in data_set_list:
+                assert ds_name in result.get("stdout")
+    finally:
+        results = hosts.all.shell(cmd=f"drm ANSIBLE.*")
+
+
 def test_create_special_chars(ansible_zos_module):
     try:
         hosts = ansible_zos_module

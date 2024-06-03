@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,8 +14,7 @@
 from __future__ import absolute_import, division, print_function
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
-from shellescape import quote
-from pprint import pprint
+from shlex import quote
 
 __metaclass__ = type
 
@@ -56,7 +55,7 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
         VolumeHandler = Volume_Handler(volumes_with_vvds)
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", state="present", force_dynamic=True)
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -93,7 +92,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module, volumes_with_vvds):
         tmphlq = "TMPHLQ"
         test_info = dict(library="", state="present", force_dynamic=True, tmp_hlq="", persistent=dict(data_set_name="", backup=True))
         test_info['tmp_hlq'] = tmphlq
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -129,7 +128,7 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
         VolumeHandler = Volume_Handler(volumes_with_vvds)
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", volume="", state="present", force_dynamic=True)
-        ds = get_tmp_ds_name(1,1)
+        ds = get_tmp_ds_name(1,1,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -148,6 +147,7 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
             hosts.all.shell(cmd=cmdStr)
             test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
+
         for result in results.contacted.values():
             assert result.get("rc") == 0
         test_info['state'] = 'absent'
@@ -192,7 +192,7 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
         VolumeHandler = Volume_Handler(volumes_with_vvds)
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", volume="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
-        ds = get_tmp_ds_name(1,1)
+        ds = get_tmp_ds_name(1,1,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -251,7 +251,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
         )
         for item in test_info['batch']:
-            ds = get_tmp_ds_name(1,1)
+            ds = get_tmp_ds_name(1,1,True)
             hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
             item['library'] = ds
             cmdStr = "dls -l " + ds + " | awk '{print $5}' "
@@ -259,12 +259,11 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             for result in results.contacted.values():
                 vol = result.get("stdout")
             item['volume'] = vol
-        prstds = get_tmp_ds_name(5,5)
+        prstds = get_tmp_ds_name(5,5,True)
         cmdStr = "dtouch -tseq {0}".format(prstds)
         hosts.all.shell(cmd=cmdStr)
         test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("rc") == 0
         add_exptd = add_batch_expected.format(test_info['batch'][0]['library'], test_info['batch'][0]['volume'],
@@ -279,7 +278,6 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         assert actual == add_exptd
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("rc") == 0
         del_exptd = del_expected.replace(" ", "")
@@ -315,7 +313,7 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", state="present", force_dynamic=True)
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -357,7 +355,7 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", state="present", force_dynamic=True)
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -394,7 +392,7 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
         VolumeHandler = Volume_Handler(volumes_with_vvds)
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", state="present", force_dynamic=True)
-        ds = get_tmp_ds_name(1,1)
+        ds = get_tmp_ds_name(1,1,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -438,7 +436,7 @@ def test_add_with_wrong_volume(ansible_zos_module, volumes_with_vvds):
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", volume="", state="present", force_dynamic=True)
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -472,7 +470,7 @@ def test_persist_invalid_ds_format(ansible_zos_module, volumes_with_vvds):
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -506,7 +504,7 @@ def test_persist_invalid_marker(ansible_zos_module, volumes_with_vvds):
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -539,7 +537,7 @@ def test_persist_invalid_marker_len(ansible_zos_module, volumes_with_vvds):
         volume = VolumeHandler.get_available_vol()
         test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:

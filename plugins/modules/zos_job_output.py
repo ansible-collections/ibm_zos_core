@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -431,6 +431,19 @@ except Exception:
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        job_id or job_name or owner not provided.
+    fail_json
+        ZOAU exception.
+    fail_json
+        Any exception while fetching jobs.
+    """
     module_args = dict(
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),

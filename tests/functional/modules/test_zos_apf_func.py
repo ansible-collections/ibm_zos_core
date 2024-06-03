@@ -4,7 +4,7 @@
 # pylint: disable=redefined-outer-name
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -109,7 +109,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module, volumes_with_vvds):
             }
         }
         test_info['tmp_hlq'] = tmphlq
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -150,7 +150,8 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
             "state":"present",
             "force_dynamic":True
         }
-        ds = get_tmp_ds_name(1,1)
+        ds = get_tmp_ds_name(1,1,True)
+
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -169,6 +170,7 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
+
         for result in results.contacted.values():
             assert result.get("rc") == 0
         test_info['state'] = 'absent'
@@ -222,7 +224,7 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
             "state":"present",
             "force_dynamic":True
         }
-        ds = get_tmp_ds_name(1,1)
+        ds = get_tmp_ds_name(1,1,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -299,7 +301,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         for item in test_info['batch']:
-            ds = get_tmp_ds_name(1,1)
+            ds = get_tmp_ds_name(1,1,True)
             hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
             item['library'] = ds
             cmd_str = "dls -l " + ds + " | awk '{print $5}' "
@@ -307,9 +309,10 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             for result in results.contacted.values():
                 vol = result.get("stdout")
             item['volume'] = vol
-        prstds = get_tmp_ds_name(5,5)
+        prstds = get_tmp_ds_name(5,5,True)
         cmd_str = f"dtouch -tseq {prstds}"
         hosts.all.shell(cmd=cmd_str)
+
         test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
@@ -371,7 +374,7 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -420,7 +423,7 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -461,7 +464,7 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
             "state":"present",
             "force_dynamic":True
         }
-        ds = get_tmp_ds_name(1,1)
+        ds = get_tmp_ds_name(1,1,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -514,7 +517,7 @@ def test_add_with_wrong_volume(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -556,7 +559,7 @@ def test_persist_invalid_ds_format(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -599,7 +602,7 @@ def test_persist_invalid_marker(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
@@ -640,7 +643,7 @@ def test_persist_invalid_marker_len(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         test_info['state'] = 'present'
-        ds = get_tmp_ds_name(3,2)
+        ds = get_tmp_ds_name(3,2,True)
         hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:

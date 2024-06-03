@@ -40,19 +40,12 @@ body:
         - v1.11.0-beta.1
         - v1.10.0
         - v1.10.0-beta.1
-        - v1.9.0
-        - v1.9.0-beta.1
-        - v1.8.0 (default)
+        - v1.9.0 (default)
+        - v1.8.0
         - v1.7.0
         - v1.6.0
         - v1.5.0
-        - v1.4.1
-        - v1.3.6
-        - v1.3.5
-        - v1.3.3
-        - v1.3.1
-        - v1.3.0
-      default: 8
+      default: 6
     validations:
       required: false
   - type: dropdown

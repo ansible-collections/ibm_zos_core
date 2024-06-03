@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -98,7 +98,7 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         type=ds_type,
         state="present"
     )
-    if ds_type == "KSDS":
+    if ds_type == "ksds":
         params["key_length"] = key_length
         params["key_offset"] = key_offset
 
@@ -545,7 +545,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="uss", wait_time_s=30
         )
 
         for result in results.contacted.values():
@@ -576,7 +576,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
         hosts = ansible_zos_module
         mlq_size = 3
         MVS_VS = get_tmp_ds_name(mlq_size)
-        create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, MVS_VS, "ksds", add_data=True, key_length=12, key_offset=0)
         hosts.all.file(path=USS_DEST_FILE, state="touch")
         results = hosts.all.zos_encode(
             src=MVS_VS,
@@ -611,7 +611,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
     hosts = ansible_zos_module
     MVS_PS = get_tmp_ds_name()
     MVS_VS = get_tmp_ds_name()
-    create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
+    create_vsam_data_set(hosts, MVS_VS, "ksds", add_data=True, key_length=12, key_offset=0)
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
     hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq", record_length=TEST_DATA_RECORD_LENGTH)
     results = hosts.all.zos_encode(
@@ -635,7 +635,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
     MVS_VS = get_tmp_ds_name()
     MVS_PDS = get_tmp_ds_name()
-    create_vsam_data_set(hosts, MVS_VS, "KSDS", add_data=True, key_length=12, key_offset=0)
+    create_vsam_data_set(hosts, MVS_VS, "ksds", add_data=True, key_length=12, key_offset=0)
     MVS_PDS_MEMBER = MVS_PDS + '(MEM)'
     hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
     hosts.all.zos_data_set(
@@ -671,7 +671,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         results = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="uss", wait_time_s=30
         )
         for result in results.contacted.values():
             assert result.get("jobs") is not None
@@ -803,7 +803,7 @@ def test_vsam_backup(ansible_zos_module):
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(MVS_VS)), TEMP_JCL_PATH)
         )
         hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="uss", wait_time_s=30
         )
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         # submit JCL to populate KSDS
@@ -814,7 +814,7 @@ def test_vsam_backup(ansible_zos_module):
             )
         )
         hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait_time_s=30
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="uss", wait_time_s=30
         )
 
         hosts.all.zos_encode(

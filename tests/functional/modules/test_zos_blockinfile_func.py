@@ -864,24 +864,25 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         remove_uss_environment(ansible_zos_module)
 
 # Test case base on bug of dataset.blockifile
-# GH Issue #1258 
-#@pytest.mark.uss
-#def test_uss_block_insert_with_doublequotes(ansible_zos_module):
-#    hosts = ansible_zos_module
-#    params = dict(insertafter="sleep 30;", block='cat "//OMVSADMI.CAT"\ncat "//OMVSADM.COPYMEM.TESTS" > test.txt', marker="// {mark} ANSIBLE MANAGED BLOCK", state="present")
-#    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
-#    content = TEST_CONTENT_DOUBLEQUOTES
-#    try:
-#        set_uss_environment(ansible_zos_module, content, full_path)
-#        params["path"] = full_path
-#        results = hosts.all.zos_blockinfile(**params)
-#        for result in results.contacted.values():
-#            assert result.get("changed") == 1
-#        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-#        for result in results.contacted.values():
-#            assert result.get("stdout") == EXPECTED_DOUBLE_QUOTES
-#    finally:
-#        remove_uss_environment(ansible_zos_module)
+# GH Issue #1258
+@pytest.mark.uss
+def test_uss_block_insert_with_doublequotes(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(insertafter="sleep 30;", block='cat "//OMVSADMI.CAT"\ncat "//OMVSADM.COPYMEM.TESTS" > test.txt', marker="// {mark} ANSIBLE MANAGED BLOCK", state="present")
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    content = TEST_CONTENT_DOUBLEQUOTES
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_DOUBLE_QUOTES
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -1277,6 +1278,86 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
+
+@pytest.mark.ds
+def test_gdd_ds_insert_block(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(insertafter="EOF", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
+    ds_name = get_tmp_ds_name(3, 2)
+    try:
+        # Set environment
+        hosts.all.shell(cmd="dtouch -tGDG -L3 {0}".format(ds_name))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(ds_name))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(ds_name))
+
+        params["src"] = ds_name + "(0)"
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["src"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
+
+        params["src"] = ds_name + "(-1)"
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["src"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
+
+        params_w_bck = dict(insertafter="eof", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=ds_name + "(+1)")
+        params_w_bck["src"] = ds_name + "(-1)"
+        results = hosts.all.zos_blockinfile(**params_w_bck)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+            assert result.get("rc") == 0
+        backup = ds_name + "(0)"
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
+
+        params["src"] = ds_name + "(-3)"
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 0
+    finally:
+        hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
+
+
+@pytest.mark.ds
+def test_special_characters_ds_insert_block(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(insertafter="eof", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
+    ds_name = get_tmp_ds_name(5, 5, symbols=True)
+    backup = get_tmp_ds_name(6, 6, symbols=True)
+    try:
+        result = hosts.all.zos_data_set(name=ds_name, type="seq", state="present")
+
+        params["src"] = ds_name
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        src = ds_name.replace('$', "\$")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(src))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
+
+        params_w_bck = dict(insertafter="eof", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=backup)
+        params_w_bck["src"] = ds_name
+        results = hosts.all.zos_blockinfile(**params_w_bck)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+            assert result.get("rc") == 0
+        backup = backup.replace('$', "\$")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
+
+    finally:
+        hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
+
+
 #########################
 # Encoding tests
 #########################
@@ -1412,6 +1493,7 @@ def test_ds_not_supported(ansible_zos_module, dstype):
         hosts.all.zos_data_set(name=ds_name, state="absent")
 
 
+# Enhancemed #1339
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ["pds","pdse"])
 def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):

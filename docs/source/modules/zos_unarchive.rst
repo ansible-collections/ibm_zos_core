@@ -392,8 +392,8 @@ Examples
        format:
          name: xmit
          format_options:
-           use_adrdssu: True
-       list: True
+           use_adrdssu: true
+       list: true
 
 
 

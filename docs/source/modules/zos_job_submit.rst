@@ -31,11 +31,13 @@ Parameters
 src
   The source file or data set containing the JCL to submit.
 
-  It could be a physical sequential data set, a partitioned data set qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
+  It could be a physical sequential data set, a partitioned data set qualified by a member or a path (e.g. \ :literal:`USER.TEST`\ , \ :literal:`USER.JCL(TEST)`\ ), or a generation data set from a generation data group (for example, \ :literal:`USER.TEST.GDG(-2)`\ ).
 
-  Or a USS file. (e.g "/u/tester/demo/sample.jcl")
+  Or a USS file. (e.g \ :literal:`/u/tester/demo/sample.jcl`\ )
 
-  Or a LOCAL file in ansible control node. (e.g "/User/tester/ansible-playbook/sample.jcl")
+  Or a LOCAL file in ansible control node. (e.g \ :literal:`/User/tester/ansible-playbook/sample.jcl`\ )
+
+  When using a generation data set, only already created generations are valid. If either the relative name is positive, or negative but not found, the module will fail.
 
   | **required**: True
   | **type**: str
@@ -44,11 +46,11 @@ src
 location
   The JCL location. Supported choices are \ :literal:`data\_set`\ , \ :literal:`uss`\  or \ :literal:`local`\ .
 
-  \ :literal:`data\_set`\  can be a PDS, PDSE, or sequential data set.
+  \ :literal:`data\_set`\  can be a PDS, PDSE, sequential data set, or a generation data set.
 
   \ :literal:`uss`\  means the JCL location is located in UNIX System Services (USS).
 
-  \ :literal:`local`\  means locally to the ansible control node.
+  \ :literal:`local`\  means locally to the Ansible control node.
 
   | **required**: False
   | **type**: str
@@ -310,6 +312,16 @@ Examples
        src: HLQ.DATA.LLQ
        location: data_set
        max_rc: 16
+
+   - name: Submit JCL from the latest generation data set in a generation data group.
+     zos_job_submit:
+       src: HLQ.DATA.GDG(0)
+       location: data_set
+
+   - name: Submit JCL from a previous generation data set in a generation data group.
+     zos_job_submit:
+       src: HLQ.DATA.GDG(-2)
+       location: data_set
 
 
 

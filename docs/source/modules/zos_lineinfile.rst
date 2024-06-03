@@ -239,15 +239,14 @@ Examples
        src: /tmp/src/somefile
        regexp: '^(.*)User(\d+)m(.*)$'
        line: '\1APPUser\3'
-       backrefs: yes
+       backrefs: true
 
    - name: Add a line to a member while a task is in execution
      zos_lineinfile:
        src: SOME.PARTITIONED.DATA.SET(DATA)
        insertafter: EOF
        line: 'Should be a working test now'
-       force: True
-
+       force: true
 
 
 

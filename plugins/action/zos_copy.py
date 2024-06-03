@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019-2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -245,7 +245,6 @@ class ActionModule(ActionBase):
         original_src = task_args.get("src")
         if original_src:
             if not remote_src:
-                base_name = os.path.basename(original_src)
                 if original_src.endswith("/"):
                     src = temp_path + "/"
                 else:
@@ -403,7 +402,7 @@ class ActionModule(ActionBase):
             else:
                 module_args = dict(name=dest, state="absent")
                 if is_member(dest):
-                    module_args["type"] = "MEMBER"
+                    module_args["type"] = "member"
                 self._execute_module(
                     module_name="ibm.ibm_zos_core.zos_data_set",
                     module_args=module_args,
@@ -465,6 +464,16 @@ def _update_result(is_binary, copy_res, original_args, original_src):
             dest_data_set_attrs.pop("name")
             updated_result["dest_created"] = True
             updated_result["destination_attributes"] = dest_data_set_attrs
+
+            # Setting attributes to lower case to conform to docs.
+            # Part of the change to lowercase choices in the collection involves having
+            # a consistent interface that also returns the same values in lowercase.
+            if "record_format" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["record_format"] = updated_result["destination_attributes"]["record_format"].lower()
+            if "space_type" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["space_type"] = updated_result["destination_attributes"]["space_type"].lower()
+            if "type" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["type"] = updated_result["destination_attributes"]["type"].lower()
 
     return updated_result
 

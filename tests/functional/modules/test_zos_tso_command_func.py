@@ -20,7 +20,6 @@ import ansible.errors
 import ansible.utils
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
-
 def test_zos_tso_command_run_help(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["help"])

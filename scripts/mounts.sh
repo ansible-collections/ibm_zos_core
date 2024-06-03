@@ -24,7 +24,16 @@
 # ------------------------------------------------------------------------------
 # Globals
 # ------------------------------------------------------------------------------
-cd $(dirname $0)
+#cd $(dirname $0)
+
+script_directory=$(cd -- "$(dirname -- "$0")" 2>/dev/null && pwd)
+
+# Depending on from where the file is sourced it can result in null so default it to .
+if [ ! -n "$script_directory" ]; then
+	script_directory="."
+fi
+
+cd ${script_directory}
 
 # Current shell, bash returns 'bash'
 CURR_SHELL=`echo $$ $SHELL | cut -d " " -f 2 | sed 's|.*/||'`
@@ -245,16 +254,31 @@ mount(){
 
 		# If zoau_mounted_data_set is empty or does not match expected, it means we should perform the mount
 		if [ "$zoau_mounted_data_set" != "$zoau_data_set" ]; then
-			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
-
-			# If zoau_mounted_data_set not empty, compare the mount points and if they match, then unmount.
-			# Note, the mount point could be root (/) waitng for children so lets compare before unmounting.
+			# If zoau_mounted_data_set not empty, compare the mount points and if they match, then continue below
 			if [ ! -z "${zoau_mounted_data_set}" ]; then
 				temp_mount=`df ${zoau_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 1`
+
+				# If zoau_mount is mounted to a different data set it means there has been a mount table update
+				# and it should be remounted with the new data set.
+				if [ "${zoau_mounted_data_set}" != "${zoau_data_set}" ]; then
+					# If the data set is mounted elsewhere, it needs to be unmounted so the mount command can succeed,
+					# thus zoau_to_unmount will eval to where the zoau_data_set might be mounted.
+					zoau_to_unmount=`df |grep ${zoau_data_set} | cut -d' ' -f 1`
+					if [ ! -z "${zoau_to_unmount}" ]; then
+						echo "Unmouting path ${zoau_to_unmount} from data set ${zoau_data_set} so that the data set can be mounted to ${zoau_mount}."
+						/usr/sbin/unmount ${zoau_to_unmount} 2>/dev/null
+					fi
+				fi
+
+				# If the mount points match then unmount so that a mount can be performed because it could mean the
+				# data set has been refreshed.
 				if [ "${zoau_mount}" = "${temp_mount}" ]; then
-					/usr/sbin/unmount ${zoau_mount}
+					# If you try to unmount / because that is where zoau_mount evals to currently, consume the error
+					echo "Unmouting path ${zoau_mount} from data set ${zoau_data_set} so that the mount point can be refreshed with the data set."
+					/usr/sbin/unmount ${zoau_mount} 2>/dev/null
 				fi
 			fi
+			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
 			mkdir -p ${zoau_mount}
         	/usr/sbin/mount ${1} ${zoau_data_set} ${zoau_mount}
 		else

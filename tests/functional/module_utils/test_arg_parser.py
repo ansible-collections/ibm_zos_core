@@ -4,7 +4,7 @@
 # pylint: disable=redefined-outer-name
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -942,6 +942,9 @@ def test_custom_defined_values_second_level():
         ("data_set", "easy.dat@.s$t"),
         ("data_set", "e##@y.dat#@.set(h$ll0)"),
         ("data_set", "easy.da-a.set(######)"),
+        ("data_set", "easy.data.gdg(+2)"),
+        ("data_set", "easy.data.gdg(-1)"),
+        ("data_set", "easy.data.gdg(0)"),
         ("data_set_base", "easy.data.set"),
         ("data_set_base", "$asy.d@ta.$et"),
         ("data_set_base", "easy.dat@.s$t"),
@@ -954,6 +957,9 @@ def test_custom_defined_values_second_level():
         ("data_set_or_path", "easy.data.set(######)"),
         ("data_set_or_path", "e##@y.dat#@.set(hello)"),
         ("data_set_or_path", "easy.data.set(helloo)"),
+        ("data_set_or_path", "easy.data.gdg(+2)"),
+        ("data_set_or_path", "easy.data.gdg(-1)"),
+        ("data_set_or_path", "easy.data.gdg(0)"),
         ("data_set_or_path", "/usr/lpp/rsusr"),
     ],
 )
@@ -980,6 +986,9 @@ def test_data_set_type_no_invalid(arg_type, name):
         ("data_set", "$asy.d@ta.$et(0helo)"),
         ("data_set", "-##@y.dat#@.set(h$ll0)"),
         ("data_set", "1asy.da-a.set(######)"),
+        ("data_set", "easy.data.gdg(+2+)"),
+        ("data_set", "easy.data.gdg(--1)"),
+        ("data_set", "easy.data.gdg(-+1)"),
         ("data_set_base", "-asy.data.set"),
         ("data_set_base", "$asy.d@ta.$etdafsfsdfad"),
         ("data_set_member", "e##@y.dat#@.set(h$l-l0)"),
@@ -991,6 +1000,9 @@ def test_data_set_type_no_invalid(arg_type, name):
         ("data_set_or_path", "3asy.data.set(######)"),
         ("data_set_or_path", "e#^#@y.dat#@.set(hello)"),
         ("data_set_or_path", "easy.5at@@a.set(helloo)"),
+        ("data_set_or_path", "easy.data.gdg(+2+)"),
+        ("data_set_or_path", "easy.data.gdg(--1)"),
+        ("data_set_or_path", "easy.data.gdg(-+1)"),
         #        ("data_set_or_path", "../lpp/rsusr"),
     ],
 )

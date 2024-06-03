@@ -22,6 +22,8 @@ module: zos_apf
 version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
+  - "Rich Parker (@richp405)"
+  - "Fernando Flores (@fernandofloresg))"
 short_description: Add or remove libraries to Authorized Program Facility (APF)
 description:
   - Adds or removes libraries to Authorized Program Facility (APF).
@@ -59,7 +61,7 @@ options:
       - The identifier for the volume containing the library specified in
         the C(library) parameter. The values must be one the following.
       - 1. The volume serial number.
-      - 2. Six asterisks (******), indicating that the system must use the
+      - 2. Six asterisks C(******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
       - 3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
@@ -176,7 +178,7 @@ options:
             specified on the C(library) parameter. The values must be one of the
             following.
           - 1. The volume serial number
-          - 2. Six asterisks (******), indicating that the system must use the
+          - 2. Six asterisks C(******), indicating that the system must use the
             volume serial number of the current system residence (SYSRES)
             volume.
           - 3. *MCAT*, indicating that the system must use the volume serial
@@ -221,7 +223,7 @@ EXAMPLES = r'''
 - name: Add a library (cataloged) to the APF list and persistence
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
-    force_dynamic: True
+    force_dynamic: true
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
 - name: Remove a library from the APF list and persistence
@@ -239,7 +241,7 @@ EXAMPLES = r'''
     batch:
       - library: SOME.SEQ.DS1
       - library: SOME.SEQ.DS2
-        sms: True
+        sms: true
       - library: SOME.SEQ.DS3
         volume: T12345
 - name: Print the APF list matching library pattern or volume serial number
@@ -312,6 +314,30 @@ DS_TYPE = ['PS', 'PO']
 
 
 def backupOper(module, src, backup, tmphlq=None):
+    """Create a backup for a specified USS file or MVS data set.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+    src : str
+        Source USS file or data set to backup.
+    backup : str
+        Name for the backup.
+    tmphlq : str
+        The name of the temporary high level qualifier to use.
+
+    Returns
+    -------
+    str
+        Backup name.
+
+    Raises
+    ------
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Creating backup has failed.
+    """
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
@@ -336,6 +362,19 @@ def backupOper(module, src, backup, tmphlq=None):
 
 
 def main():
+    """Initialize the module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Marker length may not exceed 72 characters.
+    fail_json
+        library is required.
+    fail_json
+        An exception occurred.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             library=dict(
@@ -471,7 +510,8 @@ def main():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    library = parsed_args.get('library')
+    library = parsed_args.get("library")
+
     state = parsed_args.get('state')
     force_dynamic = parsed_args.get('force_dynamic')
     volume = parsed_args.get('volume')

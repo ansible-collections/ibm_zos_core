@@ -17,9 +17,11 @@ from pprint import pprint
 from os import path
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 import pytest
+import re
 
 __metaclass__ = type
 
+SHELL_EXECUTABLE = "/bin/sh"
 USS_FILE = "/tmp/encode_data"
 USS_NONE_FILE = "/tmp/none"
 USS_DEST_FILE = "/tmp/converted_data"
@@ -1033,3 +1035,90 @@ def test_gdg_encoding_conversion_with_invalid_generation(ansible_zos_module, gen
     finally:
         hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
         hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_encoding_conversion_gds_to_uss_file(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        ds_name = get_tmp_ds_name()
+        gds_name = f"{ds_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{gds_name}\"")
+
+        results = hosts.all.zos_encode(
+            src=gds_name,
+            dest=USS_DEST_FILE,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            src = result.get("src", "")
+            assert ds_name in src
+            assert re.fullmatch(gds_pattern, src.split(".")[-1])
+
+            assert result.get("dest") == USS_DEST_FILE
+            assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_FILE))
+        for result in tag_results.contacted.values():
+            assert TO_ENCODING in result.get("stdout")
+    finally:
+        hosts.all.file(path=USS_DEST_FILE, state="absent")
+        hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_encoding_conversion_gds_to_mvs(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        src_name = get_tmp_ds_name()
+        dest_name = get_tmp_ds_name()
+        gds_name = f"{src_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{src_name}(+1)" """)
+        hosts.all.shell(cmd=f"dtouch -tseq {dest_name}")
+
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{gds_name}\"")
+
+        results = hosts.all.zos_encode(
+            src=gds_name,
+            dest=dest_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        dest_existence_check = hosts.all.shell(
+            cmd=f"""dcat "{dest_name}" """,
+            executable=SHELL_EXECUTABLE
+        )
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            src = result.get("src", "")
+            assert src_name in src
+            assert re.fullmatch(gds_pattern, src.split(".")[-1])
+
+            assert result.get("dest") == dest_name
+            assert result.get("changed") is True
+
+        for result in dest_existence_check.contacted.values():
+            assert result.get("rc") == 0
+            assert len(result.get("stdout_lines", [])) > 0
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_name}")
+        hosts.all.shell(cmd=f"drm {dest_name}")

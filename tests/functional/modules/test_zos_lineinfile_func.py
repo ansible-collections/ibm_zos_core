@@ -463,7 +463,7 @@ def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
 @pytest.mark.uss
 def test_uss_line_absent(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
+    params = dict(regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/usr/lpp/zoautil/v100", state="absent")
     full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
@@ -471,6 +471,7 @@ def test_uss_line_absent(ansible_zos_module):
         params["path"] = full_path
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
@@ -675,7 +676,97 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
-#GH Issue #1244 / JIRA NAZARE-10439
+
+@pytest.mark.ds
+def test_gdd_ds_insert_line(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(insertafter="eof", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    ds_name = get_tmp_ds_name(3, 2)
+    try:
+        # Set environment
+        hosts.all.shell(cmd="dtouch -tGDG -L3 {0}".format(ds_name))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(ds_name))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(ds_name))
+
+        params["src"] = ds_name + "(0)"
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+            cmd = result.get("cmd").split()
+        for cmd_p in cmd:
+            if ds_name in cmd_p:
+                dataset = cmd_p
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(dataset))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
+
+        params["src"] = ds_name + "(-1)"
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+            cmd = result.get("cmd").split()
+        for cmd_p in cmd:
+            if ds_name in cmd_p:
+                dataset = cmd_p
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(dataset))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
+
+        params_w_bck = dict(insertafter="eof", line="export ZOAU_ROOT", state="present", backup=True, backup_name=ds_name + "(+1)")
+        params_w_bck["src"] = ds_name + "(-1)"
+        results = hosts.all.zos_lineinfile(**params_w_bck)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+            assert result.get("rc") == 0
+        backup = ds_name + "(0)"
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
+
+        params["src"] = ds_name + "(-3)"
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 0
+    finally:
+        hosts.all.shell(cmd="""drm "{0}*" """.format(ds_name))
+
+
+@pytest.mark.ds
+def test_special_characters_ds_insert_line(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(insertafter="eof", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
+    ds_name = get_tmp_ds_name(5, 5, symbols=True)
+    backup = get_tmp_ds_name(6, 6, symbols=True)
+    try:
+        # Set environment
+        result = hosts.all.zos_data_set(name=ds_name, type="seq", state="present")
+
+        params["src"] = ds_name
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        src = ds_name.replace('$', "\$")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(src))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
+
+        params_w_bck = dict(insertafter="eof", line="export ZOAU_ROOT", state="present", backup=True, backup_name=backup)
+        params_w_bck["src"] = ds_name
+        results = hosts.all.zos_lineinfile(**params_w_bck)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == 1
+            assert result.get("rc") == 0
+        backup = backup.replace('$', "\$")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
+        for result in results.contacted.values():
+            assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
+
+    finally:
+        hosts.all.shell(cmd="""drm "ANSIBLE.*" """.format(ds_name))
+
+
+#GH Issue #1244
 #@pytest.mark.ds
 #@pytest.mark.parametrize("dstype", DS_TYPE)
 #def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
@@ -773,7 +864,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 def test_ds_line_absent(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
+    params = dict(regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/usr/lpp/zoautil/v100", state="absent")
     ds_name = get_tmp_ds_name()
     temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
@@ -973,7 +1064,7 @@ def test_ds_line_does_not_insert_repeated(ansible_zos_module, dstype):
         # Run lineinfle module with same params again, ensure duplicate entry is not made into file
         hosts.all.zos_lineinfile(**params)
         results = hosts.all.shell(cmd="""dgrep -c 'ZOAU_ROOT=/usr/lpp/zoautil/v10' "{0}" """.format(params["path"]))
-        response = params["path"] + " " + "1"
+        response = params["path"] + "          " + "1"
         for result in results.contacted.values():
             assert result.get("stdout") == response
     finally:

@@ -1454,7 +1454,7 @@ def parse_and_validate_args(params):
                 type=dict(
                     type=data_set_type,
                     required=False,
-                    dependencies=["state"],
+                    dependencies=["state", "limit"],
                     choices=DATA_SET_TYPES,
                 ),
                 space_type=dict(
@@ -1525,6 +1525,30 @@ def parse_and_validate_args(params):
                     required=False,
                     aliases=["volume"],
                     dependencies=["state"],
+                ),
+                limit=dict(
+                    type="int",
+                    required=False
+                ),
+                empty=dict(
+                    type="bool",
+                    required=False
+                ),
+                purge=dict(
+                    type="bool",
+                    required=False
+                ),
+                scratch=dict(
+                    type="bool",
+                    required=False
+                ),
+                extended=dict(
+                    type="bool",
+                    required=False
+                ),
+                fifo=dict(
+                    type="bool",
+                    required=False
                 ),
                 force=dict(
                     type="bool",
@@ -1598,7 +1622,7 @@ def parse_and_validate_args(params):
             default=False,
         ),
         # GDG options
-        limit=dict(type=limit_type, required=False),
+        limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False),
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
@@ -1721,7 +1745,7 @@ def run_module():
                     default=False,
                 ),
                 # GDG options
-                limit=dict(type="int", required=False, no_log=False),
+                limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False),
                 purge=dict(type="bool", required=False),
                 scratch=dict(type="bool", required=False),

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -512,7 +512,7 @@ EXAMPLES = r"""
   zos_copy:
     src: /path/to/foo.conf
     dest: /etc/foo.conf
-    mode: 0644
+    mode: "0644"
     group: foo
     owner: bar
 
@@ -881,22 +881,56 @@ class CopyHandler(object):
         backup_name=None,
         force_lock=False,
     ):
-        """Utility class to handle copying data between two targets
+        """Utility class to handle copying data between two targets.
 
-        Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently
-                                      running module
+        Parameters
+        ----------
+        module : AnsibleModule
+            The AnsibleModule object from currently
+            running module.
 
-        Keyword Arguments:
-            is_binary {bool} -- Whether the file or data set to be copied
-                                contains binary data
-            executable {bool} -- Whether the file or data set to be copied
-                                is executable
-            backup_name {str} -- The USS path or data set name of destination
-                                 backup
-            force_lock {str} -- Whether the dest data set should be copied into
-                                using disp=shr when is opened by another
-                                process.
+        Keyword Parameters
+        ------------------
+        is_binary : bool
+            Whether the file or data set to be copied
+            contains binary data.
+        executable : bool
+            Whether the file or data set to be copied
+            is executable.
+        asa_text : bool
+            Printer print statement.
+        aliases : bool
+            Unused.
+        backup_name : str
+            The USS path or data set name of destination
+            backup.
+        force_lock : str
+            Whether the dest data set should be copied into
+            using disp=shr when is opened by another
+            process.
+
+        Attributes
+        ----------
+        module : AnsibleModule
+            The AnsibleModule object from currently
+            running module.
+        is_binary : bool
+            Whether the file or data set to be copied
+            contains binary data.
+        executable : bool
+            Whether the file or data set to be copied
+            is executable.
+        asa_text : bool
+            Printer print statement.
+        aliases : bool
+            Unused.
+        backup_name : str
+            The USS path or data set name of destination
+            backup.
+        force_lock : str
+            Whether the dest data set should be copied into
+            using disp=shr when is opened by another
+            process.
         """
         self.module = module
         self.is_binary = is_binary
@@ -907,7 +941,20 @@ class CopyHandler(object):
         self.force_lock = force_lock
 
     def run_command(self, cmd, **kwargs):
-        """ Wrapper for AnsibleModule.run_command """
+        """Wrapper for AnsibleModule.run_command.
+
+        Parameters
+        ----------
+        cmd : str
+            cmd command.
+        **kwargs : dict
+            Dictionary with the arguments.
+
+        Returns
+        -------
+        tuple(int, str, str)
+            A tuple of return code, stdout and stderr.
+        """
         return self.module.run_command(cmd, **kwargs)
 
     def copy_to_seq(
@@ -919,14 +966,24 @@ class CopyHandler(object):
     ):
         """Copy source to a sequential data set.
 
-        Raises:
-            CopyOperationError -- When copying into the data set fails.
+        Parameters
+        ----------
+        src : str
+            Path to USS file or data set name.
+        temp_path : str
+            Path to the location where the control node
+            transferred data to.
+        conv_path : str
+            Path to the converted source file.
+        dest : str
+            Name of destination data set.
+        src_type : str
+            Type of the source.
 
-        Arguments:
-            src {str} -- Path to USS file or data set name
-            conv_path {str} -- Path to the converted source file
-            dest {str} -- Name of destination data set
-            src_type {str} -- Type of the source
+        Raises
+        ------
+        CopyOperationError
+            When copying into the data set fails.
         """
         new_src = conv_path or src
         copy_args = dict()
@@ -948,11 +1005,8 @@ class CopyHandler(object):
             if self.is_binary or self.asa_text:
                 copy_args["options"] = "-B"
 
-            if self.force_lock:
-                copy_args["options"] += " -f"
-
             try:
-                datasets.copy(new_src, dest, **copy_args)
+                datasets.copy(new_src, dest, force=self.force_lock, **copy_args)
             except zoau_exceptions.ZOAUException as copy_exception:
                 raise CopyOperationError(
                     msg="Unable to copy source {0} to {1}".format(new_src, dest),
@@ -964,12 +1018,17 @@ class CopyHandler(object):
     def copy_to_vsam(self, src, dest):
         """Copy source VSAM to destination VSAM.
 
-        Raises:
-            CopyOperationError -- When REPRO fails to copy the data set.
+        Parameters
+        ----------
+        src : str
+            The name of the source VSAM.
+        dest : str
+            The name of the destination VSAM.
 
-        Arguments:
-            src {str} -- The name of the source VSAM
-            dest {str} -- The name of the destination VSAM
+        Raises
+        ------
+        CopyOperationError
+            When REPRO fails to copy the data set.
         """
         out_dsp = "shr" if self.force_lock else "old"
         dds = {"OUT": "{0},{1}".format(dest.upper(), out_dsp)}
@@ -996,17 +1055,26 @@ class CopyHandler(object):
         because the use of shutil.copy2. This issue is only present in
         Python 3.11 and 3.12.
 
-        Arguments:
-            entries {list} -- List of files under src directory.
-            src_dir {str} -- USS source directory.
-            dest_dir {str} -- USS dest directory.
-            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+        Parameters
+        ----------
+        entries : list
+            List of files under src directory.
+        src_dir : str
+            USS source directory.
+        dest_dir : str
+            USS dest directory.
+        dirs_exist_ok : bool
+            Whether to copy files to an already existing directory.
 
-        Raises:
-            Exception -- When copying into the directory fails.
+        Returns
+        -------
+        str
+            Destination directory that was copied.
 
-        Returns:
-            {str } -- Destination directory that was copied.
+        Raises
+        ------
+        Exception
+            When copying into the directory fails.
         """
         os.makedirs(dest, exist_ok=dirs_exist_ok)
         for src_entry in entries:
@@ -1037,13 +1105,19 @@ class CopyHandler(object):
         """
         Copies a USS directory into another USS directory.
 
-        Arguments:
-            src_dir {str} -- USS source directory.
-            dest_dir {str} -- USS dest directory.
-            dirs_exist_ok {bool} -- Whether to copy files to an already existing directory.
+        Parameters
+        ----------
+        src_dir : str
+            USS source directory.
+        dest_dir : str
+            USS dest directory.
+        dirs_exist_ok : bool
+            Whether to copy files to an already existing directory.
 
-        Returns:
-            {str} -- Destination directory that was copied.
+        Returns
+        -------
+        str
+            Destination directory that was copied.
         """
         with os.scandir(src_dir) as itr:
             entries = list(itr)
@@ -1052,19 +1126,27 @@ class CopyHandler(object):
     def convert_encoding(self, src, encoding, remote_src):
         """Convert encoding for given src
 
-        Arguments:
-            src {str} -- Path to the USS source file or directory
-            encoding {dict} -- Charsets that the source is to be converted
-                               from and to
-            remote_src {bool} -- Whether the file was already on the remote
-                                node or not.
+        Parameters
+        ----------
+        src : str
+            Path to the USS source file or directory.
+        encoding : dict
+            Charsets that the source is to be converted
+            from and to.
+        remote_src : bool
+            Whether the file was already on the remote
+            node or not.
 
-        Raises:
-            CopyOperationError -- When the encoding of a USS file is not
-                                       able to be converted
+        Returns
+        -------
+        str
+            The USS path where the converted data is stored.
 
-        Returns:
-            {str} -- The USS path where the converted data is stored
+        Raises
+        ------
+        CopyOperationError
+            When the encoding of a USS file is not
+            able to be converted.
         """
         from_code_set = encoding.get("from")
         to_code_set = encoding.get("to")
@@ -1121,16 +1203,22 @@ class CopyHandler(object):
         return new_src
 
     def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):
-        """Convert encoding for all files inside a given directory
+        """Convert encoding for all files inside a given directory.
 
-        Arguments:
-            dir_path {str} -- Absolute path to the input directory
-            from_code_set {str} -- The character set to convert the files from
-            to_code_set {str} -- The character set to convert the files to
+        Parameters
+        ----------
+        dir_path : str
+            Absolute path to the input directory.
+        from_code_set : str
+            The character set to convert the files from.
+        to_code_set : str
+            The character set to convert the files to.
 
         Raises
-            EncodingConversionError -- When the encoding of a USS file is not
-                                       able to be converted
+        ------
+        EncodingConversionError
+            When the encoding of a USS file is not
+            able to be converted.
         """
         enc_utils = encode.EncodeUtils()
         for path, dirs, files in os.walk(dir_path):
@@ -1149,17 +1237,23 @@ class CopyHandler(object):
         If `file_path` is a directory, all of the files and subdirectories will
         be tagged recursively.
 
-        Raises:
-            CopyOperationError -- When chtag fails.
+        Parameters
+        ----------
+        file_path : str
+            Absolute file path.
+        tag : str
+            Specifies which code set to tag the file.
 
-        Arguments:
-            file_path {str} -- Absolute file path
-            tag {str} -- Specifies which code set to tag the file
+        Keyword Parameters
+        ------------------
+        is_dir : bool
+            Whether 'file_path' specifies a directory.
+            (Default {False})
 
-        Keyword Arguments:
-            is_dir {bool} -- Whether 'file_path' specifies a directory.
-                             (Default {False})
-
+        Raises
+        ------
+        CopyOperationError
+            When chtag fails.
         """
         tag_cmd = "chtag -{0}c {1} {2}".format(
             "R" if is_dir else "t", tag, file_path)
@@ -1175,7 +1269,18 @@ class CopyHandler(object):
             )
 
     def _merge_hash(self, *args):
-        """Combine multiple dictionaries"""
+        """Combine multiple dictionaries.
+
+        Parameters
+        ----------
+        *args : dict
+            Arguments to merge.
+
+        Returns
+        -------
+        dict
+            Results of the merge.
+        """
         result = dict()
         for arg in args:
             result.update(arg)
@@ -1185,12 +1290,16 @@ class CopyHandler(object):
         """Reads src as a binary file and checks whether it uses CRLF or LF
         line endings.
 
-        Arguments:
-            src {str} -- Path to a USS file
+        Parameters
+        ----------
+        src : str
+            Path to a USS file.
 
-        Returns:
-            {bool} -- True if the file uses CRLF endings, False if it uses LF
-                      ones.
+        Returns
+        -------
+        bool
+            True if the file uses CRLF endings, False if it uses LF
+            ones.
         """
         # Python has to read the file in binary mode to not mask CRLF
         # endings or enable universal newlines. If we used encoding="cp037",
@@ -1211,14 +1320,20 @@ class CopyHandler(object):
         """Creates a temporary file with the same content as src but without
         carriage returns.
 
-        Arguments:
-            src {str} -- Path to a USS source file.
+        Parameters
+        ----------
+        src : str
+            Path to a USS source file.
 
-        Raises:
-            CopyOperationError: If the conversion fails.
+        Returns
+        -------
+        str
+            Path to the temporary file created.
 
-        Returns:
-            {str} -- Path to the temporary file created.
+        Raises
+        ------
+        CopyOperationError
+            If the conversion fails.
         """
         try:
             fd, converted_src = tempfile.mkstemp()
@@ -1251,18 +1366,29 @@ class USSCopyHandler(CopyHandler):
         common_file_args=None,
         backup_name=None,
     ):
-        """Utility class to handle copying files or data sets to USS target
+        """Utility class to handle copying files or data sets to USS target.
 
-        Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently
-                                      running module
+        Parameters
+        ----------
+        module : AnsibleModule
+            The AnsibleModule object from currently
+            running module.
 
-        Keyword Arguments:
-            common_file_args {dict} -- mode, group and owner information to be
+        Keyword Parameters
+        ------------------
+        common_file_args : dict
+            Mode, group and owner information to be
             applied to destination file.
+        is_binary : bool
+            Whether the file to be copied contains binary data.
+        backup_name : str
+            The USS path or data set name of destination backup.
 
-            is_binary {bool} -- Whether the file to be copied contains binary data
-            backup_name {str} -- The USS path or data set name of destination backup
+        Attributes
+        ----------
+        common_file_args : dict
+            Code, group and owner information to be
+            applied to destination file.
         """
         super().__init__(
             module,
@@ -1285,20 +1411,34 @@ class USSCopyHandler(CopyHandler):
         force,
         content_copy,
     ):
-        """Copy a file or data set to a USS location
+        """Copy a file or data set to a USS location.
 
-        Arguments:
-            src {str} -- The USS source
-            dest {str} -- Destination file or directory on USS
-            conv_path {str} -- Path to the converted source file or directory
-            src_ds_type {str} -- Type of source
-            src_member {bool} -- Whether src is a data set member
-            member_name {str} -- The name of the source data set member
-            force {bool} -- Whether to copy files to an already existing directory
-            content_copy {bool} -- Whether copy is using content option or not.
+        Parameters
+        ----------
+        src : str
+            The USS source.
+        dest : str
+            Destination file or directory on USS.
+        temp_path : str
+            Path to the location where the control node
+            transferred data to.
+        conv_path : str
+            Path to the converted source file or directory.
+        src_ds_type : str
+            Type of source.
+        src_member : bool
+            Whether src is a data set member.
+        member_name : str
+            The name of the source data set member.
+        force : bool
+            Whether to copy files to an already existing directory.
+        content_copy : bool
+            Whether copy is using content option or not.
 
-        Returns:
-            {str} -- Destination where the file was copied to
+        Returns
+        -------
+        str
+            Destination where the file was copied to.
         """
         changed_files = None
 
@@ -1358,17 +1498,26 @@ class USSCopyHandler(CopyHandler):
     def _copy_to_file(self, src, dest, content_copy, conv_path):
         """Helper function to copy a USS src to USS dest.
 
-        Arguments:
-            src {str} -- USS source file path
-            dest {str} -- USS dest file path
-            content_copy {bool} -- Whether copy is using content option or not.
-            conv_path {str} -- Path to the converted source file or directory
+        Parameters
+        ----------
+        src : str
+            USS source file path.
+        dest : str
+            USS dest file path.
+        content_copy : bool
+            Whether copy is using content option or not.
+        conv_path : str
+            Path to the converted source file or directory.
 
-        Raises:
-            CopyOperationError -- When copying into the file fails.
+        Returns
+        -------
+        str
+            Destination where the file was copied to.
 
-        Returns:
-            {str} -- Destination where the file was copied to
+        Raises
+        ------
+        CopyOperationError
+            When copying into the file fails.
         """
         src_path = os.path.basename(src) if not content_copy else "inline_copy"
         if os.path.isdir(dest):
@@ -1414,19 +1563,28 @@ class USSCopyHandler(CopyHandler):
         If the path for dest_dir does not end with a trailing slash ("/"),
         the src_dir itself will be copied into the destination.
 
-        Arguments:
-            src_dir {str} -- USS source directory
-            dest_dir {str} -- USS dest directory
-            conv_path {str} -- Path to the converted source directory
-            force {bool} -- Whether to copy files to an already existing directory
+        Parameters
+        ----------
+        src_dir : str
+            USS source directory.
+        dest_dir : str
+            USS dest directory.
+        conv_path : str
+            Path to the converted source directory.
+        force :bool
+            Whether to copy files to an already existing directory.
 
-        Raises:
-            CopyOperationError -- When copying into the directory fails.
+        Returns
+        -------
+        tuple(str,list[str])
+            Destination where the directory was copied to, and
+            a list of paths for all subdirectories and files
+            that got copied.
 
-        Returns:
-            {tuple} -- Destination where the directory was copied to, and
-                       a list of paths for all subdirectories and files
-                       that got copied.
+        Raises
+        ------
+        CopyOperationError
+            When copying into the directory fails.
         """
         copy_directory = True if not src_dir.endswith("/") else False
         new_src_dir = conv_path or src_dir
@@ -1455,19 +1613,24 @@ class USSCopyHandler(CopyHandler):
         """Traverses a source directory and gets all the paths to files and
         subdirectories that got copied into a destination.
 
-        Arguments:
-            src (str) -- Path to the directory where files are copied from.
-            dest (str) -- Path to the directory where files are copied into.
-            copy_directory (bool) -- Whether the src directory itself will be copied
-                                     into dest. The src basename will get appended
-                                     to filepaths when comparing.
+        Parameters
+        ----------
+        src : str
+            Path to the directory where files are copied from.
+        dest : str
+            Path to the directory where files are copied into.
+        copy_directory : bool
+            Whether the src directory itself will be copied
+            into dest. The src basename will get appended
+            to filepaths when comparing.
 
-
-        Returns:
-            tuple -- A list of paths for all new subdirectories and files that
-                     got copied into dest, and a list of the permissions
-                     for the files and directories already present on the
-                     destination.
+        Returns
+        -------
+        tuple(list[str],list[tuple(str,int)])
+            A list of paths for all new subdirectories and files that
+            got copied into dest, and a list of the permissions
+            for the files and directories already present on the
+            destination.
         """
         files_to_copy = self._walk_uss_tree(src)
 
@@ -1501,10 +1664,16 @@ class USSCopyHandler(CopyHandler):
     def _walk_uss_tree(self, dir):
         """Walks the tree directory for dir and returns all relative paths
         found.
-        Arguments:
-            dir (str) -- Path to the directory to traverse.
-        Returns:
-            list -- List of relative paths to all content inside dir.
+
+        Parameters
+        ----------
+        dir : str
+            Path to the directory to traverse.
+
+        Returns
+        -------
+        Union[str]
+            List of relative paths to all content inside dir.
         """
         original_working_dir = os.getcwd()
         # The function gets relative paths, so it changes the current working
@@ -1538,17 +1707,26 @@ class USSCopyHandler(CopyHandler):
     ):
         """Helper function to copy an MVS data set src to USS dest.
 
-        Arguments:
-            src {str} -- Name of source data set or data set member
-            dest {str} -- USS dest file path
-            src_ds_type -- Type of source
-            src_member {bool} -- Whether src is a data set member
+        Parameters
+        ----------
+        src : str
+            Name of source data set or data set member.
+        dest : str
+            USS dest file path.
+        src_ds_type
+            Type of source.
+        src_member : bool
+            Whether src is a data set member.
 
-        Raises:
-            CopyOperationError -- When copying the data set into USS fails.
+        Keyword Parameters
+        ------------------
+        member_name : str
+            The name of the source data set member.
 
-        Keyword Arguments:
-            member_name {str} -- The name of the source data set member
+        Raises
+        ------
+        CopyOperationError
+            When copying the data set into USS fails.
         """
 
         if os.path.isdir(dest):
@@ -1635,14 +1813,19 @@ class PDSECopyHandler(CopyHandler):
         """ Utility class to handle copying to partitioned data sets or
         partitioned data set members.
 
-        Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently
-                                      running module
+        Parameters
+        ----------
+        module : AnsibleModule
+            The AnsibleModule object from currently
+            running module.
 
-        Keyword Arguments:
-            is_binary {bool} -- Whether the data set to be copied contains
-                                binary data
-            backup_name {str} -- The USS path or data set name of destination backup
+        Keyword Parameters
+        ------------------
+        is_binary : bool
+            Whether the data set to be copied contains
+            binary data.
+        backup_name : str
+            The USS path or data set name of destination backup.
         """
         super().__init__(
             module,
@@ -1666,17 +1849,27 @@ class PDSECopyHandler(CopyHandler):
     ):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
 
-        Raises:
-            CopyOperationError -- When copying into a member fails.
+        Parameters
+        ----------
+        src : str
+            Path to USS file/directory or data set name.
+        conv_path : str
+            Path to the converted source file/directory.
+        dest : str
+            Name of destination data set.
+        src_ds_type : str
+            The type of source.
+        src_member : bool, optional
+            Member of the source data set to copy.
+        dest_member : str, optional
+            Name of destination member in data set.
+        encoding : dict, optional
+            Dictionary with encoding options.
 
-        Arguments:
-            src {str} -- Path to USS file/directory or data set name.
-            conv_path {str} -- Path to the converted source file/directory.
-            dest {str} -- Name of destination data set.
-            src_ds_type {str} -- The type of source.
-            src_member {bool, optional} -- Member of the source data set to copy.
-            dest_member {str, optional} -- Name of destination member in data set.
-            encoding {dict, optional} -- Dictionary with encoding options.
+        Raises
+        ------
+        CopyOperationError
+            When copying into a member fails.
         """
         new_src = conv_path or src
         src_members = []
@@ -1792,14 +1985,20 @@ class PDSECopyHandler(CopyHandler):
             - Sequential data sets
             - PDS/PDSE members
 
-        Arguments:
-            src {str} -- Path to USS file or data set name.
-            dest {str} -- Name of destination data set
-            src_type {str} -- Type of the source.
+        Parameters
+        ----------
+        src : str
+            Path to USS file or data set name.
+        dest : str
+            Name of destination data set.
+        src_type : str
+            Type of the source.
 
-        Returns:
-            dict -- Dictionary containing the return code, stdout, and stderr from
-                    the copy command.
+        Returns
+        -------
+        dict
+            Dictionary containing the return code, stdout, and stderr from
+            the copy command.
         """
         src = src.replace("$", "\\$")
         dest = dest.replace("$", "\\$").upper()
@@ -1815,11 +2014,8 @@ class PDSECopyHandler(CopyHandler):
             if self.is_binary or self.asa_text:
                 opts["options"] = "-B"
 
-            if self.force_lock:
-                opts["options"] += " -f"
-
             try:
-                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, **opts)
+                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, force=self.force_lock, **opts)
                 out = ""
                 err = ""
             except zoau_exceptions.ZOAUException as copy_exception:
@@ -1837,11 +2033,15 @@ class PDSECopyHandler(CopyHandler):
 def get_file_record_length(file):
     """Gets the longest line length from a file.
 
-    Arguments:
-        file (str) -- Path of the file.
+    Parameters
+    ----------
+    file : str
+        Path of the file.
 
-    Returns:
-        int -- Length of the longest line in the file.
+    Returns
+    -------
+    int
+        Length of the longest line in the file.
     """
     max_line_length = 0
 
@@ -1865,15 +2065,22 @@ def get_file_record_length(file):
 def dump_data_set_member_to_file(data_set_member, is_binary):
     """Dumps a data set member into a file in USS.
 
-    Arguments:
-        data_set_member (str) -- Name of the data set member to dump.
-        is_binary (bool) -- Whether the data set member contains binary data.
+    Parameters
+    ----------
+    data_set_member : str
+        Name of the data set member to dump.
+    is_binary : bool
+        Whether the data set member contains binary data.
 
-    Returns:
-        str -- Path of the file in USS that contains the dump of the member.
+    Returns
+    -------
+    str
+        Path of the file in USS that contains the dump of the member.
 
-    Raise:
-        DataSetMemberAttributeError: When the call to dcp fails.
+    Raise
+    -----
+    DataSetMemberAttributeError
+        When the call to dcp fails.
     """
     fd, temp_path = tempfile.mkstemp()
     os.close(fd)
@@ -1913,18 +2120,29 @@ def get_data_set_attributes(
     Block sizes are computed following the recomendations on this documentation
     page: https://www.ibm.com/docs/en/zos/2.4.0?topic=options-block-size-blksize
 
-    Arguments:
-        name (str) -- Name of the new sequential data set.
-        size (int) -- Number of bytes needed for the new data set.
-        is_binary (bool) -- Whether or not the data set will have binary data.
-        asa_text (bool) -- Whether the data set will have ASA control characters.
-        record_format (str, optional) -- Type of record format.
-        record_length (int, optional) -- Record length for the data set.
-        type (str, optional) -- Type of the new data set.
-        volume (str, optional) -- Volume where the data set should be allocated.
+    Parameters
+    ----------
+    name : str
+        Name of the new sequential data set.
+    size : int
+        Number of bytes needed for the new data set.
+    is_binary : bool
+        Whether or not the data set will have binary data.
+    asa_text : bool
+        Whether the data set will have ASA control characters.
+    record_format : str, optional
+        Type of record format.
+    record_length : int, optional
+        Record length for the data set.
+    type : str, optional
+        Type of the new data set.
+    volume : str, optional
+        Volume where the data set should be allocated.
 
-    Returns:
-        dict -- Parameters that can be passed into data_set.DataSet.ensure_present
+    Returns
+    -------
+    dict
+        Parameters that can be passed into data_set.DataSet.ensure_present.
     """
     # Calculating the size needed to allocate.
     space_primary = int(math.ceil((size / 1024)))
@@ -1987,13 +2205,20 @@ def create_seq_dataset_from_file(
     """Creates a new sequential dataset with attributes suitable to copy the
     contents of a file into it.
 
-    Arguments:
-        file (str) -- Path of the source file.
-        dest (str) -- Name of the data set.
-        force (bool) -- Whether to replace an existing data set.
-        is_binary (bool) -- Whether the file has binary data.
-        asa_text (bool) -- Whether the file has ASA control characters.
-        volume (str, optional) -- Volume where the data set should be.
+    Parameters
+    ----------
+    file : str
+        Path of the source file.
+    dest : str
+        Name of the data set.
+    force : bool
+        Whether to replace an existing data set.
+    is_binary : bool
+        Whether the file has binary data.
+    asa_text bool
+        Whether the file has ASA control characters.
+    volume : str, optional
+        Volume where the data set should be.
     """
     src_size = os.stat(file).st_size
     # record_format = record_length = None
@@ -2035,13 +2260,21 @@ def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
     """Back up the given data set or file to the location specified by 'backup_name'.
     If 'backup_name' is not specified, then calculate a temporary location
     and copy the file or data set there.
-    Arguments:
-        ds_name {str} -- Name of the file or data set to be backed up
-        ds_type {str} -- Type of the file or data set
-        backup_name {str} -- Path to USS location or name of data set
-        where data will be backed up
-    Returns:
-        {str} -- The USS path or data set name where data was backed up
+
+    Parameters
+    ----------
+    ds_name : str
+        Name of the file or data set to be backed up.
+    ds_type : str
+        Type of the file or data set.
+    backup_name : str
+        Path to USS location or name of data set
+        where data will be backed up.
+
+    Returns
+    -------
+    str
+        The USS path or data set name where data was backed up.
     """
     module = AnsibleModuleHelper(argument_spec={})
     try:
@@ -2072,20 +2305,33 @@ def is_compatible(
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
 
-    Arguments:
-        src_type {str} -- Type of the source (e.g. PDSE, USS).
-        dest_type {str} -- Type of destination.
-        copy_member {bool} -- Whether dest is a data set member.
-        src_member {bool} -- Whether src is a data set member.
-        is_src_dir {bool} -- Whether the src is a USS directory.
-        is_src_inline {bool} -- Whether the src comes from inline content.
-        executable {bool} -- Whether the src is a executable to be copied.
-        asa_text {bool} -- Whether the copy operation will handle ASA control characters.
-        src_has_asa_chars {bool} -- Whether the src contains ASA control characters.
-        dest_has_asa_chars {bool} -- Whether the dest contains ASA control characters.
+    Parameters
+    ----------
+    src_type : str
+        Type of the source (e.g. PDSE, USS).
+    dest_type : str
+        Type of destination.
+    copy_member : bool
+        Whether dest is a data set member.
+    src_member : bool
+        Whether src is a data set member.
+    is_src_dir : bool
+        Whether the src is a USS directory.
+    is_src_inline : bool
+        Whether the src comes from inline content.
+    executable : bool
+        Whether the src is a executable to be copied.
+    asa_text : bool
+        Whether the copy operation will handle ASA control characters.
+    src_has_asa_chars : bool
+        Whether the src contains ASA control characters.
+    dest_has_asa_chars : bool
+        Whether the dest contains ASA control characters.
 
-    Returns:
-        {bool} -- Whether src can be copied to dest.
+    Returns
+    -------
+    bool
+        Whether src can be copied to dest.
     """
 
     # ********************************************************************
@@ -2188,20 +2434,32 @@ def does_destination_allow_copy(
     """Checks whether or not the module can copy into the destination
     specified.
 
-    Arguments:
-        src {str} -- Name of the source.
-        src_type {bool} -- Type of the source (SEQ/PARTITIONED/VSAM/USS).
-        dest {str} -- Name of the destination.
-        dest_exists {bool} -- Whether or not the destination exists.
-        member_exists {bool} -- Whether or not a member in a partitioned destination exists.
-        dest_type {str} -- Type of the destination (SEQ/PARTITIONED/VSAM/USS).
-        is_uss {bool} -- Whether or not the destination is inside USS.
-        force {bool} -- Whether or not the module can replace existing destinations.
-        volume {str, optional} -- Volume where the destination should be.
+    Parameters
+    ----------
+    src : str
+        Name of the source.
+    src_type : bool
+        Type of the source (SEQ/PARTITIONED/VSAM/USS).
+    dest : str
+        Name of the destination.
+    dest_exists : bool
+        Whether or not the destination exists.
+    member_exists : bool
+        Whether or not a member in a partitioned destination exists.
+    dest_type : str
+        Type of the destination (SEQ/PARTITIONED/VSAM/USS).
+    is_uss : bool
+        Whether or not the destination is inside USS.
+    force : bool
+        Whether or not the module can replace existing destinations.
+    volume : str, optional
+        Volume where the destination should be.
 
-    Returns:
-        bool -- If the module has the permissions needed to create, use or replace
-                the destination.
+    Returns
+    -------
+    bool
+        If the module has the permissions needed to create, use or replace
+        the destination.
     """
     # If the destination is inside USS and the module doesn't have permission to replace it,
     # it fails.
@@ -2227,13 +2485,17 @@ def does_destination_allow_copy(
 
 
 def get_file_checksum(src):
-    """Calculate SHA256 hash for a given file
+    """Calculate SHA256 hash for a given file.
 
-    Arguments:
-        src {str} -- The absolute path of the file
+    Parameters
+    ----------
+    src : str
+        The absolute path of the file.
 
-    Returns:
-        str -- The SHA256 hash of the contents of input file
+    Returns
+    -------
+    str
+        The SHA256 hash of the contents of input file.
     """
     b_src = to_bytes(src)
     if not os.path.exists(b_src) or os.path.isdir(b_src):
@@ -2255,8 +2517,10 @@ def cleanup(src_list):
     """Remove all files or directories listed in src_list. Also perform
     additional cleanup of the /tmp directory.
 
-    Arguments:
-        src_list {list} -- A list of file paths
+    Parameters
+    ----------
+    src_list : list
+        A list of file paths.
     """
     module = AnsibleModuleHelper(argument_spec={})
     tmp_prefix = tempfile.gettempprefix()
@@ -2284,12 +2548,17 @@ def is_member_wildcard(src):
     """Determine whether src specifies a data set member wildcard in the
     form 'SOME.DATA.SET(*)' or 'SOME.DATA.SET(ABC*)'
 
-    Arguments:
-        src {str} -- The data set name
+    Parameters
+    ----------
+    src : str
+        The data set name.
 
-    Returns:
-        re.Match -- If the data set specifies a member wildcard
-        None -- If the data set does not specify a member wildcard
+    Returns
+    -------
+    re.Match
+        If the data set specifies a member wildcard.
+    None
+        If the data set does not specify a member wildcard.
     """
     return fullmatch(
         r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}\([A-Z$#@\*]{1}[A-Z0-9$#@\*]{0,7}\)$",
@@ -2307,22 +2576,31 @@ def get_attributes_of_any_dataset_created(
     asa_text,
     volume=None
 ):
-    """
-    Get the attributes of dataset created by the function allocate_destination_data_set
+    """Get the attributes of dataset created by the function allocate_destination_data_set
     except for VSAM.
 
-    Arguments:
-        dest (str) -- Name of the destination data set.
-        src_ds_type (str) -- Source of the destination data set.
-        src (str) -- Name of the source data set, used as a model when appropiate.
-        src_name (str) -- Extraction of the source name without the member pattern.
-        is_binary (bool) -- Whether the data set will contain binary data.
-        asa_text (bool) -- Whether the data set will contain ASA control characters.
-        volume (str, optional) -- Volume where the data set should be allocated into.
+    Parameters
+    ----------
+    dest : str
+        Name of the destination data set.
+    src_ds_type : str
+        Source of the destination data set.
+    src : str
+        Name of the source data set, used as a model when appropiate.
+    src_name : str
+        Extraction of the source name without the member pattern.
+    is_binary : bool
+        Whether the data set will contain binary data.
+    asa_text : bool
+        Whether the data set will contain ASA control characters.
+    volume : str, optional
+        Volume where the data set should be allocated into.
 
-    Returns:
-        params (dict) -- Parameters used for the dataset created as name, type,
-        space_primary, space_secondary, record_format, record_length, block_size and space_type
+    Returns
+    -------
+    dict
+        Parameters used for the dataset created as name, type,
+        space_primary, space_secondary, record_format, record_length, block_size and space_type.
     """
     params = {}
     if src_ds_type == "USS":
@@ -2374,23 +2652,37 @@ def allocate_destination_data_set(
     Allocates a new destination data set to copy into, erasing a preexistent one if
     needed.
 
-    Arguments:
-        src (str) -- Name of the source data set, used as a model when appropiate.
-        dest (str) -- Name of the destination data set.
-        src_ds_type (str) -- Source of the destination data set.
-        dest_ds_type (str) -- Type of the destination data set.
-        dest_exists (bool) -- Whether the destination data set already exists.
-        force (bool) -- Whether to replace an existent data set.
-        is_binary (bool) -- Whether the data set will contain binary data.
-        executable (bool) -- Whether the data to copy is an executable dataset or file.
-        asa_text (bool) -- Whether the data to copy has ASA control characters.
-        dest_data_set (dict, optional) -- Parameters containing a full definition
-            of the new data set; they will take precedence over any other allocation logic.
-        volume (str, optional) -- Volume where the data set should be allocated into.
+    Parameters
+    ----------
+    src : str
+        Name of the source data set, used as a model when appropiate.
+    dest : str
+        Name of the destination data set.
+    src_ds_type : str
+        Source of the destination data set.
+    dest_ds_type : str
+        Type of the destination data set.
+    dest_exists : bool
+        Whether the destination data set already exists.
+    force : bool
+        Whether to replace an existent data set.
+    is_binary : bool
+        Whether the data set will contain binary data.
+    executable : bool
+        Whether the data to copy is an executable dataset or file.
+    asa_text : bool
+        Whether the data to copy has ASA control characters.
+    dest_data_set : dict, optional
+        Parameters containing a full definition
+        of the new data set; they will take precedence over any other allocation logic.
+    volume : str, optional
+        Volume where the data set should be allocated into.
 
-    Returns:
-        bool -- True if the data set was created, False otherwise.
-        dest_params (dict) -- Parameters used for the dataset created as name,
+    Returns
+    -------
+    Union(bool, dict)
+        True if the data set was created, False otherwise.
+        Parameters used for the dataset created as name,
         block_size, record_format, record_length, space_primary, space_secondary,
         space_type, type.
     """
@@ -2545,16 +2837,20 @@ def allocate_destination_data_set(
 
 
 def normalize_line_endings(src, encoding=None):
-    """
-    Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
+    """Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
     its line endings to LF.
 
-    Arguments:
-        src (str) -- Path of a USS file.
-        encoding (dict, optional) -- Encoding options for the module.
+    Parameters
+    ----------
+    src : str
+        Path of a USS file.
+    encoding : dict, optional
+        Encoding options for the module.
 
-    Returns:
-        str -- Path to the normalized file.
+    Returns
+    -------
+    str
+        Path to the normalized file.
     """
     # Before copying into a destination dataset, we'll make sure that
     # the source file doesn't contain any carriage returns that would
@@ -2596,11 +2892,15 @@ def data_set_locked(dataset_name):
     Checks if a data set is in use and therefore locked (DISP=SHR), which
     is often caused by a long running task. Returns a boolean value to indicate the data set status.
 
-    Arguments:
-        dataset_name (str) - the data set name used to check if there is a lock.
+    Parameters
+    ----------
+    dataset_name : str
+        The data set name used to check if there is a lock.
 
-    Returns:
-        bool -- True if the data set is locked, or False if the data set is not locked.
+    Returns
+    -------
+    bool
+        True if the data set is locked, or False if the data set is not locked.
     """
     # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
     # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
@@ -2623,6 +2923,45 @@ def data_set_locked(dataset_name):
 
 
 def run_module(module, arg_def):
+    """Initialize module
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The AnsibleModule object from currently
+        running module.
+    arg_def : dict
+        Arguments.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Source does not exist.
+    fail_json
+        Source is not readable.
+    fail_json
+        Encoding conversion is only valid for USS source.
+    fail_json
+        Destination is not writable.
+    fail_json
+        Any exception.
+    fail_json
+        Incompatible target type for source.
+    fail_json
+        Neither the source or the destination are ASA text files.
+    fail_json
+        Unable to write to dest because a task is accessing the data set.
+    fail_json
+        Alias support for text-based data sets is not available.
+    fail_json
+        Cannot write a partitioned data set (PDS) to a USS file.
+    fail_json
+        Destination already exists on the system, unable to overwrite unless force=True is specified.
+    fail_json
+        Unable to allocate destination data set.
+    """
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
     # when a parameter fails its validation check
@@ -3132,6 +3471,13 @@ def run_module(module, arg_def):
 
 
 def main():
+    """Run the zos_copy module core functions.
+
+    Raises
+    ------
+    fail_json
+        CopyOperationError.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(type='str'),
@@ -3328,6 +3674,22 @@ def main():
 
 class EncodingConversionError(Exception):
     def __init__(self, src, f_code, t_code):
+        """Error converting encoding.
+
+        Parameters
+        ----------
+        src : str
+            Source where the file is in.
+        f_code : str
+            Encoding format the source is in.
+        t_code : str
+            Encoding format it tried to convert it to.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = "Unable to convert encoding for {0} from {1} to {2}".format(
             src, f_code, t_code
         )
@@ -3336,12 +3698,36 @@ class EncodingConversionError(Exception):
 
 class NonExistentSourceError(Exception):
     def __init__(self, src):
+        """Error trying to find a dataset that doesn't exist.
+
+        Parameters
+        ----------
+        src : str
+            Source where the dataset was expected to be.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = "Source data set {0} does not exist".format(src)
         super().__init__(self.msg)
 
 
 class DataSetMemberAttributeError(Exception):
     def __init__(self, src):
+        """Error measuring a dataset member.
+
+        Parameters
+        ----------
+        src : str
+            Path the member is in.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = "Unable to get size and record length of member {0}".format(src)
         super().__init__(self.msg)
 
@@ -3360,6 +3746,38 @@ class CopyOperationError(Exception):
         overwritten_members=None,
         new_members=None
     ):
+        """Error in a copy operation.
+
+        Parameters
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        rc : int
+            Result code.
+        stdout : str
+            Standart output.
+        stderr : str
+            Standart error.
+        stdout_lines : str
+            Standart output divided in lines.
+        stderr_lines : str
+            Standart error divided in lines.
+        cmd : str
+            Command.
+        dest_exists : bool
+            If the destination exists.
+        overwritten_members : list
+            Members replaced before the error ocurred.
+        new_members : list
+            New members that could be copied before the error ocurred.
+
+        Attributes
+        ----------
+        overwritten_members : list
+            Members replaced before the error ocurred.
+        new_members : list
+            New members that could be copied before the error ocurred.
+        """
         self.json_args = dict(
             msg=msg,
             rc=rc,

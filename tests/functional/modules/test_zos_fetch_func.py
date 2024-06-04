@@ -670,7 +670,7 @@ def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
 
 def test_fetch_sequential_data_set_with_special_chars(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PS = "USER.TEST.@N$IBLE#"
+    TEST_PS = get_tmp_ds_name(symbols=True)
 
     hosts.all.zos_data_set(
         name=TEST_PS,

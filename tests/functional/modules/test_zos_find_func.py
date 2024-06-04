@@ -1,10 +1,5 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
-# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+import pytest
 
 SEQ_NAMES = [
     "TEST.FIND.SEQ.FUNCTEST.FIRST",
@@ -36,6 +32,8 @@ PDS_NAMES = [
 VSAM_NAMES = [
     "TEST.FIND.VSAM.FUNCTEST.FIRST"
 ]
+
+DATASET_TYPES = ['seq', 'pds', 'pdse']
 
 
 def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
@@ -145,6 +143,8 @@ def test_find_pds_members_containing_string(ansible_zos_module):
                 {
                     "name":i,
                     "type":'pds'
+                    "space_primary"=1,
+                    "space_type"="m"
                 } for i in PDS_NAMES
             ]
         )
@@ -271,13 +271,14 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
         assert val.get('matched') == 2
 
 
-def test_find_data_sets_larger_than_size(ansible_zos_module):
+@pytest.mark.parametrize("ds_type", DATASET_TYPES)
+def test_find_data_sets_larger_than_size(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
     TEST_PS1 = 'TEST.PS.ONE'
     TEST_PS2 = 'TEST.PS.TWO'
     try:
-        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", space_type="m", space_primary=5)
-        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", space_type="m", space_primary=5)
+        res = hosts.all.zos_data_set(name=TEST_PS1, state="present", space_primary="1", space_type="m", type=ds_type)
+        res = hosts.all.zos_data_set(name=TEST_PS2, state="present", space_primary="1", space_type="m", type=ds_type)
         find_res = hosts.all.zos_find(patterns=['TEST.PS.*'], size="1k")
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
@@ -291,7 +292,7 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = 'USER.FIND.TEST'
     try:
-        hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="k", space_primary=1)
+        hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_primary="1", space_type="k")
         find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

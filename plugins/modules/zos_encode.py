@@ -555,17 +555,23 @@ def run_module():
 
             if path.sep in dest:
                 is_uss_dest = True
-                # ds_type_dest = "USS"
             else:
                 is_mvs_dest = True
                 dest_data_set = data_set.MVSDataSet(dest)
+                is_name_member = data_set.is_member(dest_data_set.name)
 
-                if data_set.is_member(dest_data_set.name):
-                    if not data_set.DataSet.data_set_exists(data_set.extract_dsname(dest_data_set.name)):
-                        raise EncodeError(
-                            "Data set {0} is not cataloged, please check data set provided in"
-                            "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
-                        )
+                if not is_name_member:
+                    dest_exists = data_set.DataSet.data_set_exists(dest_data_set.name)
+                else:
+                    dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(dest_data_set.name))
+
+                if not dest_exists:
+                    raise EncodeError(
+                        "Data set {0} is not cataloged, please check data set provided in"
+                        "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
+                    )
+
+                if is_name_member:
                     ds_type_dest = "PS"
                 else:
                     ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name)

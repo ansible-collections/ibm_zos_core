@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2021                                    .
+.. © Copyright IBM Corporation 2024                                          .
 .. ...........................................................................
 
 =========
@@ -10,3 +10,4 @@ Resources
    :maxdepth: 1
 
    character_set
+   releases_maintenance

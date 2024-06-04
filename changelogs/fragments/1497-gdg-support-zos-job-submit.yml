@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_job_submit - add support for generation data groups and generation
+    data sets as sources for jobs.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1497)

@@ -95,10 +95,10 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
     dsn = _validate_data_set_name(dsn).upper()
     if is_member(dsn):
         # added the check for a sub-mmember, just in this case
-        if not bk_dsn:
+        if not bk_dsn or "(" not in bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
-        elif "(" not in bk_dsn:
-            bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
+        elif DataSet.is_gds_positive_relative_name(bk_dsn):
+            bk_dsn = datasets.create(bk_dsn)
 
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         try:
@@ -128,7 +128,10 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             except exceptions.ZOAUException as copy_exception:
                 cp_rc = copy_exception.response.rc
         else:
-            cp_rc = _copy_ds(dsn, bk_dsn)
+            if DataSet.is_gds_positive_relative_name(bk_dsn):
+                cp_rc = datasets.copy(dsn, bk_dsn)
+            else:
+                cp_rc = _copy_ds(dsn, bk_dsn)
 
         if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()
@@ -242,8 +245,8 @@ def _copy_ds(ds, bk_ds):
     module = AnsibleModuleHelper(argument_spec={})
     _allocate_model(bk_ds, ds)
     repro_cmd = """  REPRO -
-    INDATASET({0}) -
-    OUTDATASET({1})""".format(
+    INDATASET('{0}') -
+    OUTDATASET('{1}')""".format(
         ds, bk_ds
     )
     rc, out, err = module.run_command(

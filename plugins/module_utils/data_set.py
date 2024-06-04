@@ -540,8 +540,8 @@ class DataSet(object):
             volume (str) -- The volume the data set may reside on.
 
         Returns:
-            str -- The type of the data set (one of "PS", "PO", "DA", "KSDS",
-                    "ESDS", "LDS" or "RRDS").
+            str -- The type of the data set (one of "PS", "PO", "DA", "GDG",
+                    "KSDS", "ESDS", "LDS" or "RRDS").
             None -- If the data set does not exist or ZOAU is not able to determine
                     the type.
         """
@@ -551,9 +551,14 @@ class DataSet(object):
         data_sets_found = datasets.list_datasets(name)
 
         # Using the organization property when it's a sequential or partitioned
-        # dataset. VSAMs are not found by datasets.list_datasets.
+        # dataset. VSAMs and GDGs are not found by datasets.list_datasets.
         if len(data_sets_found) > 0:
             return data_sets_found[0].organization
+
+        # Now trying to list GDGs through gdgs.
+        data_sets_found = gdgs.list_gdg_names(name)
+        if len(data_sets_found) > 0:
+            return "GDG"
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
@@ -1032,7 +1037,7 @@ class DataSet(object):
                 create_exception.response.rc,
                 create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
-        except exceptions.DatasetVerificationError as e:
+        except exceptions.DatasetVerificationError:
             # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
             if volumes and len(volumes) > 1:
                 if DataSet.data_set_cataloged(name, volumes):
@@ -1342,6 +1347,23 @@ class DataSet(object):
             Whether the name is a GDS relative name.
         """
         pattern = r'(.+)\(([\\]?[+-]?\d+)\)'
+        match = re.fullmatch(pattern, name)
+        return bool(match)
+
+    @staticmethod
+    def is_gds_positive_relative_name(name):
+        """Determine if name is a gdg relative positive name
+        based on the GDS relative name syntax eg. 'USER.GDG(+1)'.
+        Parameters
+        ----------
+        name : str
+            Data set name to determine if is a GDS relative name.
+        Returns
+        -------
+        bool
+            Whether the name is a GDS positive relative name.
+        """
+        pattern = r'(.+)\(([\\]?[+]\d+)\)'
         match = re.fullmatch(pattern, name)
         return bool(match)
 
@@ -1727,6 +1749,7 @@ class DataSetUtils(object):
             dict -- Dictionary containing data set attributes
         """
         result = dict()
+        self.data_set = self.data_set.upper().replace("\\", '')
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
             "  LISTDS '{0}'".format(self.data_set), authorized=True
         )

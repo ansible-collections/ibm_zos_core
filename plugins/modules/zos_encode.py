@@ -549,7 +549,11 @@ def run_module():
         # Check the dest is a USS file/path or an MVS data set
         # if the dest is not specified, the value in the src will be used
         if not dest:
-            dest = src
+            if src_data_set:
+                dest = src_data_set.name
+            else:
+                dest = src
+
             is_uss_dest = is_uss_src
             is_mvs_dest = is_mvs_src
             ds_type_dest = ds_type_src

@@ -1104,6 +1104,98 @@ def test_encoding_conversion_gds_to_uss_file(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {ds_name}")
 
 
+def test_encoding_conversion_gds_no_dest(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        ds_name = get_tmp_ds_name()
+        gds_name = f"{ds_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\"  \"{gds_name}\"")
+
+        results = hosts.all.zos_encode(
+            src=gds_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        dest_existence_check = hosts.all.shell(
+            cmd=f"""dcat "{gds_name}" | wc -l """,
+            executable=SHELL_EXECUTABLE
+        )
+
+        # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            src = result.get("src", "")
+            dest = result.get("dest", "")
+
+            assert ds_name in src
+            assert re.fullmatch(gds_pattern, src.split(".")[-1])
+            assert src == dest
+
+            assert result.get("changed") is True
+
+        for result in dest_existence_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+
+    finally:
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.shell(cmd=f"""drm "{gds_name}" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_encoding_conversion_uss_file_to_gds(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        ds_name = get_tmp_ds_name()
+        gds_name = f"{ds_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        hosts.all.shell(cmd=f"echo \"{TEST_DATA}\" > {USS_FILE}")
+
+        results = hosts.all.zos_encode(
+            src=USS_FILE,
+            dest=gds_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        dest_existence_check = hosts.all.shell(
+            cmd=f"""dcat "{gds_name}" | wc -l """,
+            executable=SHELL_EXECUTABLE
+        )
+
+        # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            dest = result.get("dest", "")
+            assert ds_name in dest
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+
+            assert result.get("src") == USS_FILE
+            assert result.get("changed") is True
+
+        for result in dest_existence_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+
+    finally:
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.shell(cmd=f"""drm "{gds_name}" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
 def test_encoding_conversion_gds_to_mvs(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -1127,7 +1219,7 @@ def test_encoding_conversion_gds_to_mvs(ansible_zos_module):
         )
 
         dest_existence_check = hosts.all.shell(
-            cmd=f"""dcat "{dest_name}" """,
+            cmd=f"""dcat "{dest_name}" | wc -l """,
             executable=SHELL_EXECUTABLE
         )
 
@@ -1144,7 +1236,7 @@ def test_encoding_conversion_gds_to_mvs(ansible_zos_module):
 
         for result in dest_existence_check.contacted.values():
             assert result.get("rc") == 0
-            assert len(result.get("stdout_lines", [])) > 0
+            assert int(result.get("stdout")) > 0
     finally:
         hosts.all.shell(cmd=f"""drm "{src_name}(0)" """)
         hosts.all.shell(cmd=f"drm {src_name}")

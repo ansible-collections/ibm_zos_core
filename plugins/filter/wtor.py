@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -54,8 +54,8 @@ EXAMPLES = r"""
 - name: Evaluate if there are any existing dump messages matching 'IEE094D SPECIFY OPERAND'
   assert:
     that:
-        - is_specify_operand is defined
-        - bool_zos_operator_action_continue
+      - is_specify_operand is defined
+      - bool_zos_operator_action_continue
     success_msg: "Found 'IEE094D SPECIFY OPERAND' message."
     fail_msg: "Did not find 'IEE094D SPECIFY OPERAND' message."
 """

@@ -1439,15 +1439,6 @@ class AMATerseArchive(MVSArchive):
                 self.module.fail_json(
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
-        # dest = self.create_dest_ds(self.dest)
-        # dest, changed = self._create_dest_data_set(
-        #     name=self.dest,
-        #     replace=True,
-        #     type='seq',
-        #     record_format='fb',
-        #     record_length=AMATERSE_RECORD_LENGTH,
-        #     space_primary=self.dest_data_set.get("space_primary"),
-        #     space_type=self.dest_data_set.get("space_type"))
         dataset = data_set.MVSDataSet(
             name=self.dest,
             data_set_type='seq',
@@ -1456,7 +1447,7 @@ class AMATerseArchive(MVSArchive):
             space_primary=self.dest_data_set.get("space_primary"),
             space_type=self.dest_data_set.get("space_type")
         )
-        changed = dataset.create(replace=True) # we need to account for replace
+        changed = dataset.create(replace=True)
         self.changed = self.changed or changed
         self.dest = dataset.name
         self.add(source, self.dest)
@@ -1551,16 +1542,8 @@ class XMITArchive(MVSArchive):
             space_primary=self.dest_data_set.get("space_primary"),
             space_type=self.dest_data_set.get("space_type")
         )
-        changed = dataset.create(replace=True) # we need to account for replace
+        changed = dataset.create(replace=True)
         self.changed = self.changed or changed
-        # dest, changed = self._create_dest_data_set(
-        #     name=self.dest,
-        #     replace=True,
-        #     type='seq',
-        #     record_format='fb',
-        #     record_length=XMIT_RECORD_LENGTH,
-        #     space_primary=self.dest_data_set.get("space_primary"),
-        #     space_type=self.dest_data_set.get("space_type"))
         self.changed = self.changed or changed
         self.dest = dataset.name
         self.add(source, self.dest)

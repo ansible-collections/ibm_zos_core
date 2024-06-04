@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -38,6 +38,8 @@ options:
       - The location can be a UNIX System Services (USS) file,
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
+      - Generation data set (GDS) relative name of generation already
+        created.  C(e.g. SOME.CREATION(-1).)
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -110,6 +112,7 @@ options:
       - When set to C(true), the module creates a backup file or data set.
       - The backup file name will be returned on either success or failure of
         module execution such that data can be retrieved.
+      - Use generation data set (GDS) relative positive name. C(e.g. SOME.CREATION(+1))
     required: false
     type: bool
     default: false
@@ -279,6 +282,20 @@ EXAMPLES = r'''
     marker_begin: "Begin Ansible Block Insertion 2"
     marker_end: "End Ansible Block Insertion 2"
     block: "{{ CONTENT }}"
+
+- name: Add a block to a gds
+  zos_blockinfile:
+    src: TEST.SOME.CREATION(0)
+    insertafter: EOF
+    block: "{{ CONTENT }}"
+
+- name: Add a block to dataset and backup in a new generation of gds
+  zos_blockinfile:
+    src: SOME.CREATION.TEST
+    insertbefore: BOF
+    backup: True
+    backup_name: CREATION.GDS(+1)
+    block: "{{ CONTENT }}"
 '''
 
 RETURN = r"""
@@ -344,13 +361,21 @@ DS_TYPE = ['PS', 'PO']
 
 
 def transformBlock(block, indentation_char, indentation_spaces):
-    """Prepends the specified number of spaces to the block in all lines
-    Arguments:
-        block: {str} -- The block text to be transformed.
-        indentation_char: {str} -- The indentation char to be used.
-        indentation_spaces: {int} -- Number of times the indentation char to prepend.
-    Returns:
-        block: {str} -- The text block after applying the necessary transformations.
+    """Prepends the specified number of spaces to the block in all lines.
+
+    Parameters
+    ----------
+    block : str
+        The block text to be transformed.
+    indentation_char : str
+        The indentation char to be used.
+    indentation_spaces : int
+        Number of times the indentation char to prepend.
+
+    Returns
+    -------
+    str
+        The text block after applying the necessary transformations.
     """
     blocklines = block.splitlines()
     # Prepend spaces transformation
@@ -364,50 +389,83 @@ def transformBlock(block, indentation_char, indentation_spaces):
 
 
 def present(src, block, marker, ins_aft, ins_bef, encoding, force):
-    """Replace a block with the matching regex pattern
-    Insert a block before/after the matching pattern
-    Insert a block at BOF/EOF
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        block: {str} -- The block to insert/replace into the src.
-        marker: {str} -- The block will be inserted/updated with the markers.
-        ins_aft: {str} -- Insert the block after matching '*regex*' pattern or EOF.
-            choices:
-                - EOF
-                - '*regex*'
-        ins_bef: {str} -- Insert the block before matching '*regex*' pattern or BOF.
-            choices:
-                - BOF
-                - '*regex*'
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- If not empty passes True option to dmod cmd.
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dmod shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the destination was modified.
+    """Replace a block with the matching regex pattern.
+    Insert a block before/after the matching pattern.
+    Insert a block at BOF/EOF.
+
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    block : str
+        The block to insert/replace into the src.
+    marker : str
+        The block will be inserted/updated with the markers.
+    ins_aft : str
+        Insert the block after matching '*regex*' pattern or EOF.
+        choices:
+            - EOF
+            - '*regex*'
+    ins_bef : str
+        Insert the block before matching '*regex*' pattern or BOF.
+        choices:
+            - BOF
+            - '*regex*'
+    encoding : str
+        Encoding of the src.
+    force : bool
+        If not empty passes True option to dmod cmd.
+
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dmod shell command.
+        found {int} -- Number of matching regex pattern.
+        changed {bool} -- Indicates if the destination was modified.
     """
     return datasets.blockinfile(src, True, block=block, marker=marker, insert_after=ins_aft,
                                 insert_before=ins_bef, encoding=encoding, force=force, as_json=True)
 
 
 def absent(src, marker, encoding, force):
-    """Delete blocks with matching regex pattern
-    Arguments:
-        src: {str} -- The z/OS USS file or data set to modify.
-        marker: {str} -- Identifies the block to be removed.
-        encoding: {str} -- Encoding of the src.
-        force: {bool} -- If not empty passes the value True option to dmod cmd.
-    Returns:
-        str -- Information in JSON format. keys:
-            cmd: {str} -- dmod shell command
-            found: {int} -- Number of matching regex pattern
-            changed: {bool} -- Indicates if the destination was modified.
+    """Delete blocks with matching regex pattern.
+
+    Parameter
+    ---------
+    src : str
+        The z/OS USS file or data set to modify.
+    marker : str
+        Identifies the block to be removed.
+    encoding : str
+        Encoding of the src.
+    force : bool
+        If not empty passes the value True option to dmod cmd.
+
+    Returns
+    -------
+    str
+        Information in JSON format. keys:
+        cmd {str} -- dmod shell command.
+        found {int} -- Number of matching regex pattern.
+        changed {bool} -- Indicates if the destination was modified.
     """
     return datasets.blockinfile(src, False, marker=marker, encoding=encoding, force=force, as_json=True)
 
 
 def quotedString(string):
+    """Deletes the quote mark on strings.
+
+    Parameters
+    ----------
+    string : str
+        String to delete quote marks from.
+
+    Returns
+    -------
+    str
+        String without the quote marks.
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
@@ -415,6 +473,18 @@ def quotedString(string):
 
 
 def quotedString_double_quotes(string):
+    """Deletes the quote mark on strings.
+
+    Parameters
+    ----------
+    string : str
+        String to modify quote marks from.
+
+    Returns
+    -------
+    str
+        String scaping the quote marks.
+    """
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
@@ -422,6 +492,25 @@ def quotedString_double_quotes(string):
 
 
 def check_double_quotes(marker, ins_bef, ins_aft, block):
+    """Verify the content of strings to determine if double
+      quotes are in the string.
+
+    Parameters
+    ----------
+    marker : str
+        String to verify quote marks from.
+    ins_bef : str
+        String to verify quote marks from.
+    ins_aft : str
+        String to verify quote marks from.
+    block : str
+        String to verify quote marks from.
+
+    Returns
+    -------
+    bool
+        If any string contain double quotes.
+    """
     if marker:
         if '"' in marker:
             return True
@@ -438,6 +527,42 @@ def check_double_quotes(marker, ins_bef, ins_aft, block):
 
 
 def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=None, ins_aft=None):
+    """Execute in terminal dmod command directly.
+
+    Parameters
+    ----------
+    src : str
+        The z/OS USS file or data set to modify.
+    block : str
+        The block to insert/replace into the src.
+    marker : str
+        The block will be inserted/updated with the markers.
+    force : bool
+        If not empty passes True option to dmod cmd.
+    encoding : str
+        Encoding of the src.
+    state : bool
+        Determine if will add or delete the block.
+    module : obj
+        Object to execute the command.
+    ins_bef : str
+        Insert the block before matching '*regex*' pattern or BOF.
+        choices:
+            - BOF
+            - '*regex*'
+    ins_aft : str
+        Insert the block after matching '*regex*' pattern or EOF.
+        choices:
+            - EOF
+            - '*regex*'
+
+    Returns
+    -------
+    int
+        RC of the execution of the command.
+    cmd
+        Command executed.
+    """
     block = block.replace('"', '\\"')
     force = "-f" if force else ""
     encoding = "-c {0}".format(encoding) if encoding else ""
@@ -456,7 +581,7 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
 
         cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
     else:
-        cmd = """dmod -b {0} {1} {2} "//d" {4}""".format(force, encoding, marker, src)
+        cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
 
     rc, stdout, stderr = module.run_command(cmd)
     cmd = clean_command(cmd)
@@ -464,6 +589,18 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
 
 
 def clean_command(cmd):
+    """Deletes escaped characters from the str.
+
+    Parameters
+    ----------
+    cmd : str
+        Command to clean any escaped characters.
+
+    Returns
+    -------
+    str
+        Command without escaped characters.
+    """
     cmd = cmd.replace('/c\\\\', '')
     cmd = cmd.replace('/a\\\\', '', )
     cmd = cmd.replace('/i\\\\', '', )
@@ -482,6 +619,25 @@ def clean_command(cmd):
 
 
 def main():
+    """Run the zos_blockinfile module core functions.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        Block is required with state=present.
+    fail_json
+        Marker should have {mark}.
+    fail_json
+        src does NOT exist.
+    fail_json
+        Data set type is NOT supported.
+    fail_json
+        Unable to allocate backup.
+    fail_json
+        ZOAU dmod return content is NOT in json format.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(
@@ -607,18 +763,25 @@ def main():
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
     # analysis the file type
+    if "/" not in src:
+        dataset = data_set.MVSDataSet(
+            name=src
+        )
+        src = dataset.name
+
+    if data_set.DataSet.is_gds_relative_name(src):
+        module.fail_json(msg="{0} does not exist".format(src))
+
     ds_utils = data_set.DataSetUtils(src)
     if not ds_utils.exists():
         message = "{0} does NOT exist".format(str(src))
         module.fail_json(msg=message)
     file_type = ds_utils.ds_type()
-    if file_type == 'USS':
-        file_type = 1
-    else:
+
+    if file_type != "USS":
         if file_type not in DS_TYPE:
             message = "{0} data set type is NOT supported".format(str(file_type))
             module.fail_json(msg=message)
-        file_type = 0
 
     return_content = None
     if backup:
@@ -628,7 +791,7 @@ def main():
         if isinstance(backup, bool):
             backup = None
         try:
-            if file_type:
+            if file_type == "USS":
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)

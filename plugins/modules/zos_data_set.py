@@ -674,7 +674,7 @@ EXAMPLES = r"""
     space_type: m
     record_format: u
     record_length: 25
-    replace: yes
+    replace: true
 
 - name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
   zos_data_set:
@@ -685,7 +685,7 @@ EXAMPLES = r"""
     record_format: u
     record_length: 25
     volumes: "222222"
-    replace: yes
+    replace: true
 
 - name: Create an ESDS data set if it does not exist
   zos_data_set:
@@ -720,7 +720,7 @@ EXAMPLES = r"""
   zos_data_set:
     name: someds.name.here(mydata)
     type: member
-    replace: yes
+    replace: true
 
 - name: Write a member to an existing PDS; do not replace if member exists
   zos_data_set:
@@ -738,22 +738,22 @@ EXAMPLES = r"""
     name: someds.name.here(mydata)
     state: absent
     type: member
-    force: yes
+    force: true
 
 - name: Create multiple partitioned data sets and add one or more members to each
   zos_data_set:
     batch:
-      - name:  someds.name.here1
+      - name: someds.name.here1
         type: pds
         space_primary: 5
         space_type: m
         record_format: fb
-        replace: yes
+        replace: true
       - name: someds.name.here1(member1)
         type: member
       - name: someds.name.here2(member1)
         type: member
-        replace: yes
+        replace: true
       - name: someds.name.here2(member2)
         type: member
 
@@ -1454,7 +1454,7 @@ def parse_and_validate_args(params):
                 type=dict(
                     type=data_set_type,
                     required=False,
-                    dependencies=["state"],
+                    dependencies=["state", "limit"],
                     choices=DATA_SET_TYPES,
                 ),
                 space_type=dict(
@@ -1525,6 +1525,30 @@ def parse_and_validate_args(params):
                     required=False,
                     aliases=["volume"],
                     dependencies=["state"],
+                ),
+                limit=dict(
+                    type="int",
+                    required=False
+                ),
+                empty=dict(
+                    type="bool",
+                    required=False
+                ),
+                purge=dict(
+                    type="bool",
+                    required=False
+                ),
+                scratch=dict(
+                    type="bool",
+                    required=False
+                ),
+                extended=dict(
+                    type="bool",
+                    required=False
+                ),
+                fifo=dict(
+                    type="bool",
+                    required=False
                 ),
                 force=dict(
                     type="bool",
@@ -1598,7 +1622,7 @@ def parse_and_validate_args(params):
             default=False,
         ),
         # GDG options
-        limit=dict(type=limit_type, required=False),
+        limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False),
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
@@ -1721,7 +1745,7 @@ def run_module():
                     default=False,
                 ),
                 # GDG options
-                limit=dict(type="int", required=False, no_log=False),
+                limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False),
                 purge=dict(type="bool", required=False),
                 scratch=dict(type="bool", required=False),

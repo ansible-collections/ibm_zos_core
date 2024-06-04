@@ -20,7 +20,7 @@ Synopsis
 - When fetching a sequential data set, the destination file name will be the same as the data set name.
 - When fetching a PDS or PDSE, the destination will be a directory with the same name as the PDS or PDSE.
 - When fetching a PDS/PDSE member, destination will be a file.
-- Files that already exist at ``dest`` will be overwritten if they are different than ``src``.
+- Files that already exist at \ :literal:`dest`\  will be overwritten if they are different than \ :literal:`src`\ .
 
 
 
@@ -96,7 +96,7 @@ encoding
 
 
   from
-    The character set of the source *src*.
+    The character set of the source \ :emphasis:`src`\ .
 
     Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
@@ -105,7 +105,7 @@ encoding
 
 
   to
-    The destination *dest* character set for the output to be written as.
+    The destination \ :emphasis:`dest`\  character set for the output to be written as.
 
     Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
@@ -117,16 +117,16 @@ encoding
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup datasets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value \ :literal:`TMPHLQ`\  is used.
 
   | **required**: False
   | **type**: str
 
 
 ignore_sftp_stderr
-  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
+  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to \ :literal:`true`\ . By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
 
-  When Ansible verbosity is set to greater than 3, either through the command line interface (CLI) using **-vvvv** or through environment variables such as **verbosity = 4**, then this parameter will automatically be set to ``true``.
+  When Ansible verbosity is set to greater than 3, either through the command line interface (CLI) using \ :strong:`-vvvv`\  or through environment variables such as \ :strong:`verbosity = 4`\ , then this parameter will automatically be set to \ :literal:`true`\ .
 
   | **required**: False
   | **type**: bool
@@ -196,13 +196,13 @@ Notes
 .. note::
    When fetching PDSE and VSAM data sets, temporary storage will be used on the remote z/OS system. After the PDSE or VSAM data set is successfully transferred, the temporary storage will be deleted. The size of the temporary storage will correspond to the size of PDSE or VSAM data set being fetched. If module execution fails, the temporary storage will be deleted.
 
-   To ensure optimal performance, data integrity checks for PDS, PDSE, and members of PDS or PDSE are done through the transfer methods used. As a result, the module response will not include the ``checksum`` parameter.
+   To ensure optimal performance, data integrity checks for PDS, PDSE, and members of PDS or PDSE are done through the transfer methods used. As a result, the module response will not include the \ :literal:`checksum`\  parameter.
 
    All data sets are always assumed to be cataloged. If an uncataloged data set needs to be fetched, it should be cataloged first.
 
    Fetching HFS or ZFS type data sets is currently not supported.
 
-   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
+   For supported character sets used to encode data, refer to the \ `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`__\ .
 
    This module uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
@@ -263,7 +263,7 @@ data_set_type
   | **sample**: PDSE
 
 note
-  Notice of module failure when ``fail_on_missing`` is false.
+  Notice of module failure when \ :literal:`fail\_on\_missing`\  is false.
 
   | **returned**: failure and fail_on_missing=false
   | **type**: str

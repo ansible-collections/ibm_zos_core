@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -140,8 +140,8 @@ EXAMPLES = r"""
     encoding:
       from: IBM-1047
       to: ISO8859-1
-    backup: yes
-    backup_compress: yes
+    backup: true
+    backup_compress: true
 
 - name: Convert file encoding from IBM-1047 to ISO8859-1 to a directory
   zos_encode:
@@ -249,7 +249,6 @@ EXAMPLES = r"""
     encoding:
       from: ISO8859-1
       to: IBM-1047
-
 """
 
 RETURN = r"""
@@ -295,6 +294,25 @@ except Exception:
 
 
 def check_pds_member(ds, mem):
+    """Check if a member exists in a PDS.
+
+    Parameters
+    ----------
+    ds : str
+        PDS data set name.
+    mem : str
+        Member name to check if is under PDS.
+
+    Returns
+    -------
+    bool
+        If it is a member of the data set.
+
+    Raises
+    ------
+    EncodeError
+        Can not find member in provided dataset.
+    """
     check_rc = False
     if mem in datasets.list_members(ds):
         check_rc = True
@@ -304,7 +322,25 @@ def check_pds_member(ds, mem):
 
 
 def check_mvs_dataset(ds):
-    """ To call data_set utils to check if the MVS data set exists or not """
+    """To call data_set utils to check if the MVS data set exists or not.
+
+    Parameters
+    ----------
+    ds : str
+        Data set name.
+
+    Returns
+    -------
+    tuple(bool,str)
+        If the data set exists and it's type.
+
+    Raises
+    ------
+    EncodeError
+        If data set is not cataloged.
+    EncodeError
+        Unable to determine data set type.
+    """
     check_rc = False
     ds_type = None
     if not data_set.DataSet.data_set_exists(ds):
@@ -321,7 +357,23 @@ def check_mvs_dataset(ds):
 
 
 def check_file(file):
-    """ check file is a USS file or an MVS data set """
+    """Check file is a USS file or an MVS data set.
+
+    Parameters
+    ----------
+    file : str
+        File to check.
+
+    Returns
+    -------
+    tuple(bool,bool,str)
+        If is USS file, MVS dataset, and the dataset type.
+
+    Raises
+    ------
+    EncodeError
+        The data set is not partitioned.
+    """
     is_uss = False
     is_mvs = False
     ds_type = None
@@ -347,6 +399,18 @@ def check_file(file):
 
 
 def verify_uss_path_exists(file):
+    """Verify if USS path exists.
+
+    Parameters
+    ----------
+    file : str
+        Path of the file.
+
+    Raises
+    ------
+    EncodeError
+        File does not exist in the directory.
+    """
     if not path.exists(file):
         mypath = "/" + file.split("/")[0] + "/*"
         ld = listdir(mypath)
@@ -359,6 +423,13 @@ def verify_uss_path_exists(file):
 
 
 def run_module():
+    """Runs the module.
+
+    Raises
+    ------
+    fail_json
+        Exception during execution.
+    """
     module_args = dict(
         src=dict(type="str", required=True),
         dest=dict(type="str"),
@@ -530,6 +601,18 @@ def run_module():
 
 class EncodeError(Exception):
     def __init__(self, message):
+        """Error during encoding.
+
+        Parameters
+        ----------
+        message : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
         self.msg = 'An error occurred during encoding: "{0}"'.format(message)
         super(EncodeError, self).__init__(self.msg)
 

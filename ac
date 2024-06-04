@@ -34,6 +34,7 @@ normalize_version() {
     echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
 }
 
+# Method determines the lastest (highest number) version venv that is managed by ./ac
 latest_venv(){
     dir_version_latest="0"
     test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* 2>/dev/null`
@@ -46,6 +47,33 @@ latest_venv(){
         done
         echo "${VENV_HOME_MANAGED}"/"venv-"$dir_version_latest
     fi
+}
+
+# Method will take a venv name such as venv-2.16 and validate that it exists
+validate_venv(){
+    option_venv=$1
+    #test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* 2>/dev/null`
+
+    if [[ "$option_venv" =~ "latest" ]]; then
+        test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-latest* 2>/dev/null`
+        if [[ "$test_for_managed_venv" =~ "latest" ]]; then
+            dir_version_latest=$option_venv
+        fi
+    #elif [ ! -z "$test_for_managed_venv" ]; then
+    else
+        for dir_version in `ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* | rev | cut -d"/" -f1| rev`; do
+            if [ $dir_version == $option_venv ]; then
+                dir_version_latest=$dir_version
+            fi
+        done
+    fi
+
+    if [ ! -z "$dir_version_latest" ]; then
+        echo "${VENV_HOME_MANAGED}"/$dir_version_latest
+    else
+        echo "Unable to validate managed venv option $option_venv, exiting."
+        exit
+        fi
 }
 
 VENV=`latest_venv`
@@ -321,6 +349,18 @@ ac_install(){
         message "Installing 'ibm.ibm_zos_core' lastet GA version."
         . $VENV_BIN/activate && $VENV_BIN/ansible-galaxy collection install -fc ibm.ibm_zos_core
     fi
+}
+
+# Run a make module doc
+# ------------------------------------------------------------------------------
+#->ac-module-doc:
+## Runs make module-doc to generate the module documentation
+## Usage: ac [--ac-module-doc]
+## Example:
+##  $ ac --ac-module-doc
+ac_module_doc(){
+    message "Running make module-doc"
+    . $VENV_BIN/activate && cd docs/ && make module-doc
 }
 
 # ------------------------------------------------------------------------------
@@ -655,11 +695,24 @@ venv_setup(){
 # TODO: Allow user to specify which venv they can start
 # ------------------------------------------------------------------------------
 #->venv-start:
-## Activate the lastest ansible managed virtual environment.
-## Usage: ac [--venv-start]
+## Activate the latest ansible managed virtual environment or optionally start
+## by its name.
+## Usage: ac [--venv-start --name <venv name>]
 ## Example:
+##  $ ac --venv-start --name venv-2.16
 ##  $ ac --venv-start
 venv_start(){
+    option_name=$1
+
+    if [ "$option_name" ]; then
+        VENV=`validate_venv $option_name`
+
+        if [ ! -z "$VENV" ]; then
+            VENV_BIN=$VENV/bin
+            VENV_BASENAME=`basename $VENV`
+        fi
+    fi
+
     message "Starting managed python virtual environment: $VENV_BASENAME"
     #. $VENV_BIN/activate; exec /bin/sh -i
     /bin/bash -c ". $VENV_BIN/activate; exec /bin/sh -i"
@@ -670,14 +723,27 @@ venv_start(){
 # TODO: Allow user to specify which venv they can stop
 # ------------------------------------------------------------------------------
 #->venv-stop:
-## Deactivate the lastest ansible managed virtual environment.
-## Usage: ac [--venv-stop]
+## Deactivate the latest ansible managed virtual environment or optionally deactivate
+## by its name.
+## Usage: ac [--venv-stop --name <venv name>]]
 ## Example:
+##  $ ac --venv-stop --name venv-2.16
 ##  $ ac --venv-stop
 venv_stop(){
+    option_name=$1
+
+    if [ "$option_name" ]; then
+        VENV=`validate_venv $option_name`
+
+        if [ ! -z "$VENV" ]; then
+            VENV_BIN=$VENV/bin
+            VENV_BASENAME=`basename $VENV`
+        fi
+    fi
+
     message "Stopping managed ansible virtual environment located at: $VENV_BASENAME"
     message "ac --venv-stop does not actually currently work, use CNTL-D"
-    . deactivate $VENV_BASENAME;
+    . deactivate $VENV_BASENAME 2>/dev/null;
 }
 
 # ==============================================================================
@@ -711,10 +777,6 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-build"
             ;;
-      --ac-changelog)                              # Command
-            ensure_managed_venv_exists $1
-            option_submitted="--ac-changelog"
-            ;;
       --ac-check-changelog)                              # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-check-changelog"
@@ -722,6 +784,17 @@ while true; do
       --ac-galaxy-importer)                              # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-galaxy-importer"
+      --ac-galaxy-importer)                    # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-galaxy-importer"
+            ;;
+      --ac-changelog)                          # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-changelog"
+            ;;
+      --ac-module-doc)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-module-doc"
             ;;
       --ac-install)
             ensure_managed_venv_exists $1      # Command
@@ -821,6 +894,11 @@ while true; do
             option_sanitize $level
             shift
             ;;
+      --name|--name=?*)                        # option
+            name=`option_processor $1 $2`
+            option_sanitize $name
+            shift
+            ;;
       --out-file|--out-file=?*)                 # option
             out_file=`option_processor $1 $2`
             option_sanitize $out_file
@@ -891,6 +969,8 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-check-changelog" ]
     ac_check_changelog $base $head
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ] ; then
     ac_galaxy_importer
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-module-doc" ] ; then
+    ac_module_doc
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
@@ -918,7 +998,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-nodes" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-setup" ] ; then
     venv_setup $password
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then
-    venv_start
+    venv_start $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-stop" ] ; then
-    venv_stop
+    venv_stop $name
 fi

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2022 - 2023
+# Copyright (c) IBM Corporation 2022, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,10 +25,16 @@ __metaclass__ = type
 
 def is_zoau_version_higher_than(min_version_str):
     """Reports back if ZOAU version is high enough.
-    Arguments:
-        min_version_str {str} -- The minimal desired ZOAU version '#.#.#'.
-    Returns:
-        bool -- Whether ZOAU version found was high enough.
+
+    Parameters
+    ----------
+    min_version_str : str
+        The minimal desired ZOAU version '#.#.#'.
+
+    Returns
+    -------
+    bool
+        Whether ZOAU version found was high enough.
     """
     if is_valid_version_string(min_version_str):
         # check zoau version on system (already a list)
@@ -78,10 +84,16 @@ def is_valid_version_string(version_str):
         series of numbers (minor) followed by another dot(.) followed by a
         series of numbers (patch) i.e. "#.#.#" where '#' can be any integer.
         There is a provision for a 4th level to this eg "v1.2.0.1".
-    Arguments:
-        min_version_str {str} -- String to be verified is in correct format.
-    Returns:
-        bool -- Whether provided str is in correct format.
+
+    Parameters
+    ----------
+    min_version_str : str
+        String to be verified is in correct format.
+
+    Returns
+    -------
+    bool
+        Whether provided str is in correct format.
     """
 
     # split string into [major, minor, patch]
@@ -97,10 +109,12 @@ def is_valid_version_string(version_str):
 
 def get_zoau_version_str():
     """Attempts to call zoaversion on target and parses out version string.
-    Returns:
-        { [int, int, int] } -- ZOAU version found in format [#,#,#]. There is a
-                               provision for a 4th level eg "v1.2.0.1".
 
+    Returns
+    -------
+    Union[int, int, int]
+        ZOAU version found in format [#,#,#]. There is a
+        provision for a 4th level eg "v1.2.0.1".
     """
     version_list = (
         ZOAU_API_VERSION.split('.')

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -53,34 +53,49 @@ class BetterArg(object):
         """Holds all of the attributes that define a particular argument.
         A BetterArg object can contain nested BetterArg objects.
 
-        Arguments:
-            object {object} -- The most base class type.
-            arg_parser {BetterArgParser} -- The instance of BetterArgParser
+        Parameters
+        ----------
+        object : object
+            The most base class type.
+        arg_parser : BetterArgParser
+            The instance of BetterArgParser
             used to create the BetterArg.
             Used to call BetterArgParser.handle_args() when nested BetterArg
             objects need to be defined.
-            name {str} -- The name of the argument to define.
+        name : str
+            The name of the argument to define.
 
-        Keyword Arguments:
-            elements {Union[str, function]} -- Used to specify the expected
+        Keyword Parameters
+        ------------------
+        elements : Union[str, function]
+            Used to specify the expected
             type for each list element when the arg_type is 'list'. (default: {None})
-            options {dict} -- When arg_type or elements = 'dict', a dictionary
+        options : dict
+            When arg_type or elements = 'dict', a dictionary
             containing details for a nested group of arguments should be
             provided. (default: {None})
-            aliases {list[str]} -- A list of alternative names that can be
+        aliases : list[str]
+            A list of alternative names that can be
             used to refer to the argument. (default: {[]})
-            dependencies {list} -- A list of arguments that should be resolved
+        dependencies : list
+            A list of arguments that should be resolved
             before parsing this argument. (default: {[]})
-            required {Union[bool, function]} -- Determines if later parsing
+        required : Union[bool, function]
+            Determines if later parsing
             should fail when no value is provided for the argument. Not necessary if
             default is provided. (default: {False})
-            default {Union[str, int, bool, function]} -- The default value that the
+        default : Union[str, int, bool, function]
+            The default value that the
             argument should be set to when none is provided. (default: {None})
-            choices {list[Union[str, int, bool]]} -- The list of valid contents for the argument.
-            mutually_exclusive {list[list[str]]} -- A list containing lists of mutually exclusive argument names.
+        choices : list[Union[str, int, bool]]
+            The list of valid contents for the argument.
+        mutually_exclusive : list[list[str]]
+            A list containing lists of mutually exclusive argument names.
             (default: {None})
-            arg_type {Union[str, function]} -- The type the argument contents should be. (default: {'str'})
-            type {Union[str, function]} -- The type the argument contents should be. Alternative to arg_type.
+        arg_type : Union[str, function]
+            The type the argument contents should be. (default: {'str'})
+        type : Union[str, function]
+            The type the argument contents should be. Alternative to arg_type.
             (default: {'str'})
         """
         if aliases is None:
@@ -114,15 +129,19 @@ class BetterArgHandler(object):
         """Sets, formats and validates an argument and its contents based on its
         matching BetterArg object.
 
-        Arguments:
-            object {object} -- The most base class type.
-            arg_name {str} -- The name of the argument.
-            contents {dict} -- The argument contents to be handled by the
+        Parameters
+        ----------
+        arg_name : str
+            The name of the argument.
+        contents : dict
+            The argument contents to be handled by the
             argument's BetterArg object
-            resolved_args {dict} -- Contains all of the dependencies and their
+        resolved_args : dict
+            Contains all of the dependencies and their
             contents, which have already been handled by a BetterArgHandler, for use
             during current arguments handling operations.
-            arg_defs {dict[str, BetterArg]} -- All of the BetterArg argument
+        arg_defs : dict[str, BetterArg]
+            All of the BetterArg argument
             definitions for current argument depth.
         """
         self.arg_name = arg_name
@@ -154,8 +173,10 @@ class BetterArgHandler(object):
     def handle_arg(self):
         """Performs all setting, formatting and validation operations for a single argument.
 
-        Returns:
-            dict -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        dict
+            The arguments contents after any necessary operations.
         """
 
         self._resolve_required()
@@ -169,13 +190,19 @@ class BetterArgHandler(object):
     def _list_type(self, contents, resolved_dependencies):
         """Resolver for list type arguments.
 
-        Arguments:
-            contents {list[Union[int, str, bool, dict]]} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : list[Union[int, str, bool, dict]]
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
-        Returns:
-            list[Union[int, str, bool, dict]] -- The arguments contents after any necessary operations.
+
+        Returns
+        -------
+        Union[list[int, str, bool, dict]]
+            The arguments contents after any necessary operations.
         """
         # TODO: determine how to handle resolved dependencies for list items, probably good as-is
         updated_contents = []
@@ -198,14 +225,19 @@ class BetterArgHandler(object):
     def _dict_type(self, contents, resolved_dependencies):
         """Resolver for dict type arguments.
 
-        Arguments:
-            contents {dict} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : dict
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Returns:
-            dict -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        dict
+            The arguments contents after any necessary operations.
         """
         updated_contents = {}
         # for key, value in contents.items():
@@ -222,17 +254,24 @@ class BetterArgHandler(object):
     def _str_type(self, contents, resolve_dependencies):
         """Resolver for str type arguments.
 
-        Arguments:
-            contents {str} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : str
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
 
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not isinstance(contents, str):
             raise ValueError('Invalid argument "{0}" for type "str".'.format(contents))
@@ -241,17 +280,24 @@ class BetterArgHandler(object):
     def _int_type(self, contents, resolve_dependencies):
         """Resolver for int type arguments.
 
-        Arguments:
-            contents {Union[int, str]} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : Union[int, str]
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
+        Returns
+        -------
+        int
+            The arguments contents after any necessary operations.
 
-        Returns:
-            int -- The arguments contents after any necessary operations.
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(r"[0-9]+", str(contents)):
             raise ValueError('Invalid argument "{0}" for type "int".'.format(contents))
@@ -260,34 +306,49 @@ class BetterArgHandler(object):
     def _bool_type(self, contents, resolve_dependencies):
         """Resolver for bool type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            bool -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        bool
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+            ValueError: When contents is invalid argument type.
         """
         if not isinstance(contents, bool):
             raise ValueError('Invalid argument "{0}" for type "bool".'.format(contents))
         return contents
 
     def _path_type(self, contents, resolve_dependencies):
-        """Resolver for path type arguments
+        """Resolver for path type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type
         """
         contents = BetterArgHandler.fix_local_path(contents)
         if not path.isabs(str(contents)):
@@ -317,19 +378,27 @@ class BetterArgHandler(object):
     def _data_set_type(self, contents, resolve_dependencies):
         """Resolver for data_set type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
-            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
             str(contents),
             IGNORECASE,
         ):
@@ -339,18 +408,26 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _data_set_base_type(self, contents, resolve_dependencies):
-        """Resolver for data_set_base type arguments
+        """Resolver for data_set_base type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}$",
@@ -363,18 +440,26 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _data_set_member_type(self, contents, resolve_dependencies):
-        """Resolver for data_set_member type arguments
+        """Resolver for data_set_member type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)$",
@@ -387,18 +472,24 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _qualifier_type(self, contents, resolve_dependencies):
-        """Resolver for qualifier type arguments
+        """Resolver for qualifier type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
         Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+            ValueError: When contents is invalid argument type.
         """
         if not fullmatch(
             r"^[A-Z]{1}[A-Z0-9]{0,7}$",
@@ -411,18 +502,26 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _qualifier_or_empty_type(self, contents, resolve_dependencies):
-        """Resolver for qualifier type arguments
+        """Resolver for qualifier type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
             r"^[A-Z]{1}[A-Z0-9]{0,7}$",
@@ -435,18 +534,26 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _qualifier_pattern_type(self, contents, resolve_dependencies):
-        """Resolver for qualifier_pattern type arguments
+        """Resolver for qualifier_pattern type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
             r"^(?:[A-Z]{1}[A-Z0-9]{0,7})|(?:\*{1})|(?:[A-Z]{1}[A-Z0-9]{0,6}\*{1})$",
@@ -459,18 +566,26 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _volume_type(self, contents, resolve_dependencies):
-        """Resolver for volume type arguments
+        """Resolver for volume type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
             r"^[A-Z0-9@#$]{1,6}$",
@@ -483,18 +598,26 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _dd_type(self, contents, resolve_dependencies):
-        """Resolver for dd type arguments
+        """Resolver for dd type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
             r"^[A-Z$#@][A-Z0-9@#$]{0,7}$",
@@ -506,13 +629,17 @@ class BetterArgHandler(object):
 
     @staticmethod
     def fix_local_path(given_path):
-        """Adapter for local/USS path abbreviations
+        """Adapter for local/USS path abbreviations.
 
-        Arguments:
-            path given as input, which may need adjustment
+        Parameters
+        ----------
+        given_path : str
+            Path given as input, which may need adjustment.
 
-        Returns:
-            str -- The path, after leading ~, .. or . has been adjusted
+        Returns
+        -------
+        str
+            The path, after leading ~, .. or . has been adjusted.
         """
         final_path = given_path
         if given_path.startswith("~"):
@@ -527,21 +654,30 @@ class BetterArgHandler(object):
         return str(final_path)
 
     def _data_set_or_path_type(self, contents, resolve_dependencies):
-        """Resolver for data_set_or_path type arguments
+        """Resolver for data_set_or_path type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
-            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
+            #  HLQ and all middle level qualifiers.                Last qualifier bef members.    Normal members.                 GDS members.
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
             str(contents),
             IGNORECASE,
         ):
@@ -557,18 +693,26 @@ class BetterArgHandler(object):
         return str(contents)
 
     def _encoding_type(self, contents, resolve_dependencies):
-        """Resolver for encoding type arguments
+        """Resolver for encoding type arguments.
 
-        Arguments:
-            contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), IGNORECASE):
             raise ValueError(
@@ -580,19 +724,25 @@ class BetterArgHandler(object):
     def is_function(some_var):
         """Determines if variable is a function.
 
-        Arguments:
-            some_var {Union[str, int, bool, function]} -- The variable to test for type.
+        Parameters
+        ----------
+        some_var : Union[str, int, bool, function]
+            The variable to test for type.
 
-        Returns:
-            bool -- True if variable some_var is function, False otherwise.
+        Returns
+        -------
+        bool
+            True if variable some_var is function, False otherwise.
         """
         return isinstance(some_var, types.FunctionType)
 
     def _resolve_required(self):
         """Perform operations to determine if an argument is required.
 
-        Raises:
-            ValueError: When no value or defaults are provided for a required argument.
+        Raises
+        ------
+        ValueError
+            When no value or defaults are provided for a required argument.
         """
         required = self.arg_def.required
         if BetterArgHandler.is_function(self.arg_def.required):
@@ -605,8 +755,10 @@ class BetterArgHandler(object):
     def _resolve_default(self):
         """Resolve the default value of an argument when no value is provided.
 
-        Returns:
-            Union[str, int, bool, list, dict] -- The updated contents of the argument.
+        Returns
+        -------
+        Union[str, int, bool, list, dict]
+            The updated contents of the argument.
         """
         if self.contents is not None:
             return self.contents
@@ -621,8 +773,10 @@ class BetterArgHandler(object):
     def _resolve_choices(self):
         """Verify the argument contents are a valid choice when list of choices is provided.
 
-        Raises:
-            ValueError: The provided value is not a valid choice.
+        Raises
+        ------
+        ValueError
+            The provided value is not a valid choice.
         """
         if self.arg_def.choices and len(self.arg_def.choices) > 0:
             if self.contents not in self.arg_def.choices:
@@ -637,11 +791,15 @@ class BetterArgHandler(object):
         This may include manipulating argument contents and/or
         any necessary validation.
 
-        Raises:
-            ValueError: When the provided arg_type is invalid.
+        Returns
+        -------
+        Union[str, int, bool, list, dict]
+            The argument's contents after any necessary processing by type handler.
 
-        Returns:
-            Union[str, int, bool, list, dict] -- The argument's contents after any necessary processing by type handler.
+        Raises
+        ------
+        ValueError
+            When the provided arg_type is invalid.
         """
         if BetterArgHandler.is_function(self.arg_def.arg_type):
             return self._call_arg_function(self.arg_def.arg_type, self.contents)
@@ -662,11 +820,15 @@ class BetterArgHandler(object):
         a dependency. These dependency arguments should already be
         resolved by the time this method is called.
 
-        Arguments:
-            resolved_args {dict} -- Arguments that have already finished parser processing.
+        Parameters
+        ----------
+        resolved_args : dict
+            Arguments that have already finished parser processing.
 
-        Returns:
-            dict -- Subset of resolved_args containing any dependencies required by current argument.
+        Returns
+        -------
+        dict
+            Subset of resolved_args containing any dependencies required by current argument.
         """
         resolved_dependencies = {}
         for dependency in self.arg_def.dependencies:
@@ -678,13 +840,17 @@ class BetterArgHandler(object):
         """Assert none of the provided arguments
         break mutual exclusivity.
 
-        Arguments:
-            contents {dict} -- Argument dict for level of arguments.
+        Parameters
+        ----------
+        contents : dict
+            Argument dict for level of arguments.
             Need to determine if any 2 or more of the arguments in the
             dict are breaking mutual exclusivity rules.
 
-        Raises:
-            ValueError: When two or more mutually exclusive arguments are found.
+        Raises
+        ------
+        ValueError
+            When two or more mutually exclusive arguments are found.
         """
         for name, name_list in self.arg_def.mutually_exclusive.items():
             arg = contents.get(name)
@@ -702,11 +868,15 @@ class BetterArgHandler(object):
     def _num_of_params(self, arg_function):
         """Get the number of parameters accepted by a function.
 
-        Args:
-            arg_function (function): The function to inspect.
+        Parameters
+        ----------
+        arg_function : function
+            The function to inspect.
 
-        Returns:
-            int: The number of parameters the function accepts.
+        Returns
+        -------
+        int
+            The number of parameters the function accepts.
         """
         spec = getfullargspec(arg_function)
         length = len(spec[0])
@@ -720,15 +890,21 @@ class BetterArgHandler(object):
         """Call a function with the correct number
         of arguments.
 
-        Arguments:
-            arg_function {function} -- The function to call.
-            contents {Union[str,list,dict,int,bool]} -- The argument contents to pass to the function.
+        Parameters
+        ----------
+        arg_function : function
+            The function to call.
+        contents : Union[str,list,dict,int,bool]
+            The argument contents to pass to the function.
 
-        Raises:
-            ValueError: When the provided function's number of parameters do not match BetterArgParser spec.
+        Returns
+        -------
+            Any -- Returns the result of the function call.
 
-        Returns:
-            ?? -- Returns the result of the function call.
+        Raises
+        ------
+        ValueError
+            When the provided function's number of parameters do not match BetterArgParser spec.
         """
         number_of_params = self._num_of_params(arg_function)
         if number_of_params == 2:
@@ -755,13 +931,20 @@ class BetterArgHandler(object):
         Other characters can be letters, numbers, or national (#, $, @) characters.
         If the text string contains #, $, or @, enclose the text string in single or double quotation marks.
 
-        Arguments:
-            contents {str} -- The contents of the argument.
+        Parameters
+        ----------
+        contents : str
+            The contents of the argument.
 
-        Raises:
-            ValueError: When contents is invalid argument type
-        Returns:
-            str -- The arguments contents after any necessary operations.
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
         """
         if not fullmatch(
             r"(^[a-zA-Z$#@%}]{1}[0-9a-zA-Z$#@%*]{1,7})|(^['\*']{1})",
@@ -780,9 +963,12 @@ class BetterArgParser(object):
         match defined criteria, and perform any
         necessary operations on the provided arguments.
 
-        Arguments:
-            object {object} -- The most base type
-            arg_dict {dict[str, dict]} -- a list of key:value pairs where key = argument name
+        Parameters
+        ----------
+        object : object
+            The most base type
+        arg_dict : dict[str, dict]
+            A list of key:value pairs where key = argument name
             and value = BetterArg object
         """
         self.aliases = {}
@@ -803,11 +989,15 @@ class BetterArgParser(object):
         definitions, swaps out alias names, and sorts and verifies no
         invalid or cyclic dependencies exist.
 
-        Arguments:
-            arg_dict {dict} -- The argument definitions used to generate BetterArg objects.
+        Parameters
+        ----------
+        arg_dict : dict
+            The argument definitions used to generate BetterArg objects.
 
-        Returns:
-            OrderedDict[str, BetterArg] -- The defined arguments, sorted based on their dependencies.
+        Returns
+        --------
+        OrderedDict[str, BetterArg]
+            The defined arguments, sorted based on their dependencies.
         """
         args = {}
         for key, value in arg_dict.items():
@@ -823,12 +1013,16 @@ class BetterArgParser(object):
         """Parse provided argument values using corresponding
         BetterArg argument definition.
 
-        Arguments:
-            arg_dict {dict} -- The arguments to parse where key=argument name/alias
+        Parameters
+        ----------
+        arg_dict : dict
+            The arguments to parse where key=argument name/alias
             and value=argument contents.
 
-        Returns:
-            dict -- The arguments with alias names swapped for real names
+        Returns
+        -------
+        dict
+            The arguments with alias names swapped for real names
             and contents after any necessary operations and checks have been performed.
         """
         parsed_args = {}
@@ -849,18 +1043,27 @@ class BetterArgParser(object):
         """Add alias to an alias dictionary that can be
         used to simplify alias->name determinations.
 
-        Arguments:
-            arg_name {str} -- the name of the argument
+        Parameters
+        ----------
+        arg_name : str
+            The name of the argument.
 
-        Keyword Arguments:
-            arg_aliases {list[str]} -- The list of aliases for the argument name (default: {None})
-            aliases {dict} -- The dictionary containing all of the currently defined aliases. (default: {None})
+        Keyword Parameters
+        ------------------
+        arg_aliases : list[str]
+            The list of aliases for the argument name (default: {None}).
+        aliases : dict
+            The dictionary containing all of the currently defined aliases. (default: {None}).
 
-        Raises:
-            ValueError: When conflicting aliases are found.
+        Returns
+        -------
+        dict
+            The updated dict of aliases.
 
-        Returns:
-            dict -- The updated dict of aliases
+        Raises
+        ------
+        ValueError
+            When conflicting aliases are found.
         """
         if arg_aliases is None:
             arg_aliases = []
@@ -882,12 +1085,17 @@ class BetterArgParser(object):
         with their 'real' name used to refer to the argument
         throughout parser.
 
-        Arguments:
-            args {dict} -- Arguments for BetterArgParser to parse
-            aliases {dict} -- The dictionary containing all of the currently defined aliases.
+        Parameters
+        ----------
+        args : dict
+            Arguments for BetterArgParser to parse.
+        aliases : dict
+            The dictionary containing all of the currently defined aliases.
 
-        Returns:
-            dict -- The contents from provided argument where they keys
+        Returns
+        -------
+        dict
+            The contents from provided argument where they keys
             have been swapped for 'real' argument names where necessary.
         """
         renamed_args = {}
@@ -900,11 +1108,15 @@ class BetterArgParser(object):
         """Format mutually exclusive argument definitions. Into dictionary
         for simplified exclusivity checking.
 
-        Arguments:
-            mutually_exclusive {list[list[str]]} -- List of lists containing mutually exclusive arguments.
+        Parameters
+        ----------
+        mutually_exclusive : list[list[str]]
+            List of lists containing mutually exclusive arguments.
 
-        Returns:
-            dict -- Dict where key is the mutually exclusive
+        Returns
+        -------
+        dict
+            Dict where key is the mutually exclusive
             argument name and value is a list of all arguments
             it is mutually exclusive with.
         """
@@ -920,11 +1132,15 @@ class BetterArgParser(object):
     def _assert_mutually_exclusive_args_structure(self, mutually_exclusive):
         """Used to enforce structure of mutually_exclusive argument.
 
-        Arguments:
-            mutually_exclusive {list[list[str]]} -- The mutually exclusive argument to validate.
+        Parameters
+        ----------
+        mutually_exclusive : list[list[str]]
+            The mutually exclusive argument to validate.
 
-        Raises:
-            ValueError: When not in proper format.
+        Raises
+        ------
+        ValueError
+            When not in proper format.
         """
         try:
             if isinstance(mutually_exclusive, list):
@@ -947,14 +1163,20 @@ class BetterArgParser(object):
         """Verify that no dependencies are requested
         that do not have an argument with matching name.
 
-        Arguments:
-            args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
+        Parameters
+        ----------
+        args : dict[str, BetterArg]
+            All of the BetterArg argument definitions for current argument depth.
 
-        Raises:
-            ValueError: When invalid dependency found.
+        Returns
+        -------
+        bool
+            Always returns True when no invalid dependencies found.
 
-        Returns:
-            bool -- Always returns True when no invalid dependencies found.
+        Raises
+        ------
+        ValueError
+            When invalid dependency found.
         """
         valid_names = args.keys()
         dependencies = []
@@ -973,11 +1195,15 @@ class BetterArgParser(object):
         """Sort arguments based on their dependencies to other arguments.
         Used with _dependency_sort_helper() to implement topographical sorting.
 
-        Arguments:
-            args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
+        Parameters
+        ----------
+        args : dict[str, BetterArg]
+            All of the BetterArg argument definitions for current argument depth.
 
-        Returns:
-            OrderedDict[str, BetterArg] -- All of the BetterArg argument definitions for current argument depth,
+        Returns
+        -------
+        OrderedDict[str, BetterArg]
+            All of the BetterArg argument definitions for current argument depth,
             sorted based on dependencies.
         """
         visited = {name: False for name in args}
@@ -997,20 +1223,28 @@ class BetterArgParser(object):
         """Recursive helper function for _sort_args_by_dependencies().
         Used with _sort_args_by_dependencies() to implement topographical sorting.
 
-        Arguments:
-            args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
-            name {str} -- the name of the argument
-            visited {dict[str, bool]} -- holds the name of each argument in a key with
+        Parameters
+        ----------
+        args : dict[str, BetterArg]
+            All of the BetterArg argument definitions for current argument depth.
+        name : str
+            The name of the argument
+        visited : dict[str, bool]
+            Holds the name of each argument in a key with
             a boolean value to identify whether operations have already been performed on the argument
-            dependencies {dict[str, dict[str, bool]]} -- Each outer key represents one argument where the
+        dependencies : dict[str, dict[str, bool]]
+            Each outer key represents one argument where the
             value is a dictionary with key=name of argument outer key argument is dependent on. Boolean value
             is always true and is a placeholder.
-            ordered_arg_defs {dict[str, BetterArg]} -- argument definitions
+        ordered_arg_defs : dict[str, BetterArg]
+            Argument definitions
             from arg_defs sorted based on their dependencies,
             output is in the reverse of the order desired. Reverse sorting is handled in _sort_args_by_dependencies().
 
-        Raises:
-            RuntimeError: When cyclic dependencies are found
+        Raises
+        ------
+        RuntimeError
+            When cyclic dependencies are found
         """
         visited[name] = True
         dependencies[name] = {
@@ -1030,11 +1264,15 @@ class BetterArgParser(object):
     def _has_cycle(self, args):
         """Determines if cyclic dependencies exist between arguments.
 
-        Arguments:
-            args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
+        Parameters
+        ----------
+        args : dict[str, BetterArg]
+            All of the BetterArg argument definitions for current argument depth.
 
-        Returns:
-            bool -- True if cycle exists False otherwise
+        Returns
+        -------
+        bool
+            True if cycle exists False otherwise.
         """
         graph = defaultdict(list)
         arg_name_to_num = {}
@@ -1056,14 +1294,21 @@ class BetterArgParser(object):
     def _is_cyclic_helper(self, i, visited, stack, graph):
         """Works with _has_cycle() to determine if cyclic dependencies exist between arguments.
 
-        Arguments:
-            i {integer} -- The index for the current argument
-            visited {list[bool]} -- Maintains a record of which arguments have been visited
-            stack {list[bool]} -- Used with visited to identify cycles.
-            graph {defaultdict[list]} -- The graph representing our argument dependencies as numbers
+        Parameters
+        ----------
+        i : int
+            The index for the current argument.
+        visited : list[bool]
+            Maintains a record of which arguments have been visited.
+        stack : list[bool]
+            Used with visited to identify cycles.
+        graph : defaultdict[list]
+            The graph representing our argument dependencies as numbers.
 
-        Returns:
-            bool -- True if cycle exists, False otherwise
+        Returns
+        -------
+        bool
+            True if cycle exists, False otherwise.
         """
         visited[i] = True
         stack[i] = True

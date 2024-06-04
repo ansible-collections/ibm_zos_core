@@ -55,8 +55,8 @@ options:
   src:
     description:
       - The location can be a UNIX System Services (USS) file or path,
-        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS (VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, a
+        generation data set (GDS) or KSDS (VSAM data set).
       - The USS path or file must be an absolute pathname.
       - If I(src) is a USS directory, all files will be encoded.
     required: true
@@ -65,14 +65,15 @@ options:
     description:
       - The location where the converted characters are output.
       - The destination I(dest) can be a UNIX System Services (USS) file or path,
-        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS (VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, a
+        generation data set (GDS) or KSDS (VSAM data set).
       - If the length of the PDSE member name used in I(dest) is greater
         than 8 characters, the member name will be truncated when written out.
       - If I(dest) is not specified, the I(src) will be used as the destination
         and will overwrite the I(src) with the character set in the
         option I(to_encoding).
       - The USS file or path must be an absolute pathname.
+      - If I(dest) is a data set, it must be already allocated.
     required: false
     type: str
   backup:
@@ -99,6 +100,8 @@ options:
         by IBM Z Open Automation Utilities.
       - C(backup_name) will be returned on either success or failure of module
         execution such that data can be retrieved.
+      - If I(backup_name) is a generation data set (GDS), it must be a relative
+        positive name (for example, V(HLQ.USER.GDG(+1\))).
     required: false
     type: str
   backup_compress:
@@ -524,7 +527,7 @@ def run_module():
 
             if not dest_exists:
                 raise EncodeError(
-                    "Data set {0} is not cataloged, please check data set provided in"
+                    "Data set {0} is not cataloged, please check data set provided in "
                     "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
                 )
 
@@ -551,8 +554,6 @@ def run_module():
             is_mvs_dest = is_mvs_src
             ds_type_dest = ds_type_src
         else:
-            # is_uss_dest, is_mvs_dest, ds_type_dest = check_file(dest)
-
             if path.sep in dest:
                 is_uss_dest = True
             else:
@@ -567,7 +568,7 @@ def run_module():
 
                 if not dest_exists:
                     raise EncodeError(
-                        "Data set {0} is not cataloged, please check data set provided in"
+                        "Data set {0} is not cataloged, please check data set provided in "
                         "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
                     )
 

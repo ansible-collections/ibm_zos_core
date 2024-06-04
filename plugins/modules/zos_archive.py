@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -125,7 +126,7 @@ options:
   exclude:
     description:
       - Remote absolute path, glob, or list of paths, globs, data set name
-        patterns or Generation Data Sets in relative notation for the file,
+        patterns or generation data sets (GDSs) in relative notation for the file,
         files or data sets to exclude from src list and glob expansion.
       - "Patterns (wildcards) can contain one of the following, `?`, `*`."
       - "* matches everything."
@@ -369,7 +370,6 @@ EXAMPLES = r'''
     format:
       name: xmit
 
-# Use different
 - name: Archive multiple GDSs into a terse
   zos_archive:
     src:
@@ -377,6 +377,15 @@ EXAMPLES = r'''
       - "USER.GDG(-1)"
       - "USER.GDG(-2)"
     dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+      format_options:
+        use_adrdssu: True
+
+- name: Archive multiple data sets into a new GDS
+  zos_archive:
+    src: "USER.ARCHIVE.*"
+    dest: "USER.GDG(+1)"
     format:
       name: terse
       format_options:
@@ -429,27 +438,22 @@ expanded_exclude_sources:
     returned: always
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-    validation,
-    mvs_cmd,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
-import os
-import tarfile
-import zipfile
 import abc
 import glob
-import re
 import math
+import os
+import re
+import tarfile
 import traceback
+import zipfile
 from hashlib import sha256
 
+from ansible.module_utils._text import to_bytes
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set, mvs_cmd, validation)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
 
 try:
     from zoautil_py import datasets
@@ -1436,16 +1440,26 @@ class AMATerseArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(
+        # dest, changed = self._create_dest_data_set(
+        #     name=self.dest,
+        #     replace=True,
+        #     type='seq',
+        #     record_format='fb',
+        #     record_length=AMATERSE_RECORD_LENGTH,
+        #     space_primary=self.dest_data_set.get("space_primary"),
+        #     space_type=self.dest_data_set.get("space_type"))
+        dataset = data_set.MVSDataSet(
             name=self.dest,
-            replace=True,
-            type='seq',
+            data_set_type='seq',
             record_format='fb',
             record_length=AMATERSE_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
-            space_type=self.dest_data_set.get("space_type"))
+            space_type=self.dest_data_set.get("space_type")
+        )
+        changed = dataset.create(replace=True) # we need to account for replace
         self.changed = self.changed or changed
-        self.add(source, dest)
+        self.dest = dataset.name
+        self.add(source, self.dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 
 
@@ -1529,16 +1543,27 @@ class XMITArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(
+        dataset = data_set.MVSDataSet(
             name=self.dest,
-            replace=True,
-            type='seq',
+            data_set_type='seq',
             record_format='fb',
             record_length=XMIT_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
-            space_type=self.dest_data_set.get("space_type"))
+            space_type=self.dest_data_set.get("space_type")
+        )
+        changed = dataset.create(replace=True) # we need to account for replace
         self.changed = self.changed or changed
-        self.add(source, dest)
+        # dest, changed = self._create_dest_data_set(
+        #     name=self.dest,
+        #     replace=True,
+        #     type='seq',
+        #     record_format='fb',
+        #     record_length=XMIT_RECORD_LENGTH,
+        #     space_primary=self.dest_data_set.get("space_primary"),
+        #     space_type=self.dest_data_set.get("space_type"))
+        self.changed = self.changed or changed
+        self.dest = dataset.name
+        self.add(source, self.dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 
     def get_error_hint(self, output):

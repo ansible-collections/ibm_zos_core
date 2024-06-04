@@ -965,3 +965,43 @@ def test_gdg_archive(ansible_zos_module, dstype, format):
         hosts.all.shell(cmd=f"drm {HLQ}.*")
 
 
+@pytest.mark.ds
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_archive_into_gds(ansible_zos_module, dstype, format):
+    try:
+        HLQ = "ANSIBLE"
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name(symbols=True)
+        archive_data_set = get_tmp_ds_name(symbols=True)
+        results = hosts.all.zos_data_set(
+            batch = [
+                {"name":archive_data_set, "state":"present", "type":"gdg", "limit":3},
+                {"name":data_set_name, "state":"present", "type":dstype}
+            ]
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"] = dict(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            src=data_set_name,
+            dest=f"{archive_data_set}(+1)",
+            format=format_dict,
+        )
+        for result in archive_result.contacted.values():
+            assert result.get("changed") is True
+            assert data_set_name in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                assert archive_data_set in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd=f"drm {HLQ}.*")
+

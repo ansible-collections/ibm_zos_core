@@ -159,14 +159,14 @@ Examples
      zos_volume_init:
        address: "1234"
        volid: "DEMO01"
-       sms_managed: no
+       sms_managed: false
 
    - name: Initialize non-SMS managed target volume with all the default options and
            override the default high level qualifier (HLQ).
      zos_volume_init:
        address: 1234
        volid: DEMO01
-       sms_managed: no
+       sms_managed: false
        tmp_hlq: TESTUSR
 
    - name: Initialize a new SMS managed DASD volume with new volume serial 'e8d8' with 30 track VTOC, an index, as long as
@@ -175,12 +175,12 @@ Examples
      zos_volume_init:
        address: e8d8
        vtoc_size: 30
-       index: yes
-       sms_managed: yes
+       index: true
+       sms_managed: true
        volid: ine8d8
        verify_volid: ine8d8
-       verify_volume_empty: yes
-       verify_offline: no
+       verify_volume_empty: true
+       verify_offline: false
 
    - name: Initialize 3 new DASD volumes (0901, 0902, 0903) for use on a z/OS system as 'DEMO01', 'DEMO02', 'DEMO03'
            using Ansible loops.

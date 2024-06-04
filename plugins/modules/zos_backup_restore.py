@@ -431,8 +431,7 @@ def main():
         result["changed"] = True
 
     except Exception as e:
-        # module.fail_json(msg=repr(e), **result)
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=repr(e), **result)
     module.exit_json(**result)
 
 

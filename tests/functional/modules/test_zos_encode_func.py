@@ -1011,7 +1011,7 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
 
 
 @pytest.mark.parametrize("generation", ["-1", "+1"])
-def test_gdg_encoding_conversion_with_invalid_generation(ansible_zos_module, generation):
+def test_gdg_encoding_conversion_src_with_invalid_generation(ansible_zos_module, generation):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name(3, 2)
 
@@ -1032,6 +1032,33 @@ def test_gdg_encoding_conversion_with_invalid_generation(ansible_zos_module, gen
             assert "not cataloged" in result.get("msg")
             assert result.get("backup_name") is None
             assert result.get("changed") is False
+    finally:
+        hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_gdg_encoding_conversion_invalid_gdg(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name(3, 2)
+
+    try:
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        results = hosts.all.zos_encode(
+            src=ds_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("msg") is not None
+            assert "not yet supported" in result.get("msg")
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+            assert result.get("failed") is True
     finally:
         hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
         hosts.all.shell(cmd=f"drm {ds_name}")
@@ -1122,3 +1149,34 @@ def test_encoding_conversion_gds_to_mvs(ansible_zos_module):
         hosts.all.shell(cmd=f"""drm "{src_name}(0)" """)
         hosts.all.shell(cmd=f"drm {src_name}")
         hosts.all.shell(cmd=f"drm {dest_name}")
+
+
+def test_gds_encoding_conversion_when_gds_does_not_exist(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        src = get_tmp_ds_name()
+        gdg_name = get_tmp_ds_name()
+        dest = f"{gdg_name}(+1)"
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {gdg_name}")
+
+        results = hosts.all.zos_encode(
+            src=src,
+            dest=dest,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("src") == src
+            assert result.get("dest") == dest
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+            assert "not cataloged" in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=gdg_name, state="absent")

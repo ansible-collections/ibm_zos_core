@@ -1272,3 +1272,76 @@ def test_gds_encoding_conversion_when_gds_does_not_exist(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=src, state="absent")
         hosts.all.zos_data_set(name=gdg_name, state="absent")
+
+
+def test_gds_backup(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        backup_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{src_data_set}\"")
+
+        results = hosts.all.zos_encode(
+            src=src_data_set,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
+            backup=True,
+            backup_name=f"{backup_data_set}(+1)",
+        )
+
+        backup_check = hosts.all.shell(
+            cmd=f"""dcat "{backup_data_set}(0)" | wc -l """
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg") is None
+
+        for result in backup_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{backup_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {backup_data_set}")
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+
+def test_gds_backup_invalid_generation(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        backup_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{backup_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{src_data_set}\"")
+
+        results = hosts.all.zos_encode(
+            src=src_data_set,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
+            backup=True,
+            backup_name=f"{backup_data_set}(0)",
+        )
+
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            assert result.get("msg") is not None
+            assert "cannot be used" in result.get("msg")
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{backup_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {backup_data_set}")
+        hosts.all.shell(cmd=f"drm {src_data_set}")

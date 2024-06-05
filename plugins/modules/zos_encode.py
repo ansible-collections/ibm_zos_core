@@ -74,6 +74,7 @@ options:
         option I(to_encoding).
       - The USS file or path must be an absolute pathname.
       - If I(dest) is a data set, it must be already allocated.
+      - Encoding a whole generation data group (GDG) is not supported.
     required: false
     type: str
   backup:
@@ -604,6 +605,14 @@ def run_module():
 
         # Check if the dest is required to be backup before conversion
         if backup:
+            if backup_name:
+                backup_data_set = data_set.MVSDataSet(backup_name)
+                if backup_data_set.is_gds_active:
+                    raise EncodeError(
+                        f"The generation data set {backup_name} cannot be used as backup. "
+                        "Please use a new generation for this purpose."
+                    )
+
             if is_uss_dest:
                 backup_name = zos_backup.uss_file_backup(
                     new_dest, backup_name, backup_compress

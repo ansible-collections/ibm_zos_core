@@ -59,6 +59,7 @@ options:
         generation data set (GDS) or KSDS (VSAM data set).
       - The USS path or file must be an absolute pathname.
       - If I(src) is a USS directory, all files will be encoded.
+      - Encoding a whole generation data group (GDG) is not supported.
     required: true
     type: str
   dest:
@@ -74,7 +75,6 @@ options:
         option I(to_encoding).
       - The USS file or path must be an absolute pathname.
       - If I(dest) is a data set, it must be already allocated.
-      - Encoding a whole generation data group (GDG) is not supported.
     required: false
     type: str
   backup:
@@ -253,6 +253,24 @@ EXAMPLES = r"""
     encoding:
       from: ISO8859-1
       to: IBM-1047
+
+- name: Convert file encoding from a USS file to a generation data set
+  zos_encode:
+    src: /zos_encode/test.data
+    dest: USER.TEST.GDG(0)
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
+
+- name: Convert file encoding from a USS file to a data set while using a GDG for backup
+  zos_encode:
+    src: /zos_encode/test.data
+    dest: USER.TEST.PS
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
+    backup: true
+    backup_name: USER.BACKUP.GDG(+1)
 """
 
 RETURN = r"""

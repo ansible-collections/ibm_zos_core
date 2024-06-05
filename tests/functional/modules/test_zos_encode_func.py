@@ -701,6 +701,32 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
+def test_uss_encoding_conversion_src_with_special_chars(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name(symbols=True)
+        hosts.all.zos_data_set(name=src_data_set, state="present", type="seq")
+
+        results = hosts.all.zos_encode(
+            src=src_data_set,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("src") == src_data_set
+            assert result.get("dest") == src_data_set
+            assert result.get("backup_name") is None
+            assert result.get("changed") is True
+            assert result.get("msg") is None
+
+    finally:
+        hosts.all.zos_data_set(name=src_data_set, state="absent")
+
+
 def test_pds_backup(ansible_zos_module):
     try:
         hosts = ansible_zos_module

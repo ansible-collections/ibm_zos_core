@@ -363,6 +363,13 @@ class DataSet(object):
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
 
+        # The above 'listcat entries' command to idcams returns:
+        # rc=0 if data set found in catalog
+        # rc=4 if data set NOT found in catalog
+        # rc>4 for other errors
+        if rc > 4:
+            raise MVSCmdExecError(rc, stdout, stderr)
+
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
             if bool(set(volumes) & set(cataloged_volume_list)):

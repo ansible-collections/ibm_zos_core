@@ -142,9 +142,9 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             batch=[
                 {
                     "name":i,
-                    "type":'pds'
-                    "space_primary"=1,
-                    "space_type"="m"
+                    "type":'pds',
+                    "space_primary":1,
+                    "space_type":"m",
                 } for i in PDS_NAMES
             ]
         )
@@ -154,7 +154,7 @@ def test_find_pds_members_containing_string(ansible_zos_module):
                     "name":i + "(MEMBER)",
                     "type":"member",
                     "state":'present',
-                    "replace":'yes'
+                    "replace":'yes',
                 } for i in PDS_NAMES
             ]
         )

@@ -47,11 +47,34 @@ stdout_ds_in_catatlog = """0
       IN-CAT --- CATALOG.SVPLEX9.MASTER
 1IDCAMS  SYSTEM SERVICES  """.format(data_set_name)
 
-stdout_ds_not_in_catalog="""0
+stdout_ds_not_in_catalog="""
+1IDCAMS  SYSTEM SERVICES                                           TIME: 13:34:18        06/06/24     PAGE      1
+0        
   LISTCAT ENTRIES('{0}')
 0IDC3012I ENTRY {0} NOT FOUND
  IDC3009I ** VSAM CATALOG RETURN CODE IS 8 - REASON CODE IS IGG0CLEG-42
- IDC1566I ** {0} NOT LISTED""".format(data_set_name)
+ IDC1566I ** {0} NOT LISTED
+1IDCAMS  SYSTEM SERVICES                                           TIME: 13:34:18        06/06/24     PAGE      2
+0         THE NUMBER OF ENTRIES PROCESSED WAS:
+0                   AIX -------------------0
+                    ALIAS -----------------0
+                    CLUSTER ---------------0
+                    DATA ------------------0
+                    GDG -------------------0
+                    INDEX -----------------0
+                    NONVSAM ---------------0
+                    PAGESPACE -------------0
+                    PATH ------------------0
+                    SPACE -----------------0
+                    USERCATALOG -----------0
+                    TAPELIBRARY -----------0
+                    TAPEVOLUME ------------0
+                    TOTAL -----------------0
+0         THE NUMBER OF PROTECTED ENTRIES SUPPRESSED WAS 0
+0IDC0001I FUNCTION COMPLETED, HIGHEST CONDITION CODE WAS 4
+0        
+0IDC0002I IDCAMS PROCESSING COMPLETE. MAXIMUM CONDITION CODE WAS 4
+""".format(data_set_name)
 
 # passing in a lowercase data set causes idcams to fail.
 # this behavior isn't possible via ansible because we upper-case the input.

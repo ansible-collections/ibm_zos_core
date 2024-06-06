@@ -26,7 +26,7 @@ def test_zos_operator_action_query_no_options(ansible_zos_module):
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
 
@@ -41,7 +41,7 @@ def test_zos_operator_action_query_option_message_id(ansible_zos_module):
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
 
@@ -58,7 +58,7 @@ def test_zos_operator_action_query_option_message_id_invalid_abbreviation(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
     for result in results.contacted.values():
@@ -76,7 +76,7 @@ def test_zos_operator_action_query_option_message_id_regex(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
     for result in results.contacted.values():
@@ -133,7 +133,7 @@ def test_zos_operator_action_query_option_system_regex(ansible_zos_module):
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
     for result in results.contacted.values():
@@ -157,7 +157,7 @@ def test_zos_operator_action_query_option_system_regex_and_message_id(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
     for result in results.contacted.values():
@@ -237,7 +237,7 @@ def test_zos_operator_action_query_option_message_filter_one_match(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
     for result in results.contacted.values():
@@ -265,7 +265,7 @@ def test_zos_operator_action_query_option_message_filter_multiple_matches(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
     for result in results.contacted.values():
@@ -292,7 +292,7 @@ def test_zos_operator_action_query_option_message_filter_no_match(
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):
                 hosts.all.zos_operator(
-                    cmd=f"{action.get("number")}cancel")
+                    cmd="{0}cancel".format(action.get("number")))
     except Exception:
         pass
     for result in results.contacted.values():

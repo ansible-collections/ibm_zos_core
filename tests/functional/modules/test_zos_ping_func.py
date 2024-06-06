@@ -16,7 +16,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 
-def test_job_submit_PDS(ansible_zos_module):
+def test_job_submit_pds(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_ping()
     for result in results.contacted.values():

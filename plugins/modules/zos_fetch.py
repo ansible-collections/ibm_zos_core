@@ -24,7 +24,8 @@ version_added: "1.1.0"
 short_description: Fetch data from z/OS
 description:
   - This module fetches a UNIX System Services (USS) file,
-    PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+    PS (sequential data set), PDS, PDSE, member of a PDS or PDSE,
+    generation data set (GDS), generation data group (GDG), or
     KSDS (VSAM data set) from a remote z/OS system.
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
@@ -33,6 +34,9 @@ description:
   - When fetching a PDS/PDSE member, destination will be a file.
   - Files that already exist at C(dest) will be overwritten if they are different
     than C(src).
+  - When fetching a GDS, the relative name will be resolved to its absolute one.
+  - When fetching a generation data group, the destination will be a directory
+    with the same name as the GDG.
 author:
     - "Asif Mahmud (@asifmahmud)"
     - "Demetrios Dimatos (@ddimatos)"
@@ -40,7 +44,7 @@ options:
   src:
     description:
       - Name of a UNIX System Services (USS) file, PS (sequential data set), PDS,
-        PDSE, member of a PDS, PDSE or KSDS (VSAM data set).
+        PDSE, member of a PDS, PDSE, GDS, GDG or KSDS (VSAM data set).
       - USS file paths should be absolute paths.
     required: true
     type: str
@@ -202,6 +206,24 @@ EXAMPLES = r"""
       from: IBM-037
       to: ISO8859-1
     flat: true
+
+- name: Fetch the current generation data set from a GDG
+  zos_fetch:
+    src: USERHLQ.DATA.SET(0)
+    dest: /tmp/
+    flat: true
+
+- name: Fetch a previous generation data set from a GDG
+  zos_fetch:
+    src: USERHLQ.DATA.SET(-3)
+    dest: /tmp/
+    flat: true
+
+- name: Fetch a generation data group
+  zos_fetch:
+    src: USERHLQ.TEST.GDG
+    dest: /tmp/
+    flat: true
 """
 
 RETURN = r"""
@@ -291,7 +313,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 
 
 try:
-    from zoautil_py import datasets, mvscmd, ztypes
+    from zoautil_py import datasets, mvscmd, ztypes, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     mvscmd = ZOAUImportError(traceback.format_exc())
@@ -565,7 +587,7 @@ class FetchHandler:
             Unable to delete temporary dataset.
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
-        file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
+        file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding=encoding)
         rc = datasets.delete(temp_ds)
         if rc != 0:
             os.remove(file_path)
@@ -575,7 +597,7 @@ class FetchHandler:
 
         return file_path
 
-    def _fetch_pdse(self, src, is_binary, encoding=None):
+    def _fetch_pdse(self, src, is_binary, temp_dir=None, encoding=None):
         """Copy a partitioned data set to a USS directory. If the data set
         is not being fetched in binary mode, encoding for all members inside
         the data set will be converted.
@@ -585,7 +607,9 @@ class FetchHandler:
         src : str
             Source of the dataset.
         is_binary : bool
-            If is binary.
+            If it is binary.
+        temp_dir : str
+            Parent directory for the temp directory of the copy.
         encoding : str
             The file encoding.
 
@@ -601,7 +625,7 @@ class FetchHandler:
         fail_json
             Error converting encoding of the member.
         """
-        dir_path = tempfile.mkdtemp()
+        dir_path = tempfile.mkdtemp(dir=temp_dir)
         cmd = "cp -B \"//'{0}'\" {1}"
         if not is_binary:
             cmd = cmd.replace(" -B", "")
@@ -642,7 +666,55 @@ class FetchHandler:
                 )
         return dir_path
 
-    def _fetch_mvs_data(self, src, is_binary, encoding=None):
+    def _fetch_gdg(self, src, is_binary, encoding=None):
+        """Copy a generation data group to a USS directory. If the data set
+        is not being fetched in binary mode, encoding for all data sets inside
+        the GDG will be converted.
+
+        Parameters
+        ----------
+        src : str
+            Source of the generation data group.
+        is_binary : bool
+            If it is binary.
+        encoding : str
+            The file encoding.
+
+        Returns
+        -------
+        str
+            Directory path containing the files of the converted generation data sets.
+
+        Raises
+        ------
+        fail_json
+            Error copying a GDS to USS.
+        fail_json
+            Error converting encoding of a GDS.
+        """
+        dir_path = tempfile.mkdtemp()
+
+        data_group = gdgs.GenerationDataGroupView(src)
+        for current_gds in data_group.generations():
+            if current_gds.organization in data_set.DataSet.MVS_SEQ:
+                self._fetch_mvs_data(
+                    current_gds.name,
+                    is_binary,
+                    temp_dir=dir_path,
+                    file_override=current_gds.name,
+                    encoding=encoding
+                )
+            elif current_gds.organization in data_set.DataSet.MVS_PARTITIONED:
+                self._fetch_pdse(
+                    current_gds.name,
+                    is_binary,
+                    temp_dir=dir_path,
+                    encoding=encoding
+                )
+
+        return dir_path
+
+    def _fetch_mvs_data(self, src, is_binary, temp_dir=None, file_override=None, encoding=None):
         """Copy a sequential data set or a partitioned data set member
         to a USS file.
 
@@ -651,7 +723,12 @@ class FetchHandler:
         src : str
             Source of the dataset.
         is_binary : bool
-            If is binary.
+            If it is binary.
+        temp_dir : str
+            Parent directory for the temp directory of the copy.
+        file_override : str
+            File name that will override the random one made by Python when
+            creating a temp file.
         encoding : str
             The file encoding.
 
@@ -667,12 +744,21 @@ class FetchHandler:
         fail_json
             Error converting encoding of the dataset.
         """
-        fd, file_path = tempfile.mkstemp()
-        os.close(fd)
+        if file_override:
+            file_path = file_override
+
+            if temp_dir:
+                file_path = os.path.join(temp_dir, file_path)
+        else:
+            fd, file_path = tempfile.mkstemp(dir=temp_dir)
+            os.close(fd)
+
         cmd = "cp -B \"//'{0}'\" {1}"
         if not is_binary:
             cmd = cmd.replace(" -B", "")
+
         rc, out, err = self._run_command(cmd.format(src, file_path))
+
         if rc != 0:
             os.remove(file_path)
             self._fail_json(
@@ -741,8 +827,10 @@ def run_module():
     )
 
     src = module.params.get("src")
+    hlq = None
     if module.params.get("use_qualifier"):
-        module.params["src"] = datasets.get_hlq() + "." + src
+        hlq = datasets.get_hlq()
+        module.params["src"] = hlq + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #
@@ -802,57 +890,90 @@ def run_module():
     # ********************************************************** #
 
     res_args = dict()
-    _fetch_member = "(" in src and src.endswith(")")
-    ds_name = src if not _fetch_member else src[: src.find("(")]
+    src_data_set = None
+    ds_type = None
+
     try:
-        ds_utils = data_set.DataSetUtils(ds_name)
-        if not ds_utils.exists():
-            if fail_on_missing:
-                module.fail_json(
-                    msg=(
-                        "The source '{0}' does not exist or is "
-                        "uncataloged".format(ds_name)
-                    )
+        # Checking the source actually exists on the system.
+        if "/" in src:  # USS
+            src_exists = os.path.exists(b_src)
+        else:  # MVS
+            src_data_set = data_set.MVSDataSet(src)
+            is_member = data_set.is_member(src_data_set.name)
+
+            if is_member:
+                src_exists = data_set.DataSet.data_set_member_exists(src_data_set.name)
+            else:
+                src_exists = data_set.DataSet.data_set_exists(
+                    src_data_set.name
                 )
-            module.exit_json(
-                note=("Source '{0}' was not found. No data was fetched".format(ds_name))
-            )
-        ds_type = ds_utils.ds_type()
+
+        if not src_exists:
+            if fail_on_missing:
+                if is_member:
+                    module.fail_json(
+                        msg=(
+                            "The data set member '{0}' was not found inside data "
+                            "set '{1}'"
+                        ).format(
+                            data_set.extract_member_name(src_data_set.raw_name),
+                            data_set.extract_dsname(src_data_set.raw_name)
+                        )
+                    )
+                else:
+                    module.fail_json(
+                        msg=(
+                            "The source '{0}' does not exist or is "
+                            "uncataloged.".format(src)
+                        )
+                    )
+            else:
+                module.exit_json(
+                    note=("Source '{0}' was not found. No data was fetched.".format(src))
+                )
+
+        if "/" in src:
+            ds_type = "USS"
+        else:
+            ds_type = data_set.DataSet.data_set_type(data_set.extract_dsname(src_data_set.name))
+
         if not ds_type:
-            module.fail_json(msg="Unable to determine data set type")
+            module.fail_json(msg="Unable to determine source type. No data was fetched.")
 
     except Exception as err:
         module.fail_json(
-            msg="Error while gathering data set information", stderr=str(err)
+            msg="Error while gathering source information", stderr=str(err)
         )
 
     # ********************************************************** #
     #                  Fetch a sequential data set               #
     # ********************************************************** #
 
-    if ds_type == "PS":
-        file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
+    if ds_type in data_set.DataSet.MVS_SEQ:
+        file_path = fetch_handler._fetch_mvs_data(
+            src_data_set.name,
+            is_binary,
+            encoding=encoding
+        )
         res_args["remote_path"] = file_path
 
     # ********************************************************** #
     #    Fetch a partitioned data set or one of its members      #
     # ********************************************************** #
 
-    elif ds_type == "PO":
-        if _fetch_member:
-            member_name = src[src.find("(") + 1: src.find(")")]
-            if not ds_utils.member_exists(member_name):
-                module.fail_json(
-                    msg=(
-                        "The data set member '{0}' was not found inside data "
-                        "set '{1}'"
-                    ).format(member_name, ds_name)
-                )
-            file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
+    elif ds_type in data_set.DataSet.MVS_PARTITIONED:
+        if is_member:
+            file_path = fetch_handler._fetch_mvs_data(
+                src_data_set.name,
+                is_binary,
+                encoding=encoding
+            )
             res_args["remote_path"] = file_path
         else:
             res_args["remote_path"] = fetch_handler._fetch_pdse(
-                src, is_binary, encoding
+                src_data_set.name,
+                is_binary,
+                encoding=encoding
             )
 
     # ********************************************************** #
@@ -864,18 +985,47 @@ def run_module():
             module.fail_json(
                 msg="File '{0}' does not have appropriate read permission".format(src)
             )
-        file_path = fetch_handler._fetch_uss_file(src, is_binary, encoding)
+        file_path = fetch_handler._fetch_uss_file(
+            src,
+            is_binary,
+            encoding=encoding
+        )
         res_args["remote_path"] = file_path
 
     # ********************************************************** #
     #                  Fetch a VSAM data set                     #
     # ********************************************************** #
 
-    elif ds_type == "VSAM":
-        file_path = fetch_handler._fetch_vsam(src, is_binary, encoding)
+    elif ds_type in data_set.DataSet.MVS_VSAM:
+        file_path = fetch_handler._fetch_vsam(
+            src_data_set.name,
+            is_binary,
+            encoding=encoding
+        )
         res_args["remote_path"] = file_path
 
-    res_args["file"] = ds_name
+    # ********************************************************** #
+    #                  Fetch a GDG                               #
+    # ********************************************************** #
+
+    elif ds_type == "GDG":
+        res_args["remote_path"] = fetch_handler._fetch_gdg(
+            src_data_set.name,
+            is_binary,
+            encoding=encoding
+        )
+
+    if ds_type == "USS":
+        res_args["file"] = src
+    else:
+        res_args["file"] = src_data_set.name
+
+        # Removing the HLQ since the user is probably not expecting it. The module
+        # hasn't returned it ever since it was originally written. Changes made to
+        # add GDG/GDS support started leaving the HLQ behind in the file name.
+        if hlq:
+            res_args["file"] = res_args["file"].replace(f"{hlq}.", "")
+
     res_args["ds_type"] = ds_type
     module.exit_json(**res_args)
 

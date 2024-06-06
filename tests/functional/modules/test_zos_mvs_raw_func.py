@@ -763,6 +763,113 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
         hosts.all.zos_data_set(name=default_data_set, state="absent")
 
 
+def test_data_set_name_gdgs(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        default_data_set = get_tmp_ds_name(3, 3)
+        hosts.all.shell(cmd="dtouch -tGDG -L4 {0}".format(default_data_set))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=default_data_set + "(0)",
+                        return_content=dict(type="text"),
+                    ),
+                ),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+        # Generation minus 1
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=default_data_set + "(-1)",
+                        return_content=dict(type="text"),
+                    ),
+                ),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+        # Create a new one
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=default_data_set + "(+1)",
+                        disposition="new",
+                        return_content=dict(type="text"),
+                    ),
+                ),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+        # Negative case
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=default_data_set + "(-4)",
+                        disposition="new",
+                        return_content=dict(type="text"),
+                    ),
+                ),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 8
+    finally:
+        hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
+
+
+def test_data_set_name_special_characters(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        default_data_set = get_tmp_ds_name(5, 6, symbols=True)
+        hosts.all.zos_data_set(name=default_data_set, type="seq", state="present")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=default_data_set,
+                        return_content=dict(type="text"),
+                    ),
+                ),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+    finally:
+        hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
 # ---------------------------------------------------------------------------- #
 #                                 Input DD Tests                                #
 # ---------------------------------------------------------------------------- #

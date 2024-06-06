@@ -2930,6 +2930,12 @@ def get_data_set_output(dd_statement):
     """
     contents = ""
     if dd_statement.definition.return_content.type == "text":
+        if data_set.DataSet.is_gds_positive_relative_name(dd_statement.definition.name):
+            src = dd_statement.definition.name
+            data = data_set.MVSDataSet(
+                name=src.replace('(+1)', '(0)')
+            )
+            dd_statement.definition.name = data.name
         contents = get_data_set_content(
             name=dd_statement.definition.name,
             binary=False,

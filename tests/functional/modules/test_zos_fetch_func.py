@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import stat
+import re
+import pytest
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
@@ -753,7 +755,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
-        hosts.all.zos_data_set(src="OMVSADM." + src, state="absent")
+        hosts.all.zos_data_set(name="OMVSADM." + src, state="absent")
 
 
 def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
@@ -780,3 +782,133 @@ def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
     finally:
         if os.path.exists(dest_path):
             shutil.rmtree("/tmp/" + remote_host)
+
+
+def test_fetch_sequential_data_set_with_special_chars(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_PS = get_tmp_ds_name(symbols=True)
+
+    hosts.all.zos_data_set(
+        name=TEST_PS,
+        state="present",
+        type="seq",
+        space_type="m",
+        space_primary=5
+    )
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PS}\"")
+    params = dict(src=TEST_PS, dest="/tmp/", flat=True)
+    dest_path = f"/tmp/{TEST_PS}"
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Sequential"
+            assert result.get("module_stderr") is None
+            assert result.get("dest") == dest_path
+            assert os.path.exists(dest_path)
+    finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+
+
+@pytest.mark.parametrize("generation", ["0", "-1"])
+def test_fetch_gds_from_gdg(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+    TEST_GDS = f"{TEST_GDG}({generation})"
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDS}\"")
+    params = dict(src=TEST_GDS, dest="/tmp/", flat=True)
+    dest_path = ""
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Sequential"
+            assert result.get("module_stderr") is None
+
+            # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+            dest_path = result.get("dest", "")
+            dest_pattern = r"G[0-9]+V[0-9]+"
+
+            assert TEST_GDG in dest_path
+            assert re.fullmatch(dest_pattern, dest_path.split(".")[-1])
+            assert os.path.exists(dest_path)
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(-1)", state="absent")
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
+        if dest_path != "" and os.path.exists(dest_path):
+            os.remove(dest_path)
+
+
+def test_error_fetch_inexistent_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+    TEST_GDS = f"{TEST_GDG}(+1)"
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    params = dict(src=TEST_GDS, dest="/tmp/", flat=True)
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+            assert "does not exist" in result.get("msg", "")
+
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
+
+def test_fetch_gdg(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDG}(-1)\"")
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDG}(0)\"")
+
+    params = dict(src=TEST_GDG, dest="/tmp/", flat=True)
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Generation Data Group"
+            assert result.get("module_stderr") is None
+
+            # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+            dest_path = result.get("dest", "")
+            dest_pattern = r"G[0-9]+V[0-9]+"
+
+            assert TEST_GDG in dest_path
+            assert os.path.exists(dest_path)
+
+            # Checking that the contents of the dir match with what we would expect to get:
+            # Multiple generation data sets conforming to the pattern defined above.
+            for file_name in os.listdir(dest_path):
+                assert re.fullmatch(dest_pattern, file_name.split(".")[-1])
+                assert os.path.exists(os.path.join(dest_path, file_name))
+
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(-1)", state="absent")
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
+        if os.path.exists(dest_path):
+            shutil.rmtree(dest_path)

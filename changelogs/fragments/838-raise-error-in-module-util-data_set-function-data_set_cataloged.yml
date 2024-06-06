@@ -1,4 +1,4 @@
-enhancement:
+bugfixes:
   - module_util/data_set.py - DataSet.data_set_cataloged function previously only returned
     True or False, but failed to account for exceptions which occurred during the LISTCAT.
     The fix now raises an MVSCmdExecError if the return code from LISTCAT is too high.

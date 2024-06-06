@@ -424,7 +424,7 @@ def test_job_submit_pds(ansible_zos_module, location):
         data_set_name = get_tmp_ds_name()
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
 
         hosts.all.zos_data_set(
@@ -432,15 +432,15 @@ def test_job_submit_pds(ansible_zos_module, location):
         )
 
         hosts.all.shell(
-            cmd=f"cp {TEMP_PATH}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
         )
         if bool(location.get("default_location")):
             results = hosts.all.zos_job_submit(
-                src=f"{data_set_name}(SAMPLE)", wait_time_s=30
+                src="{0}(SAMPLE)".format(data_set_name), wait_time_s=30
             )
         else:
             results = hosts.all.zos_job_submit(
-                src=f"{data_set_name}(SAMPLE)", location="data_set", wait_time_s=30
+                src="{0}(SAMPLE)".format(data_set_name), location="data_set", wait_time_s=30
             )
 
         for result in results.contacted.values():
@@ -457,15 +457,21 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
-        hosts.all.zos_data_set(
+        results = hosts.all.zos_data_set(
             name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="pds", replace=True
         )
         hosts.all.shell(
-            cmd=f"cp {TEMP_PATH}/SAMPLE \"//'{DATA_SET_NAME_SPECIAL_CHARS.replace('$', '\$')}(SAMPLE)'\""
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+        )
+        hosts.all.shell(
+            cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
+                TEMP_PATH, DATA_SET_NAME_SPECIAL_CHARS.replace('$', '\$')
+            )
+        )
         results = hosts.all.zos_job_submit(
-            src=f"{DATA_SET_NAME_SPECIAL_CHARS}(SAMPLE)",
+            src="{0}(SAMPLE)".format(DATA_SET_NAME_SPECIAL_CHARS),
             location="data_set",
         )
         for result in results.contacted.values():
@@ -482,7 +488,7 @@ def test_job_submit_uss(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         results = hosts.all.zos_job_submit(
             src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
@@ -543,7 +549,7 @@ def test_job_submit_pds_volume(ansible_zos_module, volumes_on_systems):
         hosts.all.file(path=TEMP_PATH, state="directory")
 
         hosts.all.shell(
-            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
 
         hosts.all.zos_data_set(
@@ -551,7 +557,7 @@ def test_job_submit_pds_volume(ansible_zos_module, volumes_on_systems):
         )
 
         hosts.all.shell(
-            cmd=f"cp {TEMP_PATH}/SAMPLE \"//'{data_set_name}(SAMPLE)'\""
+            cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(TEMP_PATH, data_set_name)
         )
 
         hosts.all.zos_data_set(

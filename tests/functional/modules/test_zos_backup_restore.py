@@ -46,9 +46,9 @@ def create_sequential_data_set_with_contents(
     hosts, data_set_name, contents, volume=None
 ):
     if volume is not None:
-        results = hosts.all.zos_data_set(name=data_set_name, type="SEQ", volumes=volume)
+        results = hosts.all.zos_data_set(name=data_set_name, type="seq", volumes=volume)
     else:
-        results = hosts.all.zos_data_set(name=data_set_name, type="SEQ")
+        results = hosts.all.zos_data_set(name=data_set_name, type="seq")
     assert_module_did_not_fail(results)
     results = hosts.all.shell("decho '{0}' {1}".format(contents, data_set_name))
     assert_module_did_not_fail(results)
@@ -100,6 +100,7 @@ def is_volume(hosts, volume):
 
 def assert_module_did_not_fail(results):
     for result in results.contacted.values():
+        print(result)
         assert (
             result.get("failed", False) is not True
             and not result.get("exception", "")

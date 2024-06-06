@@ -748,7 +748,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
             assert len(result.get("backups", [])) > 0
             assert result.get("backups")[0].get("backup_name") is not None
             results2 = hosts.all.command(
-                cmd=f"head \"//'{result.get("backups")[0].get("backup_name")}'\""
+                cmd="head \"//'{0}'\"".format(result.get("backups")[0].get("backup_name"))
             )
             hosts.all.zos_data_set(
                 name=result.get("backups")[0].get("backup_name"), state="absent"

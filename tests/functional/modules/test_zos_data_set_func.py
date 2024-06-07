@@ -1026,7 +1026,7 @@ def test_gdg_create_and_delete_force(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type="seq")
+        results = hosts.all.zos_data_set(name="{0}(+1)".format(data_set_name), state="present", type="seq")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -1047,7 +1047,7 @@ def test_gdg_create_and_delete_force(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name(2,2, symbols=True)
-        data_set_list = [f"{data_set_name}A", f"{data_set_name}B", f"{data_set_name}C"]
+        data_set_list = ["{0}A".format(data_set_name), "{0}B".format(data_set_name), "{0}C".format(data_set_name)]
         results = hosts.all.zos_data_set(
             batch=[
                 {"name":data_set_list[0], "state":"present", "type":"gdg", "limit":3},
@@ -1058,7 +1058,7 @@ def test_gdg_create_and_delete_force(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dls -tGDG ANSIBLE.*")
+        results = hosts.all.shell(cmd=f"dls -tGDG 'ANSIBLE.*'")
         for result in results.contacted.values():
             for ds_name in data_set_list:
                 assert ds_name in result.get("stdout")
@@ -1074,7 +1074,7 @@ def test_create_special_chars(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dls ANSIBLE.*")
+        results = hosts.all.shell(cmd=f"dls 'ANSIBLE.*'")
         for result in results.contacted.values():
             assert data_set_name in result.get("stdout")
         results = hosts.all.zos_data_set(name=data_set_name, state="absent",)
@@ -1094,7 +1094,7 @@ def test_create_member_special_chars(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"dls ANSIBLE.*")
+        results = hosts.all.shell(cmd=f"dls 'ANSIBLE.*'")
         for result in results.contacted.values():
             assert data_set_name in result.get("stdout")
         results = hosts.all.zos_data_set(name=data_set_name, state="absent",)

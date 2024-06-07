@@ -610,12 +610,6 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
             assert result.get("dest") == USS_DEST_FILE
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
-            # How can we add a content validation without having to encode again ?
-            # cat_result = hosts.all.shell(
-            # cmd="iconv -f {0} -t {1} {2}".format(TO_ENCODING, FROM_ENCODING, USS_DEST_FILE))
-            # print(cat_result.contacted.values())
-            # for uss_file_result in cat_result.contacted.values():
-            #     assert TEST_DATA in uss_file_result.get("stdout")
 
         tag_results = hosts.all.shell(cmd=f"ls -T {USS_DEST_FILE}")
         for result in tag_results.contacted.values():

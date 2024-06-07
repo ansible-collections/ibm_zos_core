@@ -769,7 +769,7 @@ def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
         )
         for enc_res in encode_res.contacted.values():
             assert enc_res.get("backup_name")[:6] == tmphlq
-            contents = hosts.all.shell(cmd=f"cat \"//'{enc_res.get("backup_name")}(SAMPLE)'\"")
+            contents = hosts.all.shell(cmd="cat \"//'{0}(SAMPLE)'\"".format(enc_res.get("backup_name")))
             hosts.all.file(path=TEMP_JCL_PATH, state="absent")
             hosts.all.zos_data_set(name=MVS_PDS, state="absent")
             hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")

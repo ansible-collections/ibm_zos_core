@@ -487,7 +487,7 @@ def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
     finally:
@@ -510,7 +510,7 @@ def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
     finally:
@@ -533,7 +533,7 @@ def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
@@ -556,7 +556,7 @@ def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
     finally:
@@ -583,7 +583,7 @@ def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX_CUSTOM
     finally:
@@ -611,7 +611,7 @@ def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX_CUSTOM
     finally:
@@ -638,7 +638,7 @@ def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF_CUSTOM
     finally:
@@ -665,7 +665,7 @@ def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF_CUSTOM
     finally:
@@ -687,7 +687,7 @@ def test_uss_block_absent_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
     finally:
@@ -712,7 +712,7 @@ def test_uss_block_absent_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
     finally:
@@ -735,7 +735,7 @@ def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER
     finally:
@@ -758,7 +758,7 @@ def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE
     finally:
@@ -781,7 +781,7 @@ def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_EOF_CUSTOM
     finally:
@@ -804,7 +804,7 @@ def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_BOF_CUSTOM
     finally:
@@ -830,7 +830,7 @@ def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_EOF_REGEX_CUSTOM
     finally:
@@ -856,7 +856,7 @@ def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_BOF_REGEX_CUSTOM
     finally:
@@ -882,7 +882,7 @@ def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF_CUSTOM
     finally:
@@ -908,7 +908,7 @@ def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF_CUSTOM
     finally:
@@ -932,7 +932,7 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERT_WITH_INDENTATION
     finally:
@@ -979,7 +979,7 @@ def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
             backup_name = result.get("backup_name")
             assert result.get("changed") == 1
             assert backup_name is not None
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
@@ -1010,7 +1010,7 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
         results = ansible_zos_module.all.shell(cmd=cmd_str)
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
@@ -1042,7 +1042,7 @@ def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
     finally:
@@ -1068,7 +1068,7 @@ def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
     finally:
@@ -1094,7 +1094,7 @@ def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
@@ -1120,7 +1120,7 @@ def test_ds_block_insertbefore_bof(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
     finally:
@@ -1146,7 +1146,7 @@ def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER
     finally:
@@ -1172,7 +1172,7 @@ def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE
     finally:
@@ -1198,7 +1198,7 @@ def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
@@ -1224,7 +1224,7 @@ def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
     finally:
@@ -1249,7 +1249,7 @@ def test_ds_block_absent(ansible_zos_module, dstype):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
     finally:
@@ -1312,7 +1312,7 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERT_WITH_INDENTATION
     finally:
@@ -1344,7 +1344,7 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
             assert result.get("changed") == 1
             backup_ds_name = result.get("backup_name")
             assert backup_ds_name is not None
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
@@ -1397,11 +1397,11 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
         )
         # write memeber to verify cases
         if ds_type in ["pds", "pdse"]:
-            cmd_str = f"cp -CM {quote(temp_file)} \"//'{params["path"]}'\""
+            cmd_str = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file), params["path"])
         else:
-            cmd_str = f"cp {quote(temp_file)} \"//'{params["path"]}'\" "
+            cmd_str = "cp {0} \"//'{1}'\" ".format(quote(temp_file), params["path"])
         hosts.all.shell(cmd=cmd_str)
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" | wc -l ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
@@ -1539,7 +1539,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat {params["path"]}")
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
@@ -1590,7 +1590,7 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
             from_encoding=params["encoding"],
             to_encoding="IBM-1047"
         )
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
@@ -1635,7 +1635,7 @@ def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
@@ -1725,9 +1725,9 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
                 },
             ]
         )
-        cmd_str = f"cp -CM {quote(temp_file)} \"//'{params["path"]}'\""
+        cmd_str = "cp -CM {0} \"//'{1}'\"".format(quote(temp_file) ,params["path"])
         hosts.all.shell(cmd=cmd_str)
-        results = hosts.all.shell(cmd=f"cat \"//'{params["path"]}'\" | wc -l ")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(params["path"]))
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)

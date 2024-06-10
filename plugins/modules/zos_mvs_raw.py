@@ -89,7 +89,6 @@ options:
             description:
               - The data set name.
               - A data set name can be a GDS relative name.
-              - When using GDS relative name and it is a positive generation, disposition new must be used.
             type: str
             required: false
           type:
@@ -708,7 +707,6 @@ options:
                     description:
                       - The data set name.
                       - A data set name can be a GDS relative name.
-                      - When using GDS relative name and it is a positive generation, disposition new must be used.
                     type: str
                     required: false
                   type:
@@ -1596,7 +1594,6 @@ EXAMPLES = r"""
       - dd_data_set:
           dd_name: sysprint
           data_set_name: TEST.CREATION(+1)
-          disposition: new
           return_content:
             type: text
       - dd_input:
@@ -1650,6 +1647,10 @@ if PY3:
 else:
     from pipes import quote
 
+try:
+    from zoautil_py import datasets
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
 
 ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 
@@ -2643,10 +2644,7 @@ def resolve_data_set_names(dataset, disposition):
     """
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
-            if disposition and disposition == "new":
-                return dataset
-            else:
-                raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
+            return datasets.create(dataset)
         else:
             data = data_set.MVSDataSet(
                 name=dataset
@@ -2930,12 +2928,6 @@ def get_data_set_output(dd_statement):
     """
     contents = ""
     if dd_statement.definition.return_content.type == "text":
-        if data_set.DataSet.is_gds_positive_relative_name(dd_statement.definition.name):
-            src = dd_statement.definition.name
-            data = data_set.MVSDataSet(
-                name=src.replace('(+1)', '(0)')
-            )
-            dd_statement.definition.name = data.name
         contents = get_data_set_content(
             name=dd_statement.definition.name,
             binary=False,

@@ -3240,7 +3240,7 @@ def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
 
         copy_res = hosts.all.zos_copy(src=src_dir, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{dest + "(FILE2)"}'\" > /dev/null 2>/dev/null",
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -5280,11 +5280,8 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
         python_path = hosts["options"]["ansible_python_path"]
 
         # This is an adhoc command, because there was no
-        cmd = "".join(f"ansible all -i {node}, -u {user} -m ibm.ibm_zos_core.zos_copy -a "
-                      f"\"src={options["src"]} dest={options["dest"]} "
-                      f"is_remote={options["is_remote"]} encoding={{enc}} \" -e "
-                      f"'{{\"enc\":{{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}}}' -e \""
-                      f"ansible_python_interpreter={python_path}\" {options["verbosity"]}")
+        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + options["dest"] + " is_remote=" + str(
+            options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
 
         with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout as process:
             output = process.read().decode()

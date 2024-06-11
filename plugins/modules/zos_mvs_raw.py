@@ -88,6 +88,8 @@ options:
           data_set_name:
             description:
               - The data set name.
+              - A data set name can be a GDS relative name.
+              - When using GDS relative name and it is a positive generation, disposition new must be used.
             type: str
             required: false
           type:
@@ -705,6 +707,8 @@ options:
                   data_set_name:
                     description:
                       - The data set name.
+                      - A data set name can be a GDS relative name.
+                      - When using GDS relative name and it is a positive generation, disposition new must be used.
                     type: str
                     required: false
                   type:
@@ -1582,6 +1586,37 @@ EXAMPLES = r"""
                       RECORDSIZE(4086 32600) -
                       VOLUMES(222222) -
                       UNIQUE)
+
+- name: List data sets matching pattern in catalog,
+    save output to a new generation of gdgs.
+  zos_mvs_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: TEST.CREATION(+1)
+          disposition: new
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: List data sets matching pattern in catalog,
+    save output to a gds already created.
+  zos_mvs_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: TEST.CREATION(-2)
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -1602,7 +1637,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw impor
     RawInputDefinition,
     RawOutputDefinition,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -2545,6 +2580,9 @@ def get_dd_name_and_key(dd):
     key = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
+        data_set_name = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
+                                               dd.get("dd_data_set").get("disposition"))
+        dd.get("dd_data_set")["data_set_name"] = data_set_name
         key = "dd_data_set"
     elif dd.get("dd_unix"):
         dd_name = dd.get("dd_unix").get("dd_name")
@@ -2587,6 +2625,42 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     elif dd.get(key):
         dd.get(key)["tmphlq"] = tmphlq
     return dd
+
+
+def resolve_data_set_names(dataset, disposition):
+    """Resolve cases for data set names as relative gds or positive
+      that could be accepted if disposition is new.
+      Parameters
+      ----------
+      dataset : str
+          Data set name to determine if is a GDS relative name or regular name.
+      disposition : str
+          Disposition of data set for it creation.
+      Returns
+      -------
+      str
+          The absolute name of dataset or relative positive if disposition is new.
+    """
+    if data_set.DataSet.is_gds_relative_name(dataset):
+        if data_set.DataSet.is_gds_positive_relative_name(dataset):
+            if disposition and disposition == "new":
+                return dataset
+            else:
+                raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
+        else:
+            data = data_set.MVSDataSet(
+                name=dataset
+            )
+            src = data.name
+            if data.is_gds_active:
+                if disposition and disposition == "new":
+                    raise ("GDS {0} already created, incorrect parameters for disposition and data_set_name".format(src))
+                else:
+                    return src
+            else:
+                raise ("{0} does not exist".format(src))
+    else:
+        return dataset
 
 
 def build_data_definition(dd):

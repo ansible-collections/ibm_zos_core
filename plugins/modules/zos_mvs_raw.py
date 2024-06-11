@@ -2582,7 +2582,8 @@ def get_dd_name_and_key(dd):
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
         data_set_name = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
-                                               dd.get("dd_data_set").get("disposition"))
+                                               dd.get("dd_data_set").get("disposition"),
+                                               dd.get("dd_data_set").get("type"))
         dd.get("dd_data_set")["data_set_name"] = data_set_name
         key = "dd_data_set"
     elif dd.get("dd_unix"):
@@ -2628,7 +2629,7 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     return dd
 
 
-def resolve_data_set_names(dataset, disposition):
+def resolve_data_set_names(dataset, disposition, type):
     """Resolve cases for data set names as relative gds or positive
       that could be accepted if disposition is new.
       Parameters
@@ -2637,6 +2638,8 @@ def resolve_data_set_names(dataset, disposition):
           Data set name to determine if is a GDS relative name or regular name.
       disposition : str
           Disposition of data set for it creation.
+      type : str
+          Type of dataset
       Returns
       -------
       str
@@ -2644,7 +2647,10 @@ def resolve_data_set_names(dataset, disposition):
     """
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
-            return datasets.create(dataset)
+            if type:
+                return str(datasets.create(dataset, type).name)
+            else:
+                return str(datasets.create(dataset, "seq").name)
         else:
             data = data_set.MVSDataSet(
                 name=dataset

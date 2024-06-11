@@ -1125,6 +1125,7 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
             assert result.get("module_stderr") is None
 
         target_ds_list = [f"{data_set_name}.G0001V00", f"{data_set_name}.G0002V00"]
+        ds_to_write = target_ds_list
         if dstype in ["pds", "pdse"]:
             target_member_list = []
             for ds in target_ds_list:
@@ -1182,6 +1183,5 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
                 assert f"{data_set_name}.G0001V00" in c_result.get("stdout")
                 assert f"{data_set_name}.G0002V00" in c_result.get("stdout")
     finally:
-        None
-        # hosts.all.shell(cmd=f"drm {HLQ}.*")
+        hosts.all.shell(cmd=f"drm {HLQ}.*")
 

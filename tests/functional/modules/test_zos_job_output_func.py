@@ -95,14 +95,13 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
 
         jobs = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         for job in jobs.contacted.values():
-            print(job)
             assert job.get("jobs") is not None
 
         for job in jobs.contacted.values():
@@ -124,10 +123,10 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
         result = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"

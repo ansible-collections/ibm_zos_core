@@ -2587,8 +2587,8 @@ def get_dd_name_and_key(dd):
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
         data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
-                                               dd.get("dd_data_set").get("disposition"),
-                                               dd.get("dd_data_set").get("type"))
+                                                            dd.get("dd_data_set").get("disposition"),
+                                                            dd.get("dd_data_set").get("type"))
         dd.get("dd_data_set")["data_set_name"] = data_set_name
         dd.get("dd_data_set")["disposition"] = disposition
         key = "dd_data_set"

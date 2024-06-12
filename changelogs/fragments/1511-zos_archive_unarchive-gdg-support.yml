@@ -1,0 +1,7 @@
+minor_changes:
+  - zos_archive - Added support for GDG and GDS relative name notation to archive data sets.
+    Added support for data set names with special characters like $, /#, /- and @.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1511).
+  - zos_unarchive - Added support for data set names with special characters
+    like $, /#, /- and @.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1511).

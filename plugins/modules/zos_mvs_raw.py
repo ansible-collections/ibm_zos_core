@@ -2654,13 +2654,13 @@ def resolve_data_set_names(dataset, disposition, type):
           The disposition base on the system
     """
     if disposition:
-        disposition = disposition
+        disp = disposition
     else:
-        disposition = "shr"
+        disp = "shr"
 
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
-            if disposition == "new":
+            if disp == "new":
                 if type:
                     return str(datasets.create(dataset, type).name), "shr"
                 else:
@@ -2673,15 +2673,14 @@ def resolve_data_set_names(dataset, disposition, type):
             )
             src = data.name
             if data.is_gds_active:
-                if disposition and disposition == "new":
+                if disposition and disp == "new":
                     raise ("GDS {0} already created, incorrect parameters for disposition and data_set_name".format(src))
                 else:
                     return src, disposition
             else:
                 raise ("{0} does not exist".format(src))
     else:
-        return dataset, disposition
-        return dataset
+        return dataset, disp
 
 
 def build_data_definition(dd):

@@ -1,0 +1,4 @@
+bugfix:
+  - zos_mvs_raw - DD_output first character from each line was missing. Change now includes the first character
+    of each line.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1543).

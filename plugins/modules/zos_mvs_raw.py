@@ -89,6 +89,7 @@ options:
             description:
               - The data set name.
               - A data set name can be a GDS relative name.
+              - When using GDS relative name and it is a positive generation, disposition new must be used.
             type: str
             required: false
           type:
@@ -707,6 +708,7 @@ options:
                     description:
                       - The data set name.
                       - A data set name can be a GDS relative name.
+                      - When using GDS relative name and it is a positive generation, disposition new must be used.
                     type: str
                     required: false
                   type:
@@ -2583,10 +2585,11 @@ def get_dd_name_and_key(dd):
     key = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
-        data_set_name = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
+        data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
                                                dd.get("dd_data_set").get("disposition"),
                                                dd.get("dd_data_set").get("type"))
         dd.get("dd_data_set")["data_set_name"] = data_set_name
+        dd.get("dd_data_set")["disposition"] = disposition
         key = "dd_data_set"
     elif dd.get("dd_unix"):
         dd_name = dd.get("dd_unix").get("dd_name")
@@ -2646,13 +2649,23 @@ def resolve_data_set_names(dataset, disposition, type):
       -------
       str
           The absolute name of dataset or relative positive if disposition is new.
+      str
+          The disposition base on the system
     """
+    if disposition:
+        disposition = disposition
+    else:
+        disposition = "shr"
+
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
-            if type:
-                return str(datasets.create(dataset, type).name)
+            if disposition == "new":
+                if type:
+                    return str(datasets.create(dataset, type).name), disposition
+                else:
+                    return str(datasets.create(dataset, "seq").name), disposition
             else:
-                return str(datasets.create(dataset, "seq").name)
+                raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:
             data = data_set.MVSDataSet(
                 name=dataset
@@ -2662,10 +2675,11 @@ def resolve_data_set_names(dataset, disposition, type):
                 if disposition and disposition == "new":
                     raise ("GDS {0} already created, incorrect parameters for disposition and data_set_name".format(src))
                 else:
-                    return src
+                    return src, disposition
             else:
                 raise ("{0} does not exist".format(src))
     else:
+        return dataset, disposition
         return dataset
 
 

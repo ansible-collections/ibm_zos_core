@@ -814,6 +814,7 @@ def test_data_set_name_gdgs(ansible_zos_module):
                     dd_data_set=dict(
                         dd_name=SYSPRINT_DD,
                         data_set_name=default_data_set + "(+1)",
+                        disposition="new",
                         return_content=dict(type="text"),
                     ),
                 ),

@@ -1596,6 +1596,7 @@ EXAMPLES = r"""
       - dd_data_set:
           dd_name: sysprint
           data_set_name: TEST.CREATION(+1)
+          disposition: new
           return_content:
             type: text
       - dd_input:

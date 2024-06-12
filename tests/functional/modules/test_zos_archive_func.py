@@ -425,7 +425,7 @@ def test_mvs_archive_single_dataset(
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
-                    name=f"{src_data_set}({member})",
+                    name="{0}({1})".format(src_data_set, member),
                     type="member",
                     state="present"
                 )
@@ -439,11 +439,11 @@ def test_mvs_archive_single_dataset(
             if member == "":
                 ds_to_write = f"{src_data_set}"
             else:
-                ds_to_write = f"{src_data_set}({member})"
+                ds_to_write = "{0}({1})".format(src_data_set, member)
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "name":format
+            "name":ds_format
         }
         if ds_format == "terse":
             format_dict["format_options"] = {
@@ -523,7 +523,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
-                    name=f"{src_data_set}({member})",
+                    name="{0}({1})".format(src_data_set, member),
                     type="member",
                     state="present"
                 )
@@ -537,11 +537,11 @@ def test_mvs_archive_single_dataset_use_adrdssu(
             if member == "":
                 ds_to_write = f"{src_data_set}"
             else:
-                ds_to_write = f"{src_data_set}({member})"
+                ds_to_write = "{0}({1})".format(src_data_set, member)
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "name":format
+            "name":ds_format
         }
         format_dict["format_options"] = {
             "use_adrdssu":True
@@ -609,7 +609,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
-                    name=f"{src_data_set}({member})",
+                    name="{0}({1})".format(src_data_set, member),
                     type="member",
                     state="present"
                 )
@@ -619,11 +619,11 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
             if member == "":
                 ds_to_write = f"{src_data_set}"
             else:
-                ds_to_write = f"{src_data_set}({member})"
+                ds_to_write = "{0}({1})".format(src_data_set, member)
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "name":format
+            "name":ds_format
         }
         if ds_format == "terse":
             format_dict["format_options"] = {
@@ -693,10 +693,10 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, ds_format, data_set)
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
-            "name":format,
+            "name":ds_format,
             "format_options":{}
         }
         if ds_format == "terse":
@@ -765,10 +765,10 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, ds_fo
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
-            "name":format,
+            "name":ds_format,
             "format_options":{}
         }
         if ds_format == "terse":
@@ -842,10 +842,10 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, ds_format
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
-            "name":format,
+            "name":ds_format,
             "format_options":{}
         }
         if ds_format == "terse":
@@ -916,7 +916,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, ds_form
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         # Remove ds to make sure is missing
         missing_ds = src_data_set+"1"
@@ -924,7 +924,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, ds_form
         path_list = [ds.get("name") for ds in target_ds_list]
 
         format_dict = {
-            "name":format,
+            "name":ds_format,
             "format_options":{}
         }
         if ds_format == "terse":
@@ -997,7 +997,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
-                    name=f"{src_data_set}({member})",
+                    name="{0}({1})".format(src_data_set, member),
                     type="member",
                     state="present"
                 )
@@ -1007,11 +1007,11 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
             if member == "":
                 ds_to_write = f"{src_data_set}"
             else:
-                ds_to_write = f"{src_data_set}({member})"
+                ds_to_write = "{0}({1})".format(src_data_set, member)
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
-            "name":format
+            "name":ds_format
         }
         if ds_format == "terse":
             format_dict["format_options"] = {

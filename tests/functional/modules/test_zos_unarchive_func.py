@@ -657,7 +657,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, ds_form
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
             "name":ds_format,
@@ -746,7 +746,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
             "name":ds_format,
@@ -845,7 +845,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
             "name":ds_format,
@@ -936,7 +936,7 @@ def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, ds_format, dat
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
             "name":ds_format,
@@ -1037,7 +1037,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds.get("name")}\"")
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
 
         format_dict = {
             "name":ds_format,

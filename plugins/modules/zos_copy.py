@@ -486,10 +486,10 @@ notes:
       described as the remote user, configured either for the playbook or
       playbook tasks, who can also obtain escalated privileges to execute as
       root or another user.
-    - To use this module, you must have READ authority to the RACF FACILITY
-      resource class profile MVS.MCSOPER.ZOAU. If your system uses a different
-      security product, consult that product's documentation to configure the
-      required security classes.
+    - To use this module, you must define the RACF FACILITY class profile
+      and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If
+      your system uses a different security product, consult that product's
+      documentation to configure the required security classes.
 seealso:
 - module: zos_fetch
 - module: zos_data_set

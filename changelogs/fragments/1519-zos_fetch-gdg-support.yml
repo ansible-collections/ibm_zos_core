@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_fetch - add support for fetching generation data groups and
+    generation data sets.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1519)

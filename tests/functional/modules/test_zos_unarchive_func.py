@@ -7,7 +7,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023 - 2024
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -299,7 +299,6 @@ def test_uss_single_unarchive_with_mode(ansible_zos_module, ds_format):
                     assert stat_result.get("stat").get("mode") == dest_mode
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
-
 
 @pytest.mark.uss
 def test_uss_unarchive_copy_to_remote(ansible_zos_module):
@@ -1079,7 +1078,6 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(
     finally:
         hosts.all.shell(cmd=f""" drm "{dataset}*" """)
         hosts.all.zos_data_set(name=mvs_dest_archive, state="absent")
-
 
 @pytest.mark.ds
 @pytest.mark.parametrize(

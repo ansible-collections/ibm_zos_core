@@ -1,0 +1,4 @@
+trivial:
+  - ac - Update ac tool with ansible-lint 6.22, update mount tables, add
+    support so any venv can be started. 
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1484).

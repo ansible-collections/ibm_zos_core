@@ -3007,9 +3007,24 @@ def run_module(module, arg_def):
     # that we used to pass from the action plugin.
     is_src_dir = os.path.isdir(src)
     is_uss = "/" in dest
+    is_mvs_uss = is_data_set(src)
     is_mvs_dest = is_data_set(dest)
     is_pds = is_src_dir and is_mvs_dest
     src_member = is_member(src)
+    raw_src = src
+    raw_dest = dest
+
+    # Implementing the new MVSDataSet class by masking the values of
+    # src/raw_src and dest/raw_dest.
+    if is_mvs_uss:
+        src_data_set_object = data_set.MVSDataSet(src)
+        src = src_data_set_object.name
+        raw_src = src_data_set_object.raw_name
+
+    if is_mvs_dest:
+        dest_data_set_object = data_set.MVSDataSet(dest)
+        dest = dest_data_set_object.name
+        raw_dest = dest_data_set_object.raw_name
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -3039,9 +3054,9 @@ def run_module(module, arg_def):
             src = os.path.realpath(src)
 
         if not os.path.exists(src):
-            module.fail_json(msg="Source {0} does not exist".format(src))
+            module.fail_json(msg="Source {0} does not exist".format(raw_src))
         if not os.access(src, os.R_OK):
-            module.fail_json(msg="Source {0} is not readable".format(src))
+            module.fail_json(msg="Source {0} is not readable".format(raw_src))
         if mode == "preserve":
             mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
 
@@ -3134,7 +3149,7 @@ def run_module(module, arg_def):
                 dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
-                module.fail_json(msg="Destination {0} is not writable".format(dest))
+                module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
@@ -3211,7 +3226,10 @@ def run_module(module, arg_def):
             is_dest_lock = data_set_locked(dest_name)
             if is_dest_lock:
                 module.fail_json(
-                    msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
+                    msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(
+                        data_set.extract_dsname(raw_dest)
+                    )
+                )
 
     # ********************************************************************
     # Alias support is not avaiable to and from USS for text-based data sets.
@@ -3296,7 +3314,7 @@ def run_module(module, arg_def):
         volume
     ):
         module.fail_json(
-            msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest),
+            msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(raw_dest),
             changed=False,
             dest=dest
         )

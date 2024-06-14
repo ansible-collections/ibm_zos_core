@@ -78,6 +78,20 @@ releases:
       name: zos_tso_command
       namespace: ''
     release_date: '2022-06-07'
+  1.10.0:
+    changes:
+      release_summary: 'Release Date: ''2024-06-11''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - v1.10.0_summary.yml
+    release_date: '2024-06-13'
   1.10.0-beta.1:
     changes:
       breaking_changes:

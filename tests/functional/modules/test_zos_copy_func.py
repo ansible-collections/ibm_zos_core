@@ -4698,3 +4698,58 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
     finally:
         hosts.all.file(path=options["dest"], state="absent")
 
+
+@pytest.mark.parametrize("generation", ["0", "+1"])
+def test_copy_seq_gds_inexistent_src(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+
+        copy_results = hosts.all.zos_copy(
+            src=f"{src_data_set}({generation})",
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is not None
+            assert cp_res.get("changed") is False
+            assert cp_res.get("failed") is True
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+
+def test_copy_seq_gds_to_data_set(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=f"{src_data_set}(0)",
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}" """)
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_data_set
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"drm {dest_data_set}")

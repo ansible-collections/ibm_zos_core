@@ -3007,8 +3007,10 @@ def run_module(module, arg_def):
     # that we used to pass from the action plugin.
     is_src_dir = os.path.isdir(src)
     is_uss = "/" in dest
-    is_mvs_uss = is_data_set(src)
-    is_mvs_dest = is_data_set(dest)
+    is_mvs_src = is_data_set(data_set.extract_dsname(src))
+    is_src_gds = data_set.DataSet.is_gds_relative_name(src)
+    is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
+    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
     is_pds = is_src_dir and is_mvs_dest
     src_member = is_member(src)
     raw_src = src
@@ -3016,7 +3018,7 @@ def run_module(module, arg_def):
 
     # Implementing the new MVSDataSet class by masking the values of
     # src/raw_src and dest/raw_dest.
-    if is_mvs_uss:
+    if is_mvs_src:
         src_data_set_object = data_set.MVSDataSet(src)
         src = src_data_set_object.name
         raw_src = src_data_set_object.raw_name
@@ -3109,7 +3111,8 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, is_binary=is_binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            if data_set.DataSet.data_set_exists(src_name):
+            if (is_src_gds and data_set.DataSet.data_set_exists(src)) or (
+                not is_src_gds and data_set.DataSet.data_set_exists(src_name)):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)

@@ -1157,10 +1157,12 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.file(path="/tmp/disp_shr", state='directory')
-        hosts.all.shell(cmd=f"echo \"{c_pgm}\" > /tmp/disp_shr/pdse-lock.c")
-        hosts.all.shell(cmd="echo \"{0}\" > /tmp/disp_shr/call_c_pgm.jcl".format(call_c_jcl.format(
-            default_data_set_name,member_1))
+        results = hosts.all.file(path="/tmp/disp_shr", state='directory')
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(default_data_set_name, member_1),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
         )
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")

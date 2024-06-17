@@ -30,9 +30,9 @@ c_pgm="""#include <stdio.h>
 int main(int argc, char** argv)
 {
     char dsname[ strlen(argv[1]) + 4];
-    sprintf(dsname, \\\"//'%s'\\\", argv[1]);
+    sprintf(dsname, \"//'%s'\", argv[1]);
     FILE* member;
-    member = fopen(dsname, \\\"rb,type=record\\\");
+    member = fopen(dsname, \"rb,type=record\");
     sleep(300);
     fclose(member);
     return 0;

@@ -410,6 +410,7 @@ def main():
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
+                verbose=True,
             )
         else:
             restore(
@@ -427,6 +428,7 @@ def main():
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
+                verbose=True,
             )
         result["changed"] = True
 
@@ -523,6 +525,7 @@ def backup(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
+    verbose,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -554,10 +557,12 @@ def backup(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+    verbose : bool
+        Specifies to include the full output
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
-    datasets.dzip(**zoau_args)
+    rc, stdout, stderr = datasets.dzip(**zoau_args)
 
 
 def restore(
@@ -575,6 +580,7 @@ def restore(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
+    verbose,
 ):
     """Restore data sets or a volume from the backup.
 
@@ -612,6 +618,8 @@ def restore(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
+    verbose : bool
+        Specifies to include the full output
 
     Raises
     ------
@@ -622,7 +630,7 @@ def restore(
     zoau_args = to_dunzip_args(**args)
     output = ""
     try:
-        rc = datasets.dunzip(**zoau_args)
+        rc, stout, stderr = datasets.dunzip(**zoau_args)
     except zoau_exceptions.ZOAUException as dunzip_exception:
         output = dunzip_exception.response.stdout_response
         output = output + dunzip_exception.response.stderr_response
@@ -951,6 +959,9 @@ def to_dzip_args(**kwargs):
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
+    if kwargs.get("verbose"):
+        zoau_args["verbose"] = True
+
     return zoau_args
 
 
@@ -1010,6 +1021,9 @@ def to_dunzip_args(**kwargs):
 
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+
+    if kwargs.get("verbose"):
+        zoau_args["verbose"] = True
 
     return zoau_args
 

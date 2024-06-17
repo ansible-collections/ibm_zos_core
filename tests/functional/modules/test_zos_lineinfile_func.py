@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 {
     char dsname[ strlen(argv[1]) + 4];
     sprintf(dsname, \\\"//'%s'\\\", argv[1]);
-    file* member;
+    FILE* member;
     member = fopen(dsname, \\\"rb,type=record\\\");
     sleep(300);
     fclose(member);
@@ -1128,7 +1128,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         "regexp":"ZOAU_ROOT=",
         "line":"ZOAU_ROOT=/mvsutil-develop_dsed",
         "state":"present",
-        "force":"False"
+        "force":False
     }
     member_1, member_2 = "MEM1", "MEM2"
     temp_file = f"/tmp/{member_2}"

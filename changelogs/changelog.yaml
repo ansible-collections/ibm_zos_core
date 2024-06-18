@@ -91,7 +91,7 @@ releases:
         the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
     fragments:
     - v1.10.0_summary.yml
-    release_date: '2024-06-13'
+    release_date: '2024-06-11'
   1.10.0-beta.1:
     changes:
       breaking_changes:

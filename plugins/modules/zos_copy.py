@@ -2645,6 +2645,8 @@ def allocate_destination_data_set(
     is_binary,
     executable,
     asa_text,
+    is_gds,
+    is_active_gds,
     dest_data_set=None,
     volume=None
 ):
@@ -2672,6 +2674,10 @@ def allocate_destination_data_set(
         Whether the data to copy is an executable dataset or file.
     asa_text : bool
         Whether the data to copy has ASA control characters.
+    is_gds : bool
+        Whether the destination is a generation data set.
+    is_gds_active : bool
+        Whether the destination GDS is already allocated.
     dest_data_set : dict, optional
         Parameters containing a full definition
         of the new data set; they will take precedence over any other allocation logic.
@@ -2713,7 +2719,11 @@ def allocate_destination_data_set(
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            # Only applying the GDS special case when we don't have an absolute name.
+            if is_gds and not is_active_gds:
+                dest = data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            else:
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
         else:
             temp_dump = None
             try:
@@ -2737,7 +2747,11 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
+            # Only applying the GDS special case when we don't have an absolute name.
+            if is_gds and not is_active_gds:
+                dest = data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            else:
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
@@ -2819,6 +2833,7 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+
     if dest_ds_type not in data_set.DataSet.MVS_VSAM:
         dest_params = get_attributes_of_any_dataset_created(
             dest,
@@ -2833,7 +2848,8 @@ def allocate_destination_data_set(
         record_format = dest_attributes.record_format
         dest_params["type"] = dest_ds_type
         dest_params["record_format"] = record_format
-    return True, dest_params
+
+    return True, dest_params, dest
 
 
 def normalize_line_endings(src, encoding=None):
@@ -3009,8 +3025,10 @@ def run_module(module, arg_def):
     is_uss = "/" in dest
     is_mvs_src = is_data_set(data_set.extract_dsname(src))
     is_src_gds = data_set.DataSet.is_gds_relative_name(src)
+    is_src_gds_active = False
     is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
     is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
+    is_dest_gds_active = False
     is_pds = is_src_dir and is_mvs_dest
     src_member = is_member(src)
     raw_src = src
@@ -3022,11 +3040,13 @@ def run_module(module, arg_def):
         src_data_set_object = data_set.MVSDataSet(src)
         src = src_data_set_object.name
         raw_src = src_data_set_object.raw_name
+        is_src_gds_active = src_data_set_object.is_gds_active
 
     if is_mvs_dest:
         dest_data_set_object = data_set.MVSDataSet(dest)
         dest = dest_data_set_object.name
         raw_dest = dest_data_set_object.raw_name
+        is_dest_gds_active = dest_data_set_object.is_gds_active
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -3157,14 +3177,21 @@ def run_module(module, arg_def):
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
 
+            # When dealing with a new generation, we'll override its type to None
+            # so it will be the same type as the source (or whatever dest_data_set has)
+            # a couple lines down.
+            if is_dest_gds and not is_dest_gds_active:
+                dest_exists = False
+                dest_ds_type = None
+
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type").upper()
             elif executable:
-                """ When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
-                so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
-                Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
-                and LIBRARY is not in MVS_PARTITIONED frozen set."""
+                # When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
+                # so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
+                # Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
+                # and LIBRARY is not in MVS_PARTITIONED frozen set.
                 dest_ds_type = "PDSE"
 
             if dest_data_set and (dest_data_set.get('record_format', '') == 'fba' or dest_data_set.get('record_format', '') == 'vba'):
@@ -3331,15 +3358,18 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
+            res_args["changed"], res_args["dest_data_set_attrs"], resolved_dest = allocate_destination_data_set(
                 src,
-                dest_name, src_ds_type,
+                dest_name if not is_dest_gds else dest,
+                src_ds_type,
                 dest_ds_type,
                 dest_exists,
                 force,
                 is_binary,
                 executable,
                 asa_text,
+                is_dest_gds,
+                is_dest_gds_active,
                 dest_data_set=dest_data_set,
                 volume=volume
             )
@@ -3353,6 +3383,10 @@ def run_module(module, arg_def):
 
     if converted_src:
         src = original_src
+
+    # Overriding the dest name with the current generation just allocated.
+    if not dest_exists and is_dest_gds:
+        dest = dest_name = resolved_dest
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,

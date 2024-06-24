@@ -133,9 +133,6 @@ COBOL_SRC = """
            STOP RUN.\n
 """
 
-
-
-
 # format params for LINK_JCL:
 # {0} - cobol src pds dsn
 # {1} - cobol src pds member
@@ -4827,6 +4824,188 @@ def test_copy_data_set_to_previous_gds(ansible_zos_module):
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_uss_file_to_previous_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_file = "/etc/profile"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "A record." "{dest_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_file,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_pds_member_to_previous_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        member_src = f"{src_data_set}(MEMBER)"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tPDS {src_data_set}")
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{member_src}" """)
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "A record." "{dest_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=member_src,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_pds_to_previous_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        member_src = f"{src_data_set}(MEMBER)"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tPDSE {src_data_set}")
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{member_src}" """)
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tPDS "{dest_data_set}(+1)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""mls "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_data_set_to_previous_gds_no_force(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}" """)
+        hosts.all.shell(cmd=f"""decho "A record." "{dest_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=False
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is not None
+            assert cp_res.get("changed") is False
+            assert cp_res.get("failed") is True
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_data_set_to_previous_non_existent_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            # Copying to a previous generation that doesn't exist.
+            dest=f"{dest_data_set}(-1)",
+            remote_src=True,
+            force=True
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is not None
+            assert cp_res.get("changed") is False
+            assert cp_res.get("failed") is True
     finally:
         hosts.all.shell(cmd=f"drm {src_data_set}")
         hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)

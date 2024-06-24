@@ -2703,7 +2703,7 @@ def allocate_destination_data_set(
     # not display the content.
     dest_params = {}
     if dest_exists and is_dest_empty:
-        return False, dest_params
+        return False, dest_params, dest
 
     # Giving more priority to the parameters given by the user.
     # Cover case the user set executable to true to create dataset valid.

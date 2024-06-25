@@ -151,7 +151,8 @@ class ActionModule(ActionBase):
                     remote_src=True,
                 )
             )
-            copy_task = copy.deepcopy(self._task)
+            # copy_task = copy.copy(self._task)
+            copy_task = self._task.copy()
             copy_task.args = copy_module_args
             zos_copy_action_module = ZosCopyActionModule(task=copy_task,
                                                          connection=self._connection,

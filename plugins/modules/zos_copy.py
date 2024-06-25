@@ -2300,7 +2300,9 @@ def is_compatible(
     executable,
     asa_text,
     src_has_asa_chars,
-    dest_has_asa_chars
+    dest_has_asa_chars,
+    is_src_gds,
+    is_dest_gds
 ):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
@@ -2327,6 +2329,10 @@ def is_compatible(
         Whether the src contains ASA control characters.
     dest_has_asa_chars : bool
         Whether the dest contains ASA control characters.
+    is_src_gds : bool
+        Whether the src is a generation data set.
+    is_dest_gds : bool
+        Whether the dest is a generation data set.
 
     Returns
     -------
@@ -2355,6 +2361,15 @@ def is_compatible(
     # ********************************************************************
     if asa_text:
         return src_has_asa_chars or dest_has_asa_chars
+
+    # ********************************************************************
+    # When either the src or dest are GDSs, the other cannot be a VSAM
+    # data set, since GDGs don't support VSAMs.
+    # ********************************************************************
+    if is_src_gds and dest_type in data_set.DataSet.MVS_VSAM:
+        return False
+    if is_dest_gds and src_type in data_set.DataSet.MVS_VSAM:
+        return False
 
     # ********************************************************************
     # If source is a sequential data set, then destination must be
@@ -3243,7 +3258,9 @@ def run_module(module, arg_def):
         executable,
         asa_text,
         src_has_asa_chars,
-        dest_has_asa_chars
+        dest_has_asa_chars,
+        is_src_gds,
+        is_dest_gds
     ):
         error_msg = "Incompatible target type '{0}' for source '{1}'".format(
             dest_ds_type, src_ds_type

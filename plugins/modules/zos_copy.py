@@ -2721,7 +2721,7 @@ def allocate_destination_data_set(
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                dest = data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
             else:
                 data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
         else:
@@ -2749,7 +2749,7 @@ def allocate_destination_data_set(
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                dest = data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
             else:
                 data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
@@ -2833,6 +2833,10 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+
+    if is_gds and not is_active_gds:
+        gdg_name = data_set.extract_dsname(dest)
+        dest = data_set.DataSet.resolve_gds_absolute_name(f"{gdg_name}(0)")
 
     if dest_ds_type not in data_set.DataSet.MVS_VSAM:
         dest_params = get_attributes_of_any_dataset_created(

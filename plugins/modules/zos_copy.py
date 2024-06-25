@@ -3029,7 +3029,6 @@ def run_module(module, arg_def):
     is_uss = "/" in dest
     is_mvs_src = is_data_set(data_set.extract_dsname(src))
     is_src_gds = data_set.DataSet.is_gds_relative_name(src)
-    is_src_gds_active = False
     is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
     is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
     is_dest_gds_active = False
@@ -3044,7 +3043,6 @@ def run_module(module, arg_def):
         src_data_set_object = data_set.MVSDataSet(src)
         src = src_data_set_object.name
         raw_src = src_data_set_object.raw_name
-        is_src_gds_active = src_data_set_object.is_gds_active
 
     if is_mvs_dest:
         dest_data_set_object = data_set.MVSDataSet(dest)
@@ -3220,6 +3218,14 @@ def run_module(module, arg_def):
 
     except Exception as err:
         module.fail_json(msg=str(err))
+
+    # Checking that we're dealing with a positive generation when dest does not
+    # exist.
+    if is_dest_gds and not is_dest_gds_active:
+        # extract_member_name also works to extract the generation.
+        dest_generation = int(data_set.extract_member_name(dest))
+        if dest_generation < 1:
+            module.fail_json(msg=f"Cannot copy to {dest}, the generation data set is not allocated.")
 
     # ********************************************************************
     # Some src and dest combinations are incompatible. For example, it is

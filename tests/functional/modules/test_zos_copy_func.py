@@ -5054,7 +5054,8 @@ def test_copy_data_set_to_previous_gds_no_force(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
 
-def test_copy_data_set_to_previous_non_existent_gds(ansible_zos_module):
+@pytest.mark.parametrize("generation", [0, -1])
+def test_copy_data_set_to_previous_non_existent_gds(ansible_zos_module, generation):
     hosts = ansible_zos_module
 
     try:
@@ -5063,20 +5064,22 @@ def test_copy_data_set_to_previous_non_existent_gds(ansible_zos_module):
 
         hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
         hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
-        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+        if generation < 0:
+            hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
 
         hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}" """)
 
         copy_results = hosts.all.zos_copy(
             src=src_data_set,
             # Copying to a previous generation that doesn't exist.
-            dest=f"{dest_data_set}(-1)",
+            dest=f"{dest_data_set}({generation})",
             remote_src=True,
             force=True
         )
 
         for cp_res in copy_results.contacted.values():
             assert cp_res.get("msg") is not None
+            assert "generation data set is not allocated" in cp_res.get("msg")
             assert cp_res.get("changed") is False
             assert cp_res.get("failed") is True
     finally:

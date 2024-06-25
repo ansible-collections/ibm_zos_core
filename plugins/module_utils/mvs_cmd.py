@@ -171,7 +171,7 @@ def idcams(cmd, dds=None, authorized=False):
     tuple(int, str, str)
         A tuple of return code, stdout and stderr.
     """
-    return _run_mvs_command("IDCAMS", cmd.upper(), dds.upper(), authorized)
+    return _run_mvs_command("IDCAMS", cmd.upper(), dds, authorized)
 
 
 def ikjeft01(cmd, dds=None, authorized=False):

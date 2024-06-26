@@ -408,10 +408,6 @@ class DataSet(object):
                 msg=f"Error while trying to allocate {ds_name}."
             )
 
-        gdg_name = extract_dsname(ds_name)
-
-        return DataSet.resolve_gds_absolute_name(f"{gdg_name}(0)")
-
     @staticmethod
     def data_set_cataloged(name, volumes=None):
         """Determine if a data set is in catalog.

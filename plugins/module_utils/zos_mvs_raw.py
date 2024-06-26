@@ -60,6 +60,8 @@ class MVSCmd(object):
             MVSCmd._build_command(pgm, dds, parm),
         )
         rc, out, err = module.run_command(command, errors='backslashreplace')
+        if rc == 0 and verbose:
+            out = err
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod
@@ -90,6 +92,8 @@ class MVSCmd(object):
             MVSCmd._build_command(pgm, dds, parm),
         )
         rc, out, err = module.run_command(command, errors='backslashreplace')
+        if rc == 0 and verbose:
+            out = err
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod

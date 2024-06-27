@@ -5086,3 +5086,36 @@ def test_copy_data_set_to_previous_non_existent_gds(ansible_zos_module, generati
         hosts.all.shell(cmd=f"drm {src_data_set}")
         hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
         hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_gdg_to_uss_dir(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest = "/tmp/zos_copy_gdg"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        hosts.all.file(path=dest, state="directory")
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest,
+            remote_src=True
+        )
+
+        verify_dest = hosts.all.shell(cmd=f"ls {dest}/{src_data_set}")
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+        for v_res in verify_dest.contacted.values():
+            assert v_res.get("rc") == 0
+            assert len(v_res.get("stdout_lines", [])) > 0
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.file(path=dest, state="absent")

@@ -859,10 +859,11 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets, opercmd
+    from zoautil_py import datasets, opercmd, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     opercmd = ZOAUImportError(traceback.format_exc())
+    gdgs = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import exceptions as zoau_exceptions
@@ -1442,7 +1443,7 @@ class USSCopyHandler(CopyHandler):
         """
         changed_files = None
 
-        if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED):
+        if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED) or src_ds_type == "GDG":
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
@@ -1734,7 +1735,7 @@ class USSCopyHandler(CopyHandler):
             # the same name as the member.
             dest = "{0}/{1}".format(dest, member_name or src)
 
-            if src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member:
+            if (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member) or src_ds_type == "GDG":
                 try:
                     os.mkdir(dest)
                 except FileExistsError:
@@ -1766,7 +1767,19 @@ class USSCopyHandler(CopyHandler):
                         stderr=response.stderr_response
                     )
             else:
-                if self.executable:
+                if src_ds_type == "GDG":
+                    result = copy.copy_gdg2uss(
+                        src,
+                        dest,
+                        is_binary=self.is_binary,
+                        asa_text=self.asa_text
+                    )
+
+                    if not result:
+                        raise CopyOperationError(
+                            msg=f"Error while copying GDG {src} to {dest}"
+                        )
+                elif self.executable:
                     try:
                         datasets.copy(src, dest, alias=True, executable=True)
                     except zoau_exceptions.ZOAUException as copy_exception:
@@ -1795,8 +1808,8 @@ class USSCopyHandler(CopyHandler):
                     )
         except CopyOperationError as err:
             raise err
-        except Exception as err:
-            raise CopyOperationError(msg=str(err))
+        # except Exception as err:
+        #     raise CopyOperationError(msg=str(err))
 
 
 class PDSECopyHandler(CopyHandler):
@@ -2372,6 +2385,29 @@ def is_compatible(
         return False
 
     # ********************************************************************
+    # When copying a complete GDG, we'll only allow a copy to another GDG
+    # or to a USS directory.
+    # ********************************************************************
+    if src_type == "GDG":
+        if dest_type == "GDG" or dest_type == "USS":
+            return True
+        else:
+            return False
+
+    # ********************************************************************
+    # And when copying into a GDG (not GDS), we'll only allow the copy of
+    # another GDG. To allow copy from a USS directory would require making
+    # sure the path contains only one sublevel and then deciding if every
+    # subdir will represent a PDS/E as a generation, which for now will be
+    # left as another item for future discussion/development.
+    # ********************************************************************
+    if dest_type == "GDG":
+        if src_type == "GDG":
+            return True
+        else:
+            return False
+
+    # ********************************************************************
     # If source is a sequential data set, then destination must be
     # partitioned data set member, other sequential data sets or USS files.
     # Anything else is incompatible.
@@ -2495,6 +2531,18 @@ def does_destination_allow_copy(
     # existing members inside of it, if needed.
     if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not force:
         return False
+
+    # When the destination is an existing GDG, we'll check that we have enough free generations
+    # to copy the complete source.
+    if dest_exists and dest_type == "GDG":
+        src_view = gdgs.GenerationDataGroupView(src)
+        dest_view = gdgs.GenerationDataGroupView(dest)
+
+        src_allocated_gens = len(src_view.generations())
+        dest_allocated_gens = len(dest_view.generations())
+
+        if src_allocated_gens > (dest_view.limit - dest_allocated_gens):
+            return False
 
     return True
 
@@ -2717,7 +2765,7 @@ def allocate_destination_data_set(
     # Create the dict that will contains the values created by the module if it's empty action module will
     # not display the content.
     dest_params = {}
-    if dest_exists and is_dest_empty:
+    if dest_exists and (is_dest_empty or dest_ds_type == "GDG"):
         return False, dest_params, dest
 
     # Giving more priority to the parameters given by the user.
@@ -2848,6 +2896,21 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+    elif dest_ds_type == "GDG":
+        src_view = gdgs.GenerationDataGroupView(src)
+
+        dest_view = gdgs.create(
+            dest,
+            src_view.limit,
+            empty=src_view.empty,
+            scratch=src_view.scratch,
+            purge=src_view.purge,
+            extended=src_view.extended,
+            fifo=True if src_view.order.upper() == "FIFO" else False
+        )
+
+        if not dest_view:
+            raise CopyOperationError(msg=f"Error while allocation GDG {dest}.")
 
     if is_gds and not is_active_gds:
         gdg_name = data_set.extract_dsname(dest)
@@ -3154,7 +3217,7 @@ def run_module(module, arg_def):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
 
-                if src_ds_type not in data_set.DataSet.MVS_VSAM:
+                if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
                     src_attributes = datasets.list_datasets(src_name)[0]
                     if src_attributes.record_format == 'FBA' or src_attributes.record_format == 'VBA':
                         src_has_asa_chars = True
@@ -3215,7 +3278,7 @@ def run_module(module, arg_def):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
-            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
+            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
                 dest_attributes = datasets.list_datasets(dest_name)[0]
                 if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
                     dest_has_asa_chars = True
@@ -3347,7 +3410,7 @@ def run_module(module, arg_def):
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-            elif src_ds_type in data_set.DataSet.MVS_VSAM:
+            elif src_ds_type in data_set.DataSet.MVS_VSAM or src_ds_type == "GDG":
                 dest_ds_type = src_ds_type
             elif not is_uss:
                 dest_ds_type = "SEQ"

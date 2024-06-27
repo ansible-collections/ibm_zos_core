@@ -483,7 +483,7 @@ def execute_dsed(src, state, encoding, module, line=False, first_match=False, fo
 
     cmd = "dsed {0}{1}{2}{3}".format(force, backrefs, encoding, options)
 
-    rc, stdout, stderr = module.run_command(cmd)
+    rc, stdout, stderr = module.run_command(cmd, errors='backslashreplace')
     cmd = clean_command_output(cmd)
     return rc, cmd, stdout
 

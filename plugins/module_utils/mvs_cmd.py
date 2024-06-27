@@ -301,4 +301,4 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
         for k, v in dd.items():
             mvscmd += " --{0}={1}".format(k, v)
 
-    return module.run_command(mvscmd, data=cmd)
+    return module.run_command(mvscmd, data=cmd, errors='backslashreplace')

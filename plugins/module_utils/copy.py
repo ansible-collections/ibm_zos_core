@@ -114,7 +114,7 @@ def copy_uss2mvs(src, dest, ds_type, is_binary=False):
         cp_uss2mvs = "cp -F rec {0} \"//'{1}'\"".format(quote(src), dest)
     if is_binary:
         cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_uss2mvs)
+    rc, out, err = module.run_command(cp_uss2mvs, errors='backslashreplace')
     if rc:
         raise USSCmdExecError(cp_uss2mvs, rc, out, err)
     return rc, out, err
@@ -156,7 +156,7 @@ def copy_ps2uss(src, dest, is_binary=False):
     cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
     if is_binary:
         cp_ps2uss = cp_ps2uss.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_ps2uss)
+    rc, out, err = module.run_command(cp_ps2uss, errors='backslashreplace')
     if rc:
         raise USSCmdExecError(cp_ps2uss, rc, out, err)
     return rc, out, err
@@ -209,7 +209,7 @@ def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
     elif is_binary:
         cp_pds2uss = cp_pds2uss.replace("rec", "bin", 1)
 
-    rc, out, err = module.run_command(cp_pds2uss)
+    rc, out, err = module.run_command(cp_pds2uss, errors='backslashreplace')
     if rc:
         raise USSCmdExecError(cp_pds2uss, rc, out, err)
 
@@ -244,7 +244,7 @@ def copy_uss2uss_binary(src, dest):
     src = _validate_path(src)
     dest = _validate_path(dest)
     cp_uss2uss = "cp -F bin {0} {1}".format(quote(src), quote(dest))
-    rc, out, err = module.run_command(cp_uss2uss)
+    rc, out, err = module.run_command(cp_uss2uss, errors='backslashreplace')
     if rc:
         raise USSCmdExecError(cp_uss2uss, rc, out, err)
     return rc, out, err
@@ -285,7 +285,7 @@ def copy_mvs2mvs(src, dest, is_binary=False):
     cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
     if is_binary:
         cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_mvs2mvs)
+    rc, out, err = module.run_command(cp_mvs2mvs, errors='backslashreplace')
     if rc:
         raise USSCmdExecError(cp_mvs2mvs, rc, out, err)
     return rc, out, err
@@ -320,7 +320,7 @@ def copy_vsam_ps(src, dest):
     dest = _validate_data_set_name(dest)
     repro_cmd = REPRO.format(src, dest)
     cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
-    rc, out, err = module.run_command(cmd, data=repro_cmd)
+    rc, out, err = module.run_command(cmd, data=repro_cmd, errors='backslashreplace')
     if rc:
         raise USSCmdExecError(cmd, rc, out, err)
     return rc, out, err

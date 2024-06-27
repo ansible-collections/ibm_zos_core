@@ -204,7 +204,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
         if backup_name_provided and os.path.isdir(backup_name):
             backup_name += backup_base
         bk_cmd = "tar -cpf {0}.tar {1}".format(quote(backup_name), quote(abs_path))
-        rc, out, err = module.run_command(bk_cmd)
+        rc, out, err = module.run_command(bk_cmd, errors='backslashreplace')
         if rc:
             raise BackupError(err)
         backup_name += ".tar"
@@ -250,7 +250,7 @@ def _copy_ds(ds, bk_ds):
         ds, bk_ds
     )
     rc, out, err = module.run_command(
-        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=repro_cmd
+        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=repro_cmd, errors='backslashreplace'
     )
     if rc != 0 and rc != 12:
         datasets.delete(bk_ds)
@@ -291,7 +291,7 @@ def _allocate_model(ds, model):
         ds, model
     )
     cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
-    rc, out, err = module.run_command(cmd, data=alloc_cmd)
+    rc, out, err = module.run_command(cmd, data=alloc_cmd, errors='backslashreplace')
     if rc != 0:
         raise BackupError(
             "Unable to allocate data set {0}; stdout: {1}; stderr: {2}".format(

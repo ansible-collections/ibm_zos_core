@@ -583,7 +583,7 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
     else:
         cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
 
-    rc, stdout, stderr = module.run_command(cmd)
+    rc, stdout, stderr = module.run_command(cmd, errors='backslashreplace')
     cmd = clean_command(cmd)
     return rc, cmd
 

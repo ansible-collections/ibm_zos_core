@@ -66,7 +66,7 @@ class Defaults:
         system_charset = locale.getdefaultlocale()[1]
         if system_charset is None:
             module = AnsibleModuleHelper(argument_spec={})
-            rc, out, err = module.run_command("locale -c charmap")
+            rc, out, err = module.run_command("locale -c charmap", errors='backslashreplace')
             if rc != 0 or not out or err:
                 if system.is_zos():
                     system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET
@@ -193,7 +193,7 @@ class EncodeUtils(object):
         space_u = 1024
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(ds)
         cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
-        rc, out, err = self.module.run_command(cmd, data=listcat_cmd)
+        rc, out, err = self.module.run_command(cmd, data=listcat_cmd, errors='backslashreplace')
         if rc:
             raise EncodeError(err)
         if out:
@@ -284,7 +284,7 @@ class EncodeUtils(object):
         """
         code_set = None
         iconv_list_cmd = ["iconv", "-l"]
-        rc, out, err = self.module.run_command(iconv_list_cmd)
+        rc, out, err = self.module.run_command(iconv_list_cmd, errors='backslashreplace')
         if rc:
             raise EncodeError(err)
         if out:
@@ -319,7 +319,7 @@ class EncodeUtils(object):
         iconv_cmd = "printf {0} | iconv -f {1} -t {2}".format(
             quote(src), quote(from_encoding), quote(to_encoding)
         )
-        rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
+        rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True, errors='backslashreplace')
         if rc:
             raise EncodeError(err)
         return out
@@ -364,7 +364,7 @@ class EncodeUtils(object):
             quote(from_code), quote(to_code), quote(src), quote(temp_fi)
         )
         try:
-            rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
+            rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True, errors='backslashreplace')
             if rc:
                 raise EncodeError(err)
             if dest == temp_fi:
@@ -581,7 +581,7 @@ class EncodeUtils(object):
         is_dir = os.path.isdir(file_path)
 
         tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
-        rc, out, err = self.module.run_command(tag_cmd)
+        rc, out, err = self.module.run_command(tag_cmd, errors='backslashreplace')
         if rc != 0:
             raise TaggingError(file_path, tag, rc, out, err)
 
@@ -605,7 +605,7 @@ class EncodeUtils(object):
 
         try:
             tag_cmd = "ls -T {0}".format(file_path)
-            rc, stdout, stderr = self.module.run_command(tag_cmd)
+            rc, stdout, stderr = self.module.run_command(tag_cmd, errors='backslashreplace')
 
             if rc != 0:
                 return None

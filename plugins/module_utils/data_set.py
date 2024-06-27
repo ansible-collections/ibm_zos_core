@@ -360,7 +360,7 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, errors='backslashreplace'
         )
 
         if volumes:
@@ -385,7 +385,7 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}') ALL".format(name)
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, errors='backslashreplace'
         )
         delimiter = 'VOLSER------------'
         arr = stdout.split(delimiter)[1:]  # throw away header
@@ -429,7 +429,7 @@ class DataSet(object):
         """
         module = AnsibleModuleHelper(argument_spec={})
         rc, stdout, stderr = module.run_command(
-            "head \"//'{0}'\"".format(name))
+            "head \"//'{0}'\"".format(name), errors='backslashreplace')
         if rc != 0 or (stderr and "EDC5067I" in stderr):
             return False
         return True
@@ -595,7 +595,7 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENT('{0}') DATA ALL".format(name)
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, errors='backslashreplace'
         )
 
         if rc != 0:
@@ -623,7 +623,7 @@ class DataSet(object):
             return DataSet._pds_empty(name)
         elif ds_type in DataSet.MVS_SEQ:
             module = AnsibleModuleHelper(argument_spec={})
-            rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name))
+            rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name), errors='backslashreplace')
             return rc == 0 and len(stdout.strip()) == 0
         elif ds_type in DataSet.MVS_VSAM:
             return DataSet._vsam_empty(name)
@@ -641,7 +641,7 @@ class DataSet(object):
         """
         module = AnsibleModuleHelper(argument_spec={})
         ls_cmd = "mls {0}".format(name)
-        rc, out, err = module.run_command(ls_cmd)
+        rc, out, err = module.run_command(ls_cmd, errors='backslashreplace')
         # RC 2 for mls means that there aren't any members.
         return rc == 2
 
@@ -664,7 +664,7 @@ class DataSet(object):
         rc, out, err = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(
                 name),
-            data=empty_cmd,
+            data=empty_cmd, errors='backslashreplace'
         )
         if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
             return True
@@ -1083,7 +1083,7 @@ class DataSet(object):
             raise DatasetNotFoundError(name)
         tmp_file = tempfile.NamedTemporaryFile(delete=True)
         rc, stdout, stderr = module.run_command(
-            "cp {0} \"//'{1}'\"".format(tmp_file.name, name)
+            "cp {0} \"//'{1}'\"".format(tmp_file.name, name), errors='backslashreplace'
         )
         if rc != 0:
             raise DatasetMemberCreateError(name, rc)
@@ -1133,7 +1133,7 @@ class DataSet(object):
             name.upper(), volumes)
 
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin", data=iehprogm_input
+            "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin", data=iehprogm_input, errors='backslashreplace'
         )
         if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
             raise DatasetCatalogError(name, volumes, rc)
@@ -1182,7 +1182,7 @@ class DataSet(object):
             )
 
         command_rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command)
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command, errors='backslashreplace')
 
         if command_rc == 0:
             success = True
@@ -1197,7 +1197,7 @@ class DataSet(object):
             )
 
             command_rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command)
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command, errors='backslashreplace')
 
             if command_rc == 0:
                 success = True
@@ -1241,7 +1241,7 @@ class DataSet(object):
             DataSet.write(temp_name, iehprogm_input)
             rc, stdout, stderr = module.run_command(
                 "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
-                    temp_name)
+                    temp_name), errors='backslashreplace'
             )
             if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetUncatalogError(name, rc)
@@ -1264,7 +1264,7 @@ class DataSet(object):
         idcams_input = DataSet._VSAM_UNCATALOG_COMMAND.format(name)
 
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=idcams_input
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=idcams_input, errors='backslashreplace'
         )
 
         if rc != 0:
@@ -1324,7 +1324,7 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name.upper())
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, errors='backslashreplace'
         )
         if re.search(r"^0CLUSTER[ ]+-+[ ]+" + name + r"[ ]*$", stdout, re.MULTILINE):
             return True
@@ -1497,7 +1497,7 @@ class DataSet(object):
         """
         module = AnsibleModuleHelper(argument_spec={})
         rc, stdout, stderr = module.run_command(
-            "zfsadm format -aggregate {0}".format(name)
+            "zfsadm format -aggregate {0}".format(name), errors='backslashreplace'
         )
         if rc != 0:
             raise DatasetFormatError(
@@ -1520,7 +1520,7 @@ class DataSet(object):
         with open(temp.name, "w") as f:
             f.write(contents)
         rc, stdout, stderr = module.run_command(
-            "cp -O u {0} \"//'{1}'\"".format(temp.name, name)
+            "cp -O u {0} \"//'{1}'\"".format(temp.name, name), errors='backslashreplace'
         )
         if rc != 0:
             raise DatasetWriteError(name, rc)
@@ -1645,7 +1645,7 @@ class DataSetUtils(object):
         """
         if self.ds_type() == "PO":
             rc, out, err = self.module.run_command(
-                "head \"//'{0}({1})'\"".format(self.data_set, member)
+                "head \"//'{0}({1})'\"".format(self.data_set, member), errors='backslashreplace'
             )
             if rc == 0 and not re.findall(r"EDC5067I", err):
                 return True

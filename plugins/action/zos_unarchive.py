@@ -102,15 +102,16 @@ class ActionModule(ActionBase):
                     is_binary=True,
                 )
             )
-            copy_task = copy.deepcopy(self._task)
+            copy_task = self._task.copy()
             copy_task.args = copy_module_args
-            zos_copy_action_module = ZosCopyActionModule(task=copy_task,
-                                                         connection=self._connection,
-                                                         play_context=self._play_context,
-                                                         loader=self._loader,
-                                                         templar=self._templar,
-                                                         shared_loader_obj=self._shared_loader_obj)
-            result.update(zos_copy_action_module.run(task_vars=task_vars))
+            copy_action = self._shared_loader_obj.action_loader.get('ibm.ibm_zos_core.zos_copy',
+                                                                        task=copy_task,
+                                                                        connection=self._connection,
+                                                                        play_context=self._play_context,
+                                                                        loader=self._loader,
+                                                                        templar=self._templar,
+                                                                        shared_loader_obj=self._shared_loader_obj)
+            result.update(copy_action.run(task_vars=task_vars))
             display.vvv(u"Copy result {0}".format(result), host=self._play_context.remote_addr)
             if result.get("msg") is None:
                 module_args["src"] = dest

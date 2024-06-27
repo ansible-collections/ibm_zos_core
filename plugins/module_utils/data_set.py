@@ -353,6 +353,11 @@ class DataSet(object):
         Returns:
             bool -- If data is is cataloged.
         """
+
+        # Resolve GDG/GDS names before passing it into listcat
+        if DataSet.is_gds_relative_name(name):
+            name = DataSet.resolve_gds_absolute_name(name)
+
         # We need to unescape because this calls to system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')

@@ -129,3 +129,10 @@ def zos_import_mocker(mocker):
         return newimp
 
     yield (mocker, perform_imports)
+
+
+@pytest.fixture(scope="test")
+def get_config(request):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    path = request.config.getoption("--zinventory")
+    yield path

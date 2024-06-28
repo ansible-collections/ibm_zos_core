@@ -20,10 +20,8 @@ from ansible.utils.display import Display
 from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
-import copy
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
-from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
 
 display = Display()
@@ -151,16 +149,16 @@ class ActionModule(ActionBase):
                     remote_src=True,
                 )
             )
-            # copy_task = copy.copy(self._task)
             copy_task = self._task.copy()
             copy_task.args = copy_module_args
-            copy_action = self._shared_loader_obj.action_loader.get('ibm.ibm_zos_core.zos_copy',
-                                                                        task=copy_task,
-                                                                        connection=self._connection,
-                                                                        play_context=self._play_context,
-                                                                        loader=self._loader,
-                                                                        templar=self._templar,
-                                                                        shared_loader_obj=self._shared_loader_obj)
+            copy_action = self._shared_loader_obj.action_loader.get(
+                'ibm.ibm_zos_core.zos_copy',
+                task=copy_task,
+                connection=self._connection,
+                play_context=self._play_context,
+                loader=self._loader,
+                templar=self._templar,
+                shared_loader_obj=self._shared_loader_obj)
             result.update(copy_action.run(task_vars=task_vars))
             if result.get("msg") is None:
                 module_args["src"] = dest_path

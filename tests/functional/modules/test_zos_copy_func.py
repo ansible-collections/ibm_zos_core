@@ -5119,3 +5119,42 @@ def test_copy_gdg_to_uss_dir(ansible_zos_module):
         hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
         hosts.all.shell(cmd=f"drm {src_data_set}")
         hosts.all.file(path=dest, state="absent")
+
+
+@pytest.mark.parametrize("new_gdg", [True, False])
+def test_copy_gdg_to_gdg(ansible_zos_module, new_gdg):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        if not new_gdg:
+            hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+            hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+        if not new_gdg:
+            hosts.all.shell(cmd=f"""drm "{dest_data_set}(-2)" """)
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")

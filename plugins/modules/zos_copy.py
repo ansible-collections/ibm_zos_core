@@ -1049,6 +1049,41 @@ class CopyHandler(object):
                 cmd=repro_cmd,
             )
 
+    def copy_to_gdg(self, src, dest):
+        """
+        Copy each allocated generation in src to dest.
+
+        Parameters
+        ----------
+        src : str
+            Name of the source GDG.
+        dest : str
+            Name of the destination GDG.
+
+        Returns
+        ------
+        bool
+            True if every copy operation was successful, False otherwise.
+        """
+        src_view = gdgs.GenerationDataGroupView(src)
+        generations = src_view.generations()
+        dest_generation = f"{dest}(+1)"
+
+        copy_args = {
+            "options": ""
+        }
+
+        if self.is_binary or self.asa_text:
+            copy_args["options"] = "-B"
+
+        for gds in generations:
+            rc = datasets.copy(gds.name, dest_generation, **copy_args)
+
+            if rc != 0:
+                return False
+
+        return True
+
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
         """Recursively copy USS directory to another USS directory.
         This function was created to circumvent using shutil.copytree
@@ -1808,8 +1843,8 @@ class USSCopyHandler(CopyHandler):
                     )
         except CopyOperationError as err:
             raise err
-        # except Exception as err:
-        #     raise CopyOperationError(msg=str(err))
+        except Exception as err:
+            raise CopyOperationError(msg=str(err))
 
 
 class PDSECopyHandler(CopyHandler):
@@ -2909,14 +2944,16 @@ def allocate_destination_data_set(
             fifo=True if src_view.order.upper() == "FIFO" else False
         )
 
-        if not dest_view:
-            raise CopyOperationError(msg=f"Error while allocation GDG {dest}.")
+        # Checking the new GDG was allocated.
+        results = gdgs.list_gdg_names(dest)
+        if len(results) == 0:
+            raise CopyOperationError(msg=f"Error while allocating GDG {dest}.")
 
     if is_gds and not is_active_gds:
         gdg_name = data_set.extract_dsname(dest)
         dest = data_set.DataSet.resolve_gds_absolute_name(f"{gdg_name}(0)")
 
-    if dest_ds_type not in data_set.DataSet.MVS_VSAM:
+    if dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
         dest_params = get_attributes_of_any_dataset_created(
             dest,
             src_ds_type,
@@ -3591,6 +3628,13 @@ def run_module(module, arg_def):
             )
             res_args["changed"] = True
             dest = dest.upper()
+
+        # ------------------------------- o -----------------------------------
+        # Copy to a GDG
+        # ---------------------------------------------------------------------
+        elif dest_ds_type == "GDG":
+            copy_handler.copy_to_gdg(src, dest)
+            res_args["changed"] = True
 
         # ------------------------------- o -----------------------------------
         # Copy to VSAM data set

@@ -35,6 +35,7 @@ options:
       - The remote absolute path or data set of the archive to be uncompressed.
       - I(src) can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
+      - MVS data sets supported types are C(SEQ), C(PDS), C(PDSE).
       - GDS relative names are supported C(e.g. USER.GDG(-1)).
     type: str
     required: true

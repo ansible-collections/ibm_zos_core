@@ -22,7 +22,7 @@ Life Cycle Phase
 
 To encourage the adoption of new features while keeping the high standard of stability inherent,
 support is divided into life cycle phases; **full support** which covers the first year
-and **maintenance support** which covers the second year.
+and **maintenance support** which covers the second year. 
 
 +--------------------------+------------------------------------+---------------------------+
 | Life Cycle Phase         | Full Support                       | Maintenance Support       |
@@ -36,7 +36,7 @@ Severities
 ==========
 
 Severity 1 (Critical):
-A problem that severely impacts your use of the software in a productionenvironment (such as loss
+A problem that severely impacts your use of the software in a production environment (such as loss
 of production data or in which your production systems are not functioning). The situation halts
 your business operations and no procedural workaround exists.
 
@@ -47,17 +47,15 @@ procedural workaround exists.
 
 Severity 3 (medium):
 A problem that involves partial, non-critical loss of use of the software in a production environment
-or development environment. For production environments, there is a medium-to-low impact on your
-business, but your business continues to function, including by using a procedural workaround. For
-development environments, where the situation is causing your project to no longer continue or
-migrate into production.
+or development environment and your business continues to function, including by using a procedural
+workaround.
 
 Severity 4 (low):
 A general usage question, reporting of a documentation error, or recommendation for a future product
-enhancement or modification. For production environments, there is low-to-no impact on your business
-or the performance or functionality of your system. For development environments, there is
-a medium-to-low impact on your business, but your business continues to function, including by
-using a procedural workaround.
+enhancement or modification.
+
+Severities 3 and 4 are generally addressed in subsequent releases to ensure a high standard of stability
+remains available for production environments.
 
 Support Matrix
 ==============

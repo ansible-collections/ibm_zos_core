@@ -83,9 +83,9 @@ The z/OS managed node includes several shells, currently the only supported shel
 `/bin/sh`_. To configure which shell the ansible control node will use on the target machine, set inventory variable
 **ansible_shell_executable**.
 
-```
-ansible_shell_executable: /bin/sh
-```
+.. code-block:: sh
+
+   ansible_shell_executable: /bin/sh
 
 +---------+----------------------------+---------------------------------------------------+---------------+---------------+
 | Version | Controller                 | Managed Node                                      | GA            | End of Life   |

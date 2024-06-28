@@ -1,0 +1,10 @@
+minor_changes:
+  - zos_job_submit - Improved the copy to remote mechanic to avoid using deepcopy that could
+    result in failure for some systems.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+  - zos_script - Improved the copy to remote mechanic to avoid using deepcopy that could
+    result in failure for some systems.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+  - zos_unarchive - Improved the copy to remote mechanic to avoid using deepcopy that could
+    result in failure for some systems.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1561).

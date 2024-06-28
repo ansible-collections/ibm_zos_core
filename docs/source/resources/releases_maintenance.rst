@@ -22,7 +22,7 @@ Life Cycle Phase
 
 To encourage the adoption of new features while keeping the high standard of stability inherent,
 support is divided into life cycle phases; **full support** which covers the first year
-and **maintenance support** which covers the second year. 
+and **maintenance support** which covers the second year.
 
 +--------------------------+------------------------------------+---------------------------+
 | Life Cycle Phase         | Full Support                       | Maintenance Support       |

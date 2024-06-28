@@ -87,6 +87,7 @@ The z/OS managed node includes several shells, currently the only supported shel
 
    ansible_shell_executable: /bin/sh
 
+
 +---------+----------------------------+---------------------------------------------------+---------------+---------------+
 | Version | Controller                 | Managed Node                                      | GA            | End of Life   |
 +=========+============================+===================================================+===============+===============+

@@ -1095,7 +1095,7 @@ class DataSet(object):
         original_args = locals()
         formatted_args = DataSet._build_zoau_args(**original_args)
         try:
-            datasets.create(**formatted_args)
+            data_set = datasets.create(**formatted_args)
         except exceptions._ZOAUExtendableException as create_exception:
             raise DatasetCreateError(
                 raw_name if raw_name else name,
@@ -1111,9 +1111,8 @@ class DataSet(object):
                 raw_name if raw_name else name,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
-        # With ZOAU 1.3 we switched from getting a ZOAUResponse obj to a Dataset obj, previously we returned
-        # response.rc now we just return 0 if nothing failed
-        return 0
+        changed = data_set is not None
+        return changed
 
     @staticmethod
     def delete(name):
@@ -1961,7 +1960,7 @@ class MVSDataSet():
             # with ZOAU
             self.record_format = None
 
-    def create(self):
+    def create(self, tmp_hlq=None, replace=True, force=False):
         """Creates the data set in question.
 
         Returns
@@ -1972,7 +1971,6 @@ class MVSDataSet():
         arguments = {
             "name" : self.name,
             "raw_name" : self.raw_name,
-            "replace" : self.replace,
             "type" : self.data_set_type,
             "space_primary" : self.space_primary,
             "space_secondary" : self.space_secondary,
@@ -1987,11 +1985,20 @@ class MVSDataSet():
             "sms_data_class" : self.sms_data_class,
             "sms_management_class" : self.sms_management_class,
             "volumes" : self.volumes,
-            "tmp_hlq" : self.tmp_hlq,
-            "force" : self.force,
+            "tmp_hlq" : tmp_hlq,
+            "force" : force,
         }
-        DataSet.create(**arguments)
-        self.set_state("present")
+        formatted_args = DataSet._build_zoau_args(**arguments)
+        changed = False
+        if DataSet.data_set_exists(self.name):
+            DataSet.delete(self.name)
+            changed = True
+        zoau_data_set = datasets.create(**formatted_args)
+        if zoau_data_set is not None:
+            self.set_state("present")
+            self.name = zoau_data_set.name
+            return True
+        return changed
 
     def ensure_present(self, tmp_hlq=None, replace=False, force=False):
         """ Make sure that the data set is created or fail creating it.

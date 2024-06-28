@@ -23,22 +23,22 @@ currently supported.
 For example, if a collection releases with a minimum version of ``ansible-core`` 2.14.0 (Ansible 7.0) and later this
 enters into EOL, then a newer supported version of ``ansible-core`` (Ansible) must be selected. When choosing a newer
 ``ansible-core`` (Ansible) version, review the `ansible-core support matrix`_ to select the appropriate dependencies.
-This is important to note, different releases of ``ansible-core`` can require newer controller and managed node
+This is important to note, different releases of ``ansible-core`` can require newer control node and managed node
 dependencies such as is the case with Python.
 
-If the controller is Ansible Automation Platform (AAP), review the `Red Hat Ansible Automation Platform Life Cycle`_
+If the control node is Ansible Automation Platform (AAP), review the `Red Hat Ansible Automation Platform Life Cycle`_
 to select a supported AAP version.
 
 For IBM product lifecycle information, you can search for products using a product name, version or ID. For example,
-to view IBM's **Open Enterprise SDK for Python** lifecycle, search on product ID `5655-PYT`_, and for **Z Open Automation Utilities**,
-search on product ID `5698-PA1`_.
+to view IBM's `Open Enterprise SDK for Python lifecycle`_, search on product ID `5655-PYT`_, and for
+`Z Open Automation Utilities lifecycle`_, search on product ID `5698-PA1`_.
 
 Support Matrix
 ==============
 +---------+----------------------------+---------------------------------------------------+---------------+---------------+
 | Version | Controller                 | Managed Node                                      | GA            | End of Life   |
 +=========+============================+===================================================+===============+===============+
-| 1.10.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R4 - V2Rx                              | In preview    | TBD           |
+| 1.10.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R4 - V2Rx                              | 21 June 2024  | 21 June 2026  |
 |         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |               |               |
 |         |- `AAP`_ >=2.4              |- IBM `Open Enterprise SDK for Python`_            |               |               |
 |         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.0       |               |               |
@@ -88,8 +88,12 @@ Support Matrix
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
 .. _z/OS:
    https://www.ibm.com/docs/en/zos
+.. _Open Enterprise SDK for Python lifecycle:
+   https://www.ibm.com/support/pages/lifecycle/search?q=5655-PYT
 .. _5655-PYT:
    https://www.ibm.com/support/pages/lifecycle/search?q=5655-PYT
+.. _Z Open Automation Utilities lifecycle:
+   https://www.ibm.com/support/pages/lifecycle/search?q=5698-PA1
 .. _5698-PA1:
    https://www.ibm.com/support/pages/lifecycle/search?q=5698-PA1
 .. _ansible-core:

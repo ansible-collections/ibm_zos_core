@@ -463,10 +463,11 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                                     single_dd["step_name"],
                                     single_dd["dd_name"]
                                 )
-                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError):
+                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) as e:
+                                error_type = e.__class__.__name__
                                 tmpcont = (
-                                    "Non-printable UTF-8 characters were present in this output. "
-                                    "Please access it from the job log."
+                                    f"Non-printable UTF-8 characters were present in this output, a {error_type} error has occurred."
+                                    "Please access the content from the job log."
                                 )
 
                     dd["content"] = tmpcont.split("\n")

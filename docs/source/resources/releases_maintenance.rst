@@ -81,7 +81,7 @@ to view IBM's `Open Enterprise SDK for Python lifecycle`_, search on product ID 
 
 The z/OS managed node includes several shells, currently the only supported shell is the z/OS Shell located in path
 `/bin/sh`_. To configure which shell the ansible control node will use on the target machine, set inventory variable
- **ansible_shell_executable**.
+**ansible_shell_executable**.
 
 ```
 ansible_shell_executable: /bin/sh

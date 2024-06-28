@@ -79,6 +79,14 @@ For IBM product lifecycle information, you can search for products using a produ
 to view IBM's `Open Enterprise SDK for Python lifecycle`_, search on product ID `5655-PYT`_, and for
 `Z Open Automation Utilities lifecycle`_, search on product ID `5698-PA1`_.
 
+The z/OS managed node includes several shells, currently the only supported shell is the z/OS Shell located in path
+`/bin/sh`_. To configure which shell the ansible control node will use on the target machine, set inventory variable
+ **ansible_shell_executable**.
+
+```
+ansible_shell_executable: /bin/sh
+```
+
 +---------+----------------------------+---------------------------------------------------+---------------+---------------+
 | Version | Controller                 | Managed Node                                      | GA            | End of Life   |
 +=========+============================+===================================================+===============+===============+
@@ -144,3 +152,5 @@ to view IBM's `Open Enterprise SDK for Python lifecycle`_, search on product ID 
    https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
 .. _Ansible:
    https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
+.. _/bin/sh:
+   https://www.ibm.com/docs/en/zos/3.1.0?topic=descriptions-sh-invoke-shell

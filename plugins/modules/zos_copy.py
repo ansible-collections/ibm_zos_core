@@ -1257,7 +1257,7 @@ class CopyHandler(object):
         """
         tag_cmd = "chtag -{0}c {1} {2}".format(
             "R" if is_dir else "t", tag, file_path)
-        rc, out, err = self.run_command(tag_cmd, errors='backslashreplace')
+        rc, out, err = self.run_command(tag_cmd)
         if rc != 0:
             raise CopyOperationError(
                 msg="Unable to tag the file {0} to {1}".format(file_path, tag),

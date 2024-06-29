@@ -150,18 +150,22 @@ def test_zos_tso_command_gds(ansible_zos_module):
     hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(
-        commands=["""LISTDSD DATASET('{0}(0)') ALL GENERIC""".format(default_data_set)]
+        commands=["""LISTDSD DATASET('{0}(0)') ALL GENERIC""".format(default_data_set)],
+        max_rc=4
     )
     for result in results.contacted.values():
-        print(result)
         for item in result.get("output"):
-            print(item)
             assert result.get("changed") is True
     results = hosts.all.zos_tso_command(
-        commands=["""LISTDSD DATASET('{0}(-1)') ALL GENERIC""".format(default_data_set)]
+        commands=["""LISTDSD DATASET('{0}(-1)') ALL GENERIC""".format(default_data_set)],
+        max_rc=4
     )
     for result in results.contacted.values():
-        print(result)
         for item in result.get("output"):
-            print(item)
             assert result.get("changed") is True
+    results = hosts.all.zos_tso_command(
+        commands=["""LISTDSD DATASET('{0}(+1)') ALL GENERIC""".format(default_data_set)]
+    )
+    for result in results.contacted.values():
+        for item in result.get("output"):
+            assert result.get("changed") is False

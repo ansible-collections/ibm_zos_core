@@ -128,6 +128,7 @@ EXAMPLES = r"""
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from os import chmod
+import re
 from re import match as fullmatch
 from tempfile import NamedTemporaryFile
 from stat import S_IEXEC, S_IREAD, S_IWRITE
@@ -255,30 +256,30 @@ def list_or_str_type(contents, dependencies):
     return contents
 
 
-def check_dataset_included(commands):
-    if isinstance(commands, str):
-        command = commands.strip()
-        commands = check_for_datasets(command)
-    else:
-        for command in commands:
-            check_dataset_included(command)
+def substitute_names(commands):
+    for command in commands:
+        if "'" in command:
+            target_index = commands.index(command)
+            new_command = check_for_datasets(command)
+            commands[target_index] = new_command
+    return commands
 
 
 def check_for_datasets(command):
-    str_command = ' '.join(command)
-    for word in command:
-        if (word.startswith("'") and word.endswith("'")):
+    command_split = command.split()
+    for word in command_split:
+        word = re.findall("""([^']*)""", word)
+        for separate_word in word:
             if fullmatch(
                 r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
-                str(word),
+                str(separate_word),
             ):
-                if data_set.DataSet.is_gds_relative_name(word):
-                    data = data_set.MVSDataSet(
-                        name=word
-                    )
-                    new_name = data.name
-                    str_command = str_command.replace(word, new_name)
-    return str_command
+                data = data_set.MVSDataSet(
+                    name=separate_word
+                )
+                src = data.name
+                command = command.replace(separate_word, src)
+    return command
 
 
 def run_module():
@@ -315,7 +316,7 @@ def run_module():
         module.fail_json(msg=repr(e), **result)
 
     commands = parsed_args.get("commands")
-    commands = check_dataset_included(commands)
+    commands = substitute_names(commands)
     max_rc = parsed_args.get("max_rc")
     if max_rc is None:
         max_rc = 0

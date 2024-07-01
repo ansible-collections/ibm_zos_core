@@ -514,9 +514,9 @@ c_pgm="""#include <stdio.h>
 int main(int argc, char** argv)
 {
     char dsname[ strlen(argv[1]) + 4];
-    sprintf(dsname, "//'%s'", argv[1]);
+    sprintf(dsname, \\\"//'%s'\\\", argv[1]);
     FILE* member;
-    member = fopen(dsname, "rb,type=record");
+    member = fopen(dsname, \\\"rb,type=record\\\");
     sleep(300);
     fclose(member);
     return 0;
@@ -652,8 +652,8 @@ def test_data_member_force_delete(ansible_zos_module):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
 
         # kill process - release lock - this also seems to end the job
-        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
-        hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
+        # pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        # hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
         # clean up c code/object/executable files, jcl
         # hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         # remove pdse

@@ -44,10 +44,8 @@ try:
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+
+from shlex import quote
 
 
 def _validate_data_set_name(ds):

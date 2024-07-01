@@ -815,6 +815,10 @@ Notes
 
    Beginning in version 1.8.x, zos\_copy will no longer attempt to correct a copy of a data type member into a PDSE that contains program objects. You can control this behavior using module option \ :literal:`executable`\  that will signify an executable is being copied into a PDSE with other executables. Mixing data type members with program objects will result in a (FSUM8976,./zos\_copy.html) error.
 
+   It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
+
+   To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
+
 
 
 See Also

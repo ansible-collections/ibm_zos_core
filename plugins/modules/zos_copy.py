@@ -2888,9 +2888,28 @@ def allocate_destination_data_set(
     # Giving more priority to the parameters given by the user.
     # Cover case the user set executable to true to create dataset valid.
     if dest_data_set:
-        dest_params = dest_data_set
-        dest_params["name"] = dest
-        data_set.DataSet.ensure_present(replace=force, **dest_params)
+        if dest_ds_type == "GDG":
+            if not dest_data_set.get("limit"):
+                raise CopyOperationError(msg=f"Destination {dest} is missing its 'limit' attribute.")
+
+            gdgs.create(
+                dest,
+                dest_data_set.get("limit"),
+                empty=dest_data_set.get("empty", False),
+                scratch=dest_data_set.get("scratch", False),
+                purge=dest_data_set.get("purge", False),
+                extended=dest_data_set.get("extended", False),
+                fifo=dest_data_set.get("fifo", False)
+            )
+
+            # Checking the new GDG was allocated.
+            results = gdgs.list_gdg_names(dest)
+            if len(results) == 0:
+                raise CopyOperationError(msg=f"Error while allocating GDG {dest}.")
+        else:
+            dest_params = dest_data_set
+            dest_params["name"] = dest
+            data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
@@ -3016,7 +3035,7 @@ def allocate_destination_data_set(
     elif dest_ds_type == "GDG":
         src_view = gdgs.GenerationDataGroupView(src)
 
-        dest_view = gdgs.create(
+        gdgs.create(
             dest,
             src_view.limit,
             empty=src_view.empty,
@@ -3795,7 +3814,8 @@ def main():
                     type=dict(
                         type='str',
                         choices=['basic', 'ksds', 'esds', 'rrds',
-                                 'lds', 'seq', 'pds', 'pdse', 'member', 'library'],
+                                 'lds', 'seq', 'pds', 'pdse', 'member',
+                                 'library', 'gdg'],
                         required=True,
                     ),
                     space_primary=dict(
@@ -3820,6 +3840,12 @@ def main():
                     sms_storage_class=dict(type="str", required=False),
                     sms_data_class=dict(type="str", required=False),
                     sms_management_class=dict(type="str", required=False),
+                    limit=dict(type="int", required=False),
+                    empty=dict(type="bool", required=False),
+                    scratch=dict(type="bool", required=False),
+                    purge=dict(type="bool", required=False),
+                    extended=dict(type="bool", required=False),
+                    fifo=dict(type="bool", required=False),
                 )
             ),
             use_template=dict(type='bool', default=False),
@@ -3890,6 +3916,12 @@ def main():
                 sms_storage_class=dict(arg_type="str", required=False),
                 sms_data_class=dict(arg_type="str", required=False),
                 sms_management_class=dict(arg_type="str", required=False),
+                limit=dict(arg_type="int", required=False),
+                empty=dict(arg_type="bool", required=False),
+                scratch=dict(arg_type="bool", required=False),
+                purge=dict(arg_type="bool", required=False),
+                extended=dict(arg_type="bool", required=False),
+                fifo=dict(arg_type="bool", required=False),
             )
         ),
 

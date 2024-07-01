@@ -5160,6 +5160,47 @@ def test_copy_gdg_to_gdg(ansible_zos_module, new_gdg):
         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
 
+def test_copy_gdg_to_gdg_dest_attributes(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True,
+            dest_data_set={
+                "type": "gdg",
+                "limit": 5,
+                "empty": False,
+                "scratch": True,
+                "purge": True,
+                "extended": False,
+                "fifo": False
+            }
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
 def test_gds_backup(ansible_zos_module):
     hosts = ansible_zos_module
 

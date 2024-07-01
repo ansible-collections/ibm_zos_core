@@ -581,14 +581,6 @@ def test_data_member_force_delete(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
 
-        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        # hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
-        # hosts.all.zos_copy(
-        #     content=call_c_jcl.format(default_data_set_name, member_1),
-        #     dest='/tmp/disp_shr/call_c_pgm.jcl',
-        #     force=True
-        # )
-
         hosts.all.file(path="/tmp/disp_shr/", state="directory")
         hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > /tmp/disp_shr/pdse-lock.c")
         hosts.all.shell(
@@ -652,10 +644,10 @@ def test_data_member_force_delete(ansible_zos_module):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
 
         # kill process - release lock - this also seems to end the job
-        # pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
-        # hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
         # clean up c code/object/executable files, jcl
-        # hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         # remove pdse
         hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 

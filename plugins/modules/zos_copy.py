@@ -3350,7 +3350,7 @@ def run_module(module, arg_def):
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
             if (is_src_gds and data_set.DataSet.data_set_exists(src)) or (
-                not is_src_gds and data_set.DataSet.data_set_exists(src_name)):
+                    not is_src_gds and data_set.DataSet.data_set_exists(src_name)):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)

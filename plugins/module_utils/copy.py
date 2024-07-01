@@ -26,10 +26,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
     ikjeft01
 )
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 
 REPRO = """  REPRO INDATASET({}) -

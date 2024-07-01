@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import time
-from pipes import quote
+from shlex import quote
 from pprint import pprint
 import pytest
 

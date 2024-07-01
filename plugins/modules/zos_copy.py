@@ -76,6 +76,8 @@ options:
       - If C(dest) is a data set member and C(backup_name) is not provided, the data set
         member will be backed up to the same partitioned data set with a randomly
         generated member name.
+      - If I(backup_name) is a generation data set (GDS), it must be a relative
+        positive name (for example, V(HLQ.USER.GDG(+1\))).
     required: false
     type: str
   content:
@@ -122,6 +124,10 @@ options:
       - When C(dest) is and existing VSAM (LDS), then source must be an LDS. The
         VSAM (LDS) will be deleted and recreated following the process outlined
         in the C(volume) option.
+      - C(dest) can be a previously allocated generation data set (GDS) or a new GDS.
+      - When C(dest) is a generation data group (GDG), C(src) must be a GDG too. The copy
+        will allocate successive new generations in C(dest), the module will verify
+        it has enough available generations before starting the copy operations.
       - When C(dest) is a data set, you can override storage management rules
         by specifying C(volume) if the storage class being used has
         GUARANTEED_SPACE=YES specified, otherwise, the allocation will
@@ -308,6 +314,9 @@ options:
       - If C(src) is a directory or a file, file names will be truncated and/or modified
         to ensure a valid name for a data set or member.
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
+      - If C(src) is a generation data set (GDS), it must be a previously allocated one.
+      - If C(src) is a generation data group (GDG), C(dest) can be another GDG or a USS
+        directory.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
         PDS/PDSE.
       - Required unless using C(content).
@@ -338,6 +347,7 @@ options:
   dest_data_set:
     description:
       - Data set attributes to customize a C(dest) data set to be copied into.
+      - Some attributes only apply when C(dest) is a generation data group (GDG).
     required: false
     type: dict
     suboptions:
@@ -357,6 +367,7 @@ options:
           - member
           - basic
           - library
+          - gdg
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -451,6 +462,55 @@ options:
           - Not valid for datasets that are not SMS-managed.
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
+        required: false
+      limit:
+        description:
+          - Sets the I(limit) attribute for a GDG.
+          - Specifies the maximum number, from 1 to 255(up to 999 if extended), of
+            generations that can be associated with the GDG being defined.
+          - I(limit) is required when I(type=gdg).
+        type: int
+        required: false
+      empty:
+        description:
+          - Sets the I(empty) attribute for a GDG.
+          - If false, removes only the oldest GDS entry when a new GDS is created
+            that causes GDG limit to be exceeded.
+          - If true, removes all GDS entries from a GDG base when a new GDS is
+            created that causes the GDG limit to be exceeded.
+        type: bool
+        required: false
+      scratch:
+        description:
+          - Sets the I(scratch) attribute for a GDG.
+          - Specifies what action is to be taken for a generation data set located
+            on disk volumes when the data set is uncataloged from the GDG base as
+            a result of EMPTY/NOEMPTY processing.
+        type: bool
+        required: false
+      purge:
+        description:
+          - Sets the I(purge) attribute for a GDG.
+          - Specifies whether to override expiration dates when a generation data
+            set (GDS) is rolled off and the C(scratch) option is set.
+        type: bool
+        required: false
+      extended:
+        description:
+          - Sets the I(extended) attribute for a GDG.
+          - If false, allow up to 255 generation data sets (GDSs) to be associated
+            with the GDG.
+          - If true, allow up to 999 generation data sets (GDS) to be associated
+            with the GDG.
+        type: bool
+        required: false
+      fifo:
+        description:
+          - Sets the I(fifo) attribute for a GDG.
+          - If false, the order is the newest GDS defined to the oldest GDS.
+            This is the default value.
+          - If true, the order is the oldest GDS defined to the newest GDS.
+        type: bool
         required: false
 
 extends_documentation_fragment:
@@ -679,6 +739,19 @@ EXAMPLES = r"""
     src: ./files/print.txt
     dest: HLQ.PRINT.NEW
     asa_text: true
+
+- name: Copy a file to a new generation data set.
+  zos_copy:
+    src: /path/to/uss/src
+    dest: HLQ.TEST.GDG(+1)
+    remote_src: true
+
+- name: Copy a local file and take a backup of the existing file with a GDS.
+  zos_copy:
+    src: /path/to/local/file
+    dest: /path/to/dest
+    backup: true
+    backup_name: HLQ.BACKUP.GDG(+1)
 """
 
 RETURN = r"""

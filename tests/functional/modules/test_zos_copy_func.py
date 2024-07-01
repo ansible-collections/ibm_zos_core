@@ -5175,9 +5175,11 @@ def test_gds_backup(ansible_zos_module):
 
         hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
 
-        results = hosts.all.zos_encode(
+        results = hosts.all.zos_copy(
             src=src_data_set,
             dest=dest_data_set,
+            remote_src=True,
+            force=True,
             backup=True,
             backup_name=f"{backup_data_set}(+1)",
         )
@@ -5218,9 +5220,11 @@ def test_gds_backup_invalid_generation(ansible_zos_module):
         hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
         hosts.all.shell(cmd=f"""dtouch -tSEQ "{backup_data_set}(+1)" """)
 
-        results = hosts.all.zos_encode(
+        results = hosts.all.zos_copy(
             src=src_data_set,
             dest=dest_data_set,
+            remote_src=True,
+            force=True,
             backup=True,
             backup_name=f"{backup_data_set}(0)",
         )
@@ -5236,3 +5240,28 @@ def test_gds_backup_invalid_generation(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {backup_data_set}")
         hosts.all.shell(cmd=f"drm {dest_data_set}")
         hosts.all.shell(cmd=f"drm {src_data_set}")
+
+
+def test_copy_to_dataset_with_special_symbols(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name(symbols=True)
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"decho \"{DUMMY_DATA}\" \"{src_data_set}\"")
+
+        results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg") is None
+
+    finally:
+        hosts.all.zos_data_set(name=src_data_set, state="absent")
+        hosts.all.zos_data_set(name=dest_data_set, state="absent")

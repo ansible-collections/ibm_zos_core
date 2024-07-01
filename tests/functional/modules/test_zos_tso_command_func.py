@@ -144,7 +144,8 @@ def test_zos_tso_command_maxrc(ansible_zos_module):
 
 
 def test_zos_tso_command_gds(ansible_zos_module):
-    default_data_set = get_tmp_ds_name(3, 3)
+    hosts = ansible_zos_module
+    default_data_set = get_tmp_ds_name(3, 3, symbols=True)
     hosts.all.shell(cmd="dtouch -tGDG -L2 {0}".format(default_data_set))
     hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
     hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))

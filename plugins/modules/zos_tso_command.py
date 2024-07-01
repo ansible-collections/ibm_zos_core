@@ -274,11 +274,10 @@ def check_for_datasets(command):
                 r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
                 str(separate_word),
             ):
-                data = data_set.MVSDataSet(
-                    name=separate_word
+                dataset = data_set.MVSDataSet(
+                    name=separate_word,
                 )
-                src = data.name
-                command = command.replace(separate_word, src)
+                command = command.replace(separate_word, dataset.name)
     return command
 
 

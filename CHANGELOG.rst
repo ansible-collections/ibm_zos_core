@@ -1,21 +1,87 @@
-==============================
-ibm.ibm_zos_core Release Notes
-==============================
+================================
+ibm.ibm\_zos\_core Release Notes
+================================
 
 .. contents:: Topics
 
-
-v1.9.0-beta.1
-=============
+v1.10.0
+=======
 
 Release Summary
 ---------------
 
-Release Date: '2024-01-31'
+Release Date: '2024-06-11'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_apf - Enhanced error messages when an exception is caught. (https://github.com/ansible-collections/ibm_zos_core/pull/1204).
+- zos_backup_restore - Add tmp_hlq option to the user interface to override the default high level qualifier (HLQ) for temporary and backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1265).
+- zos_copy - Documented `group` and `owner` options. (https://github.com/ansible-collections/ibm_zos_core/pull/1307).
+- zos_copy - Improve zos_copy performance when copying multiple members from one PDS/E to another. (https://github.com/ansible-collections/ibm_zos_core/pull/1183).
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+- zos_archive - option ``terse_pack`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_archive - suboption ``record_format`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_archive - suboption ``space_type`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_archive - suboption ``type`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_backup_restore - option ``space_type`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_copy - suboption ``record_format`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_copy - suboption ``space_type`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_copy - suboption ``type`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_data_set - option ``record_format`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_data_set - option ``space_type`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_data_set - option ``type`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_data_set - options inside ``batch`` no longer accept uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_job_submit - option ``location`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mount - option ``automove`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mount - option ``fs_type`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mount - option ``mount_opts`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mount - option ``tag_untagged`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mount - option ``unmount_opts`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mvs_raw - options inside ``dd_concat`` no longer accept uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mvs_raw - suboption ``record_format`` of ``dd_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mvs_raw - suboption ``record_format`` of ``dd_unix`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mvs_raw - suboption ``space_type`` of ``dd_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mvs_raw - suboption ``type`` of ``dd_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_mvs_raw - suboptions ``disposition_normal`` and ``disposition_abnormal`` of ``dd_data_set`` no longer accept ``catlg`` and ``uncatlg`` as choices. This also applies when defining a ``dd_data_set`` inside ``dd_concat``. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_unarchive - suboption ``record_format`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_unarchive - suboption ``space_type`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+- zos_unarchive - suboption ``type`` of ``dest_data_set`` no longer accepts uppercase choices, users should replace them with lowercase ones. (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+
+Bugfixes
+--------
+
+- module_utils/job.py - job output containing non-printable characters would crash modules. Fix now handles the error gracefully and returns a message to the user inside `content` of the `ddname` that failed. (https://github.com/ansible-collections/ibm_zos_core/pull/1261).
+- zos_apf - List option only returned one data set. Fix now returns the list of retrieved data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1204).
+- zos_blockinfile - Using double quotation marks inside a block resulted in a false positive result with ZOAU 1.3. Fix now handles this special case to avoid false negatives. (https://github.com/ansible-collections/ibm_zos_core/pull/1340).
+- zos_find - Filter size failed if a PDS/E matched the pattern. Fix now gets the correct size for PDS/Es. (https://github.com/ansible-collections/ibm_zos_core/pull/1443).
+- zos_job_submit - Was ignoring the default value for location=DATA_SET, now when location is not specified it will default to DATA_SET. (https://github.com/ansible-collections/ibm_zos_core/pull/1220).
+- zos_job_submit - when the argument max_rc was different than 0 the changed response returned as false. Fix now return a changed response as true when the rc is not 0 and max_rc is above or equal to the value of the job. (https://github.com/ansible-collections/ibm_zos_core/pull/1345).
+- zos_mvs_raw - The module ignored the value of `tmp_hlq` option when creating temporary data sets. Fix now honors the value if provided and uses it as High Level Qualifier for temporary data sets created during the module execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1320).
+
+v1.9.0
+======
+
+Release Summary
+---------------
+
+Release Date: '2024-03-11'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Major Changes
+-------------
+
+- zos_job_submit - when job statuses were read, were limited to AC (active), CC (completed normally), ABEND (ended abnormally) and ? (error unknown), SEC (security error), JCLERROR (job had a jcl error). Now the additional statuses are supported, CANCELLED (job was cancelled), CAB (converter abend), CNV (converter error), SYS (system failure) and FLU (job was flushed). (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
 
 Minor Changes
 -------------
@@ -32,11 +98,22 @@ Minor Changes
 Bugfixes
 --------
 
+- module_utils/job.py - job output containing non-printable characters would crash modules. Fix now handles the error gracefully and returns a message to the user inside `content` of the `ddname` that failed. (https://github.com/ansible-collections/ibm_zos_core/pull/1288).
+- zos_apf - When operation=list was selected and more than one data set entry was fetched, the module only returned one data set. Fix now returns the complete list. (https://github.com/ansible-collections/ibm_zos_core/pull/1236).
 - zos_copy - When copying an executable data set with aliases and destination did not exist, destination data set was created with wrong attributes. Fix now creates destination data set with the same attributes as the source. (https://github.com/ansible-collections/ibm_zos_core/pull/1066).
 - zos_copy - When performing a copy operation to an existing file, the copied file resulted in having corrupted contents. Fix now implements a workaround to not use the specific copy routine that corrupts the file contents. (https://github.com/ansible-collections/ibm_zos_core/pull/1064).
+- zos_data_set - Fixes a small parsing bug in module_utils/data_set function which extracts volume serial(s) from a LISTCAT command output. Previously a leading '-' was left behind for volser strings under 6 chars. (https://github.com/ansible-collections/ibm_zos_core/pull/1247).
 - zos_job_output - When passing a job ID or name less than 8 characters long, the module sent the full stack trace as the module's message. Change now allows the use of a shorter job ID or name, as well as wildcards. (https://github.com/ansible-collections/ibm_zos_core/pull/1078).
 - zos_job_query - The module handling ZOAU import errors obscured the original traceback when an import error ocurred. Fix now passes correctly the context to the user. (https://github.com/ansible-collections/ibm_zos_core/pull/1042).
 - zos_job_query - When passing a job ID or name less than 8 characters long, the module sent the full stack trace as the module's message. Change now allows the use of a shorter job ID or name, as well as wildcards. (https://github.com/ansible-collections/ibm_zos_core/pull/1078).
+- zos_job_submit - Was ignoring the default value for location=DATA_SET, now when location is not specified it will default to DATA_SET. (https://github.com/ansible-collections/ibm_zos_core/pull/1120).
+- zos_job_submit - when a JCL error occurred, the ret_code[msg_code] contained JCLERROR followed by an integer where the integer appeared to be a reason code when actually it is a multi line marker used to coordinate errors spanning more than one line. Now when a JCLERROR occurs, only the JCLERROR is returned for property ret_code[msg_code]. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when a response was returned, it contained an undocumented property; ret_code[msg_text]. Now when a response is returned, it correctly returns property ret_code[msg_txt]. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=copy was used in JCL it would fail the module with an improper message and error condition. While this case continues to be considered a failure, the message has been corrected and it fails under the condition that not enough time has been added to the modules execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=hold was used in JCL it would fail the module with an improper message and error condition. While this case continues to be considered a failure, the message has been corrected and it fails under the condition that not enough time has been added to the modules execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=jchhold was used in JCL it would fail the module with an improper message and error condition. While this case continues to be considered a failure, the message has been corrected and it fails under the condition that not enough time has been added to the modules execution. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when typrun=scan was used in JCL, it would fail the module. Now typrun=scan no longer fails the module and an appropriate message is returned with appropriate return code values. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
+- zos_job_submit - when wait_time_s was used, the duration would run approximately 5 second longer than reported in the duration. Now the when duration is returned, it is the actual accounting from when the job is submitted to when the module reads the job output. (https://github.com/ansible-collections/ibm_zos_core/pull/1283).
 - zos_operator - The module handling ZOAU import errors obscured the original traceback when an import error ocurred. Fix now passes correctly the context to the user. (https://github.com/ansible-collections/ibm_zos_core/pull/1042).
 - zos_unarchive - Using a local file with a USS format option failed when sending to remote because dest_data_set option had an empty dictionary. Fix now leaves dest_data_set as None when using a USS format option. (https://github.com/ansible-collections/ibm_zos_core/pull/1045).
 - zos_unarchive - When unarchiving USS files, the module left temporary files on the remote. Change now removes temporary files. (https://github.com/ansible-collections/ibm_zos_core/pull/1073).
@@ -320,7 +397,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
-
 Bugfixes
 --------
 
@@ -343,7 +419,6 @@ This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Major Changes
 -------------
@@ -416,7 +491,6 @@ in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Minor Changes
 -------------
 
@@ -445,7 +519,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -470,7 +543,6 @@ in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
-
 Bugfixes
 --------
 
@@ -488,7 +560,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
-
 
 Bugfixes
 --------
@@ -523,7 +594,6 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
     **z/OS** target to find the latest supported configuration and generate
     inventory and a variables configuration.
   - Automate software management with SMP/E Playbooks
-
 
 Minor Changes
 -------------
@@ -602,7 +672,6 @@ This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Minor Changes
 -------------

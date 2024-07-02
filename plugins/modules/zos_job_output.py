@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -414,15 +414,36 @@ changed:
 
 
 from ansible.module_utils.basic import AnsibleModule
+import traceback
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    ZOAUImportError,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
+try:
+    from zoautil_py import exceptions as zoau_exceptions
+except Exception:
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        job_id or job_name or owner not provided.
+    fail_json
+        ZOAU exception.
+    fail_json
+        Any exception while fetching jobs.
+    """
     module_args = dict(
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
@@ -461,6 +482,13 @@ def run_module():
         results = {}
         results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
         results["changed"] = False
+    except zoau_exceptions.JobFetchException as fetch_exception:
+        module.fail_json(
+            msg="ZOAU exception",
+            rc=fetch_exception.response.rc,
+            stdout=fetch_exception.response.stdout_response,
+            stderr=fetch_exception.response.stderr_response,
+        )
     except Exception as e:
         module.fail_json(msg=repr(e))
 

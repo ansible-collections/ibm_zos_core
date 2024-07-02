@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,6 +26,7 @@ description:
 author:
     - "Xiao Yuan Ma (@bjmaxy)"
     - "Rich Parker (@richp405)"
+    - "Demetrios Dimatos (@ddimatos)"
 options:
   commands:
     description:
@@ -94,27 +95,34 @@ output:
 """
 
 EXAMPLES = r"""
-- name: Execute TSO commands to allocate a new dataset
+- name: Execute TSO commands to allocate a new dataset.
   zos_tso_command:
-      commands:
-          - alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
-          - delete 'TEST.HILL3.TEST'
+    commands:
+      - alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
+      - delete 'TEST.HILL3.TEST'
 
-- name: Execute TSO command list user TESTUSER to obtain TSO information
+- name: Execute TSO command List User (LU) for TESTUSER to obtain TSO information.
   zos_tso_command:
-      commands:
-           - LU TESTUSER
+    commands:
+      - LU TESTUSER
 
-- name: Execute TSO command to list dataset data (allow 4 for no dataset listed or cert found)
+- name: Execute TSO command List Dataset (LISTDSD) and allow for maximum return code of 4.
   zos_tso_command:
-      commands:
-           - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
-      max_rc: 4
+    commands:
+      - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
+    max_rc: 4
 
 - name: Execute TSO command to run a REXX script explicitly from a data set.
   zos_tso_command:
-      commands:
-           - EXEC HLQ.DATASET.REXX exec
+    commands:
+      - EXEC HLQ.DATASET.REXX exec
+
+- name: Chain multiple TSO commands into one invocation using semicolons.
+  zos_tso_command:
+    commands: >-
+      ALLOCATE DDNAME(IN1) DSNAME('HLQ.PDSE.DATA.SRC(INPUT)') SHR;
+      ALLOCATE DDNAME(OUT1) DSNAME('HLQ.PDSE.DATA.DEST(OUTPUT)') SHR;
+      OCOPY INDD(IN1) OUTDD(OUT1) BINARY;
 """
 
 from ansible.module_utils.basic import AnsibleModule
@@ -127,6 +135,23 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 
 
 def run_tso_command(commands, module, max_rc):
+    """Run tso command.
+
+    Parameters
+    ----------
+    commands : str
+        Commands to run.
+    module : AnsibleModule
+        Ansible module to run the command with.
+    max_rc : int
+        Max return code.
+
+    Returns
+    -------
+    Union[dict]
+        The command result details.
+
+    """
     script = """/* REXX */
 PARSE ARG cmd
 address tso
@@ -144,6 +169,24 @@ exit rc
 
 
 def copy_rexx_and_run_commands(script, commands, module, max_rc):
+    """Copy rexx into a temporary file and run commands.
+
+    Parameters
+    ----------
+    script : str
+        Script to run the command.
+    commands : str
+        Commands to run.
+    module : AnsibleModule
+        Ansible module to run the command with.
+    max_rc : int
+        Max return code.
+
+    Returns
+    -------
+    Union[dict]
+        The command result details.
+    """
     command_detail_json = []
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
@@ -172,6 +215,25 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
 
 
 def list_or_str_type(contents, dependencies):
+    """Checks if a variable contains a string or a list of strings and returns it as a list of strings.
+
+    Parameters
+    ----------
+    contents : str | list[str]
+        String or list of strings.
+    dependencies
+        Unused.
+
+    Returns
+    -------
+    str | Union[str]
+        The parameter given as a list of strings.
+
+    Raises
+    ------
+    ValueError
+        Invalid argument type. Expected "string or list of strings".
+    """
     failed = False
     if isinstance(contents, list):
         for item in contents:
@@ -192,6 +254,17 @@ def list_or_str_type(contents, dependencies):
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        ValueError on BetterArgParser.
+    fail_json
+        Some command(s) failed.
+    fail_json
+        An unexpected error occurred.
+    """
     module_args = dict(
         commands=dict(type="raw", required=True, aliases=["command"]),
         max_rc=dict(type="int", required=False, default=0),

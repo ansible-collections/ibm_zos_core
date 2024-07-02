@@ -1,7 +1,7 @@
 
 #!/bin/sh
 # ==============================================================================
-# Copyright (c) IBM Corporation 2022, 2023
+# Copyright (c) IBM Corporation 2022, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -103,8 +103,9 @@ echo_requirements(){
         fi
     done
 
-    #for file in `ls requirements-*.sh`; do
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
+    # for file in `ls requirements-*.sh`; do
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -116,9 +117,16 @@ echo_requirements(){
             echo "Unable to source file: $file."
         fi
 
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        echo $venv_name
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            #echo $venv_name
+        fi
 
         for pkg in "${requirements[@]}" ; do
             key=${pkg%%:*}
@@ -127,6 +135,8 @@ echo_requirements(){
                 REQ=${REQ}"$key;\\n"
             elif [ -z "$value" ]; then
                 REQ=${REQ}"$key;\\n"
+            elif [ "$key" = "ansible-core" ] && [ "$value" = "latest" ]; then
+                REQ=${REQ}"https://github.com/ansible/ansible/archive/devel.tar.gz\\n"
             else
                 REQ=${REQ}"$key==$value;\\n"
             fi
@@ -159,11 +169,18 @@ make_venv_dirs(){
     # We should think about the idea of allowing:
     # --force, --synch, --update thus not sure we need this method and better to
     # manage this logic inline to write_req
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
-        # eg extract 2.14 from requirements-2.14.sh file name
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        #echo $venv_name
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            #echo $venv_name
+        fi
         mkdir -p "${VENV_HOME_MANAGED}"/"${venv_name}"
     done
 }
@@ -197,8 +214,9 @@ write_requirements(){
         fi
     done
 
-    #for file in `ls requirements-*.sh`; do
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
+    # for file in `ls requirements-*.sh`; do
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -210,9 +228,17 @@ write_requirements(){
             echo "Unable to source file: $file."
         fi
 
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        echo $venv_name
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+            echo $venv_name
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            echo $venv_name
+        fi
 
         for pkg in "${requirements[@]}" ; do
             key=${pkg%%:*}
@@ -222,6 +248,8 @@ write_requirements(){
                 REQ=${REQ}"$key;\\n"
             elif [ -z "$value" ]; then
                 REQ=${REQ}"$key;\\n"
+            elif [ "$key" = "ansible-core" ] && [ "$value" = "latest" ]; then
+                REQ=${REQ}"https://github.com/ansible/ansible/archive/devel.tar.gz\\n"
             else
                 REQ=${REQ}"$key==$value;\\n"
             fi
@@ -290,11 +318,21 @@ write_requirements(){
 
 create_venv_and_pip_install_req(){
 
-    for file in `ls requirements-[0-9].[0-9]*.env`; do
+    # for file in `ls requirements-[0-9].[0-9]*.env`; do
+    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
         unset venv
-        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-        venv_name="venv"-$ansible_version
-        echo $venv_name
+
+        if [[ "$file" =~ "latest" ]]; then
+            # eg extract 'latest' from requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        else
+            # eg extract 2.14 from requirements-2.14.sh file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+            venv_name="venv"-$ansible_version
+            #echo $venv_name
+        fi
+
 
         if [ -f $VENV_HOME_MANAGED/$venv_name/requirements.txt ]; then
             echo ${DIVIDER}
@@ -339,8 +377,13 @@ discover_python(){
         VERSION_PYTHON=$required_python
     fi
 
-    # Don't use which, it only will find first in path within the script
-    # for python_found in `which python3 | cut -d" " -f3`; do
+    # Note:
+    #   Don't use which, it only will find first in path within the script
+    #   for python_found in `which python3 | cut -d" " -f3`; do
+    #
+    #   The 'pys' array will search for pythons in reverse order, once it finds one that matches
+    #   the requirements-x.xx.env it does not continue searching. Reverse order is important to
+    #   maintain.
     pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
     rc=1
     for py in "${pys[@]}"; do
@@ -550,7 +593,12 @@ ssh_host_credentials(){
 # field in the host_list not equal to none, it will also be copied for jenkins
 ################################################################################
 ssh_copy_key(){
-    sshpass -p "${pass}" ssh-copy-id -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa.pub "${user}"@"${host}" &> /dev/null
+    # sshpass -p "${pass}" ssh-copy-id -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa.pub "${user}"@"${host}" &> /dev/null
+    # Copying all public keys because some of the sytems don't agree on RSA as a mutual signature algorithm
+    for pub in `ls ~/.ssh/*.pub`; do
+        echo "Copying public key ${pub} to host ${host}"
+        sshpass -p "${pass}" ssh-copy-id -o StrictHostKeyChecking=no -i "${pub}" "${user}"@"${host}" &> /dev/null;
+    done
 
     if [ ! -z "$SSH_KEY_PIPELINE" ]; then
         echo "${SSH_KEY_PIPELINE}" | ssh "${user}"@"${host}"  "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"

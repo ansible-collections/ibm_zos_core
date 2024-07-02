@@ -22,11 +22,11 @@
 # and Jinja2 template, and later sphinx html.
 # This requries that the ansible collection be prebuilt so that it can find
 # the template.py within the collection (not within the git project). Thus run
-# './ac --ac-build' before the make file that builds doc. 
+# './ac --ac-build' before the make file that builds doc.
 ################################################################################
 
 template_doc_source=`ansible-config dump|grep DEFAULT_MODULE_PATH| cut -d'=' -f2|sed 's/[][]//g' | tr -d \'\" |sed 's/modules/doc_fragments\/template.py/g'`
 cp $template_doc_source $template_doc_source.tmp
-sed -i '' "s/\"\\\\n\"/'\\\\\\\\n'/g" $template_doc_source
-sed -i '' "s/\"\\\\r\"/'\\\\\\\\r'/g" $template_doc_source
-sed -i '' "s/\"\\\\r\\\\n\"/'\\\\\\\\r\\\\\\\\n'/g" $template_doc_source
+sed -i'' -e "s/\"\\\\n\"/'\\\\\\\\n'/g" $template_doc_source
+sed -i'' -e "s/\"\\\\r\"/'\\\\\\\\r'/g" $template_doc_source
+sed -i'' -e "s/\"\\\\r\\\\n\"/'\\\\\\\\r\\\\\\\\n'/g" $template_doc_source

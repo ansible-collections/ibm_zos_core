@@ -1,7 +1,7 @@
 /* rexx  __ANSIBLE_ENCODE_EBCDIC__  */
 /* WANT_JSON */
 
-/* Copyright (c) IBM Corporation 2019, 2020, 2023 */
+/* Copyright (c) IBM Corporation 2019, 2023 */
 
 /* Licensed under the Apache License, Version 2.0 (the "License"); */
 /* you may not use this file except in compliance with the License. */
@@ -62,7 +62,7 @@ Parse Arg argFile .
 
 pythonName       = 'Python'
 majVersionPython = 3
-minVersionPython = 8
+minVersionPython = 10
 warningJsonList = ''
 
 If (argFile = '') Then Do
@@ -85,7 +85,7 @@ If (rc <> 0 | returnCode <> HWTJ_OK) Then Do
     failModule(errmsg, "", retC)
 End
 
-/* Check for Python version >= 3.8 eg: 'Python 3.8.2' */
+/* Check for Python version >= 3.10 eg: 'Python 3.10.0' */
 retC = bpxwunix('python3 --version', out., err.)
 If (err.0 > 0) Then Do
     Do index=1 To err.0

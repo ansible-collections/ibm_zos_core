@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,8 +31,6 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/jcl"
-JOB_NOT_FOUND_MSG_TXT="The job with the name * could not be found."
-JOB_NOT_FOUND_MSG_TXT_ID="The job with the job_id INVALID could not be found."
 
 def test_zos_job_output_no_job_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -47,7 +45,8 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
     results = hosts.all.zos_job_output(job_id="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT_ID
+        assert result.get("stderr") is not None
+        assert result.get("failed") is True
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -63,7 +62,7 @@ def test_zos_job_output_invalid_job_name(ansible_zos_module):
     results = hosts.all.zos_job_output(job_name="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get('job_name') == "INVALID"
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
 
 
 def test_zos_job_output_no_owner(ansible_zos_module):
@@ -71,7 +70,7 @@ def test_zos_job_output_no_owner(ansible_zos_module):
     results = hosts.all.zos_job_output(owner="")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs") is None
+        assert result.get("msg") is not None
 
 
 def test_zos_job_output_invalid_owner(ansible_zos_module):
@@ -79,7 +78,7 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
     results = hosts.all.zos_job_output(owner="INVALID")
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
 
 
 def test_zos_job_output_reject(ansible_zos_module):
@@ -96,13 +95,12 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
 
         jobs = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
-
         for job in jobs.contacted.values():
             assert job.get("jobs") is not None
 
@@ -125,10 +123,10 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
-        hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+        result = hosts.all.zos_job_submit(
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"
@@ -147,4 +145,4 @@ def test_zos_job_submit_job_id_and_owner_included(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_id="STC00*", owner="MASTER")
     for result in results.contacted.values():
-        assert result.get("jobs") is not None
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None

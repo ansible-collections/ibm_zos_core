@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -51,6 +51,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to include in the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to include when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -68,6 +69,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to exclude from the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to exclude when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -117,6 +119,7 @@ options:
       - There are no enforced conventions for backup names.
         However, using a common extension like C(.dzp) for UNIX files and C(.DZP) for data sets will
         improve readability.
+      - GDS relative names are supported when I(operation=restore).
     type: str
     required: True
   recover:
@@ -168,15 +171,15 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining data set space.
-      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
-      - When I(full_volume=True), I(space_type) defaults to C(G), otherwise default is C(M)
+      - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+      - When I(full_volume=True), I(space_type) defaults to C(g), otherwise default is C(m)
     type: str
     choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
+      - k
+      - m
+      - g
+      - cyl
+      - trk
     required: false
     aliases:
       - unit
@@ -186,6 +189,14 @@ options:
       - Defaults to running user's username.
     type: str
     required: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        data sets.
+      - The default HLQ is the Ansible user that executes the module and if
+        that is not available, then the value of C(TMPHLQ) is used.
+    required: false
+    type: str
 """
 
 RETURN = r""""""
@@ -209,13 +220,22 @@ EXAMPLES = r"""
       exclude: user.private.*
     backup_name: MY.BACKUP.DZP
 
+- name: Backup a list of GDDs to data set my.backup.dzp
+  zos_backup_restore:
+    operation: backup
+    data_sets:
+      include:
+        - user.gdg(-1)
+        - user.gdg(0)
+    backup_name: my.backup.dzp
+
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
   zos_backup_restore:
     operation: backup
     data_sets:
       include: user.**
     backup_name: /tmp/temp_backup.dzp
-    recover: yes
+    recover: true
 
 - name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP.DZP,
     allocate 100MB for data sets used in backup process.
@@ -225,7 +245,7 @@ EXAMPLES = r"""
       include: user.**
     backup_name: MY.BACKUP.DZP
     space: 100
-    space_type: M
+    space_type: m
 
 - name:
     Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP.DZP,
@@ -237,7 +257,7 @@ EXAMPLES = r"""
     volume: MYVOL1
     backup_name: MY.BACKUP.DZP
     space: 100
-    space_type: M
+    space_type: m
 
 - name: Backup an entire volume, MYVOL1, to the UNIX file /tmp/temp_backup.dzp,
     allocate 1GB for data sets used in backup process.
@@ -245,9 +265,9 @@ EXAMPLES = r"""
     operation: backup
     backup_name: /tmp/temp_backup.dzp
     volume: MYVOL1
-    full_volume: yes
+    full_volume: true
     space: 1
-    space_type: G
+    space_type: g
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Use z/OS username as new HLQ.
@@ -288,10 +308,10 @@ EXAMPLES = r"""
   zos_backup_restore:
     operation: restore
     volume: MYVOL2
-    full_volume: yes
+    full_volume: true
     backup_name: MY.BACKUP.DZP
     space: 1
-    space_type: G
+    space_type: g
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Specify DB2SMS10 for the SMS storage and management classes to use for the restored
@@ -304,27 +324,34 @@ EXAMPLES = r"""
     sms_management_class: DB2SMS10
 """
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-from ansible.module_utils.basic import AnsibleModule
-
-from re import match, search, IGNORECASE
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
+import traceback
 from os import path
+from re import IGNORECASE, match, search
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import \
+    BetterArgParser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
+    DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
 
 try:
-    from zoautil_py import datasets, exceptions
+    from zoautil_py import datasets
+    from zoautil_py import exceptions as zoau_exceptions
 except ImportError:
-    datasets = MissingZOAUImport()
-    exceptions = MissingZOAUImport()
+    datasets = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
 def main():
-    """Run the zos_backup_restore module core functions."""
+    """Run the zos_backup_restore module core functions.
+
+    Raises
+    ------
+    fail_json
+        Any error ocurred during execution.
+    """
     result = dict(changed=False, message="", backup_name="")
     module_args = dict(
         operation=dict(type="str", required=True, choices=["backup", "restore"]),
@@ -337,7 +364,7 @@ def main():
             ),
         ),
         space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"], choices=["K", "M", "G", "CYL", "TRK"]),
+        space_type=dict(type="str", required=False, aliases=["unit"], choices=["k", "m", "g", "cyl", "trk"]),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
@@ -347,6 +374,7 @@ def main():
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
+        tmp_hlq=dict(type="str", required=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -365,12 +393,13 @@ def main():
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
+        tmp_hlq = params.get("tmp_hlq")
 
         if operation == "backup":
             backup(
                 backup_name=backup_name,
-                include_data_sets=data_sets.get("include"),
-                exclude_data_sets=data_sets.get("exclude"),
+                include_data_sets=resolve_gds_name_if_any(data_sets.get("include")),
+                exclude_data_sets=resolve_gds_name_if_any(data_sets.get("exclude")),
                 volume=volume,
                 full_volume=full_volume,
                 temp_volume=temp_volume,
@@ -380,6 +409,7 @@ def main():
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
+                tmp_hlq=tmp_hlq,
             )
         else:
             restore(
@@ -396,6 +426,7 @@ def main():
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
+                tmp_hlq=tmp_hlq,
             )
         result["changed"] = True
 
@@ -404,14 +435,38 @@ def main():
     module.exit_json(**result)
 
 
+def resolve_gds_name_if_any(data_set_list):
+    """Resolve all gds names in a list, if no gds relative name is found then
+    the original name will be kept.
+    Parameters
+    ----------
+    data_set_list : list
+        List of data set names.
+
+    Returns
+    -------
+    list
+        List of data set names with resolved gds names.
+    """
+    if isinstance(data_set_list, list):
+        for index, name in enumerate(data_set_list):
+            if DataSet.is_gds_relative_name(name):
+                data_set_list[index] = DataSet.resolve_gds_absolute_name(name)
+    return data_set_list
+
+
 def parse_and_validate_args(params):
     """Parse and validate arguments to be used by remainder of module.
 
-    Args:
-        params (dict): The params as returned from AnsibleModule instantiation.
+    Parameters
+    ----------
+    params : dict
+        The params as returned from AnsibleModule instantiation.
 
-    Returns:
-        dict: The updated params after additional parsing and validation.
+    Returns
+    -------
+    dict
+        The updated params after additional parsing and validation.
     """
     arg_defs = dict(
         operation=dict(type="str", required=True, choices=["backup", "restore"]),
@@ -444,6 +499,7 @@ def parse_and_validate_args(params):
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
+        tmp_hlq=dict(type=hlq_type, required=False),
     )
 
     parsed_args = BetterArgParser(arg_defs).parse_args(params)
@@ -466,26 +522,42 @@ def backup(
     space_type,
     sms_storage_class,
     sms_management_class,
+    tmp_hlq,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
-    Args:
-        backup_name (str): The data set or UNIX path to place the backup.
-        include_data_sets (list): A list of data set patterns to include in the backup.
-        exclude_data_sets (list): A list of data set patterns to exclude from the backup.
-        volume (str): The volume that contains the data sets to backup.
-        full_volume (bool): Specifies if a backup will be made of the entire volume.
-        temp_volume (bool): Specifies the volume that should be used to store temporary files.
-        overwrite (bool): Specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
-        recover (bool): Specifies if potentially recoverable errors should be ignored.
-        space (int): Specifies the amount of space to allocate for the backup.
-        space_type (str): The unit of measurement to use when defining data set space.
-        sms_storage_class (str): Specifies the storage class to use.
-        sms_management_class (str): Specifies the management class to use.
+    Parameters
+    ----------
+    backup_name : str
+        The data set or UNIX path to place the backup.
+    include_data_sets : list
+        A list of data set patterns to include in the backup.
+    exclude_data_sets : list
+        A list of data set patterns to exclude from the backup.
+    volume : str
+        The volume that contains the data sets to backup.
+    full_volume : bool
+        Specifies if a backup will be made of the entire volume.
+    temp_volume : bool
+        Specifies the volume that should be used to store temporary files.
+    overwrite : bool
+        Specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
+    recover : bool
+        Specifies if potentially recoverable errors should be ignored.
+    space : int
+        Specifies the amount of space to allocate for the backup.
+    space_type : str
+        The unit of measurement to use when defining data set space.
+    sms_storage_class : str
+        Specifies the storage class to use.
+    sms_management_class : str
+        Specifies the management class to use.
+    tmp_hlq : str
+        Specifies the tmp hlq to temporary datasets.
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
-    datasets.zip(**zoau_args)
+    datasets.dzip(**zoau_args)
 
 
 def restore(
@@ -502,55 +574,83 @@ def restore(
     space_type,
     sms_storage_class,
     sms_management_class,
+    tmp_hlq,
 ):
-    """[summary]
+    """Restore data sets or a volume from the backup.
 
-    Args:
-        backup_name (str): The data set or UNIX path containing the backup.
-        include_data_sets (list): A list of data set patterns to include in the restore
-          that are present in the backup.
-        exclude_data_sets (list): A list of data set patterns to exclude from the restore
-          that are present in the backup.
-        volume (str): The volume that contains the data sets to backup.
-        full_volume (bool): Specifies if a backup will be made of the entire volume.
-        temp_volume (bool): Specifies the volume that should be used to store temporary files.
-        overwrite (bool): Specifies if module should overwrite existing data sets with
-          matching name on the target device.
-        recover (bool): Specifies if potentially recoverable errors should be ignored.
-        hlq (str): Specifies the new HLQ to use for the data sets being restored.
-        space (int): Specifies the amount of space to allocate for data sets temporarily
-          created during the restore process.
-        space_type (str): The unit of measurement to use when defining data set space.
-        sms_storage_class (str): Specifies the storage class to use.
-        sms_management_class (str): Specifies the management class to use.
+    Parameters
+    ----------
+    backup_name : str
+        The data set or UNIX path containing the backup.
+    include_data_sets : list
+        A list of data set patterns to include in the restore
+        that are present in the backup.
+    exclude_data_sets : list
+        A list of data set patterns to exclude from the restore
+        that are present in the backup.
+    volume : str
+        The volume that contains the data sets to backup.
+    full_volume : bool
+        Specifies if a backup will be made of the entire volume.
+    temp_volume : bool
+        Specifies the volume that should be used to store temporary files.
+    overwrite : bool
+        Specifies if module should overwrite existing data sets with
+        matching name on the target device.
+    recover : bool
+        Specifies if potentially recoverable errors should be ignored.
+    hlq : str
+        Specifies the new HLQ to use for the data sets being restored.
+    space : int
+        Specifies the amount of space to allocate for data sets temporarily
+        created during the restore process.
+    space_type : str
+        The unit of measurement to use when defining data set space.
+    sms_storage_class : str
+        Specifies the storage class to use.
+    sms_management_class : str
+        Specifies the management class to use.
+    tmp_hlq : str
+        Specifies the tmp hlq to temporary datasets.
+
+    Raises
+    ------
+    ZOAUException
+        When any exception is raised during the data set allocation.
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
-    response = datasets._unzip(**zoau_args)
+    output = ""
+    try:
+        rc = datasets.dunzip(**zoau_args)
+    except zoau_exceptions.ZOAUException as dunzip_exception:
+        output = dunzip_exception.response.stdout_response
+        output = output + dunzip_exception.response.stderr_response
+        rc = get_real_rc(output)
     failed = False
-    true_rc = response.rc
-    if response.rc > 0:
-        output = response.stdout_response + response.stderr_response
-        true_rc = get_real_rc(output) or true_rc
-    if true_rc > 0 and true_rc <= 4:
+    if rc > 0 and rc <= 4:
         if recover is not True:
             failed = True
-    elif true_rc > 0:
+    elif rc > 4:
         failed = True
     if failed:
-        raise exceptions.ZOAUException(
-            "%s,RC=%s" % (response.stderr_response, response.rc)
+        raise zoau_exceptions.ZOAUException(
+            "{0}, RC={1}".format(output, rc)
         )
 
 
 def get_real_rc(output):
     """Parse out the final RC from MVS program output.
 
-    Args:
-        output (str): The MVS program output.
+    Parameters
+    ----------
+    output : str
+        The MVS program output.
 
-    Returns:
-        int: The true program RC.
+    Returns
+    -------
+    int
+        The true program RC.
     """
     true_rc = None
     match = search(
@@ -565,16 +665,24 @@ def get_real_rc(output):
 def data_set_pattern_type(contents, dependencies):
     """Validates provided data set patterns.
 
-    Args:
-        contents (Union[str, list[str]]): One or more data set patterns
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+    contents : Union[str, list[str]
+        One or more data set patterns.
+    dependencies : dict
+        Any dependent arguments.
 
-    Raises:
-        ValueError: When provided argument is not a string or a list
-        ValueError: When provided argument is an invalid data set pattern
+    Returns
+    -------
+    Union[str]
+        A list of uppercase data set patterns.
 
-    Returns:
-        list[str]: A list of uppercase data set patterns
+    Raises
+    ------
+    ValueError
+        When provided argument is not a string or a list.
+    ValueError
+        When provided argument is an invalid data set pattern.
     """
     if contents is None:
         return None
@@ -586,7 +694,7 @@ def data_set_pattern_type(contents, dependencies):
         )
     for pattern in contents:
         if not match(
-            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
             str(pattern),
             IGNORECASE,
         ):
@@ -599,16 +707,24 @@ def data_set_pattern_type(contents, dependencies):
 def hlq_type(contents, dependencies):
     """Validates provided HLQ is valid and is not specified for a backup operation.
 
-    Args:
-        contents (str): The HLQ to use
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+    contents : str
+        The HLQ to use.
+    dependencies : dict
+        Any dependent arguments.
 
-    Raises:
-        ValueError: When operation is restore and HLQ is provided
-        ValueError: When an invalid HLQ is provided
+    Returns
+    -------
+    str
+        The HLQ to use.
 
-    Returns:
-        str: The HLQ to use
+    Raises
+    ------
+    ValueError
+        When operation is restore and HLQ is provided.
+    ValueError
+        When an invalid HLQ is provided.
     """
     if contents is None:
         return None
@@ -622,31 +738,43 @@ def hlq_type(contents, dependencies):
 def hlq_default(contents, dependencies):
     """Sets the default HLQ to use if none is provided.
 
-    Args:
-        contents (str): The HLQ to use
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+    contents : str
+        The HLQ to use.
+    dependencies : dict
+        Any dependent arguments.
 
-    Returns:
-        str: The HLQ to use
+    Returns
+    -------
+    str
+        The HLQ to use.
     """
     hlq = None
     if dependencies.get("operation") == "restore":
-        hlq = datasets.hlq()
+        hlq = datasets.get_hlq()
     return hlq
 
 
 def sms_type(contents, dependencies):
     """Validates the SMS class provided matches a valid format.
 
-    Args:
-        contents (str): The SMS class name
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+    contents : str
+        The SMS class name.
+    dependencies : dict
+        Any dependent arguments.
 
-    Raises:
-        ValueError: When invalid argument provided for SMS class.
+    Returns
+    -------
+    str
+        The uppercase SMS class name.
 
-    Returns:
-        str: The uppercase SMS class name
+    Raises
+    ------
+    ValueError
+        When invalid argument provided for SMS class.
     """
     if contents is None:
         return None
@@ -658,12 +786,17 @@ def sms_type(contents, dependencies):
 def space_type(contents, dependencies):
     """Validates amount of space provided.
 
-    Args:
-        contents (str): The amount of space
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+    contents : str
+        The amount of space.
+    dependencies : dict
+        Any dependent arguments.
 
-    Returns:
-        int: The amount of space
+    Returns
+    -------
+    int
+        The amount of space.
     """
     if contents is None:
         if dependencies.get("full_volume"):
@@ -677,24 +810,31 @@ def space_type_type(contents, dependencies):
     """Validates provided data set unit of space.
     Returns the unit of space.
 
-    Args:
-        contents (str): The space type to use
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+    contents : str
+        The space type to use.
+    dependencies : dict
+        Any dependent arguments.
 
-    Raises:
-        ValueError: When an invalid space unit is provided
+    Returns
+    -------
+    str
+        The unit of space.
 
-    Returns:
-        str: The unit of space
+    Raises
+    ------
+    ValueError
+        When an invalid space unit is provided.
     """
     if contents is None:
         if dependencies.get("full_volume"):
-            return "G"
+            return "g"
         else:
-            return "M"
-    if not match(r"^(M|G|K|TRK|CYL)$", contents, IGNORECASE):
+            return "m"
+    if not match(r"^(m|g|k|trk|cyl)$", contents, IGNORECASE):
         raise ValueError(
-            'Value {0} is invalid for space_type argument. Valid space types are "K", "M", "G", "TRK" or "CYL".'.format(
+            'Value {0} is invalid for space_type argument. Valid space types are "k", "m", "g", "trk" or "cyl".'.format(
                 contents
             )
         )
@@ -704,20 +844,27 @@ def space_type_type(contents, dependencies):
 def backup_name_type(contents, dependencies):
     """Validates provided backup name.
 
-    Args:
-        contents (str): The backup name to use
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+        contents : str
+            The backup name to use
+        dependencies : dict
+            Any dependent arguments
 
-    Raises:
-        ValueError: When an invalid backup name is provided
+    Returns
+    -------
+        str
+            The backup name to use
 
-    Returns:
-        str: The backup name to use
+    Raises
+    ------
+        ValueError
+            When an invalid backup name is provided
     """
     if contents is None:
         return None
     if not match(
-        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
         str(contents),
         IGNORECASE,
     ):
@@ -731,15 +878,22 @@ def backup_name_type(contents, dependencies):
 def full_volume_type(contents, dependencies):
     """Validates dependent arguments are also specified for full_volume argument.
 
-    Args:
-        contents (bool): Whether we are making a full volume backup or not
-        dependencies (dict): Any dependent arguments
+    Parameters
+    ----------
+    contents : bool
+        Whether we are making a full volume backup or not.
+    dependencies : dict
+        Any dependent arguments.
 
-    Raises:
-        ValueError: When volume argument is not provided
+    Returns
+    -------
+    bool
+        Whether we are making a full volume backup or not.
 
-    Returns:
-        bool: Whether we are making a full volume backup or not
+    Raises
+    ------
+    ValueError
+        When volume argument is not provided.
     """
     if contents is True and dependencies.get("volume") is None:
         raise ValueError("full_volume=True is only valid when volume is specified.")
@@ -749,8 +903,10 @@ def full_volume_type(contents, dependencies):
 def to_dzip_args(**kwargs):
     """API adapter for ZOAU dzip method.
 
-    Returns:
-        dict: The arguments for ZOAU dzip method translated from module arguments
+    Returns
+    -------
+    dict
+        The arguments for ZOAU dzip method translated from module arguments.
     """
     zoau_args = {}
     if kwargs.get("backup_name"):
@@ -791,14 +947,20 @@ def to_dzip_args(**kwargs):
         if kwargs.get("space_type"):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
+
+    if kwargs.get("tmp_hlq"):
+        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+
     return zoau_args
 
 
 def to_dunzip_args(**kwargs):
     """API adapter for ZOAU dunzip method.
 
-    Returns:
-        dict: The arguments for ZOAU dunzip method translated from module arguments
+    Returns
+    -------
+    dict
+        The arguments for ZOAU dunzip method translated from module arguments.
     """
     zoau_args = {}
     if kwargs.get("backup_name"):
@@ -844,7 +1006,10 @@ def to_dunzip_args(**kwargs):
         zoau_args["size"] = size
 
     if kwargs.get("hlq"):
-        zoau_args["hlq"] = kwargs.get("hlq")
+        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
+
+    if kwargs.get("tmp_hlq"):
+        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
     return zoau_args
 

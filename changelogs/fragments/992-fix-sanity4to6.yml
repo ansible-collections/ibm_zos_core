@@ -1,0 +1,7 @@
+trivial:
+  - zos_data_set.py - Corrected references to input variable definitions
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1285).
+  - data_set.py - Updated exception handler to match what was returned.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1285).
+  - test_zos_data_set_func.py - Removed test of discontinued function.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1285).

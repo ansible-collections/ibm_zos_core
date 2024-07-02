@@ -257,11 +257,23 @@ def list_or_str_type(contents, dependencies):
 
 
 def substitute_names(commands):
-    for command in commands:
+    """ Checks for each command if there is a data set name, if there is, it will
+    apply any preprocess transformation needed.
+    
+    Parameters
+    ----------
+    commands : list[str]
+        List of commands to be analyzed.
+
+    Returns
+    -------
+    list[str]
+        List of commands processed.
+    """
+    for index, command in enumerate(commands):
         if "'" in command:
-            target_index = commands.index(command)
             new_command = check_for_datasets(command)
-            commands[target_index] = new_command
+            commands[index] = new_command
     return commands
 
 

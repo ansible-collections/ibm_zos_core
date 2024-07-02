@@ -5201,7 +5201,7 @@ def test_copy_gdg_to_gdg_dest_attributes(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
 
-def test_gds_backup(ansible_zos_module):
+def test_backup_gds(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
@@ -5244,7 +5244,7 @@ def test_gds_backup(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {src_data_set}")
 
 
-def test_gds_backup_invalid_generation(ansible_zos_module):
+def test_backup_gds_invalid_generation(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:

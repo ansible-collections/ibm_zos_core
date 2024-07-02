@@ -3521,14 +3521,15 @@ def run_module(module, arg_def):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
-                backup_data_set = data_set.MVSDataSet(backup_name)
-                if backup_data_set.is_gds_active:
-                    module.fail_json(
-                        msg=(
-                            f"The generation data set {backup_name} cannot be used as backup. "
-                            "Please use a new generation for this purpose."
+                if backup_name:
+                    backup_data_set = data_set.MVSDataSet(backup_name)
+                    if backup_data_set.is_gds_active:
+                        module.fail_json(
+                            msg=(
+                                f"The generation data set {backup_name} cannot be used as backup. "
+                                "Please use a new generation for this purpose."
+                            )
                         )
-                    )
 
                 backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
 

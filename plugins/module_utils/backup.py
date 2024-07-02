@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )

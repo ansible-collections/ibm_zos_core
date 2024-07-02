@@ -1,4 +1,3 @@
-# Download document files concurrently and save the files locally concurrently
 import os
 import sys, getopt
 import subprocess
@@ -19,15 +18,33 @@ from contextlib import contextmanager
 import time
 
 # ------------------------------------------------------------------------------
+# TODO: list
+# ------------------------------------------------------------------------------
+#  1. Update the AC tool's requirements to include paramiko so that the library
+#  is included in the managed venv's which perform a 'pip install paramiko'
+#  2. This relies on the dependency finder, thus a copy of 'dependencyfinder.py'
+#  needs to be placed the AC managed venv's.
+#  3. Add support for unit tests, currently only functional tests are supported.
+#  4. Reduce some of the cross product dependencies, for example can we remove
+#  the dependencyfinder.py or other AC tools dependency. Another example the code
+#  has this comment (below), while i can see value in using AC, should it be used
+#  instead of code written in Python (see get_jobs_as_dictionary..)?
+#      # Instead of using get_all_files_in_dir_tree, use ./ac './ac --ac-test-discover'
+       # files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
+# Document get_jobs_as_dictionary usage with more examples and explanation. 
+
+# ------------------------------------------------------------------------------
 # Helpers to collect test status
 # ------------------------------------------------------------------------------
 def get_all_files_in_dir_tree(base_path):
-    """Recursively search subdirectories for files according to base_path.
+    """
+    Recursively search subdirectories for files according to base_path.
+
     Args:
         base_path (str): The directory to recursively search.
     Returns:
-    list[str]: A list of file paths.
-        """
+        list[str]: A list of file paths.
+    """
 
     found_files = []
     for root, subdirs, files in os.walk(base_path):
@@ -35,22 +52,33 @@ def get_all_files_in_dir_tree(base_path):
             found_files.append(os.path.join(root, file))
     return found_files
 
+# TODO: Unsure why this is not used and if it needs to remain
 def get_all_test_suites(collection_root):
-    """Build a list of all test suites for collection_root which equates to
-       <path>/github/ibm_zos_core/
+    """
+    Build a list of all test suites that correspond to a collections
+    root path. For example collection_root could be the path + sub directories:
+    <path>/github/ibm_zos_core/
+
     Args:
-        collection_root (str): The path to the root of the collection
+        collection_root (str): Path to collections root folder, not the tests folder.
     Returns:
         list[tests]: A list of test cases.
+
     Example:
-        suites = get_all_test_suites("/Users/ddimatos/git/github/ibm_zos_core/")
+        suites = get_all_test_suites("/Users/ddimatos/git/gh/ibm_zos_core/")
         print(suites)
     """
 
+    # TODO: Unit tests are not supported at this time.
+    #   e.g.; files += get_all_files_in_dir_tree(collection_root + "/tests/unit")
+
     files = []
-    # Not support unit tests at this time
-    # files += get_all_files_in_dir_tree(collection_root + "/tests/unit")
-    files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
+    test_suit_path = (collection_root + "/tests/functional")
+
+    if not os.path.exists(test_suit_path):
+        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
+
+    files += get_all_files_in_dir_tree(test_suit_path)
 
     test_suites = []
     for file in files:
@@ -60,17 +88,28 @@ def get_all_test_suites(collection_root):
                 test_suites.append(file)
     return test_suites
 
+# TODO: Unsure why this is not used and if it needs to remain
 def get_all_test_cases(collection_root):
-    """Build a list of all test cases found in test suites
+    """
+    Build a list of all test cases found in test suites, unlike `get_all_test_suites`
+    which builds a list of test suites, this method will return a list of all test
+    cases found in all test suites given the collections project root.
+
     Args:
-        collection_root (str): The path to the root of the collection
+        collection_root (str): Path to collections root folder, not the tests folder.
+
     Returns:
         list[tests]: A list of test cases.
     """
 
     test_suites = []
     files = []
-    files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
+    test_suit_path = (collection_root + "/tests/functional")
+
+    if not os.path.exists(test_suit_path):
+        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
+
+    files += get_all_files_in_dir_tree(test_suit_path)
 
     for file in files:
         if file.endswith(".py"):
@@ -79,80 +118,107 @@ def get_all_test_cases(collection_root):
                 with open (file) as test:
                     lines = test.readlines()
                     for line in lines:
-                        # Is string present
-                        if line.find("def test_") != -1:
+                        if line.find("def test_") != -1: # Is string present
                             test_suites.append(line.partition(" ")[2].partition("(")[0])
     return test_suites
 
 
-def get_jobs_as_dictionary(python=None, zoau=None, cmd_prefix="", local_test=None):
-    """Build a dictionary of job objects representing the test cases to be executed.
+def get_jobs_as_dictionary(python=None, zoau=None, cmd_args="", tests=None):
+    """
+    Build a dictionary of job objects. A job object is a unit of work the executor will use to execute
+    a test case, a job contains stats about the unit of work such as host, test case name, command to run, etc.
+
+    Test cases can be passed in absolute form but must reside under "tests/functional/modules/", thus unit
+    tests are not currently supported.
+
     Args:
-        python
-        zoau
-        cmd_prefix - for when run out of project root, meaning load balancer needs to know where to find ./ac
-        local_test instructs the balancer not to pull all the test suites and only pick one
+        python - z/OS python version, eg "3.9"
+        zoau - ZOAU version , eg "1.2.5"
+        cmd_args - optional command args to be run before tests are executed. This is helpful
+        if you are setting up env vars or wanting to `cd` to a directory before a test case runs.
+        tests - test suite to run located under "tests/functional/modules/", more than one test
+        suite can be passed, they must be comma or space delimited.
+    Example:
+        jobs = get_jobs_as_dictionary(python=pyz, zoau=zoau, cmd_args=cmd_args, tests=tests)
     """
 
     nodes = get_active_nodes_as_list()
+    print("Active nodes are: " + ' '.join(nodes))
     nodes_len = len(nodes)
 
     files = []
 
-    if local_test is not None:
-        files.append(local_test)
+    # If tests not none, it means a specific test suite was passed with either space or comma delimiter
+    if tests is not None:
+        files = tests.strip().replace(',', ' ').split()
+
     else:
         # Instead of using get_all_files_in_dir_tree, use ./ac './ac --ac-test-discover'
         # files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
 
-        # TODO: This may need the prefix added here
+        # TODO: Using AC here does force the tool into a predefined hierarchy, long term this could be problematic, maybe reconsider
+        # get_all_files_in_dir_tree if it will return the same results. 
         result = subprocess.run(["cd ..;./ac --ac-test-discover --all true"], shell=True, capture_output=True, text=True)
         files = result.stdout.split()
 
-    #files = ['/Users/ddimatos/git/github/ibm_zos_core/tests/functional/modules/test_load_balance.py']
     jobs = dictionary()
     index = 0
     for file in files:
         if file.endswith(".py"):
+            print("Found a file ending in *.py which is: " + file)
             path, filename = os.path.split(file)
             if filename.startswith('test'):
                 with open (file) as test:
                     lines = test.readlines()
                     nodes_index = 0
                     for line in lines:
-                        # Look for tests cases , they start with 'test_'
-                        if line.find("def test_") != -1:
-                            # Every time the end of the nodes dictionary is reached restart from the beginning
-                            # to append nodes.
-                            if (nodes_index % nodes_len) == 0:
+                        # Look for tests cases , they start with 'test_', end with ":" and ignore commented lines
+                        if not line.startswith("#") and line.find(":") != -1 and line.find("def test_") != -1:
+                            print("line " + line)
+                            # When the end of the nodes dictionary is reached restart from the beginning so that nodes are distributed to jobs
+                            # Avoid division error
+                            if ((nodes_index + nodes_len) > 0 and (nodes_index % nodes_len) == 0):
                                 nodes_index = 0
-                            test_function_line = line.partition('(')[0].strip().split()
 
+                            test_function_line = line.partition('(')[0].strip().split()
+                            print("test_function_line" + str(test_function_line))
+
+                            # The AC tool expects tests to be in  "tests/functional/modules/", thus this is a limitation until AC is updated,
+                            # thus do not try to use file=path in the job constructor, it will error, continue to use file = "tests/functional/modules/".
                             _job = job(host=nodes[nodes_index], python=python, zoau=zoau, file="tests/functional/modules/" + filename, test=test_function_line[1], debug=False, id=index )
-                            _job.add_cmd_prefix(cmd_prefix)
+                            _job.add_cmd_args(cmd_args)
                             jobs.update(index, _job)
                             index += 1
                             nodes_index += 1
+    #TODO: Should an error be thrown here if the jobs length is 0 or let it fall down into the code.
     return jobs
 
 
 def assign_new_node_to_job(job_entry):
-    """This will review the list of z/OS nodes online and then compare the nodes
-       in the job, then it will append a new node to the job which is different
-       from the prior ones the job used. Essentially it will assign the job to a
-       new target to run on.
-
-       To do this correctly we really should be monitoring the host state where
-       connection is put into an object with host name and state (active or not).
-
-       For now, we can traverse the jobs queue at selected times and see if any job
-       is not using a connection and assign it.
     """
+    This will review the list of z/OS nodes that are online and compare them
+    to the z/OS nodes assigned in a job, then it will append a new z/OS node to
+    the job which is different from the prior assigned z/OS nodes used in the
+    job. Essentially it will assign the job to a new target to run on.
+
+    This method is used to re-balance a jobs z/OS hosts, this is done when
+    a job consistently fails with a RC of 3, indicating that possibly the
+    originally assigned z/OS node is no longer responding well thus the job
+    needs a new node assigned to it.
+
+    Note: Leaving this comment here to follow up on, not particularly sure
+    what the thinking was about, sounds like maybe we should mark z/OS notes
+    as active - meaning functional and others as inactive to mark them as
+    problematic to avoid them.
+    To do this correctly, the code should really should be monitoring the host
+    state where the connection is put into an object with host name and
+    state (active or not). (not sure how this will help, leaving the comment for now)
+    """
+
     # Get a list of all the active nodes again
     nodes = get_active_nodes_as_list()
 
-    # Take the difference the active nodes with nodes set in the job and assign
-    # a new node.
+    # The difference of all available z/OS nodes and ones assigned to a job.
     nodes_not_in_job = list(set(nodes) - set(job_entry.get_all_hosts()))
     job_entry.add_host(nodes_not_in_job[1])
 
@@ -169,10 +235,12 @@ def get_active_nodes_as_list():
 
     # Return a list
     nodes = result.stdout.split()
-
+    print("The nodes are: " + ' '.join(nodes))
     # Prune anything that is  not up from the list
     for target in nodes:
-        command = ['ping', '-c', '1', '-w2', target]
+        # Remove wait time, a bit fragile, found it to be W and also w on various OS's
+        # command = ['ping', '-c', '1', '-w2', target]
+        command = ['ping', '-c', '1', target]
         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         if result.returncode == 0:
@@ -199,12 +267,14 @@ def get_active_nodes_as_dictionary():
 
     # Prune anything that is  not up from the list
     for host in hosts:
-        command = ['ping', '-c', '1', '-w2', host]
+        # command = ['ping', '-c', '1', '-w2', host]
+        command = ['ping', '-c', '1', host]
         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         if result.returncode == 0:
             hostname=host.split('.')
             nodes.update(hostname[0], node(hostname=hostname[0]))
+    print("NODES ARE " + str(nodes))
     return nodes
 
 
@@ -367,7 +437,8 @@ class job:
         return self.prefix + self.cmd + " --host " + self.hosts[-1] + " --python " + self.python + " --zoau " + self.zoau + " --file " + self.file + " --test " + self.test + " --debug " + str(self.debug)
 
     def get_all_hosts(self):
-        """Return all hosts assigned to this node as a list.
+        """
+        Return all hosts assigned to this job as a list.
         Returns:
             list[str]: A list of all hosts.
         """
@@ -453,7 +524,7 @@ class job:
     def add_failure(self):
         self.failures +=1
 
-    def add_cmd_prefix(self,prefix):
+    def add_cmd_args(self,prefix):
         self.prefix = prefix
 
 class Connection:
@@ -664,6 +735,7 @@ def run(key, jobs, nodes, completed):
     job_rc = job.get_rc()
 
     if job_rc == 0:
+        print("Test case rc is = " + str(job_rc))
         completed.update(job.get_id(), job)
         return job_rc
     elif job_rc > 0:
@@ -697,7 +769,9 @@ def run(key, jobs, nodes, completed):
 
         print("Available nodes = " + str(nodes_len) + ", Job ID = " + str(job.get_id()) + ", Command = " + job.get_command())
         result = subprocess.run([job.get_command()], shell=True, capture_output=True, text=True)
+        print("RESULT is " + str(result))
         rc = result.stdout
+        print("RC is " + rc)
         if int(rc) == 0:
             print("Job ID = " + str(job.get_id()) + ", return code = "+ rc)
             job.set_rc(int(rc))
@@ -714,6 +788,7 @@ def run(key, jobs, nodes, completed):
         # Were not able to obtain a node in the allocated default 100 seconds
         # print("Not able to obtain access to a node."
         # Don't need to print anything here but maybe a verbose mode in the future would be good
+        print("OH NOOOOO")
         return 2
 
     return int(rc)
@@ -726,6 +801,7 @@ def runner(jobs, nodes, completed):
     # Set the number of threads as the number of nodes we have, this is a limitation
     # that can be removed once the tests have been updated to support a concurrency model.
     number_of_threads = nodes.len()
+    print("Thread count for ThreadPoolExecutor is: " + str(number_of_threads))
 
     with ThreadPoolExecutor(number_of_threads) as executor:
         # Run through all jobs and execute them
@@ -737,28 +813,28 @@ def runner(jobs, nodes, completed):
 
 
 def main(argv):
-    # Example usage: python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --prefix "cd /Users/ddimatos/git/github/ibm_zos_core;"
+    # Example usage: python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --prefix "cd /Users/ddimatos/git/gh/ibm_zos_core;"
     try:
-      opts, args = getopt.getopt(argv,'-h',['python=','zoau=','itr=', 'prefix=', 'local-test='])
+      opts, args = getopt.getopt(argv,'-h',['python=','zoau=','itr=', 'prefix=', 'tests='])
     except getopt.GetoptError:
       print ('load_balance.py --python <(str)python> --zoau <(str)zoau> --itr <int> --prefix <str>')
-      print ('python load_balance.py --python \"3.9\" --zoau \"1.2.2\" --itr 10 --prefix \"cd /Users/ddimatos/git/github/ibm_zos_core;\"')
+      print ('python load_balance.py --python \"3.9\" --zoau \"1.2.2\" --itr 10 --prefix \"cd /Users/ddimatos/git/gh/ibm_zos_core;\"')
       sys.exit(2)
 
     zoau = "1.2.2"
     pyz = "3.9"
     itr = 10
-    cmd_prefix = ""
-    local_test = None
+    cmd_args = ""
+    tests = None
     for opt, arg in opts:
         if opt == '-h':
             print ('load_balance.py --python <python> --zoau <zoau> --itr <int> --prefix <str>')
-            print ('python load_balance.py --python \"3.9\" --zoau \"1.2.2\" --itr 10 --prefix \"cd /Users/ddimatos/git/github/ibm_zos_core;\" --local-test \"test_load_balance.py\"')
+            print ('python load_balance.py --python \"3.9\" --zoau \"1.2.2\" --itr 10 --prefix \"cd /Users/ddimatos/git/gh/ibm_zos_core;\" --tests \"test_load_balance.py\"')
             # Use argparse for real help, for now this works:
             print("--python - (str) python version ")
             print("--zoau - (str) zoau version")
             print("--prefix - (str) a prefix to be run before the generated command, optional")
-            print("--local-test - (str) a local test that overrides the parsing of all tests")
+            print("--tests - (str) a local test that overrides the parsing of all tests")
             sys.exit()
         elif opt in '--python':
             pyz = arg or "3.9"
@@ -767,9 +843,9 @@ def main(argv):
         elif opt in '--itr':
             itr = arg or 10
         elif opt in '--prefix':
-            cmd_prefix = arg or ""
-        elif opt in '--local-test':
-            local_test = arg or None
+            cmd_args = arg or ""
+        elif opt in '--tests':
+            tests = arg or None
 
     start_time_full_run = time.time()
 
@@ -778,18 +854,23 @@ def main(argv):
 
     # Get a dictionary of all active nodes to run tests on
     nodes = get_active_nodes_as_dictionary()
+    print("Node count is " + str(nodes.len()))
 
     print("Hosts that will be used for execution:")
     for key, value in nodes.items():
         print("    " + key)
 
     # Get a dictionary of jobs containing the work to be run on a node.
-    jobs = get_jobs_as_dictionary(python=pyz, zoau=zoau, cmd_prefix=cmd_prefix, local_test=local_test)
+    jobs = get_jobs_as_dictionary(python=pyz, zoau=zoau, cmd_args=cmd_args, tests=tests)
 
     count = 1
     iterations_result=""
+    print("completed.len() " + str(completed.len()))
+    print("jobs.len() " + str(jobs.len()))
     while completed.len() != jobs.len() and count < int(itr):
         print("Thread pool iteration " + str(count))
+        print("completed.len() " + str(completed.len()))
+        print("jobs.len() " + str(jobs.len()))
         job_completed_before = completed.len();
         start_time = time.time()
         runner(jobs, nodes, completed)
@@ -833,5 +914,7 @@ if __name__ == '__main__':
 
 
 #./ac --venv-start
-#cd /Users/ddimatos/git/github/ibm_zos_core/scripts
-#python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --prefix "cd /Users/ddimatos/git/github/ibm_zos_core;" --local-test "test_load_balance_full.py"
+#cd /Users/ddimatos/git/gh/ibm_zos_core/scripts
+#python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --prefix "cd /Users/ddimatos/git/gh/ibm_zos_core;" --tests "test_load_balance_full.py"
+
+

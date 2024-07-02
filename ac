@@ -684,7 +684,7 @@ venv_setup(){
 venv_start(){
     message "Starting managed python virtual environment: $VENV_BASENAME"
     #. $VENV_BIN/activate; exec /bin/sh -i
-    /bin/bash -c ". $VENV_BIN/activate; exec /bin/sh -i"
+    /bin/bash -c ". $VENV_BIN/activate; exec /bin/sh -i;"
 }
 
 # ------------------------------------------------------------------------------
@@ -698,8 +698,13 @@ venv_start(){
 ##  $ ac --venv-stop
 venv_stop(){
     message "Stopping managed ansible virtual environment located at: $VENV_BASENAME"
-    message "ac --venv-stop does not actually currently work, use CNTL-D"
-    . deactivate $VENV_BASENAME;
+    # message "ac --venv-stop does not actually currently work, use CNTL-D"
+    # . deactivate $VENV_BASENAME;
+    # deactivate venv/$VENV_BASENAME
+    venv_tty=`tty`
+    venv_tty=`basename $venv_tty`
+    venv_pid=`ps -ef |grep $venv_tty | grep -v "grep" | grep "/bin/sh -i" | awk '{print $3}'`
+    kill -9 $venv_pid > /dev/null 2>&1
 }
 
 # ==============================================================================

@@ -256,40 +256,28 @@ def list_or_str_type(contents, dependencies):
     return contents
 
 
-def substitute_names(commands):
-    """ Checks for each command if there is a data set name, if there is, it will
-    apply any preprocess transformation needed.
-    
+def preprocess_data_set_names(command):
+    """
+    Applies necessary preprocessing to the data set names, such as converting
+    a GDS relative name into an absolute one.
+
     Parameters
     ----------
-    commands : list[str]
-        List of commands to be analyzed.
+    command : str
+        command in which to look for a data set name.
 
     Returns
     -------
-    list[str]
-        List of commands processed.
+    str
+        The command with the modified data set names if any.
+
     """
-    for index, command in enumerate(commands):
-        if "'" in command:
-            new_command = check_for_datasets(command)
-            commands[index] = new_command
-    return commands
-
-
-def check_for_datasets(command):
-    command_split = command.split()
-    for word in command_split:
-        word = re.findall("""([^']*)""", word)
-        for separate_word in word:
-            if fullmatch(
-                r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\(([-+]?[0-9]+)\)){0,1}$",
-                str(separate_word),
-            ):
-                dataset = data_set.MVSDataSet(
-                    name=separate_word,
-                )
-                command = command.replace(separate_word, dataset.name)
+    data_set_list = re.findall(r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\((?:[-+]?[0-9]+)\)){0,1}", command)
+    for name in data_set_list:
+        dataset = data_set.MVSDataSet(
+            name=name,
+        )
+        command = command.replace(name, dataset.name)
     return command
 
 
@@ -327,7 +315,7 @@ def run_module():
         module.fail_json(msg=repr(e), **result)
 
     commands = parsed_args.get("commands")
-    commands = substitute_names(commands)
+    commands = list(map(preprocess_data_set_names, commands))
     max_rc = parsed_args.get("max_rc")
     if max_rc is None:
         max_rc = 0

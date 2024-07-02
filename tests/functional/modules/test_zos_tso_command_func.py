@@ -165,7 +165,7 @@ def test_zos_tso_command_gds(ansible_zos_module):
         for item in result.get("output"):
             assert result.get("changed") is True
     results = hosts.all.zos_tso_command(
-        commands=["""LISTDSD DATASET('{0}(+1)') ALL GENERIC""".format(default_data_set)]
+        commands=["""LISTDS {0}(-1)""".format(default_data_set)]
     )
     for result in results.contacted.values():
         for item in result.get("output"):

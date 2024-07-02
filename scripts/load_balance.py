@@ -788,7 +788,6 @@ def run(key, jobs, nodes, completed):
         # Were not able to obtain a node in the allocated default 100 seconds
         # print("Not able to obtain access to a node."
         # Don't need to print anything here but maybe a verbose mode in the future would be good
-        print("OH NOOOOO")
         return 2
 
     return int(rc)

@@ -107,6 +107,9 @@ options:
         attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record
         format with a record length of 0, block size of 32760, and the remaining attributes will be
         computed.
+      - If C(src) is a file and C(dest) a partitioned data set, C(dest) does not need to include
+        a member in its value, the module can automatically compute the resulting member name from
+        C(src).
       - When C(dest) is a data set, precedence rules apply. If C(dest_data_set)
         is set, this will take precedence over an existing data set. If C(dest)
         is an empty data set, the empty data set will be written with the

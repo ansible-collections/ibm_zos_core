@@ -145,7 +145,7 @@ def test_zos_tso_command_maxrc(ansible_zos_module):
 
 def test_zos_tso_command_gds(ansible_zos_module):
     hosts = ansible_zos_module
-    default_data_set = get_tmp_ds_name(3, 3, symbols=True)
+    default_data_set = get_tmp_ds_name(3, 3, symbols=True).replace("-", "").replace("@", "")
     hosts.all.shell(cmd="dtouch -tGDG -L2 {0}".format(default_data_set))
     hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
     hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
@@ -165,7 +165,7 @@ def test_zos_tso_command_gds(ansible_zos_module):
         for item in result.get("output"):
             assert result.get("changed") is True
     results = hosts.all.zos_tso_command(
-        commands=["""LISTDS {0}(-1)""".format(default_data_set)]
+        commands=["""PROFILE NOPREFIX; LISTDS {0}(-1);""".format(default_data_set)]
     )
     for result in results.contacted.values():
         for item in result.get("output"):

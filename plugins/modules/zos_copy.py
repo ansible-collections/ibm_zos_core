@@ -2909,6 +2909,13 @@ def allocate_destination_data_set(
         else:
             dest_params = dest_data_set
             dest_params["name"] = dest
+            # Removing GDG specific options.
+            del dest_params["limit"]
+            del dest_params["empty"]
+            del dest_params["scratch"]
+            del dest_params["purge"]
+            del dest_params["extended"]
+            del dest_params["fifo"]
             data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None

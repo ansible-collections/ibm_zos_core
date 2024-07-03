@@ -6,15 +6,59 @@
 Releases and maintenance
 ========================
 
-This table describes the collections release dates, dependency versions and End of Life dates (EOL).
+This section describes the collections release dates, dependency versions and End of Life dates (EOL)
+and support coverage.
 
 The ``ibm_zos_core`` collection is developed and released on a flexible release cycle; generally, each quarter
 a beta is released followed by a GA version. Occasionally, the cycle may be extended to properly implement and
 test larger changes before a new release is made available.
 
 End of Life for this collection is generally a 2-year cycle unless a dependency reaches EOL prior to the 2 years.
-For example, if a collection has released and its dependency reaches EOL 1 year later, then the collection will EOL
+For example, if a collection has released and a dependency reaches EOL 1 year later, then the collection will EOL
 at the same time as the dependency, 1 year later.
+
+Life Cycle Phase
+================
+
+To encourage the adoption of new features while keeping the high standard of stability inherent,
+support is divided into life cycle phases; **full support** which covers the first year
+and **maintenance support** which covers the second year.
+
++--------------------------+------------------------------------+---------------------------+
+| Life Cycle Phase         | Full Support                       | Maintenance Support       |
++==========================+====================================+===========================+
+| Critical security fixes  | Yes                                | Yes                       |
++--------------------------+------------------------------------+---------------------------+
+| Bug fixes by severity    | Critical and high severity issues  | Critical severity issues  |
++--------------------------+------------------------------------+---------------------------+
+
+Severities
+==========
+
+Severity 1 (Critical):
+A problem that severely impacts your use of the software in a production environment (such as loss
+of production data or in which your production systems are not functioning). The situation halts
+your business operations and no procedural workaround exists.
+
+Severity 2 (high):
+A problem where the software is functioning but your use in a production environment is severely
+reduced. The situation is causing a high impact to portions of your business operations and no
+procedural workaround exists.
+
+Severity 3 (medium):
+A problem that involves partial, non-critical loss of use of the software in a production environment
+or development environment and your business continues to function, including by using a procedural
+workaround.
+
+Severity 4 (low):
+A general usage question, reporting of a documentation error, or recommendation for a future product
+enhancement or modification.
+
+Severities 3 and 4 are generally addressed in subsequent releases to ensure a high standard of stability
+remains available for production environments.
+
+Support Matrix
+==============
 
 These are the component versions available when the collection was made generally available (GA). The underlying
 component version is likely to change as it reaches EOL, thus components must be a version that is
@@ -33,8 +77,15 @@ For IBM product lifecycle information, you can search for products using a produ
 to view IBM's `Open Enterprise SDK for Python lifecycle`_, search on product ID `5655-PYT`_, and for
 `Z Open Automation Utilities lifecycle`_, search on product ID `5698-PA1`_.
 
-Support Matrix
-==============
+The z/OS managed node includes several shells, currently the only supported shell is the z/OS Shell located in path
+`/bin/sh`_. To configure which shell the ansible control node will use on the target machine, set inventory variable
+**ansible_shell_executable**.
+
+.. code-block:: sh
+
+   ansible_shell_executable: /bin/sh
+
+
 +---------+----------------------------+---------------------------------------------------+---------------+---------------+
 | Version | Controller                 | Managed Node                                      | GA            | End of Life   |
 +=========+============================+===================================================+===============+===============+
@@ -100,3 +151,5 @@ Support Matrix
    https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
 .. _Ansible:
    https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix
+.. _/bin/sh:
+   https://www.ibm.com/docs/en/zos/3.1.0?topic=descriptions-sh-invoke-shell

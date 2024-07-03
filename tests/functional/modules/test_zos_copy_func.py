@@ -2598,6 +2598,46 @@ def test_copy_file_to_non_existing_member(ansible_zos_module, src):
         hosts.all.zos_data_set(name=data_set, state="absent")
 
 
+# Test related to issue #774: https://github.com/ansible-collections/ibm_zos_core/issues/774.
+@pytest.mark.uss
+@pytest.mark.pdse
+def test_copy_file_to_non_existing_member_implicit(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_data_set = get_tmp_ds_name()
+    dest_member = f"{dest_data_set}(PROFILE)"
+
+    try:
+        hosts.all.zos_data_set(
+            name=dest_data_set,
+            type="pdse",
+            space_primary=5,
+            space_type="m",
+            record_format="fba",
+            record_length=80,
+            replace=True
+        )
+
+        copy_result = hosts.all.zos_copy(
+            src="/etc/profile",
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_member),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_member
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+    finally:
+        hosts.all.zos_data_set(name=dest_data_set, state="absent")
+
+
 @pytest.mark.uss
 @pytest.mark.pdse
 @pytest.mark.parametrize("src", [

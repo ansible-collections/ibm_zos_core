@@ -383,6 +383,8 @@ class DataSet(object):
             dataset_type = "library"
         elif dataset_type in DataSet.MVS_SEQ:
             dataset_type = "seq"
+        elif dataset_type in DataSet.MVS_PARTITIONED:
+            dataset_type = "pdse"
 
         if asa_text:
             record_format = "fba"

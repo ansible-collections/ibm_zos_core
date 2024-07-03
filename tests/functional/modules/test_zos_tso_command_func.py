@@ -144,29 +144,31 @@ def test_zos_tso_command_maxrc(ansible_zos_module):
 
 
 def test_zos_tso_command_gds(ansible_zos_module):
-    hosts = ansible_zos_module
-    default_data_set = get_tmp_ds_name(3, 3, symbols=True).replace("-", "").replace("@", "")
-    hosts.all.shell(cmd="dtouch -tGDG -L2 {0}".format(default_data_set))
-    hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
-    hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(
-        commands=["""LISTDSD DATASET('{0}(0)') ALL GENERIC""".format(default_data_set)],
-        max_rc=4
-    )
-    for result in results.contacted.values():
-        for item in result.get("output"):
+    try:
+        hosts = ansible_zos_module
+        default_data_set = get_tmp_ds_name(3, 3, symbols=True).replace("-", "").replace("@", "")
+        hosts.all.shell(cmd="dtouch -tGDG -L2 {0}".format(default_data_set))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
+        hosts = ansible_zos_module
+        results = hosts.all.zos_tso_command(
+            commands=["""LISTDSD DATASET('{0}(0)') ALL GENERIC""".format(default_data_set)],
+            max_rc=4
+        )
+        for result in results.contacted.values():
+            for item in result.get("output"):
+                assert result.get("changed") is True
+        results = hosts.all.zos_tso_command(
+            commands=["""LISTDSD DATASET('{0}(-1)') ALL GENERIC""".format(default_data_set)],
+            max_rc=4
+        )
+        for result in results.contacted.values():
+            for item in result.get("output"):
+                assert result.get("changed") is True
+        results = hosts.all.zos_tso_command(
+            commands=["""LISTDS '{0}(-1)'""".format(default_data_set)]
+        )
+        for result in results.contacted.values():
             assert result.get("changed") is True
-    results = hosts.all.zos_tso_command(
-        commands=["""LISTDSD DATASET('{0}(-1)') ALL GENERIC""".format(default_data_set)],
-        max_rc=4
-    )
-    for result in results.contacted.values():
-        for item in result.get("output"):
-            assert result.get("changed") is True
-    results = hosts.all.zos_tso_command(
-        commands=["""PROFILE NOPREFIX; LISTDS {0}(-1);""".format(default_data_set)]
-    )
-    for result in results.contacted.values():
-        for item in result.get("output"):
-            assert result.get("changed") is False
+    finally:
+        hosts.all.shell(cmd="drm ANSIBLE.*".format(default_data_set))

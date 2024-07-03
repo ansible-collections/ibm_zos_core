@@ -276,9 +276,6 @@ Several modules have reported UTF-8 decoding errors when interacting with result
 An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended
 and documented **space_primary** option.
 
-In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set,
-this is so that the collection can continue to maintain certified status.
-
 Availability
 ------------
 

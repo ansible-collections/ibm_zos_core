@@ -3168,6 +3168,13 @@ def run_module(module, arg_def):
                     dest_has_asa_chars = True
 
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
+                # Checking if we need to copy a member when the user requests it implicitly.
+                # src is a file and dest was just the PDS/E dataset name.
+                if not copy_member and src_ds_type == "USS" and os.path.isfile(src):
+                    copy_member = True
+                    dest_member = data_set.DataSet.get_member_name_from_file(os.path.basename(src))
+                    dest = f"{dest_name}({dest_member})"
+
                 # Checking if the members that would be created from the directory files
                 # are already present on the system.
                 if copy_member:

@@ -288,6 +288,7 @@ write_requirements(){
             cp hosts.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp venv.sh "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp profile.sh "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            cp ../dependencyfinder.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
 
             # Decrypt file
             if [ "$option_pass" ]; then

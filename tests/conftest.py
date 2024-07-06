@@ -21,21 +21,39 @@ import importlib
 
 
 def pytest_addoption(parser):
-    """ Add CLI options and modify optons for pytest-ansible where needed. """
+    """
+    Add CLI options and modify options for pytest-ansible where needed.
+    Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
+    will always return true because a default will be returned.
+    """
     parser.addoption(
         "--zinventory",
         "-Z",
         action="store",
-        default="test_config.yml",
+        default=None,
         help="Absolute path to YAML file containing inventory info for functional testing.",
+    )
+    parser.addoption(
+        "--zinventory-raw",
+        "-R",
+        action="store",
+        default=None,
+        help="Str - dictionary with values {'host': 'ibm.com', 'user': 'root', 'zoau': '/usr/lpp/zoau', 'pyz': '/usr/lpp/IBM/pyz'}",
     )
 
 
 @pytest.fixture(scope="session")
 def z_python_interpreter(request):
     """ Generate temporary shell wrapper for python interpreter. """
-    path = request.config.getoption("--zinventory")
-    helper = ZTestHelper.from_yaml_file(path)
+    src = None
+    helper = None
+    if request.config.getoption("--zinventory"):
+        src = request.config.getoption("--zinventory")
+        helper = ZTestHelper.from_yaml_file(src)
+    elif request.config.getoption("--zinventory-raw"):
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+
     interpreter_str = helper.build_interpreter_string()
     inventory = helper.get_inventory_info()
     python_path = helper.get_python_path()

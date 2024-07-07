@@ -688,8 +688,8 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
     hostnames=list(nodes.keys())
     hostnames_length = nodes.len()
 
-    # if hostnames_length == 0:
-    #     raise RuntimeError('No z/OS managed hosts were online, please check host availability.')
+    if hostnames_length == 0:
+        raise RuntimeError('No z/OS managed hosts were online, please check host availability.')
 
     # List to contain absolute paths to comma/space delimited test suites or directories.
     files =[]

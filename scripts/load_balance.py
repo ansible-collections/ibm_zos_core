@@ -240,30 +240,30 @@ def assign_new_node_to_job(job_entry):
     job_entry.add_hostname(zos_nodes_not_in_job[1])
 
 
-def get_active_zos_nodes_as_list():
-    """Build a list of all z/OS zos_nodes that are online.
-    Returns:
-        list[tests]: A list of zos_nodes.
-    """
+# def get_active_zos_nodes_as_list():
+#     """Build a list of all z/OS zos_nodes that are online.
+#     Returns:
+#         list[tests]: A list of zos_nodes.
+#     """
 
-    zos_nodes = []
-    active_zos_nodes = []
-    result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
+#     zos_nodes = []
+#     active_zos_nodes = []
+#     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
 
-    # Return a list
-    zos_nodes = result.stdout.split()
-    # print("The zos_nodes are: " + ' '.join(zos_nodes))
-    # Prune anything that is  not up from the list
-    for target in zos_nodes:
-        # Remove wait time, a bit fragile, found it to be W and also w on various OS's
-        # command = ['ping', '-c', '1', '-w2', target]
-        command = ['ping', '-c', '1', target]
-        result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+#     # Return a list
+#     zos_nodes = result.stdout.split()
+#     # print("The zos_nodes are: " + ' '.join(zos_nodes))
+#     # Prune anything that is  not up from the list
+#     for target in zos_nodes:
+#         # Remove wait time, a bit fragile, found it to be W and also w on various OS's
+#         # command = ['ping', '-c', '1', '-w2', target]
+#         command = ['ping', '-c', '1', target]
+#         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        if result.returncode == 0:
-            # hostname=target.split('.')
-            active_zos_nodes.append(target)
-    return active_zos_nodes
+#         if result.returncode == 0:
+#             # hostname=target.split('.')
+#             active_zos_nodes.append(target)
+#     return active_zos_nodes
 
 
 # def get_active_zos_nodes_as_dictionary():

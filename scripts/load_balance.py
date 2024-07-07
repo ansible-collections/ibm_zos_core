@@ -21,14 +21,12 @@ from contextlib import contextmanager
 import time
 import concurrent.futures
 
-# ------------------------------------------------------------------------------
+from typing import Type
+
+
+# ==============================================================================
 # TODO: list
-# ------------------------------------------------------------------------------
-#  1. Update the AC tool's requirements to include paramiko so that the library
-#  is included in the managed venv's which perform a 'pip install paramiko' - DONE
-#  2. This relies on the dependency finder, thus a copy of 'dependencyfinder.py'
-#  needs to be placed the AC managed venv's. - DONE
-#  3. Add support for unit tests, currently only functional tests are supported. DONE
+# ==============================================================================
 #  4. Reduce some of the cross product dependencies, for example can we remove
 #  the dependencyfinder.py or other AC tools dependency. Another example the code
 #  has this comment (below), while i can see value in using AC, should it be used
@@ -38,288 +36,32 @@ import concurrent.futures
 # Document get_jobs_as_dictionary usage with more examples and explanation.
 # remove files = get_all_files_in_dir_tree(directories) no need for it
 
+# ==============================================================================
+# Enums
+# ==============================================================================
+class Status (Enum):
+    ONLINE=1
+    OFFLINE=0
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+    def num(self) -> int:
+        return self.value
+
+    @classmethod
+    def default(cls):
+        return cls.ONLINE.name.lower()
+
+# ==============================================================================
+# Class definitions
+# ==============================================================================
+
 # ------------------------------------------------------------------------------
-# Helpers to collect test status
+# Class Dictionary
 # ------------------------------------------------------------------------------
-def get_all_files_in_dir_tree(directories):
-    """
-    Recursively search subdirectories for files according to location.
 
-    Args:
-        base_path (str): The directory to recursively search.
-    Returns:
-        list[str]: A list of file paths.
-    """
-    directories=directories.strip().replace(',', ' ').split()
-    found_files = []
-
-    for directory in directories:
-        for root, subdirs, files in os.walk(directory):
-            for file in files:
-                found_files.append(os.path.join(root, file))
-
-    return found_files
-
-# TODO: Unsure why this is not used and if it needs to remain
-def get_all_test_suites(collection_root):
-    """
-    Build a list of all test suites that correspond to a collections
-    root path. For example collection_root could be the path + sub directories:
-    <path>/github/ibm_zos_core/
-
-    Args:
-        collection_root (str): Path to collections root folder, not the tests folder.
-    Returns:
-        list[tests]: A list of test cases.
-
-    Example:
-        suites = get_all_test_suites("/Users/ddimatos/git/gh/ibm_zos_core/")
-        print(suites)
-    """
-
-    files = []
-    test_suit_path = (collection_root + "/tests/functional")
-
-    if not os.path.exists(test_suit_path):
-        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
-
-    files += get_all_files_in_dir_tree(test_suit_path)
-
-    test_suites = []
-    for file in files:
-        if file.endswith(".py"):
-            path, filename = os.path.split(file)
-            if filename.startswith('test'):
-                test_suites.append(file)
-    return test_suites
-
-# TODO: Unsure why this is not used and if it needs to remain
-def get_all_test_cases(collection_root):
-    """
-    Build a list of all test cases found in test suites, unlike `get_all_test_suites`
-    which builds a list of test suites, this method will return a list of all test
-    cases found in all test suites given the collections project root.
-
-    Args:
-        collection_root (str): Path to collections root folder, not the tests folder.
-
-    Returns:
-        list[tests]: A list of test cases.
-    """
-
-    test_suites = []
-    files = []
-    test_suit_path = (collection_root + "/tests/functional")
-
-    if not os.path.exists(test_suit_path):
-        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
-
-    files += get_all_files_in_dir_tree(test_suit_path)
-
-    for file in files:
-        if file.endswith(".py"):
-            path, filename = os.path.split(file)
-            if filename.startswith('test'):
-                with open (file) as test:
-                    lines = test.readlines()
-                    for line in lines:
-                        if line.find("def test_") != -1: # Is string present
-                            test_suites.append(line.partition(" ")[2].partition("(")[0])
-    return test_suites
-
-
-def get_jobs_as_dictionary(nodes, tests, directories, skip):
-    """
-    Build a dictionary of job objects. A job object is a unit of work the executor will use to execute
-    a test case, a job contains stats about the unit of work such as host, test case name, command to run, etc.
-
-    Test cases can be passed in absolute form but must reside under "tests/functional/modules/", thus unit
-    tests are not currently supported.
-
-    Args:
-        python - z/OS python version, eg "3.9"
-        zoau - ZOAU version , eg "1.2.5"
-        args - optional command args to be run before tests are executed. This is helpful
-        if you are setting up env vars or wanting to `cd` to a directory before a test case runs.
-        tests - test suite to run located under "tests/functional/modules/", more than one test
-        suite can be passed, they must be comma or space delimited.
-    Example:
-        jobs = get_jobs_as_dictionary(python=pyz, zoau=zoau, args=args, tests=tests)
-    """
-
-    # zos_nodes = get_active_zos_nodes_as_list()
-    zos_nodes=list(nodes.keys())
-    # Build a job dictionary with key as host name and host object should contain values:
-    #  host, user, zoau, pyz, extra_args,etc
-    # print("Active zos_nodes are: " + ' '.join(zos_nodes))
-    zos_nodes_len = len(zos_nodes)
-
-    if zos_nodes_len == 0:
-        raise RuntimeError('No z/OS managed zos_nodes were established, exiting test case manager.')
-        exit(1)
-
-    # List of either absolute path of specified test suites comma/space delimited or absolute path of test suite directories.
-    files =[]
-
-    # If tests, then specific test suites will be used otherwise, directories of test suites to be used. 
-    if tests is not None:
-        files = tests.strip().replace(',', ' ').split()
-    else:
-        # Remove excessive whitespace
-        directories=" ".join(directories.split())
-        # Replace any csv with single space delimiter
-        files = directories.strip().replace(',', ' ').split()
-        # TODO: Check if directories exist
-
-        # Remove excessive whitespace
-        skip=" ".join(skip.split())
-        # Replace any csv with single space delimiter
-        skip = skip.strip().replace(',', ' ').split()
-        # TODO: Check if directories exist
-
-    # pytest --collect-only -q /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/ /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/ --ignore /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_module_security.py | grep ::
-    cmd = ['pytest', '--collect-only', '-q']
-    cmd.extend(files)
-    if skip:
-        cmd.extend(['--ignore'])
-        cmd.extend(skip)
-    cmd.extend(['| grep ::'])
-    cmd_str = ' '.join(cmd)
-    parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True)
-    print("DELIMIT " + parametrized_test_cases.stdout)
-    parametrized_test_cases = parametrized_test_cases.stdout.split()
-    print("DELIMIT 2 " + str(parametrized_test_cases))
-    parametrized_test_cases_count = len(parametrized_test_cases)
-
-    jobs = dictionary()
-    index = 0
-    zos_nodes_index = 0
-
-    for parametrized_test_case in parametrized_test_cases:
-
-        if zos_nodes_index % zos_nodes_len == 0:
-            zos_nodes_index = 0
-
-        _job = job(hostname = zos_nodes[zos_nodes_index], nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
-        # _job.add_args(args)
-        print("INDEX IS " + str(index))
-        jobs.update(index, _job)
-        index += 1
-        zos_nodes_index += 1
-    return jobs
-
-
-def assign_new_node_to_job(job_entry):
-    """
-    This will review the list of z/OS zos_nodes that are online and compare them
-    to the z/OS zos_nodes assigned in a job, then it will append a new z/OS node to
-    the job which is different from the prior assigned z/OS zos_nodes used in the
-    job. Essentially it will assign the job to a new target to run on.
-
-    This method is used to re-balance a jobs z/OS hosts, this is done when
-    a job consistently fails with a RC of 3, indicating that possibly the
-    originally assigned z/OS node is no longer responding well thus the job
-    needs a new node assigned to it.
-
-    Note: Leaving this comment here to follow up on, not particularly sure
-    what the thinking was about, sounds like maybe we should mark z/OS notes
-    as active - meaning functional and others as inactive to mark them as
-    problematic to avoid them.
-    To do this correctly, the code should really should be monitoring the host
-    state where the connection is put into an object with host name and
-    state (active or not). (not sure how this will help, leaving the comment for now)
-    """
-
-    # Get a list of all the active zos_nodes again
-    # zos_nodes = get_active_zos_nodes_as_list()
-    zos_nodes = list(job_entry.get_nodes().keys())
-
-    # The difference of all available z/OS zos_nodes and ones assigned to a job.
-    zos_nodes_not_in_job = list(set(zos_nodes) - set(job_entry.get_hostnames()))
-    # Unsure why index 1 and not 0 or better yet, a random based on length of zos_nodes_not_in_job
-    job_entry.add_hostname(zos_nodes_not_in_job[1])
-
-
-# def get_active_zos_nodes_as_list():
-#     """Build a list of all z/OS zos_nodes that are online.
-#     Returns:
-#         list[tests]: A list of zos_nodes.
-#     """
-
-#     zos_nodes = []
-#     active_zos_nodes = []
-#     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
-
-#     # Return a list
-#     zos_nodes = result.stdout.split()
-#     # print("The zos_nodes are: " + ' '.join(zos_nodes))
-#     # Prune anything that is  not up from the list
-#     for target in zos_nodes:
-#         # Remove wait time, a bit fragile, found it to be W and also w on various OS's
-#         # command = ['ping', '-c', '1', '-w2', target]
-#         command = ['ping', '-c', '1', target]
-#         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-#         if result.returncode == 0:
-#             # hostname=target.split('.')
-#             active_zos_nodes.append(target)
-#     return active_zos_nodes
-
-
-# def get_active_zos_nodes_as_dictionary():
-#     """Build a dictionary of active z/OS zos_nodes.
-#     Args:
-#     Returns:
-#         list[tests]: A list of test cases.
-#     """
-
-#     # Custom thread safe dictionary
-#     zos_nodes = dictionary()
-
-#     hosts = []
-#     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
-
-#     # Return a list
-#     hosts = result.stdout.split()
-
-#     # Prune anything that is  not up from the list
-#     for host in hosts:
-#         # command = ['ping', '-c', '1', '-w2', host]
-#         command = ['ping', '-c', '1', host]
-#         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-#         if result.returncode == 0:
-#             hostname=host.split('.')
-#             zos_nodes.update(hostname[0], node(host=hostname[0]))
-#     return zos_nodes
-
-def get_managed_nodes_as_dictionary(user: str, zoau: str, pyz: str):
-    """Build a dictionary of active z/OS zos_nodes.
-    Args:
-    Returns:
-        list[tests]: A list of test cases.
-    """
-    # Thread safe dictionary
-    nodes: dictionary [str, node] = dictionary()
-    hostnames = []
-
-    # TODO: Figure out how to remove the AC dependency or ensure that the prefix (cd.../...) comes from the shell args
-    result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
-    hostnames = result.stdout.split()
-
-    # Prune any production system that fails to ping
-    for hostname in hostnames:
-        command = ['ping', '-c', '1', hostname]
-        result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        # TODO: Use the connection class to connection and validate ZOAU and Python before adding the nodes
-        if result.returncode == 0:
-            # hostname=host.split('.')
-            # zos_nodes.update(hostname[0], node(host = hostname[0], user = user, zoau = zoau, pyz = pyz))
-            nodes.update(key=hostname, obj=node(hostname = hostname, user = user, zoau = zoau, pyz = pyz))
-    return nodes
-
-class dictionary():
+class Dictionary():
     """
     This is a wrapper class around a dictionary that provides additional locks
     and logic when interacting with any of the dictionaries being accessed by
@@ -398,21 +140,10 @@ class dictionary():
         with self._lock:
             return self._shared_dictionary.keys()
 
-class status (Enum):
-    ONLINE=1
-    OFFLINE=0
-
-    def __str__(self) -> str:
-        return self.name.lower()
-
-    def num(self) -> int:
-        return self.value
-
-    @classmethod
-    def default(cls):
-        return cls.ONLINE.name.lower()
-
-class node:
+# ------------------------------------------------------------------------------
+# Class Node
+# ------------------------------------------------------------------------------
+class Node:
     """
     A z/OS node suitable for Ansible tests to execute. Attributes such as 'host',
     'zoau', 'user' and 'pyz' are maintained in this object because these attributes
@@ -432,7 +163,7 @@ class node:
         self.user: str = user
         self.zoau: str = zoau
         self.pyz: str = pyz
-        self.state: status = status.ONLINE
+        self.state: Status = Status.ONLINE
         self.failures: int = 0
         self.inventory: dict [str, str] = {}
         self.inventory.update({'host': hostname})
@@ -452,7 +183,7 @@ class node:
         }
         return str(temp)
 
-    def set_state(self, state: status):
+    def set_state(self, state: Status):
         """
         Set status of the node, is the z/OS
         node ONLINE (useable) or OFFLINE (not usable)
@@ -465,7 +196,7 @@ class node:
         """
         self.failures += 1
 
-    def get_state(self) -> status:
+    def get_state(self) -> Status:
         return self.state
 
     def get_hostname(self) -> str:
@@ -486,13 +217,15 @@ class node:
     def get_inventory_as_dict(self) -> dict [str, str]:
         return self.inventory
 
-
-class job:
+# ------------------------------------------------------------------------------
+# Class job
+# ------------------------------------------------------------------------------
+class Job:
     """
     Job object represents a unit of work that the threads will execute, it includes a command
     and stateful fields.
     """
-    def __init__(self, hostname: str, nodes: dictionary, testcase: str, id: int):
+    def __init__(self, hostname: str, nodes: Dictionary, testcase: str, id: int):
         """
         TODO:
         - Consider instead of tracking failures as an integer, instead use a list and insert
@@ -541,7 +274,7 @@ class job:
         node_temp = self.nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
         return f"pytest {self.testcase} --host-pattern={self.hostpattern} --zinventory-raw='{node_inventory}'"
-    
+
     def get_hostnames(self) -> list[str]:
         """
         Return all hostnames assigned to this job as a list.
@@ -616,7 +349,7 @@ class job:
         """
         return self.elapsed
 
-    def get_nodes(self) -> dictionary:
+    def get_nodes(self) -> Dictionary:
         return self.nodes
 
     def set_rc(self, rc: int):
@@ -644,6 +377,9 @@ class job:
     def set_elapsed_time(self, start_time: time):
         self.elapsed = elapsed_time(start_time)
 
+# ------------------------------------------------------------------------------
+# Class Connection
+# ------------------------------------------------------------------------------
 class Connection:
     """
     Connection class wrapping paramiko. The wrapper provides methods allowing
@@ -814,6 +550,307 @@ class Connection:
             for key, value in kwargs.items():
                 env_vars = f"{env_vars}{export} {key}=\"{value}\";"
         return env_vars
+
+# ------------------------------------------------------------------------------
+# Helpers to collect test status
+# ------------------------------------------------------------------------------
+def get_all_files_in_dir_tree(directories):
+    """
+    Recursively search subdirectories for files according to location.
+
+    Args:
+        base_path (str): The directory to recursively search.
+    Returns:
+        list[str]: A list of file paths.
+    """
+    directories=directories.strip().replace(',', ' ').split()
+    found_files = []
+
+    for directory in directories:
+        for root, subdirs, files in os.walk(directory):
+            for file in files:
+                found_files.append(os.path.join(root, file))
+
+    return found_files
+
+# TODO: Unsure why this is not used and if it needs to remain
+def get_all_test_suites(collection_root):
+    """
+    Build a list of all test suites that correspond to a collections
+    root path. For example collection_root could be the path + sub directories:
+    <path>/github/ibm_zos_core/
+
+    Args:
+        collection_root (str): Path to collections root folder, not the tests folder.
+    Returns:
+        list[tests]: A list of test cases.
+
+    Example:
+        suites = get_all_test_suites("/Users/ddimatos/git/gh/ibm_zos_core/")
+        print(suites)
+    """
+
+    files = []
+    test_suit_path = (collection_root + "/tests/functional")
+
+    if not os.path.exists(test_suit_path):
+        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
+
+    files += get_all_files_in_dir_tree(test_suit_path)
+
+    test_suites = []
+    for file in files:
+        if file.endswith(".py"):
+            path, filename = os.path.split(file)
+            if filename.startswith('test'):
+                test_suites.append(file)
+    return test_suites
+
+# TODO: Unsure why this is not used and if it needs to remain
+def get_all_test_cases(collection_root):
+    """
+    Build a list of all test cases found in test suites, unlike `get_all_test_suites`
+    which builds a list of test suites, this method will return a list of all test
+    cases found in all test suites given the collections project root.
+
+    Args:
+        collection_root (str): Path to collections root folder, not the tests folder.
+
+    Returns:
+        list[tests]: A list of test cases.
+    """
+
+    test_suites = []
+    files = []
+    test_suit_path = (collection_root + "/tests/functional")
+
+    if not os.path.exists(test_suit_path):
+        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
+
+    files += get_all_files_in_dir_tree(test_suit_path)
+
+    for file in files:
+        if file.endswith(".py"):
+            path, filename = os.path.split(file)
+            if filename.startswith('test'):
+                with open (file) as test:
+                    lines = test.readlines()
+                    for line in lines:
+                        if line.find("def test_") != -1: # Is string present
+                            test_suites.append(line.partition(" ")[2].partition("(")[0])
+    return test_suites
+
+def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictionary:
+    """
+    Get a thread safe dictionary of job(s).
+    A job represents a test case, a unit of work the ThreadPoolExecutor will run.
+    A job manages the state of a test case as well as the necessary information
+    to run on a z/OS managed node.
+
+    Parameters
+    ----------
+    nodes : dictionary [ str, node]
+        Thread safe dictionary z/OS managed nodes.
+    testsuite : str
+        Absolute path of testcase suites, comma or space delimited. A testsuite
+        is a collection of test cases in a file that starts with 'test' and
+        ends in '.py'.
+        Option testsuite is mutually exclusive with both 'tests' and 'skip'.
+    tests : str
+        Absolute path to directories containing test suites, both functional
+        and unit tests.
+    skip : str
+        Absolute path of testcase suites to skip, comma or space delimited.
+        A testsuite is a collection of test cases in a file that starts
+        with 'test' and ends in '.py'. Specifying skip will result in test
+        cases not being included in the results, ensuring they are not
+        executed by the ThreadPoolExecutor.
+        This option (skip) is only used when option tests is defined.
+
+    Returns
+    -------
+    Dictionary [int, Job]
+        A thread safe Dictionary containing numeric keys (ID) with value
+        type Job, each Dictionary item is a testcase with supporting
+        attributes necessary to execute on a z/OS managed node.
+
+    Raises
+    ------
+    RuntimeError : When no z/OS managed hosts were online.
+
+    Note
+    ----
+    Option 'testsuite'
+        Is mutually exclusive with both 'tests' and 'skip'. If you
+        use 'skip' with testsuite' it will be ignored.
+    """
+
+    hostnames=list(nodes.keys())
+    hostnames_length = nodes.len()
+
+    # if hostnames_length == 0:
+    #     raise RuntimeError('No z/OS managed hosts were online, please check host availability.')
+
+    # List to contain absolute paths to comma/space delimited test suites or directories.
+    files =[]
+
+    # If testsuite, test suites were provided, else tests (directories) were passed.
+    # Remove whitespace and replace CSV with single space delimiter.
+    if testsuite:
+        files = " ".join(files.split())
+        files = testsuite.strip().replace(',', ' ').split()
+    else:
+        tests=" ".join(tests.split())
+        files = tests.strip().replace(',', ' ').split()
+        # TODO: Check if directories exist
+
+        if skip:
+            skip=" ".join(skip.split())
+            skip = skip.strip().replace(',', ' ').split()
+            # TODO: Check if directories exist
+
+    # Build a command that will yield all test cases included parametrized tests.
+    cmd = ['pytest', '--collect-only', '-q']
+    cmd.extend(files)
+    if skip:
+        cmd.extend(['--ignore'])
+        cmd.extend(skip)
+    cmd.extend(['| grep ::'])
+    cmd_str = ' '.join(cmd)
+
+    # Run the pytest collect-only command and grep on :: so to avoid warnings
+    parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True)
+    parametrized_test_cases = parametrized_test_cases.stdout.split()
+    parametrized_test_cases_count = len(parametrized_test_cases)
+    print("TESTS " + str(parametrized_test_cases))
+    # Thread safe dictionary of Jobs
+    jobs = Dictionary()
+    index = 0
+    hostnames_index = 0
+
+    for parametrized_test_case in parametrized_test_cases:
+
+        # Assign each job a hostname using round robin (modulus % division)
+        if hostnames_index % hostnames_length == 0:
+            hostnames_index = 0
+
+        # Create a temporary job object and add it to thread safe dictionary
+        _job = Job(hostname = hostnames[hostnames_index], nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
+        jobs.update(index, _job)
+        index += 1
+        hostnames_index += 1
+    return jobs
+
+
+def assign_new_node_to_job(job_entry):
+    """
+    This will review the list of z/OS zos_nodes that are online and compare them
+    to the z/OS zos_nodes assigned in a job, then it will append a new z/OS node to
+    the job which is different from the prior assigned z/OS zos_nodes used in the
+    job. Essentially it will assign the job to a new target to run on.
+
+    This method is used to re-balance a jobs z/OS hosts, this is done when
+    a job consistently fails with a RC of 3, indicating that possibly the
+    originally assigned z/OS node is no longer responding well thus the job
+    needs a new node assigned to it.
+
+    Note: Leaving this comment here to follow up on, not particularly sure
+    what the thinking was about, sounds like maybe we should mark z/OS notes
+    as active - meaning functional and others as inactive to mark them as
+    problematic to avoid them.
+    To do this correctly, the code should really should be monitoring the host
+    state where the connection is put into an object with host name and
+    state (active or not). (not sure how this will help, leaving the comment for now)
+    """
+
+    # Get a list of all the active zos_nodes again
+    # zos_nodes = get_active_zos_nodes_as_list()
+    zos_nodes = list(job_entry.get_nodes().keys())
+
+    # The difference of all available z/OS zos_nodes and ones assigned to a job.
+    zos_nodes_not_in_job = list(set(zos_nodes) - set(job_entry.get_hostnames()))
+    # Unsure why index 1 and not 0 or better yet, a random based on length of zos_nodes_not_in_job
+    job_entry.add_hostname(zos_nodes_not_in_job[1])
+
+
+# def get_active_zos_nodes_as_list():
+#     """Build a list of all z/OS zos_nodes that are online.
+#     Returns:
+#         list[tests]: A list of zos_nodes.
+#     """
+
+#     zos_nodes = []
+#     active_zos_nodes = []
+#     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
+
+#     # Return a list
+#     zos_nodes = result.stdout.split()
+#     # print("The zos_nodes are: " + ' '.join(zos_nodes))
+#     # Prune anything that is  not up from the list
+#     for target in zos_nodes:
+#         # Remove wait time, a bit fragile, found it to be W and also w on various OS's
+#         # command = ['ping', '-c', '1', '-w2', target]
+#         command = ['ping', '-c', '1', target]
+#         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+#         if result.returncode == 0:
+#             # hostname=target.split('.')
+#             active_zos_nodes.append(target)
+#     return active_zos_nodes
+
+
+# def get_active_zos_nodes_as_dictionary():
+#     """Build a dictionary of active z/OS zos_nodes.
+#     Args:
+#     Returns:
+#         list[tests]: A list of test cases.
+#     """
+
+#     # Custom thread safe dictionary
+#     zos_nodes = dictionary()
+
+#     hosts = []
+#     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
+
+#     # Return a list
+#     hosts = result.stdout.split()
+
+#     # Prune anything that is  not up from the list
+#     for host in hosts:
+#         # command = ['ping', '-c', '1', '-w2', host]
+#         command = ['ping', '-c', '1', host]
+#         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+#         if result.returncode == 0:
+#             hostname=host.split('.')
+#             zos_nodes.update(hostname[0], node(host=hostname[0]))
+#     return zos_nodes
+
+def get_managed_nodes_as_dictionary(user: str, zoau: str, pyz: str):
+    """Build a dictionary of active z/OS zos_nodes.
+    Args:
+    Returns:
+        list[tests]: A list of test cases.
+    """
+    # Thread safe dictionary
+    nodes: Dictionary [str, Node] = Dictionary()
+    hostnames = []
+
+    # TODO: Figure out how to remove the AC dependency or ensure that the prefix (cd.../...) comes from the shell args
+    result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
+    hostnames = result.stdout.split()
+
+    # Prune any production system that fails to ping
+    for hostname in hostnames:
+        command = ['ping', '-c', '1', hostname]
+        result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        # TODO: Use the connection class to connection and validate ZOAU and Python before adding the nodes
+        if result.returncode == 0:
+            # hostname=host.split('.')
+            # zos_nodes.update(hostname[0], node(host = hostname[0], user = user, zoau = zoau, pyz = pyz))
+            nodes.update(key=hostname, obj=Node(hostname = hostname, user = user, zoau = zoau, pyz = pyz))
+    return nodes
 
 
 def run(key, jobs, zos_nodes, completed):
@@ -1019,7 +1056,7 @@ def main(argv):
     start_time_full_run = time.time()
 
     # Empty dictionary to start, will contain all completed jobs.
-    completed = dictionary()
+    completed = Dictionary()
 
     # Get a dictionary of all active zos_nodes to run tests on
     zos_nodes = get_managed_nodes_as_dictionary(user = user, zoau = zoau, pyz = pyz)
@@ -1029,7 +1066,7 @@ def main(argv):
 
 
     # Get a dictionary of jobs containing the work to be run on a node.
-    jobs = get_jobs_as_dictionary(zos_nodes, tests=tests, directories=directories, skip=skip)
+    jobs = get_jobs(zos_nodes, testsuite=tests, tests=directories, skip=skip)
 
     for key, value in jobs.items():
         print(f"The job count = {str(jobs.len())}, job id = {key} , job = {str(value)}")

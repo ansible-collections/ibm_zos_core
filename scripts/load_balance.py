@@ -390,6 +390,7 @@ class Job:
         """
         node_temp = self.nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
+        # f-string causing an undiagnosed error.
         #return f"pytest {self.testcase} --host-pattern={self.hostpattern} --zinventory-raw={node_inventory}"
         return """pytest {0} --host-pattern={1} --zinventory-raw='{2}' >&2 ; echo $? >&1""".format(self.testcase,self.hostpattern,node_inventory)
 
@@ -493,7 +494,7 @@ class Job:
         """
         Set the hostname where the job should be executed on.
         """
-        self.hostnames.append(hostname)
+        self._hostnames.append(hostname)
 
     def add_failure(self):
         """
@@ -775,12 +776,12 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
     cmd.extend(['| grep ::'])
     cmd_str = ' '.join(cmd)
 
-    print("CMD STRING " + cmd_str)
+    #print("CMD STRING " + cmd_str)
     # Run the pytest collect-only command and grep on :: so to avoid warnings
     parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True)
     parametrized_test_cases = parametrized_test_cases.stdout.split()
     parametrized_test_cases_count = len(parametrized_test_cases)
-    print("TESTS " + str(parametrized_test_cases))
+    #print("TESTS " + str(parametrized_test_cases))
     # Thread safe dictionary of Jobs
     jobs = Dictionary()
     index = 0
@@ -794,14 +795,14 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
 
         # Create a temporary job object and add it to thread safe dictionary
         _job = Job(hostname = hostnames[hostnames_index], nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
-        print(_job)
+        #print(_job)
         jobs.update(index, _job)
         index += 1
         hostnames_index += 1
     return jobs
 
 
-def update_job_hostname(job_entry):
+def update_job_hostname(job: Job):
     """
     Updates the job with a new hostname. Jobs rely on healthy hostnames and when
     its determine that the z/OS hostname that is being accessed has become
@@ -820,12 +821,12 @@ def update_job_hostname(job_entry):
     """
 
     # List of all ONLINE z/OS active nodes hostnames.
-    zos_nodes = list(job_entry.get_nodes().keys())
+    nodes = list(job.get_nodes().keys())
 
     # The difference of all available z/OS zos_nodes and ones assigned to a job.
-    zos_nodes_not_in_job = list(set(zos_nodes) - set(job_entry.get_hostnames()))
-    # Unsure why index 1 and not 0 or better yet, a random based on length of zos_nodes_not_in_job
-    job_entry.add_hostname(zos_nodes_not_in_job[1])
+    zos_nodes_not_in_job = list(set(nodes) - set(job.get_hostnames()))
+    # TODO: Unsure why index 1 and not 0 or better yet, a random based on length of zos_nodes_not_in_job
+    job.add_hostname(zos_nodes_not_in_job[1])
 
 
 def get_managed_nodes(user: str, zoau: str, pyz: str) -> Dictionary:
@@ -869,8 +870,8 @@ def get_managed_nodes(user: str, zoau: str, pyz: str) -> Dictionary:
 
 def run(key, jobs, zos_nodes, completed):
     """
-    Runs a job (test) on the node and ensures the job has the necessary
-    resource available. If not, it will manage the node and collect the statistics
+    Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
+    managed node available. If not, it will manage the node and collect the statistics
     so that it can be properly run when a resource becomes available.
 
     Returns:
@@ -1063,8 +1064,8 @@ def main(argv):
     # Get a dictionary of jobs containing the work to be run on a node.
     jobs = get_jobs(zos_nodes, testsuite=tests, tests=directories, skip=skip)
 
-    for key, value in jobs.items():
-        print(f"The job count = {str(jobs.len())}, job id = {key} , job = {str(value)}")
+    # for key, value in jobs.items():
+    #     print(f"The job count = {str(jobs.len())}, job id = {key} , job = {str(value)}")
 
     count = 1
     iterations_result=""

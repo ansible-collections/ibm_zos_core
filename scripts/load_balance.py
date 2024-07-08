@@ -25,18 +25,6 @@ from typing import Type
 
 
 # ==============================================================================
-# TODO: list
-# ==============================================================================
-#  4. Reduce some of the cross product dependencies, for example can we remove
-#  the dependencyfinder.py or other AC tools dependency. Another example the code
-#  has this comment (below), while i can see value in using AC, should it be used
-#  instead of code written in Python (see get_jobs_as_dictionary..)? DONE
-#      # Instead of using get_all_files_in_dir_tree, use ./ac './ac --ac-test-discover'
-       # files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
-# Document get_jobs_as_dictionary usage with more examples and explanation.
-# remove files = get_all_files_in_dir_tree(directories) no need for it
-
-# ==============================================================================
 # Enums
 # ==============================================================================
 class Status (Enum):
@@ -156,9 +144,37 @@ class Node:
     meaning its discoverable and useable or status.OFFLINE meaning over time,
     since being status.ONLINE, it has been determined unusable and thus marked
     as status.OFFLINE.
+
+
+    Parameters
+    ----------
+    hostname : str
+        Full hostname for the z/OS manage node the Ansible workload
+        will be executed on.
+    user : str
+        The USS user name who will run the Ansible workload on z/OS.
+    zoau: str
+        The USS absolute path to where ZOAU is installed.
+    pyz: str
+        The USS absolute path to where python is installed.
     """
 
     def __init__(self, hostname: str, user: str, zoau: str, pyz: str):
+        """
+
+        Parameters
+        ----------
+        hostname : str
+            Full hostname for the z/OS manage node the Ansible workload
+            will be executed on.
+        user : str
+            The USS user name who will run the Ansible workload on z/OS.
+        zoau: str
+            The USS absolute path to where ZOAU is installed.
+        pyz: str
+            The USS absolute path to where python is installed.
+
+        """
         self.hostname: str = hostname
         self.user: str = user
         self.zoau: str = zoau
@@ -187,34 +203,109 @@ class Node:
         """
         Set status of the node, is the z/OS
         node ONLINE (useable) or OFFLINE (not usable)
+
+        Parameters
+        ----------
+        state : Status
+            Set state to Status.ONLINE if the  z/OS
+            managed nodes state is usable, otherwise
+            set it to Status.OFFLINE.
         """
         self.state = state
 
     def increment_failure(self):
         """
-        Increment a failure by 1.
+        Increment the failure of this job by 1. Job failure occurs
+        when the execution of the job is a non-zero return code.
         """
         self.failures += 1
 
     def get_state(self) -> Status:
+        """
+        Get the z/OS manage node status.
+
+        Returns
+        -------
+        Status.ONLINE
+            If the  z/OS managed node state is usable.
+        Status.OFFLINE
+            If the z/OS managed node state is unusable.
+        """
         return self.state
 
     def get_hostname(self) -> str:
+        """
+        Get the hostname for this z/OS managed node. A node is a
+        z/OS endpoint capable of running an Ansible unit of work.
+
+        Returns
+        -------
+        Str
+            The z/OS managed node hostname.
+        """
         return self.hostname
 
     def get_user(self) -> str:
+        """
+        Get the user ID permitted to run an Ansible workload on
+        the z/OS managed node.
+
+        Return
+        ------
+        Str
+            USS users name
+        """
         return self.user
 
     def get_zoau(self) -> str:
+        """
+        Get the ZOAU home directory on the z/OS managed node.
+
+        Return
+        ------
+        str
+            A USS path indicating where ZOAU is installed.
+        """
         return self.zoau
 
     def get_pyz(self) -> str:
+        """
+        Get the python home directory on the z/OS managed node.
+
+        Return
+        ------
+        str
+            A USS path indicating where python is installed.
+        """
         return self.pyz
 
     def get_inventory_as_string(self) -> str:
+        """
+        Get a JSON string that can be used with the 'zinventory-raw'
+        pytest fixture. This JSON string can be passed directly
+        to the option 'zinventory-raw', for example:
+
+        pytest .... --zinventory-raw='{.....}'
+
+        Return
+        ------
+        str
+            A JSON string of necessary z/OS managed node attributes.
+        """
         return json.dumps(self.inventory)
 
     def get_inventory_as_dict(self) -> dict [str, str]:
+        """
+        Get a JSON dict() that can be used with the 'zinventory-raw'
+        pytest fixture. This is the dict() so that it can be updated.
+        To use it with the 'zinventory-raw', the dict() would have to
+        be converted to a string with json.dumps(...) or equivalent.
+
+        Return
+        ------
+        str
+            A JSON dict() of necessary z/OS managed node attributes.
+        """
         return self.inventory
 
 # ------------------------------------------------------------------------------
@@ -222,17 +313,45 @@ class Node:
 # ------------------------------------------------------------------------------
 class Job:
     """
-    Job object represents a unit of work that the threads will execute, it includes a command
-    and stateful fields.
+    Job represents a unit of work that the ThreadPoolExecutor will execute. A job
+    maintains all necessary attributes to allow the test case to execute on a
+    z/OS managed node.
+
+    Parameters
+    ----------
+    hostname : str
+        Full hostname for the z/OS manage node the Ansible workload
+        will be executed on.
+    nodes : str
+        Node object that represents a z/OS managed node and all its
+        attributes.
+    testcase: str
+        The USS absolute path to a testcase using '/path/to/test_suite.py::test_case'
+    id: int
+        The id that will be assigned to this job, a unique identifier. The id will
+        be used as the key in a dictionary.
     """
     def __init__(self, hostname: str, nodes: Dictionary, testcase: str, id: int):
         """
+        Parameters
+        ----------
+        hostname : str
+            Full hostname for the z/OS manage node the Ansible workload
+            will be executed on.
+        nodes : str
+            Node object that represents a z/OS managed node and all its
+            attributes.
+        testcase: str
+            The USS absolute path to a testcase using '/path/to/test_suite.py::test_case'
+        id: int
+            The id that will be assigned to this job, a unique identifier. The id will
+            be used as the key in a dictionary.
+
         TODO:
         - Consider instead of tracking failures as an integer, instead use a list and insert
           the host (node) it failed on for statistical purposes.
         - Consider removing completed because the return code can provide the same level of information.
         """
-        self.args: str = None
         self._hostnames: list = list()
         self._hostnames.append(hostname)
         self.testcase: str = testcase
@@ -241,14 +360,12 @@ class Job:
         self.id: int = id
         self.rc: int = -1
         self.completed: bool = False
-        self.cmd: str = "./ac --ac-test"
         self.elapsed: str = None
         self.hostpattern: str = "all"
-        self.nodes = nodes
+        self.nodes: Dictionary = nodes
 
     def __str__(self) -> str:
         temp = {
-            "args": self.args,
             "hostname": self.get_hostname(),
             "testcase": self.testcase,
             "debug": self.debug,
@@ -256,7 +373,6 @@ class Job:
             "id": self.id,
             "rc": self.rc,
             "completed": self.completed,
-            "cmd":  self.cmd,
             "elapsed": self.elapsed,
             "pytest-command": self.get_command()
         }
@@ -264,16 +380,19 @@ class Job:
         return str(temp)
 
     def get_command(self) -> str:
-       # we should build this:
-       # pytest tests/functional/modules/test_zos_operator_func.py --host-pattern=all --zinventory-raw='{"host": "ibm.com", "user": "root", "zoau": "/usr/lpp/zoau", "pyz": "/usr/lpp/IBM/pyz"}'
-       # return self.args + self.cmd + " --host " + self.hosts[-1] + " --python " + self.python + " --zoau " + self.zoau + " --file " + self.file + " --test " + self.test + " --debug " + str(self.debug)
-        #temp = self.test.split("::")
-        #print(self.args + self.cmd + " --host " + self.hosts[-1] + " --python " + self.python + " --zoau " + self.zoau + " --file " + temp[0] + " --test " + temp[1] + " --debug " + str(self.debug))
-        #return self.args + self.cmd + " --host " + self.hosts[-1] + " --python " + self.python + " --zoau " + self.zoau + " --file " + temp[0] + " --test " + temp[1] + " --debug " + str(self.debug)
-        #pytest tests/functional/modules/test_zos_operator_func.py --host-pattern=all --zinventory-raw='{"host": "ec33026a.vmec.svl.ibm.com", "user": "omvsadm", "zoau": "/zoau/v1.3.1", "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"}'
+        """
+        Returns a command designed to run with the projects pytest fixture. The command
+        is created specifically based on the ags defined, such as ZOAU or test cases to run.
+
+        Example:
+            pytest tests/functional/modules/test_zos_operator_func.py --host-pattern=all --zinventory-raw='{"host": "some.host.at.ibm.com", "user": "ibmuser", "zoau": "/zoau/v1.3.1", "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"}'
+
+        """
         node_temp = self.nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
-        return f"pytest {self.testcase} --host-pattern={self.hostpattern} --zinventory-raw='{node_inventory}'"
+        #return f"pytest {self.testcase} --host-pattern={self.hostpattern} --zinventory-raw={node_inventory}"
+        return """pytest {0} --host-pattern={1} --zinventory-raw='{2}' >&2 ; echo $? >&1""".format(self.testcase,self.hostpattern,node_inventory)
+
 
     def get_hostnames(self) -> list[str]:
         """
@@ -363,19 +482,40 @@ class Job:
         self.rc = rc
 
     def set_completed(self, completed: bool):
+        """
+        Set the jobs completed field with True or False.
+        True if the job has successfully returned with a RC 0, otherwise
+        False, the job has not completed execution at this time.
+        """
         self.completed = completed
 
     def add_hostname(self, hostname: str):
+        """
+        Set the hostname where the job should be executed on.
+        """
         self.hostnames.append(hostname)
 
     def add_failure(self):
+        """
+        Increment the failure by 1 for this jobs. Each time the job
+        returns with a non-zero return code, increment the value
+        so this statistic can be reused in other logic.
+        """
         self.failures +=1
 
-    def add_args(self,args: str):
-        self.args = args
-
     def set_elapsed_time(self, start_time: time):
+        """
+        Set the start time to obtain the elapsed time this
+        job took to run. Should only set this when RC is zero.
+        """
         self.elapsed = elapsed_time(start_time)
+
+    def set_debug(self, debug: bool):
+        """
+        Set if pytest should run in debug mode, which is the
+        equivalent of '-s'.
+        """
+        self.debug = debug
 
 # ------------------------------------------------------------------------------
 # Class Connection
@@ -392,11 +532,11 @@ class Connection:
     can be properly vetted out for concurrent support.
 
     Usage:
-    key_file_name = os.path.expanduser('~') + "/.ssh/id_dsa"
-    connection = Connection(hostname="ibm.com", username="root", key_filename=key_file_name)
-    client = connection.connect()
-    result = connection.execute(client, "ls")
-    print(result)
+        key_file_name = os.path.expanduser('~') + "/.ssh/id_dsa"
+        connection = Connection(hostname="ibm.com", username="root", key_filename=key_file_name)
+        client = connection.connect()
+        result = connection.execute(client, "ls")
+        print(result)
     """
 
     def __init__(self, hostname, username, password = None, key_filename = None,
@@ -440,12 +580,11 @@ class Connection:
             object: paramiko SSHClient, client used the execution of commands.
 
         Raises
-        BadHostKeyException
-        AuthenticationException
-        SSHException
-        FileNotFoundError
-        error
-
+            BadHostKeyException
+            AuthenticationException
+            SSHException
+            FileNotFoundError
+            error
         """
         ssh = None
 
@@ -551,94 +690,11 @@ class Connection:
                 env_vars = f"{env_vars}{export} {key}=\"{value}\";"
         return env_vars
 
+
 # ------------------------------------------------------------------------------
-# Helpers to collect test status
+# Helper methods
 # ------------------------------------------------------------------------------
-def get_all_files_in_dir_tree(directories):
-    """
-    Recursively search subdirectories for files according to location.
 
-    Args:
-        base_path (str): The directory to recursively search.
-    Returns:
-        list[str]: A list of file paths.
-    """
-    directories=directories.strip().replace(',', ' ').split()
-    found_files = []
-
-    for directory in directories:
-        for root, subdirs, files in os.walk(directory):
-            for file in files:
-                found_files.append(os.path.join(root, file))
-
-    return found_files
-
-# TODO: Unsure why this is not used and if it needs to remain
-def get_all_test_suites(collection_root):
-    """
-    Build a list of all test suites that correspond to a collections
-    root path. For example collection_root could be the path + sub directories:
-    <path>/github/ibm_zos_core/
-
-    Args:
-        collection_root (str): Path to collections root folder, not the tests folder.
-    Returns:
-        list[tests]: A list of test cases.
-
-    Example:
-        suites = get_all_test_suites("/Users/ddimatos/git/gh/ibm_zos_core/")
-        print(suites)
-    """
-
-    files = []
-    test_suit_path = (collection_root + "/tests/functional")
-
-    if not os.path.exists(test_suit_path):
-        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
-
-    files += get_all_files_in_dir_tree(test_suit_path)
-
-    test_suites = []
-    for file in files:
-        if file.endswith(".py"):
-            path, filename = os.path.split(file)
-            if filename.startswith('test'):
-                test_suites.append(file)
-    return test_suites
-
-# TODO: Unsure why this is not used and if it needs to remain
-def get_all_test_cases(collection_root):
-    """
-    Build a list of all test cases found in test suites, unlike `get_all_test_suites`
-    which builds a list of test suites, this method will return a list of all test
-    cases found in all test suites given the collections project root.
-
-    Args:
-        collection_root (str): Path to collections root folder, not the tests folder.
-
-    Returns:
-        list[tests]: A list of test cases.
-    """
-
-    test_suites = []
-    files = []
-    test_suit_path = (collection_root + "/tests/functional")
-
-    if not os.path.exists(test_suit_path):
-        raise FileNotFoundError(f"Test case directory {test_suit_path} doesn't exist.")
-
-    files += get_all_files_in_dir_tree(test_suit_path)
-
-    for file in files:
-        if file.endswith(".py"):
-            path, filename = os.path.split(file)
-            if filename.startswith('test'):
-                with open (file) as test:
-                    lines = test.readlines()
-                    for line in lines:
-                        if line.find("def test_") != -1: # Is string present
-                            test_suites.append(line.partition(" ")[2].partition("(")[0])
-    return test_suites
 
 def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictionary:
     """
@@ -696,28 +752,30 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
 
     # If testsuite, test suites were provided, else tests (directories) were passed.
     # Remove whitespace and replace CSV with single space delimiter.
+    # Build a command that will yield all test cases included parametrized tests.
+    cmd = ['pytest', '--collect-only', '-q']
     if testsuite:
-        files = " ".join(files.split())
+        print("testsuite is " + testsuite)
+        files = " ".join(testsuite.split())
         files = testsuite.strip().replace(',', ' ').split()
+        cmd.extend(files)
     else:
         tests=" ".join(tests.split())
         files = tests.strip().replace(',', ' ').split()
+        cmd.extend(files)
         # TODO: Check if directories exist
 
         if skip:
             skip=" ".join(skip.split())
             skip = skip.strip().replace(',', ' ').split()
+            cmd.extend(['--ignore'])
+            cmd.extend(skip)
             # TODO: Check if directories exist
 
-    # Build a command that will yield all test cases included parametrized tests.
-    cmd = ['pytest', '--collect-only', '-q']
-    cmd.extend(files)
-    if skip:
-        cmd.extend(['--ignore'])
-        cmd.extend(skip)
     cmd.extend(['| grep ::'])
     cmd_str = ' '.join(cmd)
 
+    print("CMD STRING " + cmd_str)
     # Run the pytest collect-only command and grep on :: so to avoid warnings
     parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True)
     parametrized_test_cases = parametrized_test_cases.stdout.split()
@@ -736,35 +794,32 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
 
         # Create a temporary job object and add it to thread safe dictionary
         _job = Job(hostname = hostnames[hostnames_index], nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
+        print(_job)
         jobs.update(index, _job)
         index += 1
         hostnames_index += 1
     return jobs
 
 
-def assign_new_node_to_job(job_entry):
+def update_job_hostname(job_entry):
     """
-    This will review the list of z/OS zos_nodes that are online and compare them
-    to the z/OS zos_nodes assigned in a job, then it will append a new z/OS node to
-    the job which is different from the prior assigned z/OS zos_nodes used in the
-    job. Essentially it will assign the job to a new target to run on.
+    Updates the job with a new hostname. Jobs rely on healthy hostnames and when
+    its determine that the z/OS hostname that is being accessed has become
+    incapable of addressing any unit of work, this method will append a new
+    z/os hostname for the job to execute its job on. This method ensures
+    that it is a randomly different node then the one previously assigned
+    to the job.
 
-    This method is used to re-balance a jobs z/OS hosts, this is done when
-    a job consistently fails with a RC of 3, indicating that possibly the
-    originally assigned z/OS node is no longer responding well thus the job
-    needs a new node assigned to it.
+    This is referred to as re-balancing a jobs hostname, this happens when
+    a job has consistently failed N number of times.
 
-    Note: Leaving this comment here to follow up on, not particularly sure
-    what the thinking was about, sounds like maybe we should mark z/OS notes
-    as active - meaning functional and others as inactive to mark them as
-    problematic to avoid them.
-    To do this correctly, the code should really should be monitoring the host
-    state where the connection is put into an object with host name and
-    state (active or not). (not sure how this will help, leaving the comment for now)
+    TODO:
+    - Mark the nodes state as offline so that no other tests will use the node.
+    - Iterate over all jobs looking for inactive ones and balance all of the
+      job nodes.
     """
 
-    # Get a list of all the active zos_nodes again
-    # zos_nodes = get_active_zos_nodes_as_list()
+    # List of all ONLINE z/OS active nodes hostnames.
     zos_nodes = list(job_entry.get_nodes().keys())
 
     # The difference of all available z/OS zos_nodes and ones assigned to a job.
@@ -773,70 +828,31 @@ def assign_new_node_to_job(job_entry):
     job_entry.add_hostname(zos_nodes_not_in_job[1])
 
 
-# def get_active_zos_nodes_as_list():
-#     """Build a list of all z/OS zos_nodes that are online.
-#     Returns:
-#         list[tests]: A list of zos_nodes.
-#     """
+def get_managed_nodes(user: str, zoau: str, pyz: str) -> Dictionary:
+    """
+    Get a thread safe Dictionary of active z/OS managed nodes.
 
-#     zos_nodes = []
-#     active_zos_nodes = []
-#     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
+    Parameters
+    ----------
+    user : str
+        The USS user name who will run the Ansible workload on z/OS.
+    zoau: str
+        The USS absolute path to where ZOAU is installed.
+    pyz: str
+        The USS absolute path to where python is installed.
 
-#     # Return a list
-#     zos_nodes = result.stdout.split()
-#     # print("The zos_nodes are: " + ' '.join(zos_nodes))
-#     # Prune anything that is  not up from the list
-#     for target in zos_nodes:
-#         # Remove wait time, a bit fragile, found it to be W and also w on various OS's
-#         # command = ['ping', '-c', '1', '-w2', target]
-#         command = ['ping', '-c', '1', target]
-#         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-#         if result.returncode == 0:
-#             # hostname=target.split('.')
-#             active_zos_nodes.append(target)
-#     return active_zos_nodes
-
-
-# def get_active_zos_nodes_as_dictionary():
-#     """Build a dictionary of active z/OS zos_nodes.
-#     Args:
-#     Returns:
-#         list[tests]: A list of test cases.
-#     """
-
-#     # Custom thread safe dictionary
-#     zos_nodes = dictionary()
-
-#     hosts = []
-#     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
-
-#     # Return a list
-#     hosts = result.stdout.split()
-
-#     # Prune anything that is  not up from the list
-#     for host in hosts:
-#         # command = ['ping', '-c', '1', '-w2', host]
-#         command = ['ping', '-c', '1', host]
-#         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-#         if result.returncode == 0:
-#             hostname=host.split('.')
-#             zos_nodes.update(hostname[0], node(host=hostname[0]))
-#     return zos_nodes
-
-def get_managed_nodes_as_dictionary(user: str, zoau: str, pyz: str):
-    """Build a dictionary of active z/OS zos_nodes.
-    Args:
-    Returns:
-        list[tests]: A list of test cases.
+    Returns
+    -------
+    Dictionary [str, Node]
+        Thread safe Dictionary containing all the active z/OS managed nodes.
+        The dictionary key will be the z/OS managed node's hostname and the value
+        will be of type Node.
     """
     # Thread safe dictionary
     nodes: Dictionary [str, Node] = Dictionary()
     hostnames = []
 
-    # TODO: Figure out how to remove the AC dependency or ensure that the prefix (cd.../...) comes from the shell args
+    # TODO: Remove the AC dependency or ensure that the prefix (cd.../...) comes from the shell args
     result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
     hostnames = result.stdout.split()
 
@@ -847,8 +863,6 @@ def get_managed_nodes_as_dictionary(user: str, zoau: str, pyz: str):
 
         # TODO: Use the connection class to connection and validate ZOAU and Python before adding the nodes
         if result.returncode == 0:
-            # hostname=host.split('.')
-            # zos_nodes.update(hostname[0], node(host = hostname[0], user = user, zoau = zoau, pyz = pyz))
             nodes.update(key=hostname, obj=Node(hostname = hostname, user = user, zoau = zoau, pyz = pyz))
     return nodes
 
@@ -887,7 +901,7 @@ def run(key, jobs, zos_nodes, completed):
         start_time = time.time()
         # print("Job information: " + "\n  z/OS hosts available = " + str(zos_nodes_len) + "\n  Job ID = " + str(job.get_id()) + "\n  Command = " + job.get_command())
         try:
-            result = subprocess.run([job.get_command()], shell=True, capture_output=True, text=True, timeout=300)
+            result = subprocess.run(["cd ../;"+job.get_command()], shell=True, capture_output=True, text=True, timeout=300)
             job.set_elapsed_time(start_time)
             rc = int(result.stdout)
             job.set_rc(int(rc))
@@ -896,9 +910,6 @@ def run(key, jobs, zos_nodes, completed):
             message = "Job " + str(job.get_id()) + " has exceed permitted execution timeout and returned with rc = " + str(rc) + " setting rc to 9"
             print(message)
             rc = 9
-
-
-        # zos_nodes.update(zos_node.get_hostname(), zos_node)
 
         if rc == 0:
             message = "Test with job ID " + str(job.get_id()) + " ran on host " + str(job.get_hostname()) + " with RC " + str(rc) + " in time " + job.get_elapsed_time()
@@ -917,11 +928,11 @@ def run(key, jobs, zos_nodes, completed):
                 rc = 8
             elif job_failures == 3:
                 # WHat do we do with invalid ECs at this point, take the EC out of the node list and traverse jobs and remove as well? 
-                # maybe node list removal is enough. 
+                # maybe node list removal is enough.
                 # What do we do with the failed Nodes, store them in a dictionary
                 message = "Job is being rebalanced = " + str(job) + " returned with rc = " + str(rc) + " setting rc to 7"
                 print(message)
-                assign_new_node_to_job(job)
+                update_job_hostname(job)
                 rc = 7
             elif rc == 1:
                 message = "Test with job ID " + str(job.get_id()) + " ran on host " + str(job.get_hostname()) + " with RC " + str(rc) + " in time " + job.get_elapsed_time()
@@ -938,22 +949,6 @@ def run(key, jobs, zos_nodes, completed):
             elif rc == 5:
                 message = "Test with job ID " + str(job.get_id()) + " ran on host " + str(job.get_hostname()) + " with RC " + str(rc) + " in time " + job.get_elapsed_time()
                 print(message)
-
-        # else:
-        #     job.add_failure()
-        #     job_failures = job.get_failures()
-
-        #     if job_failures >= 6:
-        #         #jobs.update(job.get_id(), job)
-        #         message = "Job no longer eligible for execution = " + str(job) + " returned with rc = " + str(rc) + " setting rc to 8"
-        #         print(message)
-        #         rc = 8
-        #     elif job_failures == 3:
-        #         message = "Job is being rebalanced = " + str(job) + " returned with rc = " + str(rc) + " setting rc to 7"
-        #         print(message)
-        #         assign_new_node_to_job(job)
-        #         rc = 7
-
     else:
         # No zos_node was available, they are currently all in use
         message = "There are no z/OS nodes available to Job ID = " + str(job.get_id()) + " returned with rc = " + str(rc) + " setting rc to 6"
@@ -1059,7 +1054,7 @@ def main(argv):
     completed = Dictionary()
 
     # Get a dictionary of all active zos_nodes to run tests on
-    zos_nodes = get_managed_nodes_as_dictionary(user = user, zoau = zoau, pyz = pyz)
+    zos_nodes = get_managed_nodes(user = user, zoau = zoau, pyz = pyz)
 
     for key, value in zos_nodes.items():
         print(f"The z/OS node count = {str(zos_nodes.len())}, hostname = {key} , node = {str(value)}")
@@ -1071,7 +1066,6 @@ def main(argv):
     for key, value in jobs.items():
         print(f"The job count = {str(jobs.len())}, job id = {key} , job = {str(value)}")
 
-    exit(0)
     count = 1
     iterations_result=""
     # print("completed.len() " + str(completed.len()))

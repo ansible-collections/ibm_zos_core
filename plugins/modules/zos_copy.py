@@ -76,6 +76,8 @@ options:
       - If C(dest) is a data set member and C(backup_name) is not provided, the data set
         member will be backed up to the same partitioned data set with a randomly
         generated member name.
+      - If I(backup_name) is a generation data set (GDS), it must be a relative
+        positive name (for example, V(HLQ.USER.GDG(+1\))).
     required: false
     type: str
   content:
@@ -122,6 +124,10 @@ options:
       - When C(dest) is and existing VSAM (LDS), then source must be an LDS. The
         VSAM (LDS) will be deleted and recreated following the process outlined
         in the C(volume) option.
+      - C(dest) can be a previously allocated generation data set (GDS) or a new GDS.
+      - When C(dest) is a generation data group (GDG), C(src) must be a GDG too. The copy
+        will allocate successive new generations in C(dest), the module will verify
+        it has enough available generations before starting the copy operations.
       - When C(dest) is a data set, you can override storage management rules
         by specifying C(volume) if the storage class being used has
         GUARANTEED_SPACE=YES specified, otherwise, the allocation will
@@ -308,6 +314,9 @@ options:
       - If C(src) is a directory or a file, file names will be truncated and/or modified
         to ensure a valid name for a data set or member.
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
+      - If C(src) is a generation data set (GDS), it must be a previously allocated one.
+      - If C(src) is a generation data group (GDG), C(dest) can be another GDG or a USS
+        directory.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
         PDS/PDSE.
       - Required unless using C(content).
@@ -338,6 +347,7 @@ options:
   dest_data_set:
     description:
       - Data set attributes to customize a C(dest) data set to be copied into.
+      - Some attributes only apply when C(dest) is a generation data group (GDG).
     required: false
     type: dict
     suboptions:
@@ -357,6 +367,7 @@ options:
           - member
           - basic
           - library
+          - gdg
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -451,6 +462,55 @@ options:
           - Not valid for datasets that are not SMS-managed.
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
+        required: false
+      limit:
+        description:
+          - Sets the I(limit) attribute for a GDG.
+          - Specifies the maximum number, from 1 to 255(up to 999 if extended), of
+            generations that can be associated with the GDG being defined.
+          - I(limit) is required when I(type=gdg).
+        type: int
+        required: false
+      empty:
+        description:
+          - Sets the I(empty) attribute for a GDG.
+          - If false, removes only the oldest GDS entry when a new GDS is created
+            that causes GDG limit to be exceeded.
+          - If true, removes all GDS entries from a GDG base when a new GDS is
+            created that causes the GDG limit to be exceeded.
+        type: bool
+        required: false
+      scratch:
+        description:
+          - Sets the I(scratch) attribute for a GDG.
+          - Specifies what action is to be taken for a generation data set located
+            on disk volumes when the data set is uncataloged from the GDG base as
+            a result of EMPTY/NOEMPTY processing.
+        type: bool
+        required: false
+      purge:
+        description:
+          - Sets the I(purge) attribute for a GDG.
+          - Specifies whether to override expiration dates when a generation data
+            set (GDS) is rolled off and the C(scratch) option is set.
+        type: bool
+        required: false
+      extended:
+        description:
+          - Sets the I(extended) attribute for a GDG.
+          - If false, allow up to 255 generation data sets (GDSs) to be associated
+            with the GDG.
+          - If true, allow up to 999 generation data sets (GDS) to be associated
+            with the GDG.
+        type: bool
+        required: false
+      fifo:
+        description:
+          - Sets the I(fifo) attribute for a GDG.
+          - If false, the order is the newest GDS defined to the oldest GDS.
+            This is the default value.
+          - If true, the order is the oldest GDS defined to the newest GDS.
+        type: bool
         required: false
 
 extends_documentation_fragment:
@@ -679,6 +739,19 @@ EXAMPLES = r"""
     src: ./files/print.txt
     dest: HLQ.PRINT.NEW
     asa_text: true
+
+- name: Copy a file to a new generation data set.
+  zos_copy:
+    src: /path/to/uss/src
+    dest: HLQ.TEST.GDG(+1)
+    remote_src: true
+
+- name: Copy a local file and take a backup of the existing file with a GDS.
+  zos_copy:
+    src: /path/to/local/file
+    dest: /path/to/dest
+    backup: true
+    backup_name: HLQ.BACKUP.GDG(+1)
 """
 
 RETURN = r"""
@@ -868,10 +941,11 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets, opercmd
+    from zoautil_py import datasets, opercmd, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     opercmd = ZOAUImportError(traceback.format_exc())
+    gdgs = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import exceptions as zoau_exceptions
@@ -1056,6 +1130,41 @@ class CopyHandler(object):
                 stderr_lines=err.splitlines(),
                 cmd=repro_cmd,
             )
+
+    def copy_to_gdg(self, src, dest):
+        """
+        Copy each allocated generation in src to dest.
+
+        Parameters
+        ----------
+        src : str
+            Name of the source GDG.
+        dest : str
+            Name of the destination GDG.
+
+        Returns
+        ------
+        bool
+            True if every copy operation was successful, False otherwise.
+        """
+        src_view = gdgs.GenerationDataGroupView(src)
+        generations = src_view.generations()
+        dest_generation = f"{dest}(+1)"
+
+        copy_args = {
+            "options": ""
+        }
+
+        if self.is_binary or self.asa_text:
+            copy_args["options"] = "-B"
+
+        for gds in generations:
+            rc = datasets.copy(gds.name, dest_generation, **copy_args)
+
+            if rc != 0:
+                return False
+
+        return True
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
         """Recursively copy USS directory to another USS directory.
@@ -1451,7 +1560,7 @@ class USSCopyHandler(CopyHandler):
         """
         changed_files = None
 
-        if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED):
+        if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED) or src_ds_type == "GDG":
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
@@ -1743,7 +1852,7 @@ class USSCopyHandler(CopyHandler):
             # the same name as the member.
             dest = "{0}/{1}".format(dest, member_name or src)
 
-            if src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member:
+            if (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member) or src_ds_type == "GDG":
                 try:
                     os.mkdir(dest)
                 except FileExistsError:
@@ -1775,7 +1884,19 @@ class USSCopyHandler(CopyHandler):
                         stderr=response.stderr_response
                     )
             else:
-                if self.executable:
+                if src_ds_type == "GDG":
+                    result = copy.copy_gdg2uss(
+                        src,
+                        dest,
+                        is_binary=self.is_binary,
+                        asa_text=self.asa_text
+                    )
+
+                    if not result:
+                        raise CopyOperationError(
+                            msg=f"Error while copying GDG {src} to {dest}"
+                        )
+                elif self.executable:
                     try:
                         datasets.copy(src, dest, alias=True, executable=True)
                     except zoau_exceptions.ZOAUException as copy_exception:
@@ -2309,7 +2430,9 @@ def is_compatible(
     executable,
     asa_text,
     src_has_asa_chars,
-    dest_has_asa_chars
+    dest_has_asa_chars,
+    is_src_gds,
+    is_dest_gds
 ):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
@@ -2336,6 +2459,10 @@ def is_compatible(
         Whether the src contains ASA control characters.
     dest_has_asa_chars : bool
         Whether the dest contains ASA control characters.
+    is_src_gds : bool
+        Whether the src is a generation data set.
+    is_dest_gds : bool
+        Whether the dest is a generation data set.
 
     Returns
     -------
@@ -2364,6 +2491,38 @@ def is_compatible(
     # ********************************************************************
     if asa_text:
         return src_has_asa_chars or dest_has_asa_chars
+
+    # ********************************************************************
+    # When either the src or dest are GDSs, the other cannot be a VSAM
+    # data set, since GDGs don't support VSAMs.
+    # ********************************************************************
+    if is_src_gds and dest_type in data_set.DataSet.MVS_VSAM:
+        return False
+    if is_dest_gds and src_type in data_set.DataSet.MVS_VSAM:
+        return False
+
+    # ********************************************************************
+    # When copying a complete GDG, we'll only allow a copy to another GDG
+    # or to a USS directory.
+    # ********************************************************************
+    if src_type == "GDG":
+        if dest_type == "GDG" or dest_type == "USS":
+            return True
+        else:
+            return False
+
+    # ********************************************************************
+    # And when copying into a GDG (not GDS), we'll only allow the copy of
+    # another GDG. To allow copy from a USS directory would require making
+    # sure the path contains only one sublevel and then deciding if every
+    # subdir will represent a PDS/E as a generation, which for now will be
+    # left as another item for future discussion/development.
+    # ********************************************************************
+    if dest_type == "GDG":
+        if src_type == "GDG":
+            return True
+        else:
+            return False
 
     # ********************************************************************
     # If source is a sequential data set, then destination must be
@@ -2489,6 +2648,18 @@ def does_destination_allow_copy(
     # existing members inside of it, if needed.
     if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not force:
         return False
+
+    # When the destination is an existing GDG, we'll check that we have enough free generations
+    # to copy the complete source.
+    if dest_exists and dest_type == "GDG":
+        src_view = gdgs.GenerationDataGroupView(src)
+        dest_view = gdgs.GenerationDataGroupView(dest)
+
+        src_allocated_gens = len(src_view.generations())
+        dest_allocated_gens = len(dest_view.generations())
+
+        if src_allocated_gens > (dest_view.limit - dest_allocated_gens):
+            return False
 
     return True
 
@@ -2654,6 +2825,8 @@ def allocate_destination_data_set(
     is_binary,
     executable,
     asa_text,
+    is_gds,
+    is_active_gds,
     dest_data_set=None,
     volume=None
 ):
@@ -2681,6 +2854,10 @@ def allocate_destination_data_set(
         Whether the data to copy is an executable dataset or file.
     asa_text : bool
         Whether the data to copy has ASA control characters.
+    is_gds : bool
+        Whether the destination is a generation data set.
+    is_gds_active : bool
+        Whether the destination GDS is already allocated.
     dest_data_set : dict, optional
         Parameters containing a full definition
         of the new data set; they will take precedence over any other allocation logic.
@@ -2705,15 +2882,41 @@ def allocate_destination_data_set(
     # Create the dict that will contains the values created by the module if it's empty action module will
     # not display the content.
     dest_params = {}
-    if dest_exists and is_dest_empty:
-        return False, dest_params
+    if dest_exists and (is_dest_empty or dest_ds_type == "GDG"):
+        return False, dest_params, dest
 
     # Giving more priority to the parameters given by the user.
     # Cover case the user set executable to true to create dataset valid.
     if dest_data_set:
-        dest_params = dest_data_set
-        dest_params["name"] = dest
-        data_set.DataSet.ensure_present(replace=force, **dest_params)
+        if dest_ds_type == "GDG":
+            if not dest_data_set.get("limit"):
+                raise CopyOperationError(msg=f"Destination {dest} is missing its 'limit' attribute.")
+
+            gdgs.create(
+                dest,
+                dest_data_set.get("limit"),
+                empty=dest_data_set.get("empty", False),
+                scratch=dest_data_set.get("scratch", False),
+                purge=dest_data_set.get("purge", False),
+                extended=dest_data_set.get("extended", False),
+                fifo=dest_data_set.get("fifo", False)
+            )
+
+            # Checking the new GDG was allocated.
+            results = gdgs.list_gdg_names(dest)
+            if len(results) == 0:
+                raise CopyOperationError(msg=f"Error while allocating GDG {dest}.")
+        else:
+            dest_params = dest_data_set
+            dest_params["name"] = dest
+            # Removing GDG specific options.
+            del dest_params["limit"]
+            del dest_params["empty"]
+            del dest_params["scratch"]
+            del dest_params["purge"]
+            del dest_params["extended"]
+            del dest_params["fifo"]
+            data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
@@ -2722,7 +2925,11 @@ def allocate_destination_data_set(
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            # Only applying the GDS special case when we don't have an absolute name.
+            if is_gds and not is_active_gds:
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            else:
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
         else:
             temp_dump = None
             try:
@@ -2746,7 +2953,11 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
+            # Only applying the GDS special case when we don't have an absolute name.
+            if is_gds and not is_active_gds:
+                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+            else:
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
@@ -2828,7 +3039,29 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
-    if dest_ds_type not in data_set.DataSet.MVS_VSAM:
+    elif dest_ds_type == "GDG":
+        src_view = gdgs.GenerationDataGroupView(src)
+
+        gdgs.create(
+            dest,
+            src_view.limit,
+            empty=src_view.empty,
+            scratch=src_view.scratch,
+            purge=src_view.purge,
+            extended=src_view.extended,
+            fifo=True if src_view.order.upper() == "FIFO" else False
+        )
+
+        # Checking the new GDG was allocated.
+        results = gdgs.list_gdg_names(dest)
+        if len(results) == 0:
+            raise CopyOperationError(msg=f"Error while allocating GDG {dest}.")
+
+    if is_gds and not is_active_gds:
+        gdg_name = data_set.extract_dsname(dest)
+        dest = data_set.DataSet.resolve_gds_absolute_name(f"{gdg_name}(0)")
+
+    if dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
         dest_params = get_attributes_of_any_dataset_created(
             dest,
             src_ds_type,
@@ -2842,7 +3075,8 @@ def allocate_destination_data_set(
         record_format = dest_attributes.record_format
         dest_params["type"] = dest_ds_type
         dest_params["record_format"] = record_format
-    return True, dest_params
+
+    return True, dest_params, dest
 
 
 def normalize_line_endings(src, encoding=None):
@@ -3016,9 +3250,28 @@ def run_module(module, arg_def):
     # that we used to pass from the action plugin.
     is_src_dir = os.path.isdir(src)
     is_uss = "/" in dest
-    is_mvs_dest = is_data_set(dest)
+    is_mvs_src = is_data_set(data_set.extract_dsname(src))
+    is_src_gds = data_set.DataSet.is_gds_relative_name(src)
+    is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
+    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
+    is_dest_gds_active = False
     is_pds = is_src_dir and is_mvs_dest
     src_member = is_member(src)
+    raw_src = src
+    raw_dest = dest
+
+    # Implementing the new MVSDataSet class by masking the values of
+    # src/raw_src and dest/raw_dest.
+    if is_mvs_src:
+        src_data_set_object = data_set.MVSDataSet(src)
+        src = src_data_set_object.name
+        raw_src = src_data_set_object.raw_name
+
+    if is_mvs_dest:
+        dest_data_set_object = data_set.MVSDataSet(dest)
+        dest = dest_data_set_object.name
+        raw_dest = dest_data_set_object.raw_name
+        is_dest_gds_active = dest_data_set_object.is_gds_active
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -3048,9 +3301,9 @@ def run_module(module, arg_def):
             src = os.path.realpath(src)
 
         if not os.path.exists(src):
-            module.fail_json(msg="Source {0} does not exist".format(src))
+            module.fail_json(msg="Source {0} does not exist".format(raw_src))
         if not os.access(src, os.R_OK):
-            module.fail_json(msg="Source {0} is not readable".format(src))
+            module.fail_json(msg="Source {0} is not readable".format(raw_src))
         if mode == "preserve":
             mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
 
@@ -3103,12 +3356,13 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, is_binary=is_binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            if data_set.DataSet.data_set_exists(src_name):
+            if (is_src_gds and data_set.DataSet.data_set_exists(src)) or (
+                    not is_src_gds and data_set.DataSet.data_set_exists(src_name)):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
 
-                if src_ds_type not in data_set.DataSet.MVS_VSAM:
+                if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
                     src_attributes = datasets.list_datasets(src_name)[0]
                     if src_attributes.record_format == 'FBA' or src_attributes.record_format == 'VBA':
                         src_has_asa_chars = True
@@ -3143,26 +3397,33 @@ def run_module(module, arg_def):
                 dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
-                module.fail_json(msg="Destination {0} is not writable".format(dest))
+                module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
+
+            # When dealing with a new generation, we'll override its type to None
+            # so it will be the same type as the source (or whatever dest_data_set has)
+            # a couple lines down.
+            if is_dest_gds and not is_dest_gds_active:
+                dest_exists = False
+                dest_ds_type = None
 
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type").upper()
             elif executable:
-                """ When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
-                so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
-                Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
-                and LIBRARY is not in MVS_PARTITIONED frozen set."""
+                # When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
+                # so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
+                # Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
+                # and LIBRARY is not in MVS_PARTITIONED frozen set.
                 dest_ds_type = "PDSE"
 
             if dest_data_set and (dest_data_set.get('record_format', '') == 'fba' or dest_data_set.get('record_format', '') == 'vba'):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
-            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM:
+            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
                 dest_attributes = datasets.list_datasets(dest_name)[0]
                 if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
                     dest_has_asa_chars = True
@@ -3181,6 +3442,14 @@ def run_module(module, arg_def):
     except Exception as err:
         module.fail_json(msg=str(err))
 
+    # Checking that we're dealing with a positive generation when dest does not
+    # exist.
+    if is_dest_gds and not is_dest_gds_active:
+        # extract_member_name also works to extract the generation.
+        dest_generation = int(data_set.extract_member_name(dest))
+        if dest_generation < 1:
+            module.fail_json(msg=f"Cannot copy to {dest}, the generation data set is not allocated.")
+
     # ********************************************************************
     # Some src and dest combinations are incompatible. For example, it is
     # not possible to copy a PDS member to a VSAM data set or a USS file
@@ -3197,7 +3466,9 @@ def run_module(module, arg_def):
         executable,
         asa_text,
         src_has_asa_chars,
-        dest_has_asa_chars
+        dest_has_asa_chars,
+        is_src_gds,
+        is_dest_gds
     ):
         error_msg = "Incompatible target type '{0}' for source '{1}'".format(
             dest_ds_type, src_ds_type
@@ -3220,7 +3491,10 @@ def run_module(module, arg_def):
             is_dest_lock = data_set_locked(dest_name)
             if is_dest_lock:
                 module.fail_json(
-                    msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
+                    msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(
+                        data_set.extract_dsname(raw_dest)
+                    )
+                )
 
     # ********************************************************************
     # Alias support is not avaiable to and from USS for text-based data sets.
@@ -3254,6 +3528,16 @@ def run_module(module, arg_def):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
+                if backup_name:
+                    backup_data_set = data_set.MVSDataSet(backup_name)
+                    if backup_data_set.is_gds_active:
+                        module.fail_json(
+                            msg=(
+                                f"The generation data set {backup_name} cannot be used as backup. "
+                                "Please use a new generation for this purpose."
+                            )
+                        )
+
                 backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
 
     # ********************************************************************
@@ -3281,7 +3565,7 @@ def run_module(module, arg_def):
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-            elif src_ds_type in data_set.DataSet.MVS_VSAM:
+            elif src_ds_type in data_set.DataSet.MVS_VSAM or src_ds_type == "GDG":
                 dest_ds_type = src_ds_type
             elif not is_uss:
                 dest_ds_type = "SEQ"
@@ -3305,7 +3589,7 @@ def run_module(module, arg_def):
         volume
     ):
         module.fail_json(
-            msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest),
+            msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(raw_dest),
             changed=False,
             dest=dest
         )
@@ -3319,15 +3603,18 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
+            res_args["changed"], res_args["dest_data_set_attrs"], resolved_dest = allocate_destination_data_set(
                 src,
-                dest_name, src_ds_type,
+                dest_name if not is_dest_gds else dest,
+                src_ds_type,
                 dest_ds_type,
                 dest_exists,
                 force,
                 is_binary,
                 executable,
                 asa_text,
+                is_dest_gds,
+                is_dest_gds_active,
                 dest_data_set=dest_data_set,
                 volume=volume
             )
@@ -3341,6 +3628,10 @@ def run_module(module, arg_def):
 
     if converted_src:
         src = original_src
+
+    # Overriding the dest name with the current generation just allocated.
+    if not dest_exists and is_dest_gds:
+        dest = dest_name = resolved_dest
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -3457,6 +3748,13 @@ def run_module(module, arg_def):
             dest = dest.upper()
 
         # ------------------------------- o -----------------------------------
+        # Copy to a GDG
+        # ---------------------------------------------------------------------
+        elif dest_ds_type == "GDG":
+            copy_handler.copy_to_gdg(src, dest)
+            res_args["changed"] = True
+
+        # ------------------------------- o -----------------------------------
         # Copy to VSAM data set
         # ---------------------------------------------------------------------
         else:
@@ -3524,7 +3822,8 @@ def main():
                     type=dict(
                         type='str',
                         choices=['basic', 'ksds', 'esds', 'rrds',
-                                 'lds', 'seq', 'pds', 'pdse', 'member', 'library'],
+                                 'lds', 'seq', 'pds', 'pdse', 'member',
+                                 'library', 'gdg'],
                         required=True,
                     ),
                     space_primary=dict(
@@ -3549,6 +3848,12 @@ def main():
                     sms_storage_class=dict(type="str", required=False),
                     sms_data_class=dict(type="str", required=False),
                     sms_management_class=dict(type="str", required=False),
+                    limit=dict(type="int", required=False),
+                    empty=dict(type="bool", required=False),
+                    scratch=dict(type="bool", required=False),
+                    purge=dict(type="bool", required=False),
+                    extended=dict(type="bool", required=False),
+                    fifo=dict(type="bool", required=False),
                 )
             ),
             use_template=dict(type='bool', default=False),
@@ -3619,6 +3924,12 @@ def main():
                 sms_storage_class=dict(arg_type="str", required=False),
                 sms_data_class=dict(arg_type="str", required=False),
                 sms_management_class=dict(arg_type="str", required=False),
+                limit=dict(arg_type="int", required=False),
+                empty=dict(arg_type="bool", required=False),
+                scratch=dict(arg_type="bool", required=False),
+                purge=dict(arg_type="bool", required=False),
+                extended=dict(arg_type="bool", required=False),
+                fifo=dict(arg_type="bool", required=False),
             )
         ),
 

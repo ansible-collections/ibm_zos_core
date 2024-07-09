@@ -6,8 +6,8 @@
 Releases
 ========
 
-Version 1.10.0-beta.1
-=====================
+Version 1.10.0
+==============
 
 Major Changes
 -------------
@@ -95,6 +95,7 @@ It is intended to assist in updating your playbooks so this collection will cont
 Availability
 ------------
 
+* `Automation Hub`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -106,18 +107,23 @@ controller and z/OS managed node dependencies.
 
 Known Issues
 ------------
-
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_data_set`` - When data set creation fails, exception can throw a bad import error instead of data set creation error.
+- ``zos_copy`` - To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters JSON decoding (DecodeError, TypeError, KeyError) errors when interacting with results that contain non-printable UTF-8 characters in the response. This will be addressed in **ZOAU version 1.3.2** and later.
 
-- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
-
-   - If you encounter this, some options are to:
+   - Some options to work around this known issue are:
 
       - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
       - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
       - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
         job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
       - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+- Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
+
 
 Version 1.9.1
 =============
@@ -144,7 +150,7 @@ controller and z/OS managed node dependencies.
 Known Issues
 ------------
 
-- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
 
 - ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
@@ -269,9 +275,6 @@ Several modules have reported UTF-8 decoding errors when interacting with result
 
 An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended
 and documented **space_primary** option.
-
-In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set,
-this is so that the collection can continue to maintain certified status.
 
 Availability
 ------------

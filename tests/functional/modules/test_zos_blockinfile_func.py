@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 {
     char dsname[ strlen(argv[1]) + 4];
     sprintf(dsname, \\\"//'%s'\\\", argv[1]);
-    file* member;
+    FILE* member;
     member = fopen(dsname, \\\"rb,type=record\\\");
     sleep(300);
     fclose(member);

@@ -351,6 +351,7 @@ class Job:
         - Consider instead of tracking failures as an integer, instead use a list and insert
           the host (node) it failed on for statistical purposes.
         - Consider removing completed because the return code can provide the same level of information.
+        - add a job history list, to store each executions history, could be helpful if the test is marked as non-executable. 
         """
         self._hostnames: list = list()
         self._hostnames.append(hostname)
@@ -384,7 +385,9 @@ class Job:
         Returns a command designed to run with the projects pytest fixture. The command
         is created specifically based on the ags defined, such as ZOAU or test cases to run.
 
-        Example:
+        Example
+        -------
+        str
             pytest tests/functional/modules/test_zos_operator_func.py --host-pattern=all --zinventory-raw='{"host": "some.host.at.ibm.com", "user": "ibmuser", "zoau": "/zoau/v1.3.1", "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"}'
 
         """
@@ -397,106 +400,163 @@ class Job:
 
     def get_hostnames(self) -> list[str]:
         """
-        Return all hostnames assigned to this job as a list.
-        Returns:
-            list[str]: A list of all hosts.
+        Return all hostnames that have been assigned to this job over time as a list.
+        Includes hostnames that later replaced with new hostnames because the host is
+        considered no longer functioning.
+
+        Return
+        ------
+        list[str]
+            A list of all hosts.
         """
         return self._hostnames
 
     def get_hostname(self) -> str:
         """
-        Return the last hostname assigned to this node, the active hostname.
-        Returns:
-            str: host args
+        Return the current hostname assigned to this node, in other words, the active hostname.
+
+        Return
+        ------
+        str
+            The current hostname assigned to this job.
         """
         return self._hostnames[-1]
 
     def get_testcase(self) -> str:
         """
-        Return the testcase that is assigned to this job.
-        Returns:
-            str: test case name
+        Return a pytest parametrized testcase that is assigned to this job.
+        Incudes absolute path, testcase, and parametrization, eg <path/test.py::test[parameter]>
+
+        Return
+        ------
+        str
+            Returns absolute path, testcase, and parametrization, eg <path/test.py::test[parameter]>
         """
         return self.testcase
 
     def get_failures(self) -> int:
         """
-        Return the number of failed executions that have occurred for this job.
-        Often used for statistical purposes or reason to assign the test to a new
-        hostname.
-        Returns:
-            int: Numerical value greater than 0 or equal to 0.
+        Return the number of failed job executions that have occurred. Failures can be
+        a result of the z/OS managed node, a bug in the test case or even a connection issue.
+        This is used for statistical purposes or reason to assign the test to a new hostname.
+
+        Return
+        ------
+        int
+            Number representing number of failed executions.
         """
         return self.failures
 
     def get_rc(self) -> int:
         """
-        Get the return code from the jobs execution.
-        Return code 0 All tests were collected and passed successfully
-        Return code 1 Tests were collected and run but some of the tests failed
-        Return code 2 Test execution was interrupted by the user
-        Return code 3 Internal error happened while executing tests
-        Return code 4 pytest command line usage error
-        Return code 5 No tests were collected
+        Get the return code for the jobs execution.
 
-        Returns:
-            int: Return code 1 - 5
+        Return
+        ------
+        int
+            Return code 0 All tests were collected and passed successfully (pytest)
+            Return code 1 Tests were collected and run but some of the tests failed (pytest)
+            Return code 2 Test execution was interrupted by the user (pytest)
+            Return code 3 Internal error happened while executing tests (pytest)
+            Return code 4 pytest command line usage error (pytest)
+            Return code 5 No tests were collected (pytest)
+            Return code 6 No z/OS nodes available.
+            Return code 7 Re-balancing of z/OS nodes were performed
+            Return code 8 Job has exceeded permitted job failures
+            Return code 9 Job has exceeded timeout
         """
         return self.rc
 
     def get_id(self) -> int:
         """
         Returns the job id used as the key in the dictionary to identify the job.
-        Returns:
-            int: Id of the job
+
+        Return
+        ------
+        int
+            Id of the job
         """
         return self.id
 
     def get_completed(self) -> bool:
         """
-        Returns True if the job has completed execution, this
-        aligns to a return code of 0.
-        Returns:
-            Bool: True if the job completed, otherwise False.
+        Returns True if the job has completed execution.
+
+        Return
+        ------
+        bool
+            True if the job completed, otherwise False.
+
+        See Also
+        --------
+        get_rc
+            Returns 0 for success, otherwise non-zero.
         """
         return self.completed
 
     def get_elapsed_time(self) -> str:
         """
-        Returns the elapsed formatted time for this job.
-        Returns:
-            str: time
+        Returns the elapsed time for this job, in other words,
+        how long it took this job to run.
+
+        Return
+        ------
+        str
+            Time formatted as <HH:MM:SS.ss> , eg 00:05:30.64
         """
         return self.elapsed
 
     def get_nodes(self) -> Dictionary:
+        """
+        Returns a dictionary of all z/OS managed nodes used in this
+        runtime. z/OS managed nodes are identified and passed as a
+        dictionary to a job for easy access and update, for example,
+        if a job needs to mark the node as offline, it can easily
+        access the dictionary of z/OS managed nodes to do so.
+
+        Return
+        ------
+        Dictionary[str, node]
+            Thread safe Dictionary of z/OS managed nodes.
+        """
         return self.nodes
 
-    def set_rc(self, rc: int):
+    def set_rc(self, rc: int) -> None:
         """
         Set the jobs return code obtained during execution.
-        Args:
-            int: Value that is returned from the jobs execution, it should be
-                 transparent to read and set the value, the values should remain
-                 between 0 - 5.
+
+        Parameters
+        ----------
+        rc : int
+            Value that is returned from the jobs execution
         """
         self.rc = rc
 
-    def set_completed(self, completed: bool):
+    def set_completed(self, completed: bool) -> None:
         """
-        Set the jobs completed field with True or False.
-        True if the job has successfully returned with a RC 0, otherwise
-        False, the job has not completed execution at this time.
+        Mark the job as having completed, or not.
+
+        Parameters
+        ----------
+        completed : bool
+            True if the job has successfully returned with a RC 0,
+            otherwise False.
         """
         self.completed = completed
 
-    def add_hostname(self, hostname: str):
+    def add_hostname(self, hostname: str) -> None:
         """
-        Set the hostname where the job should be executed on.
+        Set the hostname of where the job will be run. Jobs are
+        run on z/OS managed nodes.
+
+        Parameters
+        ----------
+        hostname : str
+            Hostname of the z/OS managed node.
         """
         self._hostnames.append(hostname)
 
-    def add_failure(self):
+    def add_failure(self) -> None:
         """
         Increment the failure by 1 for this jobs. Each time the job
         returns with a non-zero return code, increment the value
@@ -504,24 +564,36 @@ class Job:
         """
         self.failures +=1
 
-    def set_elapsed_time(self, start_time: time):
+    def set_elapsed_time(self, start_time: time) -> None:
         """
         Set the start time to obtain the elapsed time this
         job took to run. Should only set this when RC is zero.
+
+        Parameters
+        ----------
+        start_time : time
+            The time the job started. A start time should be
+            captured before the job is run, and passed to this
+            function after the job completes for accuracy of
+            elapsed time.
         """
         self.elapsed = elapsed_time(start_time)
 
     def set_debug(self, debug: bool):
         """
-        Set if pytest should run in debug mode, which is the
+        Indicate if pytest should run in debug mode, which is the
         equivalent of '-s'.
+
+        Parameters
+        ----------
+        debug : bool
+            True if pytest should run with debug , eg `-s` , else False.
         """
         self.debug = debug
 
 # ------------------------------------------------------------------------------
 # Class Connection
 # ------------------------------------------------------------------------------
-class Connection:
     """
     Connection class wrapping paramiko. The wrapper provides methods allowing
     for remote environment variables be set up so that they can interact with
@@ -554,7 +626,7 @@ class Connection:
             self.env_str = self.set_environment_variable(**self.environment)
 
 
-    def __to_dict(self):
+    def __to_dict(self) -> str:
         """
         Method returns constructor arguments to a dictionary, must remain private to
         protect credentials.
@@ -573,19 +645,22 @@ class Connection:
                 del temp[k]
         return temp
 
-    def connect(self):
+    def connect(self) -> SSHClient:
         """
         Create the connection after the connection class has been initialized.
 
-        Returns:
-            object: paramiko SSHClient, client used the execution of commands.
+        Return
+        ------
+        SSHClient
+            paramiko SSHClient, client used the execution of commands.
 
         Raises
-            BadHostKeyException
-            AuthenticationException
-            SSHException
-            FileNotFoundError
-            error
+        ------
+        BadHostKeyException
+        AuthenticationException
+        SSHException
+        FileNotFoundError
+        error
         """
         ssh = None
 
@@ -618,6 +693,7 @@ class Connection:
     def execute(self, client, command):
         """
         Parameters
+        ----------
         client : object, paramiko SSHClient
             SSH Client created through connection.connect()
         command: str, command to run
@@ -893,11 +969,10 @@ def run(key, jobs, zos_nodes, completed):
     host = job.get_hostname()
     zos_nodes_len = zos_nodes.len()
 
-    # Remove the host from the zos_nodes dictionary so it can be used without concern of another thread
-    # accessing it. This won't be needed when the tests can be run concurrently.
 
-    # zos_node = zos_nodes.pop(host)
     # if zos_node is not None:
+    # TODO, remove True and determine if its needed, previously the node dictionary was continuously having nodes added
+    # and remove to address that some test cases could not be run concurrently, now the tests can be run concurrently. 
     if True:
         start_time = time.time()
         # print("Job information: " + "\n  z/OS hosts available = " + str(zos_nodes_len) + "\n  Job ID = " + str(job.get_id()) + "\n  Command = " + job.get_command())
@@ -1000,9 +1075,6 @@ def elapsed_time(start_time):
         return elapsed
 
 def main(argv):
-    # Example usage:
-    # python3 load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;"
-    # python3 load_balance.py --python "3.10" --zoau "1.3.1" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;" --tests "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_tso_command_func.py"
     try:
       opts, args = getopt.getopt(argv,'-h',['pyz=','zoau=','itr=', 'args=', 'tests=', 'directories=', 'skip=', 'user='])
     except getopt.GetoptError:
@@ -1125,3 +1197,7 @@ if __name__ == '__main__':
 # python3 load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;" --directories "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/,/Users/ddimatos/git/gh/ibm_zos_core/tests/unit/"
 
 
+    # Example usage:
+    # python3 load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;"
+    # python3 load_balance.py --python "3.10" --zoau "1.3.1" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;" --tests "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_tso_command_func.py"
+   

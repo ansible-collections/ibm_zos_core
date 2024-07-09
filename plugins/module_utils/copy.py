@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
+import traceback
+from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -24,9 +26,16 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
     ikjeft01
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
 
 from shlex import quote
 
+try:
+    from zoautil_py import datasets, gdgs
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
+    gdgs = ZOAUImportError(traceback.format_exc())
 
 REPRO = """  REPRO INDATASET({}) -
     OUTDATASET({}) REPLACE """
@@ -210,6 +219,49 @@ def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
         raise USSCmdExecError(cp_pds2uss, rc, out, err)
 
     return rc, out, err
+
+
+def copy_gdg2uss(src, dest, is_binary=False, asa_text=False):
+    """Copy a whole GDG to a USS path.
+
+    Parameters
+    ----------
+    src : str
+        The MVS data set to be copied, it must be a generation data group.
+    dest : str
+        The destination USS path.
+
+    Keyword Parameters
+    ------------------
+    is_binary : bool
+        Whether the file to be copied contains binary data.
+    asa_text : bool
+        Whether the file to be copied contains ASA control
+        characters.
+
+    Returns
+    -------
+    bool
+        True if all copies were successful, False otherwise.
+    """
+    src_view = gdgs.GenerationDataGroupView(src)
+    generations = src_view.generations()
+
+    copy_args = {
+        "options": ""
+    }
+
+    if is_binary or asa_text:
+        copy_args["options"] = "-B"
+
+    for gds in generations:
+        dest_file = path.join(dest, gds.name)
+        rc = datasets.copy(gds.name, dest_file, **copy_args)
+
+        if rc != 0:
+            return False
+
+    return True
 
 
 def copy_uss2uss_binary(src, dest):

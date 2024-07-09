@@ -419,7 +419,19 @@ class DataSet(object):
 
         Returns:
             bool -- If data is is cataloged.
+
+        Raise:
+            MVSCmdExecError: When the call to IDCAMS fails with rc greater than 4.
         """
+
+        # Resolve GDS names before passing it into listcat
+        if DataSet.is_gds_relative_name(name):
+            try:
+                name = DataSet.resolve_gds_absolute_name(name)
+            except GDSNameResolveError:
+                # if GDS name cannot be resolved, it's not in the catalog.
+                return False
+
         # We need to unescape because this calls to system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')
@@ -429,6 +441,13 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
+
+        # The above 'listcat entries' command to idcams returns:
+        # rc=0 if data set found in catalog
+        # rc=4 if data set NOT found in catalog
+        # rc>4 for other errors
+        if rc > 4:
+            raise MVSCmdExecError(rc, stdout, stderr)
 
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
@@ -447,6 +466,8 @@ class DataSet(object):
             name (str) -- The data set name to check if cataloged.
         Returns:
             list{str} -- A list of volumes where the dataset is cataloged.
+        Raise:
+            MVSCmdExecError: When the call to IDCAMS fails with rc greater than 4.
         """
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
@@ -454,6 +475,13 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
+        # The above 'listcat entries all' command to idcams returns:
+        # rc=0 if data set found in catalog
+        # rc=4 if data set NOT found in catalog
+        # rc>4 for other errors
+        if rc > 4:
+            raise MVSCmdExecError(rc, stdout, stderr)
+
         delimiter = 'VOLSER------------'
         arr = stdout.split(delimiter)[1:]  # throw away header
 

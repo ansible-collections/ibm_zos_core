@@ -271,7 +271,8 @@ def preprocess_data_set_names(command):
         The command with the modified data set names if any.
 
     """
-    data_set_list = re.findall(r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\((?:[-+]?[0-9]+)\)){0,1}", command)
+    pattern = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\((?:[-+]?[0-9]+)\)){0,1}"
+    data_set_list = re.findall(pattern, command)
     for name in data_set_list:
         dataset_name = data_set.DataSet.resolve_gds_absolute_name(name)
         command = command.replace(name, dataset_name)

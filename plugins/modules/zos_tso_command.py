@@ -273,10 +273,8 @@ def preprocess_data_set_names(command):
     """
     data_set_list = re.findall(r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\((?:[-+]?[0-9]+)\)){0,1}", command)
     for name in data_set_list:
-        dataset = data_set.MVSDataSet(
-            name=name,
-        )
-        command = command.replace(name, dataset.name)
+        dataset_name = data_set.DataSet.resolve_gds_absolute_name(name)
+        command = command.replace(name, dataset_name)
     return command
 
 

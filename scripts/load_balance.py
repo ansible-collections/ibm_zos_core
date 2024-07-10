@@ -1,3 +1,4 @@
+import argparse
 from enum import Enum
 import itertools
 import json
@@ -9,6 +10,7 @@ from os.path import join
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from socket import error
+import textwrap
 from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
     AuthenticationException, SSHException, ssh_exception
 
@@ -594,6 +596,7 @@ class Job:
 # ------------------------------------------------------------------------------
 # Class Connection
 # ------------------------------------------------------------------------------
+class Connection:
     """
     Connection class wrapping paramiko. The wrapper provides methods allowing
     for remote environment variables be set up so that they can interact with
@@ -875,6 +878,10 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
         jobs.update(index, _job)
         index += 1
         hostnames_index += 1
+
+    # for key, value in jobs.items():
+    #     print(f"The job count = {str(jobs.len())}, job id = {key} , job = {str(value)}")
+
     return jobs
 
 
@@ -925,12 +932,12 @@ def get_managed_nodes(user: str, zoau: str, pyz: str) -> Dictionary:
         The dictionary key will be the z/OS managed node's hostname and the value
         will be of type Node.
     """
-    # Thread safe dictionary
     nodes: Dictionary [str, Node] = Dictionary()
     hostnames = []
 
-    # TODO: Remove the AC dependency or ensure that the prefix (cd.../...) comes from the shell args
-    result = subprocess.run(["cd ..;./ac --host-nodes --all false"], shell=True, capture_output=True, text=True)
+    # Calling venv.sh directly to avoid the ac dependency, ac usually lives in project root so an
+    # additional arg would have to be passed like so: "cd ..;./ac --host-nodes --all false"
+    result = subprocess.run(["echo `./venv.sh --targets-production`"], shell=True, capture_output=True, text=True)
     hostnames = result.stdout.split()
 
     # Prune any production system that fails to ping
@@ -941,10 +948,14 @@ def get_managed_nodes(user: str, zoau: str, pyz: str) -> Dictionary:
         # TODO: Use the connection class to connection and validate ZOAU and Python before adding the nodes
         if result.returncode == 0:
             nodes.update(key=hostname, obj=Node(hostname = hostname, user = user, zoau = zoau, pyz = pyz))
+
+    # for key, value in nodes.items():
+    #     print(f"The z/OS node count = {str(nodes.len())}, hostname = {key} , node = {str(value)}")
+
     return nodes
 
 
-def run(key, jobs, zos_nodes, completed):
+def run(key, jobs, zos_nodes, completed, timeout, max, bal):
     """
     Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
@@ -977,18 +988,18 @@ def run(key, jobs, zos_nodes, completed):
         start_time = time.time()
         # print("Job information: " + "\n  z/OS hosts available = " + str(zos_nodes_len) + "\n  Job ID = " + str(job.get_id()) + "\n  Command = " + job.get_command())
         try:
-            result = subprocess.run(["cd ../;"+job.get_command()], shell=True, capture_output=True, text=True, timeout=300)
+            result = subprocess.run(["cd ..;"+job.get_command()], shell=True, capture_output=True, text=True, timeout=timeout)
             job.set_elapsed_time(start_time)
             rc = int(result.stdout)
             job.set_rc(int(rc))
         except subprocess.TimeoutExpired:
             job.set_elapsed_time(start_time)
-            message = "Job " + str(job.get_id()) + " has exceed permitted execution timeout and returned with rc = " + str(rc) + " setting rc to 9"
+            message = "Job " + str(job.get_id()) + " has exceeded the configured execution timeout and returned with rc = " + str(rc) + "."
             print(message)
             rc = 9
 
         if rc == 0:
-            message = "Test with job ID " + str(job.get_id()) + " ran on host " + str(job.get_hostname()) + " with RC " + str(rc) + " in time " + job.get_elapsed_time()
+            message = "Test with job ID " + str(job.get_id()) + " ran on host " + str(job.get_hostname()) + " with RC " + str(rc) + " in time " + job.get_elapsed_time() + "."
             print(message)
             job.set_completed(True)
             completed.update(job.get_id(), job)
@@ -996,17 +1007,17 @@ def run(key, jobs, zos_nodes, completed):
             job.add_failure()
             job_failures = job.get_failures()
 
-            if job_failures >= 6:
+            if job_failures >= max: #6:
                 # What do we do here with this job if it fails too many times, do we take it out of the job list? Put it elsewhere? 
                 #jobs.update(job.get_id(), job)
-                message = "Job no longer eligible for execution = " + str(job) + " returned with rc = " + str(rc) + " setting rc to 8"
+                message = "Job no longer eligible for execution = " + str(job) + " returned with rc = " + str(rc) + "."
                 print(message)
                 rc = 8
-            elif job_failures == 3:
+            elif job_failures == bal: #3:
                 # WHat do we do with invalid ECs at this point, take the EC out of the node list and traverse jobs and remove as well? 
                 # maybe node list removal is enough.
                 # What do we do with the failed Nodes, store them in a dictionary
-                message = "Job is being rebalanced = " + str(job) + " returned with rc = " + str(rc) + " setting rc to 7"
+                message = "Job is being rebalanced = " + str(job) + " returned with rc = " + str(rc) + "."
                 print(message)
                 update_job_hostname(job)
                 rc = 7
@@ -1034,7 +1045,7 @@ def run(key, jobs, zos_nodes, completed):
     return rc, message
 
 
-def runner(jobs, zos_nodes, completed):
+def runner(jobs, zos_nodes, completed, timeout, max, bal):
     """Creates the thread pool to execute job in the dictionary using the run
     method.
     """
@@ -1044,7 +1055,7 @@ def runner(jobs, zos_nodes, completed):
 
     with ThreadPoolExecutor(number_of_threads) as executor:
 
-        futures = [executor.submit(run, key, jobs, zos_nodes, completed) for key, value in jobs.items() if not value.get_completed()]
+        futures = [executor.submit(run, key, jobs, zos_nodes, completed, timeout, max, bal) for key, value in jobs.items() if not value.get_completed()]
         for future in as_completed(futures):
             rc, message = future.result()
             if future.exception() is not None:
@@ -1074,52 +1085,85 @@ def elapsed_time(start_time):
         elapsed = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
         return elapsed
 
-def main(argv):
-    try:
-      opts, args = getopt.getopt(argv,'-h',['pyz=','zoau=','itr=', 'args=', 'tests=', 'directories=', 'skip=', 'user='])
-    except getopt.GetoptError:
-      print ('load_balance.py --pyz <(str)python> --zoau <(str)zoau> --itr <int> --args <str> --directories <str>, --skip <str>', '--user <str>')
-      print ('python load_balance.py --pyz \"3.9\" --zoau \"1.2.2\" --itr 10 --args \"cd /Users/ddimatos/git/gh/ibm_zos_core;\"')
-      sys.exit(2)
+# def main(argv):
+def main():
+    # python3 load_balance.py --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz" --zoau "/zoau/v1.3.1" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;"  --tests /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_tso_command_func.py --user "omvsadm" --skip tests/functional/modules/test_module_security.py
+    parser = argparse.ArgumentParser(
+    prog='load_balance.py',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description=textwrap.dedent('''
+        Examples
+        --------
+        1)  Execute a single test suite for up to 5 iterations for ibmuser with shared zoau and python installations.
+            Note, usage of --tests "../tests/functional/modules/test_zos_tso_command_func.py"
+            $ python3 load_balance.py\\
+                    --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
+                    --zoau "/zoau/v1.3.1"\\
+                    --itr 5\\
+                    --tests "../tests/functional/modules/test_zos_tso_command_func.py"\\
+                    --user "ibmuser"\\
+                    --timeout 100
 
-    zoau = "1.2.2"
-    pyz = "3.9"
-    itr = 10
-    args = ""
-    tests = None
-    directories = None
-    skip = None
-    user = ""
-    for opt, arg in opts:
-        if opt == '-h':
-            print ('load_balance.py --pyz <python> --zoau <zoau> --itr <int> --args <str> --directories <str>')
-            print ('python load_balance.py --pyz \"3.9\" --zoau \"1.2.2\" --itr 10 --args \"cd /Users/ddimatos/git/gh/ibm_zos_core;\" --tests \"test_load_balance.py\"')
-            # Use argparse for real help, for now this works:
-            print("--pyz - (str) z/OS python version ")
-            print("--zoau - (str) zoau version")
-            print("--args - (str) a prefix to be run before the generated command, optional")
-            print("--tests - (str) space or comma delimited test suites, must be absolute path(s)")
-            print("--directories - (str) project directory containing all the tests")
-            print("--skip - (str) project directory containing all the tests")
-            print("--user - (str) User running on z/OS USS")
+        2)  Execute a multiple test suites for up to 10 iterations for ibmuser with shared zoau and python installations.
+            Note, usage of --tests "../tests/functional/modules/test_zos_tso_command_func.py,../tests/functional/modules/test_zos_find_func.py"
+            $ python3 load_balance.py\\
+                    --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
+                    --zoau "/zoau/v1.3.1"\\
+                    --itr 10\\
+                    --tests "../tests/functional/modules/test_zos_tso_command_func.py,../tests/functional/modules/test_zos_find_func.py"\\
+                    --user "ibmuser"\\
+                    --timeout 100
 
-            sys.exit()
-        elif opt in '--pyz':
-            pyz = arg or "3.9"
-        elif opt in '--zoau':
-            zoau = arg or "1.2.2"
-        elif opt in '--itr':
-            itr = arg or 10
-        elif opt in '--args':
-            args = arg or ""
-        elif opt in '--tests':
-            tests = arg or None
-        elif opt in '--directories':
-            directories = arg or None
-        elif opt in '--skip':
-            skip = arg or None
-        elif opt in '--user':
-            user = arg or None
+        3)  Execute a test suites in a directory for up to 4 iterations for ibmuser with shared zoau and python installations.
+            Note, usage of --directories "../tests/functional/modules/,../tests/unit/"
+            $ python3 load_balance.py\\
+                    --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
+                    --zoau "/zoau/v1.3.1"\\
+                    --itr 4\\
+                    --directories "../tests/functional/modules/,../tests/unit/"\\
+                    --user "ibmuser"\\
+                    --timeout 100
+
+        4)  Execute test suites in multiple directories for up to 5 iterations for ibmuser with shared zoau and python installations.
+            Note, usage of "--directories "../tests/functional/modules/,../tests/unit/"
+            $ python3 load_balance.py\\
+                    --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
+                    --zoau "/zoau/v1.3.1"\\
+                    --itr 5\\
+                    --directories "../tests/functional/modules/,../tests/unit/"\\
+                    --user "ibmuser"\\
+                    --timeout 100\\
+                    --max 6\\
+                    --bal 3
+
+        5)  Execute test suites in multiple directories with up to 5 iterations for ibmuser with attributes, zoau, pyz using a max timeout of 100, max failures of 6 and balance of 3.
+            Note, usage of "--directories "../tests/functional/modules/,../tests/unit/"
+            $ python3 load_balance.py\\
+                    --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
+                    --zoau "/zoau/v1.3.1"\\
+                    --itr 5\\
+                    --directories "../tests/functional/modules/,../tests/unit/"\\
+                    --user "ibmuser"\\
+                    --timeout 100\\
+                    --max 6\\
+                    --bal 3
+        '''))
+
+    parser.add_argument('--pyz', type=str, help='Python Z home directory.', required=True, metavar='<str,str>', default="sss")
+    parser.add_argument('--zoau', type=str, help='ZOAU home directory.', required=True, metavar='<str,str>', default="")
+    parser.add_argument('--itr', type=int, help='How many times to run the test suite, exists early if all succeed.', required=True, metavar='<int>', default="")
+    parser.add_argument('--skip', type=str, help='Identify test suites to skip, only honored with option \'--directories\'', required=False, metavar='<str,str>', default="")
+    parser.add_argument('--user', type=str, help='z/OS USS user authorized to run Ansible tests on the managed z/OS node', required=True, metavar='<str>', default="")
+    parser.add_argument('--timeout', type=int, help='The maximum time in seconds a job should run on z/OS for, default is 300 seconds.', required=False, metavar='<int>', default="300")
+    parser.add_argument('--max', type=int, help='The maximum number of times a job can fail before its removed from the job queue.', required=False, metavar='<int>', default="6")
+    parser.add_argument('--bal', type=int, help='The count at which a job is balanced from one z/OS node to another for execution.', required=False, metavar='<int>', default="3")
+
+    # Mutually exclusive options
+    group_tests_or_dirs = parser.add_argument_group('Mutually exclusive', 'Absolute path to test suites. For more than one, use a comma or space delimiter.')
+    exclusive_group_or_tests = group_tests_or_dirs.add_mutually_exclusive_group(required=True)
+    exclusive_group_or_tests.add_argument('--testsuite', type=str, help='Space or comma delimited test suites, must be absolute path(s)', required=False, metavar='<str,str>', default="")
+    exclusive_group_or_tests.add_argument('--tests', type=str, help='Space or comma delimited directories containing test suites, must be absolute path(s)', required=False, metavar='<str,str>', default=None)
+    args = parser.parse_args()
 
     start_time_full_run = time.time()
 
@@ -1127,24 +1171,15 @@ def main(argv):
     completed = Dictionary()
 
     # Get a dictionary of all active zos_nodes to run tests on
-    zos_nodes = get_managed_nodes(user = user, zoau = zoau, pyz = pyz)
-
-    for key, value in zos_nodes.items():
-        print(f"The z/OS node count = {str(zos_nodes.len())}, hostname = {key} , node = {str(value)}")
-
+    nodes = get_managed_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz)
 
     # Get a dictionary of jobs containing the work to be run on a node.
-    jobs = get_jobs(zos_nodes, testsuite=tests, tests=directories, skip=skip)
-
-    # for key, value in jobs.items():
-    #     print(f"The job count = {str(jobs.len())}, job id = {key} , job = {str(value)}")
+    jobs = get_jobs(nodes, testsuite=args.testsuite, tests=args.tests, skip=args.skip)
 
     count = 1
     iterations_result=""
-    # print("completed.len() " + str(completed.len()))
-    # print("jobs.len() " + str(jobs.len()))
-    number_of_threads = zos_nodes.len()
-    while completed.len() != jobs.len() and count < int(itr):
+    number_of_threads = nodes.len()
+    while completed.len() != jobs.len() and count < int(args.itr):
         print("Thread pool iteration " + str(count))
         print("Thread pool iteration " + str(count) + " has completed " + str(completed.len()) + " jobs.")
         print("Thread pool iteration " + str(count) + " has pending " + str(jobs.len() - completed.len()) + " jobs.")
@@ -1152,26 +1187,23 @@ def main(argv):
 
         job_completed_before = completed.len();
         start_time = time.time()
-        runner(jobs, zos_nodes, completed)
+        runner(jobs, nodes, completed, args.timeout, args.max, args.bal)
         jobs_completed_after = completed.len() - job_completed_before
         iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + elapsed_time(start_time) + " time. \n"
-
-        # seconds and had " + str(failures) + "\n"
         count +=1
-        #failures = 0
 
-    fail_gt_eq_to_six=0
-    fail_less_than_six=0
+    fail_gt_eq_to_max=0
+    fail_less_than_max=0
     total_failed=0
     total_balanced=0
     for key, job in jobs.items():
         fails=job.get_failures()
         bal = job.get_hostnames()
-        if fails >= 6:
-            fail_gt_eq_to_six+=1
+        if fails >= args.max:
+            fail_gt_eq_to_max+=1
             total_failed+=1
         if fails != 0 and fails <6:
-            fail_less_than_six+=1
+            fail_less_than_max+=1
             total_failed+=1
 
         if len(bal) > 1:
@@ -1182,22 +1214,9 @@ def main(argv):
     print("Number of jobs queued to be run = " + str(jobs.len()))
     print("Number of jobs that run successfully = " + str(completed.len()))
     print("Total number of jobs that failed = " + str(total_failed))
-    print("Number of jobs that failed 6 times = " + str(fail_gt_eq_to_six))
-    print("Number of jobs that failed less than 6 times = " + str(fail_less_than_six))
+    print("Number of jobs that failed 6 times = " + str(fail_gt_eq_to_max))
+    print("Number of jobs that failed less than 6 times = " + str(fail_less_than_max))
     print("Number of jobs that had zos_nodes rebalanced = " + str(total_balanced))
 
 if __name__ == '__main__':
-     main(sys.argv[1:])
-
-
-#./ac --venv-start
-#cd /Users/ddimatos/git/gh/ibm_zos_core/scripts
-#python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;" --tests "test_load_balance_full.py"
-
-# python3 load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;" --directories "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/,/Users/ddimatos/git/gh/ibm_zos_core/tests/unit/"
-
-
-    # Example usage:
-    # python3 load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;"
-    # python3 load_balance.py --python "3.10" --zoau "1.3.1" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;" --tests "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_tso_command_func.py"
-   
+    main()

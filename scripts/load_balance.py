@@ -912,7 +912,7 @@ def update_job_hostname(job: Job):
     job.add_hostname(zos_nodes_not_in_job[1])
 
 
-def get_managed_nodes(user: str, zoau: str, pyz: str) -> Dictionary:
+def get_managed_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Dictionary:
     """
     Get a thread safe Dictionary of active z/OS managed nodes.
 
@@ -933,12 +933,16 @@ def get_managed_nodes(user: str, zoau: str, pyz: str) -> Dictionary:
         will be of type Node.
     """
     nodes: Dictionary [str, Node] = Dictionary()
-    hostnames = []
 
-    # Calling venv.sh directly to avoid the ac dependency, ac usually lives in project root so an
-    # additional arg would have to be passed like so: "cd ..;./ac --host-nodes --all false"
-    result = subprocess.run(["echo `./venv.sh --targets-production`"], shell=True, capture_output=True, text=True)
-    hostnames = result.stdout.split()
+    if hostnames is None:
+        hostnames = []
+
+        # Calling venv.sh directly to avoid the ac dependency, ac usually lives in project root so an
+        # additional arg would have to be passed like so: "cd ..;./ac --host-nodes --all false"
+        result = subprocess.run(["echo `./venv.sh --targets-production`"], shell=True, capture_output=True, text=True)
+        hostnames = result.stdout.split()
+    else:
+        hostnames = hostnames[0].split(',')
 
     # Prune any production system that fails to ping
     for hostname in hostnames:
@@ -1146,7 +1150,8 @@ def main():
                     --user "ibmuser"\\
                     --timeout 100\\
                     --max 6\\
-                    --bal 3
+                    --bal 3\\
+                    --hostnames "ec33025a.vmec.svl.ibm.com,ec33025a.vmec.svl.ibm"
         '''))
 
     parser.add_argument('--pyz', type=str, help='Python Z home directory.', required=True, metavar='<str,str>', default="sss")
@@ -1157,6 +1162,7 @@ def main():
     parser.add_argument('--timeout', type=int, help='The maximum time in seconds a job should run on z/OS for, default is 300 seconds.', required=False, metavar='<int>', default="300")
     parser.add_argument('--max', type=int, help='The maximum number of times a job can fail before its removed from the job queue.', required=False, metavar='<int>', default="6")
     parser.add_argument('--bal', type=int, help='The count at which a job is balanced from one z/OS node to another for execution.', required=False, metavar='<int>', default="3")
+    parser.add_argument('--hostnames', help='List of hostnames to use, overrides the auto detection.', required=False, metavar='<list[str]>', default=None, nargs='*')
 
     # Mutually exclusive options
     group_tests_or_dirs = parser.add_argument_group('Mutually exclusive', 'Absolute path to test suites. For more than one, use a comma or space delimiter.')
@@ -1171,7 +1177,7 @@ def main():
     completed = Dictionary()
 
     # Get a dictionary of all active zos_nodes to run tests on
-    nodes = get_managed_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz)
+    nodes = get_managed_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames)
 
     # Get a dictionary of jobs containing the work to be run on a node.
     jobs = get_jobs(nodes, testsuite=args.testsuite, tests=args.tests, skip=args.skip)

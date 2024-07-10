@@ -1185,7 +1185,7 @@ def main():
         print("Thread pool iteration " + str(count) + " has pending " + str(jobs.len() - completed.len()) + " jobs.")
         print("Thread pool has " + str(number_of_threads) + " threads running concurrently.")
 
-        job_completed_before = completed.len();
+        job_completed_before = completed.len()
         start_time = time.time()
         runner(jobs, nodes, completed, args.timeout, args.max, args.bal)
         jobs_completed_after = completed.len() - job_completed_before

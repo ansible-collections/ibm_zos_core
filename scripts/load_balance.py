@@ -366,6 +366,8 @@ class Job:
         self.elapsed: str = None
         self.hostpattern: str = "all"
         self.nodes: Dictionary = nodes
+        self._stdout_and_stderr: list = list()
+        self._stdout_and_stderr.append(hostname)
 
     def __str__(self) -> str:
         temp = {
@@ -397,8 +399,8 @@ class Job:
         node_inventory = node_temp.get_inventory_as_string()
         # f-string causing an undiagnosed error.
         #return f"pytest {self.testcase} --host-pattern={self.hostpattern} --zinventory-raw={node_inventory}"
-        return """pytest {0} --host-pattern={1} --zinventory-raw='{2}' >&2 ; echo $? >&1""".format(self.testcase,self.hostpattern,node_inventory)
-
+        #return """pytest {0} --host-pattern={1} --zinventory-raw='{2}' >&2 ; echo $? >&1""".format(self.testcase,self.hostpattern,node_inventory)
+        return """pytest {0} --host-pattern={1} --zinventory-raw='{2}'""".format(self.testcase,self.hostpattern,node_inventory)
 
     def get_hostnames(self) -> list[str]:
         """
@@ -523,6 +525,29 @@ class Job:
         """
         return self.nodes
 
+    def get_stdout_and_stderr_msgs(self) -> list[str]:
+        """
+        Return all stdout and stderr messages that have been assigned to this job over time as a list.
+
+        Return
+        ------
+        list[str]
+            A list of all stderr and stdout messages.
+        """
+        return self._stdout_and_stderr
+
+    def get_stdout_and_stderr_msg(self) -> str:
+        """
+        Return the stdout and stderr message assigned to this node, in other words, the last message
+        resulting from this jobs execution.
+
+        Return
+        ------
+        str
+            The current concatenated stderr and stdout message.
+        """
+        return self._stdout_and_stderr[-1]
+
     def set_rc(self, rc: int) -> None:
         """
         Set the jobs return code obtained during execution.
@@ -593,6 +618,17 @@ class Job:
         """
         self.debug = debug
 
+    def add_stdout_and_stderr(self, stdout_stderr: str) -> None:
+        """
+        Add a stdout and stderr concatenated message resulting from the jobs
+        execution (generally std out/err resulting from pytest) the job.
+
+        Parameters
+        ----------
+        stdout_stderr : str
+            Stdout and stderr concatenated into one string.
+        """
+        self._stdout_and_stderr.append(stdout_stderr)
 # ------------------------------------------------------------------------------
 # Class Connection
 # ------------------------------------------------------------------------------
@@ -959,7 +995,7 @@ def get_managed_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = Non
     return nodes
 
 
-def run(key, jobs, zos_nodes, completed, timeout, max, bal):
+def run(key, jobs, zos_nodes, completed, timeout, max, bal, extra):
     """
     Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
@@ -992,10 +1028,14 @@ def run(key, jobs, zos_nodes, completed, timeout, max, bal):
         start_time = time.time()
         # print("Job information: " + "\n  z/OS hosts available = " + str(zos_nodes_len) + "\n  Job ID = " + str(job.get_id()) + "\n  Command = " + job.get_command())
         try:
-            result = subprocess.run(["cd ..;"+job.get_command()], shell=True, capture_output=True, text=True, timeout=timeout)
+            # Build command
+            cmd =  f"{extra};{job.get_command()} 1>&2; echo $? >&1"
+            result = subprocess.run([cmd], shell=True, capture_output=True, text=True, timeout=timeout)
             job.set_elapsed_time(start_time)
             rc = int(result.stdout)
             job.set_rc(int(rc))
+            pytest_std_out_err = result.stderr
+            job.add_stdout_and_stderr(pytest_std_out_err)
         except subprocess.TimeoutExpired:
             job.set_elapsed_time(start_time)
             message = "Job " + str(job.get_id()) + " has exceeded the configured execution timeout and returned with rc = " + str(rc) + "."
@@ -1049,7 +1089,7 @@ def run(key, jobs, zos_nodes, completed, timeout, max, bal):
     return rc, message
 
 
-def runner(jobs, zos_nodes, completed, timeout, max, bal):
+def runner(jobs, zos_nodes, completed, timeout, max, bal, extra):
     """Creates the thread pool to execute job in the dictionary using the run
     method.
     """
@@ -1059,7 +1099,7 @@ def runner(jobs, zos_nodes, completed, timeout, max, bal):
 
     with ThreadPoolExecutor(number_of_threads) as executor:
 
-        futures = [executor.submit(run, key, jobs, zos_nodes, completed, timeout, max, bal) for key, value in jobs.items() if not value.get_completed()]
+        futures = [executor.submit(run, key, jobs, zos_nodes, completed, timeout, max, bal, extra) for key, value in jobs.items() if not value.get_completed()]
         for future in as_completed(futures):
             rc, message = future.result()
             if future.exception() is not None:
@@ -1151,10 +1191,13 @@ def main():
                     --timeout 100\\
                     --max 6\\
                     --bal 3\\
-                    --hostnames "ec33025a.vmec.svl.ibm.com,ec33025a.vmec.svl.ibm"
+                    --hostnames "ec33025a.vmec.svl.ibm.com,ec33025a.vmec.svl.ibm"\\
+                    --extra "cd .."
         '''))
 
-    parser.add_argument('--pyz', type=str, help='Python Z home directory.', required=True, metavar='<str,str>', default="sss")
+    # Options
+    parser.add_argument('--extra', type=str, help='Extra commands passed to subprocess before pytest execution', required=False, metavar='<str>', default="")
+    parser.add_argument('--pyz', type=str, help='Python Z home directory.', required=True, metavar='<str,str>', default="")
     parser.add_argument('--zoau', type=str, help='ZOAU home directory.', required=True, metavar='<str,str>', default="")
     parser.add_argument('--itr', type=int, help='How many times to run the test suite, exists early if all succeed.', required=True, metavar='<int>', default="")
     parser.add_argument('--skip', type=str, help='Identify test suites to skip, only honored with option \'--directories\'', required=False, metavar='<str,str>', default="")
@@ -1193,7 +1236,7 @@ def main():
 
         job_completed_before = completed.len()
         start_time = time.time()
-        runner(jobs, nodes, completed, args.timeout, args.max, args.bal)
+        runner(jobs, nodes, completed, args.timeout, args.max, args.bal, args.extra)
         jobs_completed_after = completed.len() - job_completed_before
         iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + elapsed_time(start_time) + " time. \n"
         count +=1

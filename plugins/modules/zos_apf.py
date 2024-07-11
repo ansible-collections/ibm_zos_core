@@ -22,6 +22,8 @@ module: zos_apf
 version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
+  - "Rich Parker (@richp405)"
+  - "Fernando Flores (@fernandofloresg))"
 short_description: Add or remove libraries to Authorized Program Facility (APF)
 description:
   - Adds or removes libraries to Authorized Program Facility (APF).
@@ -508,7 +510,8 @@ def main():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    library = parsed_args.get('library')
+    library = parsed_args.get("library")
+
     state = parsed_args.get('state')
     force_dynamic = parsed_args.get('force_dynamic')
     volume = parsed_args.get('volume')

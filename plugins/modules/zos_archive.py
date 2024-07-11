@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -36,6 +37,7 @@ options:
       - List of names or globs of UNIX System Services (USS) files,
         PS (sequential data sets), PDS, PDSE to compress or archive.
       - USS file paths should be absolute paths.
+      - GDS relative notation is supported.
       - "MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE)."
       - VSAMs are not supported.
     type: list
@@ -123,9 +125,9 @@ options:
     required: true
   exclude:
     description:
-      - Remote absolute path, glob, or list of paths, globs or data set name
-        patterns for the file, files or data sets to exclude from src list
-        and glob expansion.
+      - Remote absolute path, glob, or list of paths, globs, data set name
+        patterns or generation data sets (GDSs) in relative notation for the file,
+        files or data sets to exclude from src list and glob expansion.
       - "Patterns (wildcards) can contain one of the following, `?`, `*`."
       - "* matches everything."
       - "? matches any single character."
@@ -331,7 +333,7 @@ EXAMPLES = r'''
       name: tar
 
 # Archive multiple files
-- name: Compress list of files into a zip
+- name: Archive list of files into a zip
   zos_archive:
     src:
       - /tmp/archive/foo.txt
@@ -341,7 +343,7 @@ EXAMPLES = r'''
     name: zip
 
 # Archive one data set into terse
-- name: Compress data set into a terse
+- name: Archive data set into a terse
   zos_archive:
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
@@ -349,7 +351,7 @@ EXAMPLES = r'''
       name: terse
 
 # Use terse with different options
-- name: Compress data set into a terse, specify pack algorithm and use adrdssu
+- name: Archive data set into a terse, specify pack algorithm and use adrdssu
   zos_archive:
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
@@ -360,13 +362,34 @@ EXAMPLES = r'''
         use_adrdssu: true
 
 # Use a pattern to store
-- name: Compress data set pattern using xmit
+- name: Archive data set pattern using xmit
   zos_archive:
     src: "USER.ARCHIVE.*"
     exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
     dest: "USER.ARCHIVE.RESULT.XMIT"
     format:
       name: xmit
+
+- name: Archive multiple GDSs into a terse
+  zos_archive:
+    src:
+      - "USER.GDG(0)"
+      - "USER.GDG(-1)"
+      - "USER.GDG(-2)"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+      format_options:
+        use_adrdssu: True
+
+- name: Archive multiple data sets into a new GDS
+  zos_archive:
+    src: "USER.ARCHIVE.*"
+    dest: "USER.GDG(+1)"
+    format:
+      name: terse
+      format_options:
+        use_adrdssu: True
 '''
 
 RETURN = r'''
@@ -415,27 +438,22 @@ expanded_exclude_sources:
     returned: always
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-    validation,
-    mvs_cmd,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
-import os
-import tarfile
-import zipfile
 import abc
 import glob
-import re
 import math
+import os
+import re
+import tarfile
 import traceback
+import zipfile
 from hashlib import sha256
 
+from ansible.module_utils._text import to_bytes
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set, mvs_cmd, validation)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
 
 try:
     from zoautil_py import datasets
@@ -1278,11 +1296,17 @@ class MVSArchive(Archive):
         """
         expanded_path = []
         for path in paths:
+            e_path = []
             if '*' in path:
                 # list_dataset_names returns a list of data set names or empty.
                 e_paths = datasets.list_dataset_names(path)
             else:
                 e_paths = [path]
+
+            # resolve GDS relative names
+            for index, e_path in enumerate(e_paths):
+                if data_set.DataSet.is_gds_relative_name(e_path):
+                    e_paths[index] = data_set.DataSet.resolve_gds_absolute_name(e_path)
             expanded_path.extend(e_paths)
         return expanded_path
 
@@ -1415,17 +1439,18 @@ class AMATerseArchive(MVSArchive):
                 self.module.fail_json(
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
-        # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(
+        dataset = data_set.MVSDataSet(
             name=self.dest,
-            replace=True,
-            type='seq',
+            data_set_type='seq',
             record_format='fb',
             record_length=AMATERSE_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
-            space_type=self.dest_data_set.get("space_type"))
+            space_type=self.dest_data_set.get("space_type")
+        )
+        changed = dataset.create(replace=True)
         self.changed = self.changed or changed
-        self.add(source, dest)
+        self.dest = dataset.name
+        self.add(source, self.dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 
 
@@ -1509,16 +1534,19 @@ class XMITArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(
+        dataset = data_set.MVSDataSet(
             name=self.dest,
-            replace=True,
-            type='seq',
+            data_set_type='seq',
             record_format='fb',
             record_length=XMIT_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
-            space_type=self.dest_data_set.get("space_type"))
+            space_type=self.dest_data_set.get("space_type")
+        )
+        changed = dataset.create(replace=True)
         self.changed = self.changed or changed
-        self.add(source, dest)
+        self.changed = self.changed or changed
+        self.dest = dataset.name
+        self.add(source, self.dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 
     def get_error_hint(self, output):

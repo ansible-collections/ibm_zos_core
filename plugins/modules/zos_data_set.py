@@ -1526,11 +1526,30 @@ def parse_and_validate_args(params):
                     aliases=["volume"],
                     dependencies=["state"],
                 ),
-                limit=dict(type="int", required=False),
-                empty=dict(type="bool", required=False),
-                purge=dict(type="bool", required=False),
-                scratch=dict(type="bool", required=False),
-                extended=dict(type="bool", required=False),
+                limit=dict(
+                    type="int",
+                    required=False
+                ),
+                empty=dict(
+                    type="bool",
+                    required=False
+                ),
+                purge=dict(
+                    type="bool",
+                    required=False
+                ),
+                scratch=dict(
+                    type="bool",
+                    required=False
+                ),
+                extended=dict(
+                    type="bool",
+                    required=False
+                ),
+                fifo=dict(
+                    type="bool",
+                    required=False
+                ),
                 force=dict(
                     type="bool",
                     required=False,
@@ -1603,7 +1622,7 @@ def parse_and_validate_args(params):
             default=False,
         ),
         # GDG options
-        limit=dict(type=limit_type, required=False),
+        limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False),
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
@@ -1726,7 +1745,7 @@ def run_module():
                     default=False,
                 ),
                 # GDG options
-                limit=dict(type="int", required=False, no_log=False),
+                limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False),
                 purge=dict(type="bool", required=False),
                 scratch=dict(type="bool", required=False),

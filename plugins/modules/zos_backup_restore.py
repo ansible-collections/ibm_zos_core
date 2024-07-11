@@ -51,6 +51,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to include in the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to include when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -68,6 +69,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to exclude from the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to exclude when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -117,6 +119,7 @@ options:
       - There are no enforced conventions for backup names.
         However, using a common extension like C(.dzp) for UNIX files and C(.DZP) for data sets will
         improve readability.
+      - GDS relative names are supported when I(operation=restore).
     type: str
     required: True
   recover:
@@ -217,6 +220,15 @@ EXAMPLES = r"""
       exclude: user.private.*
     backup_name: MY.BACKUP.DZP
 
+- name: Backup a list of GDDs to data set my.backup.dzp
+  zos_backup_restore:
+    operation: backup
+    data_sets:
+      include:
+        - user.gdg(-1)
+        - user.gdg(0)
+    backup_name: my.backup.dzp
+
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
   zos_backup_restore:
     operation: backup
@@ -312,18 +324,18 @@ EXAMPLES = r"""
     sms_management_class: DB2SMS10
 """
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-from ansible.module_utils.basic import AnsibleModule
-
-from re import match, search, IGNORECASE
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
-from os import path
 import traceback
+from os import path
+from re import IGNORECASE, match, search
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import \
+    BetterArgParser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
+    DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
+
 try:
     from zoautil_py import datasets
     from zoautil_py import exceptions as zoau_exceptions
@@ -386,8 +398,8 @@ def main():
         if operation == "backup":
             backup(
                 backup_name=backup_name,
-                include_data_sets=data_sets.get("include"),
-                exclude_data_sets=data_sets.get("exclude"),
+                include_data_sets=resolve_gds_name_if_any(data_sets.get("include")),
+                exclude_data_sets=resolve_gds_name_if_any(data_sets.get("exclude")),
                 volume=volume,
                 full_volume=full_volume,
                 temp_volume=temp_volume,
@@ -421,6 +433,26 @@ def main():
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
     module.exit_json(**result)
+
+
+def resolve_gds_name_if_any(data_set_list):
+    """Resolve all gds names in a list, if no gds relative name is found then
+    the original name will be kept.
+    Parameters
+    ----------
+    data_set_list : list
+        List of data set names.
+
+    Returns
+    -------
+    list
+        List of data set names with resolved gds names.
+    """
+    if isinstance(data_set_list, list):
+        for index, name in enumerate(data_set_list):
+            if DataSet.is_gds_relative_name(name):
+                data_set_list[index] = DataSet.resolve_gds_absolute_name(name)
+    return data_set_list
 
 
 def parse_and_validate_args(params):
@@ -662,7 +694,7 @@ def data_set_pattern_type(contents, dependencies):
         )
     for pattern in contents:
         if not match(
-            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
             str(pattern),
             IGNORECASE,
         ):
@@ -832,7 +864,7 @@ def backup_name_type(contents, dependencies):
     if contents is None:
         return None
     if not match(
-        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
         str(contents),
         IGNORECASE,
     ):

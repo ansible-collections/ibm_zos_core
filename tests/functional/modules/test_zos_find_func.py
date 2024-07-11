@@ -39,11 +39,6 @@ VSAM_NAMES = [
     "TEST.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
-GDG_NAMES = [
-    "TEST.FIND.GDG.FUNCTEST.FIRST",
-    "TEST.FIND.GDG.FUNCTEST.SECOND",
-]
-
 DATASET_TYPES = ['seq', 'pds', 'pdse']
 # hlq used across the test suite.
 TEST_SUITE_HLQ = "ANSIBLE"

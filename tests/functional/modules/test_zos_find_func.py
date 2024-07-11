@@ -18,7 +18,7 @@ from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.plugins.module_utils.data_set import DataSet
 
 import ibm_zos_core.plugins.modules.zos_data_set
-# from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 
 import pytest
@@ -44,14 +44,9 @@ GDG_NAMES = [
     "TEST.FIND.GDG.FUNCTEST.SECOND",
 ]
 
-SPECIAL_NAMES = [
-    "TEST.FIND.SPEC.FU$CTEST.FIRST",
-    "TEST.FIND.SPEC.FU#CTEST.SECOND",
-    "TEST.FIND.SPEC.FUNCT-ST.THIRD",
-    "TEST.FIND.SPEC.FUNCTS@T.FOURTH"
-]
-
 DATASET_TYPES = ['seq', 'pds', 'pdse']
+# hlq used across the test suite.
+TEST_SUITE_HLQ = "ANSIBLE"
 
 
 def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
@@ -80,18 +75,21 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
     hosts = ansible_zos_module
     search_string = "hello"
     try:
-        hosts.all.zos_data_set(
-            batch=[dict(name=ds, type='gdg', state='present', limit=5) for ds in GDG_NAMES]
-        )
+        gdg_names = [ get_tmp_ds_name() for i in range(4)]
+        # Creates a command like  dtouch dsname &&  dtouch dsname && dtouch dsname to avoid multiple ssh calls and improve test performance
+        dtouch_command = " && ".join([f"dtouch -tgdg -L1 '{item}'" for item in gdg_names])
+        hosts.all.shell(cmd=dtouch_command)
 
-        for ds in GDG_NAMES:
-            hosts.all.zos_data_set(name=f"{ds}(+1)", state="present", type="seq")
+        # Creates a command like  dtouch dsname &&  dtouch dsname && dtouch dsname to avoid multiple ssh calls and improve test performance
+        dtouch_command = " && ".join([f"dtouch -tseq '{item}(+1)'" for item in gdg_names])
+        hosts.all.shell(cmd=dtouch_command)
 
-        for ds in GDG_NAMES:
-            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(0)\" ")
+        # Creates a command like decho dsname && decho dsname && decho dsname to avoid multiple ssh calls and improve test performance
+        decho_command = " && ".join([f"decho '{search_string}' '{item}(0)'" for item in gdg_names])
+        hosts.all.shell(cmd=decho_command)
 
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.GDG.*.*'],
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
             contains=search_string
         )
 
@@ -102,12 +100,10 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
                 pieces = ds.get('name').split(".")
                 pieces.pop()
                 testname = ".".join(pieces)
-                assert testname in GDG_NAMES
+                assert testname in gdg_names
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
-        hosts.all.zos_data_set(
-            batch=[dict(name=ds, type='gdg', state='absent', force=True) for ds in GDG_NAMES]
-        )
+        hosts.all.shell(cmd=f"drm {TEST_SUITE_HLQ}.*")
 
 
 def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
@@ -413,24 +409,26 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
     hosts = ansible_zos_module
     search_string = "hello"
     try:
-        hosts.all.zos_data_set(
-            batch=[dict(name=ds, type='seq', state='present') for ds in SPECIAL_NAMES]
-        )
-        for ds in SPECIAL_NAMES:
-            dsn = ds.replace("$", "\\$")
-            hosts.all.shell(cmd=f"decho '{search_string}' \"{dsn}\" ")
+
+        special_chars = ["$", "-", "@", "#"]
+        special_names = [ "".join([get_tmp_ds_name(mlq_size=7, llq_size=6, symbols=True), special_chars[i]]) for i in range(4)]
+        # Creates a command like  dtouch dsname &&  dtouch dsname && dtouch dsname to avoid multiple ssh calls and improve test performance
+        dtouch_command = " && ".join([f"dtouch -tseq '{item}'" for item in special_names])
+        hosts.all.shell(cmd=dtouch_command)
+
+        # Creates a command like decho dsname && decho dsname && decho dsname to avoid multiple ssh calls and improve test performance
+        decho_command = " && ".join([f"decho '{search_string}' '{item}'" for item in special_names])
+        hosts.all.shell(cmd=decho_command)
 
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.SPEC.*.*'],
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
             contains=search_string
         )
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):
-                assert ds.get('name') in SPECIAL_NAMES
+                assert ds.get('name') in special_names
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
-        hosts.all.zos_data_set(
-            batch=[dict(name=i, state='absent') for i in SPECIAL_NAMES]
-        )
+        hosts.all.shell(cmd=f"drm {TEST_SUITE_HLQ}.*")

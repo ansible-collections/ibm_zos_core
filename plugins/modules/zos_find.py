@@ -249,6 +249,7 @@ import re
 import time
 import datetime
 import math
+import json
 
 from copy import deepcopy
 from re import match as fullmatch
@@ -535,6 +536,35 @@ def data_set_attribute_filter(
     return filtered_data_sets
 
 
+def gdg_filter(module, data_sets, limit, empty, purge, scratch, extended):
+    filtered_data_sets = set()
+    now = time.time()
+    for ds in data_sets:
+        rc, out, err = _dls_wrapper(ds, data_set_type='gdg', list_details=True, json=True)
+
+        if rc != 0:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'dls'",
+                rc=rc, stdout=out, stderr=err
+            )
+        try:
+            response = json.loads(out)
+            gdgs = response['data']['gdgs']
+            for gdg in gdgs:
+                if (
+                    gdg['limit'] == (gdg['limit'] if limit is None else limit) or
+                    gdg['empty'] == (gdg['empty'] if empty is None else empty) or
+                    gdg['purge'] == (gdg['purge'] if purge is None else purge) or
+                    gdg['scratch'] == (gdg['scratch'] if scratch is None else scratch) or
+                    gdg['extended'] == (gdg['extended'] if extended is None else extended)
+                ):
+                    filtered_data_sets.add(gdg['base'])
+        except Exception as e:
+            module.fail_json(repr(e) + f"response {response}")
+
+        return filtered_data_sets
+
+
 # TODO:
 # Implement volume_filter() using "vtocls" shell command from ZOAU
 # when it becomes available.
@@ -779,7 +809,9 @@ def _dls_wrapper(
     u_time=False,
     size=False,
     verbose=False,
-    migrated=False
+    migrated=False,
+    data_set_type="",
+    json=False,
 ):
     """A wrapper for ZOAU 'dls' shell command.
 
@@ -797,6 +829,10 @@ def _dls_wrapper(
         Display verbose information.
     migrated : bool
         Display migrated data sets.
+    data_set_type : str
+        Data set type to look for.
+    json : bool
+        Return content in json format.
 
     Returns
     -------
@@ -815,6 +851,10 @@ def _dls_wrapper(
             dls_cmd += " -s"
     if verbose:
         dls_cmd += " -v"
+    if data_set_type:
+        dls_cmd += f" -t{data_set_type}"
+    if json:
+        dls_cmd += " -j"
 
     dls_cmd += " {0}".format(quote(data_set_pattern))
     return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd)
@@ -926,6 +966,11 @@ def run_module(module):
     )
     resource_type = module.params.get('resource_type').upper()
     volume = module.params.get('volume') or module.params.get('volumes')
+    limit = module.params.get('limit')
+    empty = module.params.get('empty')
+    scratch = module.params.get('scratch')
+    purge = module.params.get('purge')
+    extended = module.params.get('extended')
 
     res_args = dict(data_sets=[])
     filtered_data_sets = set()
@@ -983,9 +1028,11 @@ def run_module(module):
 
         res_args['examined'] = init_filtered_data_sets.get("searched")
 
-    else:
+    elif resource_type == "CLUSTER":
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         res_args['examined'] = len(filtered_data_sets)
+    elif resource_type == "GDG":
+        filtered_data_sets = gdg_filter(module, patterns, limit, empty, purge, scratch, extended)
 
     # Filter out data sets that match one of the patterns in 'excludes'
     if excludes and not pds_paths:
@@ -1045,14 +1092,19 @@ def main():
             ),
             resource_type=dict(
                 type="str", required=False, default="nonvsam",
-                choices=["cluster", "data", "index", "nonvsam"]
+                choices=["cluster", "data", "index", "nonvsam", "gdg"]
             ),
             volume=dict(
                 type="list",
                 elements="str",
                 required=False,
                 aliases=["volumes"]
-            )
+            ),
+            limit=dict(type="int", required=False),
+            empty=dict(type="bool", required=False),
+            purge=dict(type="bool", required=False),
+            scratch=dict(type="bool", required=False),
+            extended=dict(type="bool", required=False),
         )
     )
 
@@ -1077,9 +1129,14 @@ def main():
             arg_type="str",
             required=False,
             default="nonvsam",
-            choices=["cluster", "data", "index", "nonvsam"]
+            choices=["cluster", "data", "index", "nonvsam", "gdg"]
         ),
-        volume=dict(arg_type="list", required=False, aliases=["volumes"])
+        volume=dict(arg_type="list", required=False, aliases=["volumes"]),
+        limit=dict(type="int", required=False),
+        empty=dict(type="bool", required=False),
+        purge=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False),
     )
     try:
         BetterArgParser(arg_def).parse_args(module.params)

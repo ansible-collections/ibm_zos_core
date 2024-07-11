@@ -15,9 +15,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
-from ibm_zos_core.plugins.module_utils.data_set import DataSet
 
-import ibm_zos_core.plugins.modules.zos_data_set
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 
@@ -85,17 +83,15 @@ def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
-            contains=search_string
+            resource_type="gdg",
+            limit=1,
         )
 
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
             for ds in val.get('data_sets'):
-                pieces = ds.get('name').split(".")
-                pieces.pop()
-                testname = ".".join(pieces)
-                assert testname in gdg_names
+                assert ds['name'] in gdg_names
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
         hosts.all.shell(cmd=f"drm {TEST_SUITE_HLQ}.*")

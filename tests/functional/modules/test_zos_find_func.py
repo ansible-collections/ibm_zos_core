@@ -64,37 +64,67 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
     )
 
 
-def test_find_gdg_data_sets_containing_single_string(ansible_zos_module):
+def test_find_gdg_data_sets(ansible_zos_module):
     hosts = ansible_zos_module
-    search_string = "hello"
     try:
-        gdg_names = [ get_tmp_ds_name() for i in range(4)]
-        # Creates a command like  dtouch dsname &&  dtouch dsname && dtouch dsname to avoid multiple ssh calls and improve test performance
-        dtouch_command = " && ".join([f"dtouch -tgdg -L1 '{item}'" for item in gdg_names])
-        hosts.all.shell(cmd=dtouch_command)
+        gdg_a = get_tmp_ds_name()
+        gdg_b = get_tmp_ds_name()
+        gdg_c = get_tmp_ds_name()
+        gdg_names = [gdg_a, gdg_b, gdg_c]
 
-        # Creates a command like  dtouch dsname &&  dtouch dsname && dtouch dsname to avoid multiple ssh calls and improve test performance
-        dtouch_command = " && ".join([f"dtouch -tseq '{item}(+1)'" for item in gdg_names])
-        hosts.all.shell(cmd=dtouch_command)
-
-        # Creates a command like decho dsname && decho dsname && decho dsname to avoid multiple ssh calls and improve test performance
-        decho_command = " && ".join([f"decho '{search_string}' '{item}(0)'" for item in gdg_names])
-        hosts.all.shell(cmd=decho_command)
+        """
+        Purge can only be true when scratch is, hence only one gdg for both.
+        FIFO is disabled in the ECs and results in failure when trying to
+        create a data set.
+        one without flags and limit 3
+        """
+        hosts.all.shell(cmd=f"dtouch -tgdg -L3 {gdg_a}")
+        # one with EXTENDED flag -X
+        hosts.all.shell(cmd=f"dtouch -tgdg -L1 -X {gdg_b}")
+        # one with PURGE flag -P and SCRATCH flag -S
+        hosts.all.shell(cmd=f"dtouch -tgdg -L1 -P -S {gdg_c}")
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
             resource_type="gdg",
-            limit=1,
+            limit=3,
         )
 
         for val in find_res.contacted.values():
             assert val.get('msg') is None
-            assert len(val.get('data_sets')) != 0
-            for ds in val.get('data_sets'):
-                assert ds['name'] in gdg_names
+            assert len(val.get('data_sets')) == 1
+            assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            resource_type="gdg",
+            extended=True,
+        )
+
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) == 1
+            assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
+            assert val.get('matched') == len(val.get('data_sets'))
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            resource_type="gdg",
+            purge=True,
+            scratch=True,
+        )
+
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) == 1
+            assert {"name":gdg_c, "type": "GDG"} in val.get('data_sets')
+            assert val.get('matched') == len(val.get('data_sets'))
+
     finally:
-        hosts.all.shell(cmd=f"drm {TEST_SUITE_HLQ}.*")
+        # Remove one by one to avoid using an HLQ.* cuz it could cause bugs when running in parallel.
+        for ds in gdg_names:
+            hosts.all.shell(cmd=f"drm {ds}")
 
 
 def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
@@ -422,4 +452,5 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
                 assert ds.get('name') in special_names
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
-        hosts.all.shell(cmd=f"drm {TEST_SUITE_HLQ}.*")
+        for ds in special_names:
+            hosts.all.shell(cmd=f"drm {special_names}")

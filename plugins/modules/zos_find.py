@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -126,6 +126,37 @@ options:
     required: false
     aliases:
       - volumes
+  empty:
+    description:
+      - If provided, will search for data sets with I(empty) attribute set as provided.
+    type: bool
+    required: false
+  extended:
+    description:
+      - If provided, will search for data sets with I(extended) attribute set as provided.
+    type: bool
+    required: false
+  fifo:
+    description:
+      - If provided, will search for data sets with I(fifo) attribute set as provided.
+    type: bool
+    required: false
+  limit:
+    description:
+      - If provided, will search for data sets with I(limit) attribute set as provided.
+    type: int
+    required: false
+  purge:
+    description:
+      - If provided, will search for data sets with I(purge) attribute set as provided.
+    type: bool
+    required: false
+  scratch:
+    description:
+      - If provided, will search for data sets with I(scratch) attribute set as provided.
+    type: bool
+    required: false
+
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
     be searched, it should be cataloged first. The L(zos_data_set,./zos_data_set.html) module can be
@@ -536,9 +567,8 @@ def data_set_attribute_filter(
     return filtered_data_sets
 
 
-def gdg_filter(module, data_sets, limit, empty, purge, scratch, extended):
+def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
     filtered_data_sets = set()
-    now = time.time()
     for ds in data_sets:
         rc, out, err = _dls_wrapper(ds, data_set_type='gdg', list_details=True, json=True)
 
@@ -552,15 +582,16 @@ def gdg_filter(module, data_sets, limit, empty, purge, scratch, extended):
             gdgs = response['data']['gdgs']
             for gdg in gdgs:
                 if (
-                    gdg['limit'] == (gdg['limit'] if limit is None else limit) or
-                    gdg['empty'] == (gdg['empty'] if empty is None else empty) or
-                    gdg['purge'] == (gdg['purge'] if purge is None else purge) or
-                    gdg['scratch'] == (gdg['scratch'] if scratch is None else scratch) or
+                    gdg['limit'] == (gdg['limit'] if limit is None else limit) and
+                    gdg['empty'] == (gdg['empty'] if empty is None else empty) and
+                    gdg['purge'] == (gdg['purge'] if purge is None else purge) and
+                    gdg['fifo'] == (gdg['fifo'] if fifo is None else fifo) and
+                    gdg['scratch'] == (gdg['scratch'] if scratch is None else scratch) and
                     gdg['extended'] == (gdg['extended'] if extended is None else extended)
                 ):
                     filtered_data_sets.add(gdg['base'])
         except Exception as e:
-            module.fail_json(repr(e) + f"response {response}")
+            module.fail_json(repr(e))
 
         return filtered_data_sets
 
@@ -971,6 +1002,7 @@ def run_module(module):
     scratch = module.params.get('scratch')
     purge = module.params.get('purge')
     extended = module.params.get('extended')
+    fifo = module.params.get('fifo')
 
     res_args = dict(data_sets=[])
     filtered_data_sets = set()
@@ -1032,7 +1064,7 @@ def run_module(module):
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         res_args['examined'] = len(filtered_data_sets)
     elif resource_type == "GDG":
-        filtered_data_sets = gdg_filter(module, patterns, limit, empty, purge, scratch, extended)
+        filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended)
 
     # Filter out data sets that match one of the patterns in 'excludes'
     if excludes and not pds_paths:

@@ -109,11 +109,13 @@ options:
       - C(nonvsam) refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
+      - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
     choices:
       - nonvsam
       - cluster
       - data
       - index
+      - gdg
     type: str
     required: false
     default: "nonvsam"
@@ -128,31 +130,37 @@ options:
       - volumes
   empty:
     description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
       - If provided, will search for data sets with I(empty) attribute set as provided.
     type: bool
     required: false
   extended:
     description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
       - If provided, will search for data sets with I(extended) attribute set as provided.
     type: bool
     required: false
   fifo:
     description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
       - If provided, will search for data sets with I(fifo) attribute set as provided.
     type: bool
     required: false
   limit:
     description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
       - If provided, will search for data sets with I(limit) attribute set as provided.
     type: int
     required: false
   purge:
     description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
       - If provided, will search for data sets with I(purge) attribute set as provided.
     type: bool
     required: false
   scratch:
     description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
       - If provided, will search for data sets with I(scratch) attribute set as provided.
     type: bool
     required: false
@@ -217,6 +225,16 @@ EXAMPLES = r"""
     patterns:
       - USER.*
     resource_type: cluster
+
+- name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type: gdg
+    limit: 30
+    scratch: true
+    purge: true
+
 """
 
 
@@ -568,6 +586,37 @@ def data_set_attribute_filter(
 
 
 def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
+    """ Filter Generation Data Groups based on their attributes.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    data_sets : set[str]
+        A set of data set names.
+    limit : int
+        The limit GDG attribute that should be used to filter GDGs.
+    empty : bool
+        The empty GDG attribute, that should be used to filter GDGs.
+    fifo : bool
+        The fifo GDG attribute, that should be used to filter GDGs.
+    purge : bool
+        The purge GDG attribute, that should be used to filter GDGs.
+    scratch : bool
+        The scratch GDG attribute, that should be used to filter GDGs.
+    extended : bool
+        The extended GDG attribute, that should be used to filter GDGs.
+
+    Returns
+    -------
+    set[str]
+        Matched GDG base names.
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while executing ZOAU shell command 'dls'.
+    """
     filtered_data_sets = set()
     for ds in data_sets:
         rc, out, err = _dls_wrapper(ds, data_set_type='gdg', list_details=True, json=True)
@@ -1137,6 +1186,7 @@ def main():
             purge=dict(type="bool", required=False),
             scratch=dict(type="bool", required=False),
             extended=dict(type="bool", required=False),
+            fifo=dict(type="bool", required=False),
         )
     )
 
@@ -1169,6 +1219,7 @@ def main():
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
         extended=dict(type="bool", required=False),
+        fifo=dict(type="bool", required=False),
     )
     try:
         BetterArgParser(arg_def).parse_args(module.params)

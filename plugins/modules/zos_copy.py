@@ -109,6 +109,9 @@ options:
         attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record
         format with a record length of 0, block size of 32760, and the remaining attributes will be
         computed.
+      - If C(src) is a file and C(dest) a partitioned data set, C(dest) does not need to include
+        a member in its value, the module can automatically compute the resulting member name from
+        C(src).
       - When C(dest) is a data set, precedence rules apply. If C(dest_data_set)
         is set, this will take precedence over an existing data set. If C(dest)
         is an empty data set, the empty data set will be written with the
@@ -3429,6 +3432,13 @@ def run_module(module, arg_def):
                     dest_has_asa_chars = True
 
             if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
+                # Checking if we need to copy a member when the user requests it implicitly.
+                # src is a file and dest was just the PDS/E dataset name.
+                if not copy_member and src_ds_type == "USS" and os.path.isfile(src):
+                    copy_member = True
+                    dest_member = data_set.DataSet.get_member_name_from_file(os.path.basename(src))
+                    dest = f"{dest_name}({dest_member})"
+
                 # Checking if the members that would be created from the directory files
                 # are already present on the system.
                 if copy_member:

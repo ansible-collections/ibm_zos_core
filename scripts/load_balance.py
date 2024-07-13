@@ -2,6 +2,7 @@ import argparse
 from enum import Enum
 import itertools
 import json
+import math
 import os
 import sys, getopt
 import subprocess
@@ -22,8 +23,9 @@ from threading import Lock
 from contextlib import contextmanager
 import time
 import concurrent.futures
+from collections import OrderedDict
 
-from typing import Type
+from typing import List, Set, Type
 
 
 # ==============================================================================
@@ -214,7 +216,7 @@ class Job:
             "failures": self.failures,
             "id": self.id,
             "rc": self.rc,
-            "completed": self.completed,
+            "successful": self.successful,
             "elapsed": self.elapsed,
             "pytest-command": self.get_command()
         }
@@ -470,6 +472,8 @@ class Job:
 # ------------------------------------------------------------------------------
 # Class Node
 # ------------------------------------------------------------------------------
+
+
 class Node:
     """
     A z/OS node suitable for Ansible tests to execute. Attributes such as 'host',
@@ -519,15 +523,17 @@ class Node:
         self.zoau: str = zoau
         self.pyz: str = pyz
         self.state: Status = Status.ONLINE
-        self.failures: Dictionary[int, Job] = Dictionary()
+        self.failures: set[int] = set()
+        self.balanced: set[int] = set()
         self.inventory: dict [str, str] = {}
         self.inventory.update({'host': hostname})
         self.inventory.update({'user': user})
         self.inventory.update({'zoau': zoau})
         self.inventory.update({'pyz': pyz})
         self.assigned: Dictionary[int, Job] = Dictionary()
-        self.failures_count: int = 0
+        self.failure_count: int = 0
         self.assigned_count: int = 0
+        self.balanced_count: int = 0
 
     def __str__(self) -> str:
         """
@@ -543,7 +549,7 @@ class Node:
             "pyz": self.pyz,
             "state": str(self.state),
             "inventory": self.get_inventory_as_string(),
-            "failures_count": str(self.failures_count),
+            "failure_count": str(self.failure_count),
             "assigned_count": str(self.assigned_count)
         }
         return str(temp)
@@ -562,22 +568,30 @@ class Node:
         """
         self.state = state
 
-    def set_failure_job(self, job: Job):
+    def set_failure_job_id(self, id: int) -> None:
         """
-        Add a job to the dictionary that has failed. This is used for statistical
-        purposes.
+        Add a job ID to the set maintaining jobs that have failed executing on this Node.
+        This is used for statistical purposes.
         A Job failure occurs when the execution of the job is a non-zero return code.
         """
-        self.failures.add(job.get_id(),job)
-        self.failures_count +=1
+        self.failures.add(id)
+        self.failure_count = len(self.failures)
 
-    def set_assigned(self, job: Job):
+    def set_assigned_job(self, job: Job) -> None:
         """
         Add a job to the Node that has been assigned to this node (z/OS managed node).
         This is used for statistical purposes.
         """
         self.assigned.add(job.get_id(),job)
         self.assigned_count +=1
+
+    def set_balanced_job_id(self, id: int) -> None:
+        """
+        Add a job ID to the set maintaining jobs that have been rebalanced on this Node.
+        This is used for statistical purposes.
+        A Job failure occurs when the execution of the job is a non-zero return code.
+        """
+        self.balanced.add(id)
 
     def get_state(self) -> Status:
         """
@@ -667,18 +681,6 @@ class Node:
         """
         return self.inventory
 
-    def get_failure_jobs_as_string(self) -> str:
-        """
-        Get a JSON string of all jobs which have failed on this node.
-
-        Return
-        ------
-        str
-            A JSON string representation of all Job(s) that
-            have been assigned and failed on this Node.
-        """
-        return json.dumps(self.failures)
-
     def get_failure_jobs_as_dictionary(self) -> Dictionary:
         """
         Get a Dictionary() of all jobs which have failed on this node.
@@ -718,7 +720,7 @@ class Node:
         Get the numerical count of how many Job(s) have failed on this
         Node with a non-zero return code.
         """
-        return self.failures_count
+        return self.failure_count
 
     def get_assigned_job_count(self) -> int:
         """
@@ -726,6 +728,44 @@ class Node:
         to this Node.
         """
         return self.assigned_count
+
+    def get_balanced_job_count(self) -> int:
+        """
+        Get the numerical count of how many Job(s) have been assigned
+        to this Node.
+        """
+        self.balanced_count = len(self.balanced)
+        return self.balanced_count
+
+def set_nodes_offline(nodes: Dictionary, jobs: Dictionary) -> None:
+
+    jobs_not_successful_count = 0
+    maximum_allowable_balance = 0
+
+    for value in jobs.items():
+        if not value.get_successful:
+            jobs_not_successful_count += 1
+
+    maximum_allowable_balance = math.ceil(jobs_not_successful_count * .05)
+
+    for value in nodes.items():
+        if value.get_balanced_count() > maximum_allowable_balance:
+            value.set_state(Status.OFFLINE)
+
+def set_node_offline(node: Node, jobs: Dictionary) -> None:
+
+    jobs_not_successful_count = 0
+    maximum_allowable_balance = 0
+
+    for value in jobs.items():
+        if not value.get_successful:
+            jobs_not_successful_count += 1
+
+    maximum_allowable_balance = math.ceil(jobs_not_successful_count * .05)
+
+    if node.get_balanced_count() > maximum_allowable_balance:
+            node.set_state(Status.OFFLINE)
+
 
 # ------------------------------------------------------------------------------
 # Class Connection
@@ -841,7 +881,6 @@ class Connection:
 
         Raises
         SSHException
-
         """
 
         response = None
@@ -1006,15 +1045,16 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
         if hostnames_index % hostnames_length == 0:
             hostnames_index = 0
 
-        # Create a temporary job object and add it to thread safe dictionary
-        _job = Job(hostname = hostnames[hostnames_index], nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
-        #print(_job)
+        # Create a job, add it jobs Dictionary, update node reference
+        hostname = hostnames[hostnames_index]
+        _job = Job(hostname = hostname, nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
         jobs.update(index, _job)
+        nodes.get(hostname).set_assigned_job(_job)
         index += 1
         hostnames_index += 1
 
     # for key, value in jobs.items():
-    #     print(f"The job count = {str(jobs.len())}, job id = {key} , job = {str(value)}")
+    #     print(f"The job count = {str(jobs.len())}, job id = {str(key)} , job = {str(value)}")
 
     return jobs
 
@@ -1037,13 +1077,31 @@ def update_job_hostname(job: Job):
       job nodes.
     """
 
-    # List of all ONLINE z/OS active nodes hostnames.
-    nodes = list(job.get_nodes().keys())
+    unsorted_items = dict()
+    nodes = job.get_nodes()
+
+    # We need the Jobs assigned host names (job.get_hostnames() -> list[str])
+    set_of_nodes_assigned_to_job: set = set(job.get_hostnames())
+
+    set_of_nodes_online: set = set()
+    for key, value in job.get_nodes().items():
+        if value.get_state().is_online():
+            set_of_nodes_online.add(key)
 
     # The difference of all available z/OS zos_nodes and ones assigned to a job.
-    zos_nodes_not_in_job = list(set(nodes) - set(job.get_hostnames()))
+    nodes_available_and_online = list(set_of_nodes_online - set_of_nodes_assigned_to_job)
+
+    for hostname in nodes_available_and_online:
+        count = nodes.get(hostname).get_assigned_job_count()
+        unsorted_items[hostname] = count
+
+    sorted_items_by_assigned = OrderedDict(sorted(unsorted_items.items(), key=lambda x: x[1]))
+    # for key, value in sorted_items_by_assigned.items():
+    #     print(f" Sorted by assigned are; key = {key}, value = {value}.")
+
     # TODO: Unsure why index 1 and not 0 or better yet, a random based on length of zos_nodes_not_in_job
-    job.add_hostname(zos_nodes_not_in_job[1])
+    if len(sorted_items_by_assigned) > 0:
+        job.add_hostname(list(sorted_items_by_assigned)[0])
 
 
 def get_managed_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Dictionary:
@@ -1094,7 +1152,7 @@ def get_managed_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = Non
 
     return nodes
 
-def get_nodes_online(nodes: Dictionary) -> int:
+def get_nodes_online_count(nodes: Dictionary) -> int:
     """
     Get a count of how many managed Node(s) have status that is equal to Status.ONLINE.
     A value greater than or equal to 1 signifies that Job(s) can continue to execute,
@@ -1111,7 +1169,7 @@ def get_nodes_online(nodes: Dictionary) -> int:
 
     return nodes_online_count
 
-def get_nodes_offline(nodes: Dictionary) -> int:
+def get_nodes_offline_count(nodes: Dictionary) -> int:
     """
     Get a count of how many managed Node(s) have status that is equal to Status.OFFLINE.
     A value greater than or equal to 1 signifies that Job(s) have failed to run on this
@@ -1123,12 +1181,12 @@ def get_nodes_offline(nodes: Dictionary) -> int:
     """
     nodes_offline_count = 0
     for key, value in nodes.items():
-        if not value.get_state().is_online():
+        if not value.get_state().is_offline():
             nodes_offline_count += 1
 
     return nodes_offline_count
 
-def run(key, jobs, nodes, completed, timeout, max, bal, extra):
+def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra):
     """
     Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
@@ -1154,12 +1212,11 @@ def run(key, jobs, nodes, completed, timeout, max, bal, extra):
     message = None
     rc = None
 
-
     # node = nodes.get(host)
-    node_count_online = get_nodes_online(nodes = nodes)
+    node_count_online = get_nodes_online_count(nodes)
     if node_count_online >0:
-        start_time = time.time()
         node = nodes.get(hostname)
+        start_time = time.time()
         # print("Job information: " + "\n  z/OS hosts available = " + str(zos_nodes_len) + "\n  Job ID = " + str(job.get_id()) + "\n  Command = " + job.get_command())
         try:
             # Build command and strategically map stdout and stderr so that both are mapped to stderr and the pytest rc goes to stdout.
@@ -1174,10 +1231,10 @@ def run(key, jobs, nodes, completed, timeout, max, bal, extra):
             if rc == 0:
                 job.set_rc(int(rc))
                 job.set_success()
-                # TODO: Now that the job class contains more states, do we really need completed? 
+                # TODO: Now that the job class contains more states, do we really need completed?
                 completed.update(job.get_id(), job)
                 rc_msg = "Test collected and passed successfully."
-                message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
             else:
                 job_failures = job.get_failure_count()
 
@@ -1186,39 +1243,50 @@ def run(key, jobs, nodes, completed, timeout, max, bal, extra):
                     job.set_rc(int(rc))
                     # Do node stuff
                     rc_msg = f"Test exceeded permitted failures = {max}."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif job_failures == bal:
                     rc = 7
                     job.set_rc(int(rc))
+                    node.set_balanced_job_id((id))
+                    # set_nodes_offline(nodes, jobs)
+                    # set_node_offline(node)
+                    # If a node is balanced, its a good chance the node will exceed balance limit, go thourhg all nodes and mark
+                    # then as OFFLINE if they meet criteria. Then, rebalance all nodes not just a single node.
                     update_job_hostname(job) # TODO: eval the logic for balance
                     rc_msg = f"Test has been assigned to a new z/OS managed node = {job.get_hostname()}, because it exceeded balance = {bal}"
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 1:
                     job.set_rc(int(rc))
                     rc_msg = "Test case was collected and failed with an error."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 2:
                     job.set_rc(int(rc))
                     rc_msg = "Test case execution was interrupted by the user."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 3:
                     job.set_rc(int(rc))
                     rc_msg = "Internal error occurred while executing test."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 4:
                     job.set_rc(int(rc))
                     rc_msg = "Pytest command line usage error."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 5:
                     job.set_rc(int(rc))
                     rc_msg = "No tests were collected ."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
 
-                # Increment the job failure afterwards, else it will skew the logic above.
+                # Increment the job failure after evaluating all the RCs
                 job.increment_failure()
 
+                # Update the node with which jobs failed. A node has all assigned jobs so this ID can be used later for eval.
+                node.set_failure_job_id(id)
+
+
                 # Logic here to update nodes with failure information.
-                
+                #node.set_state....
+
+
 
         except subprocess.TimeoutExpired:
             job.set_elapsed_time(start_time)
@@ -1231,10 +1299,13 @@ def run(key, jobs, nodes, completed, timeout, max, bal, extra):
             message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
     else:
         rc = 6
-        rc_msg = "There are no z/OS managed nodes available to run jobs."
+        nodes_count = nodes.len()
+        node_count_offline = get_nodes_offline_count_count(nodes)
+        rc_msg = f"There are no z/OS managed nodes available to run jobs, node count = {nodes_length}, OFFLINE = {node_count_offline}, ONLINE = {node_count_online}."
         message = f"Job ID = {id}, host = {hostname}, elapsed time = {job.get_elapsed_time()}, rc = {str(rc)}, rc msg = {rc_msg}"
 
-    print(message)
+    # print("NODE IS " + str(node))
+    # print(message)
     return rc, message
 
 

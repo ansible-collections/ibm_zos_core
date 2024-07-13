@@ -448,9 +448,9 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) != 0
-            for ds in val.get('data_sets'):
-                assert ds.get('name') in special_names
+            for ds in special_names:
+                assert {"name":ds, "type": "NONVSAM"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
         for ds in special_names:
-            hosts.all.shell(cmd=f"drm {special_names}")
+            hosts.all.shell(cmd=f"drm '{ds}'")

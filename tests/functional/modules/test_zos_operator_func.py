@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+from ibm_zos_core.plugins.module_utils import (
     zoau_version_checker,
 )
 

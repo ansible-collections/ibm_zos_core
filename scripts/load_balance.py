@@ -192,12 +192,12 @@ class Job:
         - Consider instead of tracking failures as an integer, instead use a list and insert
           the host (node) it failed on for statistical purposes.
         - Consider removing completed because the return code can provide the same level of information.
-        - add a job history list, to store each executions history, could be helpful if the test is marked as non-executable. 
+        - add a job history list, to store each executions history, could be helpful if the test is marked as non-executable.
         """
         self._hostnames: list = list()
         self._hostnames.append(hostname)
         self.testcase: str = testcase
-        self.debug: bool = True
+        self.capture: str = None
         self.failures: int = 0
         self.id: int = id
         self.rc: int = -1
@@ -207,12 +207,13 @@ class Job:
         self.nodes: Dictionary = nodes
         self._stdout_and_stderr: list = list()
         self._stdout_and_stderr.append(hostname)
+        self.verbose: str = None
 
     def __str__(self) -> str:
         temp = {
             "hostname": self.get_hostname(),
             "testcase": self.testcase,
-            "debug": self.debug,
+            "capture": self.capture,
             "failures": self.failures,
             "id": self.id,
             "rc": self.rc,
@@ -239,7 +240,11 @@ class Job:
         # f-string causing an undiagnosed error.
         #return f"pytest {self.testcase} --host-pattern={self.hostpattern} --zinventory-raw={node_inventory}"
         #return """pytest {0} --host-pattern={1} --zinventory-raw='{2}' >&2 ; echo $? >&1""".format(self.testcase,self.hostpattern,node_inventory)
-        return """pytest {0} --host-pattern={1} --zinventory-raw='{2}'""".format(self.testcase,self.hostpattern,node_inventory)
+        #print("""pytest {0} --host-pattern={1} {2} {3} --zinventory-raw='{4}'""".format(self.testcase,self.hostpattern,self.capture,self.verbose,node_inventory))
+        #return """pytest {0} --host-pattern={1} {2} {3} --zinventory-raw='{4}'""".format(self.testcase,self.hostpattern,self.capture,self.verbose,node_inventory)
+        #print(f"pytest {self.testcase} --host-pattern={self.hostpattern}{self.capture if not None else ""}{self.verbose if not None else ""} --zinventory-raw='{node_inventory}'")
+        return f"pytest {self.testcase} --host-pattern={self.hostpattern}{self.capture if not None else ""}{self.verbose if not None else ""} --zinventory-raw='{node_inventory}'"
+
 
     def get_hostnames(self) -> list[str]:
         """
@@ -389,7 +394,7 @@ class Job:
 
     def set_rc(self, rc: int) -> None:
         """
-        Set the jobs return code obtained during execution.
+        Set the jobs return code obtained from execution.
 
         Parameters
         ----------
@@ -400,7 +405,7 @@ class Job:
 
     def set_success(self) -> None:
         """
-        Mark the job as having completed, or not.
+        Mark the job as having completed successfully.
 
         Parameters
         ----------
@@ -412,8 +417,7 @@ class Job:
 
     def add_hostname(self, hostname: str) -> None:
         """
-        Set the hostname of where the job will be run. Jobs are
-        run on z/OS managed nodes.
+        Set the hostname of where the job will be run.
 
         Parameters
         ----------
@@ -445,17 +449,44 @@ class Job:
         """
         self.elapsed = elapsed_time(start_time)
 
-    def set_debug(self, debug: bool):
+    def set_capture(self, capture: bool) -> None:
         """
-        Indicate if pytest should run in debug mode, which is the
-        equivalent of '-s'.
+        Indicate if pytest should run with '-s', which will
+        show output and not to capture any output. Pytest
+        captures all output sent to stdout and stderr,
+        so you won't see the printed output in the console
+        when running tests unless a test fails.
+        """
+        if capture is True:
+            self.capture = " -s"
+
+    def set_verbose(self, verbosity: int) -> None:
+        """
+        Indicate if pytest should run with verbosity to show
+        detailed console outputs and debug failing tests.
+        Verbosity is defined by the number of v's passed
+        to py test.
+
+        If verbosity is outside of the numerical range, no
+        verbosity is set.
 
         Parameters
         ----------
-        debug : bool
-            True if pytest should run with debug , eg `-s` , else False.
+        int
+            - Integer range 1 - 4
+            - 1 = -v
+            - 2 = -vv
+            - 3 = -vvv
+            - 4 = -vvvv
         """
-        self.debug = debug
+        if verbosity == 1:
+            self.verbose = " -v"
+        elif verbosity == 2:
+            self.verbose = " -v2"
+        elif verbosity == 3:
+            self.verbose = " -vvv"
+        elif verbosity == 4:
+            self.verbose = " -vvvv"
 
     def set_stdout_and_stderr(self, stdout_stderr: str) -> None:
         """
@@ -737,33 +768,14 @@ class Node:
         self.balanced_count = len(self.balanced)
         return self.balanced_count
 
-def set_nodes_offline(nodes: Dictionary, jobs: Dictionary) -> None:
+# def set_nodes_offline(nodes: Dictionary, maxbal: int) -> None:
+#     for key, value in nodes.items():
+#         if value.get_balanced_count() > maxbal:
+#             value.set_state(Status.OFFLINE)
 
-    jobs_not_successful_count = 0
-    maximum_allowable_balance = 0
-
-    for value in jobs.items():
-        if not value.get_successful:
-            jobs_not_successful_count += 1
-
-    maximum_allowable_balance = math.ceil(jobs_not_successful_count * .05)
-
-    for value in nodes.items():
-        if value.get_balanced_count() > maximum_allowable_balance:
-            value.set_state(Status.OFFLINE)
-
-def set_node_offline(node: Node, jobs: Dictionary) -> None:
-
-    jobs_not_successful_count = 0
-    maximum_allowable_balance = 0
-
-    for value in jobs.items():
-        if not value.get_successful:
-            jobs_not_successful_count += 1
-
-    maximum_allowable_balance = math.ceil(jobs_not_successful_count * .05)
-
-    if node.get_balanced_count() > maximum_allowable_balance:
+def set_node_offline(node: Node, maxbal: int) -> None:
+    if node.get_balanced_job_count() > maxbal:
+            print("MAC REBAL ")
             node.set_state(Status.OFFLINE)
 
 
@@ -949,7 +961,7 @@ class Connection:
 # ------------------------------------------------------------------------------
 
 
-def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictionary:
+def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: bool, verbosity: int) -> Dictionary:
     """
     Get a thread safe dictionary of job(s).
     A job represents a test case, a unit of work the ThreadPoolExecutor will run.
@@ -1048,6 +1060,8 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str) -> Dictio
         # Create a job, add it jobs Dictionary, update node reference
         hostname = hostnames[hostnames_index]
         _job = Job(hostname = hostname, nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
+        _job.set_verbose(verbosity)
+        _job.set_capture(capture)
         jobs.update(index, _job)
         nodes.get(hostname).set_assigned_job(_job)
         index += 1
@@ -1186,7 +1200,7 @@ def get_nodes_offline_count(nodes: Dictionary) -> int:
 
     return nodes_offline_count
 
-def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra):
+def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra, maxbal):
     """
     Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
@@ -1248,12 +1262,10 @@ def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra):
                     rc = 7
                     job.set_rc(int(rc))
                     node.set_balanced_job_id((id))
-                    # set_nodes_offline(nodes, jobs)
-                    # set_node_offline(node)
-                    # If a node is balanced, its a good chance the node will exceed balance limit, go thourhg all nodes and mark
-                    # then as OFFLINE if they meet criteria. Then, rebalance all nodes not just a single node.
-                    update_job_hostname(job) # TODO: eval the logic for balance
-                    rc_msg = f"Test has been assigned to a new z/OS managed node = {job.get_hostname()}, because it exceeded balance = {bal}"
+                    set_node_offline(node, maxbal)
+                    update_job_hostname(job)
+                    node.get_balanced_job_count()
+                    rc_msg = f"Test has been assigned to a new z/OS managed node = {job.get_hostname()}, because it exceeded allowable balance = {bal}."
                     message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 1:
                     job.set_rc(int(rc))
@@ -1282,12 +1294,6 @@ def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra):
                 # Update the node with which jobs failed. A node has all assigned jobs so this ID can be used later for eval.
                 node.set_failure_job_id(id)
 
-
-                # Logic here to update nodes with failure information.
-                #node.set_state....
-
-
-
         except subprocess.TimeoutExpired:
             job.set_elapsed_time(start_time)
             elapsed = job.get_elapsed_time()
@@ -1300,16 +1306,17 @@ def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra):
     else:
         rc = 6
         nodes_count = nodes.len()
-        node_count_offline = get_nodes_offline_count_count(nodes)
-        rc_msg = f"There are no z/OS managed nodes available to run jobs, node count = {nodes_length}, OFFLINE = {node_count_offline}, ONLINE = {node_count_online}."
+        node_count_offline = get_nodes_offline_count(nodes)
+        rc_msg = f"There are no z/OS managed nodes available to run jobs, node count = {nodes_count}, OFFLINE = {node_count_offline}, ONLINE = {node_count_online}."
         message = f"Job ID = {id}, host = {hostname}, elapsed time = {job.get_elapsed_time()}, rc = {str(rc)}, rc msg = {rc_msg}"
 
+    # print("STDERR/OUT = " + job.get_stdout_and_stderr_msg())
     # print("NODE IS " + str(node))
     # print(message)
     return rc, message
 
 
-def runner(jobs, zos_nodes, completed, timeout, max, bal, extra):
+def runner(jobs, zos_nodes, completed, timeout, max, bal, extra, maxbal):
     """Creates the thread pool to execute job in the dictionary using the run
     method.
     """
@@ -1319,7 +1326,7 @@ def runner(jobs, zos_nodes, completed, timeout, max, bal, extra):
 
     with ThreadPoolExecutor(number_of_threads) as executor:
 
-        futures = [executor.submit(run, key, jobs, zos_nodes, completed, timeout, max, bal, extra) for key, value in jobs.items() if not value.get_successful()]
+        futures = [executor.submit(run, key, jobs, zos_nodes, completed, timeout, max, bal, extra, maxbal) for key, value in jobs.items() if not value.get_successful()]
         for future in as_completed(futures):
             rc, message = future.result()
             if future.exception() is not None:
@@ -1412,6 +1419,8 @@ def main():
                     --max 6\\
                     --bal 3\\
                     --hostnames "ec33025a.vmec.svl.ibm.com,ec33025a.vmec.svl.ibm"\\
+                    --verbosity 3\\
+                    --capture\\
                     --extra "cd .."
         '''))
 
@@ -1423,9 +1432,12 @@ def main():
     parser.add_argument('--skip', type=str, help='Identify test suites to skip, only honored with option \'--directories\'', required=False, metavar='<str,str>', default="")
     parser.add_argument('--user', type=str, help='z/OS USS user authorized to run Ansible tests on the managed z/OS node', required=True, metavar='<str>', default="")
     parser.add_argument('--timeout', type=int, help='The maximum time in seconds a job should run on z/OS for, default is 300 seconds.', required=False, metavar='<int>', default="300")
-    parser.add_argument('--max', type=int, help='The maximum number of times a job can fail before its removed from the job queue.', required=False, metavar='<int>', default="6")
+    parser.add_argument('--maxjob', type=int, help='The maximum number of times a job can fail before its disabled in the job queue.', required=False, metavar='<int>', default="6")
     parser.add_argument('--bal', type=int, help='The count at which a job is balanced from one z/OS node to another for execution.', required=False, metavar='<int>', default="3")
     parser.add_argument('--hostnames', help='List of hostnames to use, overrides the auto detection.', required=False, metavar='<list[str]>', default=None, nargs='*')
+    parser.add_argument('--maxbal', type=int, help='The maximum number of times a node can fail to run a job before its set to \'offline\' in the node queue.', required=False, metavar='<int>', default=6)
+    parser.add_argument('--verbosity', type=int, help='The level of pytest verbosity, 1 = -v, 2 = -vv, 3 = -vvv, 4 = -vvvv.', required=False, metavar='<int>', default=0)
+    parser.add_argument('--capture', action=argparse.BooleanOptionalAction, help='Instruct Pytest not to capture any output, equivalent of -s.', required=False, default=False)
 
     # Mutually exclusive options
     group_tests_or_dirs = parser.add_argument_group('Mutually exclusive', 'Absolute path to test suites. For more than one, use a comma or space delimiter.')
@@ -1444,7 +1456,7 @@ def main():
 
     # Get a dictionary of jobs containing the work to be run on a node.
     # TODO: get_jobs raises an runtime exception need to handle this.
-    jobs = get_jobs(nodes, testsuite=args.testsuite, tests=args.tests, skip=args.skip)
+    jobs = get_jobs(nodes, testsuite=args.testsuite, tests=args.tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity)
 
     count = 1
     iterations_result=""
@@ -1457,7 +1469,7 @@ def main():
 
         job_completed_before = completed.len()
         start_time = time.time()
-        runner(jobs, nodes, completed, args.timeout, args.max, args.bal, args.extra)
+        runner(jobs, nodes, completed, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal)
         jobs_completed_after = completed.len() - job_completed_before
         iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + elapsed_time(start_time) + " time. \n"
         count +=1
@@ -1469,7 +1481,7 @@ def main():
     for key, job in jobs.items():
         fails=job.get_failure_count()
         bal = job.get_hostnames()
-        if fails >= args.max:
+        if fails >= args.maxjob:
             fail_gt_eq_to_max+=1
             total_failed+=1
         if fails != 0 and fails <6:

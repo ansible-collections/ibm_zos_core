@@ -25,7 +25,7 @@ import time
 import concurrent.futures
 from collections import OrderedDict
 
-from typing import List, Set, Type
+from typing import List, Set, Type, Tuple
 
 
 # ==============================================================================
@@ -1113,12 +1113,12 @@ def update_job_hostname(job: Job):
     # for key, value in sorted_items_by_assigned.items():
     #     print(f" Sorted by assigned are; key = {key}, value = {value}.")
 
-    # TODO: Unsure why index 1 and not 0 or better yet, a random based on length of zos_nodes_not_in_job
+    # After being sorted ascending, assign the first index which will have been the lease used connection. 
     if len(sorted_items_by_assigned) > 0:
         job.add_hostname(list(sorted_items_by_assigned)[0])
 
 
-def get_managed_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Dictionary:
+def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Dictionary:
     """
     Get a thread safe Dictionary of active z/OS managed nodes.
 
@@ -1175,6 +1175,16 @@ def get_nodes_online_count(nodes: Dictionary) -> int:
     A Node is set to Status.OFFLINE when the value used for --bal (balance) is
     surpassed. Balance (--bal) is used to signal that Job has run N number of times
     on a particular host and had a non-zero return code and should be used by any other Job.
+
+    Parameters
+    ----------
+    nodes : dictionary [ str, node]
+        Thread safe dictionary z/OS managed nodes.
+
+    Returns
+    -------
+    int
+        The numerical count of nodes that are online.
     """
     nodes_online_count = 0
     for key, value in nodes.items():
@@ -1192,6 +1202,16 @@ def get_nodes_offline_count(nodes: Dictionary) -> int:
     A Node is set to Status.OFFLINE when the value used for --bal (balance) is
     surpassed. Balance (--bal) is used to signal that Job has run N number of times
     on a particular host and had a non-zero return code and should be used by any other Job.
+
+    Parameters
+    ----------
+    nodes : dictionary [ str, node]
+        Thread safe dictionary z/OS managed nodes.
+
+    Returns
+    -------
+    int
+        The numerical count of nodes that are offline.
     """
     nodes_offline_count = 0
     for key, value in nodes.items():
@@ -1200,26 +1220,61 @@ def get_nodes_offline_count(nodes: Dictionary) -> int:
 
     return nodes_offline_count
 
-def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra, maxbal):
+def run(id: int, jobs: Dictionary, nodes: Dictionary, completed: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxbal: int) -> Tuple[int, str]:
     """
     Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
     so that it can be properly run when a resource becomes available.
 
-    Returns:
-        int:    Return code 0 All tests were collected and passed successfully (pytest)
-                Return code 1 Tests were collected and run but some of the tests failed (pytest)
-                Return code 2 Test execution was interrupted by the user (pytest)
-                Return code 3 Internal error happened while executing tests (pytest)
-                Return code 4 pytest command line usage error (pytest)
-                Return code 5 No tests were collected (pytest)
-                Return code 6 No z/OS nodes available.
-                Return code 7 Re-balancing of z/OS nodes were performed
-                Return code 8 Job has exceeded permitted job failures
-                Return code 9 Job has exceeded timeout
+    Parameters
+    ----------
+    id : int
+        Numerical ID assigned to a job.
+    jobs: Dictionary
+        A dictionary of jobs, the ID is paired to a job.
+        A job is a test cased designed to be run by pytest.
+    nodes: Dictionary
+        Managed nodes that jobs will run on. These are z/OS
+        managed nodes.
+    completed: Dictionary
+        A dictionary of jobs that have completed with success.
+    timeout: int
+        The maximum time in seconds a job should run on z/OS for,
+        default is 300 seconds.
+    maxjob: int
+        The maximum number of times a job can fail before its
+        disabled in the job queue
+    bal: int
+        The count at which a job is balanced from one z/OS node
+        to another for execution.
+    extra: str
+        Extra commands passed to subprocess before pytest execution
+    maxbal: int
+        The maximum number of times a node can fail to run a
+        job before its set to 'offline' in the node queue.
+
+    Returns
+    -------
+    A tuple of (rc: int, message: str) is returned.
+
+    rc: int
+        - Return code 0 All tests were collected and passed successfully (pytest).
+        - Return code 1 Tests were collected and run but some of the tests failed (pytest).
+        - Return code 2 Test execution was interrupted by the user (pytest).
+        - Return code 3 Internal error happened while executing tests (pytest).
+        - Return code 4 pytest command line usage error (pytest).
+        - Return code 5 No tests were collected (pytest).
+        - Return code 6 No z/OS nodes available.
+        - Return code 7 Re-balancing of z/OS nodes were performed.
+        - Return code 8 Job has exceeded permitted job failures.
+        - Return code 9 Job has exceeded timeout.
+    message: str
+        Description and details of the jobs execution, contains return code,
+        hostname, job id, etc. Informational and useful when understanding
+        the job's lifecycle.
     """
 
-    job = jobs.get(key)
+    job = jobs.get(id)
     hostname = job.get_hostname()
     id = str(job.get_id())
     elapsed = 0
@@ -1252,11 +1307,11 @@ def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra, maxba
             else:
                 job_failures = job.get_failure_count()
 
-                if job_failures >= max:
+                if job_failures >= maxjob:
                     rc = 8
                     job.set_rc(int(rc))
                     # Do node stuff
-                    rc_msg = f"Test exceeded permitted failures = {max}."
+                    rc_msg = f"Test exceeded permitted failures = {maxjob}."
                     message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif job_failures == bal:
                     rc = 7
@@ -1316,17 +1371,56 @@ def run(key, jobs, nodes: Dictionary, completed, timeout, max, bal, extra, maxba
     return rc, message
 
 
-def runner(jobs, zos_nodes, completed, timeout, max, bal, extra, maxbal):
-    """Creates the thread pool to execute job in the dictionary using the run
-    method.
+def runner(jobs: Dictionary, nodes: Dictionary, completed: Dictionary, timeout: int, max: int, bal: int, extra: str, maxbal: int, worker_multiple: int) -> None:
+    """
+    Method creates an executor to run a job found in the jobs dictionary concurrently.
+    This method is the key function that allows for concurrent execution of jobs.
+
+
+    Parameters
+    ----------
+    jobs: Dictionary
+        A dictionary of jobs, the ID is paired to a job.
+        A job is a test cased designed to be run by pytest.
+    nodes: Dictionary
+        Managed nodes that jobs will run on. These are z/OS
+        managed nodes.
+    completed: Dictionary
+        A dictionary of jobs that have completed with success.
+    timeout: int
+        The maximum time in seconds a job should run on z/OS for,
+        default is 300 seconds.
+    maxjob: int
+        The maximum number of times a job can fail before its
+        disabled in the job queue
+    bal: int
+        The count at which a job is balanced from one z/OS node
+        to another for execution.
+    extra: str
+        Extra commands passed to subprocess before pytest execution
+    maxbal: int
+        The maximum number of times a node can fail to run a
+        job before its set to 'offline' in the node queue.
+    worker_multiple: int
+        The numerical value used to increase the number of worker
+        threads by proportionally. By default this is 3 that will
+        yield one thread per node. With one thread per node, test
+        cases run one at a time on a managed node. This value
+        is used as a multiple to grow the number of threads and
+        test concurrency. For example, if there are 5 nodes and
+        the worker_multiple = 3, then 15 threads will be created
+        resulting in 3 test cases running concurrently.
+
     """
     # Set the number of threads as the number of zos_nodes we have, this is a limitation
     # that can be removed once the tests have been updated to support a concurrency model.
-    number_of_threads = zos_nodes.len() * 3
+    if worker_multiple > 1:
+        number_of_threads = nodes.len() * worker_multiple
+    else:
+        number_of_threads = nodes.len()
 
     with ThreadPoolExecutor(number_of_threads) as executor:
-
-        futures = [executor.submit(run, key, jobs, zos_nodes, completed, timeout, max, bal, extra, maxbal) for key, value in jobs.items() if not value.get_successful()]
+        futures = [executor.submit(run, key, jobs, nodes, completed, timeout, max, bal, extra, maxbal) for key, value in jobs.items() if not value.get_successful()]
         for future in as_completed(futures):
             rc, message = future.result()
             if future.exception() is not None:
@@ -1345,16 +1439,28 @@ def runner(jobs, zos_nodes, completed, timeout, max, bal, extra, maxbal):
         # except concurrent.futures.TimeoutError:
         #         print("this took too long...")
 
-def elapsed_time(start_time):
-        """
-        Given a start time, this will return a formatted string of time matching
-        pattern HH:MM:SS.SS , eg 00:02:38.36
-        """
+def elapsed_time(start_time: time):
+    """
+    Given a start time, this will return a formatted string of time matching
+    pattern HH:MM:SS.SS , eg 00:02:38.36
 
-        hours, rem = divmod(time.time() - start_time, 3600)
-        minutes, seconds = divmod(rem, 60)
-        elapsed = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
-        return elapsed
+    Parameters
+    ----------
+    start_time: time
+        The time the test case has began. This is generally captured
+        before a test is run.
+
+    Returns
+    -------
+    str
+        The elapsed time, how long it took a job to run. A string
+        is returned representing the elapsed time, , eg 00:02:38.36
+    """
+
+    hours, rem = divmod(time.time() - start_time, 3600)
+    minutes, seconds = divmod(rem, 60)
+    elapsed = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+    return elapsed
 
 # def main(argv):
 def main():
@@ -1421,6 +1527,7 @@ def main():
                     --hostnames "ec33025a.vmec.svl.ibm.com,ec33025a.vmec.svl.ibm"\\
                     --verbosity 3\\
                     --capture\\
+                    --worker_multiple 3\\
                     --extra "cd .."
         '''))
 
@@ -1438,6 +1545,7 @@ def main():
     parser.add_argument('--maxbal', type=int, help='The maximum number of times a node can fail to run a job before its set to \'offline\' in the node queue.', required=False, metavar='<int>', default=6)
     parser.add_argument('--verbosity', type=int, help='The level of pytest verbosity, 1 = -v, 2 = -vv, 3 = -vvv, 4 = -vvvv.', required=False, metavar='<int>', default=0)
     parser.add_argument('--capture', action=argparse.BooleanOptionalAction, help='Instruct Pytest not to capture any output, equivalent of -s.', required=False, default=False)
+    parser.add_argument('--worker_multiple', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
 
     # Mutually exclusive options
     group_tests_or_dirs = parser.add_argument_group('Mutually exclusive', 'Absolute path to test suites. For more than one, use a comma or space delimiter.')
@@ -1452,7 +1560,7 @@ def main():
     completed = Dictionary()
 
     # Get a dictionary of all active zos_nodes to run tests on
-    nodes = get_managed_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames)
+    nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames)
 
     # Get a dictionary of jobs containing the work to be run on a node.
     # TODO: get_jobs raises an runtime exception need to handle this.
@@ -1469,7 +1577,7 @@ def main():
 
         job_completed_before = completed.len()
         start_time = time.time()
-        runner(jobs, nodes, completed, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal)
+        runner(jobs, nodes, completed, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal, args.worker_multiple)
         jobs_completed_after = completed.len() - job_completed_before
         iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + elapsed_time(start_time) + " time. \n"
         count +=1

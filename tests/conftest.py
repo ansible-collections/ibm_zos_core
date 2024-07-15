@@ -15,9 +15,6 @@ __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
 from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
-import asyncio
-import subprocess
-import threading
 import sys
 from mock import MagicMock
 import importlib

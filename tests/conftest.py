@@ -15,6 +15,9 @@ __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
 from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
+import asyncio
+import subprocess
+import threading
 import sys
 from mock import MagicMock
 import importlib
@@ -131,7 +134,7 @@ def zos_import_mocker(mocker):
     yield (mocker, perform_imports)
 
 
-@pytest.fixture(scope="test")
+@pytest.fixture(scope="function")
 def get_config(request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
     path = request.config.getoption("--zinventory")

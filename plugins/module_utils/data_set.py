@@ -344,6 +344,73 @@ class DataSet(object):
             raise MVSCmdExecError(rc, out, err)
 
     @staticmethod
+    def allocate_gds_model_data_set(ds_name, model, executable=False, asa_text=False, vol=None):
+        """
+        Allocates a new current generation of a generation data group using a model
+        data set to set its attributes.
+
+        Parameters
+        ----------
+        ds_name : str
+            Name of the data set that will be allocated. It must be a GDS
+            relative name.
+        model : str
+            The name of the data set whose allocation parameters
+            should be used to allocate the new data set.
+        executable : bool, optional
+            Whether the new data set should support executables.
+        asa_text : bool, optional
+            Whether the new data set should support ASA control
+            characters (have record format FBA).
+        vol : str, optional
+            The volume where the new data set should be allocated.
+
+        Returns
+        -------
+        str
+            Absolute name of the newly allocated generation data set.
+
+        Raises
+        ------
+        DatasetCreateError
+            When the allocation fails.
+        """
+        model_attributes = datasets.list_datasets(model)[0]
+        dataset_type = model_attributes.organization
+        record_format = model_attributes.record_format
+
+        if executable:
+            dataset_type = "library"
+        elif dataset_type in DataSet.MVS_SEQ:
+            dataset_type = "seq"
+        elif dataset_type in DataSet.MVS_PARTITIONED:
+            dataset_type = "pdse"
+
+        if asa_text:
+            record_format = "fba"
+        elif executable:
+            record_format = "u"
+
+        data_set_object = MVSDataSet(
+            name=ds_name,
+            data_set_type=dataset_type,
+            state="absent",
+            record_format=record_format,
+            volumes=vol,
+            block_size=model_attributes.block_size,
+            record_length=model_attributes.record_length,
+            space_primary=model_attributes.total_space,
+            space_type=''
+        )
+
+        success = data_set_object.ensure_present()
+        if not success:
+            raise DatasetCreateError(
+                data_set=ds_name,
+                msg=f"Error while trying to allocate {ds_name}."
+            )
+
+    @staticmethod
     def data_set_cataloged(name, volumes=None):
         """Determine if a data set is in catalog.
 
@@ -352,7 +419,19 @@ class DataSet(object):
 
         Returns:
             bool -- If data is is cataloged.
+
+        Raise:
+            MVSCmdExecError: When the call to IDCAMS fails with rc greater than 4.
         """
+
+        # Resolve GDS names before passing it into listcat
+        if DataSet.is_gds_relative_name(name):
+            try:
+                name = DataSet.resolve_gds_absolute_name(name)
+            except GDSNameResolveError:
+                # if GDS name cannot be resolved, it's not in the catalog.
+                return False
+
         # We need to unescape because this calls to system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')
@@ -362,6 +441,13 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
+
+        # The above 'listcat entries' command to idcams returns:
+        # rc=0 if data set found in catalog
+        # rc=4 if data set NOT found in catalog
+        # rc>4 for other errors
+        if rc > 4:
+            raise MVSCmdExecError(rc, stdout, stderr)
 
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
@@ -380,6 +466,8 @@ class DataSet(object):
             name (str) -- The data set name to check if cataloged.
         Returns:
             list{str} -- A list of volumes where the dataset is cataloged.
+        Raise:
+            MVSCmdExecError: When the call to IDCAMS fails with rc greater than 4.
         """
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
@@ -387,6 +475,13 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
+        # The above 'listcat entries all' command to idcams returns:
+        # rc=0 if data set found in catalog
+        # rc=4 if data set NOT found in catalog
+        # rc>4 for other errors
+        if rc > 4:
+            raise MVSCmdExecError(rc, stdout, stderr)
+
         delimiter = 'VOLSER------------'
         arr = stdout.split(delimiter)[1:]  # throw away header
 

@@ -710,7 +710,6 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_ti
         "fetch_max_retries": timeout,
     }
 
-    present = False
     duration = 0
     job_submitted = None
     result = {}

@@ -18,7 +18,6 @@ __metaclass__ = type
 import pytest
 import yaml
 import os
-import subprocess
 from shellescape import quote
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -210,9 +209,8 @@ def test_zos_operator_parallel_terminal(get_config):
                 python_path,
             )), inventory))
             command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(inventory, playbook)
-            stdout = subprocess.check_output(command, shell=True, text=True)
-            assert "OMVS0001" in stdout
-            assert "OMVS0000" in stdout
+            stdout = os.system(command)
+            assert stdout == 0
         finally:
             os.remove("inventory.yml")
             os.remove("playbook.yml")

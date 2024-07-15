@@ -191,8 +191,6 @@ class Job:
         TODO:
         - Consider instead of tracking failures as an integer, instead use a list and insert
           the host (node) it failed on for statistical purposes.
-        - Consider removing completed because the return code can provide the same level of information.
-        - add a job history list, to store each executions history, could be helpful if the test is marked as non-executable.
         """
         self._hostnames: list = list()
         self._hostnames.append(hostname)
@@ -284,9 +282,10 @@ class Job:
 
     def get_failure_count(self) -> int:
         """
-        Return the number of failed job executions that have occurred. Failures can be
-        a result of the z/OS managed node, a bug in the test case or even a connection issue.
-        This is used for statistical purposes or reason to assign the test to a new hostname.
+        Return the number of failed job executions that have occurred for this job.
+        Failures can be a result of the z/OS managed node, a bug in the test case or even a
+        connection issue. This is used for statistical purposes or reason to assign the test
+        to a new hostname.
 
         Return
         ------
@@ -1215,10 +1214,63 @@ def get_nodes_offline_count(nodes: Dictionary) -> int:
     """
     nodes_offline_count = 0
     for key, value in nodes.items():
-        if not value.get_state().is_offline():
+        if not value.get_state().is_online():
             nodes_offline_count += 1
 
     return nodes_offline_count
+
+def get_failed_count_and_testcases(jobs: Dictionary) -> Tuple[int, list[str]]:
+    jobs_failed_count = 0
+    jobs_failed_list = []
+    for key, value in jobs.items():
+        if not value.get_successful():
+            jobs_failed_count += 1
+            jobs_failed_list.append(value.get_testcase())
+    return (jobs_failed_count, jobs_failed_list)
+
+
+def get_success_count_and_testcases(jobs: Dictionary) -> Tuple[int, list[str]]:
+    jobs_success_count = 0
+    jobs_success_list = []
+    for key, value in jobs.items():
+        if value.get_successful():
+            jobs_success_count += 1
+            jobs_success_list.append(value.get_testcase())
+    return (jobs_success_count, jobs_success_list)
+
+def get_jobs_statistics(jobs: Dictionary) -> Tuple[int, int, list[str], int, list[str]]:
+    """
+    Return, total jobs, jobs success count, job sucess list, job fail count, jobs fail list
+    """
+    jobs_success_count = 0
+    jobs_success_list = []
+    jobs_failed_count = 0
+    jobs_failed_list = []
+    jobs_total_count = 0
+    for key, value in jobs.items():
+        jobs_total_count +=1
+        if value.get_successful():
+            jobs_success_count += 1
+            jobs_success_list.append(value.get_testcase())
+        elif not value.get_successful():
+            jobs_failed_count += 1
+            jobs_failed_list.append(value.get_testcase())
+    return (jobs_total_count, jobs_success_count, jobs_success_list, jobs_failed_count, jobs_failed_list)
+
+def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list[str], dict[int, str], int]:
+    jobs_failed_count = 0
+    jobs_failed_list = []
+    jobs_failed_log = {}
+    jobs_rebalanced = 0
+    for key, value in jobs.items():
+        if value.get_failure_count() >= maxjob:
+            jobs_failed_count += 1
+            jobs_failed_list.append(value.get_testcase())
+            jobs_failed_log.update({key : value.get_stdout_and_stderr_msgs()})
+        if len(value.get_hostnames()) > 1:
+            jobs_rebalanced  +=1
+
+    return (jobs_failed_count, jobs_failed_list, jobs_failed_log, jobs_rebalanced)
 
 def run(id: int, jobs: Dictionary, nodes: Dictionary, completed: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxbal: int) -> Tuple[int, str]:
     """
@@ -1568,19 +1620,47 @@ def main():
 
     count = 1
     iterations_result=""
-    number_of_threads = nodes.len()
-    while completed.len() != jobs.len() and count < int(args.itr):
-        print("Thread pool iteration " + str(count))
-        print("Thread pool iteration " + str(count) + " has completed " + str(completed.len()) + " jobs.")
-        print("Thread pool iteration " + str(count) + " has pending " + str(jobs.len() - completed.len()) + " jobs.")
-        print("Thread pool has " + str(number_of_threads) + " threads running concurrently.")
+    ### number_of_threads = nodes.len()
+    number_of_threads = nodes.len() * args.worker_multiple
 
-        job_completed_before = completed.len()
+
+    ### while completed.len() != jobs.len() and count < int(args.itr):
+        # if get_failed_count_and_testcases[0] != jobs.len() and count < int(args.itr):
+        # print("Thread pool iteration " + str(count))
+        # print("Thread pool iteration " + str(count) + " has completed " + str(completed.len()) + " jobs.")
+        # print("Thread pool iteration " + str(count) + " has pending " + str(jobs.len() - completed.len()) + " jobs.")
+        # print("Thread pool has " + str(number_of_threads) + " threads running concurrently.")
+        # job_completed_before = completed.len()
+        # start_time = time.time()
+        # runner(jobs, nodes, completed, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal, args.worker_multiple)
+        # jobs_completed_after = completed.len() - job_completed_before
+        # iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + elapsed_time(start_time) + " time. \n"
+
+    # while get_failed_count_and_testcases[0] != jobs.len() and count < int(args.itr):
+    #  return (jobs_total_count, jobs_success_count, jobs_success_list, jobs_failed_count, jobs_failed_list)
+    #while get_failed_count_and_testcases[0] != jobs.len() and count < int(args.itr):
+    (jobs_total_count, jobs_success_count, jobs_success_list, jobs_failed_count, jobs_failed_list) = get_jobs_statistics(jobs)
+    while jobs_success_count != jobs_total_count and count < int(args.itr):
         start_time = time.time()
         runner(jobs, nodes, completed, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal, args.worker_multiple)
-        jobs_completed_after = completed.len() - job_completed_before
-        iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + elapsed_time(start_time) + " time. \n"
+        iterations_result += f"Thread pool iteration {str(count)} has completed {jobs_success_count} job(s) in {elapsed_time(start_time)} time.\n"
+        print(f"Thread pool iteration {str(count)} has completed {jobs_success_count} jobs.")
+        print(f"Thread pool iteration {str(count)} has pending {jobs_failed_count} jobs.")
+        print(f"Thread pool iteration {str(count)} has {str(number_of_threads)} threads running concurrently.")
         count +=1
+        (jobs_total_count, jobs_success_count, jobs_success_list, jobs_failed_count, jobs_failed_list) = get_jobs_statistics(jobs)
+
+    #def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list[str], dict[int, str]]:
+    (jobs_failed_count, jobs_failed_list, jobs_failed_log, jobs_rebalanced) = get_failed_count_gt_maxjob(jobs, args.maxjob)
+
+    print("All " + str(count - 1) + " thread pool iterations completed in " +  elapsed_time(start_time_full_run) + " time.")
+   # print(iterations_result)
+    print(f"Number of jobs queued to be run = {str(jobs_total_count)}.")
+    print(f"Number of jobs that run successfully = {str(jobs_success_count)}.")
+    print(f"Total number of jobs that failed = {str(jobs_failed_count)}.")
+    print(f"Number of jobs that failed {str(args.maxjob)} times = str(jobs_failed_count).")
+    #print("Number of jobs that failed less than 6 times = " + str(fail_less_than_max))
+    print(f"Number of jobs that were rebalanced = {str(jobs_rebalanced)}.")
 
     fail_gt_eq_to_max=0
     fail_less_than_max=0

@@ -361,6 +361,63 @@ def backupOper(module, src, backup, tmphlq=None):
     return backup_name
 
 
+def make_apf_command(
+        library,
+        opt,
+        volume=None,
+        sms=None,
+        force_dynamic=None,
+        persistent=None
+    ):
+    """Returns a string that can run an APF command in a shell.
+
+    Parameters
+    ----------
+    library : str
+        Name of the data set that will be operated on.
+    opt : str
+        APF operation (either add or del)
+    volume : str
+        Volume of library.
+    sms : bool
+        Whether library is managed by SMS.
+    force_dynamic : bool
+        Whether the APF list format should be dynamic.
+    persistent : dict
+        Options for persistent entries that should be modified by APF.
+
+    Returns
+    -------
+    str
+        APF command.
+    """
+    operation = "-A" if opt == "add" else "-D"
+    operation_args = library
+
+    if volume:
+        operation_args = f"{operation_args},{volume}"
+    elif sms:
+        operation_args = f"{operation_args},SMS"
+
+    command = f"apfadm {operation} '{operation_args}'"
+
+    if force_dynamic:
+        command = f"{command} -f"
+
+    if persistent:
+        if opt == "add":
+            persistent_args = f"-P '{persistent.get("addDataset")}'"
+        else:
+            persistent_args = f"-R '{persistent.get("delDataset")}'"
+
+        if persistent.get("marker"):
+            persistent_args = f"{persistent_args} -M '{persistent.get("marker")}'"
+
+        command = f"{command} {persistent_args}"
+
+    return command
+
+
 def main():
     """Initialize the module.
 
@@ -555,7 +612,11 @@ def main():
         else:
             if not library:
                 module.fail_json(msg='library is required')
-            ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
+            # Commenting this line to implement a workaround for names with '$'. ZOAU should
+            # release a fix soon so we can uncomment this Python API call.
+            # ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
+            apf_command = make_apf_command(library, opt, volume=volume, sms=sms, force_dynamic=force_dynamic, persistent=persistent)
+            ret = module.run_command(apf_command)
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response

@@ -406,9 +406,9 @@ def make_apf_command(
 
     if persistent:
         if opt == "add":
-            persistent_args = f"-P '{persistent.get("addDataset")}'"
+            persistent_args = f"""-P '{persistent.get("addDataset")}' """
         else:
-            persistent_args = f"-R '{persistent.get("delDataset")}'"
+            persistent_args = f"""-R '{persistent.get("delDataset")}' """
 
         if persistent.get("marker"):
             persistent_args = f"{persistent_args} -M '{persistent.get("marker")}'"

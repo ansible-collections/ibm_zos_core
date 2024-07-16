@@ -361,14 +361,7 @@ def backupOper(module, src, backup, tmphlq=None):
     return backup_name
 
 
-def make_apf_command(
-        library,
-        opt,
-        volume=None,
-        sms=None,
-        force_dynamic=None,
-        persistent=None
-    ):
+def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, persistent=None):
     """Returns a string that can run an APF command in a shell.
 
     Parameters

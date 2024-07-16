@@ -305,8 +305,10 @@ import traceback
 
 try:
     from zoautil_py import zsystem
+    from zoautil_py import ztypes
 except Exception:
     zsystem = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
@@ -609,7 +611,8 @@ def main():
             # release a fix soon so we can uncomment this Python API call.
             # ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
             apf_command = make_apf_command(library, opt, volume=volume, sms=sms, force_dynamic=force_dynamic, persistent=persistent)
-            ret = module.run_command(apf_command)
+            rc, out, err = module.run_command(apf_command)
+            ret = ztypes.ZOAUResponse(rc, out, err, apf_command)
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response

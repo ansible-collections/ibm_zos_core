@@ -620,6 +620,10 @@ def main():
     result['stderr'] = operErr
     result['rc'] = operRc
     result['stdout'] = operOut
+
+    if operation != 'list' and operRc == 0:
+        result['changed'] = True
+
     if operation == 'list':
         try:
             data = json.loads(operOut)

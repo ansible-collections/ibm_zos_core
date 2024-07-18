@@ -431,7 +431,7 @@ def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
     str
         APF command.
     """
-    command = f"apfadm"
+    command = "apfadm"
 
     for item in batch:
         operation = "-A" if item["opt"] == "add" else "-D"

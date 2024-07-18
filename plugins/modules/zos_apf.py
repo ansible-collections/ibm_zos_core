@@ -611,6 +611,7 @@ def main():
             # release a fix soon so we can uncomment this Python API call.
             # ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
             apf_command = make_apf_command(library, opt, volume=volume, sms=sms, force_dynamic=force_dynamic, persistent=persistent)
+            result['cmd'] = apf_command
             rc, out, err = module.run_command(apf_command)
             ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
 

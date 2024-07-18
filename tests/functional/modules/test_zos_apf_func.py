@@ -322,7 +322,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             test_info['batch'][2]['volume']
         )
         add_exptd = add_exptd.replace(" ", "")
-        cmd_str = f"cat \"//'{test_info['persistent']['data_set_name']}'\" "
+        cmd_str = f"""dcat '{test_info["persistent"]["data_set_name"]}' """
         results = hosts.all.shell(cmd=cmd_str)
         for result in results.contacted.values():
             actual = result.get("stdout")
@@ -333,7 +333,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
         del_exptd = DEL_EXPECTED.replace(" ", "")
-        cmd_str = f"cat \"//'{test_info['persistent']['data_set_name']}'\" "
+        cmd_str = f"""dcat '{test_info["persistent"]["data_set_name"]}' """
         results = hosts.all.shell(cmd=cmd_str)
         for result in results.contacted.values():
             actual = result.get("stdout")

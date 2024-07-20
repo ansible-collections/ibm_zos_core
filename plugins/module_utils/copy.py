@@ -17,7 +17,6 @@ __metaclass__ = type
 
 import traceback
 from os import path
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -30,10 +29,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 try:
     from zoautil_py import datasets, gdgs

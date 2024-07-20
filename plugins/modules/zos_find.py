@@ -304,7 +304,6 @@ from copy import deepcopy
 from re import match as fullmatch
 
 
-from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -319,10 +318,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper
 )
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 
 def content_filter(module, patterns, content):

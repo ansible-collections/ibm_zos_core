@@ -185,7 +185,6 @@ def test_response_come_back_complete(ansible_zos_module):
 
 
 def test_zos_operator_parallel_terminal(get_config):
-    #if zoau_version_checker.is_zoau_version_higher_than("1.3.2.0"):
         path = get_config
         with open(path, 'r') as file:
             enviroment = yaml.safe_load(file)

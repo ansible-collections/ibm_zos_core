@@ -413,6 +413,57 @@ def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, pe
     return command
 
 
+def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
+    """Returns a string that can run an APF command for multiple operations
+    in a shell.
+
+    Parameters
+    ----------
+    batch : list
+        List of dicts containing different APF add/del operations.
+    force_dynamic : bool
+        Whether the APF list format should be dynamic.
+    persistent : dict
+        Options for persistent entries that should be modified by APF.
+
+    Returns
+    -------
+    str
+        APF command.
+    """
+    command = "apfadm"
+
+    for item in batch:
+        operation = "-A" if item["opt"] == "add" else "-D"
+        operation_args = item["dsname"]
+
+        volume = item.get("volume")
+        sms = item.get("sms")
+
+        if volume:
+            operation_args = f"{operation_args},{volume}"
+        elif sms:
+            operation_args = f"{operation_args},SMS"
+
+        command = f"{command} {operation} '{operation_args}'"
+
+    if force_dynamic:
+        command = f"{command} -f"
+
+    if persistent:
+        if persistent.get("addDataset"):
+            persistent_args = f""" -P '{persistent.get("addDataset")}' """
+        else:
+            persistent_args = f""" -R '{persistent.get("delDataset")}' """
+
+        if persistent.get("marker"):
+            persistent_args = f""" {persistent_args} -M '{persistent.get("marker")}' """
+
+        command = f"{command} {persistent_args}"
+
+    return command
+
+
 def main():
     """Initialize the module.
 
@@ -603,7 +654,12 @@ def main():
                 item['opt'] = opt
                 item['dsname'] = item.get('library')
                 del item['library']
-            ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
+            # Commenting this line to implement a workaround for names with '$'. ZOAU should
+            # release a fix soon so we can uncomment this Python API call.
+            # ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
+            apf_command = make_apf_batch_command(batch, force_dynamic=force_dynamic, persistent=persistent)
+            rc, out, err = module.run_command(apf_command)
+            ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
         else:
             if not library:
                 module.fail_json(msg='library is required')
@@ -620,6 +676,10 @@ def main():
     result['stderr'] = operErr
     result['rc'] = operRc
     result['stdout'] = operOut
+
+    if operation != 'list' and operRc == 0:
+        result['changed'] = True
+
     if operation == 'list':
         try:
             data = json.loads(operOut)

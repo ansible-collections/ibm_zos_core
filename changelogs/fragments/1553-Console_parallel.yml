@@ -1,0 +1,3 @@
+trivial:
+  - zos_operator - Validate the use of two terminals with a parallel call of zos_operator.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1553).

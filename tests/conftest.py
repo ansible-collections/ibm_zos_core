@@ -108,8 +108,17 @@ def ansible_zos_module(request, z_python_interpreter):
 def volumes_on_systems(ansible_zos_module, request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
     path = request.config.getoption("--zinventory")
-    list_Volumes = get_volumes(ansible_zos_module, path)
-    yield list_Volumes
+    list_volumes = None
+
+    # If path is None, check if zinventory-raw is used instead and if so, extract the
+    # volumes dictionary and pass it along.
+    if path is None:
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+        list_volumes = helper.get_volumes_list()
+    else:
+        list_volumes = get_volumes(ansible_zos_module, path)
+    yield list_volumes
 
 
 @pytest.fixture(scope="session")
@@ -118,8 +127,18 @@ def volumes_with_vvds(ansible_zos_module, request):
     then it will try to create one for each volume found and return volumes only
     if a VVDS was successfully created for it."""
     path = request.config.getoption("--zinventory")
-    volumes = get_volumes(ansible_zos_module, path)
-    volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, volumes)
+    list_volumes = None
+
+    # If path is None, check if zinventory-raw is used instead and if so, extract the
+    # volumes dictionary and pass it along.
+    if path is None:
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+        list_volumes = helper.get_volumes_list()
+    else:
+        list_volumes = get_volumes(ansible_zos_module, path)
+
+    volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, list_volumes)
     yield volumes_with_vvds
 
 

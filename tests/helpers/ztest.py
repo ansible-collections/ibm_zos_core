@@ -74,7 +74,7 @@ class ZTestHelper(object):
         Shell example with pytest:
             pytest tests/functional/modules/test_zos_mount_func.py::test_basic_mount --host-pattern=all -s -v --zinventory-raw='{"host": "zvm.ibm.com", "user": "ibmuser", "zoau": "/zoau/v1.3.1", "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz", "pythonpath": "/zoau/v1.3.1/lib/3.10", "extra_args":{"volumes":["222222","000000"],"other":"something else"}}' -s
 
-            {
+        {
             "host":"zvm.ibm.com",
             "user":"ibmuser",
             "zoau":"/zoau/v1.3.1",
@@ -86,7 +86,7 @@ class ZTestHelper(object):
                     "vol2"
                 ],
                 "other": "something else" }
-            }
+        }
         """
         #TODO: add support for a positional string, eg "host,user,zoau,pyz" then convert it as needed
 

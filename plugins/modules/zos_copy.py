@@ -3496,7 +3496,7 @@ def run_module(module, arg_def):
     # the machine and not generate a false positive check the disposition
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
-    if dest_ds_type != "USS":
+    if dest_exists and dest_ds_type != "USS":
         if not force_lock:
             is_dest_lock = data_set_locked(dest_name)
             if is_dest_lock:

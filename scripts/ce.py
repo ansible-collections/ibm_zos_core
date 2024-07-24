@@ -1790,14 +1790,14 @@ def executor(args):
 
 def main():
     parser = argparse.ArgumentParser(
-    prog='load_balance.py',
+    prog='ce.py',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description=textwrap.dedent('''
         Examples
         --------
         1)  Execute a single test suite for up to 5 iterations for ibmuser with shared zoau and python installations.
             Note, usage of --tests "../tests/functional/modules/test_zos_tso_command_func.py"
-            $ python3 load_balance.py\\
+            $ python3 ce.py\\
                     --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
                     --zoau "/zoau/v1.3.1"\\
                     --itr 5\\
@@ -1807,7 +1807,7 @@ def main():
 
         2)  Execute a multiple test suites for up to 10 iterations for ibmuser with shared zoau and python installations.
             Note, usage of --tests "../tests/functional/modules/test_zos_tso_command_func.py,../tests/functional/modules/test_zos_find_func.py"
-            $ python3 load_balance.py\\
+            $ python3 ce.py\\
                     --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
                     --zoau "/zoau/v1.3.1"\\
                     --itr 10\\
@@ -1817,7 +1817,7 @@ def main():
 
         3)  Execute a test suites in a directory for up to 4 iterations for ibmuser with shared zoau and python installations.
             Note, usage of --directories "../tests/functional/modules/,../tests/unit/"
-            $ python3 load_balance.py\\
+            $ python3 ce.py\\
                     --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
                     --zoau "/zoau/v1.3.1"\\
                     --itr 4\\
@@ -1827,7 +1827,7 @@ def main():
 
         4)  Execute test suites in multiple directories for up to 5 iterations for ibmuser with shared zoau and python installations.
             Note, usage of "--directories "../tests/functional/modules/,../tests/unit/"
-            $ python3 load_balance.py\\
+            $ python3 ce.py\\
                     --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
                     --zoau "/zoau/v1.3.1"\\
                     --itr 5\\
@@ -1839,7 +1839,7 @@ def main():
 
         5)  Execute test suites in multiple directories with up to 5 iterations for ibmuser with attributes, zoau, pyz using a max timeout of 100, max failures of 6 and balance of 3.
             Note, usage of "--directories "../tests/functional/modules/,../tests/unit/"
-            $ python3 load_balance.py\\
+            $ python3 ce.py\\
                     --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
                     --zoau "/zoau/v1.3.1"\\
                     --itr 5\\

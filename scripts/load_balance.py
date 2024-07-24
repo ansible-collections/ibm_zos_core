@@ -829,13 +829,13 @@ class Node:
         self.balanced_count = len(self.balanced)
         return self.balanced_count
 
-# def set_nodes_offline(nodes: Dictionary, maxbal: int) -> None:
+# def set_nodes_offline(nodes: Dictionary, maxnode: int) -> None:
 #     for key, value in nodes.items():
-#         if value.get_balanced_count() > maxbal:
+#         if value.get_balanced_count() > maxnode:
 #             value.set_state(Status.OFFLINE)
 
-def set_node_offline(node: Node, maxbal: int) -> None:
-    if node.get_balanced_job_count() > maxbal:
+def set_node_offline(node: Node, maxnode: int) -> None:
+    if node.get_balanced_job_count() > maxnode:
             node.set_state(Status.OFFLINE)
 
 
@@ -1400,7 +1400,7 @@ def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list
     #TODO: refactor these tuples to include gt or max to not confused with get jobs statistics
     return (jobs_failed_count, jobs_failed_list, jobs_failed_log, jobs_rebalanced)
 
-def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxbal: int) -> Tuple[int, str]:
+def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxnode: int) -> Tuple[int, str]:
     """
     Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
@@ -1427,7 +1427,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
         to another for execution.
     extra: str
         Extra commands passed to subprocess before pytest execution
-    maxbal: int
+    maxnode: int
         The maximum number of times a node can fail to run a
         job before its set to 'offline' in the node queue.
 
@@ -1496,7 +1496,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                     rc = 7
                     job.set_rc(int(rc))
                     node.set_balanced_job_id((id))
-                    set_node_offline(node, maxbal)
+                    set_node_offline(node, maxnode)
                     update_job_hostname(job)
                     node.get_balanced_job_count()
                     rc_msg = f"Test has been assigned to a new z/OS managed node = {job.get_hostname()}, because it exceeded allowable balance = {bal}."
@@ -1559,7 +1559,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
     return rc, message
 
 
-def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxbal: int, worker_multiple: int) -> None:
+def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxnode: int, workers: int) -> None:
     """
     Method creates an executor to run a job found in the jobs dictionary concurrently.
     This method is the key function that allows for concurrent execution of jobs.
@@ -1584,28 +1584,28 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
         to another for execution.
     extra: str
         Extra commands passed to subprocess before pytest execution
-    maxbal: int
+    maxnode: int
         The maximum number of times a node can fail to run a
         job before its set to 'offline' in the node queue.
-    worker_multiple: int
+    workers: int
         The numerical value used to increase the number of worker
         threads by proportionally. By default this is 3 that will
         yield one thread per node. With one thread per node, test
         cases run one at a time on a managed node. This value
         is used as a multiple to grow the number of threads and
         test concurrency. For example, if there are 5 nodes and
-        the worker_multiple = 3, then 15 threads will be created
+        the workers = 3, then 15 threads will be created
         resulting in 3 test cases running concurrently.
 
     """
 
-    if worker_multiple > 1:
-        number_of_threads = nodes.len() * worker_multiple
+    if workers > 1:
+        number_of_threads = nodes.len() * workers
     else:
         number_of_threads = nodes.len()
 
     with ThreadPoolExecutor(number_of_threads) as executor:
-        futures = [executor.submit(run, key, jobs, nodes, timeout, max, bal, extra, maxbal) for key, value in jobs.items() if not value.get_successful()]
+        futures = [executor.submit(run, key, jobs, nodes, timeout, max, bal, extra, maxnode) for key, value in jobs.items() if not value.get_successful()]
         for future in as_completed(futures):
             rc, message = future.result()
             if future.exception() is not None:
@@ -1736,13 +1736,13 @@ def executor(args):
         # Get a dictionary of jobs containing the work to be run on a node.
         jobs = get_jobs(nodes, testsuite=args.testsuite, tests=tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
         iterations_result=""
-        number_of_threads = nodes.len() * args.worker_multiple
+        number_of_threads = nodes.len() * args.workers
 
         stats = get_jobs_statistics(jobs, args.maxjob)
         job_count_progress = 0
         while stats.jobs_success_count != stats.jobs_total_count and count <= int(args.itr):
             start_time = time.time()
-            runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal, args.worker_multiple)
+            runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers)
             stats = get_jobs_statistics(jobs, args.maxjob)
             iterations_result += f"\tThread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
             print(f"Thread pool iteration {str(count)} has pending {stats.jobs_failed_count} jobs.")
@@ -1788,11 +1788,6 @@ def executor(args):
         else:
             count_play = args.replay
 
-        # Generate a consumable report, while verbose is nice lets return something based only on jobs_failed_maxjob_tests and jobs_failed_maxjob_log
-
-
-
-        # TODO: Maxjob should always be less than itr else it makes no sense
 def main():
     parser = argparse.ArgumentParser(
     prog='load_balance.py',
@@ -1853,11 +1848,11 @@ def main():
                     --timeout 100\\
                     --maxjob 6\\
                     --bal 3\\
-                    --maxbal 4\\
+                    --maxnode 4\\
                     --hostnames "ec33025a.vmec.svl.ibm.com,ec33025a.vmec.svl.ibm"\\
                     --verbosity 3\\
                     --capture\\
-                    --worker_multiple 3\\
+                    --workers 3\\
                     --extra "cd .."
         '''))
 
@@ -1872,10 +1867,10 @@ def main():
     parser.add_argument('--maxjob', type=int, help='The maximum number of times a job can fail before its disabled in the job queue.', required=False, metavar='<int>', default="6")
     parser.add_argument('--bal', type=int, help='The count at which a job is balanced from one z/OS node to another for execution.', required=False, metavar='<int>', default="3")
     parser.add_argument('--hostnames', help='List of hostnames to use, overrides the auto detection.', required=False, metavar='<list[str]>', default=None, nargs='*')
-    parser.add_argument('--maxbal', type=int, help='The maximum number of times a node can fail to run a job before its set to \'offline\' in the node queue.', required=False, metavar='<int>', default=6)
+    parser.add_argument('--maxnode', type=int, help='The maximum number of times a node can fail to run a job before its set to \'offline\' in the node queue.', required=False, metavar='<int>', default=6)
     parser.add_argument('--verbosity', type=int, help='The level of pytest verbosity, 1 = -v, 2 = -vv, 3 = -vvv, 4 = -vvvv.', required=False, metavar='<int>', default=0)
     parser.add_argument('--capture', action=argparse.BooleanOptionalAction, help='Instruct Pytest not to capture any output, equivalent of -s.', required=False, default=False)
-    parser.add_argument('--worker_multiple', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
+    parser.add_argument('--workers', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
     parser.add_argument('--replay', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
 
     # Mutually exclusive options
@@ -1884,6 +1879,14 @@ def main():
     exclusive_group_or_tests.add_argument('--testsuite', type=str, help='Space or comma delimited test suites, must be absolute path(s)', required=False, metavar='<str,str>', default="")
     exclusive_group_or_tests.add_argument('--tests', type=str, help='Space or comma delimited directories containing test suites, must be absolute path(s)', required=False, metavar='<str,str>', default=None)
     args = parser.parse_args()
+
+    # Evaluate
+    # TODO: Maxjob should always be less than itr else it makes no sense
+    if int(args.maxjob) > int(args.itr):
+        raise ValueError(f"Value '--maxjob' = {args.maxjob}, must be less than --itr = {args.itr}, else maxjob will have no effect.")
+
+    if int(args.bal) > int(args.maxjob):
+        raise ValueError(f"Value '--bal' = {args.bal}, must be less than --maxjob = {args.itr}, else balance will have no effect.")
 
     # Execute/begin running the concurrency testing with the provided args.
     executor(args)

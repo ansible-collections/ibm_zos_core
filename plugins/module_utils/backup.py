@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -44,10 +43,8 @@ try:
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+
+from shlex import quote
 
 
 def _validate_data_set_name(ds):

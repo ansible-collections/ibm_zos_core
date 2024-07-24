@@ -17,7 +17,6 @@ __metaclass__ = type
 from tempfile import NamedTemporaryFile, mkstemp, mkdtemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
-from ansible.module_utils.six import PY3
 
 import shutil
 import errno
@@ -42,11 +41,7 @@ try:
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 
 class Defaults:

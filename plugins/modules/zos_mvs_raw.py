@@ -1645,12 +1645,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 import re
 import traceback
-from ansible.module_utils.six import PY3
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 try:
     from zoautil_py import datasets

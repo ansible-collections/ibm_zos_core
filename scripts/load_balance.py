@@ -22,10 +22,12 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from contextlib import contextmanager
 import time
+from datetime import datetime
 import concurrent.futures
 from collections import OrderedDict, namedtuple
 
 from typing import List, Set, Type, Tuple
+from prettytable import PrettyTable, ALL
 
 
 # ==============================================================================
@@ -65,7 +67,7 @@ class Status (Enum):
 class State (Enum):
     SUCCESS=(1, "success")
     FAILURE=(0, "failure")
-    EXCEEDED=(2, "exceeded max failure")
+    EXCEEDED=(2, "exceeded-max-failure")
 
     def __str__(self) -> str:
         return self.name.upper()
@@ -229,8 +231,7 @@ class Job:
         self.hostpattern: str = "all"
         self.nodes: Dictionary = nodes
         self._stdout_and_stderr: list[Tuple[str, str, str]] = []
-        # self._stdout_and_stderr.append(hostname)
-        #self._stdout_and_stderr = {}
+        self._stdout: list[Tuple[str, str, str]] = []
         self.verbose: str = None
 
     def __str__(self) -> str:
@@ -261,12 +262,6 @@ class Job:
         """
         node_temp = self.nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
-        # f-string causing an undiagnosed error.
-        #return f"pytest {self.testcase} --host-pattern={self.hostpattern} --zinventory-raw={node_inventory}"
-        #return """pytest {0} --host-pattern={1} --zinventory-raw='{2}' >&2 ; echo $? >&1""".format(self.testcase,self.hostpattern,node_inventory)
-        #print("""pytest {0} --host-pattern={1} {2} {3} --zinventory-raw='{4}'""".format(self.testcase,self.hostpattern,self.capture,self.verbose,node_inventory))
-        #return """pytest {0} --host-pattern={1} {2} {3} --zinventory-raw='{4}'""".format(self.testcase,self.hostpattern,self.capture,self.verbose,node_inventory)
-        #print(f"pytest {self.testcase} --host-pattern={self.hostpattern}{self.capture if not None else ""}{self.verbose if not None else ""} --zinventory-raw='{node_inventory}'")
         return f"pytest {self.testcase} --host-pattern={self.hostpattern}{self.capture if not None else ""}{self.verbose if not None else ""} --zinventory-raw='{node_inventory}'"
 
 
@@ -405,6 +400,17 @@ class Job:
         """
         return self._stdout_and_stderr
 
+    def get_stdout_msgs(self) -> list[Tuple[str, str, str]]:
+        """
+        Return all stdout messages that have been assigned to this job over time as a list.
+
+        Return
+        ------
+        list[str]
+            A list of all stderr and stdout messages.
+        """
+        return self._stdout
+
     def get_stdout_and_stderr_msg(self) -> Tuple[str, str, str]:
         """
         Return the current stdout and stderr message assigned to this node, in other words, the last message
@@ -416,6 +422,18 @@ class Job:
             The current concatenated stderr and stdout message.
         """
         return self._stdout_and_stderr[-1]
+
+    def get_stdout_msg(self) -> Tuple[str, str, str]:
+        """
+        Return the current stdout message assigned to this node, in other words, the last message
+        resulting from this jobs execution.
+
+        Return
+        ------
+        str
+            The current concatenated stderr and stdout message.
+        """
+        return self._stdout[-1]
 
     def set_rc(self, rc: int) -> None:
         """
@@ -513,7 +531,7 @@ class Job:
         elif verbosity == 4:
             self.verbose = " -vvvv"
 
-    def set_stdout_and_stderr(self, message: str, std_out_err: str) -> None:
+    def set_stdout_and_stderr(self, message: str, std_out_err: str, date_time: str) -> None:
         """
         Add a stdout and stderr concatenated message resulting from the jobs
         execution (generally std out/err resulting from pytest) the job.
@@ -523,10 +541,25 @@ class Job:
         stdout_stderr : str
             Stdout and stderr concatenated into one string.
         """
-        Joblog = namedtuple('Joblog',['hostname', 'command', 'message', 'std_out_err'])
+        Joblog = namedtuple('Joblog',['id', 'hostname', 'command', 'message', 'std_out_err', 'date_time'])
 
-        joblog = Joblog(self._hostnames[-1], self.get_command(), message, std_out_err)
+        joblog = Joblog(self.id, self._hostnames[-1], self.get_command(), message, std_out_err, date_time)
         self._stdout_and_stderr.append(joblog)
+
+    def set_stdout(self, message: str, std_out_err: str, date_time: str) -> None:
+        """
+        Add a stdout concatenated message resulting from the jobs
+        execution (generally std out/err resulting from pytest) the job.
+
+        Parameters
+        ----------
+        stdout_stderr : str
+            Stdout and stderr concatenated into one string.
+        """
+        Joblog = namedtuple('Joblog',['id', 'hostname', 'command', 'message', 'std_out_err', 'date_time'])
+
+        joblog = Joblog(self.id, self._hostnames[-1], self.get_command(), message, std_out_err, date_time)
+        self._stdout.append(joblog)
 
 # ------------------------------------------------------------------------------
 # Class Node
@@ -1290,7 +1323,7 @@ def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, int, list[s
     jobs_failed_count = 0
     jobs_failed_tests = []
     jobs_total_count = 0
-    jobs_success_log = {}
+    jobs_success_log = []
     jobs_failed_log = []
     jobs_rebalanced_count = 0
     jobs_failed_count_maxjob = 0
@@ -1309,6 +1342,7 @@ def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, int, list[s
         if value.get_successful():
             jobs_success_count += 1
             jobs_success_tests.append(value.get_testcase())
+            jobs_success_log.extend(value.get_stdout_msgs())
         else:
             # Total of jobs that have a failure status
             if not value.get_successful():
@@ -1324,7 +1358,7 @@ def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, int, list[s
                 jobs_failed_maxjob_tests.append(value.get_testcase())
                 jobs_failed_maxjob_log.extend(value.get_stdout_and_stderr_msgs())
 
-    # return (jobs_total_count, jobs_success_count, jobs_success_tests, jobs_success_log, jobs_failed_count, jobs_failed_tests, jobs_failed_log, jobs_rebalanced_count)
+    # TODO: the jobs_success_log is not used/populated, decide what to do with it. 
     Statistics = namedtuple('Statistics',
                             ['jobs_total_count',
                              'jobs_success_count',
@@ -1431,6 +1465,8 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
     if node_count_online >0:
         node = nodes.get(hostname)
         start_time = time.time()
+        date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
         # print("Job information: " + "\n  z/OS hosts available = " + str(zos_nodes_len) + "\n  Job ID = " + str(job.get_id()) + "\n  Command = " + job.get_command())
         try:
             # Build command and strategically map stdout and stderr so that both are mapped to stderr and the pytest rc goes to stdout.
@@ -1444,7 +1480,9 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                 job.set_rc(int(rc))
                 job.set_success()
                 rc_msg = "Test collected and passed successfully."
-                message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                pytest_std_out_err = result.stderr
+                job.set_stdout(message, pytest_std_out_err, date_time)
             else:
                 job_failures = job.get_failure_count()
 
@@ -1453,7 +1491,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                     job.set_rc(int(rc))
                     # Do node stuff
                     rc_msg = f"Test exceeded permitted failures = {maxjob}."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif job_failures == bal:
                     rc = 7
                     job.set_rc(int(rc))
@@ -1462,27 +1500,27 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                     update_job_hostname(job)
                     node.get_balanced_job_count()
                     rc_msg = f"Test has been assigned to a new z/OS managed node = {job.get_hostname()}, because it exceeded allowable balance = {bal}."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 1:
                     job.set_rc(int(rc))
                     rc_msg = "Test case was collected and failed with an error."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 2:
                     job.set_rc(int(rc))
                     rc_msg = "Test case execution was interrupted by the user."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 3:
                     job.set_rc(int(rc))
                     rc_msg = "Internal error occurred while executing test."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 4:
                     job.set_rc(int(rc))
                     rc_msg = "Pytest command line usage error."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
                 elif rc == 5:
                     job.set_rc(int(rc))
                     rc_msg = "No tests were collected ."
-                    message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
 
                 # Increment the job failure after evaluating all the RCs
                 job.increment_failure()
@@ -1491,7 +1529,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                 node.set_failure_job_id(id)
 
                 pytest_std_out_err = result.stderr
-                job.set_stdout_and_stderr(message, pytest_std_out_err)
+                job.set_stdout_and_stderr(message, pytest_std_out_err, date_time)
 
         except subprocess.TimeoutExpired as timeout_err:
             job.set_elapsed_time(start_time)
@@ -1501,8 +1539,8 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
             # pytest_std_out_err = timeout_err.stderr.decode()
             # pytest_std_out_err += timeout_err.stdout.decode()
             rc_msg = f"Job has exceeded subprocess timeout = {str(timeout)}"
-            message = f"Job ID = {id}, host = {hostname}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
-            job.set_stdout_and_stderr(message, rc_msg)
+            message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
+            job.set_stdout_and_stderr(message, rc_msg, date_time)
             job.increment_failure()
             node.set_failure_job_id(id)
     else:
@@ -1511,7 +1549,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
         node_count_offline = get_nodes_offline_count(nodes)
         rc_msg = f"There are no z/OS managed nodes available to run jobs, node count = {nodes_count}, OFFLINE = {node_count_offline}, ONLINE = {node_count_online}."
         message = f"Job ID = {id}, host = {hostname}, elapsed time = {job.get_elapsed_time()}, rc = {str(rc)}, rc msg = {rc_msg}"
-        job.set_stdout_and_stderr(message)
+        job.set_stdout_and_stderr(message, rc_msg, date_time)
         job.increment_failure()
         node.set_failure_job_id(id)
 
@@ -1610,32 +1648,77 @@ def elapsed_time(start_time: time):
     return elapsed
 
 def print_job_logs(log: list[Tuple[str, str, str]], state: State) -> None:
-    # if len(log) > 0:
-    # for host, entry in log.items():
-    #  Joblog = namedtuple('Joblog',['hostname', 'message', 'stderr'])
-    for entry in log:
-        print("------------------------------------------------------------\n"\
-             f"[START] [{state.string()}] log entry.\n"\
-             "------------------------------------------------------------\n"\
-             f"\tHostname: {entry.hostname}\n"\
-             f"\tCommand:  {entry.command}\n"\
-             f"\tMessage:  {entry.message}\n"\
-             f"\tStdout: \n\t{entry.std_out_err.replace('\n', '\n\t')}\n"\
-             "------------------------------------------------------------\n"\
-             f"[END] [{state.string()}] log entry.\n"\
-             "------------------------------------------------------------")
-        # print(f"\t{entry.replace('\n', '\n\t')}")
+    if len(log) > 0:
+        for entry in log:
+            print("------------------------------------------------------------\n"\
+                f"[START] [{state.string()}] log entry.\n"\
+                "------------------------------------------------------------\n"\
+                f"\tJob ID: {entry.id}\n"\
+                f"\tHostname: {entry.hostname}\n"\
+                f"\tDate time: {entry.date_time}\n"\
+                f"\tCommand:  {entry.command}\n"\
+                f"\tMessage:  {entry.message}\n"\
+                f"\tStdout: \n\t{entry.std_out_err.replace('\n', '\n\t')}\n"\
+                "------------------------------------------------------------\n"\
+                f"[END] [{state.string()}] log entry.\n"\
+                "------------------------------------------------------------")
 
 def print_job_tests(tests: list[str], state: State) -> None:
-    # if len(tests) > 0:
-    print("------------------------------------------------------------\n"\
-        f"[START] [{state.string()}] test cases.\n"\
-        "------------------------------------------------------------")
-    for entry in tests:
-        print(f"\t{entry}")
-    print("------------------------------------------------------------\n"\
-        f"[END] [{state.string()}] test cases.\n"\
-        "------------------------------------------------------------")
+    if len(tests) > 0:
+        print("------------------------------------------------------------\n"\
+            f"[START] [{state.string()}] test cases.\n"\
+            "------------------------------------------------------------")
+        for entry in tests:
+            print(f"\t{entry}")
+        print("------------------------------------------------------------\n"\
+            f"[END] [{state.string()}] test cases.\n"\
+            "------------------------------------------------------------")
+
+def print_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay: str) -> str:
+    if len(log) > 0:
+        table = PrettyTable()
+        table.hrules=ALL
+        table.format = False
+        table.header = True
+        table.left_padding_width = 1
+        table.right_padding_width = 1
+        table.field_names = ["Count", "Job ID", "z/OS Managed Node", "Pytest Command", "Message", "Standard Out & Error", "Date and Time"]
+        table.align["Message"] = "l"
+        table.align["Standard Out & Error"] = "l"
+        table.sortby = "Job ID"
+
+        count = 0
+        for entry in log:
+            table.add_row([count, entry.id,entry.hostname, entry.command, entry.message, entry.std_out_err, entry.date_time])
+            count +=1
+
+        html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
+        file = open(f"/tmp/{state.string()}-job-logs-replay-{replay}.html", "w")
+        file.write(html)
+        file.close()
+
+def print_job_tests_to_html(tests: list[str], state: State, replay: str) -> None:
+    if len(tests) > 0:
+        table = PrettyTable()
+        table.hrules=ALL
+        table.format = False
+        table.header = True
+        table.left_padding_width = 1
+        table.right_padding_width = 1
+        table.field_names = ["Count", "Test Case"]
+        table.align["Test Case"] = "l"
+        table.sortby = "Count"
+
+        count = 0
+        for entry in tests:
+            table.add_row([count, entry])
+            count +=1
+
+        html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
+        file = open(f"/tmp/{state.string()}-job-tests-replay-{replay}.html", "w")
+        file.write(html)
+        file.close()
+
 
 def executor(args):
     count_play = 1
@@ -1651,10 +1734,8 @@ def executor(args):
         nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames)
 
         # Get a dictionary of jobs containing the work to be run on a node.
-        # TODO: get_jobs raises an runtime exception need to handle this.
         jobs = get_jobs(nodes, testsuite=args.testsuite, tests=tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
         iterations_result=""
-        ### number_of_threads = nodes.len()
         number_of_threads = nodes.len() * args.worker_multiple
 
         stats = get_jobs_statistics(jobs, args.maxjob)
@@ -1663,7 +1744,7 @@ def executor(args):
             start_time = time.time()
             runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal, args.worker_multiple)
             stats = get_jobs_statistics(jobs, args.maxjob)
-            iterations_result += f"   Thread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
+            iterations_result += f"\tThread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
             print(f"Thread pool iteration {str(count)} has pending {stats.jobs_failed_count} jobs.")
             count +=1
             job_count_progress = stats.jobs_success_count
@@ -1672,25 +1753,32 @@ def executor(args):
         print(f"All {count - 1} thread pool iterations completed in {elapsed_time(start_time_full_run)} time, with {number_of_threads} threads running concurrently.")
         print(iterations_result)
         print("\n=================================\nSUMMARY\n=================================")
-        print(f"    Number of jobs queued to be run = {stats.jobs_total_count}.")
-        print(f"    Number of jobs that run successfully = {stats.jobs_success_count}.")
-        print(f"    Total number of jobs that failed = {stats.jobs_failed_count}.")
-        print(f"    Number of jobs that failed great than or equal to {str(args.maxjob)} times = {stats.jobs_failed_count_maxjob}.")
-        print(f"    Number of jobs that failed less than {str(args.maxjob)} times = {stats.jobs_failed_count - stats.jobs_failed_count_maxjob}.")
-        print(f"    Number of jobs that were balanced = {stats.jobs_rebalanced_count}.")
+        print(f"\tNumber of jobs queued to be run = {stats.jobs_total_count}.")
+        print(f"\tNumber of jobs that run successfully = {stats.jobs_success_count}.")
+        print(f"\tTotal number of jobs that failed = {stats.jobs_failed_count}.")
+        print(f"\tNumber of jobs that failed great than or equal to {str(args.maxjob)} times = {stats.jobs_failed_count_maxjob}.")
+        print(f"\tNumber of jobs that failed less than {str(args.maxjob)} times = {stats.jobs_failed_count - stats.jobs_failed_count_maxjob}.")
+        print(f"\tNumber of jobs that were balanced = {stats.jobs_rebalanced_count}.")
 
-        if stats.jobs_failed_count > 0:
-            print_job_tests(stats.jobs_failed_tests, State.FAILURE)
-            print_job_logs(stats.jobs_failed_log, State.FAILURE)
+        # Print to stdout any failed test cases and their relevant pytest logs
+        print_job_tests(stats.jobs_failed_tests, State.FAILURE)
+        print_job_logs(stats.jobs_failed_log, State.FAILURE)
+        print_job_tests_to_html(stats.jobs_failed_tests, State.FAILURE, count_play)
+        print_job_logs_to_html(stats.jobs_failed_log, State.FAILURE, count_play)
 
-        if stats.jobs_failed_count_maxjob > 0:
-            print_job_tests(stats.jobs_failed_maxjob_tests, State.EXCEEDED)
-            print_job_logs(stats.jobs_failed_maxjob_log, State.EXCEEDED)
+        # Print to stdout any test cases that exceeded the value max number of times a job can fail.
+        print_job_tests(stats.jobs_failed_maxjob_tests, State.EXCEEDED)
+        print_job_logs(stats.jobs_failed_maxjob_log, State.EXCEEDED)
+        print_job_tests_to_html(stats.jobs_failed_maxjob_tests, State.EXCEEDED, count_play)
+        print_job_logs_to_html(stats.jobs_failed_maxjob_log, State.EXCEEDED, count_play)
 
-        if stats.jobs_success_count > 0:
-            print_job_tests(stats.jobs_success_tests, State.SUCCESS)
-            print_job_logs(stats.jobs_success_log, State.SUCCESS)
+        # Print to stdout all successful test cases and their relevant logs.
+        print_job_tests(stats.jobs_success_tests, State.SUCCESS)
+        print_job_logs(stats.jobs_success_log, State.SUCCESS)
+        print_job_tests_to_html(stats.jobs_success_tests, State.SUCCESS, count_play)
+        print_job_logs_to_html(stats.jobs_success_log, State.SUCCESS, count_play)
 
+        # If replay is set, the retry this again with the test cases that failed
         if stats.jobs_failed_count > 0:
             tests = ','.join(stats.jobs_failed_tests)
             args.testsuite = None
@@ -1700,9 +1788,12 @@ def executor(args):
         else:
             count_play = args.replay
 
+        # Generate a consumable report, while verbose is nice lets return something based only on jobs_failed_maxjob_tests and jobs_failed_maxjob_log
 
+
+
+        # TODO: Maxjob should always be less than itr else it makes no sense
 def main():
-    # python3 load_balance.py --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz" --zoau "/zoau/v1.3.1" --itr 10 --args "cd /Users/ddimatos/git/gh/ibm_zos_core;"  --tests /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_tso_command_func.py --user "omvsadm" --skip tests/functional/modules/test_module_security.py
     parser = argparse.ArgumentParser(
     prog='load_balance.py',
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1794,54 +1885,7 @@ def main():
     exclusive_group_or_tests.add_argument('--tests', type=str, help='Space or comma delimited directories containing test suites, must be absolute path(s)', required=False, metavar='<str,str>', default=None)
     args = parser.parse_args()
 
-    # start_time_full_run = time.time()
-
-    # # Get a dictionary of all active zos_nodes to run tests on
-    # nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames)
-
-    # # Get a dictionary of jobs containing the work to be run on a node.
-    # # TODO: get_jobs raises an runtime exception need to handle this.
-    # jobs = get_jobs(nodes, testsuite=args.testsuite, tests=args.tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity)
-
-    # count = 1
-    # iterations_result=""
-    # ### number_of_threads = nodes.len()
-    # number_of_threads = nodes.len() * args.worker_multiple
-
-    # stats = get_jobs_statistics(jobs, args.maxjob)
-    # job_count_progress = 0
-    # while stats.jobs_success_count != stats.jobs_total_count and count <= int(args.itr):
-    #     start_time = time.time()
-    #     runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxbal, args.worker_multiple)
-    #     stats = get_jobs_statistics(jobs, args.maxjob)
-    #     iterations_result += f"   Thread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
-    #     print(f"Thread pool iteration {str(count)} has pending {stats.jobs_failed_count} jobs.")
-    #     count +=1
-    #     job_count_progress = stats.jobs_success_count
-
-    # print("\n=================================\nRESULTS\n=================================")
-    # print(f"All {count - 1} thread pool iterations completed in {elapsed_time(start_time_full_run)} time, with {number_of_threads} threads running concurrently.")
-    # print(iterations_result)
-    # print("\n=================================\nSUMMARY\n=================================")
-    # print(f"    Number of jobs queued to be run = {stats.jobs_total_count}.")
-    # print(f"    Number of jobs that run successfully = {stats.jobs_success_count}.")
-    # print(f"    Total number of jobs that failed = {stats.jobs_failed_count}.")
-    # print(f"    Number of jobs that failed great than or equal to {str(args.maxjob)} times = {stats.jobs_failed_count_maxjob}.")
-    # print(f"    Number of jobs that failed less than {str(args.maxjob)} times = {stats.jobs_failed_count - stats.jobs_failed_count_maxjob}.")
-    # print(f"    Number of jobs that were balanced = {stats.jobs_rebalanced_count}.")
-
-    # if stats.jobs_failed_count > 0:
-    #     print_job_tests(stats.jobs_failed_tests, State.FAILURE)
-    #     print_job_logs(stats.jobs_failed_log, State.FAILURE)
-
-    # if stats.jobs_failed_count_maxjob > 0:
-    #     print_job_tests(stats.jobs_failed_maxjob_tests, State.EXCEEDED)
-    #     print_job_logs(stats.jobs_failed_maxjob_log, State.EXCEEDED)
-
-    # if stats.jobs_success_count > 0:
-    #     print_job_tests(stats.jobs_success_tests, State.SUCCESS)
-    #     print_job_logs(stats.jobs_success_log, State.SUCCESS)
-
+    # Execute/begin running the concurrency testing with the provided args.
     executor(args)
 
 if __name__ == '__main__':

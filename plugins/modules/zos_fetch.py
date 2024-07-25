@@ -349,7 +349,7 @@ class FetchHandler:
         tuple(int,str,str)
             Return code, standard output and standard error.
         """
-        return self.module.run_command(cmd, errors='backslashreplace', **kwargs)
+        return self.module.run_command(cmd, errors='replace', **kwargs)
 
     def _get_vsam_size(self, vsam):
         """Invoke IDCAMS LISTCAT command to get the record length and space used.

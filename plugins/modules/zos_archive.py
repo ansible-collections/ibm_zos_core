@@ -1219,7 +1219,7 @@ class MVSArchive(Archive):
             The SHA256 hash of the contents of input file.
         """
         sha256_cmd = "sha256 \"//'{0}'\"".format(src)
-        rc, out, err = self.module.run_command(sha256_cmd, errors='backslashreplace')
+        rc, out, err = self.module.run_command(sha256_cmd, errors='replace')
         checksums = out.split("= ")
         if len(checksums) > 0:
             return checksums[1]

@@ -373,7 +373,7 @@ def run_module():
     script_rc, stdout, stderr = module.run_command(
         cmd_str,
         cwd=chdir,
-        errors='backslashreplace'
+        errors='replace'
     )
 
     result = dict(

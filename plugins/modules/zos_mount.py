@@ -847,7 +847,7 @@ def run_module(module, arg_def):
     # Need to see if mountpoint is in use for idempotence
     currently_mounted = False
 
-    rc, stdout, stderr = module.run_command("df", use_unsafe_shell=False, errors='backslashreplace')
+    rc, stdout, stderr = module.run_command("df", use_unsafe_shell=False, errors='replace')
 
     if rc != 0:
         module.fail_json(
@@ -1004,7 +1004,7 @@ def run_module(module, arg_def):
                     # )
                     fullumcmd = "tsocmd " + fullumcmd
                     (rc, stdout, stderr) = module.run_command(
-                        fullumcmd, use_unsafe_shell=False, errors='backslashreplace'
+                        fullumcmd, use_unsafe_shell=False, errors='replace'
                     )
                     currently_mounted = False
                 except Exception as err:
@@ -1023,7 +1023,7 @@ def run_module(module, arg_def):
                     # )
                     fullcmd = "tsocmd " + fullcmd
                     (rc, stdout, stderr) = module.run_command(
-                        fullcmd, use_unsafe_shell=False, errors='backslashreplace'
+                        fullcmd, use_unsafe_shell=False, errors='replace'
                     )
                 except Exception as err:
                     msg = "Exception occurrend when running mount: {0}".format(str(err))
@@ -1049,7 +1049,7 @@ def run_module(module, arg_def):
         copy_ps2uss(data_store, tmp_file_filename, False)
 
         module.run_command(
-            "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False, errors='backslashreplace'
+            "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False, errors='replace'
         )
 
         with open(tmp_file_filename, "r") as fh:
@@ -1075,7 +1075,7 @@ def run_module(module, arg_def):
             fh.close()
             # pre-clear to prevent caching behavior on the copy-back
             module.run_command(
-                "mrm " + data_store, use_unsafe_shell=False, errors='backslashreplace'
+                "mrm " + data_store, use_unsafe_shell=False, errors='replace'
             )
             copy_uss2mvs(tmp_file_filename, data_store, "", True)
 

@@ -31,6 +31,16 @@ IDCAMS_STDIN = f" LISTCAT ENTRIES('{EXISTING_DATA_SET.upper()}')"
 IDCAMS_INVALID_STDIN = " hello world #$!@%!#$!@``~~^$*%"
 
 
+def get_temp_idcams_dataset(hosts):
+    """Returns IDCAMS args that use a newly created PDS.
+    """
+    dataset_name = get_tmp_ds_name()
+
+    hosts.all.shell(f"""dtouch -tPDS -l80 -rFB '{dataset_name}' """)
+    hosts.all.shell(f"""decho 'A record' '{dataset_name}(MEMBER)' """)
+
+    return dataset_name, f" LISTCAT ENTRIES('{dataset_name.upper()}')"
+
 # ---------------------------------------------------------------------------- #
 #                               Data set DD tests                              #
 # ---------------------------------------------------------------------------- #
@@ -55,6 +65,8 @@ def test_disposition_new(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
+        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -74,7 +86,7 @@ def test_disposition_new(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":IDCAMS_STDIN
+                        "content":idcams_args
                     }
                 },
             ],
@@ -84,6 +96,7 @@ def test_disposition_new(ansible_zos_module):
             assert len(result.get("dd_names", [])) > 0
     finally:
         results = hosts.all.zos_data_set(name=default_data_set, state="absent")
+        results = hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
 @pytest.mark.parametrize(

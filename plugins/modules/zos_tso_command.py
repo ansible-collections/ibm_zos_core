@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -126,7 +126,9 @@ EXAMPLES = r"""
 """
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from os import chmod
+import re
 from tempfile import NamedTemporaryFile
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -135,6 +137,23 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 
 
 def run_tso_command(commands, module, max_rc):
+    """Run tso command.
+
+    Parameters
+    ----------
+    commands : str
+        Commands to run.
+    module : AnsibleModule
+        Ansible module to run the command with.
+    max_rc : int
+        Max return code.
+
+    Returns
+    -------
+    Union[dict]
+        The command result details.
+
+    """
     script = """/* REXX */
 PARSE ARG cmd
 address tso
@@ -152,6 +171,24 @@ exit rc
 
 
 def copy_rexx_and_run_commands(script, commands, module, max_rc):
+    """Copy rexx into a temporary file and run commands.
+
+    Parameters
+    ----------
+    script : str
+        Script to run the command.
+    commands : str
+        Commands to run.
+    module : AnsibleModule
+        Ansible module to run the command with.
+    max_rc : int
+        Max return code.
+
+    Returns
+    -------
+    Union[dict]
+        The command result details.
+    """
     command_detail_json = []
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
@@ -180,6 +217,25 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
 
 
 def list_or_str_type(contents, dependencies):
+    """Checks if a variable contains a string or a list of strings and returns it as a list of strings.
+
+    Parameters
+    ----------
+    contents : str | list[str]
+        String or list of strings.
+    dependencies
+        Unused.
+
+    Returns
+    -------
+    str | Union[str]
+        The parameter given as a list of strings.
+
+    Raises
+    ------
+    ValueError
+        Invalid argument type. Expected "string or list of strings".
+    """
     failed = False
     if isinstance(contents, list):
         for item in contents:
@@ -199,7 +255,43 @@ def list_or_str_type(contents, dependencies):
     return contents
 
 
+def preprocess_data_set_names(command):
+    """
+    Applies necessary preprocessing to the data set names, such as converting
+    a GDS relative name into an absolute one.
+
+    Parameters
+    ----------
+    command : str
+        command in which to look for a data set name.
+
+    Returns
+    -------
+    str
+        The command with the modified data set names if any.
+
+    """
+    pattern = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\((?:[-+]?[0-9]+)\)){0,1}"
+    data_set_list = re.findall(pattern, command)
+    for name in data_set_list:
+        if data_set.DataSet.is_gds_relative_name(name):
+            dataset_name = data_set.DataSet.resolve_gds_absolute_name(name)
+            command = command.replace(name, dataset_name)
+    return command
+
+
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        ValueError on BetterArgParser.
+    fail_json
+        Some command(s) failed.
+    fail_json
+        An unexpected error occurred.
+    """
     module_args = dict(
         commands=dict(type="raw", required=True, aliases=["command"]),
         max_rc=dict(type="int", required=False, default=0),
@@ -222,6 +314,7 @@ def run_module():
         module.fail_json(msg=repr(e), **result)
 
     commands = parsed_args.get("commands")
+    commands = list(map(preprocess_data_set_names, commands))
     max_rc = parsed_args.get("max_rc")
     if max_rc is None:
         max_rc = 0

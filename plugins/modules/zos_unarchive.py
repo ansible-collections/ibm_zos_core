@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023 - 2024
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -29,8 +29,6 @@ description:
   - Supported sources are USS (UNIX System Services) or z/OS data sets.
   - Mixing MVS data sets with USS files for unarchiving is not supported.
   - The archive is sent to the remote as binary, so no encoding is performed.
-
-
 options:
   src:
     description:
@@ -38,6 +36,7 @@ options:
       - I(src) can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
       - MVS data sets supported types are C(SEQ), C(PDS), C(PDSE).
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
     type: str
     required: true
   format:
@@ -147,6 +146,7 @@ options:
     description:
       - A list of directories, files or data set names to extract from the
         archive.
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
       - When C(include) is set, only those files will we be extracted leaving
         the remaining files in the archive.
       - Mutually exclusive with exclude.
@@ -157,6 +157,7 @@ options:
     description:
       - List the directory and file or data set names that you would like to
         exclude from the unarchive action.
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
       - Mutually exclusive with include.
     type: list
     elements: str
@@ -183,11 +184,11 @@ options:
           - Organization of the destination
         type: str
         required: false
-        default: SEQ
+        default: seq
         choices:
-          - SEQ
-          - PDS
-          - PDSE
+          - seq
+          - pds
+          - pdse
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -206,28 +207,28 @@ options:
         description:
           - If the destination data set does not exist, this sets the unit of
             measurement to use when defining primary and secondary space.
-          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+          - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
         type: str
         choices:
-          - K
-          - M
-          - G
-          - CYL
-          - TRK
+          - k
+          - m
+          - g
+          - cyl
+          - trk
         required: false
       record_format:
         description:
           - If the destination data set does not exist, this sets the format of
             the
-            data set. (e.g C(FB))
-          - Choices are case-insensitive.
+            data set. (e.g C(fb))
+          - Choices are case-sensitive.
         required: false
         choices:
-          - FB
-          - VB
-          - FBA
-          - VBA
-          - U
+          - fb
+          - vb
+          - fba
+          - vba
+          - u
         type: str
       record_length:
         description:
@@ -251,15 +252,15 @@ options:
       key_offset:
         description:
           - The key offset to use when creating a KSDS data set.
-          - I(key_offset) is required when I(type=KSDS).
-          - I(key_offset) should only be provided when I(type=KSDS)
+          - I(key_offset) is required when I(type=ksds).
+          - I(key_offset) should only be provided when I(type=ksds)
         type: int
         required: false
       key_length:
         description:
           - The key length to use when creating a KSDS data set.
-          - I(key_length) is required when I(type=KSDS).
-          - I(key_length) should only be provided when I(type=KSDS)
+          - I(key_length) is required when I(type=ksds).
+          - I(key_length) should only be provided when I(type=ksds)
         type: int
         required: false
       sms_storage_class:
@@ -311,12 +312,17 @@ options:
     type: bool
     required: false
     default: false
-
 notes:
   - VSAMs are not supported.
-
+  - This module uses L(zos_copy,./zos_copy.html) to copy local scripts to
+    the remote machine which uses SFTP (Secure File Transfer Protocol) for the
+    underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not
+    supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS
+    from using Co:Z thus falling back to using standard SFTP. If the module detects
+    SCP, it will temporarily use SFTP for transfers, if not available, the module
+    will fail.
 seealso:
-  - module: zos_unarchive
+  - module: zos_archive
 '''
 
 EXAMPLES = r'''
@@ -346,6 +352,13 @@ EXAMPLES = r'''
       - USER.ARCHIVE.TEST1
       - USER.ARCHIVE.TEST2
 
+# Unarchive a GDS
+- name: Unarchive a terse data set and excluding data sets from unpacking.
+  zos_unarchive:
+    src: "USER.ARCHIVE(0)"
+    format:
+      name: terse
+
 # List option
 - name: List content from XMIT
   zos_unarchive:
@@ -353,8 +366,8 @@ EXAMPLES = r'''
     format:
       name: xmit
       format_options:
-        use_adrdssu: True
-    list: True
+        use_adrdssu: true
+    list: true
 '''
 
 RETURN = r'''
@@ -763,6 +776,8 @@ class MVSUnarchive(Unarchive):
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
         self.source_size = 0
+        if data_set.DataSet.is_gds_relative_name(self.src):
+            self.src = data_set.DataSet.resolve_gds_absolute_name(self.src)
 
     def dest_type(self):
         """Returns the destination type.
@@ -883,11 +898,11 @@ class MVSUnarchive(Unarchive):
             temp_ds = datasets.tmp_name(high_level_qualifier=hlq)
             arguments.update(name=temp_ds)
         if record_format is None:
-            arguments.update(record_format="FB")
+            arguments.update(record_format="fb")
         if record_length is None:
             arguments.update(record_length=80)
         if type is None:
-            arguments.update(type="SEQ")
+            arguments.update(type="seq")
         if space_primary is None:
             arguments.update(space_primary=self._compute_dest_data_set_size())
         arguments.pop("self")
@@ -904,7 +919,7 @@ class MVSUnarchive(Unarchive):
         """
         include_cmd = "INCL( "
         for include_ds in self.include:
-            include_cmd += " '{0}', - \n".format(include_ds)
+            include_cmd += " '{0}', - \n".format(include_ds.upper())
         include_cmd += " ) - \n"
         return include_cmd
 
@@ -918,7 +933,7 @@ class MVSUnarchive(Unarchive):
         """
         exclude_cmd = "EXCL( - \n"
         for exclude_ds in self.exclude:
-            exclude_cmd += " '{0}', - \n".format(exclude_ds)
+            exclude_cmd += " '{0}', - \n".format(exclude_ds.upper())
         exclude_cmd += " ) - \n"
         return exclude_cmd
 
@@ -1045,8 +1060,8 @@ class MVSUnarchive(Unarchive):
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.src, temp_ds)
         else:
-            temp_ds, rc = self._create_dest_data_set(type="SEQ",
-                                                     record_format="U",
+            temp_ds, rc = self._create_dest_data_set(type="seq",
+                                                     record_format="u",
                                                      record_length=0,
                                                      tmp_hlq=self.tmphlq,
                                                      replace=True)
@@ -1075,7 +1090,8 @@ class MVSUnarchive(Unarchive):
     def list_archive_content(self):
         """Creates a temporary dataset to use in _list_content().
         """
-        temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+        temp_ds, rc = self._create_dest_data_set(type="seq", record_format="u", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+
         self.unpack(self.src, temp_ds)
         self._list_content(temp_ds)
         datasets.delete(temp_ds)
@@ -1454,9 +1470,9 @@ def run_module():
                     ),
                     type=dict(
                         type='str',
-                        choices=['SEQ', 'PDS', 'PDSE'],
+                        choices=['seq', 'pds', 'pdse'],
                         required=False,
-                        default='SEQ',
+                        default='seq',
                     ),
                     space_primary=dict(
                         type='int', required=False),
@@ -1464,12 +1480,12 @@ def run_module():
                         type='int', required=False),
                     space_type=dict(
                         type='str',
-                        choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                        choices=['k', 'm', 'g', 'cyl', 'trk'],
                         required=False,
                     ),
                     record_format=dict(
                         type='str',
-                        choices=["FB", "VB", "FBA", "VBA", "U"],
+                        choices=["fb", "vb", "fba", "vba", "u"],
                         required=False
                     ),
                     record_length=dict(type='int', required=False),
@@ -1535,7 +1551,7 @@ def run_module():
             required=False,
             options=dict(
                 name=dict(arg_type='str', required=False),
-                type=dict(arg_type='str', required=False, default="SEQ"),
+                type=dict(arg_type='str', required=False, default="seq"),
                 space_primary=dict(arg_type='int', required=False),
                 space_secondary=dict(
                     arg_type='int', required=False),
@@ -1571,12 +1587,12 @@ def run_module():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
     unarchive = get_unarchive_handler(module)
 
+    if not unarchive.src_exists():
+        module.fail_json(msg="{0} does not exists, please provide a valid src.".format(module.params.get("src")))
+
     if unarchive.list:
         unarchive.list_archive_content()
         module.exit_json(**unarchive.result)
-
-    if not unarchive.src_exists():
-        module.fail_json(msg="{0} does not exists, please provide a valid src.".format(module.params.get("src")))
 
     unarchive.extract_src()
 

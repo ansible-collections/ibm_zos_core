@@ -307,16 +307,16 @@ def test_backup_and_restore_of_data_set(
 @pytest.mark.parametrize(
     "backup_name,space,space_type",
     [
-        (DATA_SET_BACKUP_LOCATION, 10, "M"),
-        (DATA_SET_BACKUP_LOCATION, 10000, "K"),
+        (DATA_SET_BACKUP_LOCATION, 10, "m"),
+        (DATA_SET_BACKUP_LOCATION, 10000, "k"),
         (DATA_SET_BACKUP_LOCATION, 10, None),
-        (DATA_SET_BACKUP_LOCATION, 2, "CYL"),
-        (DATA_SET_BACKUP_LOCATION, 10, "TRK"),
-        (UNIX_BACKUP_LOCATION, 10, "M"),
-        (UNIX_BACKUP_LOCATION, 10000, "K"),
+        (DATA_SET_BACKUP_LOCATION, 2, "cyl"),
+        (DATA_SET_BACKUP_LOCATION, 10, "trk"),
+        (UNIX_BACKUP_LOCATION, 10, "m"),
+        (UNIX_BACKUP_LOCATION, 10000, "k"),
         (UNIX_BACKUP_LOCATION, 10, None),
-        (UNIX_BACKUP_LOCATION, 2, "CYL"),
-        (UNIX_BACKUP_LOCATION, 10, "TRK"),
+        (UNIX_BACKUP_LOCATION, 2, "cyl"),
+        (UNIX_BACKUP_LOCATION, 10, "trk"),
     ],
 )
 def test_backup_and_restore_of_data_set_various_space_measurements(
@@ -693,7 +693,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #             backup_name=DATA_SET_BACKUP_LOCATION,
 #             overwrite=True,
 #             space=500,
-#             space_type="M",
+#             space_type="m",
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
@@ -706,10 +706,92 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #             full_volume=True,
 #             sms_storage_class="DB2SMS10",
 #             space=500,
-#             space_type="M",
+#             space_type="m",
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_exists_on_volume(hosts, data_set_name, VOLUME)
 #     finally:
 #         delete_data_set_or_file(hosts, data_set_name)
 #         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+
+
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_backup_gds(ansible_zos_module, dstype):
+    try:
+        hosts = ansible_zos_module
+        # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
+        data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        backup_dest = get_tmp_ds_name(symbols=True).replace("-", "")
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[f"{data_set_name}(-1)", f"{data_set_name}(0)"]),
+            backup_name=backup_dest,
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ")
+
+
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_backup_into_gds(ansible_zos_module, dstype):
+    """This test will create a dataset and backup it into a new generation of
+    backup data sets.
+    """
+    try:
+        hosts = ansible_zos_module
+        # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
+        data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        ds_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=ds_name, state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        ds_to_write = f"{ds_name}(MEM)" if dstype in ['pds', 'pdse'] else ds_name
+        results = hosts.all.shell(cmd=f"decho 'test line' \"{ds_to_write}\"")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[ds_name]),
+            backup_name=f"{data_set_name}.G0002V00",
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.shell(cmd=f"drm \"{ds_name}\"")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=f"{data_set_name}(0)",
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ")
+

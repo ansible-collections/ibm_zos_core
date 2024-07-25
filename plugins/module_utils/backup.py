@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -44,13 +43,23 @@ try:
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+
+from shlex import quote
 
 
 def _validate_data_set_name(ds):
+    """Validate data set name.
+
+    Parameters
+    ----------
+    ds : str
+        The source dataset.
+
+    Returns
+    -------
+    str
+        Parsed dataset.
+    """
     arg_defs = dict(ds=dict(arg_type="data_set"))
     parser = BetterArgParser(arg_defs)
     parsed_args = parser.parse_args({"ds": ds})
@@ -58,24 +67,35 @@ def _validate_data_set_name(ds):
 
 
 def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
-    """Create a backup data set for an MVS data set
+    """Create a backup data set for an MVS data set.
 
-    Arguments:
-        dsn {str} -- The name of the data set to backup.
-                        It could be an MVS PS/PDS/PDSE/VSAM(KSDS), etc.
-        bk_dsn {str} -- The name of the backup data set.
+    Parameters
+    ----------
+    dsn : str
+        The name of the data set to backup.
+        It could be an MVS PS/PDS/PDSE/VSAM(KSDS), etc.
+    bk_dsn : str
+        The name of the backup data set.
 
-    Raises:
-        BackupError: When backup data set exists.
-        BackupError: When creation of backup data set fails.
+    Returns
+    -------
+    str
+        The backup dataset
+
+    Raises
+    ------
+    BackupError
+        When backup data set exists.
+    BackupError
+        When creation of backup data set fails.
     """
     dsn = _validate_data_set_name(dsn).upper()
     if is_member(dsn):
         # added the check for a sub-mmember, just in this case
-        if not bk_dsn:
+        if not bk_dsn or "(" not in bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
-        elif "(" not in bk_dsn:
-            bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
+        elif DataSet.is_gds_positive_relative_name(bk_dsn):
+            bk_dsn = datasets.create(bk_dsn)
 
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         try:
@@ -98,14 +118,17 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
 
         # In case the backup ds is a member we trust that the PDS attributes are ok to fit the src content.
         # This should not delete a PDS just to create a backup member.
-        # Otherwise, we allocate the appropiate space for the backup ds based on src.
+        # Otherwise, we allocate the appropriate space for the backup ds based on src.
         if is_member(bk_dsn):
             try:
                 cp_rc = datasets.copy(dsn, bk_dsn)
             except exceptions.ZOAUException as copy_exception:
                 cp_rc = copy_exception.response.rc
         else:
-            cp_rc = _copy_ds(dsn, bk_dsn)
+            if DataSet.is_gds_positive_relative_name(bk_dsn):
+                cp_rc = datasets.copy(dsn, bk_dsn)
+            else:
+                cp_rc = _copy_ds(dsn, bk_dsn)
 
         if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()
@@ -122,20 +145,29 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
 
 
 def uss_file_backup(path, backup_name=None, compress=False):
-    """Create a backup file for a USS file or path
+    """Create a backup file for a USS file or path.
 
-    Arguments:
-        path {str} -- The name of the USS file or path to backup.
-        backup_name {str} -- The name of the backup file.
+    Parameters
+    ----------
+    path : str
+        The name of the USS file or path to backup.
+    backup_name : str
+        The name of the backup file.
 
-    Keyword Arguments:
-        compress {bool} -- Determines if the backup be compressed. (default: {False})
+    Keyword Parameters
+    ------------------
+    compress : bool
+        Determines if the backup be compressed. (default: {False})
 
-    Raises:
-        BackupError: When creating compressed backup fails.
+    Returns
+    -------
+    str
+        Name of the backup file.
 
-    Returns:
-        str -- Name of the backup file.
+    Raises
+    ------
+    BackupError
+        When creating compressed backup fails.
     """
     abs_path = os.path.abspath(path)
 
@@ -188,20 +220,30 @@ def uss_file_backup(path, backup_name=None, compress=False):
 
 
 def _copy_ds(ds, bk_ds):
-    """Copy the contents of a data set to another
+    """Copy the contents of a data set to another.
 
-    Arguments:
-        ds {str} -- The source data set to be copied from. Should be SEQ or VSAM
-        bk_dsn {str} -- The destination data set to copy to.
+    Parameters
+    ----------
+    ds : str
+        The source data set to be copied from. Should be SEQ or VSAM.
+    bk_dsn : str
+        The destination data set to copy to.
 
-    Raises:
-        BackupError: When copying data fails
+    Returns
+    -------
+    int
+        Return code.
+
+    Raises
+    ------
+    BackupError
+        When copying data fails.
     """
     module = AnsibleModuleHelper(argument_spec={})
     _allocate_model(bk_ds, ds)
     repro_cmd = """  REPRO -
-    INDATASET({0}) -
-    OUTDATASET({1})""".format(
+    INDATASET('{0}') -
+    OUTDATASET('{1}')""".format(
         ds, bk_ds
     )
     rc, out, err = module.run_command(
@@ -220,14 +262,24 @@ def _copy_ds(ds, bk_ds):
 
 
 def _allocate_model(ds, model):
-    """Allocate a data set using allocation information of a model data set
+    """Allocate a data set using allocation information of a model data set.
 
-    Arguments:
-        ds {str} -- The name of the data set to be allocated.
-        model {str} -- The name of the data set whose allocation parameters should be used.
+    Parameters
+    ----------
+    ds : str
+        The name of the data set to be allocated.
+    model : str
+        The name of the data set whose allocation parameters should be used.
 
-    Raises:
-        BackupError: When allocation fails
+    Returns
+    -------
+    int
+        Return code.
+
+    Raises
+    ------
+    BackupError
+        When allocation fails.
     """
     module = AnsibleModuleHelper(argument_spec={})
     alloc_cmd = """  ALLOC -
@@ -247,6 +299,20 @@ def _allocate_model(ds, model):
 
 
 def _copy_pds(ds, bk_dsn):
+    """Copy a dataset.
+
+    Parameters
+    ----------
+    ds : str
+        The name of the data set to be allocated.
+    bk_dsn : str
+        The destination data set to copy to.
+
+    Returns
+    -------
+    str
+        Copied dataset.
+    """
     dds = dict(OUTPUT=bk_dsn, INPUT=ds)
     copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
     return iebcopy(copy_cmd, dds=dds)
@@ -254,6 +320,30 @@ def _copy_pds(ds, bk_dsn):
 
 class BackupError(Exception):
     def __init__(self, message, rc=None, stdout=None, stderr=None):
+        """Error during backup.
+
+        Parameters
+        ----------
+        message : str
+            Human readable string describing the exception.
+        rc : int
+            Return code.
+        stdout : str
+            Standard output.
+        stderr : str
+            Standard error.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        rc : int
+            Return code.
+        stdout : str
+            Standard output.
+        stderr : str
+            Standard error.
+        """
         self.msg = 'An error occurred during backup: "{0}"'.format(message)
         self.rc = rc
         self.stdout = stdout

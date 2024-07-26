@@ -571,8 +571,8 @@ def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, d
 def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        MVS_DEST_ARCHIVE = get_tmp_ds_name()
-        DATASET = get_tmp_ds_name(3,3)
+        MVS_DEST_ARCHIVE = get_tmp_ds_name(symbols=True)
+        DATASET = get_tmp_ds_name(3,3,symbols=True)
         HLQ ="ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                     base_name=DATASET,
@@ -593,7 +593,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
         # Write some content into src
         test_line = "this is a test line"
         for ds in ds_to_write:
-            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name").replace('$', '\\$')))
 
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
@@ -605,7 +605,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
             format=format_dict,
         )
         # remote data_sets from host
-        hosts.all.shell(cmd="drm {0}*".format(DATASET))
+        hosts.all.shell(cmd="drm {0}*".format(DATASET.replace("$", "/$")))
 
         if format == "terse":
             del format_dict["format_options"]["terse_pack"]
@@ -1099,3 +1099,89 @@ def test_mvs_unarchive_fail_copy_remote_src(ansible_zos_module):
             assert result.get("failed", False) is True
     finally:
         tmp_folder.cleanup()
+
+@pytest.mark.ds
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_gdg_unarchive(ansible_zos_module, dstype, format):
+    try:
+        HLQ = "ANSIBLE"
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name(symbols=True)
+        archive_data_set = get_tmp_ds_name(symbols=True)
+        results = hosts.all.zos_data_set(
+            batch = [
+                { "name":data_set_name, "state":"present", "type":"gdg", "limit":3},
+                { "name":f"{data_set_name}(+1)", "state":"present", "type":dstype},
+                { "name":f"{data_set_name}(+1)", "state":"present", "type":dstype},
+            ]
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        target_ds_list = [f"{data_set_name}.G0001V00", f"{data_set_name}.G0002V00"]
+        ds_to_write = target_ds_list
+        if dstype in ["pds", "pdse"]:
+            target_member_list = []
+            for ds in target_ds_list:
+                target_member_list.extend(
+                    create_multiple_members(ansible_zos_module=hosts,
+                                        pds_name=ds,
+                                        member_base_name="MEM",
+                                        n=2
+                    )
+                )
+            ds_to_write = target_member_list
+        # Write some content into src
+        test_line = "this is a test line"
+        for ds in ds_to_write:
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds))
+
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"] = dict(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
+        if format == "terse":
+            del format_dict["format_options"]["terse_pack"]
+        archive_result = hosts.all.zos_archive(
+            src=[f"{data_set_name}(0)",f"{data_set_name}(-1)" ],
+            dest=archive_data_set,
+            format=format_dict,
+        )
+        for result in archive_result.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("dest") == archive_data_set
+            assert f"{data_set_name}.G0001V00" in result.get("archived")
+            assert f"{data_set_name}.G0002V00" in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                assert archive_data_set in c_result.get("stdout")
+
+        hosts.all.zos_data_set(
+            batch=[
+                {"name": f"{data_set_name}(-1)", "state": "absent", "type": "gdg"},
+                {"name": f"{data_set_name}(0)", "state": "absent", "type": "gdg"},
+            ]
+        )
+        unarchive_result = hosts.all.zos_unarchive(
+            src=archive_data_set,
+            format=format_dict,
+            remote_src=True
+        )
+        for result in unarchive_result.contacted.values():
+            assert result.get("changed") is True
+            assert len(result.get("missing")) == 0
+            assert f"{data_set_name}.G0001V00" in result.get("targets")
+            assert f"{data_set_name}.G0002V00" in result.get("targets")
+            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                assert f"{data_set_name}.G0001V00" in c_result.get("stdout")
+                assert f"{data_set_name}.G0002V00" in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd=f"drm {HLQ}.*")
+

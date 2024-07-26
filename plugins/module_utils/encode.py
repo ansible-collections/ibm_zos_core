@@ -17,7 +17,6 @@ __metaclass__ = type
 from tempfile import NamedTemporaryFile, mkstemp, mkdtemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
-from ansible.module_utils.six import PY3
 
 import shutil
 import errno
@@ -42,11 +41,7 @@ try:
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 
 class Defaults:
@@ -511,7 +506,7 @@ class EncodeUtils(object):
             if src_type == "PO":
                 temp_src = mkdtemp()
                 rc, out, err = copy.copy_pds2uss(src, temp_src)
-            if src_type == "VSAM":
+            if src_type == "KSDS":
                 reclen, space_u = self.listdsi_data_set(src.upper())
                 # RDW takes the first 4 bytes in the VB format, hence we need to add an extra buffer to the vsam max recl.
                 reclen += 4
@@ -520,7 +515,7 @@ class EncodeUtils(object):
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
                 rc, out, err = copy.copy_ps2uss(temp_ps, temp_src)
-            if dest_type == "PS" or dest_type == "VSAM":
+            if dest_type == "PS" or dest_type == "KSDS":
                 temp_dest_fo = NamedTemporaryFile()
                 temp_dest = temp_dest_fo.name
             if dest_type == "PO":
@@ -530,7 +525,7 @@ class EncodeUtils(object):
                 if not dest_type:
                     convert_rc = True
                 else:
-                    if dest_type == "VSAM":
+                    if dest_type == "KSDS":
                         reclen, space_u = self.listdsi_data_set(dest.upper())
                         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
                         reclen += 4

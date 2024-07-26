@@ -67,6 +67,8 @@ backup_name
 
   If \ :literal:`dest`\  is a data set member and \ :literal:`backup\_name`\  is not provided, the data set member will be backed up to the same partitioned data set with a randomly generated member name.
 
+  If \ :emphasis:`backup\_name`\  is a generation data set (GDS), it must be a relative positive name (for example, \ :literal:`HLQ.USER.GDG(+1)`\ ).
+
   | **required**: False
   | **type**: str
 
@@ -104,6 +106,10 @@ dest
   When the \ :literal:`dest`\  is an existing VSAM (RRDS), then the source must be an RRDS. The VSAM (RRDS) will be deleted and recreated following the process outlined in the \ :literal:`volume`\  option.
 
   When \ :literal:`dest`\  is and existing VSAM (LDS), then source must be an LDS. The VSAM (LDS) will be deleted and recreated following the process outlined in the \ :literal:`volume`\  option.
+
+  \ :literal:`dest`\  can be a previously allocated generation data set (GDS) or a new GDS.
+
+  When \ :literal:`dest`\  is a generation data group (GDG), \ :literal:`src`\  must be a GDG too. The copy will allocate successive new generations in \ :literal:`dest`\ , the module will verify it has enough available generations before starting the copy operations.
 
   When \ :literal:`dest`\  is a data set, you can override storage management rules by specifying \ :literal:`volume`\  if the storage class being used has GUARANTEED\_SPACE=YES specified, otherwise, the allocation will fail. See \ :literal:`volume`\  for more volume related processes.
 
@@ -298,6 +304,10 @@ src
 
   If \ :literal:`src`\  is a VSAM data set, \ :literal:`dest`\  must also be a VSAM.
 
+  If \ :literal:`src`\  is a generation data set (GDS), it must be a previously allocated one.
+
+  If \ :literal:`src`\  is a generation data group (GDG), \ :literal:`dest`\  can be another GDG or a USS directory.
+
   Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
 
   Required unless using \ :literal:`content`\ .
@@ -334,6 +344,8 @@ volume
 dest_data_set
   Data set attributes to customize a \ :literal:`dest`\  data set to be copied into.
 
+  Some attributes only apply when \ :literal:`dest`\  is a generation data group (GDG).
+
   | **required**: False
   | **type**: dict
 
@@ -343,7 +355,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library, gdg
 
 
   space_primary
@@ -468,6 +480,68 @@ dest_data_set
 
     | **required**: False
     | **type**: str
+
+
+  limit
+    Sets the \ :emphasis:`limit`\  attribute for a GDG.
+
+    Specifies the maximum number, from 1 to 255(up to 999 if extended), of generations that can be associated with the GDG being defined.
+
+    \ :emphasis:`limit`\  is required when \ :emphasis:`type=gdg`\ .
+
+    | **required**: False
+    | **type**: int
+
+
+  empty
+    Sets the \ :emphasis:`empty`\  attribute for a GDG.
+
+    If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+
+    If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
+
+    | **required**: False
+    | **type**: bool
+
+
+  scratch
+    Sets the \ :emphasis:`scratch`\  attribute for a GDG.
+
+    Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+
+    | **required**: False
+    | **type**: bool
+
+
+  purge
+    Sets the \ :emphasis:`purge`\  attribute for a GDG.
+
+    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the \ :literal:`scratch`\  option is set.
+
+    | **required**: False
+    | **type**: bool
+
+
+  extended
+    Sets the \ :emphasis:`extended`\  attribute for a GDG.
+
+    If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+
+    If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+
+    | **required**: False
+    | **type**: bool
+
+
+  fifo
+    Sets the \ :emphasis:`fifo`\  attribute for a GDG.
+
+    If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+
+    If true, the order is the oldest GDS defined to the newest GDS.
+
+    | **required**: False
+    | **type**: bool
 
 
 
@@ -635,7 +709,7 @@ Examples
      zos_copy:
        src: /path/to/foo.conf
        dest: /etc/foo.conf
-       mode: 0644
+       mode: "0644"
        group: foo
        owner: bar
 
@@ -794,6 +868,19 @@ Examples
        dest: HLQ.PRINT.NEW
        asa_text: true
 
+   - name: Copy a file to a new generation data set.
+     zos_copy:
+       src: /path/to/uss/src
+       dest: HLQ.TEST.GDG(+1)
+       remote_src: true
+
+   - name: Copy a local file and take a backup of the existing file with a GDS.
+     zos_copy:
+       src: /path/to/local/file
+       dest: /path/to/dest
+       backup: true
+       backup_name: HLQ.BACKUP.GDG(+1)
+
 
 
 
@@ -814,6 +901,10 @@ Notes
    This module uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
    Beginning in version 1.8.x, zos\_copy will no longer attempt to correct a copy of a data type member into a PDSE that contains program objects. You can control this behavior using module option \ :literal:`executable`\  that will signify an executable is being copied into a PDSE with other executables. Mixing data type members with program objects will result in a (FSUM8976,./zos\_copy.html) error.
+
+   It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
+
+   To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
 
 
 

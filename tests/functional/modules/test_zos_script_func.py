@@ -15,12 +15,14 @@
 
 from __future__ import absolute_import, division, print_function
 
+import os
+import tempfile
 import pytest
 __metaclass__ = type
 
 
 # Using || to concatenate strings without extra spaces.
-rexx_script_args = """/* REXX */
+REXX_SCRIPT_ARGS = """/* REXX */
 parse arg A ',' B
 say 'args are ' || A || ',' || B
 return 0
@@ -28,7 +30,7 @@ return 0
 """
 
 # For validating that chdir gets honored by the module.
-rexx_script_chdir = """/* REXX */
+REXX_SCRIPT_CHDIR = """/* REXX */
 address syscall 'getcwd cwd'
 say cwd
 return 0
@@ -37,7 +39,7 @@ return 0
 
 # For testing a default template. Note that the Jinja variable is static
 # and it's always called playbook_msg.
-rexx_script_template_default = """/* REXX */
+REXX_SCRIPT_TEMPLATE_DEFAULT = """/* REXX */
 say '{{ playbook_msg }}'
 return 0
 
@@ -45,7 +47,7 @@ return 0
 
 # For testing templates with custom markers. Here the markers are static
 # too (always '((', '))', '&$' and '$&').
-rexx_script_template_custom = """/* REXX */
+REXX_SCRIPT_TEMPLATE_CUSTOM = """/* REXX */
 &$ This is a comment that should create problems if not substituted $&
 say '(( playbook_msg ))'
 return 0
@@ -56,38 +58,38 @@ return 0
 def create_script_content(msg, script_type):
     """Returns a string containing either a valid REXX script or a valid
     Python script. The script will print the given message."""
+
+    if not script_type in ['rexx','python']:
+        raise ValueError(f'Type {script_type} is not valid.')
     if script_type == 'rexx':
         # Without the comment in the first line, the interpreter will not be
         # able to run the script.
         # Without the last blank line, the REXX interpreter will throw
         # an error.
-        return """/* REXX */
-say '{0}'
+        content = f"""/* REXX */
+say '{msg}'
 return 0
 
-""".format(msg)
-    elif script_type == 'python':
-        return """msg = "{0}"
-print(msg)
-""".format(msg)
+"""
     else:
-        raise Exception('Type {0} is not valid.'.format(script_type))
+        content = f"""msg = "{msg}"
+print(msg)
+"""
+    return content
 
 
 def create_python_script_stderr(msg, rc):
     """Returns a Python script that will write out to STDERR and return
     a given RC. The RC can be 0, but for testing it would be better if it
     was something else."""
-    return """import sys
-print('{0}', file=sys.stderr)
-exit({1})
-""".format(msg, rc)
+    return f"""import sys
+print('{msg}', file=sys.stderr)
+exit({rc})
+"""
 
 
 def create_local_file(content, suffix):
     """Creates a tempfile that has the given content."""
-    import os
-    import tempfile
 
     fd, file_path = tempfile.mkstemp(
         prefix='zos_script',
@@ -95,15 +97,13 @@ def create_local_file(content, suffix):
     )
     os.close(fd)
 
-    with open(file_path, 'w') as f:
+    with open(file_path, 'w', encoding="utf-8") as f:
         f.write(content)
 
     return file_path
 
 
 def test_rexx_script_without_args(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
@@ -127,8 +127,6 @@ def test_rexx_script_without_args(ansible_zos_module):
 
 
 def test_rexx_remote_script(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
@@ -176,16 +174,14 @@ def test_rexx_remote_script(ansible_zos_module):
 
 
 def test_rexx_script_with_args(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
-        rexx_script = rexx_script_args
+        rexx_script = REXX_SCRIPT_ARGS
         script_path = create_local_file(rexx_script, 'rexx')
 
         args = '1,2'
-        cmd = "{0} '{1}'".format(script_path, args)
+        cmd = f"{script_path} '{args}'"
 
         zos_script_result = hosts.all.zos_script(
             cmd=cmd
@@ -195,7 +191,7 @@ def test_rexx_script_with_args(ansible_zos_module):
             assert result.get('changed') is True
             assert result.get('failed', False) is False
             assert result.get('rc') == 0
-            assert result.get('stdout', '').strip() == 'args are {0}'.format(args)
+            assert result.get('stdout', '').strip() == f'args are {args}'
             assert result.get('stderr', '') == ''
     finally:
         if os.path.exists(script_path):
@@ -203,12 +199,10 @@ def test_rexx_script_with_args(ansible_zos_module):
 
 
 def test_rexx_script_chdir(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
-        rexx_script = rexx_script_chdir
+        rexx_script = REXX_SCRIPT_CHDIR
         script_path = create_local_file(rexx_script, 'rexx')
 
         tmp_remote_dir = '/zos_script_tests'
@@ -238,8 +232,6 @@ def test_rexx_script_chdir(ansible_zos_module):
 
 
 def test_python_script(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
@@ -265,8 +257,6 @@ def test_python_script(ansible_zos_module):
 
 
 def test_rexx_script_creates_option(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
@@ -299,8 +289,6 @@ def test_rexx_script_creates_option(ansible_zos_module):
 
 
 def test_rexx_script_removes_option(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
@@ -326,18 +314,17 @@ def test_rexx_script_removes_option(ansible_zos_module):
 
 
 def test_script_template_with_default_markers(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
-        rexx_script = rexx_script_template_default
+        rexx_script = REXX_SCRIPT_TEMPLATE_DEFAULT
         script_path = create_local_file(rexx_script, 'rexx')
 
         # Updating the vars available to the tasks.
-        template_vars = dict(
-            playbook_msg='Success'
-        )
+        template_vars = {
+            "playbook_msg":'Success'
+        }
+        # pylint: disable-next=protected-access
         for host in hosts['options']['inventory_manager']._inventory.hosts.values():
             host.vars.update(template_vars)
 
@@ -358,30 +345,29 @@ def test_script_template_with_default_markers(ansible_zos_module):
 
 
 def test_script_template_with_custom_markers(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:
-        rexx_script = rexx_script_template_custom
+        rexx_script = REXX_SCRIPT_TEMPLATE_CUSTOM
         script_path = create_local_file(rexx_script, 'rexx')
 
         # Updating the vars available to the tasks.
-        template_vars = dict(
-            playbook_msg='Success'
-        )
+        template_vars = {
+            "playbook_msg":'Success'
+        }
+        # pylint: disable-next=protected-access
         for host in hosts['options']['inventory_manager']._inventory.hosts.values():
             host.vars.update(template_vars)
 
         zos_script_result = hosts.all.zos_script(
             cmd=script_path,
             use_template=True,
-            template_parameters=dict(
-                variable_start_string='((',
-                variable_end_string='))',
-                comment_start_string='&$',
-                comment_end_string='$&',
-            )
+            template_parameters={
+                "variable_start_string":'((',
+                "variable_end_string":'))',
+                "comment_start_string":'&$',
+                "comment_end_string":'$&',
+            }
         )
 
         for result in zos_script_result.contacted.values():
@@ -396,8 +382,6 @@ def test_script_template_with_custom_markers(ansible_zos_module):
 
 
 def test_python_script_with_stderr(ansible_zos_module):
-    import os
-
     hosts = ansible_zos_module
 
     try:

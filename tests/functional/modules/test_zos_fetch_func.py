@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,12 +16,16 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import stat
+import re
+import pytest
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
 from shellescape import quote
 
+# pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+# pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 __metaclass__ = type
@@ -87,22 +91,22 @@ def extract_member_name(data_set):
     return member
 
 def create_and_populate_test_ps_vb(ansible_zos_module, name):
-    params=dict(
-        name=name,
-        type='seq',
-        record_format='vb',
-        record_length='3180',
-        block_size='3190'
-    )
+    params={
+        "name":name,
+        "type":'seq',
+        "record_format":'vb',
+        "record_length":'3180',
+        "block_size":'3190'
+    }
     ansible_zos_module.all.zos_data_set(**params)
-    ansible_zos_module.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, name))
+    ansible_zos_module.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{name}\"")
 
 
 def delete_test_ps_vb(ansible_zos_module, name):
-    params=dict(
-        name=name,
-        state='absent'
-    )
+    params={
+        "name":name,
+        "state":'absent'
+    }
     ansible_zos_module.all.zos_data_set(**params)
 
 
@@ -117,11 +121,11 @@ def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None)
         key_length (int, optional) -- Key length (only for KSDS data sets).
         key_offset (int, optional) -- Key offset (only for KSDS data sets).
     """
-    params = dict(
-        name=name,
-        type=ds_type,
-        state="present"
-    )
+    params = {
+        "name":name,
+        "type":ds_type,
+        "state":"present"
+    }
     if ds_type == "ksds":
         params["key_length"] = key_length
         params["key_offset"] = key_offset
@@ -131,13 +135,16 @@ def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None)
 
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="/etc/profile", dest="/tmp/", flat=True)
+    params = {
+        "src":"/etc/profile",
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/profile"
     results = None
 
     try:
         results = hosts.all.zos_fetch(**params)
-        print(results.contacted.values())
 
         for result in results.contacted.values():
 
@@ -151,9 +158,14 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
 
 
 def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
-    open("/tmp/profile", "w").close()
+    with open("/tmp/profile", "w",encoding="utf-8") as file:
+        file.close()
     hosts = ansible_zos_module
-    params = dict(src="/etc/profile", dest="/tmp/", flat=True)
+    params = {
+        "src":"/etc/profile",
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/profile"
     local_checksum = checksum(dest_path, hash_func=sha256)
 
@@ -170,7 +182,11 @@ def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
 
 def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="/etc/profile", dest="/tmp/", flat=True)
+    params = {
+        "src":"/etc/profile",
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/profile"
     hosts.all.zos_fetch(**params)
     local_checksum = checksum(dest_path, hash_func=sha256)
@@ -188,9 +204,19 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = get_tmp_ds_name()
-    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="m", space_primary=5)
-    hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
-    params = dict(src=TEST_PS, dest="/tmp/", flat=True)
+    hosts.all.zos_data_set(
+        name=TEST_PS,
+        state="present",
+        type="seq",
+        space_type="m",
+        space_primary=5
+    )
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PS}\"")
+    params = {
+        "src":TEST_PS,
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/" + TEST_PS
     try:
         results = hosts.all.zos_fetch(**params)
@@ -210,7 +236,11 @@ def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS_VB = get_tmp_ds_name(3)
     create_and_populate_test_ps_vb(ansible_zos_module, TEST_PS_VB)
-    params = dict(src=TEST_PS_VB, dest="/tmp/", flat=True)
+    params = {
+        "src":TEST_PS_VB,
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/" + TEST_PS_VB
     try:
         results = hosts.all.zos_fetch(**params)
@@ -232,8 +262,12 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="pdse")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
-    hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
-    params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PDS_MEMBER}\"")
+    params = {
+        "src":TEST_PDS,
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/" + TEST_PDS
     try:
         results = hosts.all.zos_fetch(**params)
@@ -261,12 +295,12 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
         # start by creating the vsam dataset (could use a helper instead? )
         hosts.all.file(path=temp_jcl_path, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL.format(volume_1, test_vsam)), temp_jcl_path)
+            cmd=f"echo {quote(KSDS_CREATE_JCL.format(volume_1, test_vsam))} > {temp_jcl_path}/SAMPLE"
         )
         hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(temp_jcl_path), location="uss", wait_time_s=30
+            src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
         )
-        hosts.all.shell(cmd="echo \"{0}\c\" > {1}".format(TEST_DATA, USS_FILE))
+        hosts.all.shell(cmd=f"echo \"{TEST_DATA}\c\" > {USS_FILE}")
         hosts.all.zos_encode(
             src=USS_FILE,
             dest=test_vsam,
@@ -276,7 +310,12 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
             },
         )
 
-        params = dict(src=test_vsam, dest="/tmp/", flat=True, is_binary=True)
+        params = {
+            "src":test_vsam,
+            "dest":"/tmp/",
+            "flat":True,
+            "is_binary":True
+        }
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -284,9 +323,8 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
             assert result.get("module_stderr") is None
             assert result.get("dest") == dest_path
             assert os.path.exists(dest_path)
-            file = open(dest_path, 'r')
+            file = open(dest_path, 'r',encoding="utf-8")
             read_file = file.read()
-            print(read_file)
             assert read_file == TEST_DATA
 
     finally:
@@ -301,7 +339,11 @@ def test_fetch_vsam_empty_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     src_ds = "TEST.VSAM.DATA"
     create_vsam_data_set(hosts, src_ds, "ksds", key_length=12, key_offset=0)
-    params = dict(src=src_ds, dest="/tmp/", flat=True)
+    params = {
+        "src":src_ds,
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/" + src_ds
     try:
         results = hosts.all.zos_fetch(**params)
@@ -323,10 +365,13 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     hosts.all.zos_data_set(name=TEST_PDS, state="present")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
-    hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
-    params = dict(
-        src=TEST_PDS_MEMBER, dest="/tmp/", flat=True, is_binary=True
-    )
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PDS_MEMBER}\"")
+    params = {
+        "src":TEST_PDS_MEMBER,
+        "dest":"/tmp/",
+        "flat":True,
+        "is_binary":True
+    }
     dest_path = "/tmp/" + extract_member_name(TEST_PDS_MEMBER)
     try:
         results = hosts.all.zos_fetch(**params)
@@ -347,9 +392,20 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
 def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = get_tmp_ds_name()
-    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="m", space_primary=5)
-    hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
-    params = dict(src=TEST_PS, dest="/tmp/", flat=True, is_binary=True)
+    hosts.all.zos_data_set(
+        name=TEST_PS,
+        state="present",
+        type="seq",
+        space_type="m",
+        space_primary=5
+    )
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PS}\"")
+    params = {
+        "src":TEST_PS,
+        "dest":"/tmp/",
+        "flat":True,
+        "is_binary":True
+    }
     dest_path = "/tmp/" + TEST_PS
     try:
         results = hosts.all.zos_fetch(**params)
@@ -371,8 +427,13 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
     hosts.all.zos_data_set(name=TEST_PDS, state="present", type="pdse")
     TEST_PDS_MEMBER = TEST_PDS + "(MEM)"
     hosts.all.zos_data_set(name=TEST_PDS_MEMBER, type="member")
-    hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PDS_MEMBER))
-    params = dict(src=TEST_PDS, dest="/tmp/", flat=True, is_binary=True)
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PDS_MEMBER}\"")
+    params = {
+        "src":TEST_PDS,
+        "dest":"/tmp/",
+        "flat":True,
+        "is_binary":True
+    }
     dest_path = "/tmp/" + TEST_PDS
     try:
         results = hosts.all.zos_fetch(**params)
@@ -392,7 +453,11 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
 def test_fetch_sequential_data_set_empty(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()
-    params = dict(src=src, dest="/tmp/", flat=True)
+    params = {
+        "src":src,
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/" + src
     try:
         hosts.all.zos_data_set(name=src, type='seq', state='present')
@@ -421,7 +486,11 @@ def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
         record_format="fba",
         record_length=25,
     )
-    params = dict(src=pds_name, dest="/tmp/", flat=True)
+    params = {
+        "src":pds_name,
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -444,7 +513,11 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
     )
     hosts.all.zos_data_set(name=pds_name, type="pds")
     hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
-    params = dict(src=pds_name + "(MYDATA)", dest="/tmp/", flat=True)
+    params = {
+        "src":pds_name + "(MYDATA)",
+        "dest":"/tmp/",
+        "flat":True
+    }
     dest_path = "/tmp/MYDATA"
     try:
         results = hosts.all.zos_fetch(**params)
@@ -462,12 +535,12 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
 
 def test_fetch_missing_uss_file_does_not_fail(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(
-        src="/tmp/dummy_file_on_remote_host",
-        dest="/tmp/",
-        flat=True,
-        fail_on_missing=False,
-    )
+    params = {
+        "src":"/tmp/dummy_file_on_remote_host",
+        "dest":"/tmp/",
+        "flat":True,
+        "fail_on_missing":False,
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -480,7 +553,11 @@ def test_fetch_missing_uss_file_does_not_fail(ansible_zos_module):
 
 def test_fetch_missing_uss_file_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="/tmp/dummy_file_on_remote_host", dest="/tmp/", flat=True)
+    params = {
+        "src":"/tmp/dummy_file_on_remote_host",
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -492,9 +569,12 @@ def test_fetch_missing_uss_file_fails(ansible_zos_module):
 def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()
-    params = dict(
-        src=src, dest="/tmp/", flat=True, fail_on_missing=False
-    )
+    params = {
+        "src":src,
+        "dest":"/tmp/",
+        "flat":True,
+        "fail_on_missing":False
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -509,7 +589,11 @@ def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
 def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PDS = get_tmp_ds_name()
-    params = dict(src=TEST_PDS + "(DUMMY)", dest="/tmp/", flat=True)
+    params = {
+        "src":TEST_PDS + "(DUMMY)",
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -522,7 +606,11 @@ def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
 def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()
-    params = dict(src=src, dest="/tmp/", flat=True)
+    params = {
+        "src":src,
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -535,16 +623,26 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
 def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     TEST_PS = get_tmp_ds_name()
-    hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_type="m", space_primary=5)
+    hosts.all.zos_data_set(
+        name=TEST_PS,
+        state="present",
+        type="seq",
+        space_type="m",
+        space_primary=5
+    )
     ds_name = TEST_PS
     hosts.all.zos_data_set(name=TEST_PS, state="present")
-    hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(TEST_DATA, TEST_PS))
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PS}\"")
     dest_path = "/tmp/" + TEST_PS
-    with open(dest_path, "w") as infile:
+    with open(dest_path, "w", encoding="utf-8") as infile:
         infile.write(DUMMY_DATA)
 
     local_checksum = checksum(dest_path, hash_func=sha256)
-    params = dict(src=TEST_PS, dest="/tmp/", flat=True)
+    params = {
+        "src":TEST_PS,
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -573,13 +671,17 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
     )
     hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
     os.mkdir(dest_path)
-    with open(full_path, "w") as infile:
+    with open(full_path, "w", encoding="utf-8") as infile:
         infile.write(DUMMY_DATA)
-    with open(dest_path + "/NEWMEM", "w") as infile:
+    with open(dest_path + "/NEWMEM", "w", encoding="utf-8") as infile:
         infile.write(DUMMY_DATA)
 
     prev_timestamp = os.path.getmtime(dest_path)
-    params = dict(src=pds_name, dest="/tmp/", flat=True)
+    params = {
+        "src":pds_name,
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -595,10 +697,14 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
 def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
     dest_path = "/tmp/profile"
-    with open(dest_path, "w"):
-        pass
+    with open(dest_path, "w",encoding="utf-8") as dest_file:
+        dest_file.close()
     os.chmod(dest_path, stat.S_IREAD)
-    params = dict(src="/etc/profile", dest="/tmp/", flat=True)
+    params = {
+        "src":"/etc/profile",
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -614,7 +720,11 @@ def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
     dest_path = "/tmp/" + TEST_PDS
     os.mkdir(dest_path)
     os.chmod(dest_path, stat.S_IREAD)
-    params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
+    params = {
+        "src":TEST_PDS,
+        "dest":"/tmp/",
+        "flat":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -629,11 +739,15 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     src = get_tmp_ds_name()[:25]
     dest_path = "/tmp/"+ src
     hosts.all.zos_data_set(name="OMVSADM." + src, type="seq", state="present")
-    params = dict(src=src, dest="/tmp/", flat=True, use_qualifier=True)
+    params = {
+        "src":src,
+        "dest":"/tmp/",
+        "flat":True,
+        "use_qualifier":True
+    }
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("data_set_type") == "Sequential"
             assert result.get("module_stderr") is None
@@ -641,15 +755,19 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
-        hosts.all.zos_data_set(src="OMVSADM." + src, state="absent")
+        hosts.all.zos_data_set(name="OMVSADM." + src, state="absent")
 
 
 def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
     z_int = z_python_interpreter
     hosts = ansible_zos_module
     remote_host = z_int[1].get("inventory").strip(",")
-    dest_path = "/tmp/{0}/etc/ssh/ssh_config".format(remote_host)
-    params = dict(src="/etc/ssh/ssh_config", dest="/tmp/", flat=False)
+    dest_path = f"/tmp/{remote_host}/etc/ssh/ssh_config"
+    params = {
+        "src":"/etc/ssh/ssh_config",
+        "dest":"/tmp/",
+        "flat":False
+    }
     try:
         shutil.rmtree("/tmp/" + remote_host)
     except FileNotFoundError:
@@ -664,3 +782,133 @@ def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
     finally:
         if os.path.exists(dest_path):
             shutil.rmtree("/tmp/" + remote_host)
+
+
+def test_fetch_sequential_data_set_with_special_chars(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_PS = get_tmp_ds_name(symbols=True)
+
+    hosts.all.zos_data_set(
+        name=TEST_PS,
+        state="present",
+        type="seq",
+        space_type="m",
+        space_primary=5
+    )
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PS}\"")
+    params = dict(src=TEST_PS, dest="/tmp/", flat=True)
+    dest_path = f"/tmp/{TEST_PS}"
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Sequential"
+            assert result.get("module_stderr") is None
+            assert result.get("dest") == dest_path
+            assert os.path.exists(dest_path)
+    finally:
+        hosts.all.zos_data_set(name=TEST_PS, state="absent")
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+
+
+@pytest.mark.parametrize("generation", ["0", "-1"])
+def test_fetch_gds_from_gdg(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+    TEST_GDS = f"{TEST_GDG}({generation})"
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDS}\"")
+    params = dict(src=TEST_GDS, dest="/tmp/", flat=True)
+    dest_path = ""
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Sequential"
+            assert result.get("module_stderr") is None
+
+            # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+            dest_path = result.get("dest", "")
+            dest_pattern = r"G[0-9]+V[0-9]+"
+
+            assert TEST_GDG in dest_path
+            assert re.fullmatch(dest_pattern, dest_path.split(".")[-1])
+            assert os.path.exists(dest_path)
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(-1)", state="absent")
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
+        if dest_path != "" and os.path.exists(dest_path):
+            os.remove(dest_path)
+
+
+def test_error_fetch_inexistent_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+    TEST_GDS = f"{TEST_GDG}(+1)"
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    params = dict(src=TEST_GDS, dest="/tmp/", flat=True)
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+            assert "does not exist" in result.get("msg", "")
+
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
+
+def test_fetch_gdg(ansible_zos_module):
+    hosts = ansible_zos_module
+    TEST_GDG = get_tmp_ds_name()
+
+    hosts.all.zos_data_set(name=TEST_GDG, state="present", type="gdg", limit=3)
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+    hosts.all.zos_data_set(name=f"{TEST_GDG}(+1)", state="present", type="seq")
+
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDG}(-1)\"")
+    hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_GDG}(0)\"")
+
+    params = dict(src=TEST_GDG, dest="/tmp/", flat=True)
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "Generation Data Group"
+            assert result.get("module_stderr") is None
+
+            # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+            dest_path = result.get("dest", "")
+            dest_pattern = r"G[0-9]+V[0-9]+"
+
+            assert TEST_GDG in dest_path
+            assert os.path.exists(dest_path)
+
+            # Checking that the contents of the dir match with what we would expect to get:
+            # Multiple generation data sets conforming to the pattern defined above.
+            for file_name in os.listdir(dest_path):
+                assert re.fullmatch(dest_pattern, file_name.split(".")[-1])
+                assert os.path.exists(os.path.join(dest_path, file_name))
+
+    finally:
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(-1)", state="absent")
+        hosts.all.zos_data_set(name=f"{TEST_GDG}(0)", state="absent")
+        hosts.all.zos_data_set(name=TEST_GDG, state="absent")
+
+        if os.path.exists(dest_path):
+            shutil.rmtree(dest_path)

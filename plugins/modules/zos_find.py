@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2023
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,6 +31,7 @@ description:
 author:
   - "Asif Mahmud (@asifmahmud)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Fernando Flores (@fernandofloresg)"
 options:
   age:
     description:
@@ -108,11 +109,13 @@ options:
       - C(nonvsam) refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
+      - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
     choices:
       - nonvsam
       - cluster
       - data
       - index
+      - gdg
     type: str
     required: false
     default: "nonvsam"
@@ -125,6 +128,43 @@ options:
     required: false
     aliases:
       - volumes
+  empty:
+    description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
+      - If provided, will search for data sets with I(empty) attribute set as provided.
+    type: bool
+    required: false
+  extended:
+    description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
+      - If provided, will search for data sets with I(extended) attribute set as provided.
+    type: bool
+    required: false
+  fifo:
+    description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
+      - If provided, will search for data sets with I(fifo) attribute set as provided.
+    type: bool
+    required: false
+  limit:
+    description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
+      - If provided, will search for data sets with I(limit) attribute set as provided.
+    type: int
+    required: false
+  purge:
+    description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
+      - If provided, will search for data sets with I(purge) attribute set as provided.
+    type: bool
+    required: false
+  scratch:
+    description:
+      - A GDG attribute, only valid when C(resource_type=gdg).
+      - If provided, will search for data sets with I(scratch) attribute set as provided.
+    type: bool
+    required: false
+
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
     be searched, it should be cataloged first. The L(zos_data_set,./zos_data_set.html) module can be
@@ -185,6 +225,16 @@ EXAMPLES = r"""
     patterns:
       - USER.*
     resource_type: cluster
+
+- name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type: gdg
+    limit: 30
+    scratch: true
+    purge: true
+
 """
 
 
@@ -248,12 +298,12 @@ import re
 import time
 import datetime
 import math
+import json
 
 from copy import deepcopy
 from re import match as fullmatch
 
 
-from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -268,26 +318,33 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper
 )
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 
 def content_filter(module, patterns, content):
     """ Find data sets that match any pattern in a list of patterns and
-    contains the given content
+    contains the given content.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used in the module
-        patterns {list[str]} -- A list of data set patterns
-        content {str} -- The content string to search for within matched data sets
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used in the module.
+    patterns : list[str]
+        A list of data set patterns.
+    content : str
+        The content string to search for within matched data sets.
 
-    Returns:
-        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing
+    Returns
+    -------
+    dict[ps=set, pds=dict[str, str], searched=int]
+        A dictionary containing
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
+
+    Raises
+    ------
+        fail_json: Non-zero return code received while executing ZOAU shell command 'dgrep'.
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
@@ -320,15 +377,25 @@ def content_filter(module, patterns, content):
 def data_set_filter(module, pds_paths, patterns):
     """ Find data sets that match any pattern in a list of patterns.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used
-        patterns {list[str]} -- A list of data set patterns
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    patterns : list[str]
+        A list of data set patterns.
 
-    Returns:
-        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing
+    Returns
+    -------
+    dict[ps=set, pds=dict[str, str], searched=int]
+        A dictionary containing
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while executing ZOAU shell command 'dls'.
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     patterns = pds_paths or patterns
@@ -371,15 +438,21 @@ def pds_filter(module, pds_dict, member_patterns, excludes=None):
     """ Return all PDS/PDSE data sets whose members match any of the patterns
     in the given list of member patterns.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used in the module
-        pds_dict {dict[str, str]} -- A dictionary where each key is the name of
-                                    of the PDS/PDSE and the value is a list of
-                                    members belonging to the PDS/PDSE
-        member_patterns {list} -- A list of member patterns to search for
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used in the module.
+    pds_dict : dict[str, str]
+        A dictionary where each key is the name of
+        of the PDS/PDSE and the value is a list of
+        members belonging to the PDS/PDSE.
+    member_patterns : list
+        A list of member patterns to search for.
 
-    Returns:
-        dict[str, set[str]] -- Filtered PDS/PDSE with corresponding members
+    Returns
+    -------
+    dict[str, set[str]]
+        Filtered PDS/PDSE with corresponding members.
     """
     filtered_pds = dict()
     for pds, members in pds_dict.items():
@@ -411,12 +484,22 @@ def vsam_filter(module, patterns, resource_type, age=None):
     """ Return all VSAM data sets that match any of the patterns
     in the given list of patterns.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used
-        patterns {list[str]} -- A list of data set patterns
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    patterns : list[str]
+        A list of data set patterns.
 
-    Returns:
-        set[str]-- Matched VSAM data sets
+    Returns
+    -------
+    set[str]
+        Matched VSAM data sets.
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while executing ZOAU shell command 'vls'.
     """
     filtered_data_sets = set()
     now = time.time()
@@ -446,14 +529,26 @@ def data_set_attribute_filter(
 ):
     """ Filter data sets based on attributes such as age or size.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used
-        data_sets {set[str]} -- A set of data set names
-        size {int} -- The size, in bytes, that should be used to filter data sets
-        age {int} -- The age, in days, that should be used to filter data sets
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    data_sets : set[str]
+        A set of data set names.
+    size : int
+        The size, in bytes, that should be used to filter data sets.
+    age : int
+        The age, in days, that should be used to filter data sets.
 
-    Returns:
-        set[str] -- Matched data sets filtered by age and size
+    Returns
+    -------
+    set[str]
+        Matched data sets filtered by age and size.
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while executing ZOAU shell command 'dls'.
     """
     filtered_data_sets = set()
     now = time.time()
@@ -479,11 +574,71 @@ def data_set_attribute_filter(
                 age and not size and _age_filter(ds_age, now, age)
             ) or
             (
-                size and not age and _size_filter(int(out[5]), size)
+                size and not age and _size_filter(int(out[6]), size)
             )
         ):
             filtered_data_sets.add(ds)
     return filtered_data_sets
+
+
+def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
+    """ Filter Generation Data Groups based on their attributes.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    data_sets : set[str]
+        A set of data set names.
+    limit : int
+        The limit GDG attribute that should be used to filter GDGs.
+    empty : bool
+        The empty GDG attribute, that should be used to filter GDGs.
+    fifo : bool
+        The fifo GDG attribute, that should be used to filter GDGs.
+    purge : bool
+        The purge GDG attribute, that should be used to filter GDGs.
+    scratch : bool
+        The scratch GDG attribute, that should be used to filter GDGs.
+    extended : bool
+        The extended GDG attribute, that should be used to filter GDGs.
+
+    Returns
+    -------
+    set[str]
+        Matched GDG base names.
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while executing ZOAU shell command 'dls'.
+    """
+    filtered_data_sets = set()
+    for ds in data_sets:
+        rc, out, err = _dls_wrapper(ds, data_set_type='gdg', list_details=True, json=True)
+
+        if rc != 0:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'dls'",
+                rc=rc, stdout=out, stderr=err
+            )
+        try:
+            response = json.loads(out)
+            gdgs = response['data']['gdgs']
+            for gdg in gdgs:
+                if (
+                    gdg['limit'] == (gdg['limit'] if limit is None else limit) and
+                    gdg['empty'] == (gdg['empty'] if empty is None else empty) and
+                    gdg['purge'] == (gdg['purge'] if purge is None else purge) and
+                    gdg['fifo'] == (gdg['fifo'] if fifo is None else fifo) and
+                    gdg['scratch'] == (gdg['scratch'] if scratch is None else scratch) and
+                    gdg['extended'] == (gdg['extended'] if extended is None else extended)
+                ):
+                    filtered_data_sets.add(gdg['base'])
+        except Exception as e:
+            module.fail_json(repr(e))
+
+        return filtered_data_sets
 
 
 # TODO:
@@ -493,13 +648,24 @@ def volume_filter(module, data_sets, volumes):
     """Return only the data sets that are allocated in one of the volumes from
     the list of input volumes.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object
-        data_sets {set[str]} -- A set of data sets to be filtered
-        volumes {list[str]} -- A list of input volumes
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object.
+    data_sets : set[str]
+        A set of data sets to be filtered.
+    volumes : list[str]
+        A list of input volumes.
 
-    Returns:
-        set[str] -- The filtered data sets
+    Returns
+    -------
+    set[str]
+        The filtered data sets.
+
+    Raises
+    ------
+    fail_json
+        Unable to retrieve VTOC information.
     """
     filtered_data_sets = set()
     for volume in volumes:
@@ -517,15 +683,21 @@ def volume_filter(module, data_sets, volumes):
 
 
 def exclude_data_sets(module, data_set_list, excludes):
-    """Remove data sets that match any pattern in a list of patterns
+    """Remove data sets that match any pattern in a list of patterns.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used
-        data_set_list {set[str]} -- A set of data sets to be filtered
-        excludes {list[str]} -- A list of data set patterns to be excluded
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    data_set_list : set[str]
+        A set of data sets to be filtered.
+    excludes : list[str]
+        A list of data set patterns to be excluded.
 
-    Returns:
-        set[str] -- The remaining data sets that have not been excluded
+    Returns
+    -------
+    set[str]
+        The remaining data sets that have not been excluded.
     """
     for ds in set(data_set_list):
         for ex_pat in excludes:
@@ -536,15 +708,21 @@ def exclude_data_sets(module, data_set_list, excludes):
 
 
 def _age_filter(ds_date, now, age):
-    """Determine whether a given date is older than 'age'
+    """Determine whether a given date is older than 'age'.
 
-    Arguments:
-        ds_date {str} -- The input date in the format YYYY/MM/DD
-        now {float} -- The time elapsed since the last epoch
-        age {int} -- The age, in days, to compare against
+    Parameters
+    ----------
+    ds_date : str
+        The input date in the format YYYY/MM/DD.
+    now : float
+        The time elapsed since the last epoch.
+    age : int
+        The age, in days, to compare against.
 
-    Returns:
-        bool -- Whether 'ds_date' is older than 'age'
+    Returns
+    -------
+    bool
+        Whether 'ds_date' is older than 'age'.
     """
     year, month, day = list(map(int, ds_date.split("/")))
     if year == "0000":
@@ -560,14 +738,24 @@ def _age_filter(ds_date, now, age):
 
 
 def _get_creation_date(module, ds):
-    """Retrieve the creation date for a given data set
+    """Retrieve the creation date for a given data set.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used
-        ds {str} -- The name of the data set
+    Arguments
+    ---------
+    module : AnsibleModule
+        The Ansible module object being used.
+    ds : str
+        The name of the data set.
 
-    Returns:
-        str -- The data set creation date in the format "YYYY/MM/DD"
+    Returns
+    -------
+    str
+        The data set creation date in the format "YYYY/MM/DD".
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while retrieving data set age.
     """
     rc, out, err = mvs_cmd.idcams(
         "  LISTCAT ENT('{0}') HISTORY".format(ds), authorized=True
@@ -595,14 +783,19 @@ def _get_creation_date(module, ds):
 
 
 def _size_filter(ds_size, size):
-    """ Determine whether a given size is greater than the input size
+    """Determine whether a given size is greater than the input size.
 
-    Arguments:
-        ds_size {int} -- The input size, in bytes
-        size {int} -- The size, in bytes, to compare against
+    Parameters
+    ----------
+    ds_size : int
+        The input size, in bytes.
+    size : int
+        The size, in bytes, to compare against.
 
-    Returns:
-        bool -- Whether 'ds_size' is greater than 'age'
+    Returns
+    -------
+    bool
+        Whether 'ds_size' is greater than 'age'.
     """
     if size >= 0 and ds_size >= abs(size):
         return True
@@ -612,15 +805,26 @@ def _size_filter(ds_size, size):
 
 
 def _match_regex(module, pattern, string):
-    """ Determine whether the input regex pattern matches the string
+    """Determine whether the input regex pattern matches the string.
 
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used
-        pattern {str} -- The regular expression to match
-        string {str} -- The string to match
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    pattern : str
+        The regular expression to match.
+    string : str
+        The string to match.
 
-    Returns:
-        re.Match -- A Match object that matches the pattern to string
+    Returns
+    -------
+    re.Match
+        A Match object that matches the pattern to string.
+
+    Raises
+    ------
+    fail_json
+        Invalid regular expression.
     """
     try:
         return fullmatch(pattern, string, re.IGNORECASE)
@@ -639,7 +843,28 @@ def _dgrep_wrapper(
     verbose=False,
     context=None
 ):
-    """A wrapper for ZOAU 'dgrep' shell command"""
+    """A wrapper for ZOAU 'dgrep' shell command.
+
+    Parameters
+    ----------
+    data_set_pattern : str
+        Data set pattern where to search for content.
+    content : str
+        Content to search across the data sets specified in data_set_pattern.
+    ignore_case : bool
+        Whether to ignore case or not.
+    line_num : bool
+        Whether to display line numbers.
+    verbose : bool
+        Extra verbosity, prints names of datasets being searched.
+    context : int
+        If context lines are requested, then up to <NUM> lines before and after the matching line are also printed.
+
+    Returns
+    -------
+    tuple(int,str,str)
+        Return code, standard output and standard error.
+    """
     dgrep_cmd = "dgrep"
     if ignore_case:
         dgrep_cmd += " -i"
@@ -660,9 +885,36 @@ def _dls_wrapper(
     u_time=False,
     size=False,
     verbose=False,
-    migrated=False
+    migrated=False,
+    data_set_type="",
+    json=False,
 ):
-    """A wrapper for ZOAU 'dls' shell command"""
+    """A wrapper for ZOAU 'dls' shell command.
+
+    Parameters
+    ----------
+    data_set_pattern : str
+        Data set pattern.
+    list_details : bool
+        Display detailed information based on the dataset type.
+    u_time : bool
+        Display last usage time.
+    size : bool
+        Display size in list.
+    verbose : bool
+        Display verbose information.
+    migrated : bool
+        Display migrated data sets.
+    data_set_type : str
+        Data set type to look for.
+    json : bool
+        Return content in json format.
+
+    Returns
+    -------
+    tuple(int,str,str)
+        Return code, standard output and standard error.
+    """
     dls_cmd = "dls"
     if migrated:
         dls_cmd += " -m"
@@ -675,13 +927,32 @@ def _dls_wrapper(
             dls_cmd += " -s"
     if verbose:
         dls_cmd += " -v"
+    if data_set_type:
+        dls_cmd += f" -t{data_set_type}"
+    if json:
+        dls_cmd += " -j"
 
     dls_cmd += " {0}".format(quote(data_set_pattern))
     return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd)
 
 
 def _vls_wrapper(pattern, details=False, verbose=False):
-    """A wrapper for ZOAU 'vls' shell command"""
+    """A wrapper for ZOAU 'vls' shell command.
+
+    Parameters
+    ----------
+    pattern : str
+        Data set pattern.
+    details : bool
+        Display detailed information based on the dataset type.
+    verbose : bool
+        Display verbose information.
+
+    Returns
+    -------
+    tuple(int,str,str)
+        Return code, standard output and standard error.
+    """
     vls_cmd = "vls"
     if details:
         vls_cmd += " -l"
@@ -693,6 +964,20 @@ def _vls_wrapper(pattern, details=False, verbose=False):
 
 
 def _match_resource_type(type1, type2):
+    """Compare that the two types match.
+
+    Parameters
+    ----------
+    type1 : str
+        One of the types that are expected to match.
+    type2 : str
+        One of the types that are expected to match.
+
+    Returns
+    -------
+    bool
+        If the types match.
+    """
     if type1 == type2:
         return True
     if type1 == "CLUSTER" and type2 not in ("DATA", "INDEX"):
@@ -701,13 +986,17 @@ def _match_resource_type(type1, type2):
 
 
 def _ds_type(ds_name):
-    """Utility function to determine the DSORG of a data set
+    """Utility function to determine the DSORG of a data set.
 
-    Arguments:
-        ds_name {str} -- The name of the data set
+    Parameters
+    ----------
+    ds_name : str
+        The name of the data set.
 
-    Returns:
-        str -- The DSORG of the data set
+    Returns
+    -------
+    str
+        The DSORG of the data set.
     """
     rc, out, err = mvs_cmd.ikjeft01(
         "  LISTDS '{0}'".format(ds_name),
@@ -720,6 +1009,25 @@ def _ds_type(ds_name):
 
 
 def run_module(module):
+    """Initialize parameters.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        Ansible Module.
+
+    Returns
+    -------
+    dict
+        Arguments.
+
+    Raises
+    ------
+    fail_json
+        Failed to process age.
+    fail_json
+        Failed to process size.
+    """
     # Parameter initialization
     age = module.params.get('age')
     age_stamp = module.params.get('age_stamp')
@@ -734,6 +1042,12 @@ def run_module(module):
     )
     resource_type = module.params.get('resource_type').upper()
     volume = module.params.get('volume') or module.params.get('volumes')
+    limit = module.params.get('limit')
+    empty = module.params.get('empty')
+    scratch = module.params.get('scratch')
+    purge = module.params.get('purge')
+    extended = module.params.get('extended')
+    fifo = module.params.get('fifo')
 
     res_args = dict(data_sets=[])
     filtered_data_sets = set()
@@ -791,9 +1105,11 @@ def run_module(module):
 
         res_args['examined'] = init_filtered_data_sets.get("searched")
 
-    else:
+    elif resource_type == "CLUSTER":
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         res_args['examined'] = len(filtered_data_sets)
+    elif resource_type == "GDG":
+        filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended)
 
     # Filter out data sets that match one of the patterns in 'excludes'
     if excludes and not pds_paths:
@@ -816,6 +1132,13 @@ def run_module(module):
 
 
 def main():
+    """Initialize module when it's run as main.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             age=dict(type="str", required=False),
@@ -846,14 +1169,20 @@ def main():
             ),
             resource_type=dict(
                 type="str", required=False, default="nonvsam",
-                choices=["cluster", "data", "index", "nonvsam"]
+                choices=["cluster", "data", "index", "nonvsam", "gdg"]
             ),
             volume=dict(
                 type="list",
                 elements="str",
                 required=False,
                 aliases=["volumes"]
-            )
+            ),
+            limit=dict(type="int", required=False),
+            empty=dict(type="bool", required=False),
+            purge=dict(type="bool", required=False),
+            scratch=dict(type="bool", required=False),
+            extended=dict(type="bool", required=False),
+            fifo=dict(type="bool", required=False),
         )
     )
 
@@ -878,9 +1207,15 @@ def main():
             arg_type="str",
             required=False,
             default="nonvsam",
-            choices=["cluster", "data", "index", "nonvsam"]
+            choices=["cluster", "data", "index", "nonvsam", "gdg"]
         ),
-        volume=dict(arg_type="list", required=False, aliases=["volumes"])
+        volume=dict(arg_type="list", required=False, aliases=["volumes"]),
+        limit=dict(type="int", required=False),
+        empty=dict(type="bool", required=False),
+        purge=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False),
+        fifo=dict(type="bool", required=False),
     )
     try:
         BetterArgParser(arg_def).parse_args(module.params)

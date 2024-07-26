@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023 - 2024
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -36,6 +36,7 @@ options:
       - I(src) can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
       - MVS data sets supported types are C(SEQ), C(PDS), C(PDSE).
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
     type: str
     required: true
   format:
@@ -145,6 +146,7 @@ options:
     description:
       - A list of directories, files or data set names to extract from the
         archive.
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
       - When C(include) is set, only those files will we be extracted leaving
         the remaining files in the archive.
       - Mutually exclusive with exclude.
@@ -155,6 +157,7 @@ options:
     description:
       - List the directory and file or data set names that you would like to
         exclude from the unarchive action.
+      - GDS relative names are supported C(e.g. USER.GDG(-1)).
       - Mutually exclusive with include.
     type: list
     elements: str
@@ -349,6 +352,13 @@ EXAMPLES = r'''
       - USER.ARCHIVE.TEST1
       - USER.ARCHIVE.TEST2
 
+# Unarchive a GDS
+- name: Unarchive a terse data set and excluding data sets from unpacking.
+  zos_unarchive:
+    src: "USER.ARCHIVE(0)"
+    format:
+      name: terse
+
 # List option
 - name: List content from XMIT
   zos_unarchive:
@@ -356,8 +366,8 @@ EXAMPLES = r'''
     format:
       name: xmit
       format_options:
-        use_adrdssu: True
-    list: True
+        use_adrdssu: true
+    list: true
 '''
 
 RETURN = r'''
@@ -623,6 +633,8 @@ class MVSUnarchive(Unarchive):
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
         self.source_size = 0
+        if data_set.DataSet.is_gds_relative_name(self.src):
+            self.src = data_set.DataSet.resolve_gds_absolute_name(self.src)
 
     def dest_type(self):
         return "MVS"
@@ -709,14 +721,14 @@ class MVSUnarchive(Unarchive):
     def _get_include_data_sets_cmd(self):
         include_cmd = "INCL( "
         for include_ds in self.include:
-            include_cmd += " '{0}', - \n".format(include_ds)
+            include_cmd += " '{0}', - \n".format(include_ds.upper())
         include_cmd += " ) - \n"
         return include_cmd
 
     def _get_exclude_data_sets_cmd(self):
         exclude_cmd = "EXCL( - \n"
         for exclude_ds in self.exclude:
-            exclude_cmd += " '{0}', - \n".format(exclude_ds)
+            exclude_cmd += " '{0}', - \n".format(exclude_ds.upper())
         exclude_cmd += " ) - \n"
         return exclude_cmd
 
@@ -1143,12 +1155,12 @@ def run_module():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
     unarchive = get_unarchive_handler(module)
 
+    if not unarchive.src_exists():
+        module.fail_json(msg="{0} does not exists, please provide a valid src.".format(module.params.get("src")))
+
     if unarchive.list:
         unarchive.list_archive_content()
         module.exit_json(**unarchive.result)
-
-    if not unarchive.src_exists():
-        module.fail_json(msg="{0} does not exists, please provide a valid src.".format(module.params.get("src")))
 
     unarchive.extract_src()
 

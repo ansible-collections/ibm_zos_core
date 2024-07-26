@@ -22,6 +22,8 @@ module: zos_apf
 version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
+  - "Rich Parker (@richp405)"
+  - "Fernando Flores (@fernandofloresg))"
 short_description: Add or remove libraries to Authorized Program Facility (APF)
 description:
   - Adds or removes libraries to Authorized Program Facility (APF).
@@ -59,7 +61,7 @@ options:
       - The identifier for the volume containing the library specified in
         the C(library) parameter. The values must be one the following.
       - 1. The volume serial number.
-      - 2. Six asterisks (******), indicating that the system must use the
+      - 2. Six asterisks C(******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
       - 3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
@@ -176,7 +178,7 @@ options:
             specified on the C(library) parameter. The values must be one of the
             following.
           - 1. The volume serial number
-          - 2. Six asterisks (******), indicating that the system must use the
+          - 2. Six asterisks C(******), indicating that the system must use the
             volume serial number of the current system residence (SYSRES)
             volume.
           - 3. *MCAT*, indicating that the system must use the volume serial
@@ -221,7 +223,7 @@ EXAMPLES = r'''
 - name: Add a library (cataloged) to the APF list and persistence
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
-    force_dynamic: True
+    force_dynamic: true
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
 - name: Remove a library from the APF list and persistence
@@ -239,7 +241,7 @@ EXAMPLES = r'''
     batch:
       - library: SOME.SEQ.DS1
       - library: SOME.SEQ.DS2
-        sms: True
+        sms: true
       - library: SOME.SEQ.DS3
         volume: T12345
 - name: Print the APF list matching library pattern or volume serial number
@@ -303,8 +305,10 @@ import traceback
 
 try:
     from zoautil_py import zsystem
+    from zoautil_py import ztypes
 except Exception:
     zsystem = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
@@ -357,6 +361,107 @@ def backupOper(module, src, backup, tmphlq=None):
         module.fail_json(msg="creating backup has failed")
 
     return backup_name
+
+
+def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, persistent=None):
+    """Returns a string that can run an APF command in a shell.
+
+    Parameters
+    ----------
+    library : str
+        Name of the data set that will be operated on.
+    opt : str
+        APF operation (either add or del)
+    volume : str
+        Volume of library.
+    sms : bool
+        Whether library is managed by SMS.
+    force_dynamic : bool
+        Whether the APF list format should be dynamic.
+    persistent : dict
+        Options for persistent entries that should be modified by APF.
+
+    Returns
+    -------
+    str
+        APF command.
+    """
+    operation = "-A" if opt == "add" else "-D"
+    operation_args = library
+
+    if volume:
+        operation_args = f"{operation_args},{volume}"
+    elif sms:
+        operation_args = f"{operation_args},SMS"
+
+    command = f"apfadm {operation} '{operation_args}'"
+
+    if force_dynamic:
+        command = f"{command} -f"
+
+    if persistent:
+        if opt == "add":
+            persistent_args = f""" -P '{persistent.get("addDataset")}' """
+        else:
+            persistent_args = f""" -R '{persistent.get("delDataset")}' """
+
+        if persistent.get("marker"):
+            persistent_args = f""" {persistent_args} -M '{persistent.get("marker")}' """
+
+        command = f"{command} {persistent_args}"
+
+    return command
+
+
+def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
+    """Returns a string that can run an APF command for multiple operations
+    in a shell.
+
+    Parameters
+    ----------
+    batch : list
+        List of dicts containing different APF add/del operations.
+    force_dynamic : bool
+        Whether the APF list format should be dynamic.
+    persistent : dict
+        Options for persistent entries that should be modified by APF.
+
+    Returns
+    -------
+    str
+        APF command.
+    """
+    command = "apfadm"
+
+    for item in batch:
+        operation = "-A" if item["opt"] == "add" else "-D"
+        operation_args = item["dsname"]
+
+        volume = item.get("volume")
+        sms = item.get("sms")
+
+        if volume:
+            operation_args = f"{operation_args},{volume}"
+        elif sms:
+            operation_args = f"{operation_args},SMS"
+
+        command = f"{command} {operation} '{operation_args}'"
+
+    if force_dynamic:
+        command = f"{command} -f"
+
+    if persistent:
+        if persistent.get("addDataset"):
+            persistent_args = f""" -P '{persistent.get("addDataset")}' """
+        else:
+            persistent_args = f""" -R '{persistent.get("delDataset")}' """
+
+        if persistent.get("marker"):
+            persistent_args = f""" {persistent_args} -M '{persistent.get("marker")}' """
+
+        command = f"{command} {persistent_args}"
+
+    return command
 
 
 def main():
@@ -508,7 +613,8 @@ def main():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    library = parsed_args.get('library')
+    library = parsed_args.get("library")
+
     state = parsed_args.get('state')
     force_dynamic = parsed_args.get('force_dynamic')
     volume = parsed_args.get('volume')
@@ -548,11 +654,21 @@ def main():
                 item['opt'] = opt
                 item['dsname'] = item.get('library')
                 del item['library']
-            ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
+            # Commenting this line to implement a workaround for names with '$'. ZOAU should
+            # release a fix soon so we can uncomment this Python API call.
+            # ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
+            apf_command = make_apf_batch_command(batch, force_dynamic=force_dynamic, persistent=persistent)
+            rc, out, err = module.run_command(apf_command)
+            ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
         else:
             if not library:
                 module.fail_json(msg='library is required')
-            ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
+            # Commenting this line to implement a workaround for names with '$'. ZOAU should
+            # release a fix soon so we can uncomment this Python API call.
+            # ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
+            apf_command = make_apf_command(library, opt, volume=volume, sms=sms, force_dynamic=force_dynamic, persistent=persistent)
+            rc, out, err = module.run_command(apf_command)
+            ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response
@@ -560,6 +676,10 @@ def main():
     result['stderr'] = operErr
     result['rc'] = operRc
     result['stdout'] = operOut
+
+    if operation != 'list' and operRc == 0:
+        result['changed'] = True
+
     if operation == 'list':
         try:
             data = json.loads(operOut)

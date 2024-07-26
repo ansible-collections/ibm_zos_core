@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import time
-from pipes import quote
+from shlex import quote
 from pprint import pprint
 import pytest
 
@@ -514,9 +514,9 @@ c_pgm="""#include <stdio.h>
 int main(int argc, char** argv)
 {
     char dsname[ strlen(argv[1]) + 4];
-    sprintf(dsname, "//'%s'", argv[1]);
+    sprintf(dsname, \\\"//'%s'\\\", argv[1]);
     FILE* member;
-    member = fopen(dsname, "rb,type=record");
+    member = fopen(dsname, \\\"rb,type=record\\\");
     sleep(300);
     fclose(member);
     return 0;
@@ -581,12 +581,11 @@ def test_data_member_force_delete(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
 
-        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
-            content=call_c_jcl.format(default_data_set_name, member_1),
-            dest='/tmp/disp_shr/call_c_pgm.jcl',
-            force=True
+        hosts.all.file(path="/tmp/disp_shr/", state="directory")
+        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > /tmp/disp_shr/pdse-lock.c")
+        hosts.all.shell(
+            cmd=f"echo \"{call_c_jcl.format(default_data_set_name, member_1)}\""+
+            " > /tmp/disp_shr/call_c_pgm.jcl"
         )
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
 

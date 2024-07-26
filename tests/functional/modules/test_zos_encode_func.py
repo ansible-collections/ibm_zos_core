@@ -16,9 +16,12 @@ from os import path
 from shellescape import quote
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+import pytest
+import re
 
 __metaclass__ = type
 
+SHELL_EXECUTABLE = "/bin/sh"
 USS_FILE = "/tmp/encode_data"
 USS_NONE_FILE = "/tmp/none"
 USS_DEST_FILE = "/tmp/converted_data"
@@ -720,6 +723,32 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
 
 
+def test_uss_encoding_conversion_src_with_special_chars(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name(symbols=True)
+        hosts.all.zos_data_set(name=src_data_set, state="present", type="seq")
+
+        results = hosts.all.zos_encode(
+            src=src_data_set,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("src") == src_data_set
+            assert result.get("dest") == src_data_set
+            assert result.get("backup_name") is None
+            assert result.get("changed") is True
+            assert result.get("msg") is None
+
+    finally:
+        hosts.all.zos_data_set(name=src_data_set, state="absent")
+
+
 def test_pds_backup(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -1025,3 +1054,340 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+
+
+@pytest.mark.parametrize("generation", ["-1", "+1"])
+def test_gdg_encoding_conversion_src_with_invalid_generation(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name(3, 2)
+
+    try:
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        results = hosts.all.zos_encode(
+            src=f"{ds_name}({generation})",
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("msg") is not None
+            assert "not cataloged" in result.get("msg")
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+    finally:
+        hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_gdg_encoding_conversion_invalid_gdg(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name(3, 2)
+
+    try:
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        results = hosts.all.zos_encode(
+            src=ds_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("msg") is not None
+            assert "not yet supported" in result.get("msg")
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+    finally:
+        hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_encoding_conversion_gds_to_uss_file(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        ds_name = get_tmp_ds_name()
+        gds_name = f"{ds_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{gds_name}\"")
+
+        results = hosts.all.zos_encode(
+            src=gds_name,
+            dest=USS_DEST_FILE,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            src = result.get("src", "")
+            assert ds_name in src
+            assert re.fullmatch(gds_pattern, src.split(".")[-1])
+
+            assert result.get("dest") == USS_DEST_FILE
+            assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_FILE))
+        for result in tag_results.contacted.values():
+            assert TO_ENCODING in result.get("stdout")
+    finally:
+        hosts.all.file(path=USS_DEST_FILE, state="absent")
+        hosts.all.shell(cmd=f"""drm "{ds_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_encoding_conversion_gds_no_dest(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        ds_name = get_tmp_ds_name()
+        gds_name = f"{ds_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\"  \"{gds_name}\"")
+
+        results = hosts.all.zos_encode(
+            src=gds_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        dest_existence_check = hosts.all.shell(
+            cmd=f"""dcat "{gds_name}" | wc -l """,
+            executable=SHELL_EXECUTABLE
+        )
+
+        # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            src = result.get("src", "")
+            dest = result.get("dest", "")
+
+            assert ds_name in src
+            assert re.fullmatch(gds_pattern, src.split(".")[-1])
+            assert src == dest
+
+            assert result.get("changed") is True
+
+        for result in dest_existence_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+
+    finally:
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.shell(cmd=f"""drm "{gds_name}" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_encoding_conversion_uss_file_to_gds(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        ds_name = get_tmp_ds_name()
+        gds_name = f"{ds_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {ds_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{ds_name}(+1)" """)
+
+        hosts.all.shell(cmd=f"echo \"{TEST_DATA}\" > {USS_FILE}")
+
+        results = hosts.all.zos_encode(
+            src=USS_FILE,
+            dest=gds_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        dest_existence_check = hosts.all.shell(
+            cmd=f"""dcat "{gds_name}" | wc -l """,
+            executable=SHELL_EXECUTABLE
+        )
+
+        # Checking that we got a dest of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            dest = result.get("dest", "")
+            assert ds_name in dest
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+
+            assert result.get("src") == USS_FILE
+            assert result.get("changed") is True
+
+        for result in dest_existence_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+
+    finally:
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.shell(cmd=f"""drm "{gds_name}" """)
+        hosts.all.shell(cmd=f"drm {ds_name}")
+
+
+def test_encoding_conversion_gds_to_mvs(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        src_name = get_tmp_ds_name()
+        dest_name = get_tmp_ds_name()
+        gds_name = f"{src_name}(0)"
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_name}")
+        hosts.all.shell(cmd=f"""dtouch -tseq "{src_name}(+1)" """)
+        hosts.all.shell(cmd=f"dtouch -tseq {dest_name}")
+
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{gds_name}\"")
+
+        results = hosts.all.zos_encode(
+            src=gds_name,
+            dest=dest_name,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            }
+        )
+
+        dest_existence_check = hosts.all.shell(
+            cmd=f"""dcat "{dest_name}" | wc -l """,
+            executable=SHELL_EXECUTABLE
+        )
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for result in results.contacted.values():
+            src = result.get("src", "")
+            assert src_name in src
+            assert re.fullmatch(gds_pattern, src.split(".")[-1])
+
+            assert result.get("dest") == dest_name
+            assert result.get("changed") is True
+
+        for result in dest_existence_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_name}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_name}")
+        hosts.all.shell(cmd=f"drm {dest_name}")
+
+
+def test_gds_encoding_conversion_when_gds_does_not_exist(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        src = get_tmp_ds_name()
+        gdg_name = get_tmp_ds_name()
+        dest = f"{gdg_name}(+1)"
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {gdg_name}")
+
+        results = hosts.all.zos_encode(
+            src=src,
+            dest=dest,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        for result in results.contacted.values():
+            assert result.get("src") == src
+            assert result.get("dest") == dest
+            assert result.get("backup_name") is None
+            assert result.get("changed") is False
+            assert result.get("failed") is True
+            assert "not cataloged" in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=gdg_name, state="absent")
+
+
+def test_gds_backup(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        backup_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{src_data_set}\"")
+
+        results = hosts.all.zos_encode(
+            src=src_data_set,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
+            backup=True,
+            backup_name=f"{backup_data_set}(+1)",
+        )
+
+        backup_check = hosts.all.shell(
+            cmd=f"""dcat "{backup_data_set}(0)" | wc -l """
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg") is None
+
+        for result in backup_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{backup_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {backup_data_set}")
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+
+def test_gds_backup_invalid_generation(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        backup_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{backup_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{src_data_set}\"")
+
+        results = hosts.all.zos_encode(
+            src=src_data_set,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
+            backup=True,
+            backup_name=f"{backup_data_set}(0)",
+        )
+
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            assert result.get("msg") is not None
+            assert "cannot be used" in result.get("msg")
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{backup_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {backup_data_set}")
+        hosts.all.shell(cmd=f"drm {src_data_set}")

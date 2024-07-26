@@ -35,7 +35,7 @@ cmd
 
   If the command contains any special characters ($, &, etc), they must be escaped using double backslashes like \\\\\\$.
 
-  For example, to display job by job name the command would be \ :literal:`cmd:"\\\\$dj''HELLO''"`\ 
+  For example, to display job by job name the command would be ``cmd:"\\$dj''HELLO''"``
 
   | **required**: True
   | **type**: str

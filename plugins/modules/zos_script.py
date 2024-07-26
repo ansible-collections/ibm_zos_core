@@ -168,6 +168,12 @@ EXAMPLES = r"""
   zos_script:
     cmd: ./scripts/PROGRAM
     removes: /u/user/pgm_input.txt
+
+- name: Run a shell script on the remote system
+  zos_script:
+    cmd: ./scripts/program.sh
+    executable: /bin/sh
+    remote_src: true
 """
 
 RETURN = r"""

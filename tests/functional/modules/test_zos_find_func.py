@@ -15,6 +15,10 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+
+
 import pytest
 
 SEQ_NAMES = [
@@ -34,6 +38,8 @@ VSAM_NAMES = [
 ]
 
 DATASET_TYPES = ['seq', 'pds', 'pdse']
+# hlq used across the test suite.
+TEST_SUITE_HLQ = "ANSIBLE"
 
 
 def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
@@ -53,6 +59,69 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
         executable='/bin/sh',
         stdin=alloc_cmd,
     )
+
+
+def test_find_gdg_data_sets(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        gdg_a = get_tmp_ds_name()
+        gdg_b = get_tmp_ds_name()
+        gdg_c = get_tmp_ds_name()
+        gdg_names = [gdg_a, gdg_b, gdg_c]
+
+        """
+        Purge can only be true when scratch is, hence only one gdg for both.
+        FIFO is disabled in the ECs and results in failure when trying to
+        create a data set.
+        one without flags and limit 3
+        """
+        hosts.all.shell(cmd=f"dtouch -tgdg -L3 {gdg_a}")
+        # one with EXTENDED flag -X
+        hosts.all.shell(cmd=f"dtouch -tgdg -L1 -X {gdg_b}")
+        # one with PURGE flag -P and SCRATCH flag -S
+        hosts.all.shell(cmd=f"dtouch -tgdg -L1 -P -S {gdg_c}")
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            resource_type="gdg",
+            limit=3,
+        )
+
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) == 1
+            assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
+            assert val.get('matched') == len(val.get('data_sets'))
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            resource_type="gdg",
+            extended=True,
+        )
+
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) == 1
+            assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
+            assert val.get('matched') == len(val.get('data_sets'))
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            resource_type="gdg",
+            purge=True,
+            scratch=True,
+        )
+
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) == 1
+            assert {"name":gdg_c, "type": "GDG"} in val.get('data_sets')
+            assert val.get('matched') == len(val.get('data_sets'))
+
+    finally:
+        # Remove one by one to avoid using an HLQ.* cuz it could cause bugs when running in parallel.
+        for ds in gdg_names:
+            hosts.all.shell(cmd=f"drm {ds}")
 
 
 def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
@@ -159,7 +228,7 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             ]
         )
         for ds in PDS_NAMES:
-            hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
+            result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
 
         find_res = hosts.all.zos_find(
             pds_paths=['TEST.FIND.PDS.FUNCTEST.*'],
@@ -263,7 +332,7 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
 def test_find_data_sets_older_than_age(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(
-        patterns=['IMSTESTL.IMS01.RESTART', 'IMSTESTL.IMS01.LGMSGL'],
+        patterns=['IMSTESTL.IMS01.RESTART', "IMSTESTL.IMS01.LGMSGL".lower()],
         age='2d'
     )
     for val in find_res.contacted.values():
@@ -325,7 +394,7 @@ def test_find_vsam_pattern(ansible_zos_module):
         for vsam in VSAM_NAMES:
             create_vsam_ksds(vsam, hosts)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.VSAM.*.*'], resource_type='cluster'
+            patterns=['TEST.FIND.VSAM.FUNCTEST.*'], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -352,7 +421,7 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
             create_vsam_ksds(vsam, hosts, volume=volume_1)
         create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=[volume_1], resource_type='cluster'
+            patterns=['TEST.FIND.VSAM.*.*'], volumes=[volume_1], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -443,3 +512,33 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
                 } for i in PDS_NAMES
             ]
         )
+
+
+def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "hello"
+    try:
+
+        special_chars = ["$", "-", "@", "#"]
+        special_names = [ "".join([get_tmp_ds_name(mlq_size=7, llq_size=6, symbols=True), special_chars[i]]) for i in range(4)]
+        # Creates a command like  dtouch dsname &&  dtouch dsname && dtouch dsname to avoid multiple ssh calls and improve test performance
+        dtouch_command = " && ".join([f"dtouch -tseq '{item}'" for item in special_names])
+        hosts.all.shell(cmd=dtouch_command)
+
+        # Creates a command like decho dsname && decho dsname && decho dsname to avoid multiple ssh calls and improve test performance
+        decho_command = " && ".join([f"decho '{search_string}' '{item}'" for item in special_names])
+        hosts.all.shell(cmd=decho_command)
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            contains=search_string
+        )
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) != 0
+            for ds in special_names:
+                assert {"name":ds, "type": "NONVSAM"} in val.get('data_sets')
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        for ds in special_names:
+            hosts.all.shell(cmd=f"drm '{ds}'")

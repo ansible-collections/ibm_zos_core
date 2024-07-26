@@ -1637,19 +1637,21 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw impor
     RawInputDefinition,
     RawOutputDefinition,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import ZOAUImportError
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 import re
-from ansible.module_utils.six import PY3
+import traceback
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
+try:
+    from zoautil_py import datasets
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
 
 ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 
@@ -2580,9 +2582,11 @@ def get_dd_name_and_key(dd):
     key = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
-        data_set_name = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
-                                               dd.get("dd_data_set").get("disposition"))
+        data_set_name, disposition = resolve_data_set_names(dd.get("dd_data_set").get("data_set_name"),
+                                                            dd.get("dd_data_set").get("disposition"),
+                                                            dd.get("dd_data_set").get("type"))
         dd.get("dd_data_set")["data_set_name"] = data_set_name
+        dd.get("dd_data_set")["disposition"] = disposition
         key = "dd_data_set"
     elif dd.get("dd_unix"):
         dd_name = dd.get("dd_unix").get("dd_name")
@@ -2627,7 +2631,7 @@ def set_extra_attributes_in_dd(dd, tmphlq, key):
     return dd
 
 
-def resolve_data_set_names(dataset, disposition):
+def resolve_data_set_names(dataset, disposition, type):
     """Resolve cases for data set names as relative gds or positive
       that could be accepted if disposition is new.
       Parameters
@@ -2636,15 +2640,27 @@ def resolve_data_set_names(dataset, disposition):
           Data set name to determine if is a GDS relative name or regular name.
       disposition : str
           Disposition of data set for it creation.
+      type : str
+          Type of dataset
       Returns
       -------
       str
           The absolute name of dataset or relative positive if disposition is new.
+      str
+          The disposition base on the system
     """
+    if disposition:
+        disp = disposition
+    else:
+        disp = "shr"
+
     if data_set.DataSet.is_gds_relative_name(dataset):
         if data_set.DataSet.is_gds_positive_relative_name(dataset):
-            if disposition and disposition == "new":
-                return dataset
+            if disp == "new":
+                if type:
+                    return str(datasets.create(dataset, type).name), "shr"
+                else:
+                    return str(datasets.create(dataset, "seq").name), "shr"
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:
@@ -2653,14 +2669,14 @@ def resolve_data_set_names(dataset, disposition):
             )
             src = data.name
             if data.is_gds_active:
-                if disposition and disposition == "new":
+                if disposition and disp == "new":
                     raise ("GDS {0} already created, incorrect parameters for disposition and data_set_name".format(src))
                 else:
-                    return src
+                    return src, disposition
             else:
                 raise ("{0} does not exist".format(src))
     else:
-        return dataset
+        return dataset, disp
 
 
 def build_data_definition(dd):

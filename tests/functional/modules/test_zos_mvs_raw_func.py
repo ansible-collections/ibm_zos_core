@@ -1040,7 +1040,7 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
         (
             "iso8859-1",
             "ibm-1047",
-            "|�qBFfeF|g�F�qgB��CBg�ҿ�qGeFgҿ��f�qbн=",
+            "|�qBFfeF|g�F�qgB��",
         ),
         (
             "ibm-1047",

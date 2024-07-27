@@ -502,7 +502,10 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
         ("text", "IDCAMS  SYSTEM"),
         (
             "base64",
-            "������@@������",
+            "8cnEw8HU4kBA4uji48XUQOLF2eXJw8Xi"
+            # the above corresponds to the following bytes:
+            # f1 c9 c4 c3 c1 d4 e2 40 40 e2 e8 e2 e3 c5 d4 40 e2 c5 d9 e5 c9 c3 c5 e2
+            # which translate in ebdic to: "1IDCAMS  SYSTEM SERVICE"
         ),
     ],
 )
@@ -994,7 +997,10 @@ def test_input_provided_as_list(ansible_zos_module):
         ("text", "LISTCAT ENTRIES"),
         (
             "base64",
-            "@�������@�������",
+            "QNPJ4uPDweNAxdXj2cnF4k1",
+            # the above corresponds to the following bytes:
+            # 40 d3 c9 e2 e3 c3 c1 e3 40 c5 d5 e3 d9 c9 c5 e2
+            # which translate in ebdic to: " LISTCAT ENTRIES"
         ),
     ],
 )
@@ -1410,7 +1416,10 @@ def test_file_record_format(ansible_zos_module, record_format):
         ("text", "IDCAMS  SYSTEM"),
         (
             "base64",
-            "�������@@������@��������@",
+            "8cnEw8HU4kBA4uji48XUQOLF2eXJw8Xi",
+            # the above corresponds to the following bytes:
+            # f1 c9 c4 c3 c1 d4 e2 40 40 e2 e8 e2 e3 c5 d4 40 e2 c5 d9 e5 c9 c3 c5 e2
+            # which translate in ebdic to: "1IDCAMS  SYSTEM SERVICES"
         ),
     ],
 )

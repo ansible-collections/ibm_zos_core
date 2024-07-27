@@ -1643,15 +1643,18 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+
+import base64
 import re
 import traceback
 
 from shlex import quote
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, zoau_io
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
+    zoau_io = ZOAUImportError(traceback.format_exc())
 
 ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 
@@ -3056,9 +3059,14 @@ def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=Non
     quoted_name = quote(name)
     if "'" not in quoted_name:
         quoted_name = "'{0}'".format(quoted_name)
-    return get_content(
-        '"//{0}"'.format(quoted_name), binary, from_encoding, to_encoding
+
+    if binary:
+        with zoau_io.RecordIO("//{0}".format(quoted_name), "r") as records:
+            content = base64.b64encode(b''.join(records.readrecords())).decode()
+    else:
+        content = get_content('"//{0}"'.format(quoted_name), from_encoding, to_encoding
     )
+    return content
 
 
 def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
@@ -3080,10 +3088,15 @@ def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
         stdout : str
                The raw content of the UNIX file.
     """
-    return get_content("{0}".format(quote(name)), binary, from_encoding, to_encoding)
+    if binary:
+        with open(name, "rb") as f:
+            content = base64.b64encode(f.read()).decode()
+    else:
+        content = get_content("{0}".format(quote(name)), from_encoding, to_encoding)
+    return content
 
 
-def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=None):
+def get_content(formatted_name, from_encoding=None, to_encoding=None):
     """Retrieve raw contents of a data set or UNIXfile.
 
     Parameters
@@ -3103,9 +3116,7 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
                The raw content of the data set or UNIX file. If unsuccessful in retrieving data, returns empty string.
     """
     module = AnsibleModuleHelper(argument_spec={})
-    conversion_command = ""
-    if not binary:
-        conversion_command = " | iconv -f {0} -t {1}".format(
+    conversion_command = " | iconv -f {0} -t {1}".format(
             quote(from_encoding), quote(to_encoding)
         )
     # * name argument should already be quoted by the time it reaches here

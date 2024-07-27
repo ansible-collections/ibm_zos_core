@@ -1,3 +1,18 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (c) IBM Corporation 2024
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import argparse
 from enum import Enum
 import itertools
@@ -12,10 +27,10 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from socket import error
 import textwrap
+import threading
 from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
     AuthenticationException, SSHException, ssh_exception
 
-# Thread pool
 from os import makedirs
 from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
@@ -30,26 +45,78 @@ from typing import List, Set, Type, Tuple
 from prettytable import PrettyTable, ALL
 
 
-# ==============================================================================
+# ------------------------------------------------------------------------------
 # Enums
-# ==============================================================================
+# ------------------------------------------------------------------------------
 class Status (Enum):
+    """
+    Represents the online/offline status of a managed node.
+
+    Attributes:
+        ONLINE : Status - The node is online.
+        OFFLINE : Status - The node is offline.
+
+    Methods:
+        number() - Returns the integer value of the status.
+        string() - Returns the string representation of the status.
+        is_equal(other) - Checks if this status is equal to another status.
+        is_online() - Checks if this status is online.
+        default() - Returns the default status (ONLINE).
+    """
+
     ONLINE=(1, "online")
     OFFLINE=(0, "offline")
 
     def __str__(self) -> str:
+        """
+        Convert the name of the project to lowercase when converting it to a string.
+
+        Return:
+            str: The lowercase name of the project.
+        """
         return self.name.lower()
 
     def number(self) -> int:
+        """
+        Returns the numerical element of the tuple.
+        1 for ONLINE and 0 for OFFLINE.
+
+        Return:
+            int: The numerical element of the tuple.
+                1 for ONLINE and 0 for OFFLINE.
+        """
         return self.value[0]
 
     def string(self) -> str:
+        """
+        Returns the string value contained in the tuple.
+        'online' for ONLINE and 'offline' for OFFLINE.
+
+        Return:
+            str: The string value contained in the tuple.
+                'online' for ONLINE and 'offline' for OFFLINE.
+        """
         return self.value[1]
 
     def is_equal(self, other) -> bool:
+        """
+        Checks if two tuples numerical value are the same.
+
+        Parameters:
+            other (status): The other tuple to compare to.
+
+        Return:
+            bool: True if the numerical tuple values are the same, False otherwise.
+        """
         return self.number() == other.number()
 
     def is_online(self) -> bool:
+        """
+        Checks if the tuple is ONLINE, if it equates to 1
+
+        Return:
+            bool: True if the tuple is ONLINE, False otherwise.
+        """
         return self.number() == 1
 
     @classmethod
@@ -57,41 +124,105 @@ class Status (Enum):
         """
         Return default status of ONLINE.
 
-        Return
-        ------
-        Status
-            Return the ONLINE status.
+        Return:
+            Status: Return the ONLINE status.
         """
         return cls.ONLINE
 
 class State (Enum):
+    """
+    This class represents the state of a job. It has three
+    possible values: success, failure, and exceeded-max-failure.
+
+    Attributes:
+        SUCCESS (State): A job succeeded execution.
+        FAILURE (State): A job failed to execute.
+        EXCEEDED (State): A job has exceeded its maximum allowable.
+        failures and will no longer be run in the thread pool.
+    """
     SUCCESS=(1, "success")
     FAILURE=(0, "failure")
     EXCEEDED=(2, "exceeded-max-failure")
 
     def __str__(self) -> str:
+        """
+        Returns the name of the state in uppercase letters.
+
+        Return:
+            str: The name of the state in uppercase letters.
+                'SUCCESS' a job succeeded execution.
+                'FAILURE' a job failed to execute.
+                'EXCEEDED' a job has exceeded its maximum allowable failures.
+        """
         return self.name.upper()
 
+
     def number(self) -> int:
+        """
+        Returns the numeric value of the state.
+
+        Return:
+            int: The numeric value of the state.
+                1 for 'SUCCESS' a job succeeded execution.
+                2 for 'FAILURE' a job failed to execute.
+                3 for 'EXCEEDED' a job has exceeded its maximum allowable failures.
+        """
         return self.value[0]
 
     def string(self) -> str:
+        """
+        Returns the string representation of the state.
+
+        Return:
+            str: The string value of the state.
+                'success' a job succeeded execution.
+                'failure' a job failed to execute.
+                'exceeded-max-failure' a job has exceeded its maximum allowable failures.
+        """
         return self.value[1]
 
-    def is_equal(self, other) -> bool:
+    def is_equal(self, other: Enum) -> bool:
+        """
+        Checks if this state is equal to another state by comparing
+        the numerical values for the two states.
+
+        Args:
+            other (State): The other state to compare to.
+
+        Return:
+            bool: True if the states are equal, False otherwise.
+        """
         return self.number() == other.number()
 
     def is_success(self) -> bool:
+        """
+        Checks if this state is successful (SUCCESS) by
+        ensuring the numerical value is 1.
+
+        Return:
+            bool: True if the state is successful, False otherwise.
+        """
         return self.number() == 1
 
     def is_failure(self) -> bool:
+        """
+        Checks if this state is a failure (FAILURE) by
+        ensuring the numerical value is 0.
+
+        Return:
+            bool: True if the state is a failure, False otherwise.
+        """
         return self.number() == 0
 
     def is_balanced(self) -> bool:
+        """
+        Checks if this state has exceeded (EXCEEDED) by
+        ensuring the numerical value is 2.
+
+        Return:
+            bool: True if the state has exceeded, False otherwise.
+        """
         return self.number() == 2
-# ==============================================================================
-# Class definitions
-# ==============================================================================
 
 # ------------------------------------------------------------------------------
 # Class Dictionary
@@ -100,15 +231,26 @@ class State (Enum):
 class Dictionary():
     """
     This is a wrapper class around a dictionary that provides additional locks
-    and logic when interacting with any of the dictionaries being accessed by
-    a thread pool to ensure successful execution.
+    and logic for when interacting with any of the entries being accessed by
+    a thread pool to ensure safe access.
     """
+
     def __init__(self):
         self._shared_dictionary = dict()
         self._lock = Lock()
 
     @contextmanager
-    def acquire_with_timeout(self, timeout=-1):
+    def _acquire_with_timeout(self, timeout: int = -1) -> bool:
+        """
+        Acquires a lock with a timeout in milliseconds.
+
+        Parameters:
+            timeout (int): The maximum time to wait for the lock in milliseconds.
+                If -1, waits indefinitely.
+
+        Return:
+            bool: True if the lock was acquired, False otherwise.
+        """
         result = self._lock.acquire(timeout=timeout)
         try:
             yield result
@@ -123,56 +265,100 @@ class Dictionary():
     #             if key in self._shared_dictionary:
     #                 self._shared_dictionary.pop(key)
 
-    def pop(self, key, timeout = 100):
+    def pop(self, key, timeout: int = 100) -> object:
         """
-        Removes the entry from the dictionary and returns it. No longer in
-        dictionary.
+        Removes the entry from the dictionary and returns it.
+        Entry will no longer in remain in the dictionary.
+
+        Parameters:
+            key (str): The key of the item to remove.
+            timeout (int): The maximum time to wait for acquiring the lock.
+                Default is 100ms.
+
+        Return:
+            object: The value of the removed item.
         """
-        with self.acquire_with_timeout(timeout) as acquired:
+        with self._acquire_with_timeout(timeout) as acquired:
             if acquired:
                 if self._shared_dictionary:
                     if key in self._shared_dictionary:
                         return self._shared_dictionary.pop(key)
         return None
 
-    def get(self, key, timeout=10):
+    def get(self, key, timeout: int = 10) -> object:
         """
-        Returns the value of the dictionary entry, entry remains in the dictionary
+        Retrieves the value associated with the given key from the dictionary.
+
+        Args:
+            key (str): The key of the entry to retrieve.
+            timeout (int): The maximum time to wait for the lock, in seconds.
+                Defaults to 10 seconds.
+
+        Return:
+            Any: The value associated with the given key.
+
+        Raises:
+            KeyError: If the key does not exist in the dictionary.
+            TimeoutError: If the lock cannot be acquired before the timeout expires.
         """
-        with self.acquire_with_timeout(timeout) as acquired:
+        with self._acquire_with_timeout(timeout) as acquired:
             if acquired:
                 return self._shared_dictionary[key]
 
-    def update(self, key, obj):
+    def update(self, key, obj) -> None:
         """
-        Replace or add a dictionary entry. Same as add(...).
+        Update the dictionary with a new entry, functions same as add(...).
+        If the entry exists, it will be replaced.
+
+        Parameters:
+            key (str): The key for the dictionary entry.
+            obj (object): The object to be stored in the dictionary.
         """
         with self._lock:
             self._shared_dictionary[key]=obj
 
-    def add(self, key, obj):
+    def add(self, key, obj) -> None:
         """
-        Replace or add a dictionary entry. Same as update(...).
+        Add an entry to the dictionary, functions same as update(...).
+        If the entry exists, it will be replaced.
+
+        Parameters:
+            key (str): The key for the dictionary entry.
+            obj (object): The object to be stored in the dictionary.
         """
         with self._lock:
             self._shared_dictionary[key]=obj
 
-    def items(self):
+    def items(self) -> None:
         """
         Returns a tuple (key, value) for each entry in the dictionary.
+
+        Returns:
+            A tuple containing the key and value of each entry in the dictionary.
         """
         with self._lock:
             return self._shared_dictionary.items()
 
-    def len(self):
+    def len(self) -> int:
         """
-        Returns the length of the dictionary. Note its a member function to the
-        class to be used such <dictionary>.len().
+        Returns the length of the dictionary.
+
+        Returns:
+            int: The length of the dictionary.
+
+        Example:
+            <dictionary>.len()
         """
         with self._lock:
              return len(self._shared_dictionary)
 
-    def keys(self):
+    def keys(self) -> List[str]:
+        """
+        Returns a list of all keys in the dictionary.
+
+        Returns:
+            List[str]: A list of all keys in the shared dictionary.
+        """
         with self._lock:
             return self._shared_dictionary.keys()
 
@@ -185,66 +371,60 @@ class Job:
     maintains all necessary attributes to allow the test case to execute on a
     z/OS managed node.
 
-    Parameters
-    ----------
-    hostname : str
-        Full hostname for the z/OS manage node the Ansible workload
-        will be executed on.
-    nodes : str
-        Node object that represents a z/OS managed node and all its
-        attributes.
-    testcase: str
-        The USS absolute path to a testcase using '/path/to/test_suite.py::test_case'
-    id: int
-        The id that will be assigned to this job, a unique identifier. The id will
-        be used as the key in a dictionary.
+    Parameters:
+    hostname (str): Full hostname for the z/OS manage node the Ansible workload will be executed on.
+    nodes (str): Node object that represents a z/OS managed node and all its attributes.
+    testcase (str): The USS absolute path to a testcase using '/path/to/test_suite.py::test_case'
+    id (int): The id that will be assigned to this job, a unique identifier. The id will be used
+        as the key in a dictionary.
     """
     def __init__(self, hostname: str, nodes: Dictionary, testcase: str, id: int):
         """
-        Parameters
-        ----------
-        hostname : str
-            Full hostname for the z/OS manage node the Ansible workload
-            will be executed on.
-        nodes : str
-            Node object that represents a z/OS managed node and all its
-            attributes.
-        testcase: str
-            The USS absolute path to a testcase using '/path/to/test_suite.py::test_case'
-        id: int
-            The id that will be assigned to this job, a unique identifier. The id will
-            be used as the key in a dictionary.
-
-        TODO:
-        - Consider instead of tracking failures as an integer, instead use a list and insert
-          the host (node) it failed on for statistical purposes.
+        Parameters:
+            hostname (str): Full hostname for the z/OS manage node the Ansible workload
+                will be executed on.
+            nodes (str): Node object that represents a z/OS managed node and all its attributes.
+            testcase (str): The USS absolute path to a testcase using '/path/to/test_suite.py::test_case'
+            id (int): The id that will be assigned to this job, a unique identifier. The id will
+                be used as the key in a dictionary.
         """
         self._hostnames: list = list()
         self._hostnames.append(hostname)
-        self.testcase: str = testcase
-        self.capture: str = None
-        self.failures: int = 0
-        self.id: int = id
-        self.rc: int = -1
-        self.successful: bool = False
-        self.elapsed: str = None
-        self.hostpattern: str = "all"
-        self.nodes: Dictionary = nodes
+        self._testcase: str = testcase
+        self._capture: str = None
+        self._failures: int = 0
+        self._id: int = id
+        self._rc: int = -1
+        self._successful: bool = False
+        self._elapsed: str = None
+        self._hostpattern: str = "all"
+        self._nodes: Dictionary = nodes
         self._stdout_and_stderr: list[Tuple[str, str, str]] = []
         self._stdout: list[Tuple[str, str, str]] = []
-        self.verbose: str = None
+        self._verbose: str = None
 
     def __str__(self) -> str:
+        """
+        This function returns a string representation of the Job.
+
+        Parameters:
+            self (Job): The Job object to be represented as a string.
+
+        Returns:
+            A string representation of the Job object.
+        """
         temp = {
-            "hostname": self.get_hostname(),
-            "testcase": self.testcase,
-            "capture": self.capture,
-            "failures": self.failures,
-            "id": self.id,
-            "rc": self.rc,
-            "successful": self.successful,
-            "elapsed": self.elapsed,
-            "pytest-command": self.get_command()
+            "_hostname": self.get_hostname(),
+            "_testcase": self._testcase,
+            "_capture": self._capture,
+            "_failures": self._failures,
+            "_id": self._id,
+            "_rc": self._rc,
+            "_successful": self._successful,
+            "_elapsed": self._elapsed,
+            "_hostpattern": self._hostpattern,
+            "_pytest-command": self.get_command(),
+            "verbose": self._verbose
         }
 
         return str(temp)
@@ -252,17 +432,24 @@ class Job:
     def get_command(self) -> str:
         """
         Returns a command designed to run with the projects pytest fixture. The command
-        is created specifically based on the ags defined, such as ZOAU or test cases to run.
+        is created specifically based on the args defined, such as ZOAU or test cases to run.
 
-        Example
-        -------
-        str
-            pytest tests/functional/modules/test_zos_operator_func.py --host-pattern=all --zinventory-raw='{"host": "some.host.at.ibm.com", "user": "ibmuser", "zoau": "/zoau/v1.3.1", "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"}'
+        Parameters:
+        self (Job)  An instance of the class containing the method.
+
+        Returns:
+        str: A string representing the pytest command to be executed.
+
+        Example Return:
+            pytest tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_pds[location1]\
+              --host-pattern=allNoneNone --zinventory-raw='{"host": "ec33025a.vmec.svl.ibm.com",\
+              "user": "omvsadm", "zoau": "/zoau/v1.3.1", "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz",\
+              "pythonpath": "/zoau/v1.3.1/lib/3.10", "extra_args": {"volumes": ["222222", "000000"]}}'
 
         """
-        node_temp = self.nodes.get(self.get_hostname())
+        node_temp = self._nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
-        return f"pytest {self.testcase} --host-pattern={self.hostpattern}{self.capture if not None else ""}{self.verbose if not None else ""} --zinventory-raw='{node_inventory}'"
+        return f"pytest {self._testcase} --host-pattern={self._hostpattern}{self._capture if not None else ""}{self._verbose if not None else ""} --zinventory-raw='{node_inventory}'"
 
 
     def get_hostnames(self) -> list[str]:
@@ -271,10 +458,8 @@ class Job:
         Includes hostnames that later replaced with new hostnames because the host is
         considered no longer functioning.
 
-        Return
-        ------
-        list[str]
-            A list of all hosts.
+        Return:
+            list[str]: A list of all hosts.
         """
         return self._hostnames
 
@@ -282,10 +467,8 @@ class Job:
         """
         Return the current hostname assigned to this node, in other words, the active hostname.
 
-        Return
-        ------
-        str
-            The current hostname assigned to this job.
+        Return:
+            str: The current hostname assigned to this job.
         """
         return self._hostnames[-1]
 
@@ -294,12 +477,10 @@ class Job:
         Return a pytest parametrized testcase that is assigned to this job.
         Incudes absolute path, testcase, and parametrization, eg <path/test.py::test[parameter]>
 
-        Return
-        ------
-        str
-            Returns absolute path, testcase, and parametrization, eg <path/test.py::test[parameter]>
+        Return:
+            str: Returns absolute path, testcase, and parametrization, eg <path/test.py::test[parameter]>
         """
-        return self.testcase
+        return self._testcase
 
     def get_failure_count(self) -> int:
         """
@@ -308,71 +489,60 @@ class Job:
         connection issue. This is used for statistical purposes or reason to assign the test
         to a new hostname.
 
-        Return
-        ------
-        int
-            Number representing number of failed executions.
+        Return:
+            int: Number representing number of failed executions.
         """
-        return self.failures
+        return self._failures
 
     def get_rc(self) -> int:
         """
-        Get the return code for the jobs execution.
+        The return code for the jobs execution.
 
-        Return
-        ------
-        int
-            Return code 0 All tests were collected and passed successfully (pytest)
-            Return code 1 Tests were collected and run but some of the tests failed (pytest)
-            Return code 2 Test execution was interrupted by the user (pytest)
-            Return code 3 Internal error happened while executing tests (pytest)
-            Return code 4 pytest command line usage error (pytest)
-            Return code 5 No tests were collected (pytest)
-            Return code 6 No z/OS nodes available.
-            Return code 7 Re-balancing of z/OS nodes were performed
-            Return code 8 Job has exceeded permitted job failures
-            Return code 9 Job has exceeded timeout
+        Return:
+            int:
+                Return code 0 All tests were collected and passed successfully (pytest)
+                Return code 1 Tests were collected and run but some of the tests failed (pytest)
+                Return code 2 Test execution was interrupted by the user (pytest)
+                Return code 3 Internal error happened while executing tests (pytest)
+                Return code 4 pytest command line usage error (pytest)
+                Return code 5 No tests were collected (pytest)
+                Return code 6 No z/OS nodes available.
+                Return code 7 Re-balancing of z/OS nodes were performed
+                Return code 8 Job has exceeded permitted job failures
+                Return code 9 Job has exceeded timeout
         """
-        return self.rc
+        return self._rc
 
     def get_id(self) -> int:
         """
         Returns the job id used as the key in the dictionary to identify the job.
 
-        Return
-        ------
-        int
-            Id of the job
+        Return:
+            int: Id of the job
         """
-        return self.id
+        return self._id
 
     def get_successful(self) -> bool:
         """
         Returns True if the job has completed execution.
 
-        Return
-        ------
-        bool
-            True if the job completed, otherwise False.
+        Return:
+            bool: True if the job completed, otherwise False.
 
-        See Also
-        --------
-        get_rc
-            Returns 0 for success, otherwise non-zero.
+        See Also:
+            get_rc() - Returns 0 for success, otherwise non-zero.
         """
-        return self.successful
+        return self._successful
 
     def get_elapsed_time(self) -> str:
         """
         Returns the elapsed time for this job, in other words,
         how long it took this job to run.
 
-        Return
-        ------
-        str
-            Time formatted as <HH:MM:SS.ss> , eg 00:05:30.64
+        Return:
+            str: Time formatted as <HH:MM:SS.ss> , eg 00:05:30.64
         """
-        return self.elapsed
+        return self._elapsed
 
     def get_nodes(self) -> Dictionary:
         """
@@ -382,56 +552,48 @@ class Job:
         if a job needs to mark the node as offline, it can easily
         access the dictionary of z/OS managed nodes to do so.
 
-        Return
-        ------
-        Dictionary[str, node]
-            Thread safe Dictionary of z/OS managed nodes.
+        Return:
+            Dictionary[str, node]: Thread safe Dictionary of z/OS managed nodes.
         """
-        return self.nodes
+        return self._nodes
 
     def get_stdout_and_stderr_msgs(self) -> list[Tuple[str, str, str]]:
         """
-        Return all stdout and stderr messages that have been assigned to this job over time as a list.
+        Return all stdout and stderr messages that have been assigned to
+        this job over time as a list.
 
-        Return
-        ------
-        list[str]
-            A list of all stderr and stdout messages.
+        Return:
+            list[str]: A list of all stderr and stdout messages.
         """
         return self._stdout_and_stderr
 
     def get_stdout_msgs(self) -> list[Tuple[str, str, str]]:
         """
-        Return all stdout messages that have been assigned to this job over time as a list.
+        Return all stdout messages that have been assigned to this job
+        over time as a list.
 
-        Return
-        ------
-        list[str]
-            A list of all stderr and stdout messages.
+        Return:
+            list[str]: A list of all stderr and stdout messages.
         """
         return self._stdout
 
     def get_stdout_and_stderr_msg(self) -> Tuple[str, str, str]:
         """
-        Return the current stdout and stderr message assigned to this node, in other words, the last message
-        resulting from this jobs execution.
+        Return the current stdout and stderr message assigned to this node, in
+        other words, the last message resulting from this jobs execution.
 
-        Return
-        ------
-        str
-            The current concatenated stderr and stdout message.
+        Return:
+            str: The current concatenated stderr and stdout message.
         """
         return self._stdout_and_stderr[-1]
 
     def get_stdout_msg(self) -> Tuple[str, str, str]:
         """
-        Return the current stdout message assigned to this node, in other words, the last message
-        resulting from this jobs execution.
+        Return the current stdout message assigned to this node, in other
+        words, the last message resulting from this jobs execution.
 
-        Return
-        ------
-        str
-            The current concatenated stderr and stdout message.
+        Return:
+            str: The current concatenated stderr and stdout message.
         """
         return self._stdout[-1]
 
@@ -439,33 +601,27 @@ class Job:
         """
         Set the jobs return code obtained from execution.
 
-        Parameters
-        ----------
-        rc : int
-            Value that is returned from the jobs execution
+        Parameters:
+            rc (int): Value that is returned from the jobs execution
         """
-        self.rc = rc
+        self._rc = rc
 
     def set_success(self) -> None:
         """
         Mark the job as having completed successfully.
 
-        Parameters
-        ----------
-        completed : bool
-            True if the job has successfully returned with a RC 0,
-            otherwise False.
+        Parameters:
+            completed (bool): True if the job has successfully returned
+            with a RC 0, otherwise False.
         """
-        self.successful = True
+        self._successful = True
 
     def add_hostname(self, hostname: str) -> None:
         """
         Set the hostname of where the job will be run.
 
-        Parameters
-        ----------
-        hostname : str
-            Hostname of the z/OS managed node.
+        Parameters:
+            hostname (str): Hostname of the z/OS managed node.
         """
         self._hostnames.append(hostname)
 
@@ -475,22 +631,20 @@ class Job:
         returns with a non-zero return code, increment the value
         so this statistic can be reused in other logic.
         """
-        self.failures +=1
+        self._failures +=1
 
     def set_elapsed_time(self, start_time: time) -> None:
         """
         Set the start time to obtain the elapsed time this
         job took to run. Should only set this when RC is zero.
 
-        Parameters
-        ----------
-        start_time : time
-            The time the job started. A start time should be
-            captured before the job is run, and passed to this
-            function after the job completes for accuracy of
-            elapsed time.
+        Parameters:
+            start_time (time): The time the job started. A start time should be
+                captured before the job is run, and passed to this
+                function after the job completes for accuracy of
+                elapsed time.
         """
-        self.elapsed = elapsed_time(start_time)
+        self._elapsed = elapsed_time(start_time)
 
     def set_capture(self, capture: bool) -> None:
         """
@@ -501,7 +655,7 @@ class Job:
         when running tests unless a test fails.
         """
         if capture is True:
-            self.capture = " -s"
+            self._capture = " -s"
 
     def set_verbose(self, verbosity: int) -> None:
         """
@@ -513,37 +667,37 @@ class Job:
         If verbosity is outside of the numerical range, no
         verbosity is set.
 
-        Parameters
-        ----------
-        int
-            - Integer range 1 - 4
-            - 1 = -v
-            - 2 = -vv
-            - 3 = -vvv
-            - 4 = -vvvv
+        Parameters:
+            int: Integer range 1 - 4
+                 1 = -v
+                 2 = -vv
+                 3 = -vvv
+                 4 = -vvvv
         """
         if verbosity == 1:
-            self.verbose = " -v"
+            self._verbose = " -v"
         elif verbosity == 2:
-            self.verbose = " -vv"
+            self._verbose = " -vv"
         elif verbosity == 3:
-            self.verbose = " -vvv"
+            self._verbose = " -vvv"
         elif verbosity == 4:
-            self.verbose = " -vvvv"
+            self._verbose = " -vvvv"
 
     def set_stdout_and_stderr(self, message: str, std_out_err: str, date_time: str) -> None:
         """
         Add a stdout and stderr concatenated message resulting from the jobs
         execution (generally std out/err resulting from pytest) the job.
 
-        Parameters
-        ----------
-        stdout_stderr : str
-            Stdout and stderr concatenated into one string.
+        Parameters:
+            message (str): Message associated with the stdout and stderr output. Message
+                describes the std_out_err entry.
+            stdout_stderr (str): Stdout and stderr concatenated into one string.
+            date_time (str): Date and time when the stdout and stderr output was generated.
         """
+
         Joblog = namedtuple('Joblog',['id', 'hostname', 'command', 'message', 'std_out_err', 'date_time'])
 
-        joblog = Joblog(self.id, self._hostnames[-1], self.get_command(), message, std_out_err, date_time)
+        joblog = Joblog(self._id, self._hostnames[-1], self.get_command(), message, std_out_err, date_time)
         self._stdout_and_stderr.append(joblog)
 
     def set_stdout(self, message: str, std_out_err: str, date_time: str) -> None:
@@ -551,14 +705,14 @@ class Job:
         Add a stdout concatenated message resulting from the jobs
         execution (generally std out/err resulting from pytest) the job.
 
-        Parameters
-        ----------
-        stdout_stderr : str
-            Stdout and stderr concatenated into one string.
+        Parameters:
+            message (str): Message associated with the stdout/stderr output.
+            stdout_stderr (str): Stdout and stderr concatenated into one string.
+            date_time (str): Date and time when the stdout/stderr was generated.
         """
         Joblog = namedtuple('Joblog',['id', 'hostname', 'command', 'message', 'std_out_err', 'date_time'])
 
-        joblog = Joblog(self.id, self._hostnames[-1], self.get_command(), message, std_out_err, date_time)
+        joblog = Joblog(self._id, self._hostnames[-1], self.get_command(), message, std_out_err, date_time)
         self._stdout.append(joblog)
 
 # ------------------------------------------------------------------------------
@@ -569,63 +723,55 @@ class Job:
 class Node:
     """
     A z/OS node suitable for Ansible tests to execute. Attributes such as 'host',
-    'zoau', 'user' and 'pyz' are maintained in this object because these attributes
-    can be in different locations on the various z/OS nodes.
-
-    A node instance will also generate a dictionary for use with pytest fixture
-    'zinventory-raw'.
+    'zoau', 'user' and 'pyz' , etc are maintained in this class instance because
+    these attributes can vary between nodes. These attributes are then used to
+    create a  dictionary for use with pytest fixture 'zinventory-raw'.
 
     This node will also track the health of the node, whether its status.ONLINE
     meaning its discoverable and useable or status.OFFLINE meaning over time,
     since being status.ONLINE, it has been determined unusable and thus marked
     as status.OFFLINE.
 
-
-    Parameters
-    ----------
-    hostname : str
-        Full hostname for the z/OS manage node the Ansible workload
-        will be executed on.
-    user : str
-        The USS user name who will run the Ansible workload on z/OS.
-    zoau: str
-        The USS absolute path to where ZOAU is installed.
-    pyz: str
-        The USS absolute path to where python is installed.
+    Parameters:
+        hostname (str): Hostname for the z/OS managed node the Ansible workload
+            will be executed on.
+        user (str): The USS user who will run the Ansible workload on z/OS.
+        zoau (str): The USS absolute path to where ZOAU is installed.
+        pyz( str): The USS absolute path to where python is installed.
     """
 
     def __init__(self, hostname: str, user: str, zoau: str, pyz: str):
         """
 
-        Parameters
-        ----------
-        hostname : str
-            Full hostname for the z/OS manage node the Ansible workload
-            will be executed on.
-        user : str
-            The USS user name who will run the Ansible workload on z/OS.
-        zoau: str
-            The USS absolute path to where ZOAU is installed.
-        pyz: str
-            The USS absolute path to where python is installed.
+        Parameters:
+            hostname (str): Hostname for the z/OS managed node the Ansible workload
+                will be executed on.
+            user (str): The USS user who will run the Ansible workload on z/OS.
+            zoau (str): The USS absolute path to where ZOAU is installed.
+            pyz( str): The USS absolute path to where python is installed.
 
         """
-        self.hostname: str = hostname
-        self.user: str = user
-        self.zoau: str = zoau
-        self.pyz: str = pyz
-        self.state: Status = Status.ONLINE
-        self.failures: set[int] = set()
-        self.balanced: set[int] = set()
-        self.inventory: dict [str, str] = {}
-        self.inventory.update({'host': hostname})
-        self.inventory.update({'user': user})
-        self.inventory.update({'zoau': zoau})
-        self.inventory.update({'pyz': pyz})
-        self.assigned: Dictionary[int, Job] = Dictionary()
+        self._hostname: str = hostname
+        self._user: str = user
+        self._zoau: str = zoau
+        self._pyz: str = pyz
+        self._state: Status = Status.ONLINE
+        self._failures: set[int] = set()
+        self._balanced: set[int] = set()
+        self._inventory: dict [str, str] = {}
+        self._inventory.update({'host': hostname})
+        self._inventory.update({'user': user})
+        self._inventory.update({'zoau': zoau})
+        self._inventory.update({'pyz': pyz})
+        self._inventory.update({'pythonpath': '/zoau/v1.3.1/lib/3.10'})
+        self._extra_args = dict()
+        self._extra_args.update({'extra_args':{'volumes':['222222','000000']}})
+        self._inventory.update(self._extra_args)
+        self._assigned: Dictionary[int, Job] = Dictionary()
         self.failure_count: int = 0
-        self.assigned_count: int = 0
-        self.balanced_count: int = 0
+        self._assigned_count: int = 0
+        self._balanced_count: int = 0
+        self._running_job_id: int = -1
 
     def __str__(self) -> str:
         """
@@ -635,182 +781,185 @@ class Node:
         class members.
         """
         temp = {
-            "hostname": self.hostname,
-            "user": self.user,
-            "zoau": self.zoau,
-            "pyz": self.pyz,
-            "state": str(self.state),
+            "_hostname": self._hostname,
+            "_user": self._user,
+            "_zoau": self._zoau,
+            "_pyz": self._pyz,
+            "_state": str(self._state),
             "inventory": self.get_inventory_as_string(),
             "failure_count": str(self.failure_count),
-            "assigned_count": str(self.assigned_count)
+            "assigned_count": str(self._assigned_count),
+            "_balanced_count": str(self._balanced_coun),
+            "_running_job_id": str(self._running_job_id)
         }
         return str(temp)
 
-    def set_state(self, state: Status):
+    def set_state(self, state: Status) -> None:
         """
-        Set status of the node, is the z/OS
-        node ONLINE (useable) or OFFLINE (not usable)
+        Set status of the node, is the z/OS node ONLINE (useable)
+        or OFFLINE (not usable).
 
-        Parameters
-        ----------
-        state : Status
-            Set state to Status.ONLINE if the  z/OS
-            managed nodes state is usable, otherwise
-            set it to Status.OFFLINE.
+        Parameters:
+        state (Status): Set state to Status.ONLINE or Status.OFFLINE.
+            Use Status.ONLINE to signal the managed node is healthy, use
+            Status.OFFLINE to signal the managed node should not used
+            to run any jobs.
         """
-        self.state = state
+        self._state = state
 
     def set_failure_job_id(self, id: int) -> None:
         """
-        Add a job ID to the set maintaining jobs that have failed executing on this Node.
-        This is used for statistical purposes.
-        A Job failure occurs when the execution of the job is a non-zero return code.
+        Update the node with any jobs which fail to run. If a job fails to run,
+        add the job ID to the nodes class. A Job failure occurs when the
+        execution of the job is a non-zero return code.
+
+        Parameters:
+            id (int): The ID of the job that failed to run.
         """
-        self.failures.add(id)
-        self.failure_count = len(self.failures)
+        self._failures.add(id)
+        self.failure_count = len(self._failures)
 
     def set_assigned_job(self, job: Job) -> None:
         """
         Add a job to the Node that has been assigned to this node (z/OS managed node).
-        This is used for statistical purposes.
+
+        Parameters:
+            job (Job): The job that has been assigned to this node.
         """
-        self.assigned.add(job.get_id(),job)
-        self.assigned_count +=1
+        self._assigned.add(job.get_id(),job)
+        self._assigned_count +=1
 
     def set_balanced_job_id(self, id: int) -> None:
         """
-        Add a job ID to the set maintaining jobs that have been rebalanced on this Node.
-        This is used for statistical purposes.
-        A Job failure occurs when the execution of the job is a non-zero return code.
+        Add a jobs ID to the node, when a job has been rebalanced.
+
+        Parameters:
+            id (int): The job ID to add to the set of balanced jobs.
         """
-        self.balanced.add(id)
+        self._balanced.add(id)
+
+    def set_running_job_id(self, running_job_id: int) -> None:
+        """
+        Set the ID of the currently running job.
+
+        Parameters:
+            running_job_id (int): The ID of the currently running job.
+        """
+        self._running_job_id = running_job_id
 
     def get_state(self) -> Status:
         """
         Get the z/OS manage node status.
 
-        Returns
-        -------
-        Status.ONLINE
-            If the  z/OS managed node state is usable.
-        Status.OFFLINE
-            If the z/OS managed node state is unusable.
+        Return:
+            Status.ONLINE: If the  z/OS managed node state is usable.
+            Status.OFFLINE: If the z/OS managed node state is unusable.
         """
-        return self.state
+        return self._state
 
     def get_hostname(self) -> str:
         """
-        Get the hostname for this z/OS managed node. A node is a
-        z/OS endpoint capable of running an Ansible unit of work.
+        Get the hostname for this managed node. A node is a
+        z/OS host capable of running an Ansible unit of work.
 
-        Returns
-        -------
-        Str
-            The z/OS managed node hostname.
+        Return:
+            str: The managed nodes hostname.
         """
-        return self.hostname
+        return self._hostname
 
     def get_user(self) -> str:
         """
-        Get the user ID permitted to run an Ansible workload on
-        the z/OS managed node.
+        Get the users id that is permitted to run an Ansible workload on
+        the managed node.
 
-        Return
-        ------
-        Str
-            USS users name
+        Return:
+        str: Unix System Services (USS) user name
         """
-        return self.user
+        return self._user
 
     def get_zoau(self) -> str:
         """
-        Get the ZOAU home directory on the z/OS managed node.
+        Get the ZOAU home directory path found on the managed node.
 
-        Return
-        ------
-        str
-            A USS path indicating where ZOAU is installed.
+        Return:
+            str: Unix System Services (USS) absolute path of where
+                ZOAU is installed.
         """
-        return self.zoau
+        return self._zoau
 
     def get_pyz(self) -> str:
         """
-        Get the python home directory on the z/OS managed node.
+        Get the Python home directory path found on the managed node.
 
-        Return
-        ------
-        str
-            A USS path indicating where python is installed.
+        Return:
+            str: Unix System Services (USS) absolute path of where
+                python is installed.
         """
-        return self.pyz
+        return self._pyz
 
     def get_inventory_as_string(self) -> str:
         """
-        Get a JSON string that can be used with the 'zinventory-raw'
-        pytest fixture. This JSON string can be passed directly
-        to the option 'zinventory-raw', for example:
+        Get a JSON string of the inventory that can be used with
+        the 'zinventory-raw' pytest fixture. This JSON string can be
+        passed directly to the option 'zinventory-raw', for example:
 
         pytest .... --zinventory-raw='{.....}'
 
-        Return
-        ------
-        str
-            A JSON string of necessary z/OS managed node attributes.
+        Return:
+            str: A JSON string of the managed node inventory attributes.
         """
-        return json.dumps(self.inventory)
+        return json.dumps(self._inventory)
 
     def get_inventory_as_dict(self) -> dict [str, str]:
         """
-        Get a dict() that can be used with the 'zinventory-raw'
-        pytest fixture. This is the dict() so that it can be updated.
-        To use it with the 'zinventory-raw', the dict() would have to
-        be converted to a string with json.dumps(...) or equivalent.
+        Get a dictionary that can be used with the 'zinventory-raw'
+        pytest fixture. This is the dict() not a string, you might
+        choose this so you can dynamically update the dictionary and
+        then use json.dumps(...) to convert it to string and pass it
+        to zinventory-raw'.
 
-        Return
-        ------
-        dict [str, str]
-            A dict() of necessary z/OS managed node attributes.
+        Return:
+            dict [str, str]: A dictionary of the managed node
+                inventory attributes.
         """
-        return self.inventory
+        return self._inventory
 
     def get_failure_jobs_as_dictionary(self) -> Dictionary:
         """
         Get a Dictionary() of all jobs which have failed on this node.
 
-        Return
-        ------
-        Dictionary[int, Job]
-            A Dictionary() of all Job(s) that have
-            been assigned and failed on this Node.
+        Return:
+            Dictionary[int, Job]: A Dictionary() of all Job(s) that have
+                been assigned and failed on this Node.
         """
-        return self.failures
+        return self._failures
 
     def get_assigned_jobs_as_string(self) -> str:
         """
         Get a JSON string of all jobs which have been assigned to this node.
 
-        Return
-        ------
-        str
-            A JSON string representation of a Job (a unit of work)
+        Return:
+            str: A JSON string representation of a job.
         """
-        return json.dumps(self.assigned)
+        return json.dumps(self._assigned)
 
     def get_assigned_jobs_as_dictionary(self) -> Dictionary:
         """
-        Get a Dictionary() of all jobs which have been assigned to this node.
+        Get a Dictionary of all jobs which have been assigned to this node.
 
-        Return
-        ------
-        Dictionary[int, Job]
-            A Dictionary() of all jobs which have failed on this node.
+        Return:
+            Dictionary[int, Job]: A Dictionary of all jobs which have
+                failed on this node.
         """
-        return self.assigned
+        return self._assigned
 
     def get_failure_job_count(self) -> int:
         """
         Get the numerical count of how many Job(s) have failed on this
         Node with a non-zero return code.
+
+        Returns:
+            int: The number of failed Jobs.
         """
         return self.failure_count
 
@@ -818,26 +967,32 @@ class Node:
         """
         Get the numerical count of how many Job(s) have been assigned
         to this Node.
+
+        Returns:
+            int: The number of Jobs assigned to this Node.
         """
-        return self.assigned_count
+        return self._assigned_count
 
     def get_balanced_job_count(self) -> int:
         """
-        Get the numerical count of how many Job(s) have been assigned
-        to this Node.
+        Get the numerical count of how many Job(s) have been
+        reassigned (balanced) to this Node.
+
+        Returns:
+            int: The number of jobs which have been balanced onto
+                this node.
         """
-        self.balanced_count = len(self.balanced)
-        return self.balanced_count
+        self._balanced_count = len(self._balanced)
+        return self._balanced_count
 
-# def set_nodes_offline(nodes: Dictionary, maxnode: int) -> None:
-#     for key, value in nodes.items():
-#         if value.get_balanced_count() > maxnode:
-#             value.set_state(Status.OFFLINE)
+    def get_running_job_id(self) -> int:
+        """
+        Get the job id of the currently running job.
 
-def set_node_offline(node: Node, maxnode: int) -> None:
-    if node.get_balanced_job_count() > maxnode:
-            node.set_state(Status.OFFLINE)
-
+        Returns:
+            int: The job id of the currently running job.
+        """
+        return self._running_job_id
 
 # ------------------------------------------------------------------------------
 # Class Connection
@@ -863,9 +1018,9 @@ class Connection:
 
     def __init__(self, hostname, username, password = None, key_filename = None,
                     passphrase = None, port=22, environment= None ):
-        self.hostname = hostname
+        self._hostname = hostname
         self.port = port
-        self.username = username
+        self._username = username
         self.password = password
         self.key_filename = key_filename
         self.passphrase = passphrase
@@ -881,9 +1036,9 @@ class Connection:
         protect credentials.
         """
         temp =  {
-            "hostname": self.hostname,
+            "hostname": self._hostname,
             "port": self.port,
-            "username": self.username,
+            "username": self._username,
             "password": self.password,
             "key_filename": self.key_filename,
             "passphrase": self.passphrase,
@@ -1184,7 +1339,9 @@ def update_job_hostname(job: Job):
 
     # After being sorted ascending, assign the first index which will have been the lease used connection. 
     if len(sorted_items_by_assigned) > 0:
-        job.add_hostname(list(sorted_items_by_assigned)[0])
+        hostname = list(sorted_items_by_assigned)[0]
+        job.add_hostname(hostname)
+        nodes.get(hostname).set_assigned_job(job)
 
 
 def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Dictionary:
@@ -1229,9 +1386,6 @@ def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Di
             node=Node(hostname = hostname, user = user, zoau = zoau, pyz = pyz)
             node.set_state(Status.ONLINE)
             nodes.update(key = hostname, obj = node)
-
-    # for key, value in nodes.items():
-    #     print(f"The z/OS node count = {str(nodes.len())}, hostname = {key} , node = {str(value)}")
 
     return nodes
 
@@ -1289,34 +1443,62 @@ def get_nodes_offline_count(nodes: Dictionary) -> int:
 
     return nodes_offline_count
 
+# def set_nodes_offline(nodes: Dictionary, maxnode: int) -> None:
+#     for key, value in nodes.items():
+#         if value.get_balanced_count() > maxnode:
+#             value.set_state(Status.OFFLINE)
 
-def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, int, list[str], int, list[str]]:
+def set_node_offline(node: Node, maxnode: int) -> None:
     """
-    The get_jobs_statistics function is used to calculate statistics about the jobs that
-    have been run. It takes in a dictionary of jobs and returns a tuple containing
-    various statistics about the jobs.
+    Sets a node offline if it has exceeded maxnode, the number of permitted
+    balanced jobs for a node. 'maxnode' is defined as the maximum number of
+    times a node can fail to run a job before its set to 'offline' indicating
+    the node is no longer suitable for job execution.
 
-    Parameters
-    ----------
-    jobs: Dictionary [int, job].
+    Parameters:
+        node (Node): The node to check for balanced jobs.
+        maxnode (int): The maximum number of balanced jobs
+        allowed on a node before it is set offline.
+    """
+    if node.get_balanced_job_count() > maxnode:
+            node.set_state(Status.OFFLINE)
+
+def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, list[str], int, list[str], int, list[str], list[str], int, int, list[str], list[str]]:
+    """
+    Collect result data that can be used to generate a log/history of the
+    programs execution, such as how many jobs ran, how many failed, etc.
+
+    Parameters:
+    jobs (Dictionary [int, job]) - A dictionary of jobs keyed by their id.
+    maxjob (int): The maximum number of times a job can fail before its disabled
+    in the job queue.
 
     Returns
-    -------
-    Tuple[int, int, list[str], int, list[str]]
-        A tuple containing the following statistics about the jobs:
-        - jobs_total_count: The total number of jobs collected, count includes both
-          success and failures.
-        - jobs_success_count: The number of jobs that have successfully executed.
-        - jobs_success_tests: A list of testcases that succeeded.
-        - jobs_failed_count: The number jobs that did not succeed and resulted in
-          having never successfully executed.
-        - jobs_failed_tests: A list of testcases that failed.
+        jobs_total_count (int): The total number of jobs that have been run.
+        jobs_success_tests (ist[str]): A list of test cases that were successful.
+        jobs_success_log (list[str]): A list of log messages associated with the
+            successful test cases.
+        jobs_failed_count (int): The total number of jobs that failed.
+        jobs_failed_tests (list[str]): A list of test cases that failed.
+        jobs_failed_log: (list[str]): A list of log messages associated with the
+            failed test cases.
+        jobs_rebalanced_count (int): The total number of jobs that had their
+            hostnames rebalanced.
+        jobs_failed_count_maxjob (int): The total number of jobs that failed
+            multiple times (exceeded maxjob).
+        jobs_failed_maxjob_tests (list[str]): A list of test cases that failed
+            multiple times (exceeded maxjob).
+        jobs_failed_maxjob_log (list[str]): A list of log messages associated with
+            the failed test cases that exceeded maxjob.
 
-    Raises
-    ------
-    TypeError:
-        - If the input argument jobs is not a dictionary
-        - If any of the values in the jobs dictionary are not instances of the Job class
+    Example:
+        >>>> stats = get_jobs_statistics(jobs, args.maxjob)
+        >>>> print(f" {stats.jobs_success_count}, {stats.jobs_total_count}, etc)
+
+    Raises:
+        TypeError:
+            - If the input argument jobs is not a dictionary
+            - If any of the values in the jobs dictionary are not instances of the Job class
     """
     jobs_success_count = 0
     jobs_success_tests = []
@@ -1358,7 +1540,6 @@ def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, int, list[s
                 jobs_failed_maxjob_tests.append(value.get_testcase())
                 jobs_failed_maxjob_log.extend(value.get_stdout_and_stderr_msgs())
 
-    # TODO: the jobs_success_log is not used/populated, decide what to do with it. 
     Statistics = namedtuple('Statistics',
                             ['jobs_total_count',
                              'jobs_success_count',
@@ -1386,6 +1567,24 @@ def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, int, list[s
     return result
 
 def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list[str], dict[int, str], int]:
+    """
+    This function takes in a dictionary of jobs and a maximum job failure count threshold, and returns a tuple containing:
+        1. The number of jobs that have failed more than the maximum job failure count threshold.
+        2. A list of test cases for those jobs that have failed more than the maximum job failure count threshold.
+        3. A dictionary mapping each failed job's ID to its stdout and stderr messages.
+        4. The number of jobs that were rebalanced after the maximum job failure count threshold was exceeded.
+
+    Parameters:
+        jobs (Dictionary): A dictionary mapping job IDs to Job objects.
+        maxjob (int): The maximum number of times a job can fail before it is considered a failure.
+
+    Returns:
+        Tuple[int, list[str], dict[int, str], int]: A tuple containing the number of jobs that have
+            failed more than the maximum job failure count threshold, a list of test cases for those
+            jobs that have failed more than the maximum job failure count threshold, a dictionary
+            mapping each failed job's ID to its stdout and stderr messages, and the number of jobs
+            that were rebalanced after the maximum job failure count threshold was exceeded.
+    """
     jobs_failed_count = 0
     jobs_failed_list = []
     jobs_failed_log = []
@@ -1402,160 +1601,159 @@ def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list
 
 def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxnode: int) -> Tuple[int, str]:
     """
-    Runs a job (test case) on a z/OS managed node and ensures the job has the necessary
+    Runs a job (test case) on a managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
     so that it can be properly run when a resource becomes available.
 
     Parameters
-    ----------
-    id : int
-        Numerical ID assigned to a job.
-    jobs: Dictionary
-        A dictionary of jobs, the ID is paired to a job.
+    id (int): Numerical ID assigned to a job.
+    jobs (Dictionary): A dictionary of jobs, the ID is paired to a job.
         A job is a test cased designed to be run by pytest.
-    nodes: Dictionary
-        Managed nodes that jobs will run on. These are z/OS
+    nodes (Dictionary): Managed nodes that jobs will run on. These are z/OS
         managed nodes.
-    timeout: int
-        The maximum time in seconds a job should run on z/OS for,
+    timeout (int):The maximum time in seconds a job should run on z/OS for,
         default is 300 seconds.
-    maxjob: int
-        The maximum number of times a job can fail before its
+    maxjob (int): The maximum number of times a job can fail before its
         disabled in the job queue
-    bal: int
-        The count at which a job is balanced from one z/OS node
+    bal (int): The count at which a job is balanced from one z/OS node
         to another for execution.
-    extra: str
-        Extra commands passed to subprocess before pytest execution
-    maxnode: int
-        The maximum number of times a node can fail to run a
+    extra (str): Extra commands passed to subprocess before pytest execution
+    maxnode (int): The maximum number of times a node can fail to run a
         job before its set to 'offline' in the node queue.
 
-    Returns
-    -------
+    Returns:
     A tuple of (rc: int, message: str) is returned.
+    rc (int):
+        Return code 0 All tests were collected and passed successfully (pytest).
+        Return code 1 Tests were collected and run but some of the tests failed (pytest).
+        Return code 2 Test execution was interrupted by the user (pytest).
+        Return code 3 Internal error happened while executing tests (pytest).
+        Return code 4 pytest command line usage error (pytest).
+        Return code 5 No tests were collected (pytest).
+        Return code 6 No z/OS nodes available.
+        Return code 7 Re-balancing of z/OS nodes were performed.
+        Return code 8 Job has exceeded permitted job failures.
+        Return code 9 Job has exceeded timeout.
+        Return code 10 Job is being passed over because the node that
+          is going to run the job is executing another job.
 
-    rc: int
-        - Return code 0 All tests were collected and passed successfully (pytest).
-        - Return code 1 Tests were collected and run but some of the tests failed (pytest).
-        - Return code 2 Test execution was interrupted by the user (pytest).
-        - Return code 3 Internal error happened while executing tests (pytest).
-        - Return code 4 pytest command line usage error (pytest).
-        - Return code 5 No tests were collected (pytest).
-        - Return code 6 No z/OS nodes available.
-        - Return code 7 Re-balancing of z/OS nodes were performed.
-        - Return code 8 Job has exceeded permitted job failures.
-        - Return code 9 Job has exceeded timeout.
-    message: str
-        Description and details of the jobs execution, contains return code,
-        hostname, job id, etc. Informational and useful when understanding
-        the job's lifecycle.
+    message (str): Description and details of the jobs execution, contains
+        return code, hostname, job id, etc. Informational and useful when
+        understanding the job's lifecycle.
     """
 
     job = jobs.get(id)
     hostname = job.get_hostname()
-    id = str(job.get_id())
+    #id = str(job.get_id())
     elapsed = 0
     message = None
     rc = None
     result = None
 
-    # node = nodes.get(host)
     node_count_online = get_nodes_online_count(nodes)
     if node_count_online >0:
         node = nodes.get(hostname)
-        start_time = time.time()
-        date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        # Temporary solution to avoid nodes running concurrent work loads
+        if get_nodes_offline_count(nodes) == 0 and node.get_running_job_id() == -1:
+            node.set_running_job_id(id)
+            start_time = time.time()
+            date_time = datetime.now().strftime("%H:%M:%S") #"%d/%m/%Y %H:%M:%S")
+            thread_name = threading.current_thread().name
+            try:
+                # Build command and strategically map stdout and stderr so that both are mapped to stderr and the pytest rc goes to stdout.
+                cmd =  f"{extra};{job.get_command()} 1>&2; echo $? >&1"
+                result = subprocess.run([cmd], shell=True, capture_output=True, text=True, timeout=timeout)
+                node.set_running_job_id(-1)
+                job.set_elapsed_time(start_time)
+                elapsed = job.get_elapsed_time()
+                rc = int(result.stdout)
 
-        # print("Job information: " + "\n  z/OS hosts available = " + str(zos_nodes_len) + "\n  Job ID = " + str(job.get_id()) + "\n  Command = " + job.get_command())
-        try:
-            # Build command and strategically map stdout and stderr so that both are mapped to stderr and the pytest rc goes to stdout.
-            cmd =  f"{extra};{job.get_command()} 1>&2; echo $? >&1"
-            result = subprocess.run([cmd], shell=True, capture_output=True, text=True, timeout=timeout)
-            job.set_elapsed_time(start_time)
-            elapsed = job.get_elapsed_time()
-            rc = int(result.stdout)
+                if rc == 0:
+                    job.set_rc(rc)
+                    job.set_success()
+                    rsn = "Job successfully executed."
+                    message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                    pytest_std_out_err = result.stderr
+                    job.set_stdout(message, pytest_std_out_err, date_time)
+                else:
+                    job_failures = job.get_failure_count()
 
-            if rc == 0:
-                job.set_rc(int(rc))
-                job.set_success()
-                rc_msg = "Test collected and passed successfully."
-                message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
-                pytest_std_out_err = result.stderr
-                job.set_stdout(message, pytest_std_out_err, date_time)
-            else:
-                job_failures = job.get_failure_count()
+                    if job_failures >= maxjob:
+                        rc = 8
+                        job.set_rc(rc)
+                        rsn = f"Test exceeded allowable failures={maxjob}."
+                        message = f"Job id={id}, host={hostname}, start time={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                    elif job_failures == bal:
+                        rc = 7
+                        job.set_rc(rc)
+                        node.set_balanced_job_id(id)
+                        set_node_offline(node, maxnode)
+                        update_job_hostname(job)
+                        rsn = f"Job is reassigned to managed node={job.get_hostname()}, job exceeded allowable balance={bal}."
+                        message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                    elif rc == 1:
+                        job.set_rc(rc)
+                        rsn = "Test case failed with an error."
+                        message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                    elif rc == 2:
+                        job.set_rc(int(rc))
+                        rsn = "Test case execution was interrupted by the user."
+                        message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                    elif rc == 3:
+                        job.set_rc(int(rc))
+                        rsn = "Internal error occurred while executing test."
+                        message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                    elif rc == 4:
+                        job.set_rc(int(rc))
+                        rsn = "Pytest command line usage error."
+                        message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                    elif rc == 5:
+                        job.set_rc(int(rc))
+                        rsn = "No tests were collected."
+                        message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
 
-                if job_failures >= maxjob:
-                    rc = 8
-                    job.set_rc(int(rc))
-                    # Do node stuff
-                    rc_msg = f"Test exceeded permitted failures = {maxjob}."
-                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
-                elif job_failures == bal:
-                    rc = 7
-                    job.set_rc(int(rc))
-                    node.set_balanced_job_id((id))
-                    set_node_offline(node, maxnode)
-                    update_job_hostname(job)
-                    node.get_balanced_job_count()
-                    rc_msg = f"Test has been assigned to a new z/OS managed node = {job.get_hostname()}, because it exceeded allowable balance = {bal}."
-                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
-                elif rc == 1:
-                    job.set_rc(int(rc))
-                    rc_msg = "Test case was collected and failed with an error."
-                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
-                elif rc == 2:
-                    job.set_rc(int(rc))
-                    rc_msg = "Test case execution was interrupted by the user."
-                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
-                elif rc == 3:
-                    job.set_rc(int(rc))
-                    rc_msg = "Internal error occurred while executing test."
-                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
-                elif rc == 4:
-                    job.set_rc(int(rc))
-                    rc_msg = "Pytest command line usage error."
-                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
-                elif rc == 5:
-                    job.set_rc(int(rc))
-                    rc_msg = "No tests were collected ."
-                    message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, msg = {rc_msg}"
+                    # Only increment a job failure after evaluating all the RCs
+                    job.increment_failure()
 
-                # Increment the job failure after evaluating all the RCs
+                    # Update the node with which jobs failed. A node has all assigned jobs so this ID can be used later for eval.
+                    node.set_failure_job_id(id)
+                    job.set_stdout_and_stderr(message, result.stderr, date_time)
+
+            except subprocess.TimeoutExpired as timeout_err:
+                node.set_running_job_id(-1)
+                rc = 9
+                job.set_rc(rc)
+                job.set_elapsed_time(start_time)
+                elapsed = job.get_elapsed_time()
+                rsn = f"Job has exceeded subprocess timeout={str(timeout)}"
+                message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={elapsed}, rc={rc}, thread={thread_name}, msg={rsn}"
+                job.set_stdout_and_stderr(message, rsn, date_time)
                 job.increment_failure()
-
-                # Update the node with which jobs failed. A node has all assigned jobs so this ID can be used later for eval.
                 node.set_failure_job_id(id)
-
-                pytest_std_out_err = result.stderr
-                job.set_stdout_and_stderr(message, pytest_std_out_err, date_time)
-
-        except subprocess.TimeoutExpired as timeout_err:
-            job.set_elapsed_time(start_time)
-            elapsed = job.get_elapsed_time()
-            rc = 9
-            job.set_rc(int(rc))
-            # pytest_std_out_err = timeout_err.stderr.decode()
-            # pytest_std_out_err += timeout_err.stdout.decode()
-            rc_msg = f"Job has exceeded subprocess timeout = {str(timeout)}"
-            message = f"Job ID = {id}, host = {hostname}, start time = {date_time}, elapsed time = {elapsed}, rc = {str(rc)}, rc msg = {rc_msg}"
-            job.set_stdout_and_stderr(message, rc_msg, date_time)
-            job.increment_failure()
-            node.set_failure_job_id(id)
+        else:
+            rc = 10
+            job.set_rc(rc)
+            nodes_count = nodes.len()
+            node_count_offline = get_nodes_offline_count(nodes)
+            #other = node.get_assigned_jobs_as_dictionary().get(id)
+            date_time = datetime.now().strftime("%H:%M:%S") #("%d/%m/%Y %H:%M:%S")
+            rsn = f"Managed node is not able to execute job id={node.get_running_job_id()}, nodes={nodes_count}, offline={node_count_offline}, online={node_count_online}."
+            message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={0}, rc={rc}, msg={rsn}"
+            node.set_running_job_id(-1) # Set it to false after message string
+            node.set_balanced_job_id(id)
+            #set_node_offline(node, maxnode)
+            update_job_hostname(job)
     else:
+        node.set_running_job_id(-1)
         rc = 6
         nodes_count = nodes.len()
         node_count_offline = get_nodes_offline_count(nodes)
-        rc_msg = f"There are no z/OS managed nodes available to run jobs, node count = {nodes_count}, OFFLINE = {node_count_offline}, ONLINE = {node_count_online}."
-        message = f"Job ID = {id}, host = {hostname}, elapsed time = {job.get_elapsed_time()}, rc = {str(rc)}, rc msg = {rc_msg}"
-        job.set_stdout_and_stderr(message, rc_msg, date_time)
+        rsn = f"There are no managed nodes online to run jobs, nodes={nodes_count}, offline={node_count_offline}, online={node_count_online}."
+        message = f"Job id={id}, host={hostname}, elapsed={job.get_elapsed_time()}, rc={rc}, msg={rsn}"
+        job.set_stdout_and_stderr(message, rsn, date_time)
         job.increment_failure()
         node.set_failure_job_id(id)
 
-    # print("STDERR/OUT = " + job.get_stdout_and_stderr_msg())
-    # print("NODE IS " + str(node))
-    # print(message)
     return rc, message
 
 
@@ -1564,38 +1762,36 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
     Method creates an executor to run a job found in the jobs dictionary concurrently.
     This method is the key function that allows for concurrent execution of jobs.
 
-
-    Parameters
-    ----------
-    jobs: Dictionary
-        A dictionary of jobs, the ID is paired to a job.
-        A job is a test cased designed to be run by pytest.
-    nodes: Dictionary
-        Managed nodes that jobs will run on. These are z/OS
-        managed nodes.
-    timeout: int
-        The maximum time in seconds a job should run on z/OS for,
-        default is 300 seconds.
-    maxjob: int
-        The maximum number of times a job can fail before its
-        disabled in the job queue
-    bal: int
-        The count at which a job is balanced from one z/OS node
-        to another for execution.
-    extra: str
-        Extra commands passed to subprocess before pytest execution
-    maxnode: int
-        The maximum number of times a node can fail to run a
-        job before its set to 'offline' in the node queue.
-    workers: int
-        The numerical value used to increase the number of worker
-        threads by proportionally. By default this is 3 that will
-        yield one thread per node. With one thread per node, test
-        cases run one at a time on a managed node. This value
-        is used as a multiple to grow the number of threads and
-        test concurrency. For example, if there are 5 nodes and
-        the workers = 3, then 15 threads will be created
-        resulting in 3 test cases running concurrently.
+    Parameters:
+        jobs: Dictionary
+            A dictionary of jobs, the ID is paired to a job.
+            A job is a test cased designed to be run by pytest.
+        nodes: Dictionary
+            Managed nodes that jobs will run on. These are z/OS
+            managed nodes.
+        timeout: int
+            The maximum time in seconds a job should run on z/OS for,
+            default is 300 seconds.
+        maxjob: int
+            The maximum number of times a job can fail before its
+            disabled in the job queue
+        bal: int
+            The count at which a job is balanced from one z/OS node
+            to another for execution.
+        extra: str
+            Extra commands passed to subprocess before pytest execution
+        maxnode: int
+            The maximum number of times a node can fail to run a
+            job before its set to 'offline' in the node queue.
+        workers: int
+            The numerical value used to increase the number of worker
+            threads by proportionally. By default this is 3 that will
+            yield one thread per node. With one thread per node, test
+            cases run one at a time on a managed node. This value
+            is used as a multiple to grow the number of threads and
+            test concurrency. For example, if there are 5 nodes and
+            the workers = 3, then 15 threads will be created
+            resulting in 3 test cases running concurrently.
 
     """
 
@@ -1604,16 +1800,17 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
     else:
         number_of_threads = nodes.len()
 
-    with ThreadPoolExecutor(number_of_threads) as executor:
+    with ThreadPoolExecutor(number_of_threads,thread_name_prefix='ansible-test') as executor:
         futures = [executor.submit(run, key, jobs, nodes, timeout, max, bal, extra, maxnode) for key, value in jobs.items() if not value.get_successful()]
         for future in as_completed(futures):
+            # TODO: Do we need to do anything with the future result?
             rc, message = future.result()
             if future.exception() is not None:
-                print(f"Thread pool exception occurred with error: {future.exception()}")
+                print(f"Executor exception occurred with error: {future.exception()}")
             elif future.cancelled():
-                 print(f"Thread pool cancelled job with message: {message}")
+                 print(f"Executor cancelled job, message = {message}")
             elif future.done():
-                print(f"Thread pool completed job with message: {message}")
+                print(f"Executor message = {message}")
             elif future.running():
                 print(f"Thread pool is still running job")
 
@@ -1629,17 +1826,13 @@ def elapsed_time(start_time: time):
     Given a start time, this will return a formatted string of time matching
     pattern HH:MM:SS.SS , eg 00:02:38.36
 
-    Parameters
-    ----------
-    start_time: time
-        The time the test case has began. This is generally captured
-        before a test is run.
+    Parameters:
+        start_time (time): The time the test case has began. This is generally
+        captured before a test is run.
 
-    Returns
-    -------
-    str
-        The elapsed time, how long it took a job to run. A string
-        is returned representing the elapsed time, , eg 00:02:38.36
+    Returns:
+        str: The elapsed time, how long it took a job to run. A string
+            is returned representing the elapsed time, , eg 00:02:38.36
     """
 
     hours, rem = divmod(time.time() - start_time, 3600)
@@ -1648,6 +1841,13 @@ def elapsed_time(start_time: time):
     return elapsed
 
 def print_job_logs(log: list[Tuple[str, str, str]], state: State) -> None:
+    """
+    Prints job logs to the console.
+
+    Parameters:
+        log (list[Tuple[str, str, str]]): A list of tuples containing job log information.
+            state (State): The current state of the program
+    """
     if len(log) > 0:
         for entry in log:
             print("------------------------------------------------------------\n"\
@@ -1664,6 +1864,14 @@ def print_job_logs(log: list[Tuple[str, str, str]], state: State) -> None:
                 "------------------------------------------------------------")
 
 def print_job_tests(tests: list[str], state: State) -> None:
+    """
+    Prints the test cases for a job.
+
+    Parameters:
+        tests (list[str]): A list of strings representing the test cases for a job.
+        state (State): The current state of the job.
+    """
+
     if len(tests) > 0:
         print("------------------------------------------------------------\n"\
             f"[START] [{state.string()}] test cases.\n"\
@@ -1675,6 +1883,17 @@ def print_job_tests(tests: list[str], state: State) -> None:
             "------------------------------------------------------------")
 
 def print_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay: str) -> str:
+    """
+    Prints job logs to an HTML file using the PrettyTable library.
+
+    Parameters:
+        log (list[Tuple[str, str, str]]): A list of tuples containing job information.
+            state (State): The current state of the program.
+        replay (str): A string indicating whether the user wants to replay the logs or not.
+
+    Returns:
+        str: An HTML string generated from the job logs.
+    """
     if len(log) > 0:
         table = PrettyTable()
         table.hrules=ALL
@@ -1698,6 +1917,14 @@ def print_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay
         file.close()
 
 def print_job_tests_to_html(tests: list[str], state: State, replay: str) -> None:
+    """
+    Prints job tests to HTML.
+
+    Parameters:
+        tests (list[str]): A list of test cases.
+        state (State): The current state of the job.
+        replay (str): The replay ID of the job.
+    """
     if len(tests) > 0:
         table = PrettyTable()
         table.hrules=ALL
@@ -1719,8 +1946,26 @@ def print_job_tests_to_html(tests: list[str], state: State, replay: str) -> None
         file.write(html)
         file.close()
 
+def print_nodes(nodes: Dictionary) -> None:
+    """
+    Prints the names of all z/OS nodes in the provided dictionary.
+
+    Parameters:
+        nodes (Dictionary): A dictionary containing z/OS node names as keys and values.
+    """
+    if nodes.len() > 0:
+        print(f"There are {nodes.len()} managed nodes serving this play.")
+    for key, value in nodes.items():
+        print(f"z/OS node = {key}")
 
 def executor(args):
+    """
+    This function is responsible for executing the tests on the nodes. It takes in several arguments such as the user,
+    the tests to be run, the maximum number of times a job can fail, and more. The function returns no value.
+
+    Args:
+        args (Namespace): A Namespace object containing various arguments passed to the script.
+    """
     count_play = 1
     tests=args.tests
     count = 1
@@ -1732,6 +1977,7 @@ def executor(args):
 
         # Get a dictionary of all active zos_nodes to run tests on
         nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames)
+        print_nodes(nodes)
 
         # Get a dictionary of jobs containing the work to be run on a node.
         jobs = get_jobs(nodes, testsuite=args.testsuite, tests=tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
@@ -1872,7 +2118,11 @@ def main():
     parser.add_argument('--capture', action=argparse.BooleanOptionalAction, help='Instruct Pytest not to capture any output, equivalent of -s.', required=False, default=False)
     parser.add_argument('--workers', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
     parser.add_argument('--replay', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
+    # parser.add_argument('--pythonpath', type=str, help='Absolute path where to find Python modules (ZOAU modules).', required=True, metavar='<str>', default="")
+    # parser.add_argument('--volumes', type=str, help='The volumes to use with the test cases that are to be executed.', required=False, metavar='<str,str>', default="222222,000000")
 
+        # self._inventory.update({'pythonpath': '/zoau/v1.3.1/lib/3.10'})
+        # self._extra_args.update({'extra_args':{'volumes':['222222','000000']}})
     # Mutually exclusive options
     group_tests_or_dirs = parser.add_argument_group('Mutually exclusive', 'Absolute path to test suites. For more than one, use a comma or space delimiter.')
     exclusive_group_or_tests = group_tests_or_dirs.add_mutually_exclusive_group(required=True)
@@ -1881,13 +2131,14 @@ def main():
     args = parser.parse_args()
 
     # Evaluate
-    # TODO: Maxjob should always be less than itr else it makes no sense
-    if int(args.maxjob) > int(args.itr):
-        raise ValueError(f"Value '--maxjob' = {args.maxjob}, must be less than --itr = {args.itr}, else maxjob will have no effect.")
+    # Maxjob should always be less than itr else it makes no sense
+    # if int(args.maxjob) > int(args.itr):
+    #     raise ValueError(f"Value '--maxjob' = {args.maxjob}, must be less than --itr = {args.itr}, else maxjob will have no effect.")
 
     if int(args.bal) > int(args.maxjob):
         raise ValueError(f"Value '--bal' = {args.bal}, must be less than --maxjob = {args.itr}, else balance will have no effect.")
 
+    # TODO: Lets find a way to default the workers to the number of ECs
     # Execute/begin running the concurrency testing with the provided args.
     executor(args)
 

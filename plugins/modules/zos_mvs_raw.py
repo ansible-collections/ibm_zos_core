@@ -2951,12 +2951,12 @@ def get_data_set_output(dd_statement):
     if dd_statement.definition.return_content.type == "text":
         contents = get_data_set_content(
             name=dd_statement.definition.name,
-            binary=False,
+            base64_encode=False,
             from_encoding=dd_statement.definition.return_content.src_encoding,
             to_encoding=dd_statement.definition.return_content.response_encoding,
         )
     elif dd_statement.definition.return_content.type == "base64":
-        contents = get_data_set_content(name=dd_statement.definition.name, binary=True)
+        contents = get_data_set_content(name=dd_statement.definition.name, base64_encode=True)
     return build_dd_response(dd_statement.name, dd_statement.definition.name, contents)
 
 
@@ -2977,12 +2977,12 @@ def get_unix_file_output(dd_statement):
     if dd_statement.definition.return_content.type == "text":
         contents = get_unix_content(
             name=dd_statement.definition.name,
-            binary=False,
+            base64_encode=False,
             from_encoding=dd_statement.definition.return_content.src_encoding,
             to_encoding=dd_statement.definition.return_content.response_encoding,
         )
     elif dd_statement.definition.return_content.type == "base64":
-        contents = get_unix_content(name=dd_statement.definition.name, binary=True)
+        contents = get_unix_content(name=dd_statement.definition.name, base64_encode=True)
     return build_dd_response(dd_statement.name, dd_statement.definition.name, contents)
 
 
@@ -3037,15 +3037,15 @@ def build_dd_response(dd_name, name, contents):
     return dd_response
 
 
-def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=None):
+def get_data_set_content(name, base64_encode=False, from_encoding=None, to_encoding=None):
     """Retrieve the raw contents of a data set.
 
     Parameters
     ----------
         name : str
              The name of the data set.
-        binary : bool, optional
-               Determines if contents are retrieved without encoding conversion. Defaults to False.
+        base64_encode : bool, optional
+               Determines if contents are retrieved as binary and base64 encoded. Defaults to False.
         from_encoding : str, optional
                       The encoding of the data set on the z/OS system. Defaults to None.
         to_encoding : str, optional
@@ -3060,7 +3060,7 @@ def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=Non
     if "'" not in quoted_name:
         quoted_name = "'{0}'".format(quoted_name)
 
-    if binary:
+    if base64_encode:
         with zoau_io.RecordIO("//{0}".format(quoted_name), "r") as records:
             content = base64.b64encode(b''.join(records.readrecords())).decode()
     else:
@@ -3069,15 +3069,15 @@ def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=Non
     return content
 
 
-def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
+def get_unix_content(name, base64_encode=False, from_encoding=None, to_encoding=None):
     """Retrieve the raw contents of a UNIX file.
 
     Parameters
     ----------
         name : str
              The name of the UNIX file.
-        binary : bool, optional
-               Determines if contents are retrieved without encoding conversion. Defaults to False.
+        base64_encode : bool, optional
+               Determines if contents are retrieved as binary and base64 encoded. Defaults to False.
         from_encoding : str, optional
                       The encoding of the UNIX file on the z/OS system. Defaults to None.
         to_encoding : str, optional
@@ -3088,7 +3088,7 @@ def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
         stdout : str
                The raw content of the UNIX file.
     """
-    if binary:
+    if base64_encode:
         with open(name, "rb") as f:
             content = base64.b64encode(f.read()).decode()
     else:
@@ -3103,8 +3103,6 @@ def get_content(formatted_name, from_encoding=None, to_encoding=None):
     ----------
         name : str
              The name of the data set or UNIX file, formatted and quoted for proper usage in command.
-        binary : bool, optional
-               Determines if contents are retrieved without encoding conversion. Defaults to False.
         from_encoding : str, optional
                       The encoding of the data set or UNIX file on the z/OS system. Defaults to None.
         to_encoding : str, optional

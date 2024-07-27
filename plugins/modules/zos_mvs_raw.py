@@ -340,7 +340,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -520,7 +520,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -587,7 +587,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -628,7 +628,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -959,7 +959,7 @@ options:
                           - The type of the content to be returned.
                           - C(text) means return content in encoding specified by I(response_encoding).
                           - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                          - C(base64) means return content in binary mode.
+                          - C(base64) means return content as base64 encoded in binary.
                         type: str
                         choices:
                           - text
@@ -1137,7 +1137,7 @@ options:
                           - The type of the content to be returned.
                           - C(text) means return content in encoding specified by I(response_encoding).
                           - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                          - C(base64) means return content in binary mode.
+                          - C(base64) means return content as base64 encoded in binary.
                         type: str
                         choices:
                           - text
@@ -1199,7 +1199,7 @@ options:
                           - The type of the content to be returned.
                           - C(text) means return content in encoding specified by I(response_encoding).
                           - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                          - C(base64) means return content in binary mode.
+                          - C(base64) means return content as base64 encoded in binary.
                         type: str
                         choices:
                           - text

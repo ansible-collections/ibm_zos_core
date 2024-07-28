@@ -449,7 +449,7 @@ class Job:
         """
         node_temp = self._nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
-        return f"pytest {self._testcase} --host-pattern={self._hostpattern}{self._capture if not None else ""}{self._verbose if not None else ""} --zinventory-raw='{node_inventory}'"
+        return f"pytest {self._testcase} --host-pattern={self._hostpattern}{self._capture if self._capture else ""}{self._verbose if self._verbose else ""} --zinventory-raw='{node_inventory}'"
 
 
     def get_hostnames(self) -> list[str]:
@@ -740,9 +740,10 @@ class Node:
         pyz( str): The USS absolute path to where python is installed.
     """
 
-    def __init__(self, hostname: str, user: str, zoau: str, pyz: str):
+    def __init__(self, hostname: str, user: str, zoau: str, pyz: str, pythonpath: str, volumes: str):
         """
-
+    parser.add_argument('--pythonpath', type=str, help='Absolute path to the ZOAU Python modules, precompiled or wheels.', required=True, metavar='<str>', default="")
+    parser.add_argument('--volumes'
         Parameters:
             hostname (str): Hostname for the z/OS managed node the Ansible workload
                 will be executed on.
@@ -755,20 +756,23 @@ class Node:
         self._user: str = user
         self._zoau: str = zoau
         self._pyz: str = pyz
+        self._pythonpath: str = pythonpath
+        self._volumes: str  = volumes
         self._state: Status = Status.ONLINE
         self._failures: set[int] = set()
         self._balanced: set[int] = set()
         self._inventory: dict [str, str] = {}
-        self._inventory.update({'host': hostname})
-        self._inventory.update({'user': user})
-        self._inventory.update({'zoau': zoau})
-        self._inventory.update({'pyz': pyz})
-        self._inventory.update({'pythonpath': '/zoau/v1.3.1/lib/3.10'})
+        self._inventory.update({'host': self._hostname})
+        self._inventory.update({'user': self._user})
+        self._inventory.update({'zoau': self._zoau})
+        self._inventory.update({'pyz': self._pyz})
+        self._inventory.update({'pythonpath': self._pythonpath})
         self._extra_args = dict()
-        self._extra_args.update({'extra_args':{'volumes':['222222','000000']}})
+        # self._extra_args.update({'extra_args':{'volumes':['222222','000000']}})
+        self._extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}})
         self._inventory.update(self._extra_args)
         self._assigned: Dictionary[int, Job] = Dictionary()
-        self.failure_count: int = 0
+        self._failure_count: int = 0
         self._assigned_count: int = 0
         self._balanced_count: int = 0
         self._running_job_id: int = -1
@@ -785,11 +789,13 @@ class Node:
             "_user": self._user,
             "_zoau": self._zoau,
             "_pyz": self._pyz,
+            "_pythonpath": self._pythonpath,
+            "_volumes": self._volumes,
             "_state": str(self._state),
             "inventory": self.get_inventory_as_string(),
-            "failure_count": str(self.failure_count),
-            "assigned_count": str(self._assigned_count),
-            "_balanced_count": str(self._balanced_coun),
+            "_failure_count": str(self._failure_count),
+            "_assigned_count": str(self._assigned_count),
+            "_balanced_count": str(self._balanced_count),
             "_running_job_id": str(self._running_job_id)
         }
         return str(temp)
@@ -817,7 +823,7 @@ class Node:
             id (int): The ID of the job that failed to run.
         """
         self._failures.add(id)
-        self.failure_count = len(self._failures)
+        self._failure_count = len(self._failures)
 
     def set_assigned_job(self, job: Job) -> None:
         """
@@ -961,7 +967,7 @@ class Node:
         Returns:
             int: The number of failed Jobs.
         """
-        return self.failure_count
+        return self._failure_count
 
     def get_assigned_job_count(self) -> int:
         """
@@ -1337,14 +1343,14 @@ def update_job_hostname(job: Job):
     # for key, value in sorted_items_by_assigned.items():
     #     print(f" Sorted by assigned are; key = {key}, value = {value}.")
 
-    # After being sorted ascending, assign the first index which will have been the lease used connection. 
+    # After being sorted ascending, assign the first index which will have been the lease used connection.
     if len(sorted_items_by_assigned) > 0:
         hostname = list(sorted_items_by_assigned)[0]
         job.add_hostname(hostname)
         nodes.get(hostname).set_assigned_job(job)
 
 
-def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Dictionary:
+def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None, pythonpath: str = None, volumes: str = None) -> Dictionary:
     """
     Get a thread safe Dictionary of active z/OS managed nodes.
 
@@ -1383,7 +1389,7 @@ def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None) -> Di
 
         # TODO: Use the connection class to connection and validate ZOAU and Python before adding the nodes
         if result.returncode == 0:
-            node=Node(hostname = hostname, user = user, zoau = zoau, pyz = pyz)
+            node=Node(hostname = hostname, user = user, zoau = zoau, pyz = pyz, pythonpath = pythonpath, volumes = volumes)
             node.set_state(Status.ONLINE)
             nodes.update(key = hostname, obj = node)
 
@@ -1474,7 +1480,7 @@ def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, list[str], 
     in the job queue.
 
     Returns
-        jobs_total_count (int): The total number of jobs that have been run.
+        jobs_total_count (int): The number of jobs that have been scheduled to run.
         jobs_success_tests (ist[str]): A list of test cases that were successful.
         jobs_success_log (list[str]): A list of log messages associated with the
             successful test cases.
@@ -1757,7 +1763,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
     return rc, message
 
 
-def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxnode: int, workers: int) -> None:
+def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxnode: int, workers: int) -> list[str]:
     """
     Method creates an executor to run a job found in the jobs dictionary concurrently.
     This method is the key function that allows for concurrent execution of jobs.
@@ -1793,6 +1799,8 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
             the workers = 3, then 15 threads will be created
             resulting in 3 test cases running concurrently.
 
+    Returns:
+        list[str]: A list of strings, each list entry is describes the jobs lifecycle.
     """
 
     if workers > 1:
@@ -1800,19 +1808,28 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
     else:
         number_of_threads = nodes.len()
 
+    result = []
     with ThreadPoolExecutor(number_of_threads,thread_name_prefix='ansible-test') as executor:
         futures = [executor.submit(run, key, jobs, nodes, timeout, max, bal, extra, maxnode) for key, value in jobs.items() if not value.get_successful()]
         for future in as_completed(futures):
             # TODO: Do we need to do anything with the future result?
             rc, message = future.result()
             if future.exception() is not None:
-                print(f"Executor exception occurred with error: {future.exception()}")
+                msg = f"[ERROR] Executor exception occurred with error: {future.exception()}"
+                result.append(msg)
+                print(msg)
             elif future.cancelled():
-                 print(f"Executor cancelled job, message = {message}")
+                 msg = f"[ERROR] Executor cancelled job, message = {message}"
+                 result.append(msg)
+                 print(msg)
             elif future.done():
-                print(f"Executor message = {message}")
+                msg = f"[{"INFO" if rc == 0 else "WARN"}] Executor message = {message}"
+                result.append(msg)
+                print(msg)
             elif future.running():
-                print(f"Thread pool is still running job")
+                msg = f"[{"INFO" if rc == 0 else "WARN"}] Thread pool is still running = {message}"
+                result.append(msg)
+                print(msg)
 
         # try:
         #     for future in as_completed(futures, timeout=200):
@@ -1820,6 +1837,7 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
         #         print("JOB RC is " + str(rc) + " with message " + message)
         # except concurrent.futures.TimeoutError:
         #         print("this took too long...")
+    return result
 
 def elapsed_time(start_time: time):
     """
@@ -1882,7 +1900,7 @@ def print_job_tests(tests: list[str], state: State) -> None:
             f"[END] [{state.string()}] test cases.\n"\
             "------------------------------------------------------------")
 
-def print_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay: str) -> str:
+def write_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay: str) -> str:
     """
     Prints job logs to an HTML file using the PrettyTable library.
 
@@ -1912,11 +1930,26 @@ def print_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay
             count +=1
 
         html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
-        file = open(f"/tmp/{state.string()}-job-logs-replay-{replay}.html", "w")
+        date_time = datetime.now().strftime("%H:%M:%S")
+        file = open(f"/tmp/{state.string()}-job-logs-replay-{replay}-{date_time}.html", "w")
         file.write(html)
         file.close()
 
-def print_job_tests_to_html(tests: list[str], state: State, replay: str) -> None:
+def write_results_to_file(results: list[str]) -> None:
+    """
+    Write the results of a replay to a file.
+
+    Parameters:
+        results (list[str]): A list of strings representing the results of each action taken during the replay.
+        replay (str): The name of the replay.
+    """
+    date_time = datetime.now().strftime("%H:%M:%S")
+    with open(f"/tmp/concurrent-executor-log-{date_time}.txt", "w") as file:
+        for result in results:
+            file.write(f"{result}\n")
+    file.close()
+
+def write_job_tests_to_html(tests: list[str], state: State, replay: str) -> None:
     """
     Prints job tests to HTML.
 
@@ -1942,21 +1975,35 @@ def print_job_tests_to_html(tests: list[str], state: State, replay: str) -> None
             count +=1
 
         html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
-        file = open(f"/tmp/{state.string()}-job-tests-replay-{replay}.html", "w")
+        date_time = datetime.now().strftime("%H:%M:%S")
+        file = open(f"/tmp/{state.string()}-job-tests-replay-{replay}-{date_time}.html", "w")
         file.write(html)
         file.close()
 
-def print_nodes(nodes: Dictionary) -> None:
+def print_nodes(nodes: Dictionary) -> list[str]:
+    result = []
     """
     Prints the names of all z/OS nodes in the provided dictionary.
 
     Parameters:
         nodes (Dictionary): A dictionary containing z/OS node names as keys and values.
+
+    Returns:
+        list[str] - A list of strings representing the names of all z/OS nodes in the provided dictionary.
+
     """
+    count  = 1
     if nodes.len() > 0:
-        print(f"There are {nodes.len()} managed nodes serving this play.")
+        msg = f"[INFO] There are {nodes.len()} managed nodes serving this play."
+        result.append(msg)
+        print(msg)
+
     for key, value in nodes.items():
-        print(f"z/OS node = {key}")
+        msg = f"[INFO] Node {count} = {key}"
+        result.append(msg)
+        print(msg)
+        count +=1
+    return result
 
 def executor(args):
     """
@@ -1966,18 +2013,21 @@ def executor(args):
     Args:
         args (Namespace): A Namespace object containing various arguments passed to the script.
     """
+    play_result = []
     count_play = 1
     tests=args.tests
     count = 1
     replay = False
     while count_play <= args.replay:
-        print(f"\n=================================\nPLAY {count_play} has been initialized.\n=================================")
+        message = f"\n=================================================\n[START] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}started.\n================================================="
+        print(message)
+        play_result.append(message)
 
         start_time_full_run = time.time()
 
         # Get a dictionary of all active zos_nodes to run tests on
-        nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames)
-        print_nodes(nodes)
+        nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames, pythonpath = args.pythonpath, volumes = args.volumes)
+        play_result.extend(print_nodes(nodes))
 
         # Get a dictionary of jobs containing the work to be run on a node.
         jobs = get_jobs(nodes, testsuite=args.testsuite, tests=tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
@@ -1987,44 +2037,89 @@ def executor(args):
         stats = get_jobs_statistics(jobs, args.maxjob)
         job_count_progress = 0
         while stats.jobs_success_count != stats.jobs_total_count and count <= int(args.itr):
+            message = f"\n-----------------------------------------------------------\n[START] Thread pool iteration = {str(count)}, pending = {stats.jobs_total_count - stats.jobs_success_count}.\n-----------------------------------------------------------"
+            play_result.append(message)
+            print(message)
+
             start_time = time.time()
-            runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers)
+            play_result.extend(runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers))
+
             stats = get_jobs_statistics(jobs, args.maxjob)
-            iterations_result += f"\tThread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
-            print(f"Thread pool iteration {str(count)} has pending {stats.jobs_failed_count} jobs.")
+            iterations_result += f"- Thread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
+
+            info = f"-----------------------------------------------------------\n[END] Thread pool iteration = {str(count)},  pending = {stats.jobs_failed_count}.\n-----------------------------------------------------------"
+            play_result.append(info)
+            print(info)
+
             count +=1
             job_count_progress = stats.jobs_success_count
 
-        print("\n=================================\nRESULTS\n=================================")
-        print(f"All {count - 1} thread pool iterations completed in {elapsed_time(start_time_full_run)} time, with {number_of_threads} threads running concurrently.")
+        msg = f"\n-----------------------------------------------------------\n[RESULTS] for play {count_play} {f"of {args.replay} " if args.replay > 1 else ""}.\n-----------------------------------------------------------"
+        play_result.append(msg)
+        print(msg)
+
+        msg = f"All {count - 1} thread pool iterations completed in {elapsed_time(start_time_full_run)} time, with {number_of_threads} threads running concurrently."
+        play_result.append(msg)
+        print(msg)
+
         print(iterations_result)
-        print("\n=================================\nSUMMARY\n=================================")
-        print(f"\tNumber of jobs queued to be run = {stats.jobs_total_count}.")
-        print(f"\tNumber of jobs that run successfully = {stats.jobs_success_count}.")
-        print(f"\tTotal number of jobs that failed = {stats.jobs_failed_count}.")
-        print(f"\tNumber of jobs that failed great than or equal to {str(args.maxjob)} times = {stats.jobs_failed_count_maxjob}.")
-        print(f"\tNumber of jobs that failed less than {str(args.maxjob)} times = {stats.jobs_failed_count - stats.jobs_failed_count_maxjob}.")
-        print(f"\tNumber of jobs that were balanced = {stats.jobs_rebalanced_count}.")
+        play_result.append(iterations_result)
 
-        # Print to stdout any failed test cases and their relevant pytest logs
-        print_job_tests(stats.jobs_failed_tests, State.FAILURE)
-        print_job_logs(stats.jobs_failed_log, State.FAILURE)
-        print_job_tests_to_html(stats.jobs_failed_tests, State.FAILURE, count_play)
-        print_job_logs_to_html(stats.jobs_failed_log, State.FAILURE, count_play)
+        msg = f"Number of jobs queued to be run = {stats.jobs_total_count}."
+        play_result.append(msg)
+        print(msg)
 
-        # Print to stdout any test cases that exceeded the value max number of times a job can fail.
-        print_job_tests(stats.jobs_failed_maxjob_tests, State.EXCEEDED)
-        print_job_logs(stats.jobs_failed_maxjob_log, State.EXCEEDED)
-        print_job_tests_to_html(stats.jobs_failed_maxjob_tests, State.EXCEEDED, count_play)
-        print_job_logs_to_html(stats.jobs_failed_maxjob_log, State.EXCEEDED, count_play)
+        msg = f"Number of jobs that run successfully = {stats.jobs_success_count}."
+        play_result.append(msg)
+        print(msg)
 
-        # Print to stdout all successful test cases and their relevant logs.
-        print_job_tests(stats.jobs_success_tests, State.SUCCESS)
-        print_job_logs(stats.jobs_success_log, State.SUCCESS)
-        print_job_tests_to_html(stats.jobs_success_tests, State.SUCCESS, count_play)
-        print_job_logs_to_html(stats.jobs_success_log, State.SUCCESS, count_play)
+        msg = f"Total number of jobs that failed = {stats.jobs_failed_count}."
+        play_result.append(msg)
+        print(msg)
 
-        # If replay is set, the retry this again with the test cases that failed
+        msg = f"Number of jobs that failed great than or equal to {str(args.maxjob)} times = {stats.jobs_failed_count_maxjob}."
+        play_result.append(msg)
+        print(msg)
+
+        msg = f"Number of jobs that failed less than {str(args.maxjob)} times = {stats.jobs_failed_count - stats.jobs_failed_count_maxjob}."
+        play_result.append(msg)
+        print(msg)
+
+        msg = f"Number of jobs that were balanced = {stats.jobs_rebalanced_count}."
+        play_result.append(msg)
+        print(msg)
+
+        message = f"\n=================================================\n[END] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}ended.\n================================================="
+        play_result.append(message)
+        print(message)
+
+        # ----------------------------------------------
+        # Print each play to STDOUT and/or write results.
+        # ----------------------------------------------
+        if args.verbose:
+            # Print to stdout any failed test cases and their relevant pytest logs
+            print_job_tests(stats.jobs_failed_tests, State.FAILURE)
+            print_job_logs(stats.jobs_failed_log, State.FAILURE)
+            # Print to stdout any test cases that exceeded the value max number of times a job can fail.
+            print_job_tests(stats.jobs_failed_maxjob_tests, State.EXCEEDED)
+            print_job_logs(stats.jobs_failed_maxjob_log, State.EXCEEDED)
+            # Print to stdout all successful test cases and their relevant logs.
+            print_job_tests(stats.jobs_success_tests, State.SUCCESS)
+            print_job_logs(stats.jobs_success_log, State.SUCCESS)
+
+        # Print to HTML any failed test cases and their relevant pytest logs
+        write_job_tests_to_html(stats.jobs_failed_tests, State.FAILURE, count_play)
+        write_job_logs_to_html(stats.jobs_failed_log, State.FAILURE, count_play)
+
+        # Print to HTML any test cases that exceeded the value max number of times a job can fail.
+        write_job_tests_to_html(stats.jobs_failed_maxjob_tests, State.EXCEEDED, count_play)
+        write_job_logs_to_html(stats.jobs_failed_maxjob_log, State.EXCEEDED, count_play)
+
+        # Print to HTML all successful test cases and their relevant logs.
+        write_job_tests_to_html(stats.jobs_success_tests, State.SUCCESS, count_play)
+        write_job_logs_to_html(stats.jobs_success_log, State.SUCCESS, count_play)
+
+        # If replay is set, then repeat the concurrent executor again with the test cases that failed only.
         if stats.jobs_failed_count > 0:
             tests = ','.join(stats.jobs_failed_tests)
             args.testsuite = None
@@ -2033,6 +2128,9 @@ def executor(args):
             replay = True
         else:
             count_play = args.replay
+
+    # Print the cumulative result of all plays to a file
+    write_results_to_file(play_result)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -2104,25 +2202,25 @@ def main():
 
     # Options
     parser.add_argument('--extra', type=str, help='Extra commands passed to subprocess before pytest execution', required=False, metavar='<str>', default="")
-    parser.add_argument('--pyz', type=str, help='Python Z home directory.', required=True, metavar='<str,str>', default="")
-    parser.add_argument('--zoau', type=str, help='ZOAU home directory.', required=True, metavar='<str,str>', default="")
-    parser.add_argument('--itr', type=int, help='How many times to run the test suite, exists early if all succeed.', required=True, metavar='<int>', default="")
-    parser.add_argument('--skip', type=str, help='Identify test suites to skip, only honored with option \'--directories\'', required=False, metavar='<str,str>', default="")
-    parser.add_argument('--user', type=str, help='z/OS USS user authorized to run Ansible tests on the managed z/OS node', required=True, metavar='<str>', default="")
-    parser.add_argument('--timeout', type=int, help='The maximum time in seconds a job should run on z/OS for, default is 300 seconds.', required=False, metavar='<int>', default="300")
-    parser.add_argument('--maxjob', type=int, help='The maximum number of times a job can fail before its disabled in the job queue.', required=False, metavar='<int>', default="6")
-    parser.add_argument('--bal', type=int, help='The count at which a job is balanced from one z/OS node to another for execution.', required=False, metavar='<int>', default="3")
-    parser.add_argument('--hostnames', help='List of hostnames to use, overrides the auto detection.', required=False, metavar='<list[str]>', default=None, nargs='*')
-    parser.add_argument('--maxnode', type=int, help='The maximum number of times a node can fail to run a job before its set to \'offline\' in the node queue.', required=False, metavar='<int>', default=6)
-    parser.add_argument('--verbosity', type=int, help='The level of pytest verbosity, 1 = -v, 2 = -vv, 3 = -vvv, 4 = -vvvv.', required=False, metavar='<int>', default=0)
-    parser.add_argument('--capture', action=argparse.BooleanOptionalAction, help='Instruct Pytest not to capture any output, equivalent of -s.', required=False, default=False)
-    parser.add_argument('--workers', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
-    parser.add_argument('--replay', type=int, help='The numerical value used to increase the number of worker threads by proportionally.', required=False, metavar='<int>', default=1)
-    # parser.add_argument('--pythonpath', type=str, help='Absolute path where to find Python modules (ZOAU modules).', required=True, metavar='<str>', default="")
-    # parser.add_argument('--volumes', type=str, help='The volumes to use with the test cases that are to be executed.', required=False, metavar='<str,str>', default="222222,000000")
+    parser.add_argument('--pyz', type=str, help='Python Z home directory.', required=True, metavar='<str,str>', default="/usr/lpp/python")
+    parser.add_argument('--zoau', type=str, help='ZOAU home directory.', required=True, metavar='<str,str>', default="/usr/lpp/zoau")
+    parser.add_argument('--itr', type=int, help='How many iterations to run CE, each iteration runs only failed tests, exits early if there are no tests to run, default = 12.', required=True, metavar='<int>', default="12")
+    parser.add_argument('--skip', type=str, help='Skip test suites, only works with option \'--directories\'', required=False, metavar='<str,str>', default="")
+    parser.add_argument('--user', type=str, help='Ansible user authorized to run tests on the managed node.', required=True, metavar='<str>', default="ibmuser")
+    parser.add_argument('--timeout', type=int, help='The maximum time in seconds a job should wait for completion, default = 300.', required=False, metavar='<int>', default="300")
+    parser.add_argument('--maxjob', type=int, help='The maximum number of times a job can fail before its removed from the job queue.', required=False, metavar='<int>', default="10")
+    parser.add_argument('--bal', type=int, help='The failure count at which a job is assigned to a new managed node, default = 5 .', required=False, metavar='<int>', default="5")
+    parser.add_argument('--hostnames', help='List of managed nodes to use, overrides the auto detection, must be a comma delimited string.', required=False, metavar='<str,str,str>', default=None, nargs='*')
+    parser.add_argument('--maxnode', type=int, help='The maximum number of test failures permitted for a managed node before the node is set to can fail to \'offline\' in the node queue, default = 10.', required=False, metavar='<int>', default=10)
+    parser.add_argument('--verbosity', type=int, help='The pytest verbosity level to use, 1 = -v, 2 = -vv, 3 = -vvv, 4 = -vvvv, default = 0.', required=False, metavar='<int>', default=0)
+    parser.add_argument('--capture', action=argparse.BooleanOptionalAction, help='Instruct Pytest whether to capture any output, equivalent of pytest -s, default = --no-capture.', required=False, default=False)
+    parser.add_argument('--workers', type=int, help='The numerical multiplier used to increase the number of worker threads, this is multiplied by the managed nodes to calculate threadsf.', required=False, metavar='<int>', default=1)
+    parser.add_argument('--replay', type=int, help='This value will instruct the tool to replay the entire command for only the failed test cases.', required=False, metavar='<int>', default=1)
+    parser.add_argument('--pythonpath', type=str, help='Absolute path to the ZOAU Python modules, precompiled or wheels.', required=True, metavar='<str>', default="")
+    parser.add_argument('--volumes', type=str, help='The volumes to use with the test cases, overrides the auto volume assignment.', required=False, metavar='<str,str>', default="222222,000000")
+    parser.add_argument('--verbose', action=argparse.BooleanOptionalAction, help='Enables verbose stdout, default = --no-verbose.', required=False, default=False)
+    parser.add_argument('--throttle', action=argparse.BooleanOptionalAction, help='Enables managed node throttling such that a managed node will only execute one job at at time, no matter the threads, default --throttle', required=False, default=True)
 
-        # self._inventory.update({'pythonpath': '/zoau/v1.3.1/lib/3.10'})
-        # self._extra_args.update({'extra_args':{'volumes':['222222','000000']}})
     # Mutually exclusive options
     group_tests_or_dirs = parser.add_argument_group('Mutually exclusive', 'Absolute path to test suites. For more than one, use a comma or space delimiter.')
     exclusive_group_or_tests = group_tests_or_dirs.add_mutually_exclusive_group(required=True)

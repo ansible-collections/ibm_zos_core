@@ -2020,19 +2020,32 @@ def print_nodes(nodes: Dictionary) -> list[str]:
         count +=1
     return result
 
-def executor(args):
+def executor(args) -> int:
     """
     This function is responsible for executing the tests on the nodes. It takes in several arguments such as the user,
     the tests to be run, the maximum number of times a job can fail, and more. The function returns no value.
 
     Args:
         args (Namespace): A Namespace object containing various arguments passed to the script.
+
+    Returns:
+        int: The exit code of the executor.
+            - Non-zero means there was an error during execution and at least one test case has failed.
+            - Zero return code means all tests cases successfully passed.
+
+    Notes:
+    The concurrent executor will always produce a textual log in /tmp with this named file pattern
+        'concurrent-executor-log-{date_time}.txt'. While there are logs it will produce, those are
+        selected with the command line options. On non-zero return code, its advised the textual log
+        be evaluated.
     """
     play_result = []
     count_play = 1
     tests=args.tests
     count = 1
     replay = False
+    return_code = 0
+
     while count_play <= args.replay:
         message = f"\n=================================================\n[START] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}started.\n================================================="
         print(message)
@@ -2134,18 +2147,21 @@ def executor(args):
         write_job_tests_to_html(stats.jobs_success_tests, State.SUCCESS, count_play)
         write_job_logs_to_html(stats.jobs_success_log, State.SUCCESS, count_play)
 
-        # If replay is set, then repeat the concurrent executor again with the test cases that failed only.
+        # If replay, repeat concurrent executor with failed tests only, else advance count_play and end the program
         if stats.jobs_failed_count > 0:
             tests = ','.join(stats.jobs_failed_tests)
             args.testsuite = None
             count_play +=1
             count = 1
             replay = True
+            return_code = 1
         else:
             count_play = args.replay
 
     # Print the cumulative result of all plays to a file
     write_results_to_file(play_result)
+
+    return return_code
 
 def main():
     parser = argparse.ArgumentParser(
@@ -2252,7 +2268,7 @@ def main():
         raise ValueError(f"Value '--bal' = {args.bal}, must be less than --maxjob = {args.itr}, else balance will have no effect.")
 
     # Execute/begin running the concurrency testing with the provided args.
-    executor(args)
+    return executor(args)
 
 if __name__ == '__main__':
     main()

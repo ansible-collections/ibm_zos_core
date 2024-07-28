@@ -1605,7 +1605,7 @@ def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list
     #TODO: refactor these tuples to include gt or max to not confused with get jobs statistics
     return (jobs_failed_count, jobs_failed_list, jobs_failed_log, jobs_rebalanced)
 
-def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxnode: int) -> Tuple[int, str]:
+def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxnode: int, throttle: bool) -> Tuple[int, str]:
     """
     Runs a job (test case) on a managed node and ensures the job has the necessary
     managed node available. If not, it will manage the node and collect the statistics
@@ -1657,10 +1657,26 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
     result = None
 
     node_count_online = get_nodes_online_count(nodes)
-    if node_count_online >0:
+    if node_count_online > 0:
         node = nodes.get(hostname)
         # Temporary solution to avoid nodes running concurrent work loads
-        if get_nodes_offline_count(nodes) == 0 and node.get_running_job_id() == -1:
+        # if get_nodes_offline_count(nodes) == 0 and node.get_running_job_id() == -1:
+        # TODO: Why check if there are no offline nodes , feels like node.get_running_job_id() would have been enough.
+
+        if throttle and (node.get_running_job_id() != -1):
+            rc = 10
+            job.set_rc(rc)
+            nodes_count = nodes.len()
+            node_count_offline = get_nodes_offline_count(nodes)
+            #other = node.get_assigned_jobs_as_dictionary().get(id)
+            date_time = datetime.now().strftime("%H:%M:%S") #("%d/%m/%Y %H:%M:%S")
+            rsn = f"Managed node is not able to execute job id={node.get_running_job_id()}, nodes={nodes_count}, offline={node_count_offline}, online={node_count_online}."
+            message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={0}, rc={rc}, msg={rsn}"
+            node.set_running_job_id(-1) # Set it to false after message string
+            node.set_balanced_job_id(id)
+            #set_node_offline(node, maxnode)
+            update_job_hostname(job)
+        else:
             node.set_running_job_id(id)
             start_time = time.time()
             date_time = datetime.now().strftime("%H:%M:%S") #"%d/%m/%Y %H:%M:%S")
@@ -1736,19 +1752,19 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                 job.set_stdout_and_stderr(message, rsn, date_time)
                 job.increment_failure()
                 node.set_failure_job_id(id)
-        else:
-            rc = 10
-            job.set_rc(rc)
-            nodes_count = nodes.len()
-            node_count_offline = get_nodes_offline_count(nodes)
-            #other = node.get_assigned_jobs_as_dictionary().get(id)
-            date_time = datetime.now().strftime("%H:%M:%S") #("%d/%m/%Y %H:%M:%S")
-            rsn = f"Managed node is not able to execute job id={node.get_running_job_id()}, nodes={nodes_count}, offline={node_count_offline}, online={node_count_online}."
-            message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={0}, rc={rc}, msg={rsn}"
-            node.set_running_job_id(-1) # Set it to false after message string
-            node.set_balanced_job_id(id)
-            #set_node_offline(node, maxnode)
-            update_job_hostname(job)
+        # else:
+        #     rc = 10
+        #     job.set_rc(rc)
+        #     nodes_count = nodes.len()
+        #     node_count_offline = get_nodes_offline_count(nodes)
+        #     #other = node.get_assigned_jobs_as_dictionary().get(id)
+        #     date_time = datetime.now().strftime("%H:%M:%S") #("%d/%m/%Y %H:%M:%S")
+        #     rsn = f"Managed node is not able to execute job id={node.get_running_job_id()}, nodes={nodes_count}, offline={node_count_offline}, online={node_count_online}."
+        #     message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={0}, rc={rc}, msg={rsn}"
+        #     node.set_running_job_id(-1) # Set it to false after message string
+        #     node.set_balanced_job_id(id)
+        #     #set_node_offline(node, maxnode)
+        #     update_job_hostname(job)
     else:
         node.set_running_job_id(-1)
         rc = 6
@@ -1763,7 +1779,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
     return rc, message
 
 
-def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxnode: int, workers: int) -> list[str]:
+def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxnode: int, workers: int, throttle: bool) -> list[str]:
     """
     Method creates an executor to run a job found in the jobs dictionary concurrently.
     This method is the key function that allows for concurrent execution of jobs.
@@ -1810,9 +1826,8 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
 
     result = []
     with ThreadPoolExecutor(number_of_threads,thread_name_prefix='ansible-test') as executor:
-        futures = [executor.submit(run, key, jobs, nodes, timeout, max, bal, extra, maxnode) for key, value in jobs.items() if not value.get_successful()]
+        futures = [executor.submit(run, key, jobs, nodes, timeout, max, bal, extra, maxnode, throttle) for key, value in jobs.items() if not value.get_successful()]
         for future in as_completed(futures):
-            # TODO: Do we need to do anything with the future result?
             rc, message = future.result()
             if future.exception() is not None:
                 msg = f"[ERROR] Executor exception occurred with error: {future.exception()}"
@@ -2042,7 +2057,7 @@ def executor(args):
             print(message)
 
             start_time = time.time()
-            play_result.extend(runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers))
+            play_result.extend(runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers, args.throttle))
 
             stats = get_jobs_statistics(jobs, args.maxjob)
             iterations_result += f"- Thread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
@@ -2236,7 +2251,6 @@ def main():
     if int(args.bal) > int(args.maxjob):
         raise ValueError(f"Value '--bal' = {args.bal}, must be less than --maxjob = {args.itr}, else balance will have no effect.")
 
-    # TODO: Lets find a way to default the workers to the number of ECs
     # Execute/begin running the concurrency testing with the provided args.
     executor(args)
 

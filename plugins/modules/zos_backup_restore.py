@@ -735,7 +735,7 @@ def hlq_type(contents, dependencies):
     return contents.upper()
 
 
-def hlq_default(contents, dependencies):
+#def hlq_default(contents, dependencies):
     """Sets the default HLQ to use if none is provided.
 
     Args:
@@ -745,10 +745,10 @@ def hlq_default(contents, dependencies):
     Returns:
         str: The HLQ to use
     """
-    hlq = None
-    if dependencies.get("operation") == "restore":
-        hlq = datasets.get_hlq()
-    return hlq
+#    hlq = None
+#    if dependencies.get("operation") == "restore":
+#        hlq = datasets.get_hlq()
+#    return hlq
 
 
 def sms_type(contents, dependencies):

@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import tempfile
+import pprint
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -59,6 +60,8 @@ def populate_tmpfile():
 
 
 def create_sourcefile(hosts, volume):
+    # returns un-escaped source file name, but uses escaped file name for shell commands
+    # this is intentionally done to test escaping of data set names
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
@@ -141,6 +144,12 @@ def test_remount(ansible_zos_module, volumes_on_systems):
     srcfn = create_sourcefile(hosts, volume_1)
     try:
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
+        mount_results = hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
+        for result in mount_results.values():
+            print( "\nsecond mount of remount test: " )
+            pprint( result )
+            print( "\n")
+
         mount_result = hosts.all.zos_mount(
             src=srcfn, path="/pythonx", fs_type="zfs", state="remounted"
         )

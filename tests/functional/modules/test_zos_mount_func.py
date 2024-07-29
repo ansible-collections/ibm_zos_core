@@ -145,9 +145,11 @@ def test_remount(ansible_zos_module, volumes_on_systems):
     try:
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
         mount_results = hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
+        pp = pprint.PrettyPrinter(indent=4)
+
         for result in mount_results.values():
             print( "\nsecond mount of remount test: " )
-            pprint( result )
+            pp.pprint( result )
             print( "\n")
 
         mount_result = hosts.all.zos_mount(

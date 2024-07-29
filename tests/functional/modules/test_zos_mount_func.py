@@ -143,14 +143,14 @@ def test_remount(ansible_zos_module, volumes_on_systems):
     volume_1 = volumes.get_available_vol()
     srcfn = create_sourcefile(hosts, volume_1)
     try:
-        hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
-        mount_results = hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
         pp = pprint.PrettyPrinter(indent=4)
-
+        mount_results = hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
         for result in mount_results.values():
-            print( "\nsecond mount of remount test: " )
+            print( "\nfirst mount of remount test: " )
             pp.pprint( result )
             print( "\n")
+
+        hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
 
         mount_result = hosts.all.zos_mount(
             src=srcfn, path="/pythonx", fs_type="zfs", state="remounted"
@@ -159,12 +159,18 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             assert result.get("rc") == 0
             assert result.get("changed") is True
     finally:
-        hosts.all.zos_mount(
+        mount_result = hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
             state="absent",
         )
+        for result in mount_results.values():
+            print( "\nUNMount of remount test: " )
+            pp.pprint( result )
+            print( "\n")
+
+
         hosts.all.file(path="/pythonx/", state="absent")
 
 

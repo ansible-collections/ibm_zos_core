@@ -62,7 +62,8 @@ def create_sourcefile(hosts, volume):
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
-    thisfile = DataSet.escape_data_set_name(starter + ".A$@#-O.MNT.ZFS")
+    basefile = starter + ".A$@#-O.MNT.ZFS"
+    thisfile = DataSet.escape_data_set_name(basefile)
     print(
         "csf: starter={0} thisfile={1} is type {2}".format(
             starter, thisfile, str(type(thisfile))
@@ -81,7 +82,7 @@ def create_sourcefile(hosts, volume):
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
-    return thisfile
+    return basefile
 
 
 def test_basic_mount(ansible_zos_module, volumes_on_systems):

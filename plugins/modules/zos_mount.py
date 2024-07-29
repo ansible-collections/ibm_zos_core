@@ -545,6 +545,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
+    DataSet,
     backup as Backup,
 
 )
@@ -740,6 +741,8 @@ def run_module(module, arg_def):
     res_args = dict()
 
     src = parsed_args.get("src")
+    innersrc = DataSet.escape_data_set_name(src)
+
     path = parsed_args.get("path")
     fs_type = parsed_args.get("fs_type").upper()
     state = parsed_args.get("state")
@@ -795,7 +798,7 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=src,
+            src=innersrc,
             path=path,
             fs_type=fs_type,
             state=state,
@@ -819,7 +822,7 @@ def run_module(module, arg_def):
     )
 
     # data set to be mounted/unmounted must exist
-    fs_du = data_set.DataSetUtils(src)
+    fs_du = data_set.DataSetUtils(innersrc)
     fs_exists = fs_du.exists()
     if fs_exists is False:
         module.fail_json(
@@ -855,7 +858,7 @@ def run_module(module, arg_def):
         )
     sttest = stdout.splitlines()
     for line in sttest:
-        if src in line:
+        if src in line or innersrc in line:
             currently_mounted = True
             # reminder: we can space-split the string and find out mount destination
             break
@@ -914,12 +917,12 @@ def run_module(module, arg_def):
 
     if will_mount:
         fullcmd = "MOUNT FILESYSTEM\\( \\'{0}\\' \\) MOUNTPOINT\\( \\'{1}\\' \\) TYPE\\( '{2}' \\)".format(
-            src, path, fs_type
+            innersrc, path, fs_type
         )
         parmtext = (
             parmtext
             + "MOUNT FILESYSTEM('{0}')\n      MOUNTPOINT('{1}')\n      TYPE('{2}')".format(
-                src, path, fs_type
+                innersrc, path, fs_type
             )
         )
         if "ro" in mount_opts:
@@ -985,7 +988,7 @@ def run_module(module, arg_def):
     stdout = stderr = None
 
     if will_unmount:  # unmount/remount
-        fullumcmd = "UNMOUNT FILESYSTEM\\( '{0}' \\)".format(src)
+        fullumcmd = "UNMOUNT FILESYSTEM\\( '{0}' \\)".format(innersrc)
         if unmount_opts is None:
             unmount_opts = "NORMAL"
             fullumcmd = fullcmd + " " + unmount_opts
@@ -1068,7 +1071,7 @@ def run_module(module, arg_def):
                         cont.append(line)
 
         stdout += "\n"
-        newtext = swap_text(cont, parmtext, src)
+        newtext = swap_text(cont, parmtext, innersrc)
         if newtext != cont or cont != content:
             fh = open(tmp_file_filename, "w")
             fh.write(newtext)

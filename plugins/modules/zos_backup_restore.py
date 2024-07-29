@@ -634,9 +634,7 @@ def restore(
     elif rc > 4:
         failed = True
     if failed:
-        raise zoau_exceptions.ZOAUException(
-            "{0}, RC={1}".format(output, rc)
-        )
+        raise ("{0}, RC={1}".format(output, rc))
 
 
 def get_real_rc(output):

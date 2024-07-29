@@ -13,37 +13,32 @@
 # limitations under the License.
 
 
+"""
+Module CE is used to run ansible test cases concurrently to a pool of managed
+nodes. This module is tailored to z/OS managed nodes and currently has a dependency
+on a shell script and the managed venv's provided by the 'ac' tool.
+"""
+# pylint: disable=too-many-lines
+
 import argparse
-from enum import Enum
-import itertools
 import json
-import math
-import os
-import sys, getopt
+import sys
 import subprocess
-import pprint as pprint
-from os.path import join
+import textwrap
+import threading
+from enum import Enum
+from threading import Lock
+import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from socket import error
-import textwrap
-import threading
+from contextlib import contextmanager
+from datetime import datetime
+from collections import OrderedDict, namedtuple
+from typing import List, Tuple
+from prettytable import PrettyTable, ALL
 from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
     AuthenticationException, SSHException, ssh_exception
-
-from os import makedirs
-from os.path import basename
-from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
-from contextlib import contextmanager
-import time
-from datetime import datetime
-import concurrent.futures
-from collections import OrderedDict, namedtuple
-
-from typing import List, Set, Type, Tuple
-from prettytable import PrettyTable, ALL
-
 
 # ------------------------------------------------------------------------------
 # Enums
@@ -236,7 +231,7 @@ class Dictionary():
     """
 
     def __init__(self):
-        self._shared_dictionary = dict()
+        self._shared_dictionary = {}
         self._lock = Lock()
 
     @contextmanager
@@ -304,6 +299,7 @@ class Dictionary():
         with self._acquire_with_timeout(timeout) as acquired:
             if acquired:
                 return self._shared_dictionary[key]
+        return None
 
     def update(self, key, obj) -> None:
         """
@@ -350,7 +346,7 @@ class Dictionary():
             <dictionary>.len()
         """
         with self._lock:
-             return len(self._shared_dictionary)
+            return len(self._shared_dictionary)
 
     def keys(self) -> List[str]:
         """
@@ -378,6 +374,8 @@ class Job:
     id (int): The id that will be assigned to this job, a unique identifier. The id will be used
         as the key in a dictionary.
     """
+
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods, redefined-builtin
     def __init__(self, hostname: str, nodes: Dictionary, testcase: str, id: int):
         """
         Parameters:
@@ -388,7 +386,7 @@ class Job:
             id (int): The id that will be assigned to this job, a unique identifier. The id will
                 be used as the key in a dictionary.
         """
-        self._hostnames: list = list()
+        self._hostnames: list = []
         self._hostnames.append(hostname)
         self._testcase: str = testcase
         self._capture: str = None
@@ -740,6 +738,8 @@ class Node:
         pyz( str): The USS absolute path to where python is installed.
     """
 
+    # pylint: disable=too-many-instance-attributes, too-many-arguments
+
     def __init__(self, hostname: str, user: str, zoau: str, pyz: str, pythonpath: str, volumes: str):
         """
     parser.add_argument('--pythonpath', type=str, help='Absolute path to the ZOAU Python modules, precompiled or wheels.', required=True, metavar='<str>', default="")
@@ -767,11 +767,10 @@ class Node:
         self._inventory.update({'zoau': self._zoau})
         self._inventory.update({'pyz': self._pyz})
         self._inventory.update({'pythonpath': self._pythonpath})
-        self._extra_args = dict()
-        # self._extra_args.update({'extra_args':{'volumes':['222222','000000']}})
+        self._extra_args = {}
         self._extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}})
         self._inventory.update(self._extra_args)
-        self._assigned: Dictionary[int, Job] = Dictionary()
+        self._assigned: Dictionary[int, Job] = Dictionary()     # pylint: disable=unsubscriptable-object
         self._failure_count: int = 0
         self._assigned_count: int = 0
         self._balanced_count: int = 0
@@ -813,7 +812,7 @@ class Node:
         """
         self._state = state
 
-    def set_failure_job_id(self, id: int) -> None:
+    def set_failure_job_id(self, id: int) -> None:      # pylint: disable=redefined-builtin
         """
         Update the node with any jobs which fail to run. If a job fails to run,
         add the job ID to the nodes class. A Job failure occurs when the
@@ -835,7 +834,7 @@ class Node:
         self._assigned.add(job.get_id(),job)
         self._assigned_count +=1
 
-    def set_balanced_job_id(self, id: int) -> None:
+    def set_balanced_job_id(self, id: int) -> None:         # pylint: disable=redefined-builtin
         """
         Add a jobs ID to the node, when a job has been rebalanced.
 
@@ -1022,6 +1021,8 @@ class Connection:
         print(result)
     """
 
+    # pylint: disable=too-many-instance-attributes, too-many-lines, too-many-arguments
+
     def __init__(self, hostname, username, password = None, key_filename = None,
                     passphrase = None, port=22, environment= None ):
         self._hostname = hostname
@@ -1081,24 +1082,22 @@ class Connection:
                 ssh.set_missing_host_key_policy(AutoAddPolicy())
                 ssh.connect(**self.__to_dict(), disabled_algorithms=
                                 {'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']})
-                return ssh
             except BadHostKeyException as e:
-                print(e)
-                raise BadHostKeyException('Host key could not be verified.') # parentheses?
+                print('Host key could not be verified.', str(e))
+                raise e
             except AuthenticationException as e:
-                print(e)
-                raise AuthenticationException('Authentication failed.')
+                print('Authentication failed.', str(e))
+                raise e
             except ssh_exception.SSHException as e:
-                print(e)
-                raise ssh_exception.SSHException('SSH Error.')
+                print(e, str(e))
+                raise e
             except FileNotFoundError as e:
-                print(e)
-                raise FileNotFoundError('Missing key filename.')
+                print('Missing key filename.', str(e))
+                raise e
             except error as e:
-                print(e)
-                raise error('Socket error occurred while connecting.')
-
-        raise Exception
+                print('Socket error occurred while connecting.', str(e))
+                raise e
+        return ssh
 
     def execute(self, client, command):
         """
@@ -1119,24 +1118,23 @@ class Connection:
         response = None
         get_pty_bool = True
         out = ""
-        error = ""
         try:
             # We may need to create a channel and make this synchronous
             # but get_pty should help avoid having to do that
-            (stdin, stdout, stderr) = client.exec_command(self.env_str+command, get_pty=get_pty_bool)
+            (_, stdout, stderr) = client.exec_command(self.env_str+command, get_pty=get_pty_bool)
 
             if get_pty_bool is True:
                 out = stdout.read().decode().strip('\r\n')
-                error = stderr.read().decode().strip('\r\n')
+                error_msg = stderr.read().decode().strip('\r\n')
             else:
                 out = stdout.read().decode().strip('\n')
-                error = stderr.read().decode().strip('\n')
+                error_msg = stderr.read().decode().strip('\n')
 
             # Don't shutdown stdin, we are reusing this connection in the services instance
             # client.get_transport().open_session().shutdown_write()
 
             response = {'stdout': out,
-                        'stderr': error,
+                        'stderr': error_msg,
                         'command': command
             }
 
@@ -1181,8 +1179,7 @@ class Connection:
 # Helper methods
 # ------------------------------------------------------------------------------
 
-
-# def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: bool, verbosity: int, parametrized_test_cases = None) -> Dictionary:
+# pylint: disable=too-many-arguments, too-many-locals
 def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: bool, verbosity: int, replay: bool = False) -> Dictionary:
     """
     Get a thread safe dictionary of job(s).
@@ -1273,9 +1270,8 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: 
             parametrized_test_cases.append(f.replace('tests/','',1))
     else:
         # Run the pytest collect-only command and grep on :: so to avoid warnings
-        parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True)
+        parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True, check=False)
         parametrized_test_cases = parametrized_test_cases.stdout.split()
-        parametrized_test_cases_count = len(parametrized_test_cases)
 
     # Thread safe dictionary of Jobs
     jobs = Dictionary()
@@ -1321,7 +1317,7 @@ def update_job_hostname(job: Job):
       job nodes. - after giving this some thou
     """
 
-    unsorted_items = dict()
+    unsorted_items = {}
     nodes = job.get_nodes()
 
     # We need the Jobs assigned host names (job.get_hostnames() -> list[str])
@@ -1370,14 +1366,14 @@ def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None, pytho
         The dictionary key will be the z/OS managed node's hostname and the value
         will be of type Node.
     """
-    nodes: Dictionary [str, Node] = Dictionary()
+    nodes: Dictionary [str, Node] = Dictionary()    # pylint: disable=unsubscriptable-object
 
     if hostnames is None:
         hostnames = []
 
         # Calling venv.sh directly to avoid the ac dependency, ac usually lives in project root so an
         # additional arg would have to be passed like so: "cd ..;./ac --host-nodes --all false"
-        result = subprocess.run(["echo `./venv.sh --targets-production`"], shell=True, capture_output=True, text=True)
+        result = subprocess.run(["echo `./venv.sh --targets-production`"], shell=True, capture_output=True, text=True, check=False)
         hostnames = result.stdout.split()
     else:
         hostnames = hostnames[0].split(',')
@@ -1385,7 +1381,7 @@ def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None, pytho
     # Prune any production system that fails to ping
     for hostname in hostnames:
         command = ['ping', '-c', '1', hostname]
-        result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
 
         # TODO: Use the connection class to connection and validate ZOAU and Python before adding the nodes
         if result.returncode == 0:
@@ -1416,7 +1412,7 @@ def get_nodes_online_count(nodes: Dictionary) -> int:
         The numerical count of nodes that are online.
     """
     nodes_online_count = 0
-    for key, value in nodes.items():
+    for _, value in nodes.items():
         if value.get_state().is_online():
             nodes_online_count += 1
 
@@ -1443,7 +1439,7 @@ def get_nodes_offline_count(nodes: Dictionary) -> int:
         The numerical count of nodes that are offline.
     """
     nodes_offline_count = 0
-    for key, value in nodes.items():
+    for _, value in nodes.items():
         if not value.get_state().is_online():
             nodes_offline_count += 1
 
@@ -1467,7 +1463,7 @@ def set_node_offline(node: Node, maxnode: int) -> None:
         allowed on a node before it is set offline.
     """
     if node.get_balanced_job_count() > maxnode:
-            node.set_state(Status.OFFLINE)
+        node.set_state(Status.OFFLINE)
 
 def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, list[str], int, list[str], int, list[str], list[str], int, int, list[str], list[str]]:
     """
@@ -1518,7 +1514,7 @@ def get_jobs_statistics(jobs: Dictionary, maxjob: int) -> Tuple[int, list[str], 
     jobs_failed_maxjob_tests =[]
     jobs_failed_maxjob_log = []
 
-    for key, value in jobs.items():
+    for _, value in jobs.items():
         # Total count of jobs (same as len(jobs))
         jobs_total_count +=1
 
@@ -1605,6 +1601,7 @@ def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list
     #TODO: refactor these tuples to include gt or max to not confused with get jobs statistics
     return (jobs_failed_count, jobs_failed_list, jobs_failed_log, jobs_rebalanced)
 
+# pylint: disable=redefined-builtin, too-many-branches, too-many-statements
 def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxnode: int, throttle: bool) -> Tuple[int, str]:
     """
     Runs a job (test case) on a managed node and ensures the job has the necessary
@@ -1684,7 +1681,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
             try:
                 # Build command and strategically map stdout and stderr so that both are mapped to stderr and the pytest rc goes to stdout.
                 cmd =  f"{extra};{job.get_command()} 1>&2; echo $? >&1"
-                result = subprocess.run([cmd], shell=True, capture_output=True, text=True, timeout=timeout)
+                result = subprocess.run([cmd], shell=True, capture_output=True, text=True, timeout=timeout, check=False)
                 node.set_running_job_id(-1)
                 job.set_elapsed_time(start_time)
                 elapsed = job.get_elapsed_time()
@@ -1741,7 +1738,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                     node.set_failure_job_id(id)
                     job.set_stdout_and_stderr(message, result.stderr, date_time)
 
-            except subprocess.TimeoutExpired as timeout_err:
+            except subprocess.TimeoutExpired:
                 node.set_running_job_id(-1)
                 rc = 9
                 job.set_rc(rc)
@@ -1834,9 +1831,9 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
                 result.append(msg)
                 print(msg)
             elif future.cancelled():
-                 msg = f"[ERROR] Executor cancelled job, message = {message}"
-                 result.append(msg)
-                 print(msg)
+                msg = f"[ERROR] Executor cancelled job, message = {message}"
+                result.append(msg)
+                print(msg)
             elif future.done():
                 msg = f"[{"INFO" if rc == 0 else "WARN"}] Executor message = {message}"
                 result.append(msg)
@@ -1870,12 +1867,14 @@ def elapsed_time(start_time: time):
 
     hours, rem = divmod(time.time() - start_time, 3600)
     minutes, seconds = divmod(rem, 60)
-    elapsed = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+    #elapsed = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+    elapsed = f"{hours:0>2}:{minutes:0>2}:{seconds:05.2f}"
     return elapsed
 
 def print_job_logs(log: list[Tuple[str, str, str]], state: State) -> None:
     """
-    Prints job logs to the console.
+    Prints job logs to the console. If State is of type SUCCESS, prints to stdout,
+    else prints to stderr.
 
     Parameters:
         log (list[Tuple[str, str, str]]): A list of tuples containing job log information.
@@ -1883,7 +1882,7 @@ def print_job_logs(log: list[Tuple[str, str, str]], state: State) -> None:
     """
     if len(log) > 0:
         for entry in log:
-            print("------------------------------------------------------------\n"\
+            msg=f"------------------------------------------------------------\n"\
                 f"[START] [{state.string()}] log entry.\n"\
                 "------------------------------------------------------------\n"\
                 f"\tJob ID: {entry.id}\n"\
@@ -1894,7 +1893,13 @@ def print_job_logs(log: list[Tuple[str, str, str]], state: State) -> None:
                 f"\tStdout: \n\t{entry.std_out_err.replace('\n', '\n\t')}\n"\
                 "------------------------------------------------------------\n"\
                 f"[END] [{state.string()}] log entry.\n"\
-                "------------------------------------------------------------")
+                "------------------------------------------------------------"
+            if state.is_success():
+                print(msg)
+            else:
+                print(msg,file=sys.stderr)
+                # sys.stderr.write(msg)
+                # sys.stderr.flush()
 
 def print_job_tests(tests: list[str], state: State) -> None:
     """
@@ -1906,14 +1911,27 @@ def print_job_tests(tests: list[str], state: State) -> None:
     """
 
     if len(tests) > 0:
-        print("------------------------------------------------------------\n"\
+        msg_header =f"------------------------------------------------------------\n"\
             f"[START] [{state.string()}] test cases.\n"\
-            "------------------------------------------------------------")
+            "------------------------------------------------------------"
+        if state.is_success():
+            print(msg_header)
+        else:
+            print(msg_header,file=sys.stderr)
+
         for entry in tests:
-            print(f"\t{entry}")
-        print("------------------------------------------------------------\n"\
+            if state.is_success():
+                print(f"\t{entry}")
+            else:
+                print(f"\t{entry}",file=sys.stderr)
+
+        msg_tail = f"------------------------------------------------------------\n"\
             f"[END] [{state.string()}] test cases.\n"\
-            "------------------------------------------------------------")
+            "------------------------------------------------------------"
+        if state.is_success():
+            print(msg_tail)
+        else:
+            print(msg_tail,file=sys.stderr)
 
 def write_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay: str) -> str:
     """
@@ -1946,9 +1964,9 @@ def write_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay
 
         html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
         date_time = datetime.now().strftime("%H:%M:%S")
-        file = open(f"/tmp/{state.string()}-job-logs-replay-{replay}-{date_time}.html", "w")
-        file.write(html)
-        file.close()
+        with open(f"/tmp/{state.string()}-job-logs-replay-{replay}-{date_time}.html", "w", encoding="utf-8") as file:
+            file.write(html)
+            file.close()
 
 def write_results_to_file(results: list[str]) -> None:
     """
@@ -1959,10 +1977,10 @@ def write_results_to_file(results: list[str]) -> None:
         replay (str): The name of the replay.
     """
     date_time = datetime.now().strftime("%H:%M:%S")
-    with open(f"/tmp/concurrent-executor-log-{date_time}.txt", "w") as file:
+    with open(f"/tmp/concurrent-executor-log-{date_time}.txt", "w", encoding="utf-8") as file:
         for result in results:
             file.write(f"{result}\n")
-    file.close()
+        file.close()
 
 def write_job_tests_to_html(tests: list[str], state: State, replay: str) -> None:
     """
@@ -1991,12 +2009,11 @@ def write_job_tests_to_html(tests: list[str], state: State, replay: str) -> None
 
         html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
         date_time = datetime.now().strftime("%H:%M:%S")
-        file = open(f"/tmp/{state.string()}-job-tests-replay-{replay}-{date_time}.html", "w")
-        file.write(html)
-        file.close()
+        with open(f"/tmp/{state.string()}-job-tests-replay-{replay}-{date_time}.html", "w", encoding="utf-8") as file:
+            file.write(html)
+            file.close()
 
 def print_nodes(nodes: Dictionary) -> list[str]:
-    result = []
     """
     Prints the names of all z/OS nodes in the provided dictionary.
 
@@ -2007,20 +2024,21 @@ def print_nodes(nodes: Dictionary) -> list[str]:
         list[str] - A list of strings representing the names of all z/OS nodes in the provided dictionary.
 
     """
+    result = []
     count  = 1
     if nodes.len() > 0:
         msg = f"[INFO] There are {nodes.len()} managed nodes serving this play."
         result.append(msg)
         print(msg)
 
-    for key, value in nodes.items():
+    for key, _ in nodes.items():
         msg = f"[INFO] Node {count} = {key}"
         result.append(msg)
         print(msg)
         count +=1
     return result
 
-def executor(args) -> int:
+def execute(args) -> int:
     """
     This function is responsible for executing the tests on the nodes. It takes in several arguments such as the user,
     the tests to be run, the maximum number of times a job can fail, and more. The function returns no value.
@@ -2156,7 +2174,7 @@ def executor(args) -> int:
             replay = True
             return_code = 1
         else:
-            count_play = args.replay
+            count_play = args.replay + 1
 
     # Print the cumulative result of all plays to a file
     write_results_to_file(play_result)
@@ -2164,6 +2182,7 @@ def executor(args) -> int:
     return return_code
 
 def main():
+    """ Main """
     parser = argparse.ArgumentParser(
     prog='ce.py',
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2268,7 +2287,7 @@ def main():
         raise ValueError(f"Value '--bal' = {args.bal}, must be less than --maxjob = {args.itr}, else balance will have no effect.")
 
     # Execute/begin running the concurrency testing with the provided args.
-    return executor(args)
+    return execute(args)
 
 if __name__ == '__main__':
     main()

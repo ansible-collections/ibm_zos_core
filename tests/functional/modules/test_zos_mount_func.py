@@ -11,7 +11,9 @@ import tempfile
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    DataSet,
+)
 
 INITIAL_PRM_MEMBER = """/* Initial file to look like BPXPRM */
 /* some settings at the top */
@@ -60,7 +62,7 @@ def create_sourcefile(hosts, volume):
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
-    thisfile = starter + ".A$@#-O.MNT.ZFS"
+    thisfile = DataSet.escape_data_set_name(starter + ".A$@#-O.MNT.ZFS")
     print(
         "csf: starter={0} thisfile={1} is type {2}".format(
             starter, thisfile, str(type(thisfile))

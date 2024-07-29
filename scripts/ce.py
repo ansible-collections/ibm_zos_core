@@ -18,7 +18,9 @@ Module CE is used to run ansible test cases concurrently to a pool of managed
 nodes. This module is tailored to z/OS managed nodes and currently has a dependency
 on a shell script and the managed venv's provided by the 'ac' tool.
 """
-# pylint: disable=too-many-lines
+
+# pylint: disable=line-too-long, redefined-builtin, too-many-arguments, too-many-branches, too-many-instance-attributes
+# pylint: disable=too-many-lines, too-many-locals, too-many-public-methods, too-many-statements, unsubscriptable-object
 
 import argparse
 import json
@@ -375,7 +377,6 @@ class Job:
         as the key in a dictionary.
     """
 
-    # pylint: disable=too-many-instance-attributes, too-many-public-methods, redefined-builtin
     def __init__(self, hostname: str, nodes: Dictionary, testcase: str, id: int):
         """
         Parameters:
@@ -738,7 +739,6 @@ class Node:
         pyz( str): The USS absolute path to where python is installed.
     """
 
-    # pylint: disable=too-many-instance-attributes, too-many-arguments
 
     def __init__(self, hostname: str, user: str, zoau: str, pyz: str, pythonpath: str, volumes: str):
         """
@@ -770,7 +770,7 @@ class Node:
         self._extra_args = {}
         self._extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}})
         self._inventory.update(self._extra_args)
-        self._assigned: Dictionary[int, Job] = Dictionary()     # pylint: disable=unsubscriptable-object
+        self._assigned: Dictionary[int, Job] = Dictionary()
         self._failure_count: int = 0
         self._assigned_count: int = 0
         self._balanced_count: int = 0
@@ -812,7 +812,7 @@ class Node:
         """
         self._state = state
 
-    def set_failure_job_id(self, id: int) -> None:      # pylint: disable=redefined-builtin
+    def set_failure_job_id(self, id: int) -> None:
         """
         Update the node with any jobs which fail to run. If a job fails to run,
         add the job ID to the nodes class. A Job failure occurs when the
@@ -834,7 +834,7 @@ class Node:
         self._assigned.add(job.get_id(),job)
         self._assigned_count +=1
 
-    def set_balanced_job_id(self, id: int) -> None:         # pylint: disable=redefined-builtin
+    def set_balanced_job_id(self, id: int) -> None:
         """
         Add a jobs ID to the node, when a job has been rebalanced.
 
@@ -1021,8 +1021,6 @@ class Connection:
         print(result)
     """
 
-    # pylint: disable=too-many-instance-attributes, too-many-lines, too-many-arguments
-
     def __init__(self, hostname, username, password = None, key_filename = None,
                     passphrase = None, port=22, environment= None ):
         self._hostname = hostname
@@ -1179,7 +1177,6 @@ class Connection:
 # Helper methods
 # ------------------------------------------------------------------------------
 
-# pylint: disable=too-many-arguments, too-many-locals
 def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: bool, verbosity: int, replay: bool = False) -> Dictionary:
     """
     Get a thread safe dictionary of job(s).
@@ -1366,7 +1363,7 @@ def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None, pytho
         The dictionary key will be the z/OS managed node's hostname and the value
         will be of type Node.
     """
-    nodes: Dictionary [str, Node] = Dictionary()    # pylint: disable=unsubscriptable-object
+    nodes: Dictionary [str, Node] = Dictionary()
 
     if hostnames is None:
         hostnames = []
@@ -1601,7 +1598,6 @@ def get_failed_count_gt_maxjob(jobs: Dictionary, maxjob: int) -> Tuple[int, list
     #TODO: refactor these tuples to include gt or max to not confused with get jobs statistics
     return (jobs_failed_count, jobs_failed_list, jobs_failed_log, jobs_rebalanced)
 
-# pylint: disable=redefined-builtin, too-many-branches, too-many-statements
 def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int, bal: int, extra: str, maxnode: int, throttle: bool) -> Tuple[int, str]:
     """
     Runs a job (test case) on a managed node and ensures the job has the necessary

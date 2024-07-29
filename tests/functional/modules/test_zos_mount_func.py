@@ -73,19 +73,19 @@ def create_sourcefile(hosts, volume):
         )
     )
 
-    if not DataSet.data_set_exists(basefile):
-        hosts.all.shell(
-            cmd="zfsadm define -aggregate "
-            + thisfile
-            + " -volumes {0} -cylinders 200 1".format(volume),
-            executable=SHELL_EXECUTABLE,
-            stdin="",
-        )
-        hosts.all.shell(
-            cmd="zfsadm format -aggregate " + thisfile,
-            executable=SHELL_EXECUTABLE,
-            stdin="",
-        )
+    hosts.all.shell(
+        cmd="zfsadm define -aggregate "
+        + thisfile
+        + " -volumes {0} -cylinders 200 1".format(volume),
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
+    hosts.all.shell(
+        cmd="zfsadm format -aggregate " + thisfile,
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
+
     return basefile
 
 

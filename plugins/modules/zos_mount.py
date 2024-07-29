@@ -545,11 +545,11 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    DataSet,
     backup as Backup,
-
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    DataSet,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
     copy_uss2mvs,

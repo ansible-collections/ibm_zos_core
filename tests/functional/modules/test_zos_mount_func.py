@@ -106,7 +106,7 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
-            state="absent",
+            state="unmounted",
         )
         hosts.all.file(path="/pythonx/", state="absent")
 
@@ -132,7 +132,7 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
-            state="absent",
+            state="unmounted",
         )
         hosts.all.file(path="/pythonx/", state="absent")
 
@@ -163,7 +163,7 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
-            state="absent",
+            state="unmounted",
         )
         for result in mount_results.values():
             print( "\nUNMount of remount test: " )

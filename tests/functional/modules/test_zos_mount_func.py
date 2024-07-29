@@ -73,18 +73,19 @@ def create_sourcefile(hosts, volume):
         )
     )
 
-    hosts.all.shell(
-        cmd="zfsadm define -aggregate "
-        + thisfile
-        + " -volumes {0} -cylinders 200 1".format(volume),
-        executable=SHELL_EXECUTABLE,
-        stdin="",
-    )
-    hosts.all.shell(
-        cmd="zfsadm format -aggregate " + thisfile,
-        executable=SHELL_EXECUTABLE,
-        stdin="",
-    )
+    if not DataSet.data_set_exists(basefile):
+        hosts.all.shell(
+            cmd="zfsadm define -aggregate "
+            + thisfile
+            + " -volumes {0} -cylinders 200 1".format(volume),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+        hosts.all.shell(
+            cmd="zfsadm format -aggregate " + thisfile,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
     return basefile
 
 
@@ -106,10 +107,9 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
-            state="unmounted",
+            state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
-
 
 
 def test_double_mount(ansible_zos_module, volumes_on_systems):
@@ -132,7 +132,7 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
-            state="unmounted",
+            state="absent",
         )
         hosts.all.file(path="/pythonx/", state="absent")
 
@@ -163,13 +163,12 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
-            state="unmounted",
+            state="absent",
         )
         for result in mount_results.values():
             print( "\nUNMount of remount test: " )
             pp.pprint( result )
             print( "\n")
-
 
         hosts.all.file(path="/pythonx/", state="absent")
 

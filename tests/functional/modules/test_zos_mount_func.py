@@ -60,7 +60,7 @@ def create_sourcefile(hosts, volume):
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
-    thisfile = starter + ".TTT.MNT.ZFS"
+    thisfile = starter + ".A$@#-O.MNT.ZFS"
     print(
         "csf: starter={0} thisfile={1} is type {2}".format(
             starter, thisfile, str(type(thisfile))

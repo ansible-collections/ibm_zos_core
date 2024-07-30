@@ -65,7 +65,7 @@ def create_sourcefile(hosts, volume):
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
-    basefile = starter + ".A$@#-O.MNT.ZFS"
+    basefile = starter + ".ATO.MNT.ZFS"
     thisfile = DataSet.escape_data_set_name(basefile)
     print(
         "csf: starter={0} thisfile={1} is type {2}".format(

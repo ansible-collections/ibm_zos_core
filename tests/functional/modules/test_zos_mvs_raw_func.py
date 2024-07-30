@@ -1012,43 +1012,47 @@ def test_input_large(ansible_zos_module):
         hosts.all.zos_data_set(name=default_data_set, state="absent")
 
 
-# def test_input_provided_as_list(ansible_zos_module):
-#     try:
-#         hosts = ansible_zos_module
-#         default_data_set = get_tmp_ds_name()
-#         hosts.all.zos_data_set(name=default_data_set, state="absent")
-#         contents = []
-#         for i in range(10):
-#             contents.append(IDCAMS_STDIN)
-#         results = hosts.all.zos_mvs_raw(
-#             program_name="idcams",
-#             auth=True,
-#             dds=[
-#                 {
-#                     "dd_data_set":{
-#                         "dd_name":SYSPRINT_DD,
-#                         "data_set_name":default_data_set,
-#                         "disposition":"new",
-#                         "type":"seq",
-#                         "return_content":{
-#                             "type":"text"
-#                         },
-#                     },
-#                 },
-#                 {
-#                     "dd_input":{
-#                         "dd_name":SYSIN_DD,
-#                         "content":contents
-#                     }
-#                 },
-#             ],
-#         )
-#         for result in results.contacted.values():
-#             assert result.get("ret_code", {}).get("code", -1) == 0
-#             assert len(result.get("dd_names", [])) > 0
-#             assert len(result.get("dd_names", [{}])[0].get("content")) > 100
-#     finally:
-#         hosts.all.zos_data_set(name=default_data_set, state="absent")
+def test_input_provided_as_list(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        default_data_set = get_tmp_ds_name()
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+
+        contents = []
+        for i in range(10):
+            contents.append(idcams_args)
+
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":contents
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+            assert len(result.get("dd_names", [{}])[0].get("content")) > 100
+    finally:
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -1977,162 +1981,157 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
         hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
+@pytest.mark.parametrize(
+    "dds,input_pos,input_content",
+    [
+        (
+            [
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
+                                    "disposition":"shr",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_input":{
+                                    "content":"Hello world!",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                        ],
+                    },
+                },
+            ],
+            2,
+            "Hello world!",
+        ),
+        (
+            [
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
+                                    "disposition":"shr",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_input":{
+                                    "content":"Hello world!",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                        ],
+                    },
+                },
+            ],
+            2,
+            "Hello world!",
+        ),
+        (
+            [
+                {
+                    "dd_concat":{
+                        "dd_name":SYSPRINT_DD,
+                        "dds":[
+                            {
+                                "dd_input":{
+                                    "content":"Hello world!",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_data_set":{
+                                    "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
+                                    "disposition":"shr",
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                            {
+                                "dd_unix":{
+                                    "path":DEFAULT_PATH_WITH_FILE,
+                                    "return_content":{
+                                        "type":"text"
+                                    },
+                                }
+                            },
+                        ],
+                    },
+                },
+            ],
+            0,
+            "IDCAMS",
+        ),
+    ],
+)
+def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_content):
+    try:
+        hosts = ansible_zos_module
 
-# @pytest.mark.parametrize(
-#     "dds,input_pos,input_content",
-#     [
-#         (
-#             [
-#                 {
-#                     "dd_concat":{
-#                         "dd_name":SYSPRINT_DD,
-#                         "dds":[
-#                             {
-#                                 "dd_unix":{
-#                                     "path":DEFAULT_PATH_WITH_FILE,
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                             {
-#                                 "dd_data_set":{
-#                                     "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
-#                                     "disposition":"shr",
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                             {
-#                                 "dd_input":{
-#                                     "content":"Hello world!",
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                         ],
-#                     },
-#                 },
-#                 {
-#                     "dd_input":{
-#                         "dd_name":SYSIN_DD,
-#                         "content":idcams_args,
-#                     }
-#                 },
-#             ],
-#             2,
-#             "Hello world!",
-#         ),
-#         (
-#             [
-#                 {
-#                     "dd_concat":{
-#                         "dd_name":SYSPRINT_DD,
-#                         "dds":[
-#                             {
-#                                 "dd_data_set":{
-#                                     "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
-#                                     "disposition":"shr",
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                             {
-#                                 "dd_unix":{
-#                                     "path":DEFAULT_PATH_WITH_FILE,
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                             {
-#                                 "dd_input":{
-#                                     "content":"Hello world!",
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                         ],
-#                     },
-#                 },
-#                 {
-#                     "dd_input":{
-#                         "dd_name":SYSIN_DD,
-#                         "content":idcams_args,
-#                     }
-#                 },
-#             ],
-#             2,
-#             "Hello world!",
-#         ),
-#         (
-#             [
-#                 {
-#                     "dd_concat":{
-#                         "dd_name":SYSPRINT_DD,
-#                         "dds":[
-#                             {
-#                                 "dd_input":{
-#                                     "content":"Hello world!",
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                             {
-#                                 "dd_data_set":{
-#                                     "data_set_name":"ANSIBLE.USER.PRIVATE.TEST",
-#                                     "disposition":"shr",
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                             {
-#                                 "dd_unix":{
-#                                     "path":DEFAULT_PATH_WITH_FILE,
-#                                     "return_content":{
-#                                         "type":"text"
-#                                     },
-#                                 }
-#                             },
-#                         ],
-#                     },
-#                 },
-#                 {
-#                     "dd_input":{
-#                         "dd_name":SYSIN_DD,
-#                         "content":idcams_args,
-#                     }
-#                 },
-#             ],
-#             0,
-#             "IDCAMS",
-#         ),
-#     ],
-# )
-# def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_content):
-#     try:
-#         hosts = ansible_zos_module
-#         default_data_set = "ANSIBLE.USER.PRIVATE.TEST"
-#         hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
-#         hosts.all.file(path=DEFAULT_PATH, state="directory")
-#         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-#         results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)
-#         for result in results.contacted.values():
-#             assert result.get("ret_code", {}).get("code", -1) == 0
-#             assert len(result.get("dd_names", [])) > 2
-#             assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
-#             assert input_content in "\n".join(
-#                 result.get("dd_names")[input_pos].get("content", [])
-#             )
-#     finally:
-#         hosts.all.file(name=DEFAULT_PATH, state="absent")
-#         hosts.all.zos_data_set(name=default_data_set, state="absent")
+        default_data_set = "ANSIBLE.USER.PRIVATE.TEST"
+        hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
+
+        hosts.all.file(path=DEFAULT_PATH, state="directory")
+        hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+
+        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        dds.append(
+            {
+                'dd_input': {
+                    "dd_name": SYSIN_DD,
+                    "content": idcams_args
+                }
+            }
+        )
+
+        results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 2
+            assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
+            assert input_content in "\n".join(
+                result.get("dd_names")[input_pos].get("content", [])
+            )
+    finally:
+        hosts.all.file(name=DEFAULT_PATH, state="absent")
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
 # ---------------------------------------------------------------------------- #

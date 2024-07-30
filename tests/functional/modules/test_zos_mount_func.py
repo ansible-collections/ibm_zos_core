@@ -68,23 +68,33 @@ def create_sourcefile(hosts, volume):
     basefile = starter + ".ATO.MNT.ZFS"
     thisfile = DataSet.escape_data_set_name(basefile)
     print(
-        "csf: starter={0} thisfile={1} is type {2}".format(
+        "\ncsf: starter={0} thisfile={1} is type {2}".format(
             starter, thisfile, str(type(thisfile))
         )
     )
+    pp = pprint.PrettyPrinter(indent=4)
 
-    hosts.all.shell(
+    mount_result = hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
         + " -volumes {0} -cylinders 200 1".format(volume),
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
-    hosts.all.shell(
+    for result in mount_result.values():
+        print( "\ncreate mount/define result: " )
+        pp.pprint( result )
+        print( "\n")
+
+    mount_result = hosts.all.shell(
         cmd="zfsadm format -aggregate " + thisfile,
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
+    for result in mount_result.values():
+        print( "\ncreate mount/format result: " )
+        pp.pprint( result )
+        print( "\n")
 
     return basefile
 
@@ -95,10 +105,15 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
     volume_1 = volumes.get_available_vol()
     srcfn = create_sourcefile(hosts, volume_1)
     try:
+        pp = pprint.PrettyPrinter(indent=4)
         mount_result = hosts.all.zos_mount(
             src=srcfn, path="/pythonx", fs_type="zfs", state="mounted"
         )
         for result in mount_result.values():
+            print( "\nbasic mount test: " )
+            pp.pprint( result )
+            print( "\n")
+
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
             assert result.get("changed") is True

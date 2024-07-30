@@ -124,7 +124,6 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             fs_type="zfs",
             state="absent",
         )
-        # DataSet.delete(srcfn)
         hosts.all.shell(
             cmd="drm " + srcfn,
             executable=SHELL_EXECUTABLE,
@@ -156,6 +155,12 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
             fs_type="zfs",
             state="absent",
         )
+        hosts.all.shell(
+            cmd="drm " + srcfn,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.file(path="/pythonx/", state="absent")
 
 
@@ -186,6 +191,11 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             path="/pythonx",
             fs_type="zfs",
             state="absent",
+        )
+        hosts.all.shell(
+            cmd="drm " + srcfn,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
         )
         for result in mount_results.values():
             print( "\nUNMount of remount test: " )
@@ -252,6 +262,11 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             path="/pythonx",
             fs_type="zfs",
             state="absent",
+        )
+        hosts.all.shell(
+            cmd="drm " + srcfn,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
         )
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
@@ -370,6 +385,12 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             fs_type="zfs",
             state="absent",
         )
+        hosts.all.shell(
+            cmd="drm " + srcfn,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
@@ -408,6 +429,12 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
             tmp_hlq=tmphlq,
             persistent=dict(data_store=persist_data_set, backup=True)
         )
+        hosts.all.shell(
+            cmd="drm " + srcfn,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.zos_data_set(name=persist_data_set, state="absent")
         for result in unmount_result.values():
             assert result.get("rc") == 0

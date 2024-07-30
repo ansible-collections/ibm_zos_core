@@ -125,7 +125,7 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             state="absent",
         )
         hosts.all.shell(
-            cmd="drm " + srcfn,
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
             executable=SHELL_EXECUTABLE,
             stdin="",
         )
@@ -156,7 +156,7 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
             state="absent",
         )
         hosts.all.shell(
-            cmd="drm " + srcfn,
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
             executable=SHELL_EXECUTABLE,
             stdin="",
         )
@@ -193,7 +193,7 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             state="absent",
         )
         hosts.all.shell(
-            cmd="drm " + srcfn,
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
             executable=SHELL_EXECUTABLE,
             stdin="",
         )
@@ -264,7 +264,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             state="absent",
         )
         hosts.all.shell(
-            cmd="drm " + srcfn,
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
             executable=SHELL_EXECUTABLE,
             stdin="",
         )
@@ -386,7 +386,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             state="absent",
         )
         hosts.all.shell(
-            cmd="drm " + srcfn,
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
             executable=SHELL_EXECUTABLE,
             stdin="",
         )
@@ -430,7 +430,7 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
             persistent=dict(data_store=persist_data_set, backup=True)
         )
         hosts.all.shell(
-            cmd="drm " + srcfn,
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
             executable=SHELL_EXECUTABLE,
             stdin="",
         )

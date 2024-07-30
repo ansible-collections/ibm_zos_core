@@ -124,7 +124,13 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             fs_type="zfs",
             state="absent",
         )
-        DataSet.delete(srcfn)
+        # DataSet.delete(srcfn)
+        hosts.all.shell(
+            cmd="drm " + srcfn,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.file(path="/pythonx/", state="absent")
 
 

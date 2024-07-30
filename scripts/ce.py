@@ -41,6 +41,7 @@ from typing import List, Tuple
 from prettytable import PrettyTable, ALL
 from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
     AuthenticationException, SSHException, ssh_exception
+from utility import get_test_cases
 
 # ------------------------------------------------------------------------------
 # Enums
@@ -1059,17 +1060,14 @@ class Connection:
         Create the connection after the connection class has been initialized.
 
         Return
-        ------
-        SSHClient
-            paramiko SSHClient, client used the execution of commands.
+        SSHClient: paramiko SSHClient, client used the execution of commands.
 
-        Raises
-        ------
-        BadHostKeyException
-        AuthenticationException
-        SSHException
-        FileNotFoundError
-        error
+        Raises:
+            BadHostKeyException
+            AuthenticationException
+            SSHException
+            FileNotFoundError
+            error
         """
         ssh = None
 
@@ -1099,18 +1097,15 @@ class Connection:
 
     def execute(self, client, command):
         """
-        Parameters
-        ----------
-        client : object, paramiko SSHClient
-            SSH Client created through connection.connect()
-        command: str, command to run
+        Parameters:
+            client (paramiko SSHClient) SSH Client created through connection.connect()
+            command (str): command to run
 
-        Returns
-        dict
-            a dictionary with stdout, stderr and command executed
+        Returns:
+        dict: a dictionary with stdout, stderr and command executed
 
         Raises
-        SSHException
+            SSHException
         """
 
         response = None
@@ -1177,49 +1172,30 @@ class Connection:
 # Helper methods
 # ------------------------------------------------------------------------------
 
-def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: bool, verbosity: int, replay: bool = False) -> Dictionary:
-    """
+def get_jobs(nodes: Dictionary, test_suites: str, test_directories: str, skip: str, capture: bool, verbosity: int, replay: bool = False) -> Dictionary:
+    """ get_test_cases(test_suites: str, test_directories: str = None, skip: str = None):
     Get a thread safe dictionary of job(s).
     A job represents a test case, a unit of work the ThreadPoolExecutor will run.
     A job manages the state of a test case as well as the necessary information
     to run on a z/OS managed node.
 
-    Parameters
-    ----------
-    nodes : dictionary [ str, node]
-        Thread safe dictionary z/OS managed nodes.
-    testsuite : str
-        Absolute path of testcase suites, comma or space delimited. A testsuite
-        is a collection of test cases in a file that starts with 'test' and
-        ends in '.py'.
-        Option testsuite is mutually exclusive with both 'tests' and 'skip'.
-    tests : str
-        Absolute path to directories containing test suites, both functional
-        and unit tests.
-    skip : str
-        Absolute path of testcase suites to skip, comma or space delimited.
-        A testsuite is a collection of test cases in a file that starts
-        with 'test' and ends in '.py'. Specifying skip will result in test
-        cases not being included in the results, ensuring they are not
-        executed by the ThreadPoolExecutor.
-        This option (skip) is only used when option tests is defined.
+    Parameters:
+    test_suites (str): Absolute path of test suites, comma or space delimited.
+        A testsuite is a collection of test cases in a file that starts with
+        'test' and ends in '.py'.
+    test_directories (str): Absolute path to directories containing test suites,
+        both functional and unit tests.
+    skip (str): Absolute path of either test suites, or test cases. Test cases can
+    be parametrized such they use the '::' syntax. Skip does not support directories.
 
-    Returns
-    -------
-    Dictionary [int, Job]
-        A thread safe Dictionary containing numeric keys (ID) with value
-        type Job, each Dictionary item is a testcase with supporting
-        attributes necessary to execute on a z/OS managed node.
-
-    Raises
-    ------
+    Raises:
+    FileNotFoundError : If a test suite, test case or skipped test cannot be found.
     RuntimeError : When no z/OS managed hosts were online.
 
-    Note
-    ----
-    Option 'testsuite'
-        Is mutually exclusive with both 'tests' and 'skip'. If you
-        use 'skip' with testsuite' it will be ignored.
+    Returns:
+    Dictionary [int, Job]: A thread safe Dictionary containing numeric keys (ID) with value
+        type Job, each Dictionary item is a testcase with supporting
+        attributes necessary to execute on a z/OS managed node.
     """
 
     hostnames=list(nodes.keys())
@@ -1228,52 +1204,15 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: 
     if hostnames_length == 0:
         raise RuntimeError('No z/OS managed hosts were online, please check host availability.')
 
-    # List to contain absolute paths to comma/space delimited test suites or directories.
-    files =[]
-
-    # If testsuite, test suites were provided, else tests (directories) were passed.
-    # Remove whitespace and replace CSV with single space delimiter.
-    # Build a command that will yield all test cases included parametrized tests.
-    cmd = ['pytest', '--collect-only', '-q']
-    if testsuite:
-        # print("testsuite is " + testsuite)
-        files = " ".join(testsuite.split())
-        files = testsuite.strip().replace(',', ' ').split()
-        cmd.extend(files)
-    else:
-        tests=" ".join(tests.split())
-        files = tests.strip().replace(',', ' ').split()
-        cmd.extend(files)
-        # TODO: Check if directories exist
-
-        if skip:
-            skip=" ".join(skip.split())
-            skip = skip.strip().replace(',', ' ').split()
-            cmd.extend(['--ignore'])
-            cmd.extend(skip)
-            # TODO: Check if directories exist
-
-    cmd.extend(['| grep ::'])
-    cmd_str = ' '.join(cmd)
-
-    #print("CMD STRING " + cmd_str)
-    # if parametrized_test_cases is None:
-    #     # Run the pytest collect-only command and grep on :: so to avoid warnings
-    #     parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True)
-    #     parametrized_test_cases = parametrized_test_cases.stdout.split()
-
-    if replay:
-        for f in files:
-            parametrized_test_cases.append(f.replace('tests/','',1))
-    else:
-        # Run the pytest collect-only command and grep on :: so to avoid warnings
-        parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True, check=False)
-        parametrized_test_cases = parametrized_test_cases.stdout.split()
-
     # Thread safe dictionary of Jobs
     jobs = Dictionary()
     index = 0
     hostnames_index = 0
+
+    if not replay:
+        parametrized_test_cases = get_test_cases(test_suites, test_directories, skip)
+    else:
+        parametrized_test_cases = test_directories.split(',')
 
     for parametrized_test_case in parametrized_test_cases:
 
@@ -1283,7 +1222,7 @@ def get_jobs(nodes: Dictionary, testsuite: str, tests: str, skip: str, capture: 
 
         # Create a job, add it jobs Dictionary, update node reference
         hostname = hostnames[hostnames_index]
-        _job = Job(hostname = hostname, nodes = nodes, testcase="tests/"+parametrized_test_case, id=index)
+        _job = Job(hostname = hostname, nodes = nodes, testcase=parametrized_test_case, id=index)
         _job.set_verbose(verbosity)
         _job.set_capture(capture)
         jobs.update(index, _job)
@@ -1347,19 +1286,13 @@ def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None, pytho
     """
     Get a thread safe Dictionary of active z/OS managed nodes.
 
-    Parameters
-    ----------
-    user : str
-        The USS user name who will run the Ansible workload on z/OS.
-    zoau: str
-        The USS absolute path to where ZOAU is installed.
-    pyz: str
-        The USS absolute path to where python is installed.
+    Parameters:
+    user (str): The USS user name who will run the Ansible workload on z/OS.
+    zoau (str): The USS absolute path to where ZOAU is installed.
+    pyz (str): The USS absolute path to where python is installed.
 
-    Returns
-    -------
-    Dictionary [str, Node]
-        Thread safe Dictionary containing all the active z/OS managed nodes.
+    Returns:
+    Dictionary [str, Node]: Thread safe Dictionary containing all the active z/OS managed nodes.
         The dictionary key will be the z/OS managed node's hostname and the value
         will be of type Node.
     """
@@ -1398,15 +1331,11 @@ def get_nodes_online_count(nodes: Dictionary) -> int:
     surpassed. Balance (--bal) is used to signal that Job has run N number of times
     on a particular host and had a non-zero return code and should be used by any other Job.
 
-    Parameters
-    ----------
-    nodes : dictionary [ str, node]
-        Thread safe dictionary z/OS managed nodes.
+    Parameters:
+    nodes (Dictionary [ str, node]): Thread safe dictionary z/OS managed nodes.
 
-    Returns
-    -------
-    int
-        The numerical count of nodes that are online.
+    Returns:
+    int: The numerical count of nodes that are online.
     """
     nodes_online_count = 0
     for _, value in nodes.items():
@@ -1425,15 +1354,11 @@ def get_nodes_offline_count(nodes: Dictionary) -> int:
     surpassed. Balance (--bal) is used to signal that Job has run N number of times
     on a particular host and had a non-zero return code and should be used by any other Job.
 
-    Parameters
-    ----------
-    nodes : dictionary [ str, node]
-        Thread safe dictionary z/OS managed nodes.
+    Parameters:
+    nodes (dictionary [ str, node]) Thread safe dictionary z/OS managed nodes.
 
-    Returns
-    -------
-    int
-        The numerical count of nodes that are offline.
+    Returns:
+        int - The numerical count of nodes that are offline.
     """
     nodes_offline_count = 0
     for _, value in nodes.items():
@@ -1745,19 +1670,6 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                 job.set_stdout_and_stderr(message, rsn, date_time)
                 job.increment_failure()
                 node.set_failure_job_id(id)
-        # else:
-        #     rc = 10
-        #     job.set_rc(rc)
-        #     nodes_count = nodes.len()
-        #     node_count_offline = get_nodes_offline_count(nodes)
-        #     #other = node.get_assigned_jobs_as_dictionary().get(id)
-        #     date_time = datetime.now().strftime("%H:%M:%S") #("%d/%m/%Y %H:%M:%S")
-        #     rsn = f"Managed node is not able to execute job id={node.get_running_job_id()}, nodes={nodes_count}, offline={node_count_offline}, online={node_count_online}."
-        #     message = f"Job id={id}, host={hostname}, start={date_time}, elapsed={0}, rc={rc}, msg={rsn}"
-        #     node.set_running_job_id(-1) # Set it to false after message string
-        #     node.set_balanced_job_id(id)
-        #     #set_node_offline(node, maxnode)
-        #     update_job_hostname(job)
     else:
         node.set_running_job_id(-1)
         rc = 6
@@ -2072,7 +1984,7 @@ def execute(args) -> int:
         play_result.extend(print_nodes(nodes))
 
         # Get a dictionary of jobs containing the work to be run on a node.
-        jobs = get_jobs(nodes, testsuite=args.testsuite, tests=tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
+        jobs = get_jobs(nodes, test_suites=args.testsuite, test_directories=tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
         iterations_result=""
         number_of_threads = nodes.len() * args.workers
 

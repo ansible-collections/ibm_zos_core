@@ -8,7 +8,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import tempfile
-import pprint
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -32,7 +31,6 @@ MOUNT FILESYSTEM('IMSTESTU.ZZZ.KID.GA.ZFS')
       AUTOMOVE
 """
 
-# SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
 
 
@@ -72,7 +70,6 @@ def create_sourcefile(hosts, volume):
             starter, thisfile, str(type(thisfile))
         )
     )
-    pp = pprint.PrettyPrinter(indent=4)
 
     mount_result = hosts.all.shell(
         cmd="zfsadm define -aggregate "
@@ -81,20 +78,12 @@ def create_sourcefile(hosts, volume):
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
-    for result in mount_result.values():
-        print( "\ncreate mount/define result: " )
-        pp.pprint( result )
-        print( "\n")
 
     mount_result = hosts.all.shell(
         cmd="zfsadm format -aggregate " + thisfile,
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
-    for result in mount_result.values():
-        print( "\ncreate mount/format result: " )
-        pp.pprint( result )
-        print( "\n")
 
     return basefile
 
@@ -105,15 +94,10 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
     volume_1 = volumes.get_available_vol()
     srcfn = create_sourcefile(hosts, volume_1)
     try:
-        pp = pprint.PrettyPrinter(indent=4)
         mount_result = hosts.all.zos_mount(
             src=srcfn, path="/pythonx", fs_type="zfs", state="mounted"
         )
         for result in mount_result.values():
-            print( "\nbasic mount test: " )
-            pp.pprint( result )
-            print( "\n")
-
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
             assert result.get("changed") is True
@@ -170,12 +154,7 @@ def test_remount(ansible_zos_module, volumes_on_systems):
     volume_1 = volumes.get_available_vol()
     srcfn = create_sourcefile(hosts, volume_1)
     try:
-        pp = pprint.PrettyPrinter(indent=4)
         mount_results = hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
-        for result in mount_results.values():
-            print( "\nfirst mount of remount test: " )
-            pp.pprint( result )
-            print( "\n")
 
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
 
@@ -197,10 +176,6 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             executable=SHELL_EXECUTABLE,
             stdin="",
         )
-        for result in mount_results.values():
-            print( "\nUNMount of remount test: " )
-            pp.pprint( result )
-            print( "\n")
 
         hosts.all.file(path="/pythonx/", state="absent")
 

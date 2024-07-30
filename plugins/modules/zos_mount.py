@@ -590,7 +590,7 @@ def mt_backupOper(module, src, backup, tmphlq=None):
         Data set type is NOT supported.
     """
     # analysis the file type
-    innersrc = src     # DataSet.escape_data_set_name(src)
+    innersrc = src
     ds_utils = data_set.DataSetUtils(innersrc)
     file_type = ds_utils.ds_type()
     if file_type != "USS" and file_type not in mt_DS_TYPE:
@@ -742,7 +742,7 @@ def run_module(module, arg_def):
     res_args = dict()
 
     src = parsed_args.get("src")
-    innersrc = src      # DataSet.escape_data_set_name(src)
+    innersrc = src
 
     path = parsed_args.get("path")
     fs_type = parsed_args.get("fs_type").upper()
@@ -763,16 +763,16 @@ def run_module(module, arg_def):
     tmphlq = parsed_args.get("tmp_hlq")
 
     if persistent:
-        data_store = persistent.get("data_store").upper()    # DataSet.escape_data_set_name(persistent.get("data_store").upper())
+        data_store = persistent.get("data_store").upper()
         comment = persistent.get("comment")
         backup = persistent.get("backup")
         if backup:
             if persistent.get("backup_name"):
-                backup_name = persistent.get("backup_name").upper()    # DataSet.escape_data_set_name(persistent.get("backup_name").upper())
+                backup_name = persistent.get("backup_name").upper()
             if len(backup_name) < 1:
                 backup_code = None
             else:
-                backup_code = backup_name    # DataSet.escape_data_set_name(backup_name)
+                backup_code = backup_name
             backup_name = mt_backupOper(module, data_store, backup_code, tmphlq)
             res_args["backup_name"] = backup_name
             del persistent["backup"]

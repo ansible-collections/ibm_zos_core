@@ -1,4 +1,4 @@
 minor_changes:
-  - zos_mount - Added support for data set names with special characters like $, /#, /- and @.
-    This is for both src and backup dsn's.
+  - zos_mount - Added support for data set names with special characters ($, /#, /- and @).
+    This is for both src and backup data set names.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1631).

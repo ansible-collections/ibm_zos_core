@@ -41,8 +41,7 @@ from typing import List, Tuple
 from prettytable import PrettyTable, ALL
 from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
     AuthenticationException, SSHException, ssh_exception
-from utility import get_test_cases
-
+from modules.utils import get_test_cases
 # ------------------------------------------------------------------------------
 # Enums
 # ------------------------------------------------------------------------------
@@ -1172,7 +1171,7 @@ class Connection:
 # Helper methods
 # ------------------------------------------------------------------------------
 
-def get_jobs(nodes: Dictionary, test_suites: str, test_directories: str, skip: str, capture: bool, verbosity: int, replay: bool = False) -> Dictionary:
+def get_jobs(nodes: Dictionary, paths:str, skip: str, capture: bool, verbosity: int, replay: bool = False) -> Dictionary:
     """ get_test_cases(test_suites: str, test_directories: str = None, skip: str = None):
     Get a thread safe dictionary of job(s).
     A job represents a test case, a unit of work the ThreadPoolExecutor will run.
@@ -1180,13 +1179,14 @@ def get_jobs(nodes: Dictionary, test_suites: str, test_directories: str, skip: s
     to run on a z/OS managed node.
 
     Parameters:
-    test_suites (str): Absolute path of test suites, comma or space delimited.
-        A testsuite is a collection of test cases in a file that starts with
+    paths (str): Absolute path of directories containing test suites or absolute
+        path of individual test suites comma or space delimited.
+        A directory of test cases is such that it contains test suites.
+        A test suite is a collection of test cases in a file that starts with
         'test' and ends in '.py'.
-    test_directories (str): Absolute path to directories containing test suites,
-        both functional and unit tests.
-    skip (str): Absolute path of either test suites, or test cases. Test cases can
-    be parametrized such they use the '::' syntax. Skip does not support directories.
+    skip (str): (Optional) Absolute path of either test suites, or test cases.
+        Test cases can be parametrized such they use the '::' syntax or not.
+        Skip does not support directories.
 
     Raises:
     FileNotFoundError : If a test suite, test case or skipped test cannot be found.
@@ -1210,9 +1210,9 @@ def get_jobs(nodes: Dictionary, test_suites: str, test_directories: str, skip: s
     hostnames_index = 0
 
     if not replay:
-        parametrized_test_cases = get_test_cases(test_suites, test_directories, skip)
+        parametrized_test_cases = get_test_cases(paths, skip)
     else:
-        parametrized_test_cases = test_directories.split(',')
+        parametrized_test_cases = paths.split(',')
 
     for parametrized_test_case in parametrized_test_cases:
 
@@ -1775,8 +1775,7 @@ def elapsed_time(start_time: time):
 
     hours, rem = divmod(time.time() - start_time, 3600)
     minutes, seconds = divmod(rem, 60)
-    #elapsed = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
-    elapsed = f"{hours:0>2}:{minutes:0>2}:{seconds:05.2f}"
+    elapsed = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
     return elapsed
 
 def print_job_logs(log: list[Tuple[str, str, str]], state: State) -> None:
@@ -1967,7 +1966,6 @@ def execute(args) -> int:
     """
     play_result = []
     count_play = 1
-    tests=args.tests
     count = 1
     replay = False
     return_code = 0
@@ -1984,7 +1982,7 @@ def execute(args) -> int:
         play_result.extend(print_nodes(nodes))
 
         # Get a dictionary of jobs containing the work to be run on a node.
-        jobs = get_jobs(nodes, test_suites=args.testsuite, test_directories=tests, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
+        jobs = get_jobs(nodes, paths=args.paths, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
         iterations_result=""
         number_of_threads = nodes.len() * args.workers
 
@@ -2075,8 +2073,7 @@ def execute(args) -> int:
 
         # If replay, repeat concurrent executor with failed tests only, else advance count_play and end the program
         if stats.jobs_failed_count > 0:
-            tests = ','.join(stats.jobs_failed_tests)
-            args.testsuite = None
+            args.paths = ','.join(stats.jobs_failed_tests)
             count_play +=1
             count = 1
             replay = True
@@ -2178,12 +2175,8 @@ def main():
     parser.add_argument('--volumes', type=str, help='The volumes to use with the test cases, overrides the auto volume assignment.', required=False, metavar='<str,str>', default="222222,000000")
     parser.add_argument('--verbose', action=argparse.BooleanOptionalAction, help='Enables verbose stdout, default = --no-verbose.', required=False, default=False)
     parser.add_argument('--throttle', action=argparse.BooleanOptionalAction, help='Enables managed node throttling such that a managed node will only execute one job at at time, no matter the threads, default --throttle', required=False, default=True)
+    parser.add_argument('--paths', type=str, help='Test paths', required=True, metavar='<str,str>', default="")
 
-    # Mutually exclusive options
-    group_tests_or_dirs = parser.add_argument_group('Mutually exclusive', 'Absolute path to test suites. For more than one, use a comma or space delimiter.')
-    exclusive_group_or_tests = group_tests_or_dirs.add_mutually_exclusive_group(required=True)
-    exclusive_group_or_tests.add_argument('--testsuite', type=str, help='Space or comma delimited test suites, must be absolute path(s)', required=False, metavar='<str,str>', default="")
-    exclusive_group_or_tests.add_argument('--tests', type=str, help='Space or comma delimited directories containing test suites, must be absolute path(s)', required=False, metavar='<str,str>', default=None)
     args = parser.parse_args()
 
     # Evaluate

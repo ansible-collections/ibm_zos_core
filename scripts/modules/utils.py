@@ -23,35 +23,42 @@ from pathlib import Path
 import subprocess
 
 
-def get_test_cases(test_suites: str, test_directories: str = None, skip: str = None) -> list[str]:
+def get_test_cases(paths: str, skip: str = None) -> list[str]:
     """
     Returns a list of test cases suitable for pytest to execute. Can discover test
     cases from either a directory of test suites or a list of test suites. Will also
     remove any skipped tests if specified , wether a directory or a specific test.
 
     Parameters:
-    test_suites (str): Absolute path of test suites, comma or space delimited.
-        A testsuite is a collection of test cases in a file that starts with
+    paths (str): Absolute path of directories containing test suites or absolute
+        path of individual test suites comma or space delimited.
+        A directory of test cases is such that it contains test suites.
+        A test suite is a collection of test cases in a file that starts with
         'test' and ends in '.py'.
-    test_directories (str): Absolute path to directories containing test suites,
-        both functional and unit tests.
-    skip (str): Absolute path of either test suites, or test cases. Test cases can
-    be parametrized such they use the '::' syntax. Skip does not support directories.
+    skip (str): (Optional) Absolute path of either test suites, or test cases.
+        Test cases can be parametrized such they use the '::' syntax or not.
+        Skip does not support directories.
 
     Returns:
-    list[str] A list of strings containing a modified path to each test suite. This
-    is suitable for use with pytest and will have removed any skipped test suites
-    or test cases.
+    list[str] A list of strings containing a modified path to each test suite.
+    The absolute path is truncated to meet the needs of pytest which starts at
+    the `tests` directory.
 
     Raises:
     FileNotFoundError : If a test suite, test case or skipped test cannot be found.
+    ValueError: If paths is not provided.
 
     Examples:
-    -   get_test_cases("/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py",\\
-            "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py",\\
-            skip="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\\
-            /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_local_jcl_typrun_jclhold,\\
-            /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_pds_30_sec_job_wait_10_negative")
+        Example collects all test cases for test suites`test_zos_job_submit_func.py` , `test_zos_copy_func.py`, all
+        unit tests in directory `tests/unit/` then skips all tests in test suite `test_zos_copy_func.py`
+        (for demonstration) and parametrized tests `test_zos_backup_restore_unit.py::test_invalid_operation[restorE]`
+        and test_zoau_version_checker_unit.py::test_is_zoau_version_higher_than[True-sys_zoau1-1.2.1]/
+        - get_test_cases(paths="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py,\\
+                /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\\
+                /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/",\\
+                skip="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\\
+                /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/test_zos_backup_restore_unit.py::test_invalid_operation[restorE],\\
+                /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/test_zoau_version_checker_unit.py::test_is_zoau_version_higher_than[True-sys_zoau1-1.2.1]")
     """
 
     files =[]
@@ -64,11 +71,9 @@ def get_test_cases(test_suites: str, test_directories: str = None, skip: str = N
     # Remove whitespace and replace CSV with single space delimiter.
     # Build a command that will yield all test cases including parametrized tests.
     cmd = ['pytest', '--collect-only', '-q']
-    #print("START")
-    if test_suites:
-        #print("SUITS" + test_suites)
-        files = " ".join(test_suites.split())
-        files = test_suites.strip().replace(',', ' ').split()
+    if paths:
+        files = " ".join(paths.split())
+        files = files.strip().replace(',', ' ').split()
 
         for file in files:
             file_path = Path(file)
@@ -78,16 +83,7 @@ def get_test_cases(test_suites: str, test_directories: str = None, skip: str = N
                 raise FileNotFoundError(f'{file_path} does not exist.') from e
         cmd.extend(files)
     else:
-        #print("CASES" + test_directories)
-        test_directories=" ".join(test_directories.split())
-        files = test_directories.strip().replace(',', ' ').split()
-        for file in files:
-            file_path = Path(file)
-            try:
-                file_path.resolve(strict=True)
-            except FileNotFoundError as e:
-                raise FileNotFoundError(f'{file_path} does not exist.') from e
-        cmd.extend(files)
+        raise ValueError("Required files have not been provided.")
 
     cmd.append('| grep ::')
     cmd_str = ' '.join(cmd)
@@ -95,11 +91,12 @@ def get_test_cases(test_suites: str, test_directories: str = None, skip: str = N
     # Run the pytest collect-only command and grep on '::' so to avoid warnings
     parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True, check=False)
     # Remove duplicates in case test_suites or test_directories were repeated
-    parametrized_test_cases = list(set(parametrized_test_cases.stdout.split()))
+    parametrized_test_cases = list(set(parametrized_test_cases.stdout.split('\n')))
+    # Remove the trailing line feed from the list
+    parametrized_test_cases = list(filter(None, parametrized_test_cases))
 
-    #print("parametrized_test_cases" + str(parametrized_test_cases))
     if skip:
-        #print("SKIP " + skip)
+        print("IN SKIP")
         skip=" ".join(skip.split())
         skip = skip.strip().replace(',', ' ').split()
         for skipped in skip:
@@ -156,16 +153,22 @@ def get_test_cases(test_suites: str, test_directories: str = None, skip: str = N
         return parameterized_tests
 
     parameterized_tests = [f"tests/{parametrized}" for parametrized in parametrized_test_cases]
+
     return parameterized_tests
 
 # def main():
 #     print("Main")
 
-#     plist = get_test_cases("/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py",\
-#             "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py",\
-#             skip="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\
-#             /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_local_jcl_typrun_jclhold,\
-#             /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_pds_30_sec_job_wait_10_negative")
+#     # plist = get_test_cases(paths="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py,\
+#     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\
+#     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/",\
+#     #         skip="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\
+#     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/test_zos_backup_restore_unit.py::test_invalid_operation[restorE],\
+#     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/test_zoau_version_checker_unit.py::test_is_zoau_version_higher_than[True-sys_zoau1-1.2.1]")
+
+#     # plist = get_test_cases(paths="/Users/ddimatos/git/gh/ibm_zos_core/tests/unit/")
+
+#     plist = get_test_cases(paths="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_tso_command_func.py,/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_operator_func.py")
 
 #     print(str(plist))
 

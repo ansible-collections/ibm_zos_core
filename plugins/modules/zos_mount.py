@@ -738,7 +738,6 @@ def run_module(module, arg_def):
     res_args = dict()
 
     src = parsed_args.get("src")
-    src = src
 
     path = parsed_args.get("path")
     fs_type = parsed_args.get("fs_type").upper()

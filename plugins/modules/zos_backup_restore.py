@@ -634,7 +634,9 @@ def restore(
     elif rc > 4:
         failed = True
     if failed:
-        raise ("{0}, RC={1}".format(output, rc))
+        raise zoau_exceptions.ZOAUException(
+            "{0}, RC={1}".format(output, rc)
+        )
 
 
 def get_real_rc(output):
@@ -731,22 +733,6 @@ def hlq_type(contents, dependencies):
     if not match(r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})$", contents, IGNORECASE):
         raise ValueError("Invalid argument {0} for hlq_type.".format(contents))
     return contents.upper()
-
-
-#def hlq_default(contents, dependencies):
-    """Sets the default HLQ to use if none is provided.
-
-    Args:
-        contents (str): The HLQ to use
-        dependencies (dict): Any dependent arguments
-
-    Returns:
-        str: The HLQ to use
-    """
-#    hlq = None
-#    if dependencies.get("operation") == "restore":
-#        hlq = datasets.get_hlq()
-#    return hlq
 
 
 def sms_type(contents, dependencies):

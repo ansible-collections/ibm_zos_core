@@ -577,16 +577,16 @@ def test_restore_of_data_set_when_backup_does_not_exist(
         backup_name = get_tmp_ds_name(1,1)
     else:
         backup_name = "/tmp/{0}.dzp".format(randomname.get_name())
-    NEW_HLQ = randomname.get_name().upper()[:4]
-    hlqs.append(NEW_HLQ)
+    new_hlq = randomname.get_name().upper()[:4]
+    hlqs.append(new_hlq)
     try:
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, data_set_restore_location)
         delete_data_set_or_file(hosts, backup_name)
 
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
         )
         assert_module_failed(results)
     finally:
@@ -631,7 +631,7 @@ def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     data_set_backup_location = get_tmp_ds_name(1, 1)
     try:
         delete_data_set_or_file(hosts, data_set_name)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )
@@ -660,8 +660,8 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_restore_location)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )

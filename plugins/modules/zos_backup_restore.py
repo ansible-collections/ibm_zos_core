@@ -498,7 +498,7 @@ def parse_and_validate_args(params):
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
-        hlq=dict(type=hlq_type, required=False, dependencies=["operation"]),
+        hlq=dict(type=hlq_type, default=None, required=False, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
     )
 
@@ -998,11 +998,14 @@ def to_dunzip_args(**kwargs):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
 
+    if kwargs.get("tmp_hlq"):
+        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+
     if kwargs.get("hlq"):
         zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
-    if kwargs.get("tmp_hlq"):
-        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+    if kwargs.get("hlq") ==  None:
+        zoau_args["keep_original_hlq"] = True
 
     return zoau_args
 

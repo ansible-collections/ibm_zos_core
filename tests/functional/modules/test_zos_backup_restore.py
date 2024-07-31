@@ -100,7 +100,6 @@ def is_volume(hosts, volume):
 
 def assert_module_did_not_fail(results):
     for result in results.contacted.values():
-        print(result)
         assert (
             result.get("failed", False) is not True
             and not result.get("exception", "")
@@ -436,6 +435,7 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
             backup_name=DATA_SET_BACKUP_LOCATION,
             overwrite=True,
             recover=True,
+            hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
     finally:
@@ -664,6 +664,8 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
         delete_remnants(hosts)
+
+
 # def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module):
 #     hosts = ansible_zos_module
 #     try:

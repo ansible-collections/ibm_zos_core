@@ -1104,62 +1104,62 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
         hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
-# @pytest.mark.parametrize(
-#     "src_encoding,response_encoding,expected",
-#     [
-#         (
-#             "iso8859-1",
-#             "ibm-1047",
-#             "|\udceeqBFfeF|g\udcefF\udcfdqgB\udcd4\udcd0CBg\udcfdҿ\udcfdqGeFgҿ\udcfd",
-#         ),
-#         (
-#             "ibm-1047",
-#             "iso8859-1",
-#             "LISTCAT ENTRIES",
-#         ),
-#     ],
-# )
-# def test_input_return_text_content_encodings(
-#     ansible_zos_module, src_encoding, response_encoding, expected
-# ):
-#     try:
-#         hosts = ansible_zos_module
-#         default_data_set = get_tmp_ds_name()
-#         hosts.all.zos_data_set(name=default_data_set, state="absent")
-#         idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+@pytest.mark.parametrize(
+    "src_encoding,response_encoding,expected",
+    [
+        (
+            "iso8859-1",
+            "ibm-1047",
+            "|\udceeqBFfeF|g\udcefF\udcfdqgB\udcd4\udcd0",
+        ),
+        (
+            "ibm-1047",
+            "iso8859-1",
+            "LISTCAT ENTRIES",
+        ),
+    ],
+)
+def test_input_return_text_content_encodings(
+    ansible_zos_module, src_encoding, response_encoding, expected
+):
+    try:
+        hosts = ansible_zos_module
+        default_data_set = get_tmp_ds_name()
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
 
-#         results = hosts.all.zos_mvs_raw(
-#             program_name="idcams",
-#             auth=True,
-#             dds=[
-#                 {
-#                     "dd_data_set":{
-#                         "dd_name":SYSPRINT_DD,
-#                         "data_set_name":default_data_set,
-#                         "disposition":"new",
-#                         "type":"seq",
-#                     },
-#                 },
-#                 {
-#                     "dd_input":{
-#                         "dd_name":SYSIN_DD,
-#                         "content":idcams_args,
-#                         "return_content":{
-#                             "type":"text",
-#                             "src_encoding":src_encoding,
-#                             "response_encoding":response_encoding,
-#                         },
-#                     }
-#                 },
-#             ],
-#         )
-#         for result in results.contacted.values():
-#             assert result.get("ret_code", {}).get("code", -1) == 0
-#             assert len(result.get("dd_names", [])) > 0
-#             assert expected in "\n".join(result.get("dd_names", [{}])[0].get("content"))
-#     finally:
-#         hosts.all.zos_data_set(name=default_data_set, state="absent")
-#         hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":idcams_args,
+                        "return_content":{
+                            "type":"text",
+                            "src_encoding":src_encoding,
+                            "response_encoding":response_encoding,
+                        },
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+            assert expected in "\n".join(result.get("dd_names", [{}])[0].get("content"))
+    finally:
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
 # ---------------------------------------------------------------------------- #

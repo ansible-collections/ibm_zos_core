@@ -587,8 +587,7 @@ def mt_backupOper(module, src, backup, tmphlq=None):
         Data set type is NOT supported.
     """
     # analysis the file type
-    innersrc = src
-    ds_utils = data_set.DataSetUtils(innersrc)
+    ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
     if file_type != "USS" and file_type not in mt_DS_TYPE:
         message = "{0} data set type is NOT supported".format(str(file_type))
@@ -602,10 +601,10 @@ def mt_backupOper(module, src, backup, tmphlq=None):
     try:
         if file_type == "USS":
             backup_name = Backup.uss_file_backup(
-                innersrc, backup_name=backup, compress=False
+                src, backup_name=backup, compress=False
             )
         else:
-            backup_name = Backup.mvs_file_backup(dsn=innersrc, bk_dsn=backup, tmphlq=tmphlq)
+            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
     except Exception:
         module.fail_json(msg="creating backup has failed")
 
@@ -739,7 +738,7 @@ def run_module(module, arg_def):
     res_args = dict()
 
     src = parsed_args.get("src")
-    innersrc = src
+    src = src
 
     path = parsed_args.get("path")
     fs_type = parsed_args.get("fs_type").upper()
@@ -796,7 +795,7 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=innersrc,
+            src=src,
             path=path,
             fs_type=fs_type,
             state=state,
@@ -820,7 +819,7 @@ def run_module(module, arg_def):
     )
 
     # data set to be mounted/unmounted must exist
-    fs_du = data_set.DataSetUtils(innersrc)
+    fs_du = data_set.DataSetUtils(src)
     fs_exists = fs_du.exists()
     if fs_exists is False:
         module.fail_json(
@@ -856,7 +855,7 @@ def run_module(module, arg_def):
         )
     sttest = stdout.splitlines()
     for line in sttest:
-        if src in line or innersrc in line:
+        if src in line:
             currently_mounted = True
             # reminder: we can space-split the string and find out mount destination
             break
@@ -915,12 +914,12 @@ def run_module(module, arg_def):
 
     if will_mount:
         fullcmd = "MOUNT FILESYSTEM\\( \\'{0}\\' \\) MOUNTPOINT\\( \\'{1}\\' \\) TYPE\\( '{2}' \\)".format(
-            innersrc, path, fs_type
+            src, path, fs_type
         )
         parmtext = (
             parmtext
             + "MOUNT FILESYSTEM('{0}')\n      MOUNTPOINT('{1}')\n      TYPE('{2}')".format(
-                innersrc, path, fs_type
+                src, path, fs_type
             )
         )
         if "ro" in mount_opts:
@@ -986,7 +985,7 @@ def run_module(module, arg_def):
     stdout = stderr = None
 
     if will_unmount:  # unmount/remount
-        fullumcmd = "UNMOUNT FILESYSTEM\\( '{0}' \\)".format(innersrc)
+        fullumcmd = "UNMOUNT FILESYSTEM\\( '{0}' \\)".format(src)
         if unmount_opts is None:
             unmount_opts = "NORMAL"
             fullumcmd = fullcmd + " " + unmount_opts
@@ -1069,7 +1068,7 @@ def run_module(module, arg_def):
                         cont.append(line)
 
         stdout += "\n"
-        newtext = swap_text(cont, parmtext, innersrc)
+        newtext = swap_text(cont, parmtext, src)
         if newtext != cont or cont != content:
             fh = open(tmp_file_filename, "w")
             fh.write(newtext)

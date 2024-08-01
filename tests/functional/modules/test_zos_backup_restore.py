@@ -20,7 +20,7 @@ import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
 import random
-import datetime
+from datetime import datetime
 
 DATA_SET_CONTENTS = "HELLO WORLD"
 DATE_TIME = datetime.now().strftime("%H:%M:%S").replace("-", "")

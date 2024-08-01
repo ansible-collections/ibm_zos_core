@@ -990,7 +990,7 @@ def to_dunzip_args(**kwargs):
     if kwargs.get("hlq"):
         zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
-    if kwargs.get("hlq") is  None:
+    if kwargs.get("hlq") is None:
         zoau_args["keep_original_hlq"] = True
 
     return zoau_args

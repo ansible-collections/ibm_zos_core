@@ -280,7 +280,7 @@ def test_backup_and_restore_of_data_set(
     hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
-    new_hlq  = DATE_TIME.upper()[:4]
+    new_hlq  = "N" + str(DATE_TIME).upper()[:4]
     hlqs.append(new_hlq)
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
@@ -300,7 +300,7 @@ def test_backup_and_restore_of_data_set(
             recover=recover,
         )
         if not overwrite:
-            new_hlq = DATE_TIME.upper()[:4]
+            new_hlq = "N" + str(DATE_TIME).upper()[:4]
             hlqs.append(new_hlq)
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, backup_name)
@@ -338,7 +338,7 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
     hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
-    new_hlq = DATE_TIME.upper()[:4]
+    new_hlq = "N" + str(DATE_TIME).upper()[:4]
     hlqs.append(new_hlq)
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
@@ -394,7 +394,7 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
     hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
-    new_hlq = DATE_TIME.upper()[:4]
+    new_hlq = "N" + str(DATE_TIME).upper()[:4]
     hlqs.append(new_hlq)
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
@@ -479,7 +479,7 @@ def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
     data_set_name2 = get_tmp_ds_name()
     data_sets_hlq = "ANSIBLE.**"
     data_set_backup_location = get_tmp_ds_name(1, 1)
-    new_hlq = DATE_TIME.upper()[:4]
+    new_hlq = "N" + str(DATE_TIME).upper()[:4]
     hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)
@@ -521,7 +521,7 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
     data_set_name2 = get_tmp_ds_name()
     data_set_restore_location2 = get_tmp_ds_name(1, 1)
     data_set_backup_location = get_tmp_ds_name(1, 1)
-    new_hlq = DATE_TIME.upper()[:4]
+    new_hlq = "N" + str(DATE_TIME).upper()[:4]
     hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)
@@ -578,7 +578,7 @@ def test_restore_of_data_set_when_backup_does_not_exist(
         backup_name = get_tmp_ds_name(1,1)
     else:
         backup_name = "/tmp/{0}.dzp".format(DATE_TIME)
-    new_hlq = DATE_TIME.upper()[:4]
+    new_hlq = "N" + str(DATE_TIME).upper()[:4]
     hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_restore_location)
@@ -657,7 +657,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     data_set_name = get_tmp_ds_name()
     data_set_restore_location = get_tmp_ds_name()
     data_set_backup_location = get_tmp_ds_name(1, 1)
-    new_hlq = DATE_TIME.upper()[:4]
+    new_hlq = "N" + str(DATE_TIME).upper()[:4]
     hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)

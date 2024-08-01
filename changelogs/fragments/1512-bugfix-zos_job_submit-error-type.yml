@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_job_submit - Was not propagating any error types UnicodeDecodeError,
+    JSONDecodeError, TypeError, KeyError when encountered, now the error
+    message shares the type error.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1560).

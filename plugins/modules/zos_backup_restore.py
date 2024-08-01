@@ -988,13 +988,12 @@ def to_dunzip_args(**kwargs):
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
-    if kwargs.get("hlq"):
-        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
-
     if kwargs.get("hlq") is None:
         zoau_args["high_level_qualifier"] = datasets.get_hlq()
     elif kwargs.get("hlq") == "N":
         zoau_args["keep_original_hlq"] = True
+    elif kwargs.get("tmp_hlq"):
+        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
     return zoau_args
 

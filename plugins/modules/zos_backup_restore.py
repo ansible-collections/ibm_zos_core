@@ -187,6 +187,7 @@ options:
     description:
       - Specifies the new HLQ to use for the data sets being restored.
       - Defaults to running user's username.
+      - Use keyword N to restores datasets to their original HLQ from when they were archived.
     type: str
     required: false
   tmp_hlq:
@@ -991,6 +992,8 @@ def to_dunzip_args(**kwargs):
         zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
     if kwargs.get("hlq") is None:
+        zoau_args["high_level_qualifier"] = datasets.get_hlq()
+    elif kwargs.get("hlq") is "N":
         zoau_args["keep_original_hlq"] = True
 
     return zoau_args

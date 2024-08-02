@@ -1871,7 +1871,7 @@ def write_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay
 
         html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
         date_time = datetime.now().strftime("%H:%M:%S")
-        with open(f"/tmp/{state.string()}-job-logs-replay-{replay}-{date_time}.html", "w", encoding="utf-8") as file:
+        with open(f"/tmp/concurrent-executor-log-replay-{replay}-{state.string()}-{date_time}.html", "w", encoding="utf-8") as file:
             file.write(html)
             file.close()
 
@@ -1916,7 +1916,7 @@ def write_job_tests_to_html(tests: list[str], state: State, replay: str) -> None
 
         html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
         date_time = datetime.now().strftime("%H:%M:%S")
-        with open(f"/tmp/{state.string()}-job-tests-replay-{replay}-{date_time}.html", "w", encoding="utf-8") as file:
+        with open(f"/tmp/concurrent-executor-tests-replay-{replay}-{state.string()}-{date_time}.html", "w", encoding="utf-8") as file:
             file.write(html)
             file.close()
 
@@ -2153,6 +2153,27 @@ def main():
                     --capture\\
                     --workers 3\\
                     --extra "cd .."
+
+                    python3 ce.py\\
+                        --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
+                        --zoau "/zoau/v1.3.1"\\
+                        --itr 3\\
+                        --paths "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_load_balance_full.py"\\
+                        --user "omvsadm"\\
+                        --extra "cd .."\\
+                        --maxnode 5\\
+                        --verbosity 1\\
+                        --no-capture\\
+                        --workers 1\\
+                        --maxjob 10\\
+                        --hostnames "ec01130a.vmec.svl.ibm.com"\\
+                        --timeout 300\\
+                        --replay 2\\
+                        --bal 2\\
+                        --volumes "222222,000000"\\
+                        --pythonpath "/zoau/v1.3.1/lib/3.10"\\
+                        --no-verbose\\
+                        --no-throttle
         '''))
 
     # Options
@@ -2160,7 +2181,7 @@ def main():
     parser.add_argument('--pyz', type=str, help='Python Z home directory.', required=True, metavar='<str,str>', default="/usr/lpp/python")
     parser.add_argument('--zoau', type=str, help='ZOAU home directory.', required=True, metavar='<str,str>', default="/usr/lpp/zoau")
     parser.add_argument('--itr', type=int, help='How many iterations to run CE, each iteration runs only failed tests, exits early if there are no tests to run, default = 12.', required=True, metavar='<int>', default="12")
-    parser.add_argument('--skip', type=str, help='Skip test suites, only works with option \'--directories\'', required=False, metavar='<str,str>', default="")
+    parser.add_argument('--skip', type=str, help='Skip test suites.', required=False, metavar='<str,str>', default="")
     parser.add_argument('--user', type=str, help='Ansible user authorized to run tests on the managed node.', required=True, metavar='<str>', default="ibmuser")
     parser.add_argument('--timeout', type=int, help='The maximum time in seconds a job should wait for completion, default = 300.', required=False, metavar='<int>', default="300")
     parser.add_argument('--maxjob', type=int, help='The maximum number of times a job can fail before its removed from the job queue.', required=False, metavar='<int>', default="10")
@@ -2178,6 +2199,8 @@ def main():
     parser.add_argument('--paths', type=str, help='Test paths', required=True, metavar='<str,str>', default="")
 
     args = parser.parse_args()
+
+    # TODO: Write a value check that if workers > 1, disable throttle.
 
     # Evaluate
     # Maxjob should always be less than itr else it makes no sense

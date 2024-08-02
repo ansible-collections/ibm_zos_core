@@ -546,9 +546,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
-
 )
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
     copy_uss2mvs,
@@ -740,6 +738,7 @@ def run_module(module, arg_def):
     res_args = dict()
 
     src = parsed_args.get("src")
+
     path = parsed_args.get("path")
     fs_type = parsed_args.get("fs_type").upper()
     state = parsed_args.get("state")

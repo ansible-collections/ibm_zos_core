@@ -29,6 +29,7 @@ author:
   - "Demetrios Dimatos (@ddimatos)"
   - "Rich Parker (@richp405)"
   - "Oscar Fernando Flores (@fernandofloresg)"
+  - "Ivan Moreno (@rexemin)"
 options:
   cmd:
     description:
@@ -38,6 +39,8 @@ options:
       - If the command contains any special characters ($, &, etc), they must be escaped using
         double backslashes like \\\\\\$.
       - For example, to display job by job name the command would be C(cmd:"\\$dj''HELLO''")
+      - By default, the command will be converted to uppercase before execution, to control this
+        behavior, see the I(case_sensitive) option below.
     type: str
     required: true
   verbose:
@@ -58,6 +61,14 @@ options:
     type: int
     required: false
     default: 1
+  case_sensitive:
+    description:
+      - If C(true), the command will not be converted to uppercase before
+        execution. Instead, the casing will be preserved just as it was
+        written in a task.
+    type: bool
+    required: false
+    default: false
 notes:
     - Commands may need to use specific prefixes like $, they can be discovered by
       issuing the following command C(D OPDATA,PREFIX).

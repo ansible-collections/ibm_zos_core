@@ -177,7 +177,7 @@ except Exception:
     opercmd = ZOAUImportError(traceback.format_exc())
 
 
-def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+def execute_command(operator_cmd, timeout_s=1, preserve=False, *args, **kwargs):
     """
     Executes an operator command.
 
@@ -187,6 +187,8 @@ def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
         Command to execute.
     timeout : int
         Time until it stops whether it finished or not.
+    preserve : bool
+        Whether to tell opercmd to preserve the case in the command.
     *args : dict
         Some arguments to pass on.
     **kwargs : dict
@@ -201,7 +203,7 @@ def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
     timeout_c = 100 * timeout_s
 
     start = timer()
-    response = opercmd.execute(operator_cmd, timeout=timeout_c, *args, **kwargs)
+    response = opercmd.execute(operator_cmd, timeout=timeout_c, preserve=preserve, *args, **kwargs)
     end = timer()
     rc = response.rc
     stdout = response.stdout_response
@@ -228,6 +230,7 @@ def run_module():
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
         wait_time_s=dict(type="int", required=False, default=1),
+        case_sensitive=dict(type="bool", required=False, default=False),
     )
 
     result = dict(changed=False)
@@ -314,6 +317,7 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
+        case_sensitive=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -344,6 +348,7 @@ def run_operator_command(params):
 
     wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
+    preserve = params.get("case_sensitive")
 
     use_wait_arg = False
     if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
@@ -353,7 +358,7 @@ def run_operator_command(params):
         kwargs.update({"wait": True})
 
     args = []
-    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, *args, **kwargs)
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, preserve=preserve, *args, **kwargs)
 
     if rc > 0:
         message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)

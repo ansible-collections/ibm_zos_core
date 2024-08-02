@@ -64,6 +64,7 @@ def get_test_cases(paths: str, skip: str = None) -> list[str]:
     files =[]
     parametrized_test_cases = []
     parametrized_test_cases_filtered_test_suites = []
+    parametrized_test_cases_filtered_test_cases = []
     parameterized_tests = []
     ignore_test_suites = []
     ignore_test_cases = []
@@ -92,11 +93,15 @@ def get_test_cases(paths: str, skip: str = None) -> list[str]:
     parametrized_test_cases = subprocess.run([cmd_str], shell=True, capture_output=True, text=True, check=False)
     # Remove duplicates in case test_suites or test_directories were repeated
     parametrized_test_cases = list(set(parametrized_test_cases.stdout.split('\n')))
-    # Remove the trailing line feed from the list
+    # Remove the trailing line feed from the list else it will leave an empty list index and error.
     parametrized_test_cases = list(filter(None, parametrized_test_cases))
 
+    # Skip can take any input, but note that test suites which start with 'test' and in in `.py`
+    # will supersede individual test cases. That is because if a test suite is being skipped it
+    # it should remove all test cases that match that test suite, hence the skipped are put into
+    # two buckets, 'ignore_test_cases' and 'ignore_test_suites' and 'ignore_test_suites' is evaluated
+    # first.
     if skip:
-        print("IN SKIP")
         skip=" ".join(skip.split())
         skip = skip.strip().replace(',', ' ').split()
         for skipped in skip:
@@ -109,7 +114,6 @@ def get_test_cases(paths: str, skip: str = None) -> list[str]:
                 # Only retain the sub-str because that is what pytest collect-only will yield
                 skipped = skipped.split("tests/")[1]
                 ignore_test_cases.append(skipped)
-                print("SKIP "+str(ignore_test_cases))
 
             if skipped.endswith('.py'):  # it's a test suite
                 skipped_path = Path(skipped)
@@ -121,33 +125,17 @@ def get_test_cases(paths: str, skip: str = None) -> list[str]:
                 skipped = skipped.split("tests/")[1]
                 ignore_test_suites.append(skipped)
 
-        # pytest --ignore,--deselect did not seem to work as expected so will manually replicate the functionality
+        # pytest --ignore,--deselect did not work as expected, will manually replicate the functionality
         # If a path is in ignore_test_suites, it supersedes any ignore_test_cases substrings.
-        if len(ignore_test_suites) > 0 and len(ignore_test_cases) >0:
-            for ignore in ignore_test_suites:
-                for test_case in ignore_test_cases:
-                    if ignore in test_case:
-                        ignore_test_cases.remove(test_case)
-            if len(ignore_test_suites) > 0:
-                for ignore in ignore_test_suites:
-                    for parametrized in parametrized_test_cases:
-                        if ignore not in parametrized:
-                            parametrized_test_cases_filtered_test_suites.append(parametrized)
-            if len(ignore_test_cases) > 0:
-                for ignore in ignore_test_cases:
-                    for filtered_test in parametrized_test_cases_filtered_test_suites:
-                        if ignore in filtered_test:
-                            parametrized_test_cases_filtered_test_suites.remove(filtered_test)
-        elif len(ignore_test_suites) > 0:
-            for ignore in ignore_test_suites:
-                for parametrized in parametrized_test_cases:
-                    if ignore not in parametrized:
-                        parametrized_test_cases_filtered_test_suites.append(parametrized)
-        elif len(ignore_test_cases) > 0:
-            for ignore in ignore_test_cases:
-                for parametrized in parametrized_test_cases:
-                    if ignore not in parametrized:
-                        parametrized_test_cases_filtered_test_suites.append(parametrized)
+        if len(ignore_test_suites) > 0:
+            parametrized_test_cases_filtered_test_suites = [p for p in parametrized_test_cases if all(t not in p for t in ignore_test_suites)]
+        if len(ignore_test_cases) > 0:
+            parametrized_test_cases_filtered_test_cases = [p for p in parametrized_test_cases if all(t not in p for t in ignore_test_cases)]
+
+        if len(parametrized_test_cases_filtered_test_suites) > 0 and len(parametrized_test_cases_filtered_test_cases) > 0:
+            parametrized_test_cases_filtered_test_suites.extend(parametrized_test_cases_filtered_test_cases)
+        elif len(parametrized_test_cases_filtered_test_cases) > 0:
+            parameterized_tests = [f"tests/{parametrized}" for parametrized in parametrized_test_cases_filtered_test_cases]
 
         parameterized_tests = [f"tests/{parametrized}" for parametrized in parametrized_test_cases_filtered_test_suites]
         return parameterized_tests
@@ -156,21 +144,17 @@ def get_test_cases(paths: str, skip: str = None) -> list[str]:
 
     return parameterized_tests
 
+# Some adhoc testing until some test cases can be structured.
 # def main():
 #     print("Main")
-
 #     # plist = get_test_cases(paths="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_job_submit_func.py,\
 #     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\
 #     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/",\
 #     #         skip="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_copy_func.py,\
 #     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/test_zos_backup_restore_unit.py::test_invalid_operation[restorE],\
 #     #         /Users/ddimatos/git/gh/ibm_zos_core/tests/unit/test_zoau_version_checker_unit.py::test_is_zoau_version_higher_than[True-sys_zoau1-1.2.1]")
-
 #     # plist = get_test_cases(paths="/Users/ddimatos/git/gh/ibm_zos_core/tests/unit/")
-
 #     plist = get_test_cases(paths="/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_tso_command_func.py,/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_zos_operator_func.py")
-
 #     print(str(plist))
-
 # if __name__ == '__main__':
 #     main()

@@ -28,7 +28,7 @@
 
 VENV_HOME_MANAGED=${PWD%/venv}/venv
 
-# Lest normalize the version from 3.10.2 to 3010002000
+# Normalize the version from 3.10.2 to 3010002000
 # Do we we need that 4th octet?
 normalize_version() {
     echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
@@ -103,26 +103,27 @@ DOCKER_INFO=`podman info> /dev/null 2>&1;echo $?`
 # ==============================================================================
 # Arg parsing helpers
 # ==============================================================================
+
+# ------------------------------------------------------------------------------
+# This method generates an INFO message with green color and dividers. This
+# message will always be sent to STDERR so that STDOUT can be reserved for
+# return codes.. Use this method for messages to the console.
+# ------------------------------------------------------------------------------
+message(){
+    printf '%s\n' "${GRN}${DIV}${ENDC}" >&2
+    printf '%s\n' "${GRN}INFO:${ENDC} ${1}" >&2
+    printf '%s\n' "${GRN}${DIV}${ENDC}" >&2
+}
+
+# ------------------------------------------------------------------------------
+# This method generates an ERROR message with red color. This message
+# will always be sent to STDERR so that STDOUT can be reserved for return codes.
+# Use this method for error messages to the console.
+# ------------------------------------------------------------------------------
 message_error(){
     ERROR_MSG="${RED}ERROR${ENDC}: $1"
-    printf '%s\n' "$ERROR_MSG" >&2
+    printf '%s\n' "${ERROR_MSG}" >&2
     exit 1
-}
-
-terminate() {
-    printf '%s\n' "$1" >&2
-    exit 1
-}
-
-message(){
-    # Pushing this message out to STDERR so that we can alllow for STDOUT be used
-    # return the ouput without any added messaging.
-    # echo $DIV;
-    # echo "$1";
-    # echo $DIV;
-    printf '%s\n' "$DIV" >&2
-    printf '%s\n' "$1" >&2
-    printf '%s\n' "$DIV" >&2
 }
 
 ensure_managed_venv_exists(){
@@ -132,6 +133,11 @@ ensure_managed_venv_exists(){
         "For additional optons, use $0 --help."
         exit 1
     fi
+}
+
+terminate() {
+    printf '%s\n' "$1" >&2
+    exit 1
 }
 
 # ------------------------------------------------------------------------------
@@ -482,6 +488,30 @@ ac_test(){
 }
 
 # ------------------------------------------------------------------------------
+# Run concurrent executor:
+# ------------------------------------------------------------------------------
+#->test-concurrent:
+## Run the functional tests inside the managed python virtual environment.
+## Usage: ac [--ac-test] [--host <host>] [--python <python>] [--zoau <zoau>] [--file <file>] [--debug <boolean>]
+## Options:
+##     host     - z/OS managed node to run test cases, no selection defaults to
+##                a host registerd to your user id (`whoami`).
+##     python   - IBM enterprise python version, choices are 3.8, 3.9, 3.10, 3.11,
+##                no selection defauls to 3.8.
+##     zoau     - ZOAU to use in testing, choices are 1.0.3, 1.1.1, 1.2.0, 1.2.1,
+##                no selection defaults to 1.1.1 .
+##     file     - the absoulte path to a test suite to run, no selection
+##                defaults to all test suite running.
+##     test     - a test case to run found in 'file', no selection
+##                defaults to all tests in file running.
+##     debug    - enable debug for pytest (-s), choices are true and false
+## Example:
+##  $ ac --ac-test --host ec01150a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --test  test_zos_operator_positive_path --debug true
+##  $ ac --ac-test --host ec33012a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --debug true
+##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
+##  $ ac --ac-test
+
+# ------------------------------------------------------------------------------
 # Print the configuration used to connect to the managed node for functional tests
 # ------------------------------------------------------------------------------
 #->ac-test-config:
@@ -501,9 +531,9 @@ ac_test_config(){
 # ------------------------------------------------------------------------------
 # Get a list of all test cases from the dependency finder depending on options
 # ------------------------------------------------------------------------------
-#->ac-test-dep-finder:
+#->test-dep-find:
 ## Determine which test suites to run given the options selected.
-## Usage: ac --ac-test-dep-finder [--branch <str,str>] [--skip <str, str>]
+## Usage: ac --test-dep-find [--branch <str,str>] [--skip <str, str>]
 ## Options:
 ##      branch (optional):
 ##          - The branch to compare to when performing dependency analaysis. The
@@ -521,10 +551,10 @@ ac_test_config(){
 ##          - Pretty formatting where each value is a line follwoed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --ac-test-dep-finder --branch main --skip "test_module_security.py,test_zos_apf_func.py"
-##  $ ac --ac-test-dep-finder --branch dev --skip "test_zos_apf_func.py"
-##  $ ac --ac-test-dep-finder --branch main
-##  $ ac --ac-test-dep-finder
+##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py"
+##  $ ac --test-dep-find --branch dev --skip "test_zos_apf_func.py"
+##  $ ac --test-dep-find --branch main
+##  $ ac --test-dep-find
 
 ac_test_dep_finder(){
     branch=$1
@@ -569,9 +599,9 @@ ac_test_dep_finder(){
 # ------------------------------------------------------------------------------
 # Get a list of all test cases using pytest including parameterization
 # ------------------------------------------------------------------------------
-#->--test-pytest-finder:
+#->test-pytest-find:
 ## Get a list of parametizd test cases used by pytest
-## Usage: ac --test-pytest-finder [--file <str, str>] [--skip <str, str>] [--pretty <bool>]
+## Usage: ac --test-pytest-find [--file <str, str>] [--skip <str, str>] [--pretty <bool>]
 ## Options:
 ##     file (optional):
 ##         - Space or comma delimited test suites that should be included
@@ -595,14 +625,14 @@ ac_test_dep_finder(){
 ##          - Pretty formatting where each value is a line follwoed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --test-pytest-finder --file "tests/functional/modules/test_zos_job_submit_func.py,tests/functional/modules/test_zos_copy_func.py"
-##  $ ac --test-pytest-finder --file "tests/functional/modules/test_zos_job_submit_func.py,tests/functional/modules/test_zos_copy_func.py" --skip "test_zos_job_submit_func.py,test_module_security.py" --pretty false
-##  $ ac --test-pytest-finder --pretty true
-##  $ ./ac --test-pytest-finder|wc -l
+##  $ ac --test-pytest-find --file "test_zos_copy_func.py,test_zos_mvs_raw_unit.py" --skip "test_zos_job_submit_func.py,test_module_security.py" --pretty false
+##  $ ac --test-pytest-find --file "functional/*,unit/*" --skip "test_module_security.py"
+##  $ ac --test-pytest-find --file "test_zos_copy_func.py"
+##  $ ac --test-pytest-find --pretty true
+##  $ ac --test-pytest-find|wc -l
 ac_test_pytest_finder(){
     file=$1
     skip="$2"
-    export env_file=${file}
 
     first_entry=true
     file_tests=""
@@ -655,9 +685,7 @@ ac_test_pytest_finder(){
     done
     first_entry=true
     file=$file_tests
-    export env_skip=${file}
-    echo "FILES ARE $file"
-    exit
+    export env_file=${file}
 
     # Convert any comma separated strings to space delimited as needed by the tooling.
     first_entry=true
@@ -1011,13 +1039,13 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-test-config"
             ;;
-      --ac-test-dep-finder|--ac-test-dep-finder=?*) # command
+      --test-dep-find|--test-dep-find=?*) # command
             ensure_managed_venv_exists $1
-            option_submitted="--ac-test-dep-finder"
+            option_submitted="--test-dep-find"
             ;;
-      --test-pytest-finder|--test-pytest-finder=?*) # command
+      --test-pytest-find|--test-pytest-find=?*) # command
             ensure_managed_venv_exists $1
-            option_submitted="--test-pytest-finder"
+            option_submitted="--test-pytest-find"
             ;;
       --ac-version)                             # Command
             ensure_managed_venv_exists $1
@@ -1192,11 +1220,11 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
     ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config
-elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-dep-finder" ] ; then
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then
     ac_test_dep_finder ${branch:=""}\
     "${skip:="test_module_security.py"}"\
     ${pretty:="true"}
-elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-finder" ] ; then
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-find" ] ; then
     ac_test_pytest_finder ${file:="functional/*,unit/*"}\
     "${skip:="test_module_security.py"}" ${pretty:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then

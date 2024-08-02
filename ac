@@ -103,6 +103,12 @@ DOCKER_INFO=`podman info> /dev/null 2>&1;echo $?`
 # ==============================================================================
 # Arg parsing helpers
 # ==============================================================================
+message_error(){
+    ERROR_MSG="${RED}ERROR${ENDC}: $1"
+    printf '%s\n' "$ERROR_MSG" >&2
+    exit 1
+}
+
 terminate() {
     printf '%s\n' "$1" >&2
     exit 1
@@ -205,7 +211,7 @@ option_processor(){
     opt=$1
     arg=$2
     if [ "$arg" ]; then
-       echo $arg
+       echo "$arg"
     elif [ "$opt" ]; then
         # Split up to "=" and set the remainder
         value=${opt#*=}
@@ -495,37 +501,40 @@ ac_test_config(){
 # ------------------------------------------------------------------------------
 # Get a list of all test cases from the dependency finder depending on options
 # ------------------------------------------------------------------------------
-#->ac-test-discover:
-
+#->ac-test-dep-finder:
 ## Determine which test suites to run given the options selected.
-## Usage: ac [--ac-test-discover] [--all <boolean>] [--skip <string>] [--branch <string>]]
+## Usage: ac --ac-test-dep-finder [--branch <str,str>] [--skip <str, str>]
 ## Options:
-##     all      - A list of all test cases that will leave out the skip list of tests
-##     skip     - String of space delimited tests to skip starting from 'functional'
-##     branch   - branch to compare to when performing dependency analaysis
+##      branch (optional):
+##          - The branch to compare to when performing dependency analaysis. The
+##            comparison always uses the currently checked out local branch and
+##            compares that to the 'branch' supplied.
+##          - The default branch is 'dev'
+##      skip (optional):
+##          - Space or comma delimited test suites that should not be included
+##            in the result.
+##          - Supply only the test suite name, the tooling will prepend the
+##            necessay path.
+##          - Default is to skip 'test_module_security.py', this can not be removed but
+##            it can be replaced with another test or tests.
+##     pretty (optional):
+##          - Pretty formatting where each value is a line follwoed by a line feed,
+##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --ac-test-discover --all false --skip "functional/modules/test_module_security.py functional/modules/test_zos_apf_func.py" --branch dev
-##  $ ac --ac-test-discover --all false --branch master
-##  $ ac --ac-test-discover --all
+##  $ ac --ac-test-dep-finder --branch main --skip "test_module_security.py,test_zos_apf_func.py"
+##  $ ac --ac-test-dep-finder --branch dev --skip "test_zos_apf_func.py"
+##  $ ac --ac-test-dep-finder --branch main
+##  $ ac --ac-test-dep-finder
 
-ac_test_discover(){
-    # Default is to run them all
-    all=$1
-    skip=$2
-    branch=$3
+ac_test_dep_finder(){
+    branch=$1
+    skip="$2"
     gh_branch=`git branch |grep "*" | cut -d" " -f2`
 
-    # Default we are skipping for now.
-    if [ -z "$skip" ]; then
-        skip=$CURR_DIR/tests/functional/modules/test_module_security.py
-    fi
-
-    # Traverse the comma separated tests, prefix the path with our test path and
-    # delimit with a space.
-    # skip=\"`echo $2 | tr ',' ' '`\"
+    # Convert any comma separated strings to space delimited as needed by the tooling.
     first_entry=true
     skip_tests=""
-    for i in $(echo $skip | sed "s/,/ /g")
+    for i in $(echo $skip | sed "s/,/ /g") # Optionally: skip=\"`echo $2 | tr ',' ' '`\"
     do
         if [ "$first_entry" == "true" ];then
             first_entry=false
@@ -536,21 +545,149 @@ ac_test_discover(){
     done
     skip=$skip_tests
 
-    # TODO: If we escape skip with doubl quotes , the venv will wrap it in single quotes causing an error
-    #       If we don't wrap it ends up being two args, we will need to update the depedency finder to support comma sep vals.
-    #       set -x if you want to see this.
-    #       For now will override any skip values and only allow for the default
-    skip=$CURR_DIR/tests/functional/modules/test_module_security.py
-
-    if [ "$all" == "true" ]; then
-        message "Compiling a list of all test cases that don't include ones being skipped."
-        . $VENV_BIN/activate && result=`$VENV_BIN/python ${VENV}/dependencyfinder.py -p ${CURRENT_DIR} -a -s ${skip}`
+    # If branch is defined provide results on that comparison branch else default to the `dev` branch.
+    if [ -z "$branch" ]; then
+        branch="dev"
+        message "Compiling a list functional and unit tests suites excluding skipped tests."
+        . $VENV_BIN/activate && result=`$VENV_BIN/python ${VENV}/dependencyfinder.py -p ${CURRENT_DIR} -a -s "${skip}"`
     else
-        message "Evaluating which test cases to run for branch: '$gh_branch'."
-        . $VENV_BIN/activate && $VENV_BIN/python ${VENV}/dependencyfinder.py -p ${CURRENT_DIR} -b ${branch} -s ${skip} -m
+        message "Compiling a list dependent tests cases to run based on the changes between local branch '$gh_branch' and target branch '$branch', excluding skipped tests."
+        . $VENV_BIN/activate && result=`$VENV_BIN/python ${VENV}/dependencyfinder.py -p ${CURRENT_DIR} -b ${branch} -s "${skip}" -m`
     fi
-    
-    echo $result
+
+    # Uppercase value for --pretty
+    pretty=`echo $3 | tr '[:lower:]' '[:upper:]'`
+    if [ "$pretty" == "TRUE" ];then
+        echo $result |tr '[[:space:]]' '\n'
+    else
+        export env_result=${result}
+        result=`$VENV_BIN/python3 -c "from os import environ;all = environ['env_result'].split(',');print(str(all))"`
+        echo $result
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Get a list of all test cases using pytest including parameterization
+# ------------------------------------------------------------------------------
+#->--test-pytest-finder:
+## Get a list of parametizd test cases used by pytest
+## Usage: ac --test-pytest-finder [--file <str, str>] [--skip <str, str>] [--pretty <bool>]
+## Options:
+##     file (optional):
+##         - Space or comma delimited test suites that should be included
+##           in the result.
+##         - A test suite is a collection of test cases in a file that starts with
+##           'test' and ends in '.py'.
+##         - For all functional tests, use the `functional/*` notation.
+##         - For all unit tests, use the `unit/*` notation.
+##         - Default is all functional and unit tests.
+##         - A directory of test cases is such that it contains test suites.
+##     skip (optional) - (str):
+##         - Space or comma delimited test suites that should be omitted
+##           in the result.
+##         - A test suite is a collection of test cases in a file that starts with
+##           'test' and ends in '.py'.
+##          - Default is to skip 'test_module_security.py', this can not be removed but
+##            it can be replaced with another test or tests.
+##          - Test cases can be parametrized such they use the '::' syntax or not.
+##          - Skip does not support directories.
+##     pretty (optional):
+##          - Pretty formatting where each value is a line follwoed by a line feed,
+##            otherwise a list[str] format is returned.
+## Example:
+##  $ ac --test-pytest-finder --file "tests/functional/modules/test_zos_job_submit_func.py,tests/functional/modules/test_zos_copy_func.py"
+##  $ ac --test-pytest-finder --file "tests/functional/modules/test_zos_job_submit_func.py,tests/functional/modules/test_zos_copy_func.py" --skip "test_zos_job_submit_func.py,test_module_security.py" --pretty false
+##  $ ac --test-pytest-finder --pretty true
+##  $ ./ac --test-pytest-finder|wc -l
+ac_test_pytest_finder(){
+    file=$1
+    skip="$2"
+    export env_file=${file}
+
+    first_entry=true
+    file_tests=""
+    array_func=($(ls "$CURR_DIR/tests/functional/modules/"))
+    array_unit=($(ls "$CURR_DIR/tests/unit/"))
+
+    # As a courtesy, aid in shorter notation supplied to the utils module get_test_case, the module does not
+    # support such notation because the module can be run from many locations and requires absolute paths.
+    for i in $(echo $file | sed "s/,/ /g") # Optionally: skip=\"`echo $2 | tr ',' ' '`\"
+    do
+        if [ "$i" == "functional/*" ];then
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/functional/modules/"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/functional/modules/"
+            fi
+        elif [ "$i" == "unit/*" ];then
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/unit/"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/unit/"
+            fi
+        elif [[ "${array_func[@]}" =~ $i ]];then
+            if [ ! -e "$CURR_DIR/tests/functional/modules/$i" ]; then
+                message_error "File = $CURR_DIR/tests/functional/modules/$i not found."
+            fi
+
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/functional/modules/$i"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/functional/modules/$i"
+            fi
+        elif [[ "${array_unit[@]}" =~ $i ]];then
+            if [ ! -e "$CURR_DIR/tests/unit/$i" ]; then
+                message_error "File = $CURR_DIR/tests/unit/$i not found."
+            fi
+
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/unit/"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/unit/$i"
+            fi
+        else
+            message_error "File = $i, not found in project path = $CURR_DIR."
+        fi
+    done
+    first_entry=true
+    file=$file_tests
+    export env_skip=${file}
+    echo "FILES ARE $file"
+    exit
+
+    # Convert any comma separated strings to space delimited as needed by the tooling.
+    first_entry=true
+    skip_tests=""
+    for i in $(echo $skip | sed "s/,/ /g") # Optionally: skip=\"`echo $2 | tr ',' ' '`\"
+    do
+        if [ "$first_entry" == "true" ];then
+            first_entry=false
+            skip_tests="$CURR_DIR/tests/functional/modules/$i"
+        else
+            skip_tests="$skip_tests $CURR_DIR/tests/functional/modules/$i"
+        fi
+    done
+
+    skip=$skip_tests
+    export env_skip=${skip}
+
+    message "Compiling a list of test cases for the provided test suites excluding any skip tests.."
+    . $VENV_BIN/activate && result=`$VENV_BIN/python -c "from scripts.modules.utils import get_test_cases;from os import environ;\
+        tests = get_test_cases(paths=environ['env_file'], skip=environ['env_skip']);all=','.join(tests);print(all)"`
+
+    # Uppercase value for --pretty
+    pretty=`echo $3 | tr '[:lower:]' '[:upper:]'`
+    if [ "$pretty" == "TRUE" ];then
+        echo $result |tr ',' '\n';
+    else
+        export env_result=${result}
+        result=`$VENV_BIN/python3 -c "from os import environ;all = environ['env_result'].split(',');print(str(all))"`
+        echo $result
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -874,9 +1011,13 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-test-config"
             ;;
-      --ac-test-discover|--ac-test-discover=?*) # command
+      --ac-test-dep-finder|--ac-test-dep-finder=?*) # command
             ensure_managed_venv_exists $1
-            option_submitted="--ac-test-discover"
+            option_submitted="--ac-test-dep-finder"
+            ;;
+      --test-pytest-finder|--test-pytest-finder=?*) # command
+            ensure_managed_venv_exists $1
+            option_submitted="--test-pytest-finder"
             ;;
       --ac-version)                             # Command
             ensure_managed_venv_exists $1
@@ -971,13 +1112,18 @@ while true; do
             option_sanitize $password
             shift
             ;;
+      --pretty|--pretty=?*)                     # option
+            pretty=`option_processor $1 $2`
+            option_sanitize $pretty
+            shift
+            ;;
       --python|--python=?*)                     # option
             python=`option_processor $1 $2`
             option_sanitize $python
             shift
             ;;
       --skip|--skip=?*)                        # option
-            skip=`option_processor $1 $2`
+            skip=`option_processor $1 "$2"`
             option_sanitize "$skip"
             shift
             ;;
@@ -986,7 +1132,7 @@ while true; do
             option_sanitize $test
             shift
             ;;
-    #   --tests|--tests=?*)                       # option
+    #  --tests|--tests=?*)                       # option
     #         tests=`option_processor $1 $2`
     #         option_sanitize $tests
     #         shift
@@ -1046,8 +1192,13 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
     ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config
-elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-discover" ] ; then
-    ac_test_discover ${all:=false} ${skip:=""} ${branch:="dev"}
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-dep-finder" ] ; then
+    ac_test_dep_finder ${branch:=""}\
+    "${skip:="test_module_security.py"}"\
+    ${pretty:="true"}
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-finder" ] ; then
+    ac_test_pytest_finder ${file:="functional/*,unit/*"}\
+    "${skip:="test_module_security.py"}" ${pretty:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then
     ac_version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--file-encrypt" ] ; then

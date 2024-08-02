@@ -1,3 +1,4 @@
-trivial:
-  - zos_backup_restore - Validate the datasets keep original hlq on restore operation with keyword N.
+minor_changes:
+  - zos_backup_restore - Validate the datasets keep original hlq on restore operation with keywords
+    R(restore) or K(Keep).
     (https://github.com/ansible-collections/ibm_zos_core/pull/1632).

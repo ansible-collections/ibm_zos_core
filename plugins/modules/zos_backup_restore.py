@@ -187,7 +187,7 @@ options:
     description:
       - Specifies the new HLQ to use for the data sets being restored.
       - Defaults to running user's username.
-      - Use keyword N to restores datasets to their original HLQ from when they were archived.
+      - Use keywords R or K to restores datasets to their original HLQ from when they were archived.
     type: str
     required: false
   tmp_hlq:
@@ -323,6 +323,12 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
+
+- name: Restore data sets from backup stored with their original HLQ from when they were archived .
+  zos_backup_restore:
+    operation: restore
+    backup_name: MY.BACKUP.DZP
+    hlq: K
 """
 
 import traceback
@@ -990,7 +996,7 @@ def to_dunzip_args(**kwargs):
 
     if kwargs.get("hlq") is None:
         zoau_args["high_level_qualifier"] = datasets.get_hlq()
-    elif kwargs.get("hlq") == "N":
+    elif kwargs.get("hlq") == "K" or kwargs.get("hlq") == "R":
         zoau_args["keep_original_hlq"] = True
     elif kwargs.get("tmp_hlq"):
         zoau_args["high_level_qualifier"] = kwargs.get("hlq")

@@ -2182,7 +2182,7 @@ def main():
     parser.add_argument('--zoau', type=str, help='ZOAU home directory.', required=True, metavar='<str,str>', default="/usr/lpp/zoau")
     parser.add_argument('--itr', type=int, help='How many iterations to run CE, each iteration runs only failed tests, exits early if there are no tests to run, default = 12.', required=True, metavar='<int>', default="12")
     parser.add_argument('--skip', type=str, help='Skip test suites.', required=False, metavar='<str,str>', default="")
-    parser.add_argument('--user', type=str, help='Ansible user authorized to run tests on the managed node.', required=True, metavar='<str>', default="ibmuser")
+    parser.add_argument('--user', type=str, help='Ansible user authorized to run tests on the managed node.', required=False, metavar='<str>', default="")
     parser.add_argument('--timeout', type=int, help='The maximum time in seconds a job should wait for completion, default = 300.', required=False, metavar='<int>', default="300")
     parser.add_argument('--maxjob', type=int, help='The maximum number of times a job can fail before its removed from the job queue.', required=False, metavar='<int>', default="10")
     parser.add_argument('--bal', type=int, help='The failure count at which a job is assigned to a new managed node, default = 5 .', required=False, metavar='<int>', default="5")

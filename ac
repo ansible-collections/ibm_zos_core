@@ -502,10 +502,10 @@ ac_test(){
 # ------------------------------------------------------------------------------
 #->test-concurrent:
 ## Run the conncurrent executor (CE) that can drive test cases to a cluster of hosts.
-## Usage: ac --ac-concurrent [--host <str, str>] [--user <str>] [--python <str>] [--zoau <str>] [--pythonpath <str>]
-##                           [--volumes <str, str>] [--file <str, str>] [--skip <str, str>] [--itr <int>] [--replay <int>]
-##                           [--timeout <int>] [--throttle <bool>] [--workers <int>] [--maxjob <int>] [--maxnode <int>]
-##                           [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>]
+## Usage: ac --test-concurrent [--host <str, str>] [--user <str>] [--python <str>] [--zoau <str>] [--pythonpath <str>]
+##                             [--volumes <str, str>] [--file <str, str>] [--skip <str, str>] [--itr <int>] [--replay <int>]
+##                             [--timeout <int>] [--throttle <bool>] [--workers <int>] [--maxjob <int>] [--maxnode <int>]
+##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>]
 ## Options:
 ##     host (optional): -> --hostnames
 ##          - Space or comma delimited managed nodes to use.
@@ -544,7 +544,7 @@ ac_test(){
 ##      itr (optional): -> --itr
 ##          - Configure the number of iterations to rerun failed test cases.
 ##          - Each iteration will run only the prior iterations failed tests until
-##            either theire are no more iterations left or there are no more failed
+##            either their are no more iterations left or there are no more failed
 ##            tests to run.
 ##          - Default is 50 so that full regression can succeed.
 ##      replay (optional): -> --replay
@@ -553,6 +553,10 @@ ac_test(){
 ##          - The idea behind this is if you did not set enough iterations, rather than
 ##            start all over you could instruce CE to rerun with the failed test cases
 ##            it has recorded, giving a higher probabity there will be success.
+##          - Each replay will run only the prior iterations failed tests until
+##            either their are no more replay's left or there are no more failed
+##            tests to run.
+##          - Default is 5, so that full regression can succeed.
 ##      timeout (optional): -> --timeout
 ##          - The maximum time in seconds a job should wait for completion.
 ##          - When set, a subprocess call executing pytest will waith this amount of time.
@@ -593,7 +597,7 @@ ac_test(){
 ##      verbose (optional): -> --verbose --no-verbose
 ##          - Instruct CE to run with verbose stdout to the console.
 ##          - This will instruct CE to write all statistics to stdout.
-##          - Default is false, no verbosity to the console.
+##          - Default is 'False', no verbosity to the console.
 ##          - Statistics are always written to directory '/tmp' as text and HTML files.
 ##          - Files in '/tmp' will follow this name pattern, eg conncurrent-excutor-log-<replay>-<status>-<date>.<ext>
 ##              - examples are:
@@ -607,6 +611,7 @@ ac_test(){
 ##          - Default is 0, no verbosity.
 ##       debug (optional): -> --capture --no-capture
 ##          - Instruct Pytest whether to capture any output (stdout/stderr), equivalent of pytest -s.
+##          - Default False
 ##       extra (optional): -> --extra
 ##          - Extra commands passed to subprocess before pytest execution
 ##          - This is helpful if you want to expose insert an enviroment var or even
@@ -617,35 +622,130 @@ ac_test(){
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test
 test_concurrent(){
-    host=$1
-    python=$2
-    zoau=$3
-    file=$4
-    test=$5
-    debug=$6
-    skip=$skip_tests
-    export env_skip=${skip}
 
-    # host <str, str>
-    # user <str>
-    # python <str>
-    # zoau <str>
-    # pythonpath <str>
-    # volumes <str, str> "222222,000000"
-    # file <str, str>
-    # skip <str, str>
-    # itr <int>
-    # replay <int>
-    # timeout <int>
-    # throttle <bool>
-    # workers <int>
-    # maxjob <int>
-    # maxnode <int>
-    # bal <int>
-    # verbose <bool>
-    # verbosity <int>
-    # debug <bool>
-    # extra <str>
+    echo "host=${1}, user=${2}, python=${3}, zoau=${4}, pythonpath=${5}, volumes=${6},"\
+            "file=${7}, skip=${8}, itr=${9}, replay=${10}, timeout=${11}, throttle=${12},"\
+            "workers=${13},maxjob=${14}, maxnode=${15}, bal=${16}, verbose=${17},"\
+            "verbosity=${18}, debug=${19}, extra=${20}"
+
+    host=$1
+    user=$2
+    python=$3
+    zoau=$4
+    pythonpath=$5
+    volumes=$6
+    file=$7
+    skip=$8
+    itr=$9
+    replay=$10
+    timeout=$11
+    throttle=$12
+    workers=$13
+    maxjob=$14
+    maxnode=$15
+    bal=$16
+    verbose=$17
+    verbosity=$18
+    debug=$19
+    extra=$20
+
+    #./ac --test-concurrent --host ec33012a
+    # /ac --test-concurrent --host ec33012a --python 3.11 --zoau 1.3.0 --pythonpath foo
+    read host user pass <<<$($VENV/./venv.sh --host-credentials $1)
+    echo "host=$host, user=$user, pass=$pass"
+    read  python <<<$($VENV/./mounts.sh --get-python-mount $3)
+    echo "python=$python"
+    read  zoau <<<$($VENV/./mounts.sh --get-zoau-mount $4)
+    echo "zoau=$zoau"
+
+    # Build precompiled binary path if $pythonpath string is null
+    if [ -z "${pythonpath}" ]; then
+        suffix=`echo ${python#*cyp/v}`
+        version=`echo ${suffix%*/pyz}`
+        pythonpath_version=`echo $version|sed 's/r/./g'`
+        pythonpath=$zoau/lib/$pythonpath_version
+        echo $pythonpath
+    fi
+# CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib\\n"
+
+exit
+#    export env_skip=${skip}
+
+# unset CONFIG
+# host_zvm=$1
+# pyz_version=$2
+# zoau_version=$3
+# managed_venv_path=$4
+
+# ssh_host_credentials "$host_zvm"
+# get_python_mount "$pyz_version"
+# get_zoau_mount "$zoau_version"
+
+
+#     # host <str, str>       venv.sh -> ssh_host_credentials "$host_zvm" - sets host user pass
+#     # user <str>            venv.sh -> ssh_host_credentials "$host_zvm" (also delivers pass)
+#     # python <str>          mounts.sh -> get_python_mount - sets global val ZOAU_HOME
+#     # zoau <str>            mounts.sh -> get_zoau_mount - sets global val PYZ_HOME
+#     # pythonpath <str>      Will have to assemble this myself
+#     # volumes <str, str>    will hard code defaults into AC "222222,000000"
+#     # file <str, str>       will hard code directories into AC like pytest-find
+#     # skip <str, str>       will hard code security test 'test_module_security.py'
+#     # itr <int>             will hard code default 50
+#     # replay <int>          will hard code 5
+#     # timeout <int>         will hard code 300
+#     # throttle <bool>       will hard code true
+#     # workers <int>         will hard code 1
+#     # maxjob <int>          will hard code 10
+#     # maxnode <int>         will hard code 30
+#     # bal <int>             will hard code 10
+#     # verbose <bool>        will hard code False
+#     # verbosity <int>       will hard code 0
+#     # debug <bool>          will hard code False
+#     # extra <str>           will hard code ""
+
+    # test-concurrent ${host:=""} ${user:=""} ${python:=""} ${zoau:=""} ${pythonpath:=""} ${volumes:="222222,000000"}
+    #                 ${file:="functional/*,unit/*"} ${skip:="test_module_security.py"} ${itr:="50"} ${replay:="5"} ${timeout:="300"} ${throttle:="True"}
+    #                 ${workers:="1"} ${maxjob:="10"} ${maxnode:="30"} ${bal:="10"} ${verbose:="False"} ${verbosity:="0"}
+    #                 ${debug:="False"} ${extra:=""}
+
+# CONFIG=${CONFIG}"host: ${host}\\n"
+# CONFIG=${CONFIG}"user: ${user}\\n"
+# CONFIG=${CONFIG}"python_path: ${PYZ_HOME}/bin/python3\\n"
+# CONFIG=${CONFIG}"\\n"
+# CONFIG=${CONFIG}"environment:\\n"
+# CONFIG=${CONFIG}"  _BPXK_AUTOCVT: \"ON\"\\n"
+# CONFIG=${CONFIG}"  _CEE_RUNOPTS: \"'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'\"\\n"
+# CONFIG=${CONFIG}"  _TAG_REDIR_IN: txt\\n"
+# CONFIG=${CONFIG}"  _TAG_REDIR_OUT: txt\\n"
+# CONFIG=${CONFIG}"  LANG: C\\n"
+# CONFIG=${CONFIG}"  ZOAU_HOME: ${ZOAU_HOME}\\n"
+# CONFIG=${CONFIG}"  LIBPATH: ${ZOAU_HOME}/lib:${PYZ_HOME}/lib:/lib:/usr/lib:.\\n"
+# CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib\\n"
+# CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\n"
+# CONFIG=${CONFIG}"  PYTHONSTDINENCODING: \"cp1047\"\\n"
+
+# echo $CONFIG>$managed_venv_path/config.yml
+
+    export env_host=${host}
+    export env_user=${user}
+    export env_python=${python}
+    export env_zoau=${zoau}
+    export env_pythonpath=${pythonpath}
+    export env_volumes=${volumes}
+    export env_file=${file}
+    export env_skip=${skip}
+    export env_itr=${itr}
+    export env_replay=${replay}
+    export env_timeout=${timeout}
+    export env_throttle=${throttle}
+    export env_workers=${workers}
+    export env_maxjob=${maxjob}
+    export env_maxnode=${maxnode}
+    export env_bal=${bal}
+    export env_verbose=${verbose}
+    export env_verbosity=${verbosity}
+    export env_debug=${debug}
+    export env_extra=${extra}
 
     message "Compiling a list of test cases for the provided test suites excluding any skip tests.."
     . $VENV_BIN/activate && result=`$VENV_BIN/python -c "from scripts.modules.utils import get_test_cases;from os import environ;\
@@ -1140,35 +1240,35 @@ while true; do
         fi
          exit
          ;;
-      --ac-bandit)                             # Command
+      --ac-bandit)                              # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-bandit"
             ;;
-      --ac-build)                              # Command
+      --ac-build)                               # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-build"
             ;;
-      --ac-galaxy-importer)                    # Command
+      --ac-galaxy-importer)                     # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-galaxy-importer"
             ;;
-      --ac-changelog)                          # Command
+      --ac-changelog)                           # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-changelog"
             ;;
-      --ac-module-doc)                              # Command
+      --ac-module-doc)                          # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-module-doc"
             ;;
-      --ac-install)
-            ensure_managed_venv_exists $1      # Command
+      --ac-install)                             # Command
+            ensure_managed_venv_exists $1
             option_submitted="--ac-install"
             ;;
-      --ac-lint)
-            ensure_managed_venv_exists $1      # Command
+      --ac-lint)                                # Command
+            ensure_managed_venv_exists $1
             option_submitted="--ac-lint"
             ;;
-      --ac-sanity |--ac-sanity=?*)             # Command
+      --ac-sanity |--ac-sanity=?*)              # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-sanity"
             ;;
@@ -1180,7 +1280,11 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-test-config"
             ;;
-      --test-dep-find|--test-dep-find=?*) # command
+      --test-concurrent|--test-concurrent=?*)     # command
+            ensure_managed_venv_exists $1
+            option_submitted="--test-concurrent"
+            ;;
+      --test-dep-find|--test-dep-find=?*)       # command
             ensure_managed_venv_exists $1
             option_submitted="--test-dep-find"
             ;;
@@ -1204,7 +1308,7 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--host-auth"
             ;;
-      --host-config)                             # Command
+      --host-config)                            # Command
             ensure_managed_venv_exists $1
             option_submitted="--host-config"
             ;;
@@ -1212,8 +1316,8 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--host-mount"
             ;;
-      --host-mounts)
-            ensure_managed_venv_exists $1       # Command
+      --host-mounts)                            # Command
+            ensure_managed_venv_exists $1
             option_submitted="--host-mounts"
             ;;
       --host-nodes)                             # Command
@@ -1236,9 +1340,19 @@ while true; do
             option_sanitize $all
             shift
             ;;
+      --bal|--bal=?*)                           # option
+            bal=`option_processor $1 $2`
+            option_sanitize $bal
+            shift
+            ;;
       --command|--command=?*)                   # option
             command=`option_processor $1 $2`
             option_sanitize $command
+            shift
+            ;;
+      --branch|--branch=?*)                     # option
+            branch=`option_processor $1 $2`
+            option_sanitize $branch
             shift
             ;;
       --debug|--debug=?*)                       # option
@@ -1246,9 +1360,9 @@ while true; do
             option_sanitize $debug
             shift
             ;;
-      --branch|--branch=?*)                     # option
-            branch=`option_processor $1 $2`
-            option_sanitize $branch
+      --extra|--extra=?*)                       # option
+            extra=`option_processor $1 $2`
+            option_sanitize $extra
             shift
             ;;
       --file|--file=?*)                         # option
@@ -1261,12 +1375,32 @@ while true; do
             option_sanitize $host
             shift
             ;;
+      --itr|--itr=?*)                           # option
+            itr=`option_processor $1 $2`
+            option_sanitize $itr
+            shift
+            ;;
       --level|--level=?*)                       # option
             level=`option_processor $1 $2`
             option_sanitize $level
             shift
             ;;
-      --name|--name=?*)                        # option
+      --level|--level=?*)                       # option
+            level=`option_processor $1 $2`
+            option_sanitize $level
+            shift
+            ;;
+      --maxjob|--maxjob=?*)                     # option
+            maxjob=`option_processor $1 $2`
+            option_sanitize $maxjob
+            shift
+            ;;
+      --maxnode|--maxnode=?*)                   # option
+            maxnode=`option_processor $1 $2`
+            option_sanitize $maxnode
+            shift
+            ;;
+      --name|--name=?*)                         # option
             name=`option_processor $1 $2`
             option_sanitize $name
             shift
@@ -1291,7 +1425,17 @@ while true; do
             option_sanitize $python
             shift
             ;;
-      --skip|--skip=?*)                        # option
+      --pythonpath|--pythonpath=?*)             # option
+            pythonpath=`option_processor $1 $2`
+            option_sanitize $pythonpath
+            shift
+            ;;
+      --replay|--replay=?*)                         # option
+            replay=`option_processor $1 "$2"`
+            option_sanitize "$replay"
+            shift
+            ;;
+      --skip|--skip=?*)                         # option
             skip=`option_processor $1 "$2"`
             option_sanitize "$skip"
             shift
@@ -1301,14 +1445,49 @@ while true; do
             option_sanitize $test
             shift
             ;;
-    #  --tests|--tests=?*)                       # option
+      --timeout|--timeout=?*)                         # option
+            timeout=`option_processor $1 $2`
+            option_sanitize $timeout
+            shift
+            ;;
+      --throttle|--throttle=?*)                         # option
+            throttle=`option_processor $1 $2`
+            option_sanitize $throttle
+            shift
+            ;;
+    #  --tests|--tests=?*)                      # option
     #         tests=`option_processor $1 $2`
     #         option_sanitize $tests
     #         shift
     #         ;;
+      --user|--user=?*)                         # option
+            user=`option_processor $1 $2`
+            option_sanitize $user
+            shift
+            ;;
+      --verbose|--verbose=?*)                   # option
+            verbose=`option_processor $1 $2`
+            option_sanitize $verbose
+            shift
+            ;;
+      --verbosity|--verbosity=?*)                   # option
+            verbosity=`option_processor $1 $2`
+            option_sanitize $verbosity
+            shift
+            ;;
       --version|--version=?*)                   # option
             version=`option_processor $1 $2`
             option_sanitize $version
+            shift
+            ;;
+      --workers|--workers=?*)                   # option
+            workers=`option_processor $1 $2`
+            option_sanitize $workers
+            shift
+            ;;
+      --volumes|--volumes=?*)                   # option
+            volumes=`option_processor $1 $2`
+            option_sanitize $volumes
             shift
             ;;
       --zoau|--zoau=?*)                         # option
@@ -1359,15 +1538,19 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
     ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""}
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
+    test_concurrent ${host:=""} ${user:=""} ${python:=""} ${zoau:=""} ${pythonpath:=""}\
+    ${volumes:="222222,000000"} ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
+    ${itr:="50"} ${replay:="5"} ${timeout:="300"} ${throttle:="True"} ${workers:="1"}\
+    ${maxjob:="10"} ${maxnode:="30"} ${bal:="10"} ${verbose:="False"} ${verbosity:="0"}\
+    ${debug:="False"} ${extra:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then
-    ac_test_dep_finder ${branch:=""}\
-    "${skip:="test_module_security.py"}"\
-    ${pretty:="true"}
+    ac_test_dep_finder ${branch:=""} "${skip:="test_module_security.py"}" ${pretty:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-find" ] ; then
-    ac_test_pytest_finder ${file:="functional/*,unit/*"}\
-    "${skip:="test_module_security.py"}" ${pretty:="true"}
+    ac_test_pytest_finder ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
+    ${pretty:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then
     ac_version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--file-encrypt" ] ; then

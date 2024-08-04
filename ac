@@ -620,6 +620,9 @@ ac_test(){
 ##          - Extra commands passed to subprocess before pytest execution
 ##          - This is helpful if you want to expose insert an enviroment var or even
 ##            run a shell command before exeucting, e.g 'cd ../..'
+##       returncode (optional): -> --returncode --no-returncode
+##          - Instruct Pytest whether to capture any output (stdout/stderr), equivalent of pytest -s.
+##          - Default False
 ## Example:
 ##  $ ac --ac-test --host ec01150a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --test  test_zos_operator_positive_path --debug true
 ##  $ ac --ac-test --host ec33012a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --debug true
@@ -656,7 +659,7 @@ test_concurrent(){
     # ----------------------------------------------------------------------------------------------------------------------------------
 
     echo "host=${1} user=${2} python=${3} zoau=${4} pythonpath=${5} volumes=${6} file=${7} skip=${8} itr=${9} replay=${10}"\
-    "timeout=${11} throttle=${12} workers=${13} maxjob=${14} maxnode=${15} bal=${16} verbose=${17} verbosity=${18} debug=${19} extra=${20}"
+    "timeout=${11} throttle=${12} workers=${13} maxjob=${14} maxnode=${15} bal=${16} verbose=${17} verbosity=${18} debug=${19} extra=${20} returncode=${21}"
 
     host="${1}"
     user="${2}"
@@ -678,6 +681,7 @@ test_concurrent(){
     verbosity="${18}"
     debug="${19}"
     extra="${20}"
+    returncode="${21}"
 
     # Invoke shell script helpers to set variables if host is null
      if [ ! -z "${host}" ]; then
@@ -825,12 +829,21 @@ test_concurrent(){
         debug="--no-capture"
     fi
 
-    # Useful for debug to see what is acutally passed what ./ac will pass to ce.py
+    # Uppercase value for --capture
+    returncode=`echo $returncode | tr '[:lower:]' '[:upper:]'`
+    if [ "$returncode" == "TRUE" ];then
+        returncode="--returncode"
+    else
+        returncode="--no-returncode"
+    fi
+
+    # # Useful for debug to see what is acutally passed what ./ac will pass to ce.py
     # echo "host=${host} user=${user} python=${python} zoau=${zoau} pythonpath=${pythonpath} volumes=${volumes},"\
     #         "file=${file} skip=${skip} itr=${itr} replay=${replay} timeout=${timeout} throttle=${throttle}"\
     #         "workers=${workers} maxjob=${maxjob} maxnode=${maxnode} bal=${bal} verbose=${verbose}"\
-    #         "verbosity=${verbosity} debug=${debug} extra=${extra}"
+    #         "verbosity=${verbosity} debug=${debug} extra=${extra} returncode=${returncode}"
 
+    read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
     message "Compiling a list of test cases for the provided test suites excluding any skip tests.."
     # /ac --test-concurrent --host ec33012a --python 3.11 --zoau 1.3.0 --file "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_load_balance_full.py"
     . $VENV_BIN/activate && python3 scripts/ce.py\
@@ -854,6 +867,11 @@ test_concurrent(){
         --verbosity "${verbosity}"\
         "${debug}"\
         --extra "${extra}"\
+        "${returncode}"\
+        # echo $rc
+
+        #. ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}" >&2 ; echo $? >&1
+
 
 }
 # ------------------------------------------------------------------------------
@@ -1540,6 +1558,11 @@ while true; do
             option_sanitize "$replay"
             shift
             ;;
+      --returncode|--returncode=?*)                         # option
+            returncode=`option_processor $1 "$2"`
+            option_sanitize "$returncode"
+            shift
+            ;;
       --skip|--skip=?*)                         # option
             skip=`option_processor $1 "$2"`
             option_sanitize "$skip"
@@ -1648,7 +1671,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; 
     ${volumes:="222222,000000"} ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
     ${itr:="50"} ${replay:="5"} ${timeout:="300"} ${throttle:="True"} ${workers:="1"}\
     ${maxjob:="10"} ${maxnode:="30"} ${bal:="10"} ${verbose:="False"} ${verbosity:="0"}\
-    ${debug:="False"} ${extra:="cd `pwd`"}
+    ${debug:="False"} ${extra:="cd `pwd`"} ${returncode:="False"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then

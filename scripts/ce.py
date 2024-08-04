@@ -1737,19 +1737,19 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
             if future.exception() is not None:
                 msg = f"[ERROR] Executor exception occurred with error: {future.exception()}"
                 result.append(msg)
-                print(msg)
+                #print(msg)
             elif future.cancelled():
                 msg = f"[ERROR] Executor cancelled job, message = {message}"
                 result.append(msg)
-                print(msg)
+                #print(msg)
             elif future.done():
                 msg = f"[{"INFO" if rc == 0 else "WARN"}] Executor message = {message}"
                 result.append(msg)
-                print(msg)
+                #print(msg)
             elif future.running():
                 msg = f"[{"INFO" if rc == 0 else "WARN"}] Thread pool is still running = {message}"
                 result.append(msg)
-                print(msg)
+                #print(msg) TODO: Need to pass in the --returncode from args to this now.
 
         # try:
         #     for future in as_completed(futures, timeout=200):
@@ -1972,14 +1972,14 @@ def execute(args) -> int:
 
     while count_play <= args.replay:
         message = f"\n=================================================\n[START] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}started.\n================================================="
-        print(message)
+        print(message) if not args.returncode else ""
         play_result.append(message)
 
         start_time_full_run = time.time()
 
         # Get a dictionary of all active zos_nodes to run tests on
         nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames, pythonpath = args.pythonpath, volumes = args.volumes)
-        play_result.extend(print_nodes(nodes))
+        play_result.extend(print_nodes(nodes) if not args.returncode else "")
 
         # Get a dictionary of jobs containing the work to be run on a node.
         jobs = get_jobs(nodes, paths=args.paths, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
@@ -1991,7 +1991,7 @@ def execute(args) -> int:
         while stats.jobs_success_count != stats.jobs_total_count and count <= int(args.itr):
             message = f"\n-----------------------------------------------------------\n[START] Thread pool iteration = {str(count)}, pending = {stats.jobs_total_count - stats.jobs_success_count}.\n-----------------------------------------------------------"
             play_result.append(message)
-            print(message)
+            print(message) if not args.returncode else ""
 
             start_time = time.time()
             play_result.extend(runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers, args.throttle))
@@ -2001,49 +2001,50 @@ def execute(args) -> int:
 
             info = f"-----------------------------------------------------------\n[END] Thread pool iteration = {str(count)},  pending = {stats.jobs_failed_count}.\n-----------------------------------------------------------"
             play_result.append(info)
-            print(info)
+            print(info) if not args.returncode else ""
 
             count +=1
             job_count_progress = stats.jobs_success_count
 
         msg = f"\n-----------------------------------------------------------\n[RESULTS] for play {count_play} {f"of {args.replay} " if args.replay > 1 else ""}.\n-----------------------------------------------------------"
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
         msg = f"All {count - 1} thread pool iterations completed in {elapsed_time(start_time_full_run)} time, with {number_of_threads} threads running concurrently."
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
-        print(iterations_result)
+        print(iterations_result) if not args.returncode else ""
         play_result.append(iterations_result)
 
         msg = f"Number of jobs queued to be run = {stats.jobs_total_count}."
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
         msg = f"Number of jobs that run successfully = {stats.jobs_success_count}."
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
         msg = f"Total number of jobs that failed = {stats.jobs_failed_count}."
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
         msg = f"Number of jobs that failed great than or equal to {str(args.maxjob)} times = {stats.jobs_failed_count_maxjob}."
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
         msg = f"Number of jobs that failed less than {str(args.maxjob)} times = {stats.jobs_failed_count - stats.jobs_failed_count_maxjob}."
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
         msg = f"Number of jobs that were balanced = {stats.jobs_rebalanced_count}."
         play_result.append(msg)
-        print(msg)
+        print(msg) if not args.returncode else ""
 
         message = f"\n=================================================\n[END] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}ended.\n================================================="
         play_result.append(message)
-        print(message)
+        print(message) if not args.returncode else ""
+        #TODO Maybe a wrapper for the print function?
 
         # ----------------------------------------------
         # Print each play to STDOUT and/or write results.
@@ -2197,6 +2198,8 @@ def main():
     parser.add_argument('--verbose', action=argparse.BooleanOptionalAction, help='Enables verbose stdout, default = --no-verbose.', required=False, default=False)
     parser.add_argument('--throttle', action=argparse.BooleanOptionalAction, help='Enables managed node throttling such that a managed node will only execute one job at at time, no matter the threads, default --throttle', required=False, default=True)
     parser.add_argument('--paths', type=str, help='Test paths', required=True, metavar='<str,str>', default="")
+    parser.add_argument('--returncode', action=argparse.BooleanOptionalAction, help='RC only, --returncode, --no-returncode', required=False, default=False)
+
 
     args = parser.parse_args()
     # TODO: Write a value check that if workers > 1, disable throttle.
@@ -2210,7 +2213,12 @@ def main():
         raise ValueError(f"Value '--bal' = {args.bal}, must be less than --maxjob = {args.itr}, else balance will have no effect.")
 
     # Execute/begin running the concurrency testing with the provided args.
-    return execute(args)
+    # return execute(args)
+    rc = execute(args)
+    print(rc) if not args.verbose else ""
+    return rc
+    # TODO since we are passing RC 1 or 0, why not just figure out the unique failures and pass that as a non-zero rc for better eval to caller
+
 
 if __name__ == '__main__':
     main()

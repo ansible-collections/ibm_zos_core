@@ -1671,7 +1671,8 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                 job.increment_failure()
                 node.set_failure_job_id(id)
     else:
-        node.set_running_job_id(-1) ### had an error here
+        # TODO: Is it possible there are no nodes, had an error once but not been able to recreate here. 
+        node.set_running_job_id(-1)
         rc = 6
         nodes_count = nodes.len()
         node_count_offline = get_nodes_offline_count(nodes)
@@ -1684,7 +1685,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
     return rc, message
 
 
-def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxnode: int, workers: int, throttle: bool) -> list[str]:
+def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int, extra: str, maxnode: int, workers: int, throttle: bool, returncode: bool) -> list[str]:
     """
     Method creates an executor to run a job found in the jobs dictionary concurrently.
     This method is the key function that allows for concurrent execution of jobs.
@@ -1737,19 +1738,19 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
             if future.exception() is not None:
                 msg = f"[ERROR] Executor exception occurred with error: {future.exception()}"
                 result.append(msg)
-                #print(msg)
+                print(msg) if not returncode else ""
             elif future.cancelled():
                 msg = f"[ERROR] Executor cancelled job, message = {message}"
                 result.append(msg)
-                #print(msg)
+                print(msg) if not returncode else ""
             elif future.done():
                 msg = f"[{"INFO" if rc == 0 else "WARN"}] Executor message = {message}"
                 result.append(msg)
-                #print(msg)
+                print(msg) if not returncode else ""
             elif future.running():
                 msg = f"[{"INFO" if rc == 0 else "WARN"}] Thread pool is still running = {message}"
                 result.append(msg)
-                #print(msg) TODO: Need to pass in the --returncode from args to this now.
+                print(msg) if not returncode else ""
 
         # try:
         #     for future in as_completed(futures, timeout=200):
@@ -1994,7 +1995,7 @@ def execute(args) -> int:
             print(message) if not args.returncode else ""
 
             start_time = time.time()
-            play_result.extend(runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers, args.throttle))
+            play_result.extend(runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers, args.throttle, args.returncode))
 
             stats = get_jobs_statistics(jobs, args.maxjob)
             iterations_result += f"- Thread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
@@ -2044,7 +2045,6 @@ def execute(args) -> int:
         message = f"\n=================================================\n[END] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}ended.\n================================================="
         play_result.append(message)
         print(message) if not args.returncode else ""
-        #TODO Maybe a wrapper for the print function?
 
         # ----------------------------------------------
         # Print each play to STDOUT and/or write results.
@@ -2078,7 +2078,8 @@ def execute(args) -> int:
             count_play +=1
             count = 1
             replay = True
-            return_code = 1
+            # return_code = 1
+            return_code = stats.jobs_failed_count
         else:
             count_play = args.replay + 1
 
@@ -2202,7 +2203,13 @@ def main():
 
 
     args = parser.parse_args()
-    # TODO: Write a value check that if workers > 1, disable throttle.
+    # A replay of 0 will result in no execution of CE
+    if args.replay <=0:
+        raise ValueError(f"Value '--replay' = {args.replay}, must be greater than or equal to 1.")
+
+    # If workers is > 1, throttle should be disabled else the workers would not be running concurrently.
+    if args.workers > 1:
+        args.throttle = "--no--throttle"
 
     # Evaluate
     # Maxjob should always be less than itr else it makes no sense
@@ -2213,12 +2220,9 @@ def main():
         raise ValueError(f"Value '--bal' = {args.bal}, must be less than --maxjob = {args.itr}, else balance will have no effect.")
 
     # Execute/begin running the concurrency testing with the provided args.
-    # return execute(args)
     rc = execute(args)
-    print(rc) if not args.verbose else ""
+    print(rc) if args.returncode else ""
     return rc
-    # TODO since we are passing RC 1 or 0, why not just figure out the unique failures and pass that as a non-zero rc for better eval to caller
-
 
 if __name__ == '__main__':
     main()

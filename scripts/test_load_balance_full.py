@@ -12,6 +12,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+import random
+import os
+import sys
 
 __metaclass__ = type
 
@@ -52,6 +55,7 @@ def test_case_12():
     assert 12 == 12
 
 def test_case_13():
+    print("FOO")
     assert 13 == 13
 
 def test_case_14():
@@ -166,151 +170,151 @@ def test_case_50():
     assert 50 == 50
 
 def test_case_51():
-    assert 8 == 8
+    assert 51 == 51
 
 def test_case_52():
-    assert 8 == 8
+    assert 52 == 52
 
 def test_case_53():
-    assert 8 == 8
+    assert 53 == 53
 
 def test_case_54():
-    assert 8 == 8
+    assert 54 == 54
 
 def test_case_55():
-    assert 8 == 8
+    assert 55 == 55
 
 def test_case_56():
-    assert 8 == 8
+    assert 56 == 56
 
 def test_case_57():
-    assert 8 == 8
+    assert 57 == 57
 
 def test_case_58():
-    assert 8 == 8
+    assert 58 == 58
 
 def test_case_59():
-    assert 8 == 8
+    assert 59 == 59
 
 def test_case_60():
-    assert 8 == 8
+    assert 60 == 60
 
 def test_case_61():
-    assert 8 == 8
+    assert 61 == 61
 
 def test_case_62():
-    assert 8 == 8
+    assert 62 == 62
 
 def test_case_63():
-    assert 8 == 8
+    assert 63 == 63
 
 def test_case_64():
-    assert 8 == 8
+    assert 64 == 64
 
 def test_case_65():
-    assert 8 == 8
+    assert 65 == 65
 
 def test_case_66():
-    assert 8 == 8
+    assert 66 == 66
 
 def test_case_67():
-    assert 8 == 8
+    assert 67 == 67
 
 def test_case_68():
-    assert 8 == 8
+    assert 68 == 68
 
 def test_case_69():
-    assert 8 == 8
+    assert 69 == 69
 
 def test_case_70():
-    assert 8 == 8
+    assert 70 == 70
 
 def test_case_71():
-    assert 8 == 8
+    assert 71 == 71
 
 def test_case_72():
-    assert 8 == 8
+    assert 72 == 72
 
 def test_case_73():
-    assert 8 == 8
+    assert 73 == 73
 
 def test_case_74():
-    assert 8 == 8
+    assert 74 == 74
 
 def test_case_75():
-    assert 8 == 8
+    assert 75 == 75
 
 def test_case_76():
-    assert 8 == 8
+    assert 76 == 76
 
 def test_case_77():
-    assert 8 == 8
+    assert 77 == 77
 
 def test_case_78():
-    assert 8 == 8
+    assert 78 == 78
 
 def test_case_79():
-    assert 8 == 8
+    assert 79 == 79
 
 def test_case_80():
-    assert 8 == 8
+    assert 80 == 80
 
 def test_case_81():
-    assert 8 == 8
+    assert 81 == 81
 
 def test_case_82():
-    assert 8 == 8
+    assert 82 == 82
 
 def test_case_83():
-    assert 8 == 8
+    assert 83 == 83
 
 def test_case_84():
-    assert 8 == 8
+    assert 84 == 84
 
 def test_case_85():
-    assert 8 == 8
+    assert 85 == 85
 
 def test_case_86():
-    assert 8 == 8
+    assert 86 == 86
 
 def test_case_87():
-    assert 8 == 8
+    assert 87 == 87
 
 def test_case_88():
-    assert 8 == 8
+    assert 88 == 88
 
 def test_case_89():
-    assert 8 == 8
+    assert 89 == 89
 
 def test_case_90():
-    assert 8 == 8
+    assert 90 == 90
 
 def test_case_91():
-    assert 8 == 8
+    assert 91 == 91
 
 def test_case_92():
-    assert 8 == 8
+    assert 8 == random.randrange(7, 9)
 
 def test_case_93():
-    assert 8 == 8
+    assert 8 == random.randrange(7, 9)
 
 def test_case_94():
-    assert 8 == 8
+    assert 8 == random.randrange(7, 9)
 
 def test_case_95():
-    assert 8 == 8
+    assert 8 == random.randrange(7, 9)
 
 def test_case_96():
-    assert 8 == 8
+    assert 8 == random.randrange(7, 9)
 
 def test_case_97():
-    assert 8 == 8
+    assert 8 == random.randrange(7, 9)
 
 def test_case_98():
-    assert 8 == 8
+    assert 98 == -1
 
 def test_case_99():
-    assert 8 == 8
+    assert 99 == -1
 
 def test_case_100():
-    assert 8 == 8
+    assert 100 == -1

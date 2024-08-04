@@ -126,6 +126,11 @@ message_error(){
     exit 1
 }
 
+message_warn(){
+    WARN_MSG="${YEL}WARN${ENDC}: $1"
+    printf '%s\n' "${WARN_MSG}" >&2
+}
+
 ensure_managed_venv_exists(){
     if [ -z "$VENV" ]; then
         echo "Option $1 requires that a managed virtual environment be configured. "\
@@ -502,7 +507,7 @@ ac_test(){
 # ------------------------------------------------------------------------------
 #->test-concurrent:
 ## Run the conncurrent executor (CE) that can drive test cases to a cluster of hosts.
-## Usage: ac --test-concurrent [--host <str, str>] [--user <str>] [--python <str>] [--zoau <str>] [--pythonpath <str>]
+## Usage: ac --test-concurrent [--host <str, str>] [--user <str>] --python <str> [--zoau <str>] [--pythonpath <str>]
 ##                             [--volumes <str, str>] [--file <str, str>] [--skip <str, str>] [--itr <int>] [--replay <int>]
 ##                             [--timeout <int>] [--throttle <bool>] [--workers <int>] [--maxjob <int>] [--maxnode <int>]
 ##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>]
@@ -514,18 +519,17 @@ ac_test(){
 ##          - Only the host prefix is needed, e.g. 'ec01150a'
 ##     user (optional): -> --user
 ##          - Ansible user authorized to run tests on the managed node.
-##     python (optional): -> --pyz
+##     python (requred): -> --pyz
 ##          - IBM enterprise python version, e.g 3.10', '3.11', '3.12'
-##          - Defaults to?
 ##     zoau (optional): -> --zoau
 ##          - ZOAU version to use. e.g. 1.2.5, 1.3.0, 1.3.1
-##          - Defaults to?
 ##     pythonpath (optional): --pythonpath
 ##          - The absolute path to where the ZOAU python module is located.
 ##          - The can be for the precopiled binary, wheels or setup tools installation home.
 ##          - Default is to use the precompiled binary (until we establish wheel locations)
 ##     volumes (optional): -> --volumes
 ##          - The volumes to use with the test cases, overrides the auto volume assignment.
+#           - Defaults to, "222222,000000"
 ##     file (optional): -> --paths
 ##          - Space or comma delimited test suites that should be included in the result.
 ##          - A test suite is a collection of test cases in a file that starts with
@@ -621,135 +625,235 @@ ac_test(){
 ##  $ ac --ac-test --host ec33012a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test
+##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0
+##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0 --file test_zos_operator_func.py --debug true
 test_concurrent(){
 
-    echo "host=${1}, user=${2}, python=${3}, zoau=${4}, pythonpath=${5}, volumes=${6},"\
-            "file=${7}, skip=${8}, itr=${9}, replay=${10}, timeout=${11}, throttle=${12},"\
-            "workers=${13},maxjob=${14}, maxnode=${15}, bal=${16}, verbose=${17},"\
-            "verbosity=${18}, debug=${19}, extra=${20}"
+    # TODO: Replay 0 does not execute.
+    # ----------------------------------------------------------------------------------------------------------------------------------
+    # CE            -> AC           -> AC vars       -> var mapping                               -> defaults
+    # ----------------------------------------------------------------------------------------------------------------------------------
+    # --hostnames   -> --host       -> host=$1       -> pass through                              -> adhoc else auto discovered
+    # --user        -> --user       -> user=$2       -> pass through                              -> adhoc else auto discovered
+    # --pyz         -> --python     -> python=$3     -> pass through                              -> adhoc (auto translated to absolute path)
+    # --zoau        -> --zoau       -> zoau=$4       -> pass through                              -> adhoc (auto translated to absolute path)
+    # --pythonpath  -> --pythonpath -> pythonpath=$5 -> pass through                              -> 'zoau/lib' or 'zoau/lib/<pyz version>'
+    # --volumes     -> --volumes    -> volumes=$6    -> pass through                              -> "222222,000000"
+    # --paths       -> --file       -> file=$7       -> pass through                              -> "functional/*,unit/*"
+    # --skip        -> --skip       -> skip=$8       -> pass through                              -> "test_module_security.py"
+    # --itr         -> --itr        -> itr=$9        -> pass through                              -> 50
+    # --replay      -> --replay     -> replay=$10    -> pass through                              -> 5
+    # --timeout     -> --timeout    -> timeout=$11   -> pass through                              -> 300
+    # --throttle    -> --throttle   -> throttle=$12  -> True = '--throttle', else '--no-throttle' -> True
+    # --workers     -> --workers    -> workers=$13   -> pass through                              -> 1
+    # --maxjob      -> --maxjob     -> maxjob=$14    -> pass through                              -> 10
+    # --maxnode     -> --maxnode    -> maxnode=$15   -> pass through                              -> 30
+    # --bal         -> --bal        -> bal=$16       -> pass through                              -> 10
+    # --verbose     -> --verbose    -> verbose=$17   -> True = '--verbose', else '--no-verbose'   -> False
+    # --verbosity   -> --verbosity  -> verbosity=$18 -> pass through                              -> 0
+    # --capture     -> --debug      -> debug=$19     -> True = '--capture', else '--no-capture'   -> False
+    # --extra       -> --extr       -> extra=$20     -> pass through                              -> "cd `pwd`"
+    # ----------------------------------------------------------------------------------------------------------------------------------
 
-    host=$1
-    user=$2
-    python=$3
-    zoau=$4
-    pythonpath=$5
-    volumes=$6
-    file=$7
-    skip=$8
-    itr=$9
-    replay=$10
-    timeout=$11
-    throttle=$12
-    workers=$13
-    maxjob=$14
-    maxnode=$15
-    bal=$16
-    verbose=$17
-    verbosity=$18
-    debug=$19
-    extra=$20
+    echo "host=${1} user=${2} python=${3} zoau=${4} pythonpath=${5} volumes=${6} file=${7} skip=${8} itr=${9} replay=${10}"\
+    "timeout=${11} throttle=${12} workers=${13} maxjob=${14} maxnode=${15} bal=${16} verbose=${17} verbosity=${18} debug=${19} extra=${20}"
 
-    #./ac --test-concurrent --host ec33012a
-    # /ac --test-concurrent --host ec33012a --python 3.11 --zoau 1.3.0 --pythonpath foo
-    read host user pass <<<$($VENV/./venv.sh --host-credentials $1)
-    echo "host=$host, user=$user, pass=$pass"
-    read  python <<<$($VENV/./mounts.sh --get-python-mount $3)
-    echo "python=$python"
-    read  zoau <<<$($VENV/./mounts.sh --get-zoau-mount $4)
-    echo "zoau=$zoau"
+    host="${1}"
+    user="${2}"
+    python="${3}"
+    zoau="${4}"
+    pythonpath="${5}"
+    volumes="${6}"
+    file="${7}"
+    skip="${8}"
+    itr="${9}"
+    replay="${10}"
+    timeout="${11}"
+    throttle="${12}"
+    workers="${13}"
+    maxjob="${14}"
+    maxnode="${15}"
+    bal="${16}"
+    verbose="${17}"
+    verbosity="${18}"
+    debug="${19}"
+    extra="${20}"
 
-    # Build precompiled binary path if $pythonpath string is null
-    if [ -z "${pythonpath}" ]; then
-        suffix=`echo ${python#*cyp/v}`
-        version=`echo ${suffix%*/pyz}`
-        pythonpath_version=`echo $version|sed 's/r/./g'`
-        pythonpath=$zoau/lib/$pythonpath_version
-        echo $pythonpath
+    # Invoke shell script helpers to set variables if host is null
+     if [ ! -z "${host}" ]; then
+        read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
+        host="${_host}"
+
+        if [ -z "${user}" ]; then
+            user="${_user}"
+        fi
+
+        if [ -z "${pass}" ]; then
+            pass="${_pass}"
+        fi
     fi
-# CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib\\n"
 
-exit
-#    export env_skip=${skip}
+    # Convert the python from short notation to absolute path
+    read _python <<<$($VENV/./mounts.sh --get-python-mount "${python}")
+    python="${_python}"
 
-# unset CONFIG
-# host_zvm=$1
-# pyz_version=$2
-# zoau_version=$3
-# managed_venv_path=$4
+    read _zoau_path <<<$($VENV/./mounts.sh --get-zoau-mount "${zoau}")
+    zoau="${_zoau_path}"
 
-# ssh_host_credentials "$host_zvm"
-# get_python_mount "$pyz_version"
-# get_zoau_mount "$zoau_version"
+    # Build a zoau precompiled binary path if $pythonpath is null
+    if [ -z "${pythonpath}" ]; then
+        if [ $(normalize_version $zoau) -lt 1003000000 ]; then
+                pythonpath=$zoau_path/lib
+        else
+            suffix=`echo ${python#*cyp/v}`
+            version=`echo ${suffix%*/pyz}`
+            pythonpath_version=`echo $version|sed 's/r/./g'`
+            pythonpath=$zoau_path/lib/$pythonpath_version
+        fi
+    fi
 
+    first_entry=true
+    file_tests=""
+    array_func=($(ls "$CURR_DIR/tests/functional/modules/"))
+    array_unit=($(ls "$CURR_DIR/tests/unit/"))
+    corrected_file=""
+    # Support shorter notation passed to the utils module 'get_test_case()'', the python module
+    # does not support such notation because the module can be run from many locations and requires
+    # absolute paths. This notation is translated to absolute paths.
+    for i in $(echo $file | sed "s/,/ /g") # Optionally: skip=\"`echo $2 | tr ',' ' '`\"
+    do
+        if [ "$i" == "functional/*" ];then
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/functional/modules/"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/functional/modules/"
+            fi
+        elif [ "$i" == "unit/*" ];then
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/unit/"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/unit/"
+            fi
+        elif [[ "${array_func[@]}" =~ $i ]];then
+            if [ ! -e "$CURR_DIR/tests/functional/modules/$i" ]; then
+                message_error "File = $CURR_DIR/tests/functional/modules/$i not found."
+            fi
 
-#     # host <str, str>       venv.sh -> ssh_host_credentials "$host_zvm" - sets host user pass
-#     # user <str>            venv.sh -> ssh_host_credentials "$host_zvm" (also delivers pass)
-#     # python <str>          mounts.sh -> get_python_mount - sets global val ZOAU_HOME
-#     # zoau <str>            mounts.sh -> get_zoau_mount - sets global val PYZ_HOME
-#     # pythonpath <str>      Will have to assemble this myself
-#     # volumes <str, str>    will hard code defaults into AC "222222,000000"
-#     # file <str, str>       will hard code directories into AC like pytest-find
-#     # skip <str, str>       will hard code security test 'test_module_security.py'
-#     # itr <int>             will hard code default 50
-#     # replay <int>          will hard code 5
-#     # timeout <int>         will hard code 300
-#     # throttle <bool>       will hard code true
-#     # workers <int>         will hard code 1
-#     # maxjob <int>          will hard code 10
-#     # maxnode <int>         will hard code 30
-#     # bal <int>             will hard code 10
-#     # verbose <bool>        will hard code False
-#     # verbosity <int>       will hard code 0
-#     # debug <bool>          will hard code False
-#     # extra <str>           will hard code ""
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/functional/modules/$i"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/functional/modules/$i"
+            fi
+        elif [[ "${array_unit[@]}" =~ $i ]];then
+            if [ ! -e "$CURR_DIR/tests/unit/$i" ]; then
+                message_error "File = $CURR_DIR/tests/unit/$i not found."
+            fi
 
-    # test-concurrent ${host:=""} ${user:=""} ${python:=""} ${zoau:=""} ${pythonpath:=""} ${volumes:="222222,000000"}
-    #                 ${file:="functional/*,unit/*"} ${skip:="test_module_security.py"} ${itr:="50"} ${replay:="5"} ${timeout:="300"} ${throttle:="True"}
-    #                 ${workers:="1"} ${maxjob:="10"} ${maxnode:="30"} ${bal:="10"} ${verbose:="False"} ${verbosity:="0"}
-    #                 ${debug:="False"} ${extra:=""}
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/unit/"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/unit/$i"
+            fi
+        elif [[ $i == tests/functional/modules/* ]] || [[ $i == $CURR_DIR/tests/functional/modules/* ]] ;then
+            message_warn "It appears an absolute path has been used, 'ac' will try to truncate it to the test suite."
+            suffix=`echo ${i#*/modules/}`
 
-# CONFIG=${CONFIG}"host: ${host}\\n"
-# CONFIG=${CONFIG}"user: ${user}\\n"
-# CONFIG=${CONFIG}"python_path: ${PYZ_HOME}/bin/python3\\n"
-# CONFIG=${CONFIG}"\\n"
-# CONFIG=${CONFIG}"environment:\\n"
-# CONFIG=${CONFIG}"  _BPXK_AUTOCVT: \"ON\"\\n"
-# CONFIG=${CONFIG}"  _CEE_RUNOPTS: \"'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'\"\\n"
-# CONFIG=${CONFIG}"  _TAG_REDIR_IN: txt\\n"
-# CONFIG=${CONFIG}"  _TAG_REDIR_OUT: txt\\n"
-# CONFIG=${CONFIG}"  LANG: C\\n"
-# CONFIG=${CONFIG}"  ZOAU_HOME: ${ZOAU_HOME}\\n"
-# CONFIG=${CONFIG}"  LIBPATH: ${ZOAU_HOME}/lib:${PYZ_HOME}/lib:/lib:/usr/lib:.\\n"
-# CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib\\n"
-# CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\n"
-# CONFIG=${CONFIG}"  PYTHONSTDINENCODING: \"cp1047\"\\n"
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/functional/modules/$suffix"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/functional/modules/$suffix"
+            fi
+        elif [[ $i == tests/unit/* ]] || [[ $i == $CURR_DIR/tests/unit/* ]] ;then
+            message_warn "It appears an absolute path has been used, 'ac' will try to truncate it to the test suite."
+            suffix=`echo ${i#*/modules/}`
 
-# echo $CONFIG>$managed_venv_path/config.yml
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                file_tests="$CURR_DIR/tests/unit/$suffix"
+            else
+                file_tests="$file_tests $CURR_DIR/tests/unit/$suffix"
+            fi
+        else
+            message_error "File = $i, not found in project path = $CURR_DIR."
+        fi
+    done
+    first_entry=true
+    file=$file_tests
+    #file="tests/functional/modules/test_load_balance_full.py"
+    #file="/Users/ddimatos/git/gh/ibm_zos_core/scripts/test_load_balance_full.py"
 
-    export env_host=${host}
-    export env_user=${user}
-    export env_python=${python}
-    export env_zoau=${zoau}
-    export env_pythonpath=${pythonpath}
-    export env_volumes=${volumes}
-    export env_file=${file}
-    export env_skip=${skip}
-    export env_itr=${itr}
-    export env_replay=${replay}
-    export env_timeout=${timeout}
-    export env_throttle=${throttle}
-    export env_workers=${workers}
-    export env_maxjob=${maxjob}
-    export env_maxnode=${maxnode}
-    export env_bal=${bal}
-    export env_verbose=${verbose}
-    export env_verbosity=${verbosity}
-    export env_debug=${debug}
-    export env_extra=${extra}
+    # Convert any comma separated strings to space delimited as needed by the tooling.
+    first_entry=true
+    skip_tests=""
+    for i in $(echo $skip | sed "s/,/ /g") # Optionally: skip=\"`echo $2 | tr ',' ' '`\"
+    do
+        if [ "$first_entry" == "true" ];then
+            first_entry=false
+            skip_tests="$CURR_DIR/tests/functional/modules/$i"
+        else
+            skip_tests="$skip_tests $CURR_DIR/tests/functional/modules/$i"
+        fi
+    done
+    skip=$skip_tests
+
+    # Uppercase value for --throttle
+    throttle=`echo $throttle | tr '[:lower:]' '[:upper:]'`
+    if [ "$throttle" == "TRUE" ];then
+        throttle="--throttle"
+    else
+        throttle="--no-throttle"
+    fi
+
+    # Uppercase value for --verbose
+    verbose=`echo $verbose | tr '[:lower:]' '[:upper:]'`
+    if [ "$verbose" == "TRUE" ];then
+        verbose="--verbose"
+    else
+        verbose="--no-verbose"
+    fi
+
+    # Uppercase value for --capture
+    debug=`echo $debug | tr '[:lower:]' '[:upper:]'`
+    if [ "$debug" == "TRUE" ];then
+        debug="--capture"
+    else
+        debug="--no-capture"
+    fi
+
+    # Useful for debug to see what is acutally passed what ./ac will pass to ce.py
+    # echo "host=${host} user=${user} python=${python} zoau=${zoau} pythonpath=${pythonpath} volumes=${volumes},"\
+    #         "file=${file} skip=${skip} itr=${itr} replay=${replay} timeout=${timeout} throttle=${throttle}"\
+    #         "workers=${workers} maxjob=${maxjob} maxnode=${maxnode} bal=${bal} verbose=${verbose}"\
+    #         "verbosity=${verbosity} debug=${debug} extra=${extra}"
 
     message "Compiling a list of test cases for the provided test suites excluding any skip tests.."
-    . $VENV_BIN/activate && result=`$VENV_BIN/python -c "from scripts.modules.utils import get_test_cases;from os import environ;\
-        tests = get_test_cases(paths=environ['env_file'], skip=environ['env_skip']);all=','.join(tests);print(all)"`
+    # /ac --test-concurrent --host ec33012a --python 3.11 --zoau 1.3.0 --file "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_load_balance_full.py"
+    . $VENV_BIN/activate && python3 scripts/ce.py\
+        --hostnames  "${host}"\
+        --user "${user}"\
+        --pyz "${python}"\
+        --zoau "${zoau}"\
+        --pythonpath "${pythonpath}"\
+        --volumes "${volumes}"\
+        --paths "${file}"\
+        --skip "${skip}"\
+        --itr "${itr}"\
+        --replay "${replay}"\
+        --timeout "${timeout}"\
+        "${throttle}"\
+        --workers "${workers}"\
+        --maxjob "${maxjob}"\
+        --maxnode "${maxnode}"\
+        --bal "${bal}"\
+        "${verbose}"\
+        --verbosity "${verbosity}"\
+        "${debug}"\
+        --extra "${extra}"\
 
 }
 # ------------------------------------------------------------------------------
@@ -880,8 +984,9 @@ ac_test_pytest_finder(){
     array_func=($(ls "$CURR_DIR/tests/functional/modules/"))
     array_unit=($(ls "$CURR_DIR/tests/unit/"))
 
-    # As a courtesy, aid in shorter notation supplied to the utils module get_test_case, the module does not
-    # support such notation because the module can be run from many locations and requires absolute paths.
+    # As a courtesy, aid in shorter notation supplied to the utils module get_test_case(), the python module
+    # does not support such notation because the module can be run from many locations and requires absolute
+    # paths.
     for i in $(echo $file | sed "s/,/ /g") # Optionally: skip=\"`echo $2 | tr ',' ' '`\"
     do
         if [ "$i" == "functional/*" ];then
@@ -1543,7 +1648,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; 
     ${volumes:="222222,000000"} ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
     ${itr:="50"} ${replay:="5"} ${timeout:="300"} ${throttle:="True"} ${workers:="1"}\
     ${maxjob:="10"} ${maxnode:="30"} ${bal:="10"} ${verbose:="False"} ${verbosity:="0"}\
-    ${debug:="False"} ${extra:=""}
+    ${debug:="False"} ${extra:="cd `pwd`"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then

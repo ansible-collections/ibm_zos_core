@@ -1671,7 +1671,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                 job.increment_failure()
                 node.set_failure_job_id(id)
     else:
-        node.set_running_job_id(-1)
+        node.set_running_job_id(-1) ### had an error here
         rc = 6
         nodes_count = nodes.len()
         node_count_offline = get_nodes_offline_count(nodes)
@@ -2199,7 +2199,6 @@ def main():
     parser.add_argument('--paths', type=str, help='Test paths', required=True, metavar='<str,str>', default="")
 
     args = parser.parse_args()
-
     # TODO: Write a value check that if workers > 1, disable throttle.
 
     # Evaluate

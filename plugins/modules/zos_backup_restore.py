@@ -1012,10 +1012,11 @@ def to_dunzip_args(**kwargs):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
 
-    if kwargs.get("hlq")== "r":
-        zoau_args["keep_original_hlq"] = True
-    elif kwargs.get("hlq"):
-        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
+    if kwargs.get("hlq"):
+        if kwargs.get("hlq")== "r":
+            zoau_args["keep_original_hlq"] = True
+        else:
+            zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))

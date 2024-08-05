@@ -1013,7 +1013,7 @@ def to_dunzip_args(**kwargs):
         zoau_args["size"] = size
 
     if kwargs.get("hlq"):
-        if kwargs.get("hlq")== "r":
+        if kwargs.get("hlq") == "r":
             zoau_args["keep_original_hlq"] = True
         else:
             zoau_args["high_level_qualifier"] = kwargs.get("hlq")

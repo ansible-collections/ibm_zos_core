@@ -171,6 +171,24 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
             assert result.get('elapsed') >= wait_time_s
 
 
+def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
+    hosts = ansible_zos_module
+    command = "d u,all"
+    results = hosts.all.zos_operator(
+        cmd=command,
+        verbose=False,
+        case_sensitive=True
+    )
+
+    for result in results.contacted.values():
+        assert result["rc"] == 0
+        assert result.get("changed") is True
+        assert result.get("content") is not None
+        # Making sure the output from opercmd logged the command
+        # exactly as it was written.
+        assert len(result.get("content")) > 1
+        assert command in result.get("content")[1]
+
 
 def test_response_come_back_complete(ansible_zos_module):
     hosts = ansible_zos_module

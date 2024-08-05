@@ -17,7 +17,7 @@ __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.dataset import (
     get_tmp_ds_name,
-    get_random_q(4),
+    get_random_q,
 )
 import pytest
 from re import search, IGNORECASE, MULTILINE

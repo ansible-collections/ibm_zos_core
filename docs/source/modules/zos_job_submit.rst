@@ -31,11 +31,11 @@ Parameters
 src
   The source file or data set containing the JCL to submit.
 
-  It could be a physical sequential data set, a partitioned data set qualified by a member or a path (e.g. \ :literal:`USER.TEST`\ , \ :literal:`USER.JCL(TEST)`\ ), or a generation data set from a generation data group (for example, \ :literal:`USER.TEST.GDG(-2)`\ ).
+  It could be a physical sequential data set, a partitioned data set qualified by a member or a path (e.g. ``USER.TEST``, V(USER.JCL(TEST\))), or a generation data set from a generation data group (for example, V(USER.TEST.GDG(-2\))).
 
-  Or a USS file. (e.g \ :literal:`/u/tester/demo/sample.jcl`\ )
+  Or a USS file. (e.g ``/u/tester/demo/sample.jcl``)
 
-  Or a LOCAL file in ansible control node. (e.g \ :literal:`/User/tester/ansible-playbook/sample.jcl`\ )
+  Or a LOCAL file in ansible control node. (e.g ``/User/tester/ansible-playbook/sample.jcl``)
 
   When using a generation data set, only already created generations are valid. If either the relative name is positive, or negative but not found, the module will fail.
 
@@ -44,13 +44,13 @@ src
 
 
 location
-  The JCL location. Supported choices are \ :literal:`data\_set`\ , \ :literal:`uss`\  or \ :literal:`local`\ .
+  The JCL location. Supported choices are ``data_set``, ``uss`` or ``local``.
 
-  \ :literal:`data\_set`\  can be a PDS, PDSE, sequential data set, or a generation data set.
+  ``data_set`` can be a PDS, PDSE, sequential data set, or a generation data set.
 
-  \ :literal:`uss`\  means the JCL location is located in UNIX System Services (USS).
+  ``uss`` means the JCL location is located in UNIX System Services (USS).
 
-  \ :literal:`local`\  means locally to the Ansible control node.
+  ``local`` means locally to the Ansible control node.
 
   | **required**: False
   | **type**: str
@@ -59,9 +59,9 @@ location
 
 
 wait_time_s
-  Option \ :emphasis:`wait\_time\_s`\  is the total time that module \ `zos\_job\_submit <./zos_job_submit.html>`__\  will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
+  Option *wait_time_s* is the total time that module `zos_job_submit <./zos_job_submit.html>`_ will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
 
-  \ :emphasis:`wait\_time\_s`\  is measured in seconds and must be a value greater than 0 and less than 86400.
+  *wait_time_s* is measured in seconds and must be a value greater than 0 and less than 86400.
 
   | **required**: False
   | **type**: int
@@ -88,9 +88,9 @@ return_output
 volume
   The volume serial (VOLSER) is where the data set resides. The option is required only when the data set is not cataloged on the system.
 
-  When configured, the \ `zos\_job\_submit <./zos_job_submit.html>`__\  will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
+  When configured, the `zos_job_submit <./zos_job_submit.html>`_ will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
 
-  Ignored for \ :emphasis:`location=uss`\  and \ :emphasis:`location=local`\ .
+  Ignored for *location=uss* and *location=local*.
 
   | **required**: False
   | **type**: str
@@ -99,7 +99,7 @@ volume
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-  This option is only supported for when \ :emphasis:`location=local`\ .
+  This option is only supported for when *location=local*.
 
   If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default, otherwise the module will detect the z/OS system encoding.
 
@@ -131,13 +131,13 @@ encoding
 
 
 use_template
-  Whether the module should treat \ :literal:`src`\  as a Jinja2 template and render it before continuing with the rest of the module.
+  Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
 
-  Only valid when \ :literal:`src`\  is a local file or directory.
+  Only valid when ``src`` is a local file or directory.
 
-  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as \ `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`__\ , such as \ :literal:`playbook\_dir`\ , \ :literal:`ansible\_version`\ , etc.
+  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
 
-  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order \ `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`__\ 
+  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
 
   | **required**: False
   | **type**: bool
@@ -147,9 +147,9 @@ use_template
 template_parameters
   Options to set the way Jinja2 will process templates.
 
-  Jinja2 already sets defaults for the markers it uses, you can find more information at its \ `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`__\ .
+  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
 
-  These options are ignored unless \ :literal:`use\_template`\  is true.
+  These options are ignored unless ``use_template`` is true.
 
   | **required**: False
   | **type**: dict
@@ -228,7 +228,7 @@ template_parameters
   trim_blocks
     Whether Jinja2 should remove the first newline after a block is removed.
 
-    Setting this option to \ :literal:`False`\  will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
+    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
 
     | **required**: False
     | **type**: bool
@@ -248,8 +248,11 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: \\n
-    | **choices**: \\n, \\r, \\r\\n
+    | **default**: 
+
+    | **choices**: 
+, , 
+
 
 
   auto_reload
@@ -330,9 +333,9 @@ Notes
 -----
 
 .. note::
-   For supported character sets used to encode data, refer to the \ `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`__\ .
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
-   This module uses \ `zos\_copy <./zos_copy.html>`__\  to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
+   This module uses `zos_copy <./zos_copy.html>`_ to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
 
 
@@ -345,7 +348,7 @@ Return Values
 
 
 jobs
-  List of jobs output. If no job status is found, this will return an empty ret\_code with msg\_txt explanation.
+  List of jobs output. If no job status is found, this will return an empty ret_code with msg_txt explanation.
 
   | **returned**: success
   | **type**: list
@@ -692,25 +695,25 @@ jobs
     msg
       Job status resulting from the job submission.
 
-      Job status \`ABEND\` indicates the job ended abnormally.
+      Job status `ABEND` indicates the job ended abnormally.
 
-      Job status \`AC\` indicates the job is active, often a started task or job taking long.
+      Job status `AC` indicates the job is active, often a started task or job taking long.
 
-      Job status \`CAB\` indicates a converter abend.
+      Job status `CAB` indicates a converter abend.
 
-      Job status \`CANCELED\` indicates the job was canceled.
+      Job status `CANCELED` indicates the job was canceled.
 
-      Job status \`CNV\` indicates a converter error.
+      Job status `CNV` indicates a converter error.
 
-      Job status \`FLU\` indicates the job was flushed.
+      Job status `FLU` indicates the job was flushed.
 
-      Job status \`JCLERR\` or \`JCL ERROR\` indicates the JCL has an error.
+      Job status `JCLERR` or `JCL ERROR` indicates the JCL has an error.
 
-      Job status \`SEC\` or \`SEC ERROR\` indicates the job as encountered a security error.
+      Job status `SEC` or `SEC ERROR` indicates the job as encountered a security error.
 
-      Job status \`SYS\` indicates a system failure.
+      Job status `SYS` indicates a system failure.
 
-      Job status \`?\` indicates status can not be determined.
+      Job status `?` indicates status can not be determined.
 
       Jobs where status can not be determined will result in None (NULL).
 

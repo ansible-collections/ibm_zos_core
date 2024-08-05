@@ -637,11 +637,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         delete_remnants(hosts)
 
 
-@pytest.mark.parametrize(
-    "option",
-    ["R", "K"],
-)
-def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module, option):
+def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
     data_set_backup_location = get_tmp_ds_name()
@@ -661,7 +657,7 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module, option)
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=data_set_backup_location,
-            hlq=option,
+            hlq="r",
         )
         assert_module_did_not_fail(results)
         # Check the HLQ in the response

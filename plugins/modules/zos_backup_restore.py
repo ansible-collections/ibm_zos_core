@@ -187,7 +187,7 @@ options:
     description:
       - Specifies the new HLQ to use for the data sets being restored.
       - Defaults to running user's username.
-      - Use keywords R or K to restores datasets to their original HLQ from when they were archived.
+      - Use keywords r to restore datasets to their original HLQ from when they were archived.
     type: str
     required: false
   tmp_hlq:
@@ -324,11 +324,11 @@ EXAMPLES = r"""
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
 
-- name: Restore data sets from backup stored with their original HLQ from when they were archived .
+- name: Restore data sets from a backup with the original HLQ from when they were archived .
   zos_backup_restore:
     operation: restore
     backup_name: MY.BACKUP.DZP
-    hlq: K
+    hlq: r
 """
 
 import traceback
@@ -505,7 +505,7 @@ def parse_and_validate_args(params):
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
-        hlq=dict(type=hlq_type, default=None, required=False, dependencies=["operation"]),
+        hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
     )
 
@@ -737,9 +737,30 @@ def hlq_type(contents, dependencies):
         return None
     if dependencies.get("operation") == "backup":
         raise ValueError("hlq_type is only valid when operation=restore.")
+    if contents == "r":
+        return contents
     if not match(r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})$", contents, IGNORECASE):
         raise ValueError("Invalid argument {0} for hlq_type.".format(contents))
-    return contents.upper()
+    return contents
+
+
+def hlq_default(contents, dependencies):
+    """Sets the default HLQ to use if none is provided.
+    Parameters
+    ----------
+    contents : str
+        The HLQ to use.
+    dependencies : dict
+        Any dependent arguments.
+    Returns
+    -------
+    str
+        The HLQ to use.
+    """
+    hlq = None
+    if dependencies.get("operation") == "restore":
+        hlq = datasets.get_hlq()
+    return hlq
 
 
 def sms_type(contents, dependencies):
@@ -991,15 +1012,13 @@ def to_dunzip_args(**kwargs):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
 
+    if kwargs.get("hlq")== "r":
+        zoau_args["keep_original_hlq"] = True
+    elif kwargs.get("hlq"):
+        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
+
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
-
-    if kwargs.get("hlq") is None:
-        zoau_args["high_level_qualifier"] = datasets.get_hlq()
-    elif kwargs.get("hlq") == "K" or kwargs.get("hlq") == "R":
-        zoau_args["keep_original_hlq"] = True
-    elif kwargs.get("tmp_hlq"):
-        zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
     return zoau_args
 

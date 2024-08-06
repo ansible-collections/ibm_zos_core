@@ -322,12 +322,6 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
-
-- name: Restore data sets from a backup with the original HLQ from when they were archived.
-  zos_backup_restore:
-    operation: restore
-    backup_name: MY.BACKUP.DZP
-    hlq: r
 """
 
 import traceback

@@ -4,6 +4,51 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.11.0-beta.1
+==============
+
+Release Summary
+---------------
+
+Release Date: '2024-08-05'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_apf - Change input to auto-escape 'library' names containing symbols (https://github.com/ansible-collections/ibm_zos_core/pull/1493).
+- zos_archive - Added support for GDG and GDS relative name notation to archive data sets. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1511).
+- zos_blockinfile - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
+- zos_copy - add support for copying generation data sets (GDS) and generation data groups (GDG), as well as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1564).
+- zos_data_set - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1504).
+- zos_data_set - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1527).
+- zos_encode - add support for encoding generation data sets (GDS), as well as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1531).
+- zos_fetch - add support for fetching generation data groups and generation data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1519)
+- zos_find - added support for GDG/GDS and special characters (https://github.com/ansible-collections/ibm_zos_core/pull/1518).
+- zos_job_submit - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+- zos_job_submit - add support for generation data groups and generation data sets as sources for jobs. (https://github.com/ansible-collections/ibm_zos_core/pull/1497)
+- zos_lineinfile - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
+- zos_mount - Added support for data set names with special characters ($, /#, /- and @). This is for both src and backup data set names. (https://github.com/ansible-collections/ibm_zos_core/pull/1631).
+- zos_mvs_raw - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1563).
+- zos_mvs_raw - Added support for GDG and GDS relative name notation to use a data set. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1525).
+- zos_mvs_raw - Added support for GDG and GDS relative positive name notation to use a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1541).
+- zos_mvs_raw - Redesign the wrappers of dd clases to use properly the arguments. (https://github.com/ansible-collections/ibm_zos_core/pull/1470).
+- zos_script - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+- zos_unarchive - Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1511).
+- zos_unarchive - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+
+Bugfixes
+--------
+
+- module_util/data_set.py - DataSet.data_set_cataloged function previously only returned True or False, but failed to account for exceptions which occurred during the LISTCAT. The fix now raises an MVSCmdExecError if the return code from LISTCAT is too high. (https://github.com/ansible-collections/ibm_zos_core/pull/1535).
+- zos_copy - a regression in version 1.4.0 made the module stop automatically computing member names when copying a single file into a PDS/E. Fix now lets a user copy a single file into a PDS/E without adding a member in the dest option. (https://github.com/ansible-collections/ibm_zos_core/pull/1570).
+- zos_copy - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present. (https://github.com/ansible-collections/ibm_zos_core/pull/1623).
+- zos_job_submit - Was not propagating any error types UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered, now the error message shares the type error. (https://github.com/ansible-collections/ibm_zos_core/pull/1560).
+- zos_mvs_raw - DD_output first character from each line was missing. Change now includes the first character of each line. (https://github.com/ansible-collections/ibm_zos_core/pull/1543).
+
 v1.10.0
 =======
 

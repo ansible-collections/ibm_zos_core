@@ -81,7 +81,7 @@ echo_requirements(){
 
     unset requirements_common
     unset requirements
-    requirements_common="requirements-common.env"
+    requirements_common="configurations/requirements-common.env"
     unset REQ_COMMON
 
     if [ -f "$requirements_common" ]; then
@@ -103,9 +103,7 @@ echo_requirements(){
         fi
     done
 
-    # for file in `ls requirements-*.sh`; do
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -118,11 +116,11 @@ echo_requirements(){
         fi
 
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             #echo $venv_name
@@ -169,14 +167,13 @@ make_venv_dirs(){
     # We should think about the idea of allowing:
     # --force, --synch, --update thus not sure we need this method and better to
     # manage this logic inline to write_req
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             #echo $venv_name
@@ -191,7 +188,7 @@ write_requirements(){
     unset requirements
     unset REQ
     unset REQ_COMMON
-    requirements_common_file="requirements-common.env"
+    requirements_common_file="configurations/requirements-common.env"
 
     # Source the requirements file for now, easy way to do this. Exit may not
     # not be needed but leave it for now.
@@ -214,9 +211,7 @@ write_requirements(){
         fi
     done
 
-    # for file in `ls requirements-*.sh`; do
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -229,12 +224,12 @@ write_requirements(){
         fi
 
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
             echo $venv_name
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             echo $venv_name
@@ -321,16 +316,15 @@ write_requirements(){
 
 create_venv_and_pip_install_req(){
 
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         unset venv
 
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             #echo $venv_name
@@ -385,7 +379,7 @@ discover_python(){
     #   for python_found in `which python3 | cut -d" " -f3`; do
     #
     #   The 'pys' array will search for pythons in reverse order, once it finds one that matches
-    #   the requirements-x.xx.env it does not continue searching. Reverse order is important to
+    #   the configurations/requirements-x.xx.env it does not continue searching. Reverse order is important to
     #   maintain.
     pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
     rc=1

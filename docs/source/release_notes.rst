@@ -6,6 +6,80 @@
 Releases
 ========
 
+v1.11.0-beta.1
+==============
+
+Release Summary
+---------------
+
+Release Date: '2024-08-05'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- ``zos_apf`` - Change input to auto-escape 'library' names containing symbols
+- ``zos_archive`` - Added support for GDG and GDS relative name notation to archive data sets. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_blockinfile`` - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_copy`` - add support for copying generation data sets (GDS) and generation data groups (GDG), as well as using a GDS for backup.
+- ``zos_data_set``
+
+   - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @.
+   - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @.
+
+- ``zos_encode`` - add support for encoding generation data sets (GDS), as well as using a GDS for backup.
+- ``zos_fetch`` - add support for fetching generation data groups and generation data sets.- ``zos_find`` - added support for GDG/GDS and special characters
+- ``zos_job_submit``
+
+   - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems.
+   - add support for generation data groups and generation data sets as sources for jobs.
+- ``zos_lineinfile`` - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_mount`` - Added support for data set names with special characters ($, /#, /- and @). This is for both src and backup data set names.
+- ``zos_mvs_raw``
+
+   - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @.
+   - Redesign the wrappers of dd clases to use properly the arguments.
+
+- ``zos_script`` - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems.
+- ``zos_unarchive``
+
+   - Added support for data set names with special characters like $, /#, /- and @.
+   - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems.
+
+Bugfixes
+--------
+
+- ``zos_copy``
+
+   - a regression in version 1.4.0 made the module stop automatically computing member names when copying a single file into a PDS/E. Fix now lets a user copy a single file into a PDS/E without adding a member in the dest option.
+   - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present.
+
+- ``zos_data_set`` - When checking if a data set is cataloged, module failed to account for exceptions which occurred during the LISTCAT. The fix now raises an MVSCmdExecError if the return code from LISTCAT is too high.
+- ``zos_job_submit`` - Was not propagating any error types UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered, now the error message shares the type error.
+- ``zos_mvs_raw`` - DD_output first character from each line was missing. Change now includes the first character of each line.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+
+
 Version 1.10.0
 ==============
 

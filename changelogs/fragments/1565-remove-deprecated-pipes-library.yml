@@ -1,0 +1,11 @@
+trivial:
+  - zos_find - remove deprecated library pipes in favor of shlex.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1565).
+  - zos_mvs_raw - remove deprecated library pipes in favor of shlex.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1565).
+  - module_utils/backup.py - remove deprecated library pipes in favor of shlex.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1565).
+  - module_utils/copy.py - remove deprecated library pipes in favor of shlex.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1565).
+  - module_utils/encode.py - remove deprecated library pipes in favor of shlex.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1565).

@@ -27,7 +27,6 @@ DEFAULT_PATH_WITH_FILE = f"{DEFAULT_PATH}/testfile"
 DEFAULT_DD = "MYDD"
 SYSIN_DD = "SYSIN"
 SYSPRINT_DD = "SYSPRINT"
-IDCAMS_STDIN = f" LISTCAT ENTRIES('{EXISTING_DATA_SET.upper()}')"
 IDCAMS_INVALID_STDIN = " hello world #$!@%!#$!@``~~^$*%"
 
 
@@ -65,7 +64,7 @@ def test_disposition_new(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         results = hosts.all.zos_mvs_raw(
@@ -86,7 +85,7 @@ def test_disposition_new(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -110,7 +109,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         hosts.all.zos_data_set(
             name=default_data_set, type="seq", state="present", replace=True
         )
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -129,7 +128,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -152,7 +151,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
         hosts.all.zos_data_set(
             name=default_data_set, type="seq", state="present", replace=True
         )
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -180,7 +179,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -190,10 +189,10 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
             assert len(result.get("dd_names", [])) > 0
             for backup in result.get("backups"):
                 backup.get("backup_name")[:6] == tmphlq
-        results = hosts.all.zos_data_set(name=default_data_set, state="absent")
         for result in results.contacted.values():
             assert result.get("changed", False) is True
     finally:
+        results = hosts.all.zos_data_set(name=default_data_set, state="absent")
         hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
@@ -204,7 +203,7 @@ def test_new_disposition_for_data_set_members(ansible_zos_module):
         default_data_set = get_tmp_ds_name()
         default_data_set_with_member = default_data_set + '(MEM)'
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -225,7 +224,7 @@ def test_new_disposition_for_data_set_members(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -249,7 +248,7 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
         hosts.all.zos_data_set(
             name=default_data_set, type="pds", state="present", replace=True
         )
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -268,7 +267,7 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -296,7 +295,7 @@ def test_normal_dispositions_data_set(
         volumes = Volume_Handler(volumes_on_systems)
         volume_1 = volumes.get_available_vol()
         default_data_set = get_tmp_ds_name()
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_data_set(
             name=default_data_set,
@@ -324,7 +323,7 @@ def test_normal_dispositions_data_set(
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -352,7 +351,7 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -375,7 +374,7 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -405,7 +404,7 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, volumes_on_s
         volume_1 = volumes.get_available_vol()
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -423,7 +422,7 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type, volumes_on_s
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -448,7 +447,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_syste
         volume_1 = volumes.get_available_vol()
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -479,7 +478,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type, volumes_on_syste
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -505,7 +504,7 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
         volume_1 = volumes.get_available_vol()
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -523,7 +522,7 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -554,7 +553,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
         volumes = Volume_Handler(volumes_on_systems)
         volume_1 = volumes.get_available_vol()
         default_data_set = get_tmp_ds_name()
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
         results = hosts.all.zos_data_set(
             name=default_data_set,
             type="seq",
@@ -581,7 +580,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -615,7 +614,7 @@ def test_return_text_content_encodings(
         volume_1 = volumes.get_available_vol()
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
         results = hosts.all.zos_data_set(
             name=default_data_set,
             type="seq",
@@ -643,7 +642,7 @@ def test_return_text_content_encodings(
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -664,7 +663,7 @@ def test_reuse_existing_data_set(ansible_zos_module):
         hosts.all.zos_data_set(
             name=default_data_set, type="seq", state="present", replace=True
         )
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="IDCAMS",
@@ -685,7 +684,7 @@ def test_reuse_existing_data_set(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -706,7 +705,7 @@ def test_replace_existing_data_set(ansible_zos_module):
         hosts.all.zos_data_set(
             name=default_data_set, type="seq", state="present", replace=True
         )
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="IDCAMS",
@@ -727,7 +726,7 @@ def test_replace_existing_data_set(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -746,7 +745,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         hosts.all.zos_mvs_raw(
             program_name="IDCAMS",
@@ -767,7 +766,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -792,7 +791,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -826,7 +825,7 @@ def test_data_set_name_gdgs(ansible_zos_module):
         hosts.all.shell(cmd="dtouch -tGDG -L4 {0}".format(default_data_set))
         hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
         hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(default_data_set))
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -839,7 +838,7 @@ def test_data_set_name_gdgs(ansible_zos_module):
                         return_content=dict(type="text"),
                     ),
                 ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_args)),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_listcat_dataset_cmd)),
             ],
         )
         for result in results.contacted.values():
@@ -857,7 +856,7 @@ def test_data_set_name_gdgs(ansible_zos_module):
                         return_content=dict(type="text"),
                     ),
                 ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_args)),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_listcat_dataset_cmd)),
             ],
         )
         for result in results.contacted.values():
@@ -876,7 +875,7 @@ def test_data_set_name_gdgs(ansible_zos_module):
                         return_content=dict(type="text"),
                     ),
                 ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_args)),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_listcat_dataset_cmd)),
             ],
         )
         for result in results.contacted.values():
@@ -895,7 +894,7 @@ def test_data_set_name_gdgs(ansible_zos_module):
                         return_content=dict(type="text"),
                     ),
                 ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_args)),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_listcat_dataset_cmd)),
             ],
         )
         for result in results.contacted.values():
@@ -910,7 +909,7 @@ def test_data_set_name_special_characters(ansible_zos_module):
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name(5, 6, symbols=True)
         hosts.all.zos_data_set(name=default_data_set, type="seq", state="present")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -923,7 +922,7 @@ def test_data_set_name_special_characters(ansible_zos_module):
                         return_content=dict(type="text"),
                     ),
                 ),
-                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_args)),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=idcams_listcat_dataset_cmd)),
             ],
         )
         for result in results.contacted.values():
@@ -1017,11 +1016,11 @@ def test_input_provided_as_list(ansible_zos_module):
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         contents = []
         for i in range(10):
-            contents.append(idcams_args)
+            contents.append(idcams_listcat_dataset_cmd)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1070,7 +1069,7 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1087,7 +1086,7 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                         "return_content":{
                             "type":return_content_type
                         },
@@ -1126,7 +1125,7 @@ def test_input_return_text_content_encodings(
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1143,7 +1142,7 @@ def test_input_return_text_content_encodings(
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                         "return_content":{
                             "type":"text",
                             "src_encoding":src_encoding,
@@ -1170,7 +1169,7 @@ def test_input_return_text_content_encodings(
 def test_failing_path_name(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
@@ -1184,7 +1183,7 @@ def test_failing_path_name(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1201,7 +1200,7 @@ def test_create_new_file(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1216,7 +1215,7 @@ def test_create_new_file(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1236,7 +1235,7 @@ def test_write_to_existing_file(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="present")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1251,7 +1250,7 @@ def test_write_to_existing_file(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1274,7 +1273,7 @@ def test_file_normal_disposition(ansible_zos_module, normal_disposition, expecte
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="present")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1290,7 +1289,7 @@ def test_file_normal_disposition(ansible_zos_module, normal_disposition, expecte
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1310,7 +1309,7 @@ def test_file_modes(ansible_zos_module, mode, expected):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1326,7 +1325,7 @@ def test_file_modes(ansible_zos_module, mode, expected):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1353,7 +1352,7 @@ def test_file_path_options(ansible_zos_module, access_group, status_group):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1370,7 +1369,7 @@ def test_file_path_options(ansible_zos_module, access_group, status_group):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1394,7 +1393,7 @@ def test_file_block_size(ansible_zos_module, block_size):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1410,7 +1409,7 @@ def test_file_block_size(ansible_zos_module, block_size):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1434,7 +1433,7 @@ def test_file_record_length(ansible_zos_module, record_length):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1450,7 +1449,7 @@ def test_file_record_length(ansible_zos_module, record_length):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1474,7 +1473,7 @@ def test_file_record_format(ansible_zos_module, record_format):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1490,7 +1489,7 @@ def test_file_record_format(ansible_zos_module, record_format):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1520,7 +1519,7 @@ def test_file_return_content(ansible_zos_module, return_content_type, expected):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1538,7 +1537,7 @@ def test_file_return_content(ansible_zos_module, return_content_type, expected):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1570,7 +1569,7 @@ def test_file_return_text_content_encodings(
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1590,7 +1589,7 @@ def test_file_return_text_content_encodings(
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1614,7 +1613,7 @@ def test_dummy(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1628,7 +1627,7 @@ def test_dummy(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1653,7 +1652,7 @@ def test_concatenation_with_data_set_dd_and_response(ansible_zos_module):
         default_data_set_2 = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         hosts.all.zos_data_set(name=default_data_set_2, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1686,7 +1685,7 @@ def test_concatenation_with_data_set_dd_and_response(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1709,7 +1708,7 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
         default_data_set_2 = get_tmp_ds_name()
         hosts.all.zos_data_set(name=default_data_set, state="present", type="seq")
         hosts.all.zos_data_set(name=default_data_set_2, state="present", type="seq")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1746,7 +1745,7 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1784,7 +1783,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
         default_data_set_with_member = default_data_set + '(MEM)'
         hosts.all.zos_data_set(name=default_data_set, state="present", type="pds")
         hosts.all.zos_data_set(name=default_data_set_2, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1815,7 +1814,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1843,7 +1842,7 @@ def test_concatenation_with_unix_dd_and_response_datasets(ansible_zos_module):
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
         hosts.all.zos_data_set(name=default_data_set_2, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1874,7 +1873,7 @@ def test_concatenation_with_unix_dd_and_response_datasets(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1895,7 +1894,7 @@ def test_concatenation_with_unix_dd_and_response_uss(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -1927,7 +1926,7 @@ def test_concatenation_with_unix_dd_and_response_uss(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -1945,7 +1944,7 @@ def test_concatenation_with_unix_dd_and_response_uss(ansible_zos_module):
 def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
@@ -1969,7 +1968,7 @@ def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args,
+                        "content":idcams_listcat_dataset_cmd,
                     }
                 },
             ],
@@ -2110,12 +2109,12 @@ def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_co
         hosts.all.file(path=DEFAULT_PATH, state="directory")
         hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
 
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
         dds.append(
             {
                 'dd_input': {
                     "dd_name": SYSIN_DD,
-                    "content": idcams_args
+                    "content": idcams_listcat_dataset_cmd
                 }
             }
         )
@@ -2248,7 +2247,7 @@ def test_with_parms(ansible_zos_module):
 def test_with_multiple_of_same_dd_name(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
         results = hosts.all.zos_mvs_raw(
             pgm="idcams",
             auth=True,
@@ -2256,13 +2255,13 @@ def test_with_multiple_of_same_dd_name(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -2283,7 +2282,7 @@ def test_with_multiple_of_same_dd_name(ansible_zos_module):
 def test_vio_as_output(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -2297,7 +2296,7 @@ def test_vio_as_output(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],
@@ -2318,7 +2317,7 @@ def test_output_dd(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         data_set_name = None
-        idcams_dataset, idcams_args = get_temp_idcams_dataset(hosts)
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
@@ -2335,7 +2334,7 @@ def test_output_dd(ansible_zos_module):
                 {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
-                        "content":idcams_args
+                        "content":idcams_listcat_dataset_cmd
                     }
                 },
             ],

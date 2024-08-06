@@ -657,7 +657,6 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=data_set_backup_location,
-            hlq="r",
         )
         assert_module_did_not_fail(results)
         # Check the HLQ in the response

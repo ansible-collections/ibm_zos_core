@@ -234,7 +234,6 @@ EXAMPLES = r"""
     limit: 30
     scratch: true
     purge: true
-
 """
 
 

@@ -251,7 +251,7 @@ EXAMPLES = r"""
   zos_lineinfile:
     src: SOME.CREATION.TEST
     insertafter: EOF
-    backup: True
+    backup: true
     backup_name: CREATION.GDS(+1)
     line: 'Should be a working test now'
 """

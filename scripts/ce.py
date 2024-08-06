@@ -19,8 +19,10 @@ nodes. This module is tailored to z/OS managed nodes and currently has a depende
 on a shell script and the managed venv's provided by the 'ac' tool.
 """
 
-# pylint: disable=line-too-long, redefined-builtin, too-many-arguments, too-many-branches, too-many-instance-attributes
-# pylint: disable=too-many-lines, too-many-locals, too-many-public-methods, too-many-statements, unsubscriptable-object
+# pylint: disable=line-too-long, too-many-lines, fixme, too-many-instance-attributes
+# pylint: disable=redefined-builtin, too-many-public-methods,too-many-arguments, too-many-locals
+# pylint: disable=consider-using-f-string, too-many-branches, too-many-statements
+
 
 import argparse
 import json
@@ -33,15 +35,14 @@ from threading import Lock
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
-from socket import error
 from contextlib import contextmanager
 from datetime import datetime
 from collections import OrderedDict, namedtuple
 from typing import List, Tuple
 from prettytable import PrettyTable, ALL
-from paramiko import SSHClient, AutoAddPolicy, BadHostKeyException, \
-    AuthenticationException, SSHException, ssh_exception
 from modules.utils import get_test_cases
+
+
 # ------------------------------------------------------------------------------
 # Enums
 # ------------------------------------------------------------------------------
@@ -382,8 +383,10 @@ class Job:
         Parameters:
             hostname (str): Full hostname for the z/OS manage node the Ansible workload
                 will be executed on.
-            nodes (str): Node object that represents a z/OS managed node and all its attributes.
-            testcase (str): The USS absolute path to a testcase using '/path/to/test_suite.py::test_case'
+            nodes (str): Node object that represents a z/OS managed node and all its
+                attributes.
+            testcase (str): The USS absolute path to a testcase using
+                '/path/to/test_suite.py::test_case'
             id (int): The id that will be assigned to this job, a unique identifier. The id will
                 be used as the key in a dictionary.
         """
@@ -440,15 +443,19 @@ class Job:
         str: A string representing the pytest command to be executed.
 
         Example Return:
-            pytest tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_pds[location1]\
-              --host-pattern=allNoneNone --zinventory-raw='{"host": "ec33025a.vmec.svl.ibm.com",\
-              "user": "omvsadm", "zoau": "/zoau/v1.3.1", "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz",\
-              "pythonpath": "/zoau/v1.3.1/lib/3.10", "extra_args": {"volumes": ["222222", "000000"]}}'
+        pytest tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_pds[location1]\
+            --host-pattern=allNoneNone --zinventory-raw='{"host": "ec33025a.vmec.svl.ibm.com",\
+            "user": "omvsadm", "zoau": "/zoau/v1.3.1",\
+            "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz",\
+            "pythonpath": "/zoau/v1.3.1/lib/3.10", "extra_args": {"volumes": ["222222", "000000"]}}'
 
         """
         node_temp = self._nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
-        return f"pytest {self._testcase} --host-pattern={self._hostpattern}{self._capture if self._capture else ""}{self._verbose if self._verbose else ""} --zinventory-raw='{node_inventory}'"
+
+        return f"""pytest {self._testcase} --host-pattern={self._hostpattern}
+        {self._capture if self._capture else ""}
+        {self._verbose if self._verbose else ""} --zinventory-raw='{node_inventory}'"""
 
 
     def get_hostnames(self) -> list[str]:
@@ -477,7 +484,8 @@ class Job:
         Incudes absolute path, testcase, and parametrization, eg <path/test.py::test[parameter]>
 
         Return:
-            str: Returns absolute path, testcase, and parametrization, eg <path/test.py::test[parameter]>
+            str: Returns absolute path, testcase, and parametrization,
+                eg <path/test.py::test[parameter]>
         """
         return self._testcase
 
@@ -742,14 +750,16 @@ class Node:
 
     def __init__(self, hostname: str, user: str, zoau: str, pyz: str, pythonpath: str, volumes: str):
         """
-    parser.add_argument('--pythonpath', type=str, help='Absolute path to the ZOAU Python modules, precompiled or wheels.', required=True, metavar='<str>', default="")
-    parser.add_argument('--volumes'
+    parser.add_argument('--pythonpath', type=str, help='Absolute path to the
+    ZOAU Python modules, precompiled or wheels.', required=True,
+    metavar='<str>', default="") parser.add_argument('--volumes'
         Parameters:
-            hostname (str): Hostname for the z/OS managed node the Ansible workload
+            hostname (str): Hostname for the z/OS managed node the Ansible
+            workload
                 will be executed on.
             user (str): The USS user who will run the Ansible workload on z/OS.
-            zoau (str): The USS absolute path to where ZOAU is installed.
-            pyz( str): The USS absolute path to where python is installed.
+            zoau (str): The USS absolute path to where ZOAU is installed. pyz(
+            str): The USS absolute path to where python is installed.
 
         """
         self._hostname: str = hostname
@@ -770,7 +780,7 @@ class Node:
         self._extra_args = {}
         self._extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}})
         self._inventory.update(self._extra_args)
-        self._assigned: Dictionary[int, Job] = Dictionary()
+        self._assigned = Dictionary()
         self._failure_count: int = 0
         self._assigned_count: int = 0
         self._balanced_count: int = 0
@@ -1000,174 +1010,6 @@ class Node:
         return self._running_job_id
 
 # ------------------------------------------------------------------------------
-# Class Connection
-# ------------------------------------------------------------------------------
-class Connection:
-    """
-    Connection class wrapping paramiko. The wrapper provides methods allowing
-    for remote environment variables be set up so that they can interact with
-    ZOAU. Generally this is a wrapper to paramiko to be used to write files to
-    z/OS. For example, consider writing a file that is managed by this load
-    balancer that can know if there is another test running. The idea was to
-    update our pytest fixture to look for that file so that a remote pipeline or
-    other instance does not try to run concurrently until the functional tests
-    can be properly vetted out for concurrent support.
-
-    Usage:
-        key_file_name = os.path.expanduser('~') + "/.ssh/id_dsa"
-        connection = Connection(hostname="ibm.com", username="root", key_filename=key_file_name)
-        client = connection.connect()
-        result = connection.execute(client, "ls")
-        print(result)
-    """
-
-    def __init__(self, hostname, username, password = None, key_filename = None,
-                    passphrase = None, port=22, environment= None ):
-        self._hostname = hostname
-        self.port = port
-        self._username = username
-        self.password = password
-        self.key_filename = key_filename
-        self.passphrase = passphrase
-        self.environment = environment
-        self.env_str = ""
-        if self.environment is not None:
-            self.env_str = self.set_environment_variable(**self.environment)
-
-
-    def __to_dict(self) -> str:
-        """
-        Method returns constructor arguments to a dictionary, must remain private to
-        protect credentials.
-        """
-        temp =  {
-            "hostname": self._hostname,
-            "port": self.port,
-            "username": self._username,
-            "password": self.password,
-            "key_filename": self.key_filename,
-            "passphrase": self.passphrase,
-        }
-
-        for k,v  in dict(temp).items():
-            if v is None:
-                del temp[k]
-        return temp
-
-    def connect(self) -> SSHClient:
-        """
-        Create the connection after the connection class has been initialized.
-
-        Return
-        SSHClient: paramiko SSHClient, client used the execution of commands.
-
-        Raises:
-            BadHostKeyException
-            AuthenticationException
-            SSHException
-            FileNotFoundError
-            error
-        """
-        ssh = None
-
-        n = 0
-        while n <= 10:
-            try:
-                ssh = SSHClient()
-                ssh.set_missing_host_key_policy(AutoAddPolicy())
-                ssh.connect(**self.__to_dict(), disabled_algorithms=
-                                {'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']})
-            except BadHostKeyException as e:
-                print('Host key could not be verified.', str(e))
-                raise e
-            except AuthenticationException as e:
-                print('Authentication failed.', str(e))
-                raise e
-            except ssh_exception.SSHException as e:
-                print(e, str(e))
-                raise e
-            except FileNotFoundError as e:
-                print('Missing key filename.', str(e))
-                raise e
-            except error as e:
-                print('Socket error occurred while connecting.', str(e))
-                raise e
-        return ssh
-
-    def execute(self, client, command):
-        """
-        Parameters:
-            client (paramiko SSHClient) SSH Client created through connection.connect()
-            command (str): command to run
-
-        Returns:
-        dict: a dictionary with stdout, stderr and command executed
-
-        Raises
-            SSHException
-        """
-
-        response = None
-        get_pty_bool = True
-        out = ""
-        try:
-            # We may need to create a channel and make this synchronous
-            # but get_pty should help avoid having to do that
-            (_, stdout, stderr) = client.exec_command(self.env_str+command, get_pty=get_pty_bool)
-
-            if get_pty_bool is True:
-                out = stdout.read().decode().strip('\r\n')
-                error_msg = stderr.read().decode().strip('\r\n')
-            else:
-                out = stdout.read().decode().strip('\n')
-                error_msg = stderr.read().decode().strip('\n')
-
-            # Don't shutdown stdin, we are reusing this connection in the services instance
-            # client.get_transport().open_session().shutdown_write()
-
-            response = {'stdout': out,
-                        'stderr': error_msg,
-                        'command': command
-            }
-
-        except SSHException as e:
-            # if there was any other error connecting or establishing an SSH session
-            print(e)
-        finally:
-            client.close()
-
-        return response
-
-    def set_environment_variable(self, **kwargs):
-        """
-        Provide the connection with environment variables needed to be exported
-        such as ZOAU env vars.
-
-        Example:
-            env={"_BPXK_AUTOCVT":"ON",
-                "ZOAU_HOME":"/zoau/v1.2.0f",
-                "PATH":"/zoau/v1.2.0f/bin:/python/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:.",
-                "LIBPATH":"/zoau/v1.2.0f/lib:/lib:/usr/lib:.",
-                "PYTHONPATH":"/zoau/v1.2.0f/lib",
-                "_CEE_RUNOPTS":"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)",
-                "_TAG_REDIR_ERR":"txt",
-                "_TAG_REDIR_IN":"txt",
-                "_TAG_REDIR_OUT":"txt",
-                "LANG":"C"
-            }
-        connection = Connection(hostname="ibm.com", username="root",
-                        key_filename=key_filename, environment=env)
-
-        """
-        env_vars = ""
-        export="export"
-        if kwargs is not None:
-            for key, value in kwargs.items():
-                env_vars = f"{env_vars}{export} {key}=\"{value}\";"
-        return env_vars
-
-
-# ------------------------------------------------------------------------------
 # Helper methods
 # ------------------------------------------------------------------------------
 
@@ -1296,7 +1138,7 @@ def get_nodes(user: str, zoau: str, pyz: str, hostnames: list[str] = None, pytho
         The dictionary key will be the z/OS managed node's hostname and the value
         will be of type Node.
     """
-    nodes: Dictionary [str, Node] = Dictionary()
+    nodes = Dictionary()
 
     if hostnames is None:
         hostnames = []
@@ -1671,7 +1513,7 @@ def run(id: int, jobs: Dictionary, nodes: Dictionary, timeout: int, maxjob: int,
                 job.increment_failure()
                 node.set_failure_job_id(id)
     else:
-        # TODO: Is it possible there are no nodes, had an error once but not been able to recreate here. 
+        # TODO: Is it possible there are no nodes, had an error once but not been able to recreate here.
         node.set_running_job_id(-1)
         rc = 6
         nodes_count = nodes.len()
@@ -1738,19 +1580,23 @@ def runner(jobs: Dictionary, nodes: Dictionary, timeout: int, max: int, bal: int
             if future.exception() is not None:
                 msg = f"[ERROR] Executor exception occurred with error: {future.exception()}"
                 result.append(msg)
-                print(msg) if not returncode else ""
+                if not returncode:
+                    print(msg)
             elif future.cancelled():
                 msg = f"[ERROR] Executor cancelled job, message = {message}"
                 result.append(msg)
-                print(msg) if not returncode else ""
+                if not returncode:
+                    print(msg)
             elif future.done():
                 msg = f"[{"INFO" if rc == 0 else "WARN"}] Executor message = {message}"
                 result.append(msg)
-                print(msg) if not returncode else ""
+                if not returncode:
+                    print(msg)
             elif future.running():
                 msg = f"[{"INFO" if rc == 0 else "WARN"}] Thread pool is still running = {message}"
                 result.append(msg)
-                print(msg) if not returncode else ""
+                if not returncode:
+                    print(msg)
 
         # try:
         #     for future in as_completed(futures, timeout=200):
@@ -1973,14 +1819,16 @@ def execute(args) -> int:
 
     while count_play <= args.replay:
         message = f"\n=================================================\n[START] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}started.\n================================================="
-        print(message) if not args.returncode else ""
+        if not args.returncode:
+            print(message)
         play_result.append(message)
 
         start_time_full_run = time.time()
 
         # Get a dictionary of all active zos_nodes to run tests on
         nodes = get_nodes(user = args.user, zoau = args.zoau, pyz = args.pyz, hostnames = args.hostnames, pythonpath = args.pythonpath, volumes = args.volumes)
-        play_result.extend(print_nodes(nodes) if not args.returncode else "")
+        if not args.returncode:
+            play_result.extend(print_nodes(nodes))
 
         # Get a dictionary of jobs containing the work to be run on a node.
         jobs = get_jobs(nodes, paths=args.paths, skip=args.skip, capture=args.capture, verbosity=args.verbosity, replay=replay)
@@ -1992,7 +1840,8 @@ def execute(args) -> int:
         while stats.jobs_success_count != stats.jobs_total_count and count <= int(args.itr):
             message = f"\n-----------------------------------------------------------\n[START] Thread pool iteration = {count} {f"of {args.itr} " if args.itr > 1 else ""}, pending = {stats.jobs_total_count - stats.jobs_success_count}.\n-----------------------------------------------------------"
             play_result.append(message)
-            print(message) if not args.returncode else ""
+            if not args.returncode:
+                print(message)
 
             start_time = time.time()
             play_result.extend(runner(jobs, nodes, args.timeout, args.maxjob, args.bal, args.extra, args.maxnode, args.workers, args.throttle, args.returncode))
@@ -2002,49 +1851,60 @@ def execute(args) -> int:
 
             info = f"-----------------------------------------------------------\n[END] Thread pool iteration = {count} {f"of {args.itr} " if args.itr > 1 else ""},  pending = {stats.jobs_failed_count}.\n-----------------------------------------------------------"
             play_result.append(info)
-            print(info) if not args.returncode else ""
+            if not args.returncode:
+                print(info)
 
             count +=1
             job_count_progress = stats.jobs_success_count
 
         msg = f"\n-----------------------------------------------------------\n[RESULTS] for play {count_play} {f"of {args.replay} " if args.replay > 1 else ""}.\n-----------------------------------------------------------"
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         msg = f"All {count - 1} thread pool iterations completed in {elapsed_time(start_time_full_run)} time, with {number_of_threads} threads running concurrently."
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
-        print(iterations_result) if not args.returncode else ""
+        if not args.returncode:
+            print(iterations_result)
         play_result.append(iterations_result)
 
         msg = f"Number of jobs queued to be run = {stats.jobs_total_count}."
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         msg = f"Number of jobs that run successfully = {stats.jobs_success_count}."
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         msg = f"Total number of jobs that failed = {stats.jobs_failed_count}."
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         msg = f"Number of jobs that failed great than or equal to {str(args.maxjob)} times = {stats.jobs_failed_count_maxjob}."
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         msg = f"Number of jobs that failed less than {str(args.maxjob)} times = {stats.jobs_failed_count - stats.jobs_failed_count_maxjob}."
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         msg = f"Number of jobs that were balanced = {stats.jobs_rebalanced_count}."
         play_result.append(msg)
-        print(msg) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         message = f"\n=================================================\n[END] PLAY {count_play} {f"of {args.replay} " if args.replay > 1 else ""}ended.\n================================================="
         play_result.append(message)
-        print(message) if not args.returncode else ""
+        if not args.returncode:
+            print(msg)
 
         # ----------------------------------------------
         # Print each play to STDOUT and/or write results.
@@ -2221,7 +2081,8 @@ def main():
 
     # Execute/begin running the concurrency testing with the provided args.
     rc = execute(args)
-    print(rc) if args.returncode else ""
+    if args.returncode:
+        print(rc)
     return rc
 
 if __name__ == '__main__':

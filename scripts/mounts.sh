@@ -478,6 +478,8 @@ get_python_mount(){
 		echo "PYZ vesion [$arg] was not found in the mount table."
 		exit 1
 	fi
+
+	echo "${PYZ_HOME}"
 }
 
 
@@ -505,6 +507,8 @@ get_zoau_mount(){
 		echo "ZOAU vesion [$arg] was not found in the mount table."
 		exit 1
 	fi
+
+	echo "${ZOAU_HOME}"
 }
 
 # ==============================================================================
@@ -619,6 +623,12 @@ _test_arrays(){
 # Main arg parser
 ################################################################################
 case "$1" in
+  --get-python-mount)
+    get_python_mount $2
+    ;;
+  --get-zoau-mount)
+    get_zoau_mount $2
+    ;;
   --mount)
     mount "-r -t zfs -f"
     ;;

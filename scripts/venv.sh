@@ -288,7 +288,9 @@ write_requirements(){
             cp hosts.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp venv.sh "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp profile.sh "${VENV_HOME_MANAGED}"/"${venv_name}"/
-            cp ../dependencyfinder.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            cp ../tests/dependencyfinder.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            cp ce.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            cp -R modules "${VENV_HOME_MANAGED}"/"${venv_name}"/
 
             # Decrypt file
             if [ "$option_pass" ]; then
@@ -587,6 +589,8 @@ ssh_host_credentials(){
 			pass=`echo "${tgt}" | cut -d ":" -f 4`
 		fi
 	done
+
+    echo "$host" "$user" "$pass"
 }
 
 ################################################################################
@@ -680,6 +684,9 @@ case "$1" in
 --cert)
     ssh_host_credentials $2
     ssh_copy_key
+    ;;
+--host-credentials)
+    ssh_host_credentials $2
     ;;
 --host-setup-files)  #ec33017a "mounts.env" "mounts.sh" "shell-helper.sh" "profile.sh"
     ssh_host_credentials $2

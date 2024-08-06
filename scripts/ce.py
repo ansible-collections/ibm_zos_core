@@ -1870,7 +1870,7 @@ def write_job_logs_to_html(log: list[Tuple[str, str, str]], state: State, replay
             table.add_row([count, entry.id,entry.hostname, entry.command, entry.message, entry.std_out_err, entry.date_time])
             count +=1
 
-        html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
+        html = table.get_html_string(attributes={'border': '1', "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
         date_time = datetime.now().strftime("%H:%M:%S")
         with open(f"/tmp/concurrent-executor-log-replay-{replay}-{state.string()}-{date_time}.html", "w", encoding="utf-8") as file:
             file.write(html)
@@ -1915,7 +1915,7 @@ def write_job_tests_to_html(tests: list[str], state: State, replay: str) -> None
             table.add_row([count, entry])
             count +=1
 
-        html = table.get_html_string(attributes={'border': 1, "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
+        html = table.get_html_string(attributes={'border': '1', "style":"white-space:nowrap;width:100%;border-collapse: collapse"})
         date_time = datetime.now().strftime("%H:%M:%S")
         with open(f"/tmp/concurrent-executor-tests-replay-{replay}-{state.string()}-{date_time}.html", "w", encoding="utf-8") as file:
             file.write(html)
@@ -1990,7 +1990,7 @@ def execute(args) -> int:
         stats = get_jobs_statistics(jobs, args.maxjob)
         job_count_progress = 0
         while stats.jobs_success_count != stats.jobs_total_count and count <= int(args.itr):
-            message = f"\n-----------------------------------------------------------\n[START] Thread pool iteration = {str(count)}, pending = {stats.jobs_total_count - stats.jobs_success_count}.\n-----------------------------------------------------------"
+            message = f"\n-----------------------------------------------------------\n[START] Thread pool iteration = {count} {f"of {args.itr} " if args.itr > 1 else ""}, pending = {stats.jobs_total_count - stats.jobs_success_count}.\n-----------------------------------------------------------"
             play_result.append(message)
             print(message) if not args.returncode else ""
 
@@ -2000,7 +2000,7 @@ def execute(args) -> int:
             stats = get_jobs_statistics(jobs, args.maxjob)
             iterations_result += f"- Thread pool iteration {count} completed {stats.jobs_success_count - job_count_progress} job(s) in {elapsed_time(start_time)} time, pending {stats.jobs_failed_count} job(s).\n"
 
-            info = f"-----------------------------------------------------------\n[END] Thread pool iteration = {str(count)},  pending = {stats.jobs_failed_count}.\n-----------------------------------------------------------"
+            info = f"-----------------------------------------------------------\n[END] Thread pool iteration = {count} {f"of {args.itr} " if args.itr > 1 else ""},  pending = {stats.jobs_failed_count}.\n-----------------------------------------------------------"
             play_result.append(info)
             print(info) if not args.returncode else ""
 
@@ -2160,7 +2160,7 @@ def main():
                         --pyz "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz"\\
                         --zoau "/zoau/v1.3.1"\\
                         --itr 3\\
-                        --paths "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_load_balance_full.py"\\
+                        --paths "/Users/ddimatos/git/gh/ibm_zos_core/tests/functional/modules/test_load_balance.py.py"\\
                         --user "omvsadm"\\
                         --extra "cd .."\\
                         --maxnode 5\\

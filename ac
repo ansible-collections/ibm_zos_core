@@ -634,6 +634,7 @@ ac_test(){
 ##  $    --file test_zos_operator_func.py,test_zos_job_submit_func.py\
 ##  $    --skip "test_zos_job_submit_func.py::test_job_from_gdg_source[0]" --debug true
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0 --file test_zos_operator_func.py --returncode True --itr 1
+##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.1 --file test_zos_data_set_func.py --itr 1 --replay 1
 ## test_case_1
 test_concurrent(){
 
@@ -710,23 +711,24 @@ test_concurrent(){
 
     # Build a zoau precompiled binary path if $pythonpath is null
     if [ -z "${pythonpath}" ]; then
-        if [ $(normalize_version $zoau) -lt 1003000000 ]; then
-                pythonpath=$zoau_path/lib
+        zoau_version=`echo ${zoau#*/v}`
+        if [ $(normalize_version "${zoau_version}") -lt 1003000000 ]; then
+                pythonpath=$zoau/lib
         else
             suffix=`echo ${python#*cyp/v}`
             version=`echo ${suffix%*/pyz}`
             pythonpath_version=`echo $version|sed 's/r/./g'`
-            pythonpath=$zoau_path/lib/$pythonpath_version
+            pythonpath=$zoau/lib/$pythonpath_version
         fi
     fi
 
     first_entry=true
     file_tests=""
     #array_func=($(ls "$CURR_DIR/tests/functional/modules/"))
-    array_func=($(ac_test_pytest_finder "functional/*" "" true))
+    array_func=($(ac_test_pytest_finder "functional/*" "" true true))
 
     # array_unit=($(ls "$CURR_DIR/tests/unit/"))
-    array_unit=($(ac_test_pytest_finder "unit/*" "" true))
+    array_unit=($(ac_test_pytest_finder "unit/*" "" true true))
 
     corrected_file=""
     # Support shorter notation passed to the utils module 'get_test_case()'', the python module
@@ -851,8 +853,8 @@ test_concurrent(){
     #         "verbosity=${verbosity} debug=${debug} extra=${extra} returncode=${returncode}"
 
     read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
-    message "Compiling a list of test cases for the provided test suites excluding any skip tests.."
-    . $VENV_BIN/activate && python3 scripts/ce.py\
+    message "Concurrent executor testing is evaluating supplied options and preparing to execute."
+    . $VENV_BIN/activate && python3 $VENV/ce.py\
         --hostnames  "${host}"\
         --user "${user}"\
         --pyz "${python}"\
@@ -916,7 +918,7 @@ ac_test_config(){
 ##          - Pretty formatting where each value is a line follwoed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py"
+##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py" --pretty False
 ##  $ ac --test-dep-find --branch dev --skip "test_zos_apf_func.py"
 ##  $ ac --test-dep-find --branch main
 ##  $ ac --test-dep-find
@@ -998,6 +1000,7 @@ ac_test_dep_finder(){
 ac_test_pytest_finder(){
     file=$1
     skip="$2"
+    slience_messages="$4" # Undocumented internal interface option to disable INFO messages
 
     first_entry=true
     file_tests=""
@@ -1069,8 +1072,13 @@ ac_test_pytest_finder(){
     skip=$skip_tests
     export env_skip=${skip}
 
-    message "Compiling a list of test cases for the provided test suites excluding any skip tests.."
-    . $VENV_BIN/activate && result=`$VENV_BIN/python -c "from scripts.modules.utils import get_test_cases;from os import environ;\
+
+    slience_messages=`echo $slience_messages | tr '[:lower:]' '[:upper:]'`
+    if [ "$slience_messages" != "TRUE" ];then
+        message "Compiling a list of test cases for the provided test suites excluding any skip tests.." $slience_messages
+    fi
+
+    . $VENV_BIN/activate && result=`export PYTHONPATH=$VENV;$VENV_BIN/python -c "from modules.utils import get_test_cases;from os import environ;\
         tests = get_test_cases(paths=environ['env_file'], skip=environ['env_skip']);all=','.join(tests);print(all)"`
 
     # Uppercase value for --pretty

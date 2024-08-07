@@ -585,11 +585,6 @@ ssh_host_credentials(){
 	done
 }
 
-ssh_host_credentials_echo(){
-    ssh_host_credentials $1
-    echo "$host" "$user" "$pass"
-}
-
 ################################################################################
 # Copy a users key to a remote target to be a known host, if the host has a cert
 # field in the host_list not equal to none, it will also be copied for jenkins
@@ -683,7 +678,16 @@ case "$1" in
     ssh_copy_key
     ;;
 --host-credentials)
-    ssh_host_credentials_echo $2
+    ssh_host_credentials $2
+    echo "$host"
+    ;;
+--user-credentials)
+    ssh_host_credentials $2
+    echo "$user"
+    ;;
+--pass-credentials)
+    ssh_host_credentials $2
+    echo "$pass"
     ;;
 --host-setup-files)  #ec33017a "mounts.env" "mounts.sh" "shell-helper.sh" "profile.sh"
     ssh_host_credentials $2

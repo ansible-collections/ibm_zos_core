@@ -684,31 +684,23 @@ test_concurrent(){
 
     # Invoke shell script helpers to set variables if host is not null
      if [ ! -z "${host}" ]; then
-        # read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
-        creds_array=($($VENV/./venv.sh --host-credentials "${host}"))
-
-        #host="${_host}"
-        host="${creds_array[0]}"
+        hostname=$($VENV/./venv.sh --host-credentials "${host}")
 
         if [ -z "${user}" ]; then
-            # user="${_user}"
-            user="${creds_array[1]}"
+            user=$($VENV/./venv.sh --user-credentials "${host}")
         fi
 
         if [ -z "${pass}" ]; then
-            # pass="${_pass}"
-            pass="${creds_array[2]}"
+            pass=$($VENV/./venv.sh --pass-credentials "${host}")
         fi
+
+        host=$hostname
     fi
 
     # Convert the python from short notation to absolute path
-    # read _python <<<$($VENV/./mounts.sh --get-python-mount "${python}")
-    _python=$($VENV/./mounts.sh --get-python-mount "${python}")
-    python="${_python}"
+    python=$($VENV/./mounts.sh --get-python-mount "${python}")
 
-    # read _zoau_path <<<$($VENV/./mounts.sh --get-zoau-mount "${zoau}")
-    _zoau_path=$($VENV/./mounts.sh --get-zoau-mount "${zoau}")
-    zoau="${_zoau_path}"
+    zoau=$($VENV/./mounts.sh --get-zoau-mount "${zoau}")
 
     # Build a zoau precompiled binary path if $pythonpath is null
     if [ -z "${pythonpath}" ]; then
@@ -847,7 +839,7 @@ test_concurrent(){
         returncode="--no-returncode"
     fi
 
-    # # Useful for debug to see what is acutally passed what ./ac will pass to ce.py
+    # Useful for debug to see what is acutally passed what ./ac will pass to ce.py
     # echo "host=${host} user=${user} python=${python} zoau=${zoau} pythonpath=${pythonpath} volumes=${volumes},"\
     #         "file=${file} skip=${skip} itr=${itr} replay=${replay} timeout=${timeout} throttle=${throttle}"\
     #         "workers=${workers} maxjob=${maxjob} maxnode=${maxnode} bal=${bal} verbose=${verbose}"\

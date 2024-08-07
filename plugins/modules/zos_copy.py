@@ -207,6 +207,10 @@ options:
         this behavior by setting this parameter to C(false). By doing so, any
         content written to stderr is considered an error by Ansible and will
         have module fail.
+      - When Ansible verbosity is set to greater than 3, either through the
+        command line interface (CLI) using B(-vvvv) or through environment
+        variables such as B(verbosity = 4), then this parameter will
+        automatically be set to C(true).
     type: bool
     required: false
     default: true

@@ -30,7 +30,7 @@ FROM_ENCODING = "IBM-1047"
 INVALID_ENCODING = "EBCDIC"
 TO_ENCODING = "ISO8859-1"
 TEMP_JCL_PATH = "/tmp/jcl"
-DATE_TIME = datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "")
+DATE_TIME = "N" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + "ENCODE"
 TEST_DATA = """0001 This is for encode conversion testing_____________________________________
 0002 This is for encode conversion testing_____________________________________
 0003 This is for encode conversion testing_____________________________________

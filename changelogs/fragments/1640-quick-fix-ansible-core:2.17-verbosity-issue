@@ -1,0 +1,7 @@
+bugfixes:
+  - zos_copy - module would fail when an internal SFTP command wrote output to
+    stderr. Fix sets default value of existing module option `ignore_sftp_error` to True 
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1640).
+  - zos_fetch - module would fail when an internal SFTP command wrote output to
+    stderr. Fix sets default value of existing module option `ignore_sftp_error` to True 
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1640).

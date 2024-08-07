@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # ==============================================================================
 # Copyright (c) IBM Corporation 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -453,6 +453,7 @@ ac_sanity(){
 ##  $ ac --ac-test --host ec33012a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test
+##  $ ac --ac-test --host ec01130a --python 3.10 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
 ac_test(){
     host=$1
     python=$2
@@ -481,25 +482,18 @@ ac_test(){
 		exit 1
 	fi
 
-    #cd ${VENV_BIN}
-
     if [ "$file" ]; then
-        . ${VENV_BIN}/activate && cd tests && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}" >&2 ; echo $? >&1
-        #. ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}" ; echo $?
+        . ${VENV_BIN}/activate && ${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
     else
         for file in `ls tests/functional/modules/*.py`; do
-            # For some reason '--ignore not being honored so injecting a work around
             if [ "$file" != "$skip" ]; then
-                #. ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}"
-                . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}" >&2 ; echo $? >&1
+                . ${VENV_BIN}/activate && ${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
             fi
         done
     fi
 
     # Clean up the collections folder after running the tests, temporary work around.
     rm -rf collections/ansible_collections
-
-    #cd ${CURR_DIR}
 }
 
 # ------------------------------------------------------------------------------
@@ -534,7 +528,7 @@ ac_test(){
 ##          - Space or comma delimited test suites that should be included in the result.
 ##          - A test suite is a collection of test cases in a file that starts with
 ##           'test' and ends in '.py'.
-##          - Do not include the absolute path, this is automatically deteremined. 
+##          - Do not include the absolute path, this is automatically deteremined.
 ##          - For all functional tests, use the `functional/*` notation.
 ##          - For all unit tests, use the `unit/*` notation for directories.
 ##          - Default is all functional and unit tests.
@@ -688,25 +682,32 @@ test_concurrent(){
     extra="${20}"
     returncode="${21}"
 
-    # Invoke shell script helpers to set variables if host is null
+    # Invoke shell script helpers to set variables if host is not null
      if [ ! -z "${host}" ]; then
-        read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
-        host="${_host}"
+        # read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
+        creds_array=($($VENV/./venv.sh --host-credentials "${host}"))
+
+        #host="${_host}"
+        host="${creds_array[0]}"
 
         if [ -z "${user}" ]; then
-            user="${_user}"
+            # user="${_user}"
+            user="${creds_array[1]}"
         fi
 
         if [ -z "${pass}" ]; then
-            pass="${_pass}"
+            # pass="${_pass}"
+            pass="${creds_array[2]}"
         fi
     fi
 
     # Convert the python from short notation to absolute path
-    read _python <<<$($VENV/./mounts.sh --get-python-mount "${python}")
+    # read _python <<<$($VENV/./mounts.sh --get-python-mount "${python}")
+    _python=$($VENV/./mounts.sh --get-python-mount "${python}")
     python="${_python}"
 
-    read _zoau_path <<<$($VENV/./mounts.sh --get-zoau-mount "${zoau}")
+    # read _zoau_path <<<$($VENV/./mounts.sh --get-zoau-mount "${zoau}")
+    _zoau_path=$($VENV/./mounts.sh --get-zoau-mount "${zoau}")
     zoau="${_zoau_path}"
 
     # Build a zoau precompiled binary path if $pythonpath is null
@@ -852,7 +853,7 @@ test_concurrent(){
     #         "workers=${workers} maxjob=${maxjob} maxnode=${maxnode} bal=${bal} verbose=${verbose}"\
     #         "verbosity=${verbosity} debug=${debug} extra=${extra} returncode=${returncode}"
 
-    read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
+    # read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
     message "Concurrent executor testing is evaluating supplied options and preparing to execute."
     . $VENV_BIN/activate && python3 $VENV/ce.py\
         --hostnames  "${host}"\

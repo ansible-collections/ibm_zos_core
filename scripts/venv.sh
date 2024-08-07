@@ -583,7 +583,10 @@ ssh_host_credentials(){
 			pass=`echo "${tgt}" | cut -d ":" -f 4`
 		fi
 	done
+}
 
+ssh_host_credentials_echo(){
+    ssh_host_credentials $1
     echo "$host" "$user" "$pass"
 }
 
@@ -680,7 +683,7 @@ case "$1" in
     ssh_copy_key
     ;;
 --host-credentials)
-    ssh_host_credentials $2
+    ssh_host_credentials_echo $2
     ;;
 --host-setup-files)  #ec33017a "mounts.env" "mounts.sh" "shell-helper.sh" "profile.sh"
     ssh_host_credentials $2

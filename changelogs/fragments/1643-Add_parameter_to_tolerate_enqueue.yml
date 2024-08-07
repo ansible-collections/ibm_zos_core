@@ -1,4 +1,3 @@
-bugfixes:
-  - zos_backup_restore - module failed when data set is locked.
-    Fix now allows the option enqueue to potentially recoverable errors should be tolerated.
+trivial:
+  - zos_backup_restore - validate restore work fine with dataset block.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1643).

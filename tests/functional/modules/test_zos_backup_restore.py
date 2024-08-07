@@ -845,7 +845,7 @@ def test_backup_tolerate_enqueue(ansible_zos_module):
         time.sleep(5)
         results = hosts.all.zos_backup_restore(
             operation="backup",
-            enqueue=True,
+            recover=True,
             data_sets=dict(include=data_sets_hlq),
             backup_name=data_sets_backup_location,
         )

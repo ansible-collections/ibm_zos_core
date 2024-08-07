@@ -122,14 +122,9 @@ options:
       - GDS relative names are supported when I(operation=restore).
     type: str
     required: True
-  enqueue:
-    description:
-      - When I(operation=backup), specifies potentially recoverable errors should be tolerated.
-    type: bool
-    required: False
   recover:
     description:
-      - Specifies if potentially recoverable errors should be ignored.
+      - When I(operation=backup) specifies if potentially recoverable errors should be ignored.
     type: bool
     default: False
   overwrite:
@@ -327,15 +322,6 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
-
-- name: Backup all data sets matching the pattern USER.** even if the datasets are locked
-    to data set MY.BACKUP.DZP
-  zos_backup_restore:
-    operation: backup
-    data_sets:
-      include: user.**
-    enqueue : True
-    backup_name: MY.BACKUP.DZP
 """
 
 import traceback
@@ -383,7 +369,6 @@ def main():
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
         backup_name=dict(type="str", required=True),
-        enqueue=dict(type="bool", required=False),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type="str", required=False),
@@ -403,7 +388,6 @@ def main():
         full_volume = params.get("full_volume")
         temp_volume = params.get("temp_volume")
         backup_name = params.get("backup_name")
-        enqueue = params.get("enqueue")
         recover = params.get("recover")
         overwrite = params.get("overwrite")
         sms_storage_class = params.get("sms_storage_class")
@@ -426,7 +410,6 @@ def main():
                 sms_storage_class=sms_storage_class,
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
-                enqueue=enqueue,
             )
         else:
             restore(
@@ -511,7 +494,6 @@ def parse_and_validate_args(params):
         full_volume=dict(type=full_volume_type, default=False, dependencies=["volume"]),
         temp_volume=dict(type="volume", required=False, aliases=["dest_volume"]),
         backup_name=dict(type=backup_name_type, required=False),
-        enqueue=dict(type="bool", required=False, default=False, dependencies=["operation"]),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
@@ -541,7 +523,6 @@ def backup(
     sms_storage_class,
     sms_management_class,
     tmp_hlq,
-    enqueue,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -573,8 +554,6 @@ def backup(
         Specifies the management class to use.
     tmp_hlq : str
         Specifies the tmp hlq to temporary datasets.
-    enqueue : bool
-        Specifies potentially recoverable errors should be tolerated
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -971,9 +950,6 @@ def to_dzip_args(**kwargs):
 
     if kwargs.get("tmp_hlq"):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
-
-    if kwargs.get("enqueue"):
-        zoau_args["force"] = True
 
     return zoau_args
 

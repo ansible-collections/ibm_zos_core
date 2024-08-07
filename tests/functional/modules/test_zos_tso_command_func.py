@@ -30,10 +30,13 @@ def test_zos_tso_command_run_help(ansible_zos_module):
 # Run a long tso command to allocate a dataset.
 def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
     hosts = ansible_zos_module
+    results = hosts.all.shell(cmd="echo $USER")
+    for result in results.contacted.values():
+        user = result.get("stdout")
     command_string = [
         (
             "send 'Hello, this is a test message from zos_tso_command module. "
-            "Im sending a command exceed 80 chars. Thank you.' user(omvsadm)"
+            "Im sending a command exceed 80 chars. Thank you.' user({0})".format(user)
         )
     ]
     results = hosts.all.zos_tso_command(commands=command_string)
@@ -118,11 +121,14 @@ def test_zos_tso_command_invalid_command(ansible_zos_module):
 # The multiple commands
 def test_zos_tso_command_multiple_commands(ansible_zos_module):
     hosts = ansible_zos_module
-    commands_list = ["LU omvsadm", "LISTGRP"]
+    results = hosts.all.shell(cmd="echo $USER")
+    for result in results.contacted.values():
+        user = result.get("stdout")
+    commands_list = ["LU {0}".format(user), "LISTGRP"]
     results = hosts.all.zos_tso_command(commands=commands_list)
     for result in results.contacted.values():
         for item in result.get("output"):
-            if item.get("command") == "LU omvsadm":
+            if item.get("command") == "LU {0}".format(user):
                 assert item.get("rc") == 0
             if item.get("command") == "LISTGRP":
                 assert item.get("rc") == 0

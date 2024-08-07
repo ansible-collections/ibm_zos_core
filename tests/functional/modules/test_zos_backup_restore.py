@@ -819,6 +819,7 @@ def test_backup_into_gds(ansible_zos_module, dstype):
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=f"{data_set_name}(0)",
+            hlq=NEW_HLQ,,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True

@@ -1,3 +1,0 @@
-trivial:
-  - zos_backup_restore - validate restore work fine with dataset block.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1643).

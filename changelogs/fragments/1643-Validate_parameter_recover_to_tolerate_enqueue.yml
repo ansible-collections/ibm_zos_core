@@ -1,0 +1,4 @@
+trivial:
+  - zos_backup_restore - validate backup function work properly with recover option as True
+    with potentially recoverable errors should be ignored.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1643).

@@ -292,6 +292,7 @@ backup_name:
     type: str
 '''
 
+import os
 import re
 import json
 from ansible.module_utils._text import to_text
@@ -312,7 +313,7 @@ except Exception:
 
 
 # supported data set types
-DS_TYPE = ['PS', 'PO']
+DS_TYPE = data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED)
 
 
 def backupOper(module, src, backup, tmphlq=None):
@@ -340,9 +341,13 @@ def backupOper(module, src, backup, tmphlq=None):
     fail_json
         Creating backup has failed.
     """
-    # analysis the file type
-    ds_utils = data_set.DataSetUtils(src)
-    file_type = ds_utils.ds_type()
+    file_type = None
+    if data_set.is_data_set(src):
+        file_type = data_set.DataSet.data_set_type(src)
+    else:
+        if os.path.exists(src):
+            file_type = 'USS'
+
     if file_type != 'USS' and file_type not in DS_TYPE:
         message = "{0} data set type is NOT supported".format(str(file_type))
         module.fail_json(msg=message)

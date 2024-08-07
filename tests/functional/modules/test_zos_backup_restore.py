@@ -20,6 +20,7 @@ import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
 import random
+import time
 
 DATA_SET_CONTENTS = "HELLO world"
 DATA_SET_QUALIFIER = "{0}.PRIVATE.TESTDS"
@@ -29,6 +30,31 @@ UNIX_BACKUP_LOCATION = "/tmp/mybackup.dzp"
 NEW_HLQ = "TMPHLQ"
 DATA_SET_RESTORE_LOCATION = DATA_SET_QUALIFIER.format(NEW_HLQ)
 DATA_SET_RESTORE_LOCATION2 = DATA_SET_QUALIFIER2.format(NEW_HLQ)
+
+
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, \\\"//'%s'\\\", argv[1]);
+    FILE* member;
+    member = fopen(dsname, \\\"rb,type=record\\\");
+    sleep(300);
+    fclose(member);
+    return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
 
 # ---------------------------------------------------------------------------- #
 #                               Helper functions                               #
@@ -795,3 +821,40 @@ def test_backup_into_gds(ansible_zos_module, dstype):
     finally:
         hosts.all.shell(cmd=f"drm ANSIBLE.* ")
 
+
+def test_backup_tolerate_enqueue(ansible_zos_module):
+    hosts = ansible_zos_module
+    default_data_set_name_1 =  get_tmp_ds_name()
+    default_data_set_name_2 =  get_tmp_ds_name()
+    temp_file = f"/tmp/MEM2"
+    data_sets_hlq = "ANSIBLE.**"
+    data_sets_backup_location = get_tmp_ds_name()
+    try:
+        hosts.all.shell(cmd="dtouch {0}".format(default_data_set_name_1))
+        hosts.all.shell(cmd="dtouch {0}".format(default_data_set_name_2))
+        hosts.all.shell(cmd="""decho "HELLO WORLD" "{0}" """.format(default_data_set_name_1))
+        hosts.all.shell(cmd="""decho "HELLO WORLD" "{0}" """.format(default_data_set_name_2))
+        hosts.all.file(path="/tmp/disp_shr/", state="directory")
+        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > /tmp/disp_shr/pdse-lock.c")
+        hosts.all.shell(
+            cmd=f"echo \"{call_c_jcl.format(default_data_set_name_1)}\""+
+            " > /tmp/disp_shr/call_c_pgm.jcl"
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        time.sleep(5)
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            enqueue=True,
+            data_sets=dict(include=data_sets_hlq),
+            backup_name=data_sets_backup_location,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, data_sets_backup_location)
+    finally:
+        hosts.all.shell(cmd="rm -rf " + temp_file)
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ")

@@ -502,7 +502,7 @@ def parse_and_validate_args(params):
         full_volume=dict(type=full_volume_type, default=False, dependencies=["volume"]),
         temp_volume=dict(type="volume", required=False, aliases=["dest_volume"]),
         backup_name=dict(type=backup_name_type, required=False),
-        enqueue=dict(type=bool, required=False, default=False, dependencies=["operation"]),
+        enqueue=dict(type="bool", required=False, default=False, dependencies=["operation"]),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
@@ -964,7 +964,7 @@ def to_dzip_args(**kwargs):
         zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
 
     if kwargs.get("enqueue"):
-        zoau_args["enqueue"] = "-f"
+        zoau_args["force"] = True
 
     return zoau_args
 

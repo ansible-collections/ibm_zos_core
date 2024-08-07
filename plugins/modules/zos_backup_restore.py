@@ -327,6 +327,15 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
+
+- name: Backup all data sets matching the pattern USER.** even if the datasets are locked
+    to data set MY.BACKUP.DZP
+  zos_backup_restore:
+    operation: backup
+    data_sets:
+      include: user.**
+    enqueue : True
+    backup_name: MY.BACKUP.DZP
 """
 
 import traceback

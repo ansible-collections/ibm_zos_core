@@ -15,9 +15,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import pytest
-import yaml
 import os
+import yaml
 from shellescape import quote
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -97,10 +96,10 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
     results = hosts.all.zos_operator(cmd="DUMP COMM=('ERROR DUMP')", verbose=False)
     for result in results.contacted.values():
         assert result.get("changed") is True
-    transparency = False
-    if any('DUMP COMMAND' in str for str in result.get("content")):
-        transparency = True
-    assert transparency
+        transparency = False
+        if any('DUMP COMMAND' in str for str in result.get("content")):
+            transparency = True
+        assert transparency
 
 
 def test_zos_operator_positive_path(ansible_zos_module):
@@ -120,6 +119,7 @@ def test_zos_operator_positive_path_verbose(ansible_zos_module):
         assert result.get("changed") is True
         assert result.get("content") is not None
         # Traverse the content list for a known verbose keyword and track state
+        is_verbose = False
         if any('BGYSC0804I' in str for str in result.get("content")):
             is_verbose = True
         assert is_verbose
@@ -203,31 +203,33 @@ def test_response_come_back_complete(ansible_zos_module):
 
 
 def test_zos_operator_parallel_terminal(get_config):
-        path = get_config
-        with open(path, 'r') as file:
-            enviroment = yaml.safe_load(file)
-        ssh_key = enviroment["ssh_key"]
-        hosts = enviroment["host"].upper()
-        user = enviroment["user"].upper()
-        python_path = enviroment["python_path"]
-        cut_python_path = python_path[:python_path.find('/bin')].strip()
-        zoau = enviroment["environment"]["ZOAU_ROOT"]
-        try:
-            playbook = "playbook.yml"
-            inventory = "inventory.yml"
-            os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
-                zoau,
-                cut_python_path,
-            )), playbook))
-            os.system("echo {0} > {1}".format(quote(INVENTORY.format(
-                hosts,
-                ssh_key,
-                user,
-            )), inventory))
-            command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(inventory, playbook)
-            stdout = os.system(command)
-            assert stdout == 0
-        finally:
-            os.remove("inventory.yml")
-            os.remove("playbook.yml")
-
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    try:
+        playbook = "playbook.yml"
+        inventory = "inventory.yml"
+        os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
+            zoau,
+            cut_python_path,
+        )), playbook))
+        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+            hosts,
+            ssh_key,
+            user,
+        )), inventory))
+        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
+            inventory,
+            playbook
+        )
+        stdout = os.system(command)
+        assert stdout == 0
+    finally:
+        os.remove("inventory.yml")
+        os.remove("playbook.yml")

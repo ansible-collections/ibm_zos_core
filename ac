@@ -717,11 +717,8 @@ test_concurrent(){
 
     first_entry=true
     file_tests=""
-    #array_func=($(ls "$CURR_DIR/tests/functional/modules/"))
-    array_func=($(ac_test_pytest_finder "functional/*" "" true true))
-
-    # array_unit=($(ls "$CURR_DIR/tests/unit/"))
-    array_unit=($(ac_test_pytest_finder "unit/*" "" true true))
+    strings_func=$(ac_test_pytest_finder "functional/*" "" true true)
+    strings_unit=$(ac_test_pytest_finder "unit/*" "" true true)
 
     corrected_file=""
     # Support shorter notation passed to the utils module 'get_test_case()'', the python module
@@ -744,7 +741,7 @@ test_concurrent(){
             else
                 file_tests="$file_tests $CURR_DIR/tests/unit/"
             fi
-        elif [[ "${array_func[@]}" =~ $i ]];then
+        elif echo $strings_func | tr ' ' '\n'|grep $i >/dev/null; then
             if [ ! -e "$CURR_DIR/tests/functional/modules/$i" ]; then
                 message_error "File = $CURR_DIR/tests/functional/modules/$i not found."
             fi
@@ -755,7 +752,7 @@ test_concurrent(){
             else
                 file_tests="$file_tests $CURR_DIR/tests/functional/modules/$i"
             fi
-        elif [[ "${array_unit[@]}" =~ $i ]];then
+        elif echo $strings_unit | tr ' ' '\n'|grep $i >/dev/null; then
             if [ ! -e "$CURR_DIR/tests/unit/$i" ]; then
                 message_error "File = $CURR_DIR/tests/unit/$i not found."
             fi
@@ -997,8 +994,8 @@ ac_test_pytest_finder(){
 
     first_entry=true
     file_tests=""
-    array_func=($(ls "$CURR_DIR/tests/functional/modules/"))
-    array_unit=($(ls "$CURR_DIR/tests/unit/"))
+    strings_func=$(ls "$CURR_DIR/tests/functional/modules/")
+    strings_unit=$(ls "$CURR_DIR/tests/unit/")
 
     # As a courtesy, aid in shorter notation supplied to the utils module get_test_case(), the python module
     # does not support such notation because the module can be run from many locations and requires absolute
@@ -1019,7 +1016,7 @@ ac_test_pytest_finder(){
             else
                 file_tests="$file_tests $CURR_DIR/tests/unit/"
             fi
-        elif [[ "${array_func[@]}" =~ $i ]];then
+        elif echo $strings_func | tr ' ' '\n'|grep $i >/dev/null; then
             if [ ! -e "$CURR_DIR/tests/functional/modules/$i" ]; then
                 message_error "File = $CURR_DIR/tests/functional/modules/$i not found."
             fi
@@ -1030,7 +1027,7 @@ ac_test_pytest_finder(){
             else
                 file_tests="$file_tests $CURR_DIR/tests/functional/modules/$i"
             fi
-        elif [[ "${array_unit[@]}" =~ $i ]];then
+        elif echo $strings_unit | tr ' ' '\n'|grep $i >/dev/null; then
             if [ ! -e "$CURR_DIR/tests/unit/$i" ]; then
                 message_error "File = $CURR_DIR/tests/unit/$i not found."
             fi

@@ -193,8 +193,8 @@ options:
     description:
       - Override the default high level qualifier (HLQ) for temporary and backup
         data sets.
-      - The default HLQ is the Ansible user that executes the module and if
-        that is not available, then the value of C(TMPHLQ) is used.
+      - The default is the original HLQ fo the data sets if that is not available,
+        then the value of C(TMPHLQ) is used.
     required: false
     type: str
 """
@@ -270,7 +270,7 @@ EXAMPLES = r"""
     space_type: g
 
 - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
-    Use z/OS username as new HLQ.
+    With the original high level qualifiers.
   zos_backup_restore:
     operation: restore
     backup_name: /tmp/temp_backup.dzp

@@ -362,8 +362,17 @@ def backupOper(module, src, backup, tmphlq=None):
             backup_name = Backup.uss_file_backup(src, backup_name=backup, compress=False)
         else:
             backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+    except Backup.BackupError as exc:
+        module.fail_json(
+            msg=exc.msg,
+            rc=exc.rc,
+            stdout=exc.stdout,
+            stderr=exc.stderr
+        )
     except Exception:
-        module.fail_json(msg="creating backup has failed")
+        module.fail_json(
+            msg="An error ocurred during backup."
+        )
 
     return backup_name
 

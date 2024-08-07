@@ -139,7 +139,10 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             rc, out, err = _copy_pds(dsn, bk_dsn)
             if rc != 0:
                 raise BackupError(
-                    "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
+                    "Unable to backup data set {0} to {1}.".format(dsn, bk_dsn),
+                    rc=rc,
+                    stdout=out,
+                    stderr=err
                 )
     return bk_dsn
 

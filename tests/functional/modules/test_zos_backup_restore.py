@@ -754,8 +754,8 @@ def test_backup_into_gds(ansible_zos_module, dstype):
     try:
         hosts = ansible_zos_module
         # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
-        data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
-        ds_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        data_set_name = "ANSIBLE.PYTC@EI1.T8198001.C#LQCVCR"
+        ds_name = "ANSIBLE.P$UQN201.T6865937.CW84VW$A"
         results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -769,7 +769,7 @@ def test_backup_into_gds(ansible_zos_module, dstype):
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         ds_to_write = f"{ds_name}(MEM)" if dstype in ['pds', 'pdse'] else ds_name
-        results = hosts.all.shell(cmd=f"decho 'test line' \"{ds_to_write}\"")
+        results = hosts.all.shell(cmd=f"decho 'test line' '{ds_to_write}'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
@@ -793,5 +793,5 @@ def test_backup_into_gds(ansible_zos_module, dstype):
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
-        hosts.all.shell(cmd=f"drm ANSIBLE.* ")
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ; drm OMVSADM.*")
 

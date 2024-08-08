@@ -6,6 +6,47 @@
 Releases
 ========
 
+Version 1.9.2
+=============
+
+Bugfixes
+--------
+
+- ``zos_copy`` - when creating the destination data set, the module would unnecessarily check if a data set is locked by another process. The module no longer performs this check when it creates the data set.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
+
+Known Issues
+------------
+
+- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
+
+   - If the appropriate level of ZOAU can not be installed, some options are to:
+
+      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
+
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+
 Version 1.9.1
 =============
 

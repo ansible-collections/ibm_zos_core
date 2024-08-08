@@ -380,12 +380,9 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
-        hosts.all.copy(content=TEST_DATA, dest=uss_file)
-        hosts.all.zos_data_set(
-            name=mvs_ps,
-            state="present",
-            type="pds",
-            record_length=TEST_DATA_RECORD_LENGTH
+        results = hosts.all.copy(content=TEST_DATA, dest=uss_file)
+        hosts.all.shell(
+            cmd="dtouch -tpds -l {1} {0}".format(mvs_ps, TEST_DATA_RECORD_LENGTH),
         )
         results = hosts.all.zos_encode(
             src=uss_file,
@@ -556,13 +553,13 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
         },
     )
     for result in results.contacted.values():
-        print(result)
         assert result.get("src") == mvs_ps
         assert result.get("dest") == mvs_pds_member
         assert result.get("backup_name") is None
         assert result.get("changed") is True
     hosts.all.zos_data_set(name=mvs_ps, state="absent")
     hosts.all.zos_data_set(name=mvs_ps, state="absent")
+
 
 def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
     uss_file = "/tmp/{0}".format(DATE_TIME)

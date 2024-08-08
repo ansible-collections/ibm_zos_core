@@ -30,7 +30,7 @@ FROM_ENCODING = "IBM-1047"
 INVALID_ENCODING = "EBCDIC"
 TO_ENCODING = "ISO8859-1"
 TEMP_JCL_PATH = "/tmp/jcl"
-DATE_TIME = "N" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + "ENCODE"
+
 TEST_DATA = """0001 This is for encode conversion testing_____________________________________
 0002 This is for encode conversion testing_____________________________________
 0003 This is for encode conversion testing_____________________________________
@@ -80,6 +80,12 @@ VSAM_RECORDS = """00000001A record
 00000003A record
 """
 
+
+def get_unique_uss_file_name():
+    unique_str = "EN" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + "CODE"
+    return "/tmp/{0}".format(unique_str)
+
+
 def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, key_offset=None):
     """Creates a new VSAM on the system.
 
@@ -115,7 +121,7 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
 
 def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
         results = hosts.all.zos_encode(
@@ -135,7 +141,7 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     hosts.all.copy(content=TEST_DATA, dest=uss_file)
     results = hosts.all.zos_encode(
         src=uss_file,
@@ -152,7 +158,7 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
@@ -177,7 +183,7 @@ def test_uss_encoding_conversion_without_dest(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
@@ -229,8 +235,8 @@ def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
-    uss_dest_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
+    uss_dest_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
@@ -258,7 +264,7 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=USS_DEST_PATH, state="directory")
@@ -319,7 +325,7 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -344,7 +350,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
-    uss_dest_file = "/tmp/{0}".format(DATE_TIME)
+    uss_dest_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -376,7 +382,7 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -403,7 +409,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -441,7 +447,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
-    uss_dest_file = "/tmp/{0}".format(DATE_TIME)
+    uss_dest_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -562,7 +568,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         mvs_vs = get_tmp_ds_name(3)
@@ -599,7 +605,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
-    uss_dest_file = "/tmp/{0}".format(DATE_TIME)
+    uss_dest_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         mlq_size = 3
@@ -1118,7 +1124,7 @@ def test_gdg_encoding_conversion_invalid_gdg(ansible_zos_module):
 
 
 def test_encoding_conversion_gds_to_uss_file(ansible_zos_module):
-    uss_dest_file = "/tmp/{0}".format(DATE_TIME)
+    uss_dest_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         ds_name = get_tmp_ds_name()
@@ -1204,7 +1210,7 @@ def test_encoding_conversion_gds_no_dest(ansible_zos_module):
 
 
 def test_encoding_conversion_uss_file_to_gds(ansible_zos_module):
-    uss_file = "/tmp/{0}".format(DATE_TIME)
+    uss_file = get_unique_uss_file_name()
     try:
         hosts = ansible_zos_module
         ds_name = get_tmp_ds_name()

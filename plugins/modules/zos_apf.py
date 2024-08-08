@@ -349,7 +349,7 @@ def backupOper(module, src, backup, tmphlq=None):
             file_type = 'USS'
 
     if file_type != 'USS' and file_type not in DS_TYPE:
-        message = "{0} data set type of {1} is NOT supported".format(str(file_type), src)
+        message = "Dataset {0} of type {1} is NOT supported".format(src, str(file_type))
         module.fail_json(msg=message)
 
     # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.

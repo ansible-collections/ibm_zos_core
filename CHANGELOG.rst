@@ -4,6 +4,23 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.9.2
+======
+
+Release Summary
+---------------
+
+Release Date: '2024-08-8'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Bugfixes
+--------
+
+- zos_copy - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present. (https://github.com/ansible-collections/ibm_zos_core/pull/1549).
+
 v1.9.1
 ======
 

@@ -539,8 +539,8 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
 def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
     mvs_ps = get_tmp_ds_name()
-    mvs_pds_member = mvs_ps + '(MEM)'
     mvs_pds = get_tmp_ds_name()
+    mvs_pds_member = mvs_pds + '(MEM)'
     hosts.all.zos_data_set(name=mvs_ps, state="present", type="seq")
     hosts.all.shell(cmd=f"cp {quote(TEST_DATA)} \"//'{mvs_ps}'\" ")
     hosts.all.zos_data_set(name=mvs_pds, state="present", type="pds")
@@ -556,6 +556,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
         },
     )
     for result in results.contacted.values():
+        print(result)
         assert result.get("src") == mvs_ps
         assert result.get("dest") == mvs_pds_member
         assert result.get("backup_name") is None

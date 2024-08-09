@@ -519,6 +519,9 @@ options:
 extends_documentation_fragment:
   - ibm.ibm_zos_core.template
 
+extends_documentation_fragment:
+  - ibm.ibm_zos_core.template
+
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -3940,6 +3943,27 @@ def main():
                 purge=dict(arg_type="bool", required=False),
                 extended=dict(arg_type="bool", required=False),
                 fifo=dict(arg_type="bool", required=False),
+            )
+        ),
+
+        use_template=dict(arg_type='bool', required=False),
+        template_parameters=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                variable_start_string=dict(arg_type='str', required=False),
+                variable_end_string=dict(arg_type='str', required=False),
+                block_start_string=dict(arg_type='str', required=False),
+                block_end_string=dict(arg_type='str', required=False),
+                comment_start_string=dict(arg_type='str', required=False),
+                comment_end_string=dict(arg_type='str', required=False),
+                line_statement_prefix=dict(arg_type='str', required=False),
+                line_comment_prefix=dict(arg_type='str', required=False),
+                lstrip_blocks=dict(arg_type='bool', required=False),
+                trim_blocks=dict(arg_type='bool', required=False),
+                keep_trailing_newline=dict(arg_type='bool', required=False),
+                newline_sequence=dict(arg_type='str', required=False),
+                auto_reload=dict(arg_type='bool', required=False),
             )
         ),
 

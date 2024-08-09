@@ -52,7 +52,9 @@ Minor Changes
 Bugfixes
 --------
 
-- ``zos_copy``
+- ``zos_apf`` - Option **list** previously only returned one data set, now it returns a list of retrieved data sets.
+- ``zos_blockinfile`` - Option **block** when containing double double quotation marks results in a task failure (failed=True); now the module handles this case to avoid failure.
+- ``zos_find`` - Option **size** failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
 
    - a regression in version 1.4.0 made the module stop automatically computing member names when copying a single file into a PDS/E. Fix now lets a user copy a single file into a PDS/E without adding a member in the dest option.
    - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present.
@@ -88,12 +90,11 @@ Bugfixes
 
 - ``zos_copy`` - when creating the destination data set, the module would unnecessarily check if a data set is locked by another process. The module no longer performs this check when it creates the data set.
 
-Availability
-------------
+Porting Guide
+-------------
 
-* `Automation Hub`_
-* `Galaxy`_
-* `GitHub`_
+This section discusses the behavioral changes between ``ibm_zos_core`` v1.9.0 and ``ibm_zos_core`` v1.10.0-beta.1.
+It is intended to assist in updating your playbooks so this collection will continue to work.
 
 Requirements
 ------------
@@ -125,8 +126,10 @@ Known Issues
 Version 1.10.0
 ==============
 
-Major Changes
--------------
+  - option **record_format** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - options inside **batch** no longer accept uppercase choices, users should replace them with lowercase ones.
 
 - Starting with IBM Ansible z/OS core version 1.10.x, ZOAU version 1.3.0 will be required.
 - Starting with IBM Ansible z/OS core version 1.10.x, all module options are case sensitive,
@@ -134,8 +137,7 @@ Major Changes
 - The README has been updated with a new template.
 - The **Reference** section has been renamed to **Requirements** and now includes a support matrix.
 
-Minor Changes
--------------
+- ``zos_mount``
 
 - ``zos_apf`` - Enhanced error messages when an exception is caught.
 - ``zos_backup_restore`` - Added option **tmp_hlq** to the user module to override the default high level qualifier (HLQ) for temporary and backup data sets.
@@ -170,7 +172,8 @@ It is intended to assist in updating your playbooks so this collection will cont
 
 - ``zos_backup_restore`` - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
 
-- ``zos_copy``
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
   - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
   - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
@@ -250,12 +253,10 @@ Bugfixes
 - ``zos_find`` - Option size failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
 - ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
 
-Availability
-------------
+- ``zos_tso_command``
 
-* `Automation Hub`_
-* `Galaxy`_
-* `GitHub`_
+    - Has been updated with a new example demonstrating how to explicitly execute a REXX script in a data set.
+    - Has been updated with a new example demonstrating how to chain multiple TSO commands into one invocation using semicolons.
 
 Requirements
 ------------
@@ -392,12 +393,17 @@ Several modules have reported UTF-8 decoding errors when interacting with result
 An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended
 and documented **space_primary** option.
 
-Availability
-------------
+    - Change action plugin call from copy to zos_copy.
+    - Previous code did not return output, but still requested job data from the target system. This changes to honor `return_output=false` by not querying the job dd segments at all.
+- ``zos_operator`` - Changed system to call `wait=true` parameter to zoau call. Requires zoau 1.2.5 or later.
+- ``zos_operator_action_query`` - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later.
+- ``zos_unarchive``
 
-* `Automation Hub`_
-* `Galaxy`_
-* `GitHub`_
+    - Add validation into path joins to detect unauthorized path traversals.
+    - Enhanced test cases to use test lines the same length of the record length.
+- ``module_utils/template`` - Add validation into path joins to detect unauthorized path traversals.
+- ``zos_tso_command`` - Add example for executing explicitly a REXX script from a data set.
+- ``zos_script`` - Add support for remote_tmp from the Ansible configuration to setup where temporary files will be created, replacing the module option tmp_path.
 
 Requirements
 ------------
@@ -476,12 +482,11 @@ unique, some options to work around the error are below.
 - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
   a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
 
-Availability
-------------
+-- ``zos_copy`` and ``zos_job_submit`` - supports Jinja2 templating which is essential for handling tasks that require advanced file modifications such as JCL.
 
-* `Automation Hub`_
-* `Galaxy`_
-* `GitHub`_
+Minor Changes
+-------------
+- ``zos_copy``
 
 Requirements
 ------------

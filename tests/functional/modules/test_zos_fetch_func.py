@@ -748,6 +748,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") is True
             assert result.get("data_set_type") == "Sequential"
             assert result.get("module_stderr") is None

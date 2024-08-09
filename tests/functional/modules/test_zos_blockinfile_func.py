@@ -1546,6 +1546,33 @@ def test_uss_encoding(ansible_zos_module, encoding):
         remove_uss_environment(ansible_zos_module)
 
 
+#########################
+# Encoding tests
+#########################
+@pytest.mark.uss
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_uss_encoding(ansible_zos_module, encoding):
+    hosts = ansible_zos_module
+    insert_data = "Insert this string"
+    params = dict(insertafter="SIMPLE", block=insert_data, state="present")
+    params["encoding"] = encoding
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    content = "SIMPLE LINE TO VERIFY"
+    try:
+        hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_BLOCKINFILE))
+        hosts.all.file(path=full_path, state="touch")
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
+        hosts.all.zos_encode(src=full_path, dest=full_path, from_encoding="IBM-1047", to_encoding=params["encoding"])
+        params["path"] = full_path
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_ENCODING
+    finally:
+        remove_uss_environment(ansible_zos_module)
+
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ["IBM-1047"])

@@ -25,6 +25,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
+
+
 __metaclass__ = type
 
 PARALLEL_RUNNING = """- hosts : zvm

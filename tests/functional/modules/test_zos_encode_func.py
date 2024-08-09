@@ -549,6 +549,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
         },
     )
     for result in results.contacted.values():
+        print(result)
         assert result.get("src") == MVS_PS
         assert result.get("dest") == MVS_PDS_MEMBER
         assert result.get("backup_name") is None
@@ -677,6 +678,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
     )
     hosts.all.zos_data_set(name=MVS_PDS, state="absent")
     for result in results.contacted.values():
+        print(result)
         assert result.get("src") == MVS_VS
         assert result.get("dest") == MVS_PDS_MEMBER
         assert result.get("backup_name") is None

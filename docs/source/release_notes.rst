@@ -54,9 +54,7 @@ Minor Changes
 Bugfixes
 --------
 
-- ``zos_apf`` - Option **list** previously only returned one data set, now it returns a list of retrieved data sets.
-- ``zos_blockinfile`` - Option **block** when containing double double quotation marks results in a task failure (failed=True); now the module handles this case to avoid failure.
-- ``zos_find`` - Option **size** failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
+- ``zos_copy``
 
    - a regression in version 1.4.0 made the module stop automatically computing member names when copying a single file into a PDS/E. Fix now lets a user copy a single file into a PDS/E without adding a member in the dest option.
    - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present.

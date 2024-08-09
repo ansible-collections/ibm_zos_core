@@ -519,9 +519,6 @@ options:
 extends_documentation_fragment:
   - ibm.ibm_zos_core.template
 
-extends_documentation_fragment:
-  - ibm.ibm_zos_core.template
-
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does

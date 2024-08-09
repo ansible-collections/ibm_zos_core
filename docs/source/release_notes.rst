@@ -45,6 +45,7 @@ Minor Changes
    - Redesign the wrappers of dd clases to use properly the arguments.
 
 - ``zos_script`` - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems.
+- ``zos_tso_command`` - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @.
 - ``zos_unarchive``
 
    - Added support for data set names with special characters like $, /#, /- and @.

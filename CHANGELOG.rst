@@ -32,7 +32,7 @@ Minor Changes
 - zos_job_submit - add support for generation data groups and generation data sets as sources for jobs. (https://github.com/ansible-collections/ibm_zos_core/pull/1497)
 - zos_lineinfile - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
 - zos_mount - Added support for data set names with special characters ($, /#, /- and @). This is for both src and backup data set names. (https://github.com/ansible-collections/ibm_zos_core/pull/1631).
-- zos_mvs_raw - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1563).
+- zos_tso_command - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1563).
 - zos_mvs_raw - Added support for GDG and GDS relative name notation to use a data set. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1525).
 - zos_mvs_raw - Added support for GDG and GDS relative positive name notation to use a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1541).
 - zos_mvs_raw - Redesign the wrappers of dd clases to use properly the arguments. (https://github.com/ansible-collections/ibm_zos_core/pull/1470).

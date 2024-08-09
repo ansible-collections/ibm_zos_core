@@ -264,11 +264,6 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
         clean_test_env(hosts, test_info)
 
 
-# keyword: ENABLE-FOR-1-3
-# Test commented because there is a failure in ZOAU 1.2.x, that should be fixed in 1.3.x, so
-# whoever works in issue https://github.com/ansible-collections/ibm_zos_core/issues/726
-# should uncomment this test as part of the validation process.
-
 def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
     try:
         hosts = ansible_zos_module

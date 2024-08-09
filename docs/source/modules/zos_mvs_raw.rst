@@ -846,7 +846,7 @@ dds
 
           A data set name can be a GDS relative name.
 
-          When using GDS relative name and it is a positive generation, disposition new must be used.
+          When using GDS relative name and it is a positive generation, *disposition=new* must be used.
 
           | **required**: False
           | **type**: str

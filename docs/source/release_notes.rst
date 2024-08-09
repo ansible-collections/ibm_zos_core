@@ -23,9 +23,9 @@ Minor Changes
 
 - ``zos_apf`` - Change input to auto-escape 'library' names containing symbols
 - ``zos_archive`` - Added support for GDG and GDS relative name notation to archive data sets. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_backup_restore`` - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @.
 - ``zos_blockinfile`` - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.
 - ``zos_copy`` - add support for copying generation data sets (GDS) and generation data groups (GDG), as well as using a GDS for backup.
-- ``zos_backup_restore`` - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @.
 - ``zos_data_set``
 
    - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @.

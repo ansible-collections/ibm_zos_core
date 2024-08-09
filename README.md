@@ -136,7 +136,7 @@ All releases, will meet the following test criteria.
 * ansible-core v2.15.x
 * Python 3.9.x
 * IBM Open Enterprise SDK for Python 3.11.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.x
+* IBM Z Open Automation Utilities (ZOAU) 1.3.1.x
 * z/OS V2R5
 
 This release introduces case sensitivity for option values and includes a porting guide in the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) to assist with which option values will need to be updated.

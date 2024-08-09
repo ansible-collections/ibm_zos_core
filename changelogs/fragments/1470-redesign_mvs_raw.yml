@@ -1,3 +1,0 @@
-minor_changes:
-  - zos_mvs_raw - Redesign the wrappers of dd clases to use properly the arguments.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1470).

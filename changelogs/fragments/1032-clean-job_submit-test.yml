@@ -1,3 +1,0 @@
-trivial:
-  - test_zos_job_submit_func.py - Removed test setting that was covering a missing duration value.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1364).

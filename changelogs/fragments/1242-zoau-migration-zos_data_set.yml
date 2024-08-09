@@ -1,3 +1,0 @@
-trivial:
-  - zos_data_set - Refactor data_set module_util and functional tests for ZOAU v1.3.0.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1242).

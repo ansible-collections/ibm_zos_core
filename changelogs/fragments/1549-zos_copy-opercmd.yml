@@ -1,5 +1,0 @@
-bugfixes:
-  - zos_copy - module would use opercmd to check if a non existent
-    destination data set is locked. Fix now only checks if the destination
-    is already present.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1549).

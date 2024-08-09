@@ -769,7 +769,7 @@ def test_backup_into_gds(ansible_zos_module, dstype):
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         ds_to_write = f"{ds_name}(MEM)" if dstype in ['pds', 'pdse'] else ds_name
-        results = hosts.all.shell(cmd=f"decho 'test line' \"{ds_to_write}\"")
+        results = hosts.all.shell(cmd=f"decho 'test line' '{ds_to_write}'")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

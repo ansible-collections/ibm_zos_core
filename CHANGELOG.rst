@@ -24,7 +24,7 @@ Minor Changes
 - zos_blockinfile - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
 - zos_copy - add support for copying generation data sets (GDS) and generation data groups (GDG), as well as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1564).
 - zos_data_set - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1504).
-- zos_data_set - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1527).
+- zos_backup_restore - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1527).
 - zos_encode - add support for encoding generation data sets (GDS), as well as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1531).
 - zos_fetch - add support for fetching generation data groups and generation data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1519)
 - zos_find - added support for GDG/GDS and special characters (https://github.com/ansible-collections/ibm_zos_core/pull/1518).

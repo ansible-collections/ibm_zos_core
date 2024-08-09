@@ -6,6 +6,124 @@
 Releases
 ========
 
+Version 1.10.0
+==============
+
+Major Changes
+-------------
+
+- Starting with IBM Ansible z/OS core version 1.10.x, ZOAU version 1.3.0 will be required.
+- Starting with IBM Ansible z/OS core version 1.10.x, all module options are case sensitive,
+  review the porting guide for specifics.
+- The README has been updated with a new template.
+- The **Reference** section has been renamed to **Requirements** and now includes a support matrix.
+
+Minor Changes
+-------------
+
+- ``zos_apf`` - Enhanced error messages when an exception is caught.
+- ``zos_backup_restore`` - Added option **tmp_hlq** to the user module to override the default high level qualifier (HLQ) for temporary and backup data sets.
+- ``zos_copy`` - Documented module options `group` and `owner`.
+
+Bugfixes
+--------
+
+- ``zos_apf`` - Option **list** previously only returned one data set, now it returns a list of retrieved data sets.
+- ``zos_blockinfile`` - Option **block** when containing double double quotation marks results in a task failure (failed=True); now the module handles this case to avoid failure.
+- ``zos_find`` - Option **size** failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
+
+- ``zos_job_submit``
+
+  - Did not default to **location=DATA_SET** when no location was defined, now the location defaults to DATA_SET.
+  - Option **max_rc** previously did not influence a modules status, now the option value influences the tasks failure status.
+
+- ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
+
+Porting Guide
+-------------
+
+This section discusses the behavioral changes between ``ibm_zos_core`` v1.9.0 and ``ibm_zos_core`` v1.10.0-beta.1.
+It is intended to assist in updating your playbooks so this collection will continue to work.
+
+- ``zos_archive``
+
+  - option **terse_pack** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_backup_restore`` - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_copy``
+
+  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_data_set``
+
+  - option **record_format** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - options inside **batch** no longer accept uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_job_submit`` - option **location** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_mount``
+
+  - option **automove** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **fs_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **mount_opts** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **tag_untagged** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - option **unmount_opts** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+- ``zos_mvs_raw``
+
+  - options inside **dd_concat** no longer accept uppercase choices, users should replace them with lowercase ones.
+  - suboption **record_format** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **record_format** of **dd_unix** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dd_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboptions **disposition_normal** and **disposition_abnormal** of **dd_data_set** no longer accept **catlg** and **uncatlg** as choices. This also applies when defining a **dd_data_set** inside **dd_concat**.
+
+- ``zos_unarchive``
+
+  - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+  - suboption **type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_data_set`` - When data set creation fails, exception can throw a bad import error instead of data set creation error.
+- ``zos_copy`` - To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters JSON decoding (DecodeError, TypeError, KeyError) errors when interacting with results that contain non-printable UTF-8 characters in the response. This will be addressed in **ZOAU version 1.3.2** and later.
+
+   - Some options to work around this known issue are:
+
+      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+- Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
+
 Version 1.9.2
 =============
 

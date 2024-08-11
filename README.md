@@ -36,7 +36,7 @@ To upgrade the collection to the latest available version, run the following com
 ansible-galaxy collection install ibm.ibm_zos_core --upgrade
 ```
 
-<br/>You can also install a specific version of the collection, for example, if you need to downgrade for some reason. Use the following syntax to install version 1.0.0:
+<br/>You can also install a specific version of the collection, for example, if you need to install a different version. Use the following syntax to install version 1.0.0:
 
 ```sh
 ansible-galaxy collection install ibm.ibm_zos_core:1.0.0

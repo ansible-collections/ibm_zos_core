@@ -21,35 +21,29 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
 Minor Changes
 -------------
 
-- ``zos_apf`` - Change input to auto-escape 'library' names containing symbols
+- ``zos_apf`` - Change input to auto-escape 'library' names containing symbols.
 - ``zos_archive`` - Added support for GDG and GDS relative name notation to archive data sets. Added support for data set names with special characters like $, /#, /- and @.
 - ``zos_backup_restore`` - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @.
-- ``zos_blockinfile`` - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.
-- ``zos_copy`` - add support for copying generation data sets (GDS) and generation data groups (GDG), as well as using a GDS for backup.
-- ``zos_data_set``
-
-   - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @.
-   - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @.
-
-- ``zos_encode`` - add support for encoding generation data sets (GDS), as well as using a GDS for backup.
-- ``zos_fetch`` - add support for fetching generation data groups and generation data sets.- ``zos_find`` - added support for GDG/GDS and special characters
+- ``zos_blockinfile`` - Added support for GDG and GDS relative name notation to specify a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_copy`` - Added support for copying from and copying to generation data sets (GDS) and generation data groups (GDG) including using a GDS for backup.
+- ``zos_data_set`` - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_encode`` - Added support for converting the encodings of generation data sets (GDS). Also added support to backup into GDS.
+- ``zos_fetch`` - Added support for fetching generation data groups (GDG) and generation data sets (GDS). Added support for specifying data set names with special characters like $, /#, /- and @.
+- ``zos_find`` - Added support for finding generation data groups (GDG) and generation data sets (GDS). Added support for specifying data set names with special characters like $, /#, /- and @.
 - ``zos_job_submit``
 
-   - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems.
-   - add support for generation data groups and generation data sets as sources for jobs.
-- ``zos_lineinfile`` - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.
-- ``zos_mount`` - Added support for data set names with special characters ($, /#, /- and @). This is for both src and backup data set names.
-- ``zos_mvs_raw``
+   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+   - Added support for running JCL stored in generation data groups (GDG) and generation data sets (GDS).
 
-   - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @.
-   - Redesign the wrappers of dd clases to use properly the arguments.
-
-- ``zos_script`` - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems.
-- ``zos_tso_command`` - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_lineinfile`` - Added support for GDG and GDS relative name notation to specify the target data set and to backup into new generations. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_mount`` - Added support for data set names with special characters ($, /#, /- and @).
+- ``zos_mvs_raw`` - Added support for GDG and GDS relative name notation to specify data set names. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_script`` - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+- ``zos_tso_command`` - Added support for using GDG and GDS relative name notation in running TSO commands. Added support for data set names with special characters like $, /#, /- and @.
 - ``zos_unarchive``
 
    - Added support for data set names with special characters like $, /#, /- and @.
-   - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems.
+   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
 
 Bugfixes
 --------
@@ -60,8 +54,8 @@ Bugfixes
    - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present.
 
 - ``zos_data_set`` - When checking if a data set is cataloged, module failed to account for exceptions which occurred during the LISTCAT. The fix now raises an MVSCmdExecError if the return code from LISTCAT is too high.
-- ``zos_job_submit`` - Was not propagating any error types UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered, now the error message shares the type error.
-- ``zos_mvs_raw`` - DD_output first character from each line was missing. Change now includes the first character of each line.
+- ``zos_job_submit`` - The module was not propagating any error types including UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered. The fix now shares the type error in the error message.
+- ``zos_mvs_raw`` - The first character of each line in dd_output was missing. The fix now includes the first character of each line.
 
 Availability
 ------------
@@ -91,11 +85,12 @@ Bugfixes
 
 - ``zos_copy`` - when creating the destination data set, the module would unnecessarily check if a data set is locked by another process. The module no longer performs this check when it creates the data set.
 
-Porting Guide
--------------
+Availability
+------------
 
-This section discusses the behavioral changes between ``ibm_zos_core`` v1.9.0 and ``ibm_zos_core`` v1.10.0-beta.1.
-It is intended to assist in updating your playbooks so this collection will continue to work.
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
 
 Requirements
 ------------
@@ -127,10 +122,8 @@ Known Issues
 Version 1.10.0
 ==============
 
-  - option **record_format** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - option **type** no longer accepts uppercase choices, users should replace them with lowercase ones.
-  - options inside **batch** no longer accept uppercase choices, users should replace them with lowercase ones.
+Major Changes
+-------------
 
 - Starting with IBM Ansible z/OS core version 1.10.x, ZOAU version 1.3.0 will be required.
 - Starting with IBM Ansible z/OS core version 1.10.x, all module options are case sensitive,
@@ -138,7 +131,8 @@ Version 1.10.0
 - The README has been updated with a new template.
 - The **Reference** section has been renamed to **Requirements** and now includes a support matrix.
 
-- ``zos_mount``
+Minor Changes
+-------------
 
 - ``zos_apf`` - Enhanced error messages when an exception is caught.
 - ``zos_backup_restore`` - Added option **tmp_hlq** to the user module to override the default high level qualifier (HLQ) for temporary and backup data sets.
@@ -173,8 +167,7 @@ It is intended to assist in updating your playbooks so this collection will cont
 
 - ``zos_backup_restore`` - option **space_type** no longer accepts uppercase choices, users should replace them with lowercase ones.
 
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
+- ``zos_copy``
 
   - suboption **record_format** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
   - suboption **space_type** of **dest_data_set** no longer accepts uppercase choices, users should replace them with lowercase ones.
@@ -254,17 +247,6 @@ Bugfixes
 - ``zos_find`` - Option size failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
 - ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
 
-- ``zos_tso_command``
-
-    - Has been updated with a new example demonstrating how to explicitly execute a REXX script in a data set.
-    - Has been updated with a new example demonstrating how to chain multiple TSO commands into one invocation using semicolons.
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 Known Issues
 ------------
 
@@ -284,6 +266,19 @@ Known Issues
 - ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
 
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
 
 Version 1.9.0
 =============
@@ -394,17 +389,12 @@ Several modules have reported UTF-8 decoding errors when interacting with result
 An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended
 and documented **space_primary** option.
 
-    - Change action plugin call from copy to zos_copy.
-    - Previous code did not return output, but still requested job data from the target system. This changes to honor `return_output=false` by not querying the job dd segments at all.
-- ``zos_operator`` - Changed system to call `wait=true` parameter to zoau call. Requires zoau 1.2.5 or later.
-- ``zos_operator_action_query`` - Add a max delay of 5 seconds on each part of the operator_action_query. Requires zoau 1.2.5 or later.
-- ``zos_unarchive``
+Availability
+------------
 
-    - Add validation into path joins to detect unauthorized path traversals.
-    - Enhanced test cases to use test lines the same length of the record length.
-- ``module_utils/template`` - Add validation into path joins to detect unauthorized path traversals.
-- ``zos_tso_command`` - Add example for executing explicitly a REXX script from a data set.
-- ``zos_script`` - Add support for remote_tmp from the Ansible configuration to setup where temporary files will be created, replacing the module option tmp_path.
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
 
 Requirements
 ------------
@@ -483,11 +473,12 @@ unique, some options to work around the error are below.
 - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a variable and extract the job ID with
   a regular expression and then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
 
--- ``zos_copy`` and ``zos_job_submit`` - supports Jinja2 templating which is essential for handling tasks that require advanced file modifications such as JCL.
+Availability
+------------
 
-Minor Changes
--------------
-- ``zos_copy``
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
 
 Requirements
 ------------

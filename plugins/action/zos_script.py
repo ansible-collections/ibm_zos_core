@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,13 +12,11 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-import copy
 import shlex
 from os import path
 
 from ansible.plugins.action import ActionBase
 from ansible.module_utils.parsing.convert_bool import boolean
-from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
 from ansible.utils.display import Display
 display = Display()
@@ -90,7 +88,7 @@ class ActionModule(ActionBase):
             tempfile_path = tempfile_result.get('path')
 
             # Letting zos_copy handle the transfer of the script.
-            zos_copy_args = dict(
+            copy_module_args = dict(
                 src=script_path,
                 dest=tempfile_path,
                 force=True,
@@ -99,18 +97,17 @@ class ActionModule(ActionBase):
                 use_template=module_args.get('use_template', False),
                 template_parameters=module_args.get('template_parameters', dict())
             )
-            copy_task = copy.deepcopy(self._task)
-            copy_task.args = zos_copy_args
-            zos_copy_action_plugin = ZosCopyActionModule(
+            copy_task = self._task.copy()
+            copy_task.args = copy_module_args
+            copy_action = self._shared_loader_obj.action_loader.get(
+                'ibm.ibm_zos_core.zos_copy',
                 task=copy_task,
                 connection=self._connection,
                 play_context=self._play_context,
                 loader=self._loader,
                 templar=self._templar,
-                shared_loader_obj=self._shared_loader_obj
-            )
-
-            zos_copy_result = zos_copy_action_plugin.run(task_vars=task_vars)
+                shared_loader_obj=self._shared_loader_obj)
+            zos_copy_result = copy_action.run(task_vars=task_vars)
             result.update(zos_copy_result)
 
             if not result.get("changed") or result.get("failed"):

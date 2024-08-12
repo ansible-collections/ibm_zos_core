@@ -15,13 +15,15 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import time
-
-import ansible.constants
-import ansible.errors
-import ansible.utils
 import pytest
-from pprint import pprint
+import yaml
+import os
+from shellescape import quote
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker,
+)
+
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     zoau_version_checker
@@ -29,6 +31,44 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 
 
 __metaclass__ = type
+
+PARALLEL_RUNNING = """- hosts : zvm
+  collections :
+    - ibm.ibm_zos_core
+  gather_facts: False
+  vars:
+    ZOAU: "{0}"
+    PYZ: "{1}"
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+  tasks:
+      - name: zos_operator
+        zos_operator:
+          cmd: 'd a,all'
+          wait_time_s: 3
+          verbose: true
+        register: output
+
+      - name: print output
+        debug:
+          var: output"""
+
+INVENTORY = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: /allpython/3.9/usr/lpp/IBM/cyp/v3r9/pyz/bin/python3.9"""
 
 
 def test_zos_operator_various_command(ansible_zos_module):
@@ -64,7 +104,7 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
         assert result.get("changed") is True
     transparency = False
     if any('DUMP COMMAND' in str for str in result.get("content")):
-            transparency = True
+        transparency = True
     assert transparency
 
 
@@ -140,11 +180,41 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
 def test_response_come_back_complete(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd="\\$dspl")
-    res = dict()
+    res = {}
     res["stdout"] = []
     for result in results.contacted.values():
         stdout = result.get('content')
         # HASP646 Only appears in the last line that before did not appears
         last_line = len(stdout)
         assert "HASP646" in stdout[last_line - 1]
+
+
+def test_zos_operator_parallel_terminal(get_config):
+        path = get_config
+        with open(path, 'r') as file:
+            enviroment = yaml.safe_load(file)
+        ssh_key = enviroment["ssh_key"]
+        hosts = enviroment["host"].upper()
+        user = enviroment["user"].upper()
+        python_path = enviroment["python_path"]
+        cut_python_path = python_path[:python_path.find('/bin')].strip()
+        zoau = enviroment["environment"]["ZOAU_ROOT"]
+        try:
+            playbook = "playbook.yml"
+            inventory = "inventory.yml"
+            os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
+                zoau,
+                cut_python_path,
+            )), playbook))
+            os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+                hosts,
+                ssh_key,
+                user,
+            )), inventory))
+            command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(inventory, playbook)
+            stdout = os.system(command)
+            assert stdout == 0
+        finally:
+            os.remove("inventory.yml")
+            os.remove("playbook.yml")
 

@@ -714,3 +714,85 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #     finally:
 #         delete_data_set_or_file(hosts, data_set_name)
 #         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+
+
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_backup_gds(ansible_zos_module, dstype):
+    try:
+        hosts = ansible_zos_module
+        # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
+        data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        backup_dest = get_tmp_ds_name(symbols=True).replace("-", "")
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[f"{data_set_name}(-1)", f"{data_set_name}(0)"]),
+            backup_name=backup_dest,
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ")
+
+
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_backup_into_gds(ansible_zos_module, dstype):
+    """This test will create a dataset and backup it into a new generation of
+    backup data sets.
+    """
+    try:
+        hosts = ansible_zos_module
+        # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
+        data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        ds_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=ds_name, state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        ds_to_write = f"{ds_name}(MEM)" if dstype in ['pds', 'pdse'] else ds_name
+        results = hosts.all.shell(cmd=f"decho 'test line' '{ds_to_write}'")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[ds_name]),
+            backup_name=f"{data_set_name}.G0002V00",
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.shell(cmd=f"drm \"{ds_name}\"")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=f"{data_set_name}(0)",
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ; drm OMVSADM.*")
+

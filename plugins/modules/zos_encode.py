@@ -55,24 +55,26 @@ options:
   src:
     description:
       - The location can be a UNIX System Services (USS) file or path,
-        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS (VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, a
+        generation data set (GDS) or KSDS (VSAM data set).
       - The USS path or file must be an absolute pathname.
       - If I(src) is a USS directory, all files will be encoded.
+      - Encoding a whole generation data group (GDG) is not supported.
     required: true
     type: str
   dest:
     description:
       - The location where the converted characters are output.
       - The destination I(dest) can be a UNIX System Services (USS) file or path,
-        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS (VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, a
+        generation data set (GDS) or KSDS (VSAM data set).
       - If the length of the PDSE member name used in I(dest) is greater
         than 8 characters, the member name will be truncated when written out.
       - If I(dest) is not specified, the I(src) will be used as the destination
         and will overwrite the I(src) with the character set in the
         option I(to_encoding).
       - The USS file or path must be an absolute pathname.
+      - If I(dest) is a data set, it must be already allocated.
     required: false
     type: str
   backup:
@@ -99,6 +101,8 @@ options:
         by IBM Z Open Automation Utilities.
       - C(backup_name) will be returned on either success or failure of module
         execution such that data can be retrieved.
+      - If I(backup_name) is a generation data set (GDS), it must be a relative
+        positive name (for example, V(HLQ.USER.GDG(+1\))).
     required: false
     type: str
   backup_compress:
@@ -249,6 +253,24 @@ EXAMPLES = r"""
     encoding:
       from: ISO8859-1
       to: IBM-1047
+
+- name: Convert file encoding from a USS file to a generation data set
+  zos_encode:
+    src: /zos_encode/test.data
+    dest: USER.TEST.GDG(0)
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
+
+- name: Convert file encoding from a USS file to a data set while using a GDG for backup
+  zos_encode:
+    src: /zos_encode/test.data
+    dest: USER.TEST.PS
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
+    backup: true
+    backup_name: USER.BACKUP.GDG(+1)
 """
 
 RETURN = r"""
@@ -494,6 +516,8 @@ def run_module():
     is_mvs_dest = False
     ds_type_src = None
     ds_type_dest = None
+    src_data_set = None
+    dest_data_set = None
     convert_rc = False
     changed = False
 
@@ -503,20 +527,79 @@ def run_module():
 
     try:
         # Check the src is a USS file/path or an MVS data set
-        is_uss_src, is_mvs_src, ds_type_src = check_file(src)
-        if is_uss_src:
-            verify_uss_path_exists(src)
+        # is_uss_src, is_mvs_src, ds_type_src = check_file(src)
+
+        if path.sep in src:
+            is_uss_src = True
+            # ds_type_src = "USS"
+            verify_uss_path_exists(src)  # This can raise an exception.
+        else:
+            is_mvs_src = True
+            src_data_set = data_set.MVSDataSet(src)
+            is_name_member = data_set.is_member(src_data_set.name)
+            dest_exists = False
+
+            if not is_name_member:
+                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name)
+            else:
+                dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(src_data_set.name))
+
+            if not dest_exists:
+                raise EncodeError(
+                    "Data set {0} is not cataloged, please check data set provided in "
+                    "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
+                )
+
+            if is_name_member:
+                if not data_set.DataSet.data_set_member_exists(src_data_set.name):
+                    raise EncodeError("Cannot find member {0} in {1}".format(
+                        data_set.extract_member(src_data_set.raw_name),
+                        data_set.extract_dsname(src_data_set.raw_name)
+                    ))
+                ds_type_src = "PS"
+            else:
+                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name)
+
+            if not ds_type_src:
+                raise EncodeError("Unable to determine data set type of {0}".format(src_data_set.raw_name))
+
         result["src"] = src
 
         # Check the dest is a USS file/path or an MVS data set
         # if the dest is not specified, the value in the src will be used
         if not dest:
-            dest = src
+            if src_data_set:
+                dest = src_data_set.name
+            else:
+                dest = src
+
             is_uss_dest = is_uss_src
             is_mvs_dest = is_mvs_src
             ds_type_dest = ds_type_src
         else:
-            is_uss_dest, is_mvs_dest, ds_type_dest = check_file(dest)
+            if path.sep in dest:
+                is_uss_dest = True
+            else:
+                is_mvs_dest = True
+                dest_data_set = data_set.MVSDataSet(dest)
+                is_name_member = data_set.is_member(dest_data_set.name)
+
+                if not is_name_member:
+                    dest_exists = data_set.DataSet.data_set_exists(dest_data_set.name)
+                else:
+                    dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(dest_data_set.name))
+
+                if not dest_exists:
+                    raise EncodeError(
+                        "Data set {0} is not cataloged, please check data set provided in "
+                        "the dest option.".format(data_set.extract_dsname(dest_data_set.raw_name))
+                    )
+
+                if is_name_member:
+                    ds_type_dest = "PS"
+                else:
+                    ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name)
+
             if (not is_uss_dest) and (path.sep in dest):
                 try:
                     if path.isfile(src) or ds_type_src in ["PS", "VSAM"]:
@@ -532,14 +615,28 @@ def run_module():
                     raise EncodeError("Failed when creating the {0}".format(dest))
         result["dest"] = dest
 
+        if ds_type_dest == "GDG":
+            raise EncodeError("Encoding of a whole generation data group is not supported.")
+
+        new_src = src_data_set.name if src_data_set else src
+        new_dest = dest_data_set.name if dest_data_set else dest
+
         # Check if the dest is required to be backup before conversion
         if backup:
+            if backup_name:
+                backup_data_set = data_set.MVSDataSet(backup_name)
+                if backup_data_set.is_gds_active:
+                    raise EncodeError(
+                        f"The generation data set {backup_name} cannot be used as backup. "
+                        "Please use a new generation for this purpose."
+                    )
+
             if is_uss_dest:
                 backup_name = zos_backup.uss_file_backup(
-                    dest, backup_name, backup_compress
+                    new_dest, backup_name, backup_compress
                 )
             if is_mvs_dest:
-                backup_name = zos_backup.mvs_file_backup(dest, backup_name, tmphlq)
+                backup_name = zos_backup.mvs_file_backup(new_dest, backup_name, tmphlq)
             result["backup_name"] = backup_name
 
         eu = encode.EncodeUtils()
@@ -564,12 +661,12 @@ def run_module():
 
         if is_uss_src and is_uss_dest:
             convert_rc = eu.uss_convert_encoding_prev(
-                src, dest, from_encoding, to_encoding
+                new_src, new_dest, from_encoding, to_encoding
             )
         else:
             convert_rc = eu.mvs_convert_encoding(
-                src,
-                dest,
+                new_src,
+                new_dest,
                 from_encoding,
                 to_encoding,
                 src_type=ds_type_src,
@@ -578,12 +675,12 @@ def run_module():
 
         if convert_rc:
             if is_uss_dest:
-                eu.uss_tag_encoding(dest, to_encoding)
+                eu.uss_tag_encoding(new_dest, to_encoding)
 
             changed = True
-            result = dict(changed=changed, src=src, dest=dest, backup_name=backup_name)
+            result = dict(changed=changed, src=new_src, dest=new_dest, backup_name=backup_name)
         else:
-            result = dict(src=src, dest=dest, changed=changed, backup_name=backup_name)
+            result = dict(src=new_src, dest=new_dest, changed=changed, backup_name=backup_name)
     except encode.TaggingError as e:
         module.fail_json(
             msg=e.msg,

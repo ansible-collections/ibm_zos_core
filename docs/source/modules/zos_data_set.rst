@@ -59,6 +59,9 @@ state
   If *state=absent* and *volumes* is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided *volumes*. If the volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with *changed=False*.
 
 
+  If *state=absent* and *type=gdg* and the GDG base has active generations the module will complete successfully with *changed=False*. To remove it option *force* needs to be used. If the GDG base does not have active generations the module will complete successfully with *changed=True*.
+
+
   If *state=present* and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with *changed=True*.
 
 
@@ -102,7 +105,7 @@ type
   | **required**: False
   | **type**: str
   | **default**: pds
-  | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs
+  | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs, gdg
 
 
 space_primary
@@ -235,6 +238,74 @@ key_length
   | **type**: int
 
 
+empty
+  Sets the *empty* attribute for Generation Data Groups.
+
+  If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+
+  If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
+
+  Default is false.
+
+  | **required**: False
+  | **type**: bool
+
+
+extended
+  Sets the *extended* attribute for Generation Data Groups.
+
+  If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+
+  If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+
+  Default is false.
+
+  | **required**: False
+  | **type**: bool
+
+
+fifo
+  Sets the *fifo* attribute for Generation Data Groups.
+
+  If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+
+  If true, the order is the oldest GDS defined to the newest GDS.
+
+  Default is false.
+
+  | **required**: False
+  | **type**: bool
+
+
+limit
+  Sets the *limit* attribute for Generation Data Groups.
+
+  Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
+
+  *limit* is required when *type=gdg*.
+
+  | **required**: False
+  | **type**: int
+
+
+purge
+  Sets the *purge* attribute for Generation Data Groups.
+
+  Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
+
+  | **required**: False
+  | **type**: bool
+
+
+scratch
+  Sets the *scratch* attribute for Generation Data Groups.
+
+  Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+
+  | **required**: False
+  | **type**: bool
+
+
 volumes
   If cataloging a data set, *volumes* specifies the name of the volume(s) where the data set is located.
 
@@ -285,7 +356,9 @@ force
 
   The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
 
-  The *force=True* only applies to data set members when *state=absent* and *type=member*.
+  The *force=True* only applies to data set members when *state=absent* and *type=member* and when removing a GDG base with active generations.
+
+  If *force=True*, *type=gdg* and *state=absent* it will force remove a GDG base with active generations.
 
   | **required**: False
   | **type**: bool
@@ -375,7 +448,7 @@ batch
     | **required**: False
     | **type**: str
     | **default**: pds
-    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, library, basic, large, member, hfs, zfs, gdg
 
 
   space_primary
@@ -506,6 +579,74 @@ batch
 
     | **required**: False
     | **type**: int
+
+
+  empty
+    Sets the *empty* attribute for Generation Data Groups.
+
+    If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+
+    If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
+
+    Default is false.
+
+    | **required**: False
+    | **type**: bool
+
+
+  extended
+    Sets the *extended* attribute for Generation Data Groups.
+
+    If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+
+    If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+
+    Default is false.
+
+    | **required**: False
+    | **type**: bool
+
+
+  fifo
+    Sets the *fifo* attribute for Generation Data Groups.
+
+    If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+
+    If true, the order is the oldest GDS defined to the newest GDS.
+
+    Default is false.
+
+    | **required**: False
+    | **type**: bool
+
+
+  limit
+    Sets the *limit* attribute for Generation Data Groups.
+
+    Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
+
+    *limit* is required when *type=gdg*.
+
+    | **required**: False
+    | **type**: int
+
+
+  purge
+    Sets the *purge* attribute for Generation Data Groups.
+
+    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
+
+    | **required**: False
+    | **type**: bool
+
+
+  scratch
+    Sets the *scratch* attribute for Generation Data Groups.
+
+    Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+
+    | **required**: False
+    | **type**: bool
 
 
   volumes

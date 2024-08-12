@@ -33,6 +33,8 @@ src
 
   The USS file must be an absolute pathname.
 
+  Generation data set (GDS) relative name of generation already created.  ``e.g. SOME.CREATION(-1``.)
+
   | **required**: True
   | **type**: str
 
@@ -121,6 +123,8 @@ backup
   When set to ``true``, the module creates a backup file or data set.
 
   The backup file name will be returned on either success or failure of module execution such that data can be retrieved.
+
+  Use generation data set (GDS) relative positive name. ``e.g. SOME.CREATION(+1``)
 
   | **required**: False
   | **type**: bool
@@ -279,6 +283,20 @@ Examples
        marker: "//* {mark} *//"
        marker_begin: "Begin Ansible Block Insertion 2"
        marker_end: "End Ansible Block Insertion 2"
+       block: "{{ CONTENT }}"
+
+   - name: Add a block to a gds
+     zos_blockinfile:
+       src: TEST.SOME.CREATION(0)
+       insertafter: EOF
+       block: "{{ CONTENT }}"
+
+   - name: Add a block to dataset and backup in a new generation of gds
+     zos_blockinfile:
+       src: SOME.CREATION.TEST
+       insertbefore: BOF
+       backup: True
+       backup_name: CREATION.GDS(+1)
        block: "{{ CONTENT }}"
 
 

@@ -36,7 +36,7 @@ To upgrade the collection to the latest available version, run the following com
 ansible-galaxy collection install ibm.ibm_zos_core --upgrade
 ```
 
-<br/>You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax to install version 1.0.0:
+<br/>You can also install a specific version of the collection, for example, if you need to install a different version. Use the following syntax to install version 1.0.0:
 
 ```sh
 ansible-galaxy collection install ibm.ibm_zos_core:1.0.0
@@ -123,9 +123,10 @@ environment_vars:
 
 ## Testing
 
-All releases, including betas will meet the following test criteria.
+All releases will meet the following test criteria.
 
 * 100% success for [Functional](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/functional) tests.
+* 100% success for [Unit](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/unit) tests.
 * 100% success for [Sanity](https://docs.ansible.com/ansible/latest/dev_guide/testing/sanity/index.html#all-sanity-tests) tests as part of[ansible-test](https://docs.ansible.com/ansible/latest/dev_guide/testing.html#run-sanity-tests).
 * 100% success for [pyflakes](https://github.com/PyCQA/pyflakes/blob/main/README.rst).
 * 100% success for [ansible-lint](https://ansible.readthedocs.io/projects/lint/) allowing only false positives.
@@ -133,9 +134,9 @@ All releases, including betas will meet the following test criteria.
 <br/>This release of the collection was tested with following dependencies.
 
 * ansible-core v2.15.x
-* Python 3.9.x
+* Python 3.11.x
 * IBM Open Enterprise SDK for Python 3.11.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.0.x
+* IBM Z Open Automation Utilities (ZOAU) 1.3.1.x
 * z/OS V2R5
 
 This release introduces case sensitivity for option values and includes a porting guide in the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) to assist with which option values will need to be updated.
@@ -153,9 +154,8 @@ If you would like to communicate with this community, you can do so through the 
 * GitHub [discussions](https://github.com/ansible-collections/ibm_zos_core/discussions).
 * GitHub [issues](https://github.com/ansible-collections/ibm_zos_core/issues/new/choose).
 * [Ansible Forum](https://forum.ansible.com/), please use the `zos` tag to ensure proper awareness.
-* Discord [System Z Enthusiasts](https://forum.ansible.com/) room [ansible](https://discord.gg/nKC8F89v).
-* Matrix Ansible room [ansible-zos](#ansible-zos:matrix.org).
-* Ansible community Matrix [rooms](https://docs.ansible.com/ansible/latest/community/communication.html#general-channels).
+* Discord [System Z Enthusiasts](https://discord.gg/Kmy5QaUGbB) room [ansible](https://discord.gg/nHrDdRTC).
+* Matrix general usage questions [room](https://matrix.to/#/#users:ansible.com).
 
 ## Support
 
@@ -175,15 +175,16 @@ For Galaxy and GitHub users, to see the supported ansible-core versions, review 
 
 <br/>The collection's changelogs can be reviewed in the following table.
 
-| Version  | Status                     | Release notes | Changelogs |
-|----------|----------------------------|---------------|------------|
-| 1.11.x   | In development (unreleased)| unreleased    | unreleased |
-| 1.10.x   | Current                    | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-10-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0/CHANGELOG.rst) |
-| 1.9.x    | Released                   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-9-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.0/CHANGELOG.rst)  |
-| 1.8.x    | Released                   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-8-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.8.0/CHANGELOG.rst)  |
-| 1.7.x    | Released                   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-7-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.7.0/CHANGELOG.rst)  |
-| 1.6.x    | Released                   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-6-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.6.0/CHANGELOG.rst)  |
-| 1.5.x    | Released                   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-5-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.5.0/CHANGELOG.rst)  |
+| Version  | Status         | Release notes | Changelogs |
+|----------|----------------|---------------|------------|
+| 1.12.x   | In development | unreleased    | unreleased |
+| 1.11.x   | In preview     | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-11-0-beta.1) | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.11.0-beta.1/CHANGELOG.rst) |
+| 1.10.x   | Current        | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-10-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0/CHANGELOG.rst) |
+| 1.9.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-9-2)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.2/CHANGELOG.rst)  |
+| 1.8.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-8-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.8.0/CHANGELOG.rst)  |
+| 1.7.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-7-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.7.0/CHANGELOG.rst)  |
+| 1.6.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-6-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.6.0/CHANGELOG.rst)  |
+| 1.5.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-5-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.5.0/CHANGELOG.rst)  |
 
 ## Related Information
 

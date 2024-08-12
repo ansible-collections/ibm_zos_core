@@ -245,7 +245,6 @@ class ActionModule(ActionBase):
         original_src = task_args.get("src")
         if original_src:
             if not remote_src:
-                os.path.basename(original_src)
                 if original_src.endswith("/"):
                     src = temp_path + "/"
                 else:

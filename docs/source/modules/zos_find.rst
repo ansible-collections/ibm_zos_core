@@ -121,10 +121,12 @@ resource_type
 
   ``cluster`` refers to a VSAM cluster. The ``data`` and ``index`` are the data and index components of a VSAM cluster.
 
+  ``gdg`` refers to Generation Data Groups. The module searches based on the GDG base name.
+
   | **required**: False
   | **type**: str
   | **default**: nonvsam
-  | **choices**: nonvsam, cluster, data, index
+  | **choices**: nonvsam, cluster, data, index, gdg
 
 
 volume
@@ -133,6 +135,60 @@ volume
   | **required**: False
   | **type**: list
   | **elements**: str
+
+
+empty
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *empty* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+extended
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *extended* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+fifo
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *fifo* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+limit
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *limit* attribute set as provided.
+
+  | **required**: False
+  | **type**: int
+
+
+purge
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *purge* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+scratch
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *scratch* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
 
 
 
@@ -184,6 +240,16 @@ Examples
        patterns:
          - USER.*
        resource_type: cluster
+
+   - name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type: gdg
+       limit: 30
+       scratch: true
+       purge: true
+
 
 
 

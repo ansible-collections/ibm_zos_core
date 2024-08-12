@@ -43,20 +43,20 @@ some dependencies are required to be installed on z/OS such as:
 
    Each release of the IBM z/OS core collection depends on specific dependency
    versions. For information on the dependencies or the versions, review the
-   `release notes`_ reference section. 
+   `release notes`_ reference section.
 
 z/OS shell
 ----------
 
 Currently, only the `z/OS® shell`_ is supported. Using ``ansible_shell_executable``
 to change the default shell is discouraged. Shells such as ``bash`` are not supported
-because it handles the reading and writing of untagged files differently. 
+because it handles the reading and writing of untagged files differently.
 
 Open Enterprise SDK for Python
 ------------------------------
 
-The **IBM z/OS core collection** requires that the **IBM Open Enterprise SDK for Python** 
-be installed on z/OS. 
+The **IBM z/OS core collection** requires that the **IBM Open Enterprise SDK for Python**
+be installed on z/OS.
 
 **Installation**
 

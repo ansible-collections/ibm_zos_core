@@ -67,6 +67,8 @@ backup_name
 
   If ``dest`` is a data set member and ``backup_name`` is not provided, the data set member will be backed up to the same partitioned data set with a randomly generated member name.
 
+  If *backup_name* is a generation data set (GDS), it must be a relative positive name (for example, V(HLQ.USER.GDG(+1\))).
+
   | **required**: False
   | **type**: str
 
@@ -97,6 +99,8 @@ dest
 
   If ``dest`` is a nonexistent data set, the attributes assigned will depend on the type of ``src``. If ``src`` is a USS file, ``dest`` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If *is_binary=true*, ``dest`` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. If *executable=true*,``dest`` will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
 
+  If ``src`` is a file and ``dest`` a partitioned data set, ``dest`` does not need to include a member in its value, the module can automatically compute the resulting member name from ``src``.
+
   When ``dest`` is a data set, precedence rules apply. If ``dest_data_set`` is set, this will take precedence over an existing data set. If ``dest`` is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. Lastly, if no precendent rule has been exercised, ``dest`` will be created with the same attributes of ``src``.
 
   When the ``dest`` is an existing VSAM (KSDS) or VSAM (ESDS), then source can be an ESDS, a KSDS or an RRDS. The VSAM (KSDS) or VSAM (ESDS) ``dest`` will be deleted and recreated following the process outlined in the ``volume`` option.
@@ -104,6 +108,10 @@ dest
   When the ``dest`` is an existing VSAM (RRDS), then the source must be an RRDS. The VSAM (RRDS) will be deleted and recreated following the process outlined in the ``volume`` option.
 
   When ``dest`` is and existing VSAM (LDS), then source must be an LDS. The VSAM (LDS) will be deleted and recreated following the process outlined in the ``volume`` option.
+
+  ``dest`` can be a previously allocated generation data set (GDS) or a new GDS.
+
+  When ``dest`` is a generation data group (GDG), ``src`` must be a GDG too. The copy will allocate successive new generations in ``dest``, the module will verify it has enough available generations before starting the copy operations.
 
   When ``dest`` is a data set, you can override storage management rules by specifying ``volume`` if the storage class being used has GUARANTEED_SPACE=YES specified, otherwise, the allocation will fail. See ``volume`` for more volume related processes.
 
@@ -298,6 +306,10 @@ src
 
   If ``src`` is a VSAM data set, ``dest`` must also be a VSAM.
 
+  If ``src`` is a generation data set (GDS), it must be a previously allocated one.
+
+  If ``src`` is a generation data group (GDG), ``dest`` can be another GDG or a USS directory.
+
   Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
 
   Required unless using ``content``.
@@ -334,6 +346,8 @@ volume
 dest_data_set
   Data set attributes to customize a ``dest`` data set to be copied into.
 
+  Some attributes only apply when ``dest`` is a generation data group (GDG).
+
   | **required**: False
   | **type**: dict
 
@@ -343,7 +357,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library, gdg
 
 
   space_primary
@@ -468,6 +482,68 @@ dest_data_set
 
     | **required**: False
     | **type**: str
+
+
+  limit
+    Sets the *limit* attribute for a GDG.
+
+    Specifies the maximum number, from 1 to 255(up to 999 if extended), of generations that can be associated with the GDG being defined.
+
+    *limit* is required when *type=gdg*.
+
+    | **required**: False
+    | **type**: int
+
+
+  empty
+    Sets the *empty* attribute for a GDG.
+
+    If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+
+    If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
+
+    | **required**: False
+    | **type**: bool
+
+
+  scratch
+    Sets the *scratch* attribute for a GDG.
+
+    Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
+
+    | **required**: False
+    | **type**: bool
+
+
+  purge
+    Sets the *purge* attribute for a GDG.
+
+    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
+
+    | **required**: False
+    | **type**: bool
+
+
+  extended
+    Sets the *extended* attribute for a GDG.
+
+    If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+
+    If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+
+    | **required**: False
+    | **type**: bool
+
+
+  fifo
+    Sets the *fifo* attribute for a GDG.
+
+    If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+
+    If true, the order is the oldest GDS defined to the newest GDS.
+
+    | **required**: False
+    | **type**: bool
 
 
 
@@ -793,6 +869,19 @@ Examples
        src: ./files/print.txt
        dest: HLQ.PRINT.NEW
        asa_text: true
+
+   - name: Copy a file to a new generation data set.
+     zos_copy:
+       src: /path/to/uss/src
+       dest: HLQ.TEST.GDG(+1)
+       remote_src: true
+
+   - name: Copy a local file and take a backup of the existing file with a GDS.
+     zos_copy:
+       src: /path/to/local/file
+       dest: /path/to/dest
+       backup: true
+       backup_name: HLQ.BACKUP.GDG(+1)
 
 
 

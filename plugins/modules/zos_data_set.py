@@ -67,6 +67,11 @@ options:
         The module will catalog the original data set on completion, if the attempts to
         catalog fail, no action is taken. Module completes successfully with I(changed=False).
       - >
+        If I(state=absent) and I(type=gdg) and the GDG base has active generations the module
+        will complete successfully with I(changed=False). To remove it option I(force) needs
+        to be used. If the GDG base does not have active generations the module will complete
+        successfully with I(changed=True).
+      - >
         If I(state=present) and the data set does not exist on the managed node,
         create and catalog the data set, module completes successfully with I(changed=True).
       - >
@@ -128,6 +133,7 @@ options:
       - member
       - hfs
       - zfs
+      - gdg
     default: pds
   space_primary:
     description:
@@ -232,6 +238,54 @@ options:
       - I(key_length) should only be provided when I(type=ksds)
     type: int
     required: false
+  empty:
+    description:
+      - Sets the I(empty) attribute for Generation Data Groups.
+      - If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+      - If true, removes all GDS entries from a GDG base when a new GDS is created that causes the
+        GDG limit to be exceeded.
+      - Default is false.
+    type: bool
+    required: false
+  extended:
+    description:
+      - Sets the I(extended) attribute for Generation Data Groups.
+      - If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+      - If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+      - Default is false.
+    type: bool
+    required: false
+  fifo:
+    description:
+      - Sets the I(fifo) attribute for Generation Data Groups.
+      - If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+      - If true, the order is the oldest GDS defined to the newest GDS.
+      - Default is false.
+    type: bool
+    required: false
+  limit:
+    description:
+      - Sets the I(limit) attribute for Generation Data Groups.
+      - Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be
+        associated with the GDG being defined.
+      - I(limit) is required when I(type=gdg).
+    type: int
+    required: false
+  purge:
+    description:
+      - Sets the I(purge) attribute for Generation Data Groups.
+      - Specifies whether to override expiration dates when a generation data set (GDS)
+        is rolled off and the C(scratch) option is set.
+    type: bool
+    required: false
+  scratch:
+    description:
+      - Sets the I(scratch) attribute for Generation Data Groups.
+      - Specifies what action is to be taken for a generation data set located on disk
+        volumes when the data set is uncataloged from the GDG base as a result of
+        EMPTY/NOEMPTY processing.
+    type: bool
+    required: false
   volumes:
     description:
       - >
@@ -281,7 +335,9 @@ options:
       - The I(force=True) option enables sharing of data sets through the
         disposition I(DISP=SHR).
       - The I(force=True) only applies to data set members when I(state=absent)
-        and I(type=member).
+        and I(type=member) and when removing a GDG base with active generations.
+      - If I(force=True), I(type=gdg) and I(state=absent) it will force remove
+        a GDG base with active generations.
     type: bool
     required: false
     default: false
@@ -393,6 +449,7 @@ options:
           - member
           - hfs
           - zfs
+          - gdg
         default: pds
       space_primary:
         description:
@@ -496,6 +553,54 @@ options:
           - I(key_length) is required when I(type=ksds).
           - I(key_length) should only be provided when I(type=ksds)
         type: int
+        required: false
+      empty:
+        description:
+          - Sets the I(empty) attribute for Generation Data Groups.
+          - If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
+          - If true, removes all GDS entries from a GDG base when a new GDS is created that causes the
+            GDG limit to be exceeded.
+          - Default is false.
+        type: bool
+        required: false
+      extended:
+        description:
+          - Sets the I(extended) attribute for Generation Data Groups.
+          - If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
+          - If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
+          - Default is false.
+        type: bool
+        required: false
+      fifo:
+        description:
+          - Sets the I(fifo) attribute for Generation Data Groups.
+          - If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
+          - If true, the order is the oldest GDS defined to the newest GDS.
+          - Default is false.
+        type: bool
+        required: false
+      limit:
+        description:
+          - Sets the I(limit) attribute for Generation Data Groups.
+          - Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be
+            associated with the GDG being defined.
+          - I(limit) is required when I(type=gdg).
+        type: int
+        required: false
+      purge:
+        description:
+          - Sets the I(purge) attribute for Generation Data Groups.
+          - Specifies whether to override expiration dates when a generation data set (GDS)
+            is rolled off and the C(scratch) option is set.
+        type: bool
+        required: false
+      scratch:
+        description:
+          - Sets the I(scratch) attribute for Generation Data Groups.
+          - Specifies what action is to be taken for a generation data set located on disk
+            volumes when the data set is uncataloged from the GDG base as a result of
+            EMPTY/NOEMPTY processing.
+        type: bool
         required: false
       volumes:
         description:
@@ -682,7 +787,9 @@ names:
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    DataSet, GenerationDataGroup, MVSDataSet, Member
+)
 from ansible.module_utils.basic import AnsibleModule
 
 import re
@@ -702,6 +809,7 @@ DATA_SET_TYPES = [
     "member",
     "hfs",
     "zfs",
+    "gdg",
 ]
 
 DATA_SET_FORMATS = [
@@ -821,9 +929,17 @@ def data_set_name(contents, dependencies):
         dsname,
         re.IGNORECASE,
     ):
-        if not (
+        if (
             re.fullmatch(
-                r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
+                r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([+-]{0,1}\d{1,4}\)){0,1}$",
+                dsname,
+                re.IGNORECASE,
+            )
+        ):
+            return dsname.upper()
+        elif not (
+            re.fullmatch(
+                r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\(([A-Z$#@]{1}[A-Z0-9$#@]{0,7})\)){0,1}$",
                 dsname,
                 re.IGNORECASE,
             )
@@ -1036,11 +1152,46 @@ def data_set_type(contents, dependencies):
     #     return None
     if contents is None:
         return "pds"
+
+    if contents == "gdg" and dependencies.get("state") == "present" and dependencies.get("limit") is None:
+        raise ValueError(
+            "Limit must be provided when data set type is gdg and state=present."
+        )
     types = "|".join(DATA_SET_TYPES)
     if not re.fullmatch(types, contents, re.IGNORECASE):
         raise ValueError(
-            "Value {0} is invalid for type argument. type must be of of the following: {1}.".format(
+            "Value {0} is invalid for type argument. type must be one of the following: {1}.".format(
                 contents, ", ".join(DATA_SET_TYPES)
+            )
+        )
+    return contents
+
+
+def limit_type(contents, dependencies):
+    """Validates limit is valid. Limit option is dependent on state.
+    Returns limit.
+
+    Parameters
+    ----------
+    contents : int
+        Limit for GDG type.
+    dependencies : dict
+        Any dependencies needed for contents argument to be validated.
+
+    Returns
+    -------
+    int
+        The limit for GDG type.
+
+    Raises
+    ------
+    ValueError
+        Value is invalid.
+    """
+    if not isinstance(contents, int):
+        raise ValueError(
+            "Value {0} is invalid for limit option. Limit must be an integer from 1 to 255, if extended up to 999.".format(
+                contents
             )
         )
     return contents
@@ -1184,18 +1335,68 @@ def key_offset(contents, dependencies):
     return contents
 
 
-def perform_data_set_operations(name, state, **extra_args):
+def get_data_set_handler(**params):
+    """Get object initialized based on parameters.
+    Parameters
+    ----------
+    **params
+      Data set parameters.
+
+    Returns
+    -------
+    MVSDataSet or GenerationDataGroup or Member object.
+    """
+    if params.get("type") == "gdg":
+        return GenerationDataGroup(
+            name=params.get("name"),
+            limit=params.get("limit", None),
+            empty=params.get("empty", None),
+            purge=params.get("purge", None),
+            scratch=params.get("scratch", None),
+            extended=params.get("extended", None),
+            fifo=params.get("fifo", None),
+        )
+    elif params.get("type") == "member":
+        return Member(
+            name=params.get("name")
+        )
+    else:
+        return MVSDataSet(
+            name=params.get("name"),
+            record_format=params.get("record_format", None),
+            volumes=params.get("volumes", None),
+            data_set_type=params.get("type", None),
+            block_size=params.get("block_size", None),
+            record_length=params.get("record_length", None),
+            space_primary=params.get("space_primary", None),
+            space_secondary=params.get("space_secondary", None),
+            space_type=params.get("space_type", None),
+            directory_blocks=params.get("directory_blocks", None),
+            key_length=params.get("key_length", None),
+            key_offset=params.get("key_offset", None),
+            sms_storage_class=params.get("sms_storage_class", None),
+            sms_data_class=params.get("sms_data_class", None),
+            sms_management_class=params.get("sms_management_class", None),
+        )
+
+
+def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made.
 
     Parameters
     ----------
-    name : str
-        Name of the dataset.
+    data_set : {object | MVSDataSet | Member | GenerationDataGroup }
+        Data set object to perform operations on.
     state : str
         State of the data sets.
-    **extra_args : dict
-        Properties of the data sets.
+    replace : str
+        Whether or not replace an existing data set if it has the same name.
+    tmp_hlq : str
+        Temporary high level qualifier to use for temporary data sets.
+    force : str
+        Whether or not the data set can be shared with others during the
+        operation.
 
     Returns
     -------
@@ -1203,21 +1404,20 @@ def perform_data_set_operations(name, state, **extra_args):
         If changes were made.
     """
     changed = False
-    #  passing in **extra_args forced me to modify the acceptable parameters
-    #  for multiple functions in data_set.py including ensure_present, replace
-    #  and create where the force parameter has no bearing.
-    if state == "present" and extra_args.get("type") != "member":
-        changed = DataSet.ensure_present(name, **extra_args)
-    elif state == "present" and extra_args.get("type") == "member":
-        changed = DataSet.ensure_member_present(name, extra_args.get("replace"))
-    elif state == "absent" and extra_args.get("type") != "member":
-        changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
-    elif state == "absent" and extra_args.get("type") == "member":
-        changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
+    if state == "present" and data_set.data_set_type in ["member", "gdg"]:
+        changed = data_set.ensure_present(replace=replace)
+    elif state == "present":
+        changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
+    elif state == "absent" and data_set.data_set_type == "member":
+        changed = data_set.ensure_absent(force=force)
+    elif state == "absent" and data_set.data_set_type == "gdg":
+        changed = data_set.ensure_absent(force=force)
+    elif state == "absent":
+        changed = data_set.ensure_absent()
     elif state == "cataloged":
-        changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
+        changed = data_set.ensure_cataloged()
     elif state == "uncataloged":
-        changed = DataSet.ensure_uncataloged(name)
+        changed = data_set.ensure_uncataloged()
     return changed
 
 
@@ -1254,7 +1454,7 @@ def parse_and_validate_args(params):
                 type=dict(
                     type=data_set_type,
                     required=False,
-                    dependencies=["state"],
+                    dependencies=["state", "limit"],
                     choices=DATA_SET_TYPES,
                 ),
                 space_type=dict(
@@ -1326,6 +1526,30 @@ def parse_and_validate_args(params):
                     aliases=["volume"],
                     dependencies=["state"],
                 ),
+                limit=dict(
+                    type="int",
+                    required=False
+                ),
+                empty=dict(
+                    type="bool",
+                    required=False
+                ),
+                purge=dict(
+                    type="bool",
+                    required=False
+                ),
+                scratch=dict(
+                    type="bool",
+                    required=False
+                ),
+                extended=dict(
+                    type="bool",
+                    required=False
+                ),
+                fifo=dict(
+                    type="bool",
+                    required=False
+                ),
                 force=dict(
                     type="bool",
                     required=False,
@@ -1345,7 +1569,7 @@ def parse_and_validate_args(params):
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
         ),
-        type=dict(type=data_set_type, required=False, dependencies=["state"]),
+        type=dict(type=data_set_type, required=False, dependencies=["state", "limit"]),
         space_type=dict(
             type=space_type,
             required=False,
@@ -1368,7 +1592,7 @@ def parse_and_validate_args(params):
         ),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
-        # support for backwards compatability with previous module versions
+        # support for backwards compatibility with previous module versions
         sms_storage_class=dict(
             type=sms_class,
             required=False,
@@ -1397,6 +1621,14 @@ def parse_and_validate_args(params):
             type="bool",
             default=False,
         ),
+        # GDG options
+        limit=dict(type="int", required=False),
+        empty=dict(type="bool", required=False),
+        purge=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False),
+        fifo=dict(type="bool", required=False),
+        # End of GDG options
         volumes=dict(
             type=volumes,
             required=False,
@@ -1512,6 +1744,13 @@ def run_module():
                     type="bool",
                     default=False,
                 ),
+                # GDG options
+                limit=dict(type="int", required=False),
+                empty=dict(type="bool", required=False),
+                purge=dict(type="bool", required=False),
+                scratch=dict(type="bool", required=False),
+                extended=dict(type="bool", required=False),
+                fifo=dict(type="bool", required=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
                     type="bool",
@@ -1575,6 +1814,14 @@ def run_module():
             type="bool",
             default=False,
         ),
+        # GDG options
+        limit=dict(type="int", required=False, no_log=False),
+        empty=dict(type="bool", required=False),
+        purge=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False),
+        fifo=dict(type="bool", required=False),
+        # End of GDG options
         volumes=dict(
             type="raw",
             required=False,
@@ -1635,33 +1882,14 @@ def run_module():
             result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
-                # This *appears* redundant, bit the parse_and_validate reinforces the default value for record_type
-                if data_set_params.get("batch") is not None:
-                    for entry in data_set_params.get("batch"):
-                        if entry.get('type') is not None and entry.get("type") in DATA_SET_TYPES_VSAM:
-                            entry["record_format"] = None
-                    if data_set_params.get("type") is not None:
-                        data_set_params["type"] = None
-                    if data_set_params.get("state") is not None:
-                        data_set_params["state"] = None
-                    if data_set_params.get("space_type") is not None:
-                        data_set_params["space_type"] = None
-                    if data_set_params.get("space_primary") is not None:
-                        data_set_params["space_primary"] = None
-                    if data_set_params.get("space_secondary") is not None:
-                        data_set_params["space_secondary"] = None
-                    if data_set_params.get("replace") is not None:
-                        data_set_params["replace"] = None
-                    if data_set_params.get("record_format") is not None:
-                        data_set_params["record_format"] = None
-                else:
-                    if data_set_params.get("type") in DATA_SET_TYPES_VSAM:
-                        if data_set_params.get("record_format") is not None:
-                            data_set_params["record_format"] = None
-
-                # remove unnecessary empty batch argument
+                # this returns MVSDataSet, Member or GenerationDataGroup
+                data_set = get_data_set_handler(**data_set_params)
                 result["changed"] = perform_data_set_operations(
-                    **data_set_params
+                    data_set=data_set,
+                    state=data_set_params.get("state"),
+                    replace=data_set_params.get("replace"),
+                    tmp_hlq=data_set_params.get("tmp_hlq"),
+                    force=data_set_params.get("force"),
                 ) or result.get("changed", False)
         except Exception as e:
             module.fail_json(msg=repr(e), **result)

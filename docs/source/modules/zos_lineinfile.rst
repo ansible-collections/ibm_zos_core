@@ -33,6 +33,8 @@ src
 
   The USS file must be an absolute pathname.
 
+  Generation data set (GDS) relative name of generation already created. ``e.g. SOME.CREATION(-1.)``
+
   | **required**: True
   | **type**: str
 
@@ -138,6 +140,8 @@ backup
   *backup_name* can be used to specify a backup file name if *backup=true*.
 
   The backup file name will be return on either success or failure of module execution such that data can be retrieved.
+
+  Use generation data set (GDS) relative positive name SOME.CREATION(+1)
 
   | **required**: False
   | **type**: bool
@@ -247,6 +251,20 @@ Examples
        insertafter: EOF
        line: 'Should be a working test now'
        force: true
+
+   - name: Add a line to a gds
+     zos_lineinfile:
+       src: SOME.CREATION(-2)
+       insertafter: EOF
+       line: 'Should be a working test now'
+
+   - name: Add a line to dataset and backup in a new generation of gds
+     zos_lineinfile:
+       src: SOME.CREATION.TEST
+       insertafter: EOF
+       backup: True
+       backup_name: CREATION.GDS(+1)
+       line: 'Should be a working test now'
 
 
 

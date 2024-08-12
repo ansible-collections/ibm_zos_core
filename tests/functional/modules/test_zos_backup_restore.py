@@ -447,6 +447,7 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
     data_set_name2 = get_tmp_ds_name()
     data_set_include = [data_set_name, data_set_name2]
     data_set_backup_location = get_tmp_ds_name(1, 1)
+    new_hlq = get_random_q()
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
@@ -469,7 +470,7 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
             backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
     finally:

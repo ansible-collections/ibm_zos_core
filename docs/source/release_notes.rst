@@ -21,7 +21,7 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
 Minor Changes
 -------------
 
-- ``zos_apf`` - Change input to auto-escape 'library' names containing symbols.
+- ``zos_apf`` - Added support that auto-escapes 'library' names containing symbols.
 - ``zos_archive`` - Added support for GDG and GDS relative name notation to archive data sets. Added support for data set names with special characters like $, /#, /- and @.
 - ``zos_backup_restore`` - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @.
 - ``zos_blockinfile`` - Added support for GDG and GDS relative name notation to specify a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.

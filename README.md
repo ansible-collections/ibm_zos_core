@@ -123,7 +123,7 @@ environment_vars:
 
 ## Testing
 
-All releases, will meet the following test criteria.
+All releases will meet the following test criteria.
 
 * 100% success for [Functional](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/functional) tests.
 * 100% success for [Unit](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/unit) tests.

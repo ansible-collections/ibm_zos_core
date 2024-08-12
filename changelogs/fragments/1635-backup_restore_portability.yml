@@ -1,0 +1,3 @@
+trivial:
+  - test_zos_backup_restore - Remove the use of hard coded hlq and files names.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1635).

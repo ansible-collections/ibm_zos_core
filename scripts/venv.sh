@@ -381,9 +381,9 @@ discover_python(){
     #   The 'pys' array will search for pythons in reverse order, once it finds one that matches
     #   the configurations/requirements-x.xx.env it does not continue searching. Reverse order is important to
     #   maintain.
-    pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
-    rc=1
-    for py in "${pys[@]}"; do
+    rc=-1
+    pys="python3.14 python3.13 python3.12 python3.11 python3.10 python3.9 python3.8"
+    for py in $(echo $pys| tr ' ' '\n');do
         for python_found in `find_in_path $py`; do
             ver=`${python_found} --version | cut -d" " -f2`
             rc=$?
@@ -400,6 +400,26 @@ discover_python(){
             fi
         fi
     done
+
+    # pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
+    # rc=1
+    # for py in "${pys[@]}"; do
+    #     for python_found in `find_in_path $py`; do
+    #         ver=`${python_found} --version | cut -d" " -f2`
+    #         rc=$?
+    #         ver=`echo $ver  |cut -d"." -f1,2`
+    #         ver_path="$python_found"
+    #         echo "Found $ver_path"
+    #     done
+
+    #     if [ $rc -eq 0  ];then
+    #         if [ $(normalize_version $ver) "$operator" $(normalize_version $VERSION_PYTHON) ]; then
+    #             VERSION_PYTHON="$ver"
+    #             VERSION_PYTHON_PATH="$ver_path"
+    #             break
+    #         fi
+    #     fi
+    # done
 
     echo ${DIVIDER}
 	echo "Discovered Python version: ${VERSION_PYTHON}."

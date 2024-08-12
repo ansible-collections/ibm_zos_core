@@ -186,14 +186,14 @@ options:
   hlq:
     description:
       - Specifies the new HLQ to use for the data sets being restored.
-      - Defaults to running original HLQ.
+      - If no value is provided, the data sets will be restored with their original HLQs.
     type: str
     required: false
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary and backup
         data sets.
-      - The default is the original HLQ fo the data sets if that is not available,
+      - The default is the original HLQ of the data sets if that is not available,
         then the value of C(TMPHLQ) is used.
     required: false
     type: str
@@ -269,8 +269,8 @@ EXAMPLES = r"""
     space: 1
     space_type: g
 
-- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
-    With the original high level qualifiers.
+- name: Restore data sets from a backup stored in the UNIX file /tmp/temp_backup.dzp.
+    Restore the data sets with the original high level qualifiers.
   zos_backup_restore:
     operation: restore
     backup_name: /tmp/temp_backup.dzp

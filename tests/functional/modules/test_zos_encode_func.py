@@ -18,6 +18,8 @@ from datetime import datetime
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 import pytest
+import string
+import random
 import re
 
 __metaclass__ = type
@@ -78,7 +80,7 @@ VSAM_RECORDS = """00000001A record
 
 
 def get_unique_uss_file_name():
-    unique_str = "EN" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + "CODE"
+    unique_str = "EN" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + "CODE" + random.choice(string.ascii_letters)
     return "/tmp/{0}".format(unique_str)
 
 

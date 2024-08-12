@@ -1,0 +1,3 @@
+trivial:
+  - test_zos_tso_command_func.py - Remove the use of hard coded user.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1639).

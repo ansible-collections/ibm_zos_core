@@ -39,6 +39,8 @@ src
 
   MVS data sets supported types are \ :literal:`SEQ`\ , \ :literal:`PDS`\ , \ :literal:`PDSE`\ .
 
+  GDS relative names are supported ``e.g. USER.GDG(-1)``.
+
   | **required**: True
   | **type**: str
 
@@ -149,7 +151,9 @@ owner
 include
   A list of directories, files or data set names to extract from the archive.
 
-  When \ :literal:`include`\  is set, only those files will we be extracted leaving the remaining files in the archive.
+  GDS relative names are supported ``e.g. USER.GDG(-1)``.
+
+  When ``include`` is set, only those files will we be extracted leaving the remaining files in the archive.
 
   Mutually exclusive with exclude.
 
@@ -160,6 +164,8 @@ include
 
 exclude
   List the directory and file or data set names that you would like to exclude from the unarchive action.
+
+  GDS relative names are supported ``e.g. USER.GDG(-1)``.
 
   Mutually exclusive with include.
 
@@ -384,6 +390,13 @@ Examples
        exclude:
          - USER.ARCHIVE.TEST1
          - USER.ARCHIVE.TEST2
+
+   # Unarchive a GDS
+   - name: Unarchive a terse data set and excluding data sets from unpacking.
+     zos_unarchive:
+       src: "USER.ARCHIVE(0)"
+       format:
+         name: terse
 
    # List option
    - name: List content from XMIT

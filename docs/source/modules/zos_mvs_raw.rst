@@ -105,6 +105,10 @@ dds
     data_set_name
       The data set name.
 
+      A data set name can be a GDS relative name.
+
+      When using GDS relative name and it is a positive generation, *disposition=new* must be used.
+
       | **required**: False
       | **type**: str
 
@@ -839,6 +843,10 @@ dds
 
         data_set_name
           The data set name.
+
+          A data set name can be a GDS relative name.
+
+          When using GDS relative name and it is a positive generation, *disposition=new* must be used.
 
           | **required**: False
           | **type**: str
@@ -1747,6 +1755,37 @@ Examples
                          RECORDSIZE(4086 32600) -
                          VOLUMES(222222) -
                          UNIQUE)
+
+   - name: List data sets matching pattern in catalog,
+       save output to a new generation of gdgs.
+     zos_mvs_raw:
+       program_name: idcams
+       auth: true
+       dds:
+         - dd_data_set:
+             dd_name: sysprint
+             data_set_name: TEST.CREATION(+1)
+             disposition: new
+             return_content:
+               type: text
+         - dd_input:
+             dd_name: sysin
+             content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+   - name: List data sets matching pattern in catalog,
+       save output to a gds already created.
+     zos_mvs_raw:
+       program_name: idcams
+       auth: true
+       dds:
+         - dd_data_set:
+             dd_name: sysprint
+             data_set_name: TEST.CREATION(-2)
+             return_content:
+               type: text
+         - dd_input:
+             dd_name: sysin
+             content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 
 

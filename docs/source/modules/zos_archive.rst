@@ -35,7 +35,9 @@ src
 
   USS file paths should be absolute paths.
 
-  MVS data sets supported types are: \ :literal:`SEQ`\ , \ :literal:`PDS`\ , \ :literal:`PDSE`\ .
+  GDS relative notation is supported.
+
+  MVS data sets supported types are: ``SEQ``, ``PDS``, ``PDSE``.
 
   VSAMs are not supported.
 
@@ -126,7 +128,7 @@ dest
 
 
 exclude
-  Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude from src list and glob expansion.
+  Remote absolute path, glob, or list of paths, globs, data set name patterns or generation data sets (GDSs) in relative notation for the file, files or data sets to exclude from src list and glob expansion.
 
   Patterns (wildcards) can contain one of the following, \`?\`, \`\*\`.
 
@@ -348,7 +350,7 @@ Examples
          name: tar
 
    # Archive multiple files
-   - name: Compress list of files into a zip
+   - name: Archive list of files into a zip
      zos_archive:
        src:
          - /tmp/archive/foo.txt
@@ -358,7 +360,7 @@ Examples
        name: zip
 
    # Archive one data set into terse
-   - name: Compress data set into a terse
+   - name: Archive data set into a terse
      zos_archive:
        src: "USER.ARCHIVE.TEST"
        dest: "USER.ARCHIVE.RESULT.TRS"
@@ -366,7 +368,7 @@ Examples
          name: terse
 
    # Use terse with different options
-   - name: Compress data set into a terse, specify pack algorithm and use adrdssu
+   - name: Archive data set into a terse, specify pack algorithm and use adrdssu
      zos_archive:
        src: "USER.ARCHIVE.TEST"
        dest: "USER.ARCHIVE.RESULT.TRS"
@@ -377,13 +379,34 @@ Examples
            use_adrdssu: true
 
    # Use a pattern to store
-   - name: Compress data set pattern using xmit
+   - name: Archive data set pattern using xmit
      zos_archive:
        src: "USER.ARCHIVE.*"
        exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
        dest: "USER.ARCHIVE.RESULT.XMIT"
        format:
          name: xmit
+
+   - name: Archive multiple GDSs into a terse
+     zos_archive:
+       src:
+         - "USER.GDG(0)"
+         - "USER.GDG(-1)"
+         - "USER.GDG(-2)"
+       dest: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+         format_options:
+           use_adrdssu: True
+
+   - name: Archive multiple data sets into a new GDS
+     zos_archive:
+       src: "USER.ARCHIVE.*"
+       dest: "USER.GDG(+1)"
+       format:
+         name: terse
+         format_options:
+           use_adrdssu: True
 
 
 

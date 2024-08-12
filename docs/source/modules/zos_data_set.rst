@@ -59,7 +59,10 @@ state
   If \ :emphasis:`state=absent`\  and \ :emphasis:`volumes`\  is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided \ :emphasis:`volumes`\ . If the volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with \ :emphasis:`changed=False`\ .
 
 
-  If \ :emphasis:`state=absent`\  and \ :emphasis:`type=gdg`\  and the GDG base has active generations the module will complete successfully with \ :emphasis:`changed=False`\ . To remove it option \ :emphasis:`force`\  needs to be used. If the GDG base does not have active generations the module will complete successfully with \ :emphasis:`changed=True`\ .
+  If *state=absent* and *type=gdg* and the GDG base has active generations the module will complete successfully with *changed=False*. To remove it option *force* needs to be used. If the GDG base does not have active generations the module will complete successfully with *changed=True*.
+
+
+  If *state=present* and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with *changed=True*.
 
 
   If \ :emphasis:`state=present`\  and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with \ :emphasis:`changed=True`\ .
@@ -239,7 +242,7 @@ key_length
 
 
 empty
-  Sets the \ :emphasis:`empty`\  attribute for Generation Data Groups.
+  Sets the *empty* attribute for Generation Data Groups.
 
   If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
 
@@ -252,7 +255,7 @@ empty
 
 
 extended
-  Sets the \ :emphasis:`extended`\  attribute for Generation Data Groups.
+  Sets the *extended* attribute for Generation Data Groups.
 
   If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
 
@@ -265,7 +268,7 @@ extended
 
 
 fifo
-  Sets the \ :emphasis:`fifo`\  attribute for Generation Data Groups.
+  Sets the *fifo* attribute for Generation Data Groups.
 
   If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
 
@@ -278,27 +281,27 @@ fifo
 
 
 limit
-  Sets the \ :emphasis:`limit`\  attribute for Generation Data Groups.
+  Sets the *limit* attribute for Generation Data Groups.
 
   Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
 
-  \ :emphasis:`limit`\  is required when \ :emphasis:`type=gdg`\ .
+  *limit* is required when *type=gdg*.
 
   | **required**: False
   | **type**: int
 
 
 purge
-  Sets the \ :emphasis:`purge`\  attribute for Generation Data Groups.
+  Sets the *purge* attribute for Generation Data Groups.
 
-  Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the \ :literal:`scratch`\  option is set.
+  Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
 
   | **required**: False
   | **type**: bool
 
 
 scratch
-  Sets the \ :emphasis:`scratch`\  attribute for Generation Data Groups.
+  Sets the *scratch* attribute for Generation Data Groups.
 
   Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
 
@@ -356,9 +359,9 @@ force
 
   The \ :emphasis:`force=True`\  option enables sharing of data sets through the disposition \ :emphasis:`DISP=SHR`\ .
 
-  The \ :emphasis:`force=True`\  only applies to data set members when \ :emphasis:`state=absent`\  and \ :emphasis:`type=member`\  and when removing a GDG base with active generations.
+  The *force=True* only applies to data set members when *state=absent* and *type=member* and when removing a GDG base with active generations.
 
-  If \ :emphasis:`force=True`\ , \ :emphasis:`type=gdg`\  and \ :emphasis:`state=absent`\  it will force remove a GDG base with active generations.
+  If *force=True*, *type=gdg* and *state=absent* it will force remove a GDG base with active generations.
 
   | **required**: False
   | **type**: bool
@@ -582,7 +585,7 @@ batch
 
 
   empty
-    Sets the \ :emphasis:`empty`\  attribute for Generation Data Groups.
+    Sets the *empty* attribute for Generation Data Groups.
 
     If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
 
@@ -595,7 +598,7 @@ batch
 
 
   extended
-    Sets the \ :emphasis:`extended`\  attribute for Generation Data Groups.
+    Sets the *extended* attribute for Generation Data Groups.
 
     If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
 
@@ -608,7 +611,7 @@ batch
 
 
   fifo
-    Sets the \ :emphasis:`fifo`\  attribute for Generation Data Groups.
+    Sets the *fifo* attribute for Generation Data Groups.
 
     If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
 
@@ -621,27 +624,27 @@ batch
 
 
   limit
-    Sets the \ :emphasis:`limit`\  attribute for Generation Data Groups.
+    Sets the *limit* attribute for Generation Data Groups.
 
     Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
 
-    \ :emphasis:`limit`\  is required when \ :emphasis:`type=gdg`\ .
+    *limit* is required when *type=gdg*.
 
     | **required**: False
     | **type**: int
 
 
   purge
-    Sets the \ :emphasis:`purge`\  attribute for Generation Data Groups.
+    Sets the *purge* attribute for Generation Data Groups.
 
-    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the \ :literal:`scratch`\  option is set.
+    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
 
     | **required**: False
     | **type**: bool
 
 
   scratch
-    Sets the \ :emphasis:`scratch`\  attribute for Generation Data Groups.
+    Sets the *scratch* attribute for Generation Data Groups.
 
     Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
 

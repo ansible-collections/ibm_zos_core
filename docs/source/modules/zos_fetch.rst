@@ -20,7 +20,7 @@ Synopsis
 - When fetching a sequential data set, the destination file name will be the same as the data set name.
 - When fetching a PDS or PDSE, the destination will be a directory with the same name as the PDS or PDSE.
 - When fetching a PDS/PDSE member, destination will be a file.
-- Files that already exist at \ :literal:`dest`\  will be overwritten if they are different than \ :literal:`src`\ .
+- Files that already exist at ``dest`` will be overwritten if they are different than ``src``.
 - When fetching a GDS, the relative name will be resolved to its absolute one.
 - When fetching a generation data group, the destination will be a directory with the same name as the GDG.
 

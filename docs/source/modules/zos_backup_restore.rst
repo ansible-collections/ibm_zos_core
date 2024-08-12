@@ -49,7 +49,9 @@ data_sets
   include
     When \ :emphasis:`operation=backup`\ , specifies a list of data sets or data set patterns to include in the backup.
 
-    When \ :emphasis:`operation=restore`\ , specifies a list of data sets or data set patterns to include when restoring from a backup.
+    When *operation=backup* GDS relative names are supported.
+
+    When *operation=restore*, specifies a list of data sets or data set patterns to include when restoring from a backup.
 
     The single asterisk, \ :literal:`\*`\ , is used in place of exactly one qualifier. In addition, it can be used to indicate to DFSMSdss that only part of a qualifier has been specified.
 
@@ -66,7 +68,9 @@ data_sets
   exclude
     When \ :emphasis:`operation=backup`\ , specifies a list of data sets or data set patterns to exclude from the backup.
 
-    When \ :emphasis:`operation=restore`\ , specifies a list of data sets or data set patterns to exclude when restoring from a backup.
+    When *operation=backup* GDS relative names are supported.
+
+    When *operation=restore*, specifies a list of data sets or data set patterns to exclude when restoring from a backup.
 
     The single asterisk, \ :literal:`\*`\ , is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified."
 
@@ -121,6 +125,8 @@ backup_name
   When \ :emphasis:`operation=restore`\ , the destination data set or UNIX file backup to restore.
 
   There are no enforced conventions for backup names. However, using a common extension like \ :literal:`.dzp`\  for UNIX files and \ :literal:`.DZP`\  for data sets will improve readability.
+
+  GDS relative names are supported when *operation=restore*.
 
   | **required**: True
   | **type**: str
@@ -234,6 +240,15 @@ Examples
            - private.test.*
          exclude: user.private.*
        backup_name: MY.BACKUP.DZP
+
+   - name: Backup a list of GDDs to data set my.backup.dzp
+     zos_backup_restore:
+       operation: backup
+       data_sets:
+         include:
+           - user.gdg(-1)
+           - user.gdg(0)
+       backup_name: my.backup.dzp
 
    - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
      zos_backup_restore:

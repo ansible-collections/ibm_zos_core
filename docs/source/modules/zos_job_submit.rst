@@ -31,11 +31,11 @@ Parameters
 src
   The source file or data set containing the JCL to submit.
 
-  It could be a physical sequential data set, a partitioned data set qualified by a member or a path (e.g. \ :literal:`USER.TEST`\ , \ :literal:`USER.JCL(TEST)`\ ), or a generation data set from a generation data group (for example, \ :literal:`USER.TEST.GDG(-2)`\ ).
+  It could be a physical sequential data set, a partitioned data set qualified by a member or a path (e.g. ``USER.TEST``, V(USER.JCL(TEST\))), or a generation data set from a generation data group (for example, V(USER.TEST.GDG(-2\))).
 
-  Or a USS file. (e.g \ :literal:`/u/tester/demo/sample.jcl`\ )
+  Or a USS file. (e.g ``/u/tester/demo/sample.jcl``)
 
-  Or a LOCAL file in ansible control node. (e.g \ :literal:`/User/tester/ansible-playbook/sample.jcl`\ )
+  Or a LOCAL file in ansible control node. (e.g ``/User/tester/ansible-playbook/sample.jcl``)
 
   When using a generation data set, only already created generations are valid. If either the relative name is positive, or negative but not found, the module will fail.
 
@@ -46,11 +46,11 @@ src
 location
   The JCL location. Supported choices are \ :literal:`data\_set`\ , \ :literal:`uss`\  or \ :literal:`local`\ .
 
-  \ :literal:`data\_set`\  can be a PDS, PDSE, sequential data set, or a generation data set.
+  ``data_set`` can be a PDS, PDSE, sequential data set, or a generation data set.
 
   \ :literal:`uss`\  means the JCL location is located in UNIX System Services (USS).
 
-  \ :literal:`local`\  means locally to the Ansible control node.
+  ``local`` means locally to the Ansible control node.
 
   | **required**: False
   | **type**: str

@@ -69,6 +69,8 @@ backup_name
 
   If \ :emphasis:`backup\_name`\  is a generation data set (GDS), it must be a relative positive name (for example, \ :literal:`HLQ.USER.GDG(+1)`\ ).
 
+  If *backup_name* is a generation data set (GDS), it must be a relative positive name (for example, V(HLQ.USER.GDG(+1\))).
+
   | **required**: False
   | **type**: str
 
@@ -99,7 +101,9 @@ dest
 
   If \ :literal:`dest`\  is a nonexistent data set, the attributes assigned will depend on the type of \ :literal:`src`\ . If \ :literal:`src`\  is a USS file, \ :literal:`dest`\  will have a Fixed Block (FB) record format and the remaining attributes will be computed. If \ :emphasis:`is\_binary=true`\ , \ :literal:`dest`\  will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. If \ :emphasis:`executable=true`\ ,\ :literal:`dest`\  will have an Undefined (U) record format with a record length of 0, block size of 32760, and the remaining attributes will be computed.
 
-  When \ :literal:`dest`\  is a data set, precedence rules apply. If \ :literal:`dest\_data\_set`\  is set, this will take precedence over an existing data set. If \ :literal:`dest`\  is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. Lastly, if no precendent rule has been exercised, \ :literal:`dest`\  will be created with the same attributes of \ :literal:`src`\ .
+  If ``src`` is a file and ``dest`` a partitioned data set, ``dest`` does not need to include a member in its value, the module can automatically compute the resulting member name from ``src``.
+
+  When ``dest`` is a data set, precedence rules apply. If ``dest_data_set`` is set, this will take precedence over an existing data set. If ``dest`` is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. Lastly, if no precendent rule has been exercised, ``dest`` will be created with the same attributes of ``src``.
 
   When the \ :literal:`dest`\  is an existing VSAM (KSDS) or VSAM (ESDS), then source can be an ESDS, a KSDS or an RRDS. The VSAM (KSDS) or VSAM (ESDS) \ :literal:`dest`\  will be deleted and recreated following the process outlined in the \ :literal:`volume`\  option.
 
@@ -107,11 +111,11 @@ dest
 
   When \ :literal:`dest`\  is and existing VSAM (LDS), then source must be an LDS. The VSAM (LDS) will be deleted and recreated following the process outlined in the \ :literal:`volume`\  option.
 
-  \ :literal:`dest`\  can be a previously allocated generation data set (GDS) or a new GDS.
+  ``dest`` can be a previously allocated generation data set (GDS) or a new GDS.
 
-  When \ :literal:`dest`\  is a generation data group (GDG), \ :literal:`src`\  must be a GDG too. The copy will allocate successive new generations in \ :literal:`dest`\ , the module will verify it has enough available generations before starting the copy operations.
+  When ``dest`` is a generation data group (GDG), ``src`` must be a GDG too. The copy will allocate successive new generations in ``dest``, the module will verify it has enough available generations before starting the copy operations.
 
-  When \ :literal:`dest`\  is a data set, you can override storage management rules by specifying \ :literal:`volume`\  if the storage class being used has GUARANTEED\_SPACE=YES specified, otherwise, the allocation will fail. See \ :literal:`volume`\  for more volume related processes.
+  When ``dest`` is a data set, you can override storage management rules by specifying ``volume`` if the storage class being used has GUARANTEED_SPACE=YES specified, otherwise, the allocation will fail. See ``volume`` for more volume related processes.
 
   | **required**: True
   | **type**: str
@@ -308,6 +312,10 @@ src
 
   If \ :literal:`src`\  is a generation data group (GDG), \ :literal:`dest`\  can be another GDG or a USS directory.
 
+  If ``src`` is a generation data set (GDS), it must be a previously allocated one.
+
+  If ``src`` is a generation data group (GDG), ``dest`` can be another GDG or a USS directory.
+
   Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
 
   Required unless using \ :literal:`content`\ .
@@ -345,6 +353,8 @@ dest_data_set
   Data set attributes to customize a \ :literal:`dest`\  data set to be copied into.
 
   Some attributes only apply when \ :literal:`dest`\  is a generation data group (GDG).
+
+  Some attributes only apply when ``dest`` is a generation data group (GDG).
 
   | **required**: False
   | **type**: dict
@@ -483,18 +493,18 @@ dest_data_set
 
 
   limit
-    Sets the \ :emphasis:`limit`\  attribute for a GDG.
+    Sets the *limit* attribute for a GDG.
 
     Specifies the maximum number, from 1 to 255(up to 999 if extended), of generations that can be associated with the GDG being defined.
 
-    \ :emphasis:`limit`\  is required when \ :emphasis:`type=gdg`\ .
+    *limit* is required when *type=gdg*.
 
     | **required**: False
     | **type**: int
 
 
   empty
-    Sets the \ :emphasis:`empty`\  attribute for a GDG.
+    Sets the *empty* attribute for a GDG.
 
     If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
 
@@ -505,7 +515,7 @@ dest_data_set
 
 
   scratch
-    Sets the \ :emphasis:`scratch`\  attribute for a GDG.
+    Sets the *scratch* attribute for a GDG.
 
     Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
 
@@ -514,16 +524,16 @@ dest_data_set
 
 
   purge
-    Sets the \ :emphasis:`purge`\  attribute for a GDG.
+    Sets the *purge* attribute for a GDG.
 
-    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the \ :literal:`scratch`\  option is set.
+    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
 
     | **required**: False
     | **type**: bool
 
 
   extended
-    Sets the \ :emphasis:`extended`\  attribute for a GDG.
+    Sets the *extended* attribute for a GDG.
 
     If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
 
@@ -534,7 +544,7 @@ dest_data_set
 
 
   fifo
-    Sets the \ :emphasis:`fifo`\  attribute for a GDG.
+    Sets the *fifo* attribute for a GDG.
 
     If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
 

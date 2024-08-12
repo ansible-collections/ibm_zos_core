@@ -62,6 +62,8 @@ src
 
   Encoding a whole generation data group (GDG) is not supported.
 
+  Encoding a whole generation data group (GDG) is not supported.
+
   | **required**: True
   | **type**: str
 
@@ -69,7 +71,7 @@ src
 dest
   The location where the converted characters are output.
 
-  The destination \ :emphasis:`dest`\  can be a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, a generation data set (GDS) or KSDS (VSAM data set).
+  The destination *dest* can be a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, a generation data set (GDS) or KSDS (VSAM data set).
 
   If the length of the PDSE member name used in \ :emphasis:`dest`\  is greater than 8 characters, the member name will be truncated when written out.
 
@@ -77,7 +79,7 @@ dest
 
   The USS file or path must be an absolute pathname.
 
-  If \ :emphasis:`dest`\  is a data set, it must be already allocated.
+  If *dest* is a data set, it must be already allocated.
 
   | **required**: False
   | **type**: str
@@ -105,6 +107,8 @@ backup_name
   \ :literal:`backup\_name`\  will be returned on either success or failure of module execution such that data can be retrieved.
 
   If \ :emphasis:`backup\_name`\  is a generation data set (GDS), it must be a relative positive name (for example, \ :literal:`HLQ.USER.GDG(+1)`\ ).
+
+  If *backup_name* is a generation data set (GDS), it must be a relative positive name (for example, V(HLQ.USER.GDG(+1\))).
 
   | **required**: False
   | **type**: str
@@ -276,7 +280,6 @@ Examples
          to: IBM-1047
        backup: true
        backup_name: USER.BACKUP.GDG(+1)
-
 
 
 

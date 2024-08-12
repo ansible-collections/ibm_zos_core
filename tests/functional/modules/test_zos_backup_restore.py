@@ -30,7 +30,7 @@ from datetime import datetime
 DATA_SET_CONTENTS = "HELLO WORLD"
 
 def get_unique_uss_file_name():
-    unique_str = "n" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + ".dzp"
+    unique_str = "n" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + random.choice(string.ascii_letters) + ".dzp"
     return "/tmp/{0}".format(unique_str)
 
 
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
 //STDPARM DD *
-SH /tmp/disp_shr/pdse-lock '{0}'
+SH {1}/pdse-lock '{0}'
 //STDIN  DD DUMMY
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
@@ -886,7 +886,7 @@ def test_backup_tolerate_enqueue(ansible_zos_module):
     hosts = ansible_zos_module
     default_data_set_name_1 =  get_tmp_ds_name()
     default_data_set_name_2 =  get_tmp_ds_name()
-    temp_file = f"/tmp/MEM2"
+    temp_file = get_unique_uss_file_name()
     data_sets_hlq = "ANSIBLE.**"
     data_sets_backup_location = get_tmp_ds_name()
     try:
@@ -894,14 +894,13 @@ def test_backup_tolerate_enqueue(ansible_zos_module):
         hosts.all.shell(cmd="dtouch {0}".format(default_data_set_name_2))
         hosts.all.shell(cmd="""decho "HELLO WORLD" "{0}" """.format(default_data_set_name_1))
         hosts.all.shell(cmd="""decho "HELLO WORLD" "{0}" """.format(default_data_set_name_2))
-        hosts.all.file(path="/tmp/disp_shr/", state="directory")
-        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > /tmp/disp_shr/pdse-lock.c")
+        hosts.all.file(path=temp_file, state="directory")
+        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > {temp_file}/pdse-lock.c")
         hosts.all.shell(
-            cmd=f"echo \"{call_c_jcl.format(default_data_set_name_1)}\""+
-            " > /tmp/disp_shr/call_c_pgm.jcl"
+            cmd=f"echo \"{call_c_jcl.format(default_data_set_name_1, temp_file)}\""+ " > {0}/call_c_pgm.jcl".format(temp_file)
         )
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=temp_file)
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=temp_file)
         time.sleep(5)
         results = hosts.all.zos_backup_restore(
             operation="backup",
@@ -916,5 +915,5 @@ def test_backup_tolerate_enqueue(ansible_zos_module):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
-        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.shell(cmd='rm -r {0}'.format(temp_file))
         hosts.all.shell(cmd=f"drm ANSIBLE.* ")

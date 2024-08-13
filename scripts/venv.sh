@@ -278,7 +278,7 @@ write_requirements(){
 
         # Is the discoverd python >= what the requirements.txt requires?
         if [ $(normalize_version $VERSION_PYTHON) "$py_op" $(normalize_version $py_req) ]; then
-            echo "${REQ}${REQ_COMMON}">"${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
+            echo -e "${REQ}${REQ_COMMON}">"${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
             cp mounts.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             #cp info.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             #cp info.env.axx "${VENV_HOME_MANAGED}"/"${venv_name}"/
@@ -347,9 +347,11 @@ create_venv_and_pip_install_req(){
             if echo "$OSTYPE" |grep 'linux-gnu' >/dev/null; then
                 DISTRO=$(cat /etc/*release | grep ^NAME)
                 if echo "$DISTRO" |grep 'Ubuntu' >/dev/null; then
-                    apt install python3-dev -y
-                    apt install python3-venv -y
-                    #apt install python$VERSION_PYTHON-venv
+                    sudo add-apt-repository universe -y
+                    sudo apt update
+                    sudo apt install python3-pip
+                    #apt install python3.10-venv -y
+                    apt install python$VERSION_PYTHON-venv -y
                 fi
             fi
 

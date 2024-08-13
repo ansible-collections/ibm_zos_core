@@ -26,10 +26,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 display = Display()
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
-
-
-display = Display()
 
 
 class ActionModule(ActionBase):

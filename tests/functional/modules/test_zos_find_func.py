@@ -21,25 +21,26 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 import pytest
 
+# hlq used across the test suite.
+TEST_SUITE_HLQ = "ANSIBLE"
+
 SEQ_NAMES = [
-    "TEST.FIND.SEQ.FUNCTEST.FIRST",
-    "TEST.FIND.SEQ.FUNCTEST.SECOND",
-    "TEST.FIND.SEQ.FUNCTEST.THIRD"
+    f"{TEST_SUITE_HLQ}.FIND.SEQ.FUNCTEST.FIRST",
+    f"{TEST_SUITE_HLQ}.FIND.SEQ.FUNCTEST.SECOND",
+    f"{TEST_SUITE_HLQ}.FIND.SEQ.FUNCTEST.THIRD"
 ]
 
 PDS_NAMES = [
-    "TEST.FIND.PDS.FUNCTEST.FIRST",
-    "TEST.FIND.PDS.FUNCTEST.SECOND",
-    "TEST.FIND.PDS.FUNCTEST.THIRD"
+    f"{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.FIRST",
+    f"{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.SECOND",
+    f"{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.THIRD"
 ]
 
 VSAM_NAMES = [
-    "TEST.FIND.VSAM.FUNCTEST.FIRST"
+    f"{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
 DATASET_TYPES = ['seq', 'pds', 'pdse']
-# hlq used across the test suite.
-TEST_SUITE_HLQ = "ANSIBLE"
 
 
 def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
@@ -141,7 +142,7 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
             hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
 
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.SEQ.*.*'],
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.SEQ.*.*'],
             contains=search_string
         )
         for val in find_res.contacted.values():
@@ -164,7 +165,7 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
 def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
     hosts = ansible_zos_module
     search_string = "dummy string"
-    new_ds = "TEST.FIND.SEQ.FUNCTEST.FOURTH"
+    new_ds = f"{TEST_SUITE_HLQ}.FIND.SEQ.FUNCTEST.FOURTH"
     try:
         hosts.all.zos_data_set(
             batch=[
@@ -181,7 +182,7 @@ def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
             hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}\" ")
 
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.SEQ.*.*', 'TEST.INVALID.*'],
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.SEQ.*.*', f'{TEST_SUITE_HLQ}.INVALID.*'],
             contains=search_string
         )
         for val in find_res.contacted.values():
@@ -231,7 +232,7 @@ def test_find_pds_members_containing_string(ansible_zos_module):
             result = hosts.all.shell(cmd=f"decho '{search_string}' \"{ds}(MEMBER)\" ")
 
         find_res = hosts.all.zos_find(
-            pds_paths=['TEST.FIND.PDS.FUNCTEST.*'],
+            pds_paths=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
             contains=search_string,
             patterns=['.*']
         )
@@ -265,7 +266,7 @@ def test_exclude_data_sets_from_matched_list(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.SEQ.*.*'],
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.SEQ.*.*'],
             excludes=['.*THIRD$']
         )
         for val in find_res.contacted.values():
@@ -312,7 +313,9 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            pds_paths=['TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
+            pds_paths=[f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
+            excludes=['.*FILE$'],
+            patterns=['.*']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
@@ -343,12 +346,12 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
 @pytest.mark.parametrize("ds_type", DATASET_TYPES)
 def test_find_data_sets_larger_than_size(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
-    TEST_PS1 = 'TEST.PS.ONE'
-    TEST_PS2 = 'TEST.PS.TWO'
+    TEST_PS1 = f'{TEST_SUITE_HLQ}.PS.ONE'
+    TEST_PS2 = f'{TEST_SUITE_HLQ}.PS.TWO'
     try:
         res = hosts.all.zos_data_set(name=TEST_PS1, state="present", space_primary="1", space_type="m", type=ds_type)
         res = hosts.all.zos_data_set(name=TEST_PS2, state="present", space_primary="1", space_type="m", type=ds_type)
-        find_res = hosts.all.zos_find(patterns=['TEST.PS.*'], size="1k")
+        find_res = hosts.all.zos_find(patterns=[f'{TEST_SUITE_HLQ}.PS.*'], size="1k")
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             assert val.get('matched') == 2
@@ -359,10 +362,10 @@ def test_find_data_sets_larger_than_size(ansible_zos_module, ds_type):
 
 def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    TEST_PS = 'USER.FIND.TEST'
+    TEST_PS = f'{TEST_SUITE_HLQ}.FIND.TEST'
     try:
         hosts.all.zos_data_set(name=TEST_PS, state="present", type="seq", space_primary="1", space_type="k")
-        find_res = hosts.all.zos_find(patterns=['USER.FIND.*'], size='-1m')
+        find_res = hosts.all.zos_find(patterns=[f'{TEST_SUITE_HLQ}.FIND.*'], size='-1m')
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == 1
@@ -373,7 +376,7 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
 def test_find_data_sets_in_volume(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        data_set_name = "TEST.FIND.SEQ"
+        data_set_name = f"{TEST_SUITE_HLQ}.FIND.SEQ"
         volume = "000000"
         # Create temp data set
         hosts.all.zos_data_set(name=data_set_name, type="seq", state="present", volumes=[volume])
@@ -394,7 +397,8 @@ def test_find_vsam_pattern(ansible_zos_module):
         for vsam in VSAM_NAMES:
             create_vsam_ksds(vsam, hosts)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.VSAM.FUNCTEST.*'], resource_type='cluster'
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
+            resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -415,13 +419,15 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
     volume_2 = volumes.get_available_vol()
-    alternate_vsam = "TEST.FIND.VSAM.SECOND"
+    alternate_vsam = f"{TEST_SUITE_HLQ}.FIND.VSAM.SECOND"
     try:
         for vsam in VSAM_NAMES:
             create_vsam_ksds(vsam, hosts, volume=volume_1)
         create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.VSAM.*.*'], volumes=[volume_1], resource_type='cluster'
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.*.*'],
+            volumes=[volume_1],
+            resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -454,7 +460,7 @@ def test_find_invalid_size_indicator_fails(ansible_zos_module):
 
 def test_find_non_existent_data_sets(ansible_zos_module):
     hosts = ansible_zos_module
-    find_res = hosts.all.zos_find(patterns=['TEST.FIND.NONE.*.*'])
+    find_res = hosts.all.zos_find(patterns=[f'{TEST_SUITE_HLQ}.FIND.NONE.*.*'])
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
@@ -462,7 +468,10 @@ def test_find_non_existent_data_sets(ansible_zos_module):
 
 def test_find_non_existent_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
-    find_res = hosts.all.zos_find(pds_paths=['TEST.NONE.PDS.*'], patterns=['.*'])
+    find_res = hosts.all.zos_find(
+        pds_paths=[f'{TEST_SUITE_HLQ}.NONE.PDS.*'],
+        patterns=['.*']
+    )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
@@ -497,7 +506,9 @@ def test_find_mixed_members_from_pds_paths(ansible_zos_module):
             ]
         )
         find_res = hosts.all.zos_find(
-            pds_paths=['TEST.NONE.PDS.*','TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
+            pds_paths=[f'{TEST_SUITE_HLQ}.NONE.PDS.*',f'{TEST_SUITE_HLQ}.FIND.PDS.FUNCTEST.*'],
+            excludes=['.*FILE$'],
+            patterns=['.*']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3

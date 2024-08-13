@@ -354,31 +354,34 @@ create_venv_and_pip_install_req(){
 
                 # On Ubuntu ensurepip is not available in LTS 24.x, support is limited
                 if echo "$DISTRO" |grep 'Ubuntu' >/dev/null; then
-                    # This is a less repository driven approach to setting up the venv, for safe keeping, commenting it out.
-                    # ${VERSION_PYTHON_PATH} -m venv --without-pip "${VENV_HOME_MANAGED}"/"${venv_name}"
-                    # curl https://bootstrap.pypa.io/get-pip.py -o ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
-                    # ${VENV_HOME_MANAGED}/${venv_name}/bin/python${VERSION_PYTHON} ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
-
                     # 'sshpass' will not be on the host, some additional work to add it.
                     codename=`cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2`
                     add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ $codename universe multiverse" -y
                     apt-get update -y
-                    apt install python3-pip -y
-                    apt install python$VERSION_PYTHON-venv -y
                     apt install sshpass -y
-                    ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"/
+
+                    # This is a less repository driven approach to setting up the venv, for safe keeping, commenting it out.
+                    ${VERSION_PYTHON_PATH} -m venv --without-pip "${VENV_HOME_MANAGED}"/"${venv_name}"
+                    curl https://bootstrap.pypa.io/get-pip.py -o ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
+                    ${VENV_HOME_MANAGED}/${venv_name}/bin/python${VERSION_PYTHON} ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
+
+                    # Below 2 lines result in an architecture issue that continues to be broken, thus --without-pip is used.
+                    #   Error: python3.12-venv : Depends: python3.12 (= 3.12.3-1) but 3.12.3-1ubuntu0.1 is to be installed
+                    # apt install python3-pip -y
+                    # apt install python$VERSION_PYTHON-venv -y
+
                 elif echo "$DISTRO" |grep 'Red Hat Enterprise Linux' >/dev/null; then
                     # Install the Python versions
                     dnf install python${VERSION_PYTHON} -y
                     dnf install python${VERSION_PYTHON}-pip -y
                     dnf install sshpass
-                    ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"/
                 fi
             elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
-                ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"/
+                # Nothing to do here for now, we may want to ensure sshpass in present for MacOS
             fi
 
             # Complete the VENV creation and installation of packages
+            ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip3 install --upgrade pip
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip install --upgrade pip
             "${VENV_HOME_MANAGED}"/"${venv_name}"/bin/pip3 install -r "${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt

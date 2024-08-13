@@ -1,0 +1,25 @@
+minor_changes:
+  - zos_mvs_raw - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_script - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_tso_command - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+
+trivial:
+  - zos_archive - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_blockinfile - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_copy - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_fetch - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_find - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_lineinfile - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_mount - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+  - zos_unarchive - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1634).

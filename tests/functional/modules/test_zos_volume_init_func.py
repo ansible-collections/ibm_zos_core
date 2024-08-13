@@ -37,9 +37,7 @@ def test_guard_rail_and_setup(ansible_zos_module):
     hosts = ansible_zos_module
     hlq = get_random_q()
     # remove all data sets from target volume. Expected to be the following 3
-    hosts.all.zos_data_set(name="{0}.IMS01.SPOOL1".format(hlq), state="absent")
-    hosts.all.zos_data_set(name="{0}.IMS01.SPOOL2".format(hlq), state="absent")
-    hosts.all.zos_data_set(name="{0}.IMS01.SPOOL3".format(hlq), state="absent")
+    hosts.all.zos_data_set(name="*", volumes=TEST_VOL_ADDR, state="absent")
 
     params = {
         "address":TEST_VOL_ADDR,

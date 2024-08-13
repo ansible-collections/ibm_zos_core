@@ -140,7 +140,7 @@ echo_requirements(){
                 REQ=${REQ}"$key==$value;\\n"
             fi
         done
-        echo "${REQ}""${REQ_COMMON}"
+        echo -e "${REQ}""${REQ_COMMON}"
 
         py_req="0"
         for ver in "${python[@]}" ; do
@@ -278,7 +278,7 @@ write_requirements(){
 
         # Is the discoverd python >= what the requirements.txt requires?
         if [ $(normalize_version $VERSION_PYTHON) "$py_op" $(normalize_version $py_req) ]; then
-            echo -e "${REQ}${REQ_COMMON}">"${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
+            echo -e "${REQ}""${REQ_COMMON}">"${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
             cp mounts.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             #cp info.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             #cp info.env.axx "${VENV_HOME_MANAGED}"/"${venv_name}"/
@@ -340,22 +340,40 @@ create_venv_and_pip_install_req(){
 		    echo "Creating python virtual environment: ${VENV_HOME_MANAGED}/${venv_name}."
 		    echo ${DIVIDER}
 
+            # --------------------------------------------------------------------------
+            # This OS pre-check is going beyond the intention of the script but
+            # without out, the tool will be unbale to run.
+            # --------------------------------------------------------------------------
+
             # There is only support for Ubuntu and MacOS. To support other
-            # distirbutions, grep for: 'Debian' , 'CentOS', 'Red', 'Fedora'.
-            # On Ubuntu, ensurepip is not available, so we need to
+            # distirbutions, grep for: 'Debian' , 'CentOS', 'Fedora'.
+            # On Ubuntu, , so we need to
             # install the python3-venv package using the following command.
             if echo "$OSTYPE" |grep 'linux-gnu' >/dev/null; then
                 DISTRO=$(cat /etc/*release | grep ^NAME)
+
+                # On Ubuntu ensurepip is not available in LTS 24.x, support is limited
                 if echo "$DISTRO" |grep 'Ubuntu' >/dev/null; then
-                    sudo add-apt-repository universe -y
-                    sudo apt update
-                    sudo apt install python3-pip
-                    #apt install python3.10-venv -y
-                    apt install python$VERSION_PYTHON-venv -y
+                    # This approach does not get the *-venv installed, taking second approach
+                    # sudo add-apt-repository universe -y
+                    # sudo apt update
+                    # sudo apt install python3-pip
+                    # apt install python$VERSION_PYTHON-venv -y
+
+                    ${VERSION_PYTHON_PATH} -m venv --without-pip "${VENV_HOME_MANAGED}"/"${venv_name}"
+                    curl https://bootstrap.pypa.io/get-pip.py -o ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
+                    ${VENV_HOME_MANAGED}/${venv_name}/bin/python${VERSION_PYTHON} ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
+                elif echo "$DISTRO" |grep 'Red Hat Enterprise Linux' >/dev/null; then
+                    # Install the Python versions
+                    dnf install python${VERSION_PYTHON} -y
+                    dnf install python${VERSION_PYTHON}-pip -y
+                    ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"/
                 fi
+            elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
+                ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"/
             fi
 
-		    ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            # Complete the VENV creation and installation of packages
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip3 install --upgrade pip
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip install --upgrade pip
             "${VENV_HOME_MANAGED}"/"${venv_name}"/bin/pip3 install -r "${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt

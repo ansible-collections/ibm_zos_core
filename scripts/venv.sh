@@ -347,7 +347,9 @@ create_venv_and_pip_install_req(){
             if echo "$OSTYPE" |grep 'linux-gnu' >/dev/null; then
                 DISTRO=$(cat /etc/*release | grep ^NAME)
                 if echo "$DISTRO" |grep 'Ubuntu' >/dev/null; then
-                    apt install python$VERSION_PYTHON-venv
+                    apt install python3-venv
+                    apt install python3-venv
+                    #apt install python$VERSION_PYTHON-venv
                 fi
             fi
 

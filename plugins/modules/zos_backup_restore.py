@@ -197,6 +197,19 @@ options:
         then the value of C(TMPHLQ) is used.
     required: false
     type: str
+notes:
+    - It is the playbook author or user's responsibility to ensure they have
+      appropriate authority to the RACF FACILITY resource class. A user is
+      described as the remote user, configured to run either the playbook or
+      playbook tasks, who can also obtain escalated privileges to execute as
+      root or another user.
+    - When using this module, if the RACF FACILITY class
+      profile B(STGADMIN.ADR.DUMP.TOLERATE.ENQF) is active, you must
+      have READ access authority to use the module option I(recover=true).
+      If the RACF FACILITY class checking is not set up, any user can use
+      the module option without access to the class.
+    - If your system uses a different security product, consult that product's
+      documentation to configure the required security classes.
 """
 
 RETURN = r""""""

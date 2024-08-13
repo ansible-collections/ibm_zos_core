@@ -376,7 +376,7 @@ create_venv_and_pip_install_req(){
                     dnf install python${VERSION_PYTHON}-pip -y
                     dnf install sshpass
                 fi
-            elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
+            # elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
                 # Nothing to do here for now, we may want to ensure sshpass in present for MacOS
             fi
 

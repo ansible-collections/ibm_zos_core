@@ -1042,7 +1042,7 @@ class CopyHandler(object):
         tuple(int, str, str)
             A tuple of return code, stdout and stderr.
         """
-        return self.module.run_command(cmd, **kwargs)
+        return self.module.run_command(cmd, errors='replace', **kwargs)
 
     def copy_to_seq(
         self,

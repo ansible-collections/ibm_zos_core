@@ -121,7 +121,7 @@ def _iehlist(dd, stdin):
     response = None
     rc, stdout, stderr = module.run_command(
         "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd),
-        data=stdin,
+        data=stdin, errors='replace'
     )
     if rc == 0:
         response = stdout

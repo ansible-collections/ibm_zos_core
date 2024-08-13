@@ -563,7 +563,7 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
         ("text", "IDCAMS  SYSTEM"),
         (
             "base64",
-            "������@@������",
+            "\udcc9\udcc4\udcc3\udcc1\udcd4\udce2@@\udce2\udce8\udce2\udce3\udcc5",
         ),
     ],
 )
@@ -620,7 +620,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
 @pytest.mark.parametrize(
     "src_encoding,response_encoding,expected",
     [
-        ("iso8859-1", "ibm-1047", "qcfe�B||BTBFg�|Bg�GqfgB||"),
+        ("iso8859-1", "ibm-1047", "qcfe\udcebB||BTBFg\udceb|Bg\udcfdGqfgB"),
         (
             "ibm-1047",
             "iso8859-1",
@@ -1096,7 +1096,7 @@ def test_input_provided_as_list(ansible_zos_module):
         ("text", "LISTCAT ENTRIES"),
         (
             "base64",
-            "@�������@�������",
+            "@\udcd3\udcc9\udce2\udce3\udcc3\udcc1\udce3@\udcc5\udcd5\udce3\udcd9\udcc9\udcc5",
         ),
     ],
 )
@@ -1147,8 +1147,7 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
         (
             "iso8859-1",
             "ibm-1047",
-            "|�qBFfeF|g�F�qgB��",
-
+            "|\udceeqBFfeF|g\udcefF\udcfdqgB\udcd4\udcd0",
         ),
         (
             "ibm-1047",
@@ -1569,7 +1568,7 @@ def test_file_record_format(ansible_zos_module, record_format):
         ("text", "IDCAMS  SYSTEM"),
         (
             "base64",
-            "�������@@������@��������@",
+            "@\udcd3\udcc9\udce2\udce3\udcc3\udcc1\udce3@\udcc5\udcd5\udce3\udcd9\udcc9\udcc5",
         ),
     ],
 )
@@ -1615,7 +1614,7 @@ def test_file_return_content(ansible_zos_module, return_content_type, expected):
 @pytest.mark.parametrize(
     "src_encoding,response_encoding,expected",
     [
-        ("iso8859-1", "ibm-1047", "qcfe�B||BTBFg�|Bg�GqfgB|"),
+        ("iso8859-1", "ibm-1047", "qcfe\udcebB||BTBFg\udceb|Bg\udcfdGqfgB"),
         (
             "ibm-1047",
             "iso8859-1",

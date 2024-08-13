@@ -115,7 +115,8 @@ echo_requirements(){
             echo "Unable to source file: $file."
         fi
 
-        if [[ "$file" =~ "latest" ]]; then
+        #if [[ "$file" =~ "latest" ]]; then
+        if echo "$file" | grep "latest" >/dev/null; then
             # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
@@ -153,7 +154,7 @@ echo_requirements(){
 
 
 # Lest normalize the version from 3.10.2 to 3010002000
-# Do we we need that 4th octet? 
+# Do we we need that 4th octet?
 normalize_version() {
     echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
 }
@@ -168,7 +169,8 @@ make_venv_dirs(){
     # --force, --synch, --update thus not sure we need this method and better to
     # manage this logic inline to write_req
     for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
-        if [[ "$file" =~ "latest" ]]; then
+        #if [[ "$file" =~ "latest" ]]; then
+        if echo "$file" | grep "latest" >/dev/null; then
             # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
@@ -223,7 +225,8 @@ write_requirements(){
             echo "Unable to source file: $file."
         fi
 
-        if [[ "$file" =~ "latest" ]]; then
+        # if [[ "$file" =~ "latest" ]]; then
+        if echo "$file" | grep "latest" >/dev/null; then
             # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
@@ -319,7 +322,8 @@ create_venv_and_pip_install_req(){
     for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         unset venv
 
-        if [[ "$file" =~ "latest" ]]; then
+        #if [[ "$file" =~ "latest" ]]; then
+        if echo "$file" | grep "latest" >/dev/null; then
             # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
@@ -335,6 +339,18 @@ create_venv_and_pip_install_req(){
             echo ${DIVIDER}
 		    echo "Creating python virtual environment: ${VENV_HOME_MANAGED}/${venv_name}."
 		    echo ${DIVIDER}
+
+            # There is only support for Ubuntu and MacOS. To support other
+            # distirbutions, grep for: 'Debian' , 'CentOS', 'Red', 'Fedora'.
+            # On Ubuntu, ensurepip is not available, so we need to
+            # install the python3-venv package using the following command.
+            if echo "$OSTYPE" |grep 'linux-gnu' >/dev/null; then
+                DISTRO=$(cat /etc/*release | grep ^NAME)
+                if echo "$DISTRO" |grep 'Ubuntu' >/dev/null; then
+                    apt install $VERSION_PYTHON-venv
+                fi
+            fi
+
 		    ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"/
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip3 install --upgrade pip
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip install --upgrade pip

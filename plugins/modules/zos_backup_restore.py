@@ -193,7 +193,7 @@ options:
     description:
       - Override the default high level qualifier (HLQ) for temporary and backup
         data sets.
-      -  The default is the original HLQ of the data sets.
+      - The default is the original HLQ of the data sets.
         If that is not available, then the value of C(TMPHLQ) is used.
     required: false
     type: str

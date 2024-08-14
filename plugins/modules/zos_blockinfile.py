@@ -185,8 +185,9 @@ notes:
     the block will be overwritten on each iteration.
   - When more then one block should be handled in a file you must change
     the I(marker) per task.
-  - If using ZOAU version 1.3.0 and double quotes (") in the block argument, the module
-    will throw a response without the found argument. Follow up on the
+  - With ZOAU version 1.3.0, if double quotes (") are used in the I(block) parameter, the module
+    fails with an error message containing: 'return content is NOT in json format'. This is currently a
+    false negative response, where the I(src) is changed, but an error is reported anyhow. Follow up on the issue tracked 
     L(issue in the collection's repository,https://github.com/ansible-collections/ibm_zos_core/issues/1258).
 seealso:
 - module: zos_data_set

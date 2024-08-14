@@ -27,7 +27,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 display = Display()
 
 
-
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """

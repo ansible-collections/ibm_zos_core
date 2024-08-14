@@ -19,6 +19,9 @@ __metaclass__ = type
 from ibm_zos_core.tests.helpers.dataset import (
     get_random_q,
 )
+from ibm_zos_core.tests.helpers.volumes import (
+    create_vvds_on_volume,
+)
 # TEST_VOL_ADDR = '0903'
 # TEST_VOL_SER = 'KET999'
 TEST_VOL_ADDR = '01A2'
@@ -27,6 +30,13 @@ TEST_VOL_SER = 'USER02'
 INDEX_CREATION_SUCCESS_MSG = 'VTOC INDEX CREATION SUCCESSFUL'
 VTOC_LOC_MSG = "ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS  {:4d} TRACKS."
 
+def clear_volume(hosts, volume):
+    datasets_in_volume = hosts.all.shell(cmd="vtocls {0}".format(volume))
+    for dataset in datasets_in_volume.contacted.values():
+        datasets = str(dataset.get("stdout")).split("\n")
+    for dataset in datasets:
+        dataset_t_del = dataset.split(' ', 1)[0]
+        hosts.all.shell(cmd="""drm "{0}" """.format(dataset_t_del))
 
 # Guard Rail to prevent unintentional initialization of targeted volume.
 # If this test fails, either reset target volume serial to match
@@ -35,9 +45,8 @@ VTOC_LOC_MSG = "ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS  {:4d} TRA
 
 def test_guard_rail_and_setup(ansible_zos_module):
     hosts = ansible_zos_module
-    hlq = get_random_q()
     # remove all data sets from target volume. Expected to be the following 3
-    hosts.all.zos_data_set(name="*", volumes=TEST_VOL_ADDR, state="absent")
+    clear_volume(hosts, TEST_VOL_SER)
 
     params = {
         "address":TEST_VOL_ADDR,

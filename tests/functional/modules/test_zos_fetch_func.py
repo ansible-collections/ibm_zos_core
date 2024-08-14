@@ -195,12 +195,12 @@ def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
 
 def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
+    dest_path = get_unique_uss_file_name()
     params = {
         "src":"/etc/profile",
-        "dest":"/tmp/",
+        "dest": dest_path,
         "flat":True
     }
-    dest_path = get_unique_uss_file_name()
     hosts.all.zos_fetch(**params)
     local_checksum = checksum(dest_path, hash_func=sha256)
 

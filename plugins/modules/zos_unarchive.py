@@ -36,7 +36,7 @@ options:
       - I(src) can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
       - MVS data sets supported types are C(SEQ), C(PDS), C(PDSE).
-      - GDS relative names are supported C(e.g. USER.GDG(-1\)).
+      - GDS relative names are supported ``e.g. USER.GDG(-1)``.
     type: str
     required: true
   format:
@@ -146,7 +146,7 @@ options:
     description:
       - A list of directories, files or data set names to extract from the
         archive.
-      - GDS relative names are supported C(e.g. USER.GDG(-1\)).
+      - GDS relative names are supported ``e.g. USER.GDG(-1)``.
       - When C(include) is set, only those files will we be extracted leaving
         the remaining files in the archive.
       - Mutually exclusive with exclude.
@@ -157,7 +157,7 @@ options:
     description:
       - List the directory and file or data set names that you would like to
         exclude from the unarchive action.
-      - GDS relative names are supported C(e.g. USER.GDG(-1\)).
+      - GDS relative names are supported ``e.g. USER.GDG(-1)``.
       - Mutually exclusive with include.
     type: list
     elements: str

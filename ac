@@ -270,18 +270,6 @@ ac_build(){
 }
 
 # ------------------------------------------------------------------------------
-# Run galaxy importer on collection.
-# ------------------------------------------------------------------------------
-#->ac-galaxy-importer:
-## Build current branch and run galaxy importer on collection.
-## Usage: ac [--ac-galaxy-importer]
-## Example:
-##  $ ac --ac-galaxy-importer
-ac_galaxy_importer(){
-    message "Running Galaxy Importer"
-    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m galaxy_importer.main $collection_name
-}
-
 # Run a changelog lint locally
 # ------------------------------------------------------------------------------
 #->ac-changelog:
@@ -305,6 +293,38 @@ ac_changelog(){
     fi
     message "Running Changelog '$option_command'"
     . $VENV_BIN/activate && antsibull-changelog "${option_command}"
+}
+
+# Check for new files in the changelog.
+# Comparing it to another branch.
+# ------------------------------------------------------------------------------
+#->ac-check-changelog:
+## Check for new files in the changelog.
+## Usage: ac [--ac-check-changelog <base> <head>]
+## <base> - Branch to compare with
+## <head> - This branch
+## Example:
+## $ ac-check-changelog --base dev --head test
+ac_check_changelog(){
+    option_base=$1
+    option_head=$2
+    if [ ! "$option_base" ]; then
+        option_base="dev"
+    fi
+    message "Check for new files in the changelog."
+    . $VENV_BIN/activate && git fetch  && git checkout origin/"$option_base" && cd changelogs/fragments/ && LS_BASE="$(ls)" && cd .. && cd .. && git checkout "$option_head" ./changelogs/fragments/ && cd changelogs/fragments/ && LS_ALL="$(ls)" && git checkout "$option_head" && [ "${#LS_ALL}" -gt "${#LS_BASE}" ] || (echo "No new changelog file was found" && return 1) #echo $VAR && [ "$VAR" != "No new changelog file was found" ] || 
+}
+
+# Run galaxy importer on collection.
+# ------------------------------------------------------------------------------
+#->ac-galaxy-importer:
+## Build current branch and run galaxy importer on collection.
+## Usage: ac [--ac-galaxy-importer]
+## Example:
+##  $ ac --ac-galaxy-importer
+ac_galaxy_importer(){
+    message "Running Galaxy Importer"
+    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m galaxy_importer.main $collection_name
 }
 
 # ------------------------------------------------------------------------------
@@ -757,6 +777,13 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--ac-build"
             ;;
+      --ac-check-changelog)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-check-changelog"
+            ;;
+      --ac-galaxy-importer)                              # Command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-galaxy-importer"
       --ac-galaxy-importer)                    # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-galaxy-importer"
@@ -832,7 +859,12 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
-      --command|--command=?*)                   # option
+      --base|--base=?*)                       # option
+            base=`option_processor $1 $2`
+            option_sanitize $base
+            shift
+            ;;
+      --command|--command=?*)                       # option
             command=`option_processor $1 $2`
             option_sanitize $command
             shift
@@ -847,7 +879,12 @@ while true; do
             option_sanitize $file
             shift
             ;;
-      --host|--host=?*)                         # option
+      --head|--head=?*)                       # option
+            head=`option_processor $1 $2`
+            option_sanitize $head
+            shift
+            ;;
+      --host|--host=?*)                          # option
             host=`option_processor $1 $2`
             option_sanitize $host
             shift
@@ -926,10 +963,12 @@ if [ "$option_submitted" ] && [ "$option_submitted" = "--ac-bandit" ] ; then
     ac_bandit $level
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
-elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ] ; then
-    ac_galaxy_importer
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
     ac_changelog $command
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-check-changelog" ] ; then
+    ac_check_changelog $base $head
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ] ; then
+    ac_galaxy_importer
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-module-doc" ] ; then
     ac_module_doc
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then

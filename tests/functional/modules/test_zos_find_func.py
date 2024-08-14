@@ -43,7 +43,7 @@ VSAM_NAMES = [
 DATASET_TYPES = ['seq', 'pds', 'pdse']
 
 
-def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
+def create_vsam_ksds(ds_name, ansible_zos_module, volume):
     hosts = ansible_zos_module
     alloc_cmd = f"""     DEFINE CLUSTER (NAME({ds_name})  -
     INDEXED                 -
@@ -399,7 +399,7 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
 
         for vsam in VSAM_NAMES:
             volume = volumes.get_available_vol()
-            create_vsam_ksds(vsam, hosts, volume=volume)
+            create_vsam_ksds(vsam, hosts, volume)
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
@@ -427,8 +427,8 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
     alternate_vsam = f"{TEST_SUITE_HLQ}.FIND.VSAM.SECOND"
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts, volume=volume_1)
-        create_vsam_ksds(alternate_vsam, hosts, volume=volume_2)
+            create_vsam_ksds(vsam, hosts, volume_1)
+        create_vsam_ksds(alternate_vsam, hosts, volume_2)
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.*.*'],
             volumes=[volume_1],

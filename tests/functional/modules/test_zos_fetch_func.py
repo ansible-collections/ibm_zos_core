@@ -525,14 +525,14 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
         record_format="fba",
         record_length=25,
     )
+    dest_path = get_unique_uss_file_name()
     hosts.all.zos_data_set(name=pds_name, type="pds")
     hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
     params = {
         "src":pds_name + "(MYDATA)",
-        "dest":"/tmp/",
+        "dest": dest_path,
         "flat":True
     }
-    dest_path = get_unique_uss_file_name()
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

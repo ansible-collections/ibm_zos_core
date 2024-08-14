@@ -90,10 +90,9 @@ ansible-doc to automate tasks on z/OS.
    community_guides
    license
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
 
-
-
-
-
-
-
+   reference/documentation
+   reference/community

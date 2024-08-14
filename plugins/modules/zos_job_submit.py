@@ -36,23 +36,28 @@ options:
     description:
       - The source file or data set containing the JCL to submit.
       - It could be a physical sequential data set, a partitioned data set
-        qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
-      - Or a USS file. (e.g "/u/tester/demo/sample.jcl")
+        qualified by a member or a path (e.g. C(USER.TEST), V(USER.JCL(TEST\))),
+        or a generation data set from a generation data group
+        (for example, V(USER.TEST.GDG(-2\))).
+      - Or a USS file. (e.g C(/u/tester/demo/sample.jcl))
       - Or a LOCAL file in ansible control node.
-        (e.g "/User/tester/ansible-playbook/sample.jcl")
+        (e.g C(/User/tester/ansible-playbook/sample.jcl))
+      - When using a generation data set, only already created generations
+        are valid. If either the relative name is positive, or negative but
+        not found, the module will fail.
   location:
     required: false
-    default: DATA_SET
+    default: data_set
     type: str
     choices:
-      - DATA_SET
-      - USS
-      - LOCAL
+      - data_set
+      - uss
+      - local
     description:
-      - The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
-      - DATA_SET can be a PDS, PDSE, or sequential data set.
-      - USS means the JCL location is located in UNIX System Services (USS).
-      - LOCAL means locally to the ansible control node.
+      - The JCL location. Supported choices are C(data_set), C(uss) or C(local).
+      - C(data_set) can be a PDS, PDSE, sequential data set, or a generation data set.
+      - C(uss) means the JCL location is located in UNIX System Services (USS).
+      - C(local) means locally to the Ansible control node.
   wait_time_s:
     required: false
     default: 10
@@ -80,17 +85,17 @@ options:
     required: false
     type: str
     description:
-      - The volume serial (VOLSER)is where the data set resides. The option
+      - The volume serial (VOLSER) is where the data set resides. The option
         is required only when the data set is not cataloged on the system.
       - When configured, the L(zos_job_submit,./zos_job_submit.html) will try to
         catalog the data set for the volume serial. If it is not able to, the
         module will fail.
-      - Ignored for I(location=USS) and I(location=LOCAL).
+      - Ignored for I(location=uss) and I(location=local).
   encoding:
     description:
       - Specifies which encoding the local JCL file should be converted from
         and to, before submitting the job.
-      - This option is only supported for when I(location=LOCAL).
+      - This option is only supported for when I(location=local).
       - If this parameter is not provided, and the z/OS systems default encoding
         can not be identified, the JCL file will be converted from UTF-8 to
         IBM-1047 by default, otherwise the module will detect the z/OS system
@@ -561,19 +566,19 @@ EXAMPLES = r"""
 - name: Submit JCL in a PDSE member.
   zos_job_submit:
     src: HLQ.DATA.LLQ(SAMPLE)
-    location: DATA_SET
+    location: data_set
   register: response
 
 - name: Submit JCL in USS with no DDs in the output.
   zos_job_submit:
     src: /u/tester/demo/sample.jcl
-    location: USS
+    location: uss
     return_output: false
 
 - name: Convert local JCL to IBM-037 and submit the job.
   zos_job_submit:
     src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-    location: LOCAL
+    location: local
     encoding:
       from: ISO8859-1
       to: IBM-037
@@ -581,26 +586,36 @@ EXAMPLES = r"""
 - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
   zos_job_submit:
     src: HLQ.DATA.LLQ(SAMPLE)
-    location: DATA_SET
+    location: data_set
     volume: P2SS01
 
 - name: Submit a long running PDS job and wait up to 30 seconds for completion.
   zos_job_submit:
     src: HLQ.DATA.LLQ(LONGRUN)
-    location: DATA_SET
+    location: data_set
     wait_time_s: 30
 
 - name: Submit a long running PDS job and wait up to 30 seconds for completion.
   zos_job_submit:
     src: HLQ.DATA.LLQ(LONGRUN)
-    location: DATA_SET
+    location: data_set
     wait_time_s: 30
 
 - name: Submit JCL and set the max return code the module should fail on to 16.
   zos_job_submit:
     src: HLQ.DATA.LLQ
-    location: DATA_SET
+    location: data_set
     max_rc: 16
+
+- name: Submit JCL from the latest generation data set in a generation data group.
+  zos_job_submit:
+    src: HLQ.DATA.GDG(0)
+    location: data_set
+
+- name: Submit JCL from a previous generation data set in a generation data group.
+  zos_job_submit:
+    src: HLQ.DATA.GDG(-2)
+    location: data_set
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
@@ -647,27 +662,46 @@ JOB_SPECIAL_PROCESSING = frozenset(["TYPRUN"])
 MAX_WAIT_TIME_S = 86400
 
 
-def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=None, start_time=timer()):
-    """ Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
+def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_time=timer()):
+    """Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
 
-        Arguments:
-            module - module instnace to access the module api
-            src (str)       - JCL, can be relative or absolute paths either on controller or USS
-                            - Data set, can be PS, PDS, PDSE Member
-            src_name (str)  - the src name that was provided in the module because through
-                              the runtime src could be replace with a temporary file name
-            timeout (int)   - how long to wait in seconds for a job to complete
-            is_unix (bool)  - True if JCL is a file in USS, otherwise False; Note that all
-                              JCL local to a controller is transfered to USS thus would be
-                              True
-            volume (str)    - volume the data set JCL is located on that will be cataloged before
-                              being submitted
-            start_time      - time the JCL started its submission
+        Parameters
+        ----------
+        module: AnsibleModule
+            module instance to access the module api.
+        src : str
+            JCL, can be relative or absolute paths either on controller or USS
+            - Data set, can be PS, PDS, PDSE Member.
+        src_name : str
+            The src name that was provided in the module because through
+            the runtime src could be replace with a temporary file name.
+        timeout : int
+            How long to wait in seconds for a job to complete.
+        is_unix : bool
+            True if JCL is a file in USS, otherwise False; Note that all
+            JCL local to a controller is transfered to USS thus would be
+            True.
+        start_time : int
+            time the JCL started its submission.
 
-        Returns:
-            job_submitted_id  - the JCL job ID returned from submitting a job, else if no
-                                job submits, None will be returned
-            duration          - how long the job ran for in this method
+        Returns
+        -------
+        str
+            the JCL job ID returned from submitting a job, else if no
+            job submits, None will be returned.
+        int
+            how long the job ran for in this method.
+
+        Raises
+        ------
+        fail_json
+            Unable to submit job because the data set could not be cataloged on the volume.
+        fail_json
+            Unable to submit job, the job submission has failed.
+        fail_json
+            The JCL has been submitted but there was an error while fetching its status.
+        fail_json
+            The job has been submitted and no job id was returned.
     """
 
     kwargs = {
@@ -676,26 +710,11 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
         "fetch_max_retries": timeout,
     }
 
-    present = False
     duration = 0
     job_submitted = None
     result = {}
 
     try:
-        if volume is not None:
-            volumes = [volume]
-            # Get the PDS name to catalog it
-            src_ds_name = data_set.extract_dsname(src)
-            present, changed = DataSet.attempt_catalog_if_necessary(
-                src_ds_name, volumes)
-
-            if not present:
-                result["changed"] = False
-                result["failed"] = True
-                result["msg"] = ("Unable to submit job {0} because the data set could "
-                                 "not be cataloged on the volume {1}.".format(src, volume))
-                module.fail_json(**result)
-
         job_submitted = jobs.submit(src, is_unix=is_unix, **kwargs)
 
         # Introducing a sleep to ensure we have the result of job submit carrying the job id.
@@ -801,12 +820,21 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, volume=N
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        The value for option 'wait_time_s' is not valid.
+    """
     module_args = dict(
         src=dict(type="str", required=True),
         location=dict(
             type="str",
-            default="DATA_SET",
-            choices=["DATA_SET", "USS", "LOCAL"],
+            default="data_set",
+            choices=["data_set", "uss", "local"],
         ),
         encoding=dict(
             type="dict",
@@ -875,8 +903,8 @@ def run_module():
         src=dict(arg_type="data_set_or_path", required=True),
         location=dict(
             arg_type="str",
-            default="DATA_SET",
-            choices=["DATA_SET", "USS", "LOCAL"],
+            default="data_set",
+            choices=["data_set", "uss", "local"],
         ),
         from_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
@@ -907,7 +935,7 @@ def run_module():
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    temp_file = parsed_args.get("src") if location == "LOCAL" else None
+    temp_file = parsed_args.get("src") if location == "local" else None
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
@@ -921,13 +949,36 @@ def run_module():
     job_submitted_id = None
     duration = 0
     start_time = timer()
-    if location == "DATA_SET":
+
+    if location == "data_set":
+        # Resolving a relative GDS name and escaping special symbols if needed.
+        src_data = data_set.MVSDataSet(src)
+
+        # Checking that the source is actually present on the system.
+        if volume is not None:
+            volumes = [volume]
+            # Get the data set name to catalog it.
+            src_ds_name = data_set.extract_dsname(src_data.name)
+            present, changed = DataSet.attempt_catalog_if_necessary(src_ds_name, volumes)
+
+            if not present:
+                module.fail_json(
+                    msg=(f"Unable to submit job {src_data.name} because the data set could "
+                         f"not be cataloged on the volume {volume}.")
+                )
+        elif data_set.is_member(src_data.name):
+            if not DataSet.data_set_member_exists(src_data.name):
+                module.fail_json(msg=f"Cannot submit job, the data set member {src_data.raw_name} was not found.")
+        else:
+            if not DataSet.data_set_exists(src_data.name):
+                module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.")
+
         job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, is_unix=False, volume=volume, start_time=start_time)
-    elif location == "USS":
+            module, src_data.name, src_name=src_data.raw_name, timeout=wait_time_s, is_unix=False, start_time=start_time)
+    elif location == "uss":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, is_unix=True)
-    elif location == "LOCAL":
+    elif location == "local":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, is_unix=True)
 
@@ -1078,6 +1129,34 @@ def run_module():
 
 
 def assert_valid_return_code(max_rc, job_rc, ret_code, result):
+    """Asserts valid return code.
+
+    Parameters
+    ----------
+    max_rc : int
+        Max return code.
+    joc_rc : int
+        Job return code.
+    ret_code : int
+        Return code.
+    result : dict()
+        Result dictionary.
+
+    Returns
+    -------
+    bool
+        If job_rc is not 0.
+
+    Raises
+    ------
+    Exception
+        The job return code was not available in the jobs output.
+    Exception
+        The job return code for the submitted job is greater than the value set for option 'max_rc'.
+    Exception
+        The step return code for the submitted job is greater than the value set for option 'max_rc'.
+    """
+
     if job_rc is None:
         raise Exception(
             "The job return code (ret_code[code]) was not available in the jobs output, "
@@ -1108,7 +1187,9 @@ def assert_valid_return_code(max_rc, job_rc, ret_code, result):
     # should NOT be 'changed=true' even though the user did override the return code,
     # a non-zero return code means the job did not change anything, so set it as
     # result["chagned"]=False,
-    if job_rc != 0:
+    if max_rc and job_rc > max_rc:
+        return False
+    elif job_rc != 0 and max_rc is None:
         return False
 
     return True

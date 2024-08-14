@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -168,6 +168,12 @@ EXAMPLES = r"""
   zos_script:
     cmd: ./scripts/PROGRAM
     removes: /u/user/pgm_input.txt
+
+- name: Run a shell script on the remote system
+  zos_script:
+    cmd: ./scripts/program.sh
+    executable: /bin/sh
+    remote_src: true
 """
 
 RETURN = r"""
@@ -229,6 +235,17 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 
 
 def run_module():
+    """Initialize module.
+
+    Raises
+    ------
+    fail_json
+        Parameter verification failed.
+    fail_json
+        The given chdir does not exist on the system.
+    fail_json
+        The script terminated with an error.
+    """
     module = AnsibleModule(
         argument_spec=dict(
             chdir=dict(type='str', required=False),
@@ -355,7 +372,8 @@ def run_module():
     cmd_str = cmd_str.strip()
     script_rc, stdout, stderr = module.run_command(
         cmd_str,
-        cwd=chdir
+        cwd=chdir,
+        errors='replace'
     )
 
     result = dict(

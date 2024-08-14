@@ -15,20 +15,21 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.dataset import (
+    get_tmp_ds_name,
+    get_random_q,
+)
 import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
 import random
+from datetime import datetime
 
-DATA_SET_CONTENTS = "HELLO world"
-DATA_SET_QUALIFIER = "{0}.PRIVATE.TESTDS"
-DATA_SET_QUALIFIER2 = "{0}.PRIVATE.TESTDS2"
-DATA_SET_BACKUP_LOCATION = "MY.BACKUP"
-UNIX_BACKUP_LOCATION = "/tmp/mybackup.dzp"
-NEW_HLQ = "TMPHLQ"
-DATA_SET_RESTORE_LOCATION = DATA_SET_QUALIFIER.format(NEW_HLQ)
-DATA_SET_RESTORE_LOCATION2 = DATA_SET_QUALIFIER2.format(NEW_HLQ)
+DATA_SET_CONTENTS = "HELLO WORLD"
+
+def get_unique_uss_file_name():
+    unique_str = "n" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + ".dzp"
+    return "/tmp/{0}".format(unique_str)
 
 # ---------------------------------------------------------------------------- #
 #                               Helper functions                               #
@@ -73,10 +74,13 @@ def delete_data_set(hosts, data_set_name):
 def delete_file(hosts, path):
     hosts.all.file(path=path, state="absent")
 
-def delete_remnants(hosts):
+def delete_remnants(hosts, list=None):
     hosts.all.shell(cmd="drm 'ANSIBLE.*'")
     hosts.all.shell(cmd="drm 'TEST.*'")
     hosts.all.shell(cmd="drm 'TMPHLQ.*'")
+    if list:
+        for object in list:
+            hosts.all.shell(cmd="drm '{0}.*'".format(object))
 
 def get_unused_volume_serial(hosts):
     found = False
@@ -183,19 +187,23 @@ def assert_file_does_not_exist(hosts, path):
 @pytest.mark.parametrize(
     "backup_name,overwrite,recover",
     [
-        (DATA_SET_BACKUP_LOCATION, False, False),
-        (DATA_SET_BACKUP_LOCATION, True, True),
-        (DATA_SET_BACKUP_LOCATION, False, True),
-        (DATA_SET_BACKUP_LOCATION, True, False),
-        (UNIX_BACKUP_LOCATION, False, False),
-        (UNIX_BACKUP_LOCATION, True, True),
-        (UNIX_BACKUP_LOCATION, False, True),
-        (UNIX_BACKUP_LOCATION, True, False),
+        ("DATA_SET", False, False),
+        ("DATA_SET", True, True),
+        ("DATA_SET", False, True),
+        ("DATA_SET", True, False),
+        ("UNIX", False, False),
+        ("UNIX", True, True),
+        ("UNIX", False, True),
+        ("UNIX", True, False),
     ],
 )
 def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    if backup_name == "DATA_SET":
+        backup_name = get_tmp_ds_name(1,1)
+    else:
+        backup_name = get_unique_uss_file_name()
     try:
         if not overwrite:
             delete_data_set_or_file(hosts, backup_name)
@@ -221,10 +229,10 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
 @pytest.mark.parametrize(
     "backup_name,overwrite",
     [
-        (DATA_SET_BACKUP_LOCATION, False),
-        (DATA_SET_BACKUP_LOCATION, True),
-        (UNIX_BACKUP_LOCATION, False),
-        (UNIX_BACKUP_LOCATION, True),
+        ("DATA_SET", False),
+        ("DATA_SET", True),
+        ("UNIX", False),
+        ("UNIX", True),
     ],
 )
 def test_backup_of_data_set_when_backup_dest_exists(
@@ -232,6 +240,10 @@ def test_backup_of_data_set_when_backup_dest_exists(
 ):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    if backup_name == "DATA_SET":
+        backup_name = get_tmp_ds_name(1,1)
+    else:
+        backup_name = get_unique_uss_file_name()
     try:
         create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
         assert_data_set_or_file_exists(hosts, backup_name)
@@ -258,22 +270,28 @@ def test_backup_of_data_set_when_backup_dest_exists(
 @pytest.mark.parametrize(
     "backup_name,overwrite,recover",
     [
-        (DATA_SET_BACKUP_LOCATION, False, False),
-        (DATA_SET_BACKUP_LOCATION, True, True),
-        (DATA_SET_BACKUP_LOCATION, False, True),
-        (DATA_SET_BACKUP_LOCATION, True, False),
-        (UNIX_BACKUP_LOCATION, False, False),
-        (UNIX_BACKUP_LOCATION, True, True),
-        (UNIX_BACKUP_LOCATION, False, True),
-        (UNIX_BACKUP_LOCATION, True, False),
+        ("DATA_SET", False, False),
+        ("DATA_SET", True, True),
+        ("DATA_SET", False, True),
+        ("DATA_SET", True, False),
+        ("UNIX", False, False),
+        ("UNIX", True, True),
+        ("UNIX", False, True),
+        ("UNIX", True, False),
     ],
 )
 def test_backup_and_restore_of_data_set(
     ansible_zos_module, backup_name, overwrite, recover
 ):
+    hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
-    new_hlq  = NEW_HLQ
+    new_hlq  = "N" + get_random_q(4)
+    hlqs.append(new_hlq)
+    if backup_name == "DATA_SET":
+        backup_name = get_tmp_ds_name(1,1)
+    else:
+        backup_name = get_unique_uss_file_name()
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -288,7 +306,8 @@ def test_backup_and_restore_of_data_set(
             recover=recover,
         )
         if not overwrite:
-            new_hlq = "TEST"
+            new_hlq = "N" + get_random_q(4)
+            hlqs.append(new_hlq)
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, backup_name)
         results = hosts.all.zos_backup_restore(
@@ -301,29 +320,36 @@ def test_backup_and_restore_of_data_set(
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
-        delete_remnants(hosts)
+        delete_remnants(hosts, hlqs)
 
 
 @pytest.mark.parametrize(
     "backup_name,space,space_type",
     [
-        (DATA_SET_BACKUP_LOCATION, 10, "M"),
-        (DATA_SET_BACKUP_LOCATION, 10000, "K"),
-        (DATA_SET_BACKUP_LOCATION, 10, None),
-        (DATA_SET_BACKUP_LOCATION, 2, "CYL"),
-        (DATA_SET_BACKUP_LOCATION, 10, "TRK"),
-        (UNIX_BACKUP_LOCATION, 10, "M"),
-        (UNIX_BACKUP_LOCATION, 10000, "K"),
-        (UNIX_BACKUP_LOCATION, 10, None),
-        (UNIX_BACKUP_LOCATION, 2, "CYL"),
-        (UNIX_BACKUP_LOCATION, 10, "TRK"),
+        ("DATA_SET", 10, "m"),
+        ("DATA_SET", 10000, "k"),
+        ("DATA_SET", 10, None),
+        ("DATA_SET", 2, "cyl"),
+        ("DATA_SET", 10, "trk"),
+        ("UNIX", 10, "m"),
+        ("UNIX", 10000, "k"),
+        ("UNIX", 10, None),
+        ("UNIX", 2, "cyl"),
+        ("UNIX", 10, "trk"),
     ],
 )
 def test_backup_and_restore_of_data_set_various_space_measurements(
     ansible_zos_module, backup_name, space, space_type
 ):
+    hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    new_hlq = "N" + get_random_q(4)
+    hlqs.append(new_hlq)
+    if backup_name == "DATA_SET":
+        backup_name = get_tmp_ds_name(1,1)
+    else:
+        backup_name = get_unique_uss_file_name()
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -345,7 +371,7 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
         args = dict(
             operation="restore",
             backup_name=backup_name,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
             overwrite=True,
             space=space,
         )
@@ -362,17 +388,24 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
 @pytest.mark.parametrize(
     "backup_name,overwrite",
     [
-        (DATA_SET_BACKUP_LOCATION, False),
-        (DATA_SET_BACKUP_LOCATION, True),
-        (UNIX_BACKUP_LOCATION, False),
-        (UNIX_BACKUP_LOCATION, True),
+        ("DATA_SET", False),
+        ("DATA_SET", True),
+        ("UNIX", False),
+        ("UNIX", True),
     ],
 )
 def test_backup_and_restore_of_data_set_when_restore_location_exists(
     ansible_zos_module, backup_name, overwrite
 ):
+    hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    new_hlq = "N" + get_random_q(4)
+    hlqs.append(new_hlq)
+    if backup_name == "DATA_SET":
+        backup_name = get_tmp_ds_name(1,1)
+    else:
+        backup_name = get_unique_uss_file_name()
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -389,13 +422,13 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
             overwrite=overwrite,
         )
         if overwrite:
@@ -405,7 +438,7 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
-        delete_remnants(hosts)
+        delete_remnants(hosts, hlqs)
 
 
 def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
@@ -413,10 +446,11 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
     data_set_name = get_tmp_ds_name()
     data_set_name2 = get_tmp_ds_name()
     data_set_include = [data_set_name, data_set_name2]
+    data_set_backup_location = get_tmp_ds_name(1, 1)
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )
@@ -426,13 +460,13 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
         results = hosts.all.zos_backup_restore(
             operation="backup",
             data_sets=dict(include=data_set_include),
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
         )
@@ -440,19 +474,23 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         delete_remnants(hosts)
 
 
 def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
+    hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
     data_set_name2 = get_tmp_ds_name()
     data_sets_hlq = "ANSIBLE.**"
+    data_set_backup_location = get_tmp_ds_name(1, 1)
+    new_hlq = "N" + get_random_q(4)
+    hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )
@@ -462,35 +500,40 @@ def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
         results = hosts.all.zos_backup_restore(
             operation="backup",
             data_sets=dict(include=data_sets_hlq),
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        assert_data_set_exists(hosts, data_set_backup_location)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
-        delete_remnants(hosts)
+        delete_data_set_or_file(hosts, data_set_backup_location)
+        delete_remnants(hosts, hlqs)
 
 
 def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
+    hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
     data_set_name2 = get_tmp_ds_name()
+    data_set_restore_location2 = get_tmp_ds_name(1, 1)
+    data_set_backup_location = get_tmp_ds_name(1, 1)
+    new_hlq = "N" + get_random_q(4)
+    hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_restore_location2)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )
@@ -500,63 +543,72 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
         results = hosts.all.zos_backup_restore(
             operation="backup",
             data_sets=dict(include="ANSIBLE.**", exclude=data_set_name2),
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_exists(hosts, DATA_SET_BACKUP_LOCATION)
-        assert_data_set_does_not_exist(hosts, DATA_SET_RESTORE_LOCATION2)
+        assert_data_set_exists(hosts, data_set_backup_location)
+        assert_data_set_does_not_exist(hosts, data_set_restore_location2)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
-        delete_remnants(hosts)
+        delete_data_set_or_file(hosts, data_set_restore_location2)
+        delete_data_set_or_file(hosts, data_set_backup_location)
+        delete_remnants(hosts, hlqs)
 
 
 @pytest.mark.parametrize(
     "backup_name",
     [
-        DATA_SET_BACKUP_LOCATION,
-        DATA_SET_BACKUP_LOCATION,
-        UNIX_BACKUP_LOCATION,
-        UNIX_BACKUP_LOCATION,
+        "DATA_SET",
+        "DATA_SET",
+        "UNIX",
+        "UNIX",
     ],
 )
 def test_restore_of_data_set_when_backup_does_not_exist(
     ansible_zos_module, backup_name
 ):
+    hlqs = []
     hosts = ansible_zos_module
+    data_set_restore_location = get_tmp_ds_name(2, 2)
+    if backup_name == "DATA_SET":
+        backup_name = get_tmp_ds_name(1,1)
+    else:
+        backup_name = get_unique_uss_file_name()
+    new_hlq = "N" + get_random_q(4)
+    hlqs.append(new_hlq)
     try:
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, data_set_restore_location)
         delete_data_set_or_file(hosts, backup_name)
 
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
-            hlq=NEW_HLQ,
+            hlq=new_hlq,
         )
         assert_module_failed(results)
     finally:
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, data_set_restore_location)
         delete_data_set_or_file(hosts, backup_name)
-        delete_remnants(hosts)
+        delete_remnants(hosts, hlqs)
+
 
 @pytest.mark.parametrize(
     "backup_name",
     [
-        DATA_SET_BACKUP_LOCATION,
-        DATA_SET_BACKUP_LOCATION,
-        UNIX_BACKUP_LOCATION,
-        UNIX_BACKUP_LOCATION,
+        "DATA_SET",
+        "DATA_SET",
+        "UNIX",
+        "UNIX",
     ],
 )
 def test_backup_of_data_set_when_data_set_does_not_exist(
@@ -579,12 +631,14 @@ def test_backup_of_data_set_when_data_set_does_not_exist(
         delete_data_set_or_file(hosts, backup_name)
         delete_remnants(hosts)
 
+
 def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    data_set_backup_location = get_tmp_ds_name(1, 1)
     try:
         delete_data_set_or_file(hosts, data_set_name)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )
@@ -593,47 +647,52 @@ def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
             data_sets=dict(include=data_set_name),
             # volume=get_unused_volume_serial(hosts),
             volume="@@@@",
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
         )
         assert_module_failed(results)
-        assert_data_set_does_not_exist(hosts, DATA_SET_BACKUP_LOCATION)
+        assert_data_set_does_not_exist(hosts, data_set_backup_location)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         delete_remnants(hosts)
 
 
 def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
+    hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
+    data_set_restore_location = get_tmp_ds_name()
+    data_set_backup_location = get_tmp_ds_name(1, 1)
+    new_hlq = "N" + get_random_q(4)
+    hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, data_set_restore_location)
+        delete_data_set_or_file(hosts, data_set_backup_location)
         create_sequential_data_set_with_contents(
             hosts, data_set_name, DATA_SET_CONTENTS
         )
         results = hosts.all.zos_backup_restore(
             operation="backup",
             data_sets=dict(include=data_set_name),
-            backup_name=DATA_SET_BACKUP_LOCATION,
+            backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
-        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
-            backup_name=DATA_SET_BACKUP_LOCATION,
-            hlq=NEW_HLQ,
+            backup_name=data_set_backup_location,
+            hlq=new_hlq,
             # volume=get_unused_volume_serial(hosts),
             volume="@@@@",
         )
         assert_module_failed(results)
-        assert_data_set_does_not_exist(hosts, DATA_SET_RESTORE_LOCATION)
+        assert_data_set_does_not_exist(hosts, data_set_restore_location)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
-        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
-        delete_remnants(hosts)
+        delete_data_set_or_file(hosts, data_set_restore_location)
+        delete_data_set_or_file(hosts, data_set_backup_location)
+        delete_remnants(hosts, hlqs)
 
 
 # def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module):
@@ -693,7 +752,7 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #             backup_name=DATA_SET_BACKUP_LOCATION,
 #             overwrite=True,
 #             space=500,
-#             space_type="M",
+#             space_type="m",
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
@@ -706,10 +765,92 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
 #             full_volume=True,
 #             sms_storage_class="DB2SMS10",
 #             space=500,
-#             space_type="M",
+#             space_type="m",
 #         )
 #         assert_module_did_not_fail(results)
 #         assert_data_set_exists_on_volume(hosts, data_set_name, VOLUME)
 #     finally:
 #         delete_data_set_or_file(hosts, data_set_name)
 #         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+
+
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_backup_gds(ansible_zos_module, dstype):
+    try:
+        hosts = ansible_zos_module
+        # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
+        data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        backup_dest = get_tmp_ds_name(symbols=True).replace("-", "")
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[f"{data_set_name}(-1)", f"{data_set_name}(0)"]),
+            backup_name=backup_dest,
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ")
+
+
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_backup_into_gds(ansible_zos_module, dstype):
+    """This test will create a dataset and backup it into a new generation of
+    backup data sets.
+    """
+    try:
+        hosts = ansible_zos_module
+        # We need to replace hyphens because of NAZARE-10614: dzip fails archiving data set names with '-'
+        data_set_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        ds_name = get_tmp_ds_name(symbols=True).replace("-", "")
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=ds_name, state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        ds_to_write = f"{ds_name}(MEM)" if dstype in ['pds', 'pdse'] else ds_name
+        results = hosts.all.shell(cmd=f"decho 'test line' '{ds_to_write}'")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=[ds_name]),
+            backup_name=f"{data_set_name}.G0002V00",
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.shell(cmd=f"drm \"{ds_name}\"")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=f"{data_set_name}(0)",
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ")
+

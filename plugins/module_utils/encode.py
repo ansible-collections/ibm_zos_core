@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020 - 2024
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,7 +17,6 @@ __metaclass__ = type
 from tempfile import NamedTemporaryFile, mkstemp, mkdtemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
-from ansible.module_utils.six import PY3
 
 import shutil
 import errno
@@ -42,11 +41,7 @@ try:
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 
 class Defaults:
@@ -66,7 +61,7 @@ class Defaults:
         system_charset = locale.getdefaultlocale()[1]
         if system_charset is None:
             module = AnsibleModuleHelper(argument_spec={})
-            rc, out, err = module.run_command("locale -c charmap")
+            rc, out, err = module.run_command("locale -c charmap", errors='replace')
             if rc != 0 or not out or err:
                 if system.is_zos():
                     system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET
@@ -193,7 +188,7 @@ class EncodeUtils(object):
         space_u = 1024
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(ds)
         cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
-        rc, out, err = self.module.run_command(cmd, data=listcat_cmd)
+        rc, out, err = self.module.run_command(cmd, data=listcat_cmd, errors='replace')
         if rc:
             raise EncodeError(err)
         if out:
@@ -284,7 +279,7 @@ class EncodeUtils(object):
         """
         code_set = None
         iconv_list_cmd = ["iconv", "-l"]
-        rc, out, err = self.module.run_command(iconv_list_cmd)
+        rc, out, err = self.module.run_command(iconv_list_cmd, errors='replace')
         if rc:
             raise EncodeError(err)
         if out:
@@ -319,7 +314,7 @@ class EncodeUtils(object):
         iconv_cmd = "printf {0} | iconv -f {1} -t {2}".format(
             quote(src), quote(from_encoding), quote(to_encoding)
         )
-        rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
+        rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True, errors='replace')
         if rc:
             raise EncodeError(err)
         return out
@@ -364,7 +359,7 @@ class EncodeUtils(object):
             quote(from_code), quote(to_code), quote(src), quote(temp_fi)
         )
         try:
-            rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
+            rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True, errors='replace')
             if rc:
                 raise EncodeError(err)
             if dest == temp_fi:
@@ -511,7 +506,7 @@ class EncodeUtils(object):
             if src_type == "PO":
                 temp_src = mkdtemp()
                 rc, out, err = copy.copy_pds2uss(src, temp_src)
-            if src_type == "VSAM":
+            if src_type == "KSDS":
                 reclen, space_u = self.listdsi_data_set(src.upper())
                 # RDW takes the first 4 bytes in the VB format, hence we need to add an extra buffer to the vsam max recl.
                 reclen += 4
@@ -520,7 +515,7 @@ class EncodeUtils(object):
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
                 rc, out, err = copy.copy_ps2uss(temp_ps, temp_src)
-            if dest_type == "PS" or dest_type == "VSAM":
+            if dest_type == "PS" or dest_type == "KSDS":
                 temp_dest_fo = NamedTemporaryFile()
                 temp_dest = temp_dest_fo.name
             if dest_type == "PO":
@@ -530,7 +525,7 @@ class EncodeUtils(object):
                 if not dest_type:
                     convert_rc = True
                 else:
-                    if dest_type == "VSAM":
+                    if dest_type == "KSDS":
                         reclen, space_u = self.listdsi_data_set(dest.upper())
                         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
                         reclen += 4
@@ -581,7 +576,7 @@ class EncodeUtils(object):
         is_dir = os.path.isdir(file_path)
 
         tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
-        rc, out, err = self.module.run_command(tag_cmd)
+        rc, out, err = self.module.run_command(tag_cmd, errors='replace')
         if rc != 0:
             raise TaggingError(file_path, tag, rc, out, err)
 
@@ -605,7 +600,7 @@ class EncodeUtils(object):
 
         try:
             tag_cmd = "ls -T {0}".format(file_path)
-            rc, stdout, stderr = self.module.run_command(tag_cmd)
+            rc, stdout, stderr = self.module.run_command(tag_cmd, errors='replace')
 
             if rc != 0:
                 return None

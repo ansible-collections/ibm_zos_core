@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,10 +20,8 @@ from ansible.utils.display import Display
 from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
-import copy
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
-from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
 
 display = Display()
@@ -44,15 +42,15 @@ class ActionModule(ActionBase):
 
         use_template = _process_boolean(module_args.get("use_template"))
         location = module_args.get("location")
-        if use_template and location != "LOCAL":
+        if use_template and location != "local":
             result.update(dict(
                 failed=True,
                 changed=False,
-                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'LOCAL'".format(location)
+                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'local'".format(location)
             ))
             return result
 
-        if location == "LOCAL":
+        if location == "local":
 
             source = self._task.args.get("src", None)
 
@@ -151,15 +149,17 @@ class ActionModule(ActionBase):
                     remote_src=True,
                 )
             )
-            copy_task = copy.deepcopy(self._task)
+            copy_task = self._task.copy()
             copy_task.args = copy_module_args
-            zos_copy_action_module = ZosCopyActionModule(task=copy_task,
-                                                         connection=self._connection,
-                                                         play_context=self._play_context,
-                                                         loader=self._loader,
-                                                         templar=self._templar,
-                                                         shared_loader_obj=self._shared_loader_obj)
-            result.update(zos_copy_action_module.run(task_vars=task_vars))
+            copy_action = self._shared_loader_obj.action_loader.get(
+                'ibm.ibm_zos_core.zos_copy',
+                task=copy_task,
+                connection=self._connection,
+                play_context=self._play_context,
+                loader=self._loader,
+                templar=self._templar,
+                shared_loader_obj=self._shared_loader_obj)
+            result.update(copy_action.run(task_vars=task_vars))
             if result.get("msg") is None:
                 module_args["src"] = dest_path
                 result.update(

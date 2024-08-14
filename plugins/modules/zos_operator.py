@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,6 +35,9 @@ options:
       - The command to execute.
       - If the command contains single-quotations, another set of single quotes must be added.
       - For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
+      - If the command contains any special characters ($, &, etc), they must be escaped using
+        double backslashes like \\\\\\$.
+      - For example, to display job by job name the command would be C(cmd:"\\$dj''HELLO''")
     type: str
     required: true
   verbose:
@@ -55,6 +58,9 @@ options:
     type: int
     required: false
     default: 1
+notes:
+    - Commands may need to use specific prefixes like $, they can be discovered by
+      issuing the following command C(D OPDATA,PREFIX).
 """
 
 EXAMPLES = r"""
@@ -172,7 +178,25 @@ except Exception:
 
 
 def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
+    """
+    Executes an operator command.
 
+    Parameters
+    ----------
+    operator_cmd : str
+        Command to execute.
+    timeout : int
+        Time until it stops whether it finished or not.
+    *args : dict
+        Some arguments to pass on.
+    **kwargs : dict
+        Some other arguments to pass on.
+
+    Returns
+    -------
+    tuple(int, str, str, int)
+        Return code, standard output, standard error and time elapsed from start to finish.
+    """
     # as of ZOAU v1.3.0, timeout is measured in centiseconds, therefore:
     timeout_c = 100 * timeout_s
 
@@ -187,6 +211,19 @@ def execute_command(operator_cmd, timeout_s=1, *args, **kwargs):
 
 
 def run_module():
+    """Initialize the module.
+
+    Raises
+    ------
+    fail_json
+        An error ocurred while importing ZOAU.
+    fail_json
+        Expected response to be more than 2 lines.
+    fail_json
+        A non-zero return code was received.
+    fail_json
+        An unexpected error occurred.
+    """
     module_args = dict(
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
@@ -261,6 +298,18 @@ def run_module():
 
 
 def parse_params(params):
+    """Use BetterArgParser to parse the module parameters.
+
+    Parameters
+    ----------
+    params : dict
+        Parameters to parse.
+
+    Returns
+    -------
+    dict
+        New parameters.
+    """
     arg_defs = dict(
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
@@ -272,6 +321,19 @@ def parse_params(params):
 
 
 def run_operator_command(params):
+    """Runs operator command based on a given parameters in a dictionary.
+
+    Parameters
+    ----------
+    params : dict
+        Operator command parameters to pass into the function.
+
+    Returns
+    -------
+    dict
+        Return code, standard output, standard error, the cmd call
+        and time elapsed from beginning to end.
+    """
     AnsibleModuleHelper(argument_spec={})
 
     kwargs = {}
@@ -311,6 +373,22 @@ class Error(Exception):
 
 
 class OperatorCmdError(Error):
+    """Exception raised when an error occurred executing the operator command.
+
+    Parameters
+    ----------
+    cmd : str
+        Command that failed.
+    rc : int
+        Return code.
+    message : str
+        Human readable string describing the exception.
+
+    Attributes
+    ----------
+    msg : str
+        Human readable string describing the exception.
+    """
     def __init__(self, cmd, rc, message):
         self.msg = 'An error occurred executing the operator command "{0}", with RC={1} and response "{2}"'.format(
             cmd, str(rc), message

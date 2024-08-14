@@ -1,0 +1,87 @@
+breaking_changes:
+  - zos_archive - option ``terse_pack`` no longer accepts uppercase choices,
+    users should replace them with lowercase ones.
+    Suboption ``type`` of ``dest_data_set`` no longer accepts uppercase
+    choices, users should replace them with lowercase ones.
+    Suboption ``space_type`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboption ``record_format`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_backup_restore - option ``space_type`` no longer accepts uppercase
+    choices, users should replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_copy - suboption ``type`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboption ``space_type`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboption ``record_format`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_data_set - option ``type`` no longer accepts uppercase choices,
+    users should replace them with lowercase ones.
+    Option ``space_type`` no longer accepts uppercase choices, users
+    should replace them with lowercase ones.
+    Option ``record_format`` no longer accepts uppercase choices, users
+    should replace them with lowercase ones.
+    Options inside ``batch`` no longer accept uppercase choices, users should
+    replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_job_submit - option ``location`` no longer accepts uppercase choices,
+    users should replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_mount - option ``fs_type`` no longer accepts uppercase choices,
+    users should replace them with lowercase ones.
+    Option ``unmount_opts`` no longer accepts uppercase choices, users
+    should replace them with lowercase ones.
+    Option ``mount_opts`` no longer accepts uppercase choices, users
+    should replace them with lowercase ones.
+    Option ``tag_untagged`` no longer accepts uppercase choices, users
+    should replace them with lowercase ones.
+    Option ``automove`` no longer accepts uppercase choices, users
+    should replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_mvs_raw - suboption ``type`` of ``dd_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboptions ``disposition_normal`` and ``disposition_abnormal`` of
+    ``dd_data_set`` no longer accept ``catlg`` and ``uncatlg`` as choices.
+    This also applies when defining a ``dd_data_set`` inside ``dd_concat``.
+    Suboption ``space_type`` of ``dd_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboption ``record_format`` of ``dd_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboption ``record_format`` of ``dd_unix`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Options inside ``dd_concat`` no longer accept uppercase choices,
+    users should replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_unarchive - suboption ``type`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboption ``space_type`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    Suboption ``record_format`` of ``dest_data_set`` no longer accepts
+    uppercase choices, users should replace them with lowercase ones.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+
+trivial:
+  - zos_blockinfile - updated tests to use lowercase options when calling
+    another module in the collection.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_find - updated tests to use lowercase options when calling
+    another module in the collection.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_lineinfile - updated tests to use lowercase options when calling
+    another module in the collection.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_encode - updated tests to use lowercase options when calling
+    another module in the collection.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_fetch - updated tests to use lowercase options when calling
+    another module in the collection.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_job_output - updated tests to use lowercase options when calling
+    another module in the collection.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).
+  - zos_job_query - updated tests to use lowercase options when calling
+    another module in the collection.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1388).

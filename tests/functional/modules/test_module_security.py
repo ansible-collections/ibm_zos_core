@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import pytest
 from pprint import pprint
-from pipes import quote
+from shlex import quote
 import unittest
 
 # TODO: remove some of the logic from tests and make pytest fixtures

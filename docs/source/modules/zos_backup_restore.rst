@@ -49,6 +49,8 @@ data_sets
   include
     When *operation=backup*, specifies a list of data sets or data set patterns to include in the backup.
 
+    When *operation=backup* GDS relative names are supported.
+
     When *operation=restore*, specifies a list of data sets or data set patterns to include when restoring from a backup.
 
     The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate to DFSMSdss that only part of a qualifier has been specified.
@@ -65,6 +67,8 @@ data_sets
 
   exclude
     When *operation=backup*, specifies a list of data sets or data set patterns to exclude from the backup.
+
+    When *operation=backup* GDS relative names are supported.
 
     When *operation=restore*, specifies a list of data sets or data set patterns to exclude when restoring from a backup.
 
@@ -121,6 +125,8 @@ backup_name
   When *operation=restore*, the destination data set or UNIX file backup to restore.
 
   There are no enforced conventions for backup names. However, using a common extension like ``.dzp`` for UNIX files and ``.DZP`` for data sets will improve readability.
+
+  GDS relative names are supported when *operation=restore*.
 
   | **required**: True
   | **type**: str
@@ -182,13 +188,13 @@ space
 space_type
   The unit of measurement to use when defining data set space.
 
-  Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
-  When *full_volume=True*, *space_type* defaults to ``G``, otherwise default is ``M``
+  When *full_volume=True*, *space_type* defaults to ``g``, otherwise default is ``m``
 
   | **required**: False
   | **type**: str
-  | **choices**: K, M, G, CYL, TRK
+  | **choices**: k, m, g, cyl, trk
 
 
 hlq
@@ -235,13 +241,22 @@ Examples
          exclude: user.private.*
        backup_name: MY.BACKUP.DZP
 
+   - name: Backup a list of GDDs to data set my.backup.dzp
+     zos_backup_restore:
+       operation: backup
+       data_sets:
+         include:
+           - user.gdg(-1)
+           - user.gdg(0)
+       backup_name: my.backup.dzp
+
    - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
      zos_backup_restore:
        operation: backup
        data_sets:
          include: user.**
        backup_name: /tmp/temp_backup.dzp
-       recover: yes
+       recover: true
 
    - name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP.DZP,
        allocate 100MB for data sets used in backup process.
@@ -251,7 +266,7 @@ Examples
          include: user.**
        backup_name: MY.BACKUP.DZP
        space: 100
-       space_type: M
+       space_type: m
 
    - name:
        Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP.DZP,
@@ -263,7 +278,7 @@ Examples
        volume: MYVOL1
        backup_name: MY.BACKUP.DZP
        space: 100
-       space_type: M
+       space_type: m
 
    - name: Backup an entire volume, MYVOL1, to the UNIX file /tmp/temp_backup.dzp,
        allocate 1GB for data sets used in backup process.
@@ -271,9 +286,9 @@ Examples
        operation: backup
        backup_name: /tmp/temp_backup.dzp
        volume: MYVOL1
-       full_volume: yes
+       full_volume: true
        space: 1
-       space_type: G
+       space_type: g
 
    - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
        Use z/OS username as new HLQ.
@@ -314,10 +329,10 @@ Examples
      zos_backup_restore:
        operation: restore
        volume: MYVOL2
-       full_volume: yes
+       full_volume: true
        backup_name: MY.BACKUP.DZP
        space: 1
-       space_type: G
+       space_type: g
 
    - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
        Specify DB2SMS10 for the SMS storage and management classes to use for the restored
@@ -331,6 +346,16 @@ Examples
 
 
 
+
+Notes
+-----
+
+.. note::
+   It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured to run either the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
+
+   When using this module, if the RACF FACILITY class profile **STGADMIN.ADR.DUMP.TOLERATE.ENQF** is active, you must have READ access authority to use the module option *recover=true*. If the RACF FACILITY class checking is not set up, any user can use the module option without access to the class.
+
+   If your system uses a different security product, consult that product's documentation to configure the required security classes.
 
 
 

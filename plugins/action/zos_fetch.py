@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019 - 2024
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,9 +26,15 @@ from ansible.errors import AnsibleError
 from ansible.utils.display import Display
 from ansible import cli
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode, validation, data_set
 
-SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
+SUPPORTED_DS_TYPES = frozenset({
+    "PS", "SEQ", "BASIC",
+    "PO", "PE", "PDS", "PDSE",
+    "VSAM", "KSDS",
+    "GDG",
+    "USS"
+})
 
 display = Display()
 
@@ -37,10 +43,15 @@ def _update_result(result, src, dest, ds_type="USS", is_binary=False):
     """ Helper function to update output result with the provided values """
     data_set_types = {
         "PS": "Sequential",
+        "SEQ": "Sequential",
+        "BASIC": "Sequential",
         "PO": "Partitioned",
-        "PDSE": "Partitioned Extended",
+        "PDS": "Partitioned",
         "PE": "Partitioned Extended",
+        "PDSE": "Partitioned Extended",
         "VSAM": "VSAM",
+        "KSDS": "VSAM",
+        "GDG": "Generation Data Group",
         "USS": "USS",
     }
     updated_result = dict((k, v) for k, v in result.items())
@@ -101,6 +112,7 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         result = super(ActionModule, self).run(tmp, task_vars)
         del tmp
+
         # ********************************************************** #
         #                 Parameter initializations                  #
         # ********************************************************** #
@@ -111,7 +123,7 @@ class ActionModule(ActionBase):
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
-            self._task.args.get("ignore_sftp_stderr"), default=False
+            self._task.args.get("ignore_sftp_stderr"), default=True
         )
         validate_checksum = _process_boolean(
             self._task.args.get("validate_checksum"), default=True
@@ -139,11 +151,59 @@ class ActionModule(ActionBase):
             return result
 
         ds_type = None
-        fetch_member = "(" in src and src.endswith(")")
+        fetch_member = data_set.is_member(src)
         if fetch_member:
             member_name = src[src.find("(") + 1: src.find(")")]
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
+
+        # ********************************************************** #
+        #                Execute module on remote host               #
+        # ********************************************************** #
+        new_module_args = self._task.args.copy()
+        encoding_to = None
+        if encoding:
+            encoding_to = encoding.get("to", None)
+        if encoding is None or encoding_to is None:
+            new_module_args.update(
+                dict(encoding=dict(to=encode.Defaults.get_default_system_charset()))
+            )
+        remote_path = None
+
+        try:
+            fetch_res = self._execute_module(
+                module_name="ibm.ibm_zos_core.zos_fetch",
+                module_args=new_module_args,
+                task_vars=task_vars
+            )
+            ds_type = fetch_res.get("ds_type")
+            src = fetch_res.get("file")
+            remote_path = fetch_res.get("remote_path")
+
+            if fetch_res.get("msg"):
+                result["msg"] = fetch_res.get("msg")
+                result["stdout"] = fetch_res.get("stdout") or fetch_res.get(
+                    "module_stdout"
+                )
+                result["stderr"] = fetch_res.get("stderr") or fetch_res.get(
+                    "module_stderr"
+                )
+                result["stdout_lines"] = fetch_res.get("stdout_lines")
+                result["stderr_lines"] = fetch_res.get("stderr_lines")
+                result["rc"] = fetch_res.get("rc")
+                result["failed"] = True
+                return result
+
+            elif fetch_res.get("note"):
+                result["note"] = fetch_res.get("note")
+                return result
+
+        except Exception as err:
+            result["msg"] = "Failure during module execution"
+            result["stderr"] = str(err)
+            result["stderr_lines"] = str(err).splitlines()
+            result["failed"] = True
+            return result
 
         # ********************************************************** #
         #  Determine destination path:                               #
@@ -216,50 +276,20 @@ class ActionModule(ActionBase):
         local_checksum = _get_file_checksum(dest)
 
         # ********************************************************** #
-        #                Execute module on remote host               #
+        # Fetch remote data.
         # ********************************************************** #
-        new_module_args = self._task.args.copy()
-        encoding_to = None
-        if encoding:
-            encoding_to = encoding.get("to", None)
-        if encoding is None or encoding_to is None:
-            new_module_args.update(
-                dict(encoding=dict(to=encode.Defaults.get_default_system_charset()))
-            )
-        remote_path = None
         try:
-            fetch_res = self._execute_module(
-                module_name="ibm.ibm_zos_core.zos_fetch",
-                module_args=new_module_args,
-                task_vars=task_vars
-            )
-            ds_type = fetch_res.get("ds_type")
-            src = fetch_res.get("file")
-            remote_path = fetch_res.get("remote_path")
-
-            if fetch_res.get("msg"):
-                result["msg"] = fetch_res.get("msg")
-                result["stdout"] = fetch_res.get("stdout") or fetch_res.get(
-                    "module_stdout"
-                )
-                result["stderr"] = fetch_res.get("stderr") or fetch_res.get(
-                    "module_stderr"
-                )
-                result["stdout_lines"] = fetch_res.get("stdout_lines")
-                result["stderr_lines"] = fetch_res.get("stderr_lines")
-                result["rc"] = fetch_res.get("rc")
-                result["failed"] = True
-                return result
-
-            elif fetch_res.get("note"):
-                result["note"] = fetch_res.get("note")
-                return result
-
             if ds_type in SUPPORTED_DS_TYPES:
                 if ds_type == "PO" and os.path.isfile(dest) and not fetch_member:
                     result[
                         "msg"
                     ] = "Destination must be a directory to fetch a partitioned data set"
+                    result["failed"] = True
+                    return result
+                if ds_type == "GDG" and os.path.isfile(dest):
+                    result[
+                        "msg"
+                    ] = "Destination must be a directory to fetch a generation data group"
                     result["failed"] = True
                     return result
 
@@ -272,7 +302,7 @@ class ActionModule(ActionBase):
                 if fetch_content.get("msg"):
                     return fetch_content
 
-                if validate_checksum and ds_type != "PO" and not is_binary:
+                if validate_checksum and ds_type != "GDG" and ds_type != "PO" and not is_binary:
                     new_checksum = _get_file_checksum(dest)
                     result["changed"] = local_checksum != new_checksum
                     result["checksum"] = new_checksum
@@ -286,6 +316,7 @@ class ActionModule(ActionBase):
                 )
                 result["failed"] = True
                 return result
+
         except Exception as err:
             result["msg"] = "Failure during module execution"
             result["stderr"] = str(err)
@@ -311,7 +342,7 @@ class ActionModule(ActionBase):
         result = dict()
         _sftp_action = 'get'
 
-        if src_type == "PO":
+        if src_type == "PO" or src_type == "GDG":
             _sftp_action += ' -r'    # add '-r` to clone the source trees
 
         # To support multiple Ansible versions we must do some version detection and act accordingly
@@ -404,6 +435,6 @@ class ActionModule(ActionBase):
         # do not remove the original file.
         if not (src_type == "USS" and not encoding):
             rm_cmd = "rm -r {0}".format(remote_path)
-            if src_type != "PO":
+            if src_type != "PO" and src_type != "GDG":
                 rm_cmd = rm_cmd.replace(" -r", "")
             self._connection.exec_command(rm_cmd)

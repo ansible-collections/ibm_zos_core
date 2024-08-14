@@ -1,5 +1,5 @@
 
-#!/bin/sh
+#!/bin/bash
 # ==============================================================================
 # Copyright (c) IBM Corporation 2022, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -731,7 +731,7 @@ CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib\\n"
 CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\n"
 CONFIG=${CONFIG}"  PYTHONSTDINENCODING: \"cp1047\"\\n"
 
-echo $CONFIG>$managed_venv_path/config.yml
+echo -e $CONFIG>$managed_venv_path/config.yml
 }
 
 ################################################################################

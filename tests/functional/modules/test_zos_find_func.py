@@ -373,11 +373,12 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
         hosts.all.zos_data_set(name=TEST_PS, state="absent")
 
 
-def test_find_data_sets_in_volume(ansible_zos_module):
+def test_find_data_sets_in_volume(ansible_zos_module, volumes_on_systems):
     try:
         hosts = ansible_zos_module
         data_set_name = f"{TEST_SUITE_HLQ}.FIND.SEQ"
-        volume = "000000"
+        volumes = Volume_Handler(volumes_on_systems)
+        volume = volumes.get_available_vol()
         # Create temp data set
         hosts.all.zos_data_set(name=data_set_name, type="seq", state="present", volumes=[volume])
         find_res = hosts.all.zos_find(
@@ -391,11 +392,15 @@ def test_find_data_sets_in_volume(ansible_zos_module):
 
 
 
-def test_find_vsam_pattern(ansible_zos_module):
+def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     try:
+        volumes = Volume_Handler(volumes_on_systems)
+
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts)
+            volume = volumes.get_available_vol()
+            create_vsam_ksds(vsam, hosts, volume=volume)
+
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
             resource_type='cluster'

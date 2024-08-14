@@ -750,8 +750,10 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()[:25]
     dest_path = "/tmp/"+ src
-    hlq = get_random_q()
-    hosts.all.zos_data_set(name="{0}.".format(hlq) + src, type="seq", state="present")
+    results = hosts.all.shell(cmd="echo $USER")
+    for result in results.contacted.values():
+            hlq = result.get("stdout")
+    hosts.all.zos_data_set(name=hlq + '.' + src, type="seq", state="present")
     params = {
         "src":src,
         "dest":"/tmp/",

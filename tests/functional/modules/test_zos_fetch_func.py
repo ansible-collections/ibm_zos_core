@@ -30,10 +30,7 @@ from shellescape import quote
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 # pylint: disable-next=import-error
-from ibm_zos_core.tests.helpers.dataset import (
-    get_tmp_ds_name,
-    get_random_q,
-)
+from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 __metaclass__ = type
 

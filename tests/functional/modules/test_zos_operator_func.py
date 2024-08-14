@@ -173,7 +173,7 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
 
 def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
     hosts = ansible_zos_module
-    command = "d u,all"
+    command = "D U,all"
     results = hosts.all.zos_operator(
         cmd=command,
         verbose=False,

@@ -714,7 +714,7 @@ def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
     os.chmod(dest_path, stat.S_IREAD)
     params = {
         "src":"/etc/profile",
-        "dest":"/tmp/",
+        "dest": dest_path,
         "flat":True
     }
     try:

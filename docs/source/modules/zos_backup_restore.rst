@@ -48,21 +48,17 @@ data_sets
 
   include
     When *operation=backup*, specifies a list of data sets or data set patterns to include in the backup.
-    When *operation=backup*, specifies a list of data sets or data set patterns to include in the backup.
 
     When *operation=backup* GDS relative names are supported.
 
     When *operation=restore*, specifies a list of data sets or data set patterns to include when restoring from a backup.
 
     The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate to DFSMSdss that only part of a qualifier has been specified.
-    The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate to DFSMSdss that only part of a qualifier has been specified.
 
-    When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
     When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
 
     Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.
 
-    A question mark ``?`` or percent sign ``%`` matches a single character.
     A question mark ``?`` or percent sign ``%`` matches a single character.
 
     | **required**: False
@@ -71,21 +67,17 @@ data_sets
 
   exclude
     When *operation=backup*, specifies a list of data sets or data set patterns to exclude from the backup.
-    When *operation=backup*, specifies a list of data sets or data set patterns to exclude from the backup.
 
     When *operation=backup* GDS relative names are supported.
 
     When *operation=restore*, specifies a list of data sets or data set patterns to exclude when restoring from a backup.
 
     The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified."
-    The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified."
 
-    When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
     When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
 
     Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.
 
-    A question mark ``?`` or percent sign ``%`` matches a single character.
     A question mark ``?`` or percent sign ``%`` matches a single character.
 
     | **required**: False
@@ -97,12 +89,9 @@ volume
   This applies to both data set restores and volume restores.
 
   When *operation=backup* and *data_sets* are provided, specifies the volume that contains the data sets to backup.
-  When *operation=backup* and *data_sets* are provided, specifies the volume that contains the data sets to backup.
 
   When *operation=restore*, specifies the volume the backup should be restored to.
-  When *operation=restore*, specifies the volume the backup should be restored to.
 
-  *volume* is required when restoring a full volume backup.
   *volume* is required when restoring a full volume backup.
 
   | **required**: False
@@ -111,12 +100,9 @@ volume
 
 full_volume
   When *operation=backup* and *full_volume=True*, specifies that the entire volume provided to *volume* should be backed up.
-  When *operation=backup* and *full_volume=True*, specifies that the entire volume provided to *volume* should be backed up.
 
   When *operation=restore* and *full_volume=True*, specifies that the volume should be restored (default is dataset).
-  When *operation=restore* and *full_volume=True*, specifies that the volume should be restored (default is dataset).
 
-  *volume* must be provided when *full_volume=True*.
   *volume* must be provided when *full_volume=True*.
 
   | **required**: False
@@ -127,7 +113,6 @@ full_volume
 temp_volume
   Specifies a particular volume on which the temporary data sets should be created during the backup and restore process.
 
-  When *operation=backup* and *backup_name* is a data set, specifies the volume the backup should be placed in.
   When *operation=backup* and *backup_name* is a data set, specifies the volume the backup should be placed in.
 
   | **required**: False
@@ -157,9 +142,7 @@ recover
 
 overwrite
   When *operation=backup*, specifies if an existing data set or UNIX file matching *backup_name* should be deleted.
-  When *operation=backup*, specifies if an existing data set or UNIX file matching *backup_name* should be deleted.
 
-  When *operation=restore*, specifies if the module should overwrite existing data sets with matching name on the target device.
   When *operation=restore*, specifies if the module should overwrite existing data sets with matching name on the target device.
 
   | **required**: False
@@ -169,12 +152,9 @@ overwrite
 
 sms_storage_class
   When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
-  When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
 
   When *operation=backup*, specifies the storage class to use for temporary data sets created during backup process.
-  When *operation=backup*, specifies the storage class to use for temporary data sets created during backup process.
 
-  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
   If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
 
   | **required**: False
@@ -183,12 +163,9 @@ sms_storage_class
 
 sms_management_class
   When *operation=restore*, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
-  When *operation=restore*, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
 
   When *operation=backup*, specifies the management class to use for temporary data sets created during backup process.
-  When *operation=backup*, specifies the management class to use for temporary data sets created during backup process.
 
-  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
   If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
 
   | **required**: False
@@ -197,15 +174,11 @@ sms_management_class
 
 space
   If *operation=backup*, specifies the amount of space to allocate for the backup. Please note that even when backing up to a UNIX file, backup contents will be temporarily held in a data set.
-  If *operation=backup*, specifies the amount of space to allocate for the backup. Please note that even when backing up to a UNIX file, backup contents will be temporarily held in a data set.
 
-  If *operation=restore*, specifies the amount of space to allocate for data sets temporarily created during the restore process.
   If *operation=restore*, specifies the amount of space to allocate for data sets temporarily created during the restore process.
 
   The unit of space used is set using *space_type*.
-  The unit of space used is set using *space_type*.
 
-  When *full_volume=True*, *space* defaults to ``1``, otherwise default is ``25``
   When *full_volume=True*, *space* defaults to ``1``, otherwise default is ``25``
 
   | **required**: False
@@ -216,9 +189,7 @@ space_type
   The unit of measurement to use when defining data set space.
 
   Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
-  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
 
-  When *full_volume=True*, *space_type* defaults to ``g``, otherwise default is ``m``
   When *full_volume=True*, *space_type* defaults to ``g``, otherwise default is ``m``
 
   | **required**: False
@@ -238,7 +209,6 @@ hlq
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup data sets.
 
-  The default HLQ is the Ansible user that executes the module and if that is not available, then the value of ``TMPHLQ`` is used.
   The default HLQ is the Ansible user that executes the module and if that is not available, then the value of ``TMPHLQ`` is used.
 
   | **required**: False

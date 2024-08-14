@@ -372,7 +372,8 @@ def run_module():
     cmd_str = cmd_str.strip()
     script_rc, stdout, stderr = module.run_command(
         cmd_str,
-        cwd=chdir
+        cwd=chdir,
+        errors='replace'
     )
 
     result = dict(

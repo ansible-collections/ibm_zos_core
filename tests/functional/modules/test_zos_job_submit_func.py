@@ -453,7 +453,7 @@ def test_job_submit_pds(ansible_zos_module, location):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
     finally:
-        hosts.all.file(path=temp_pathf, state="absent")
+        hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")
 
 

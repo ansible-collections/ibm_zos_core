@@ -112,8 +112,6 @@ ASA_COPY_CONTENT = """  Space, do not advance.
 
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
-TEST_VSAM = "IMSTESTL.LDS01.WADS2"
-TEST_VSAM_KSDS = "SYS1.STGINDEX"
 
 COBOL_PRINT_STR = "HELLO WORLD ONE"
 COBOL_PRINT_STR2 = "HELLO WORLD TWO"
@@ -257,7 +255,7 @@ def populate_partitioned_data_set(hosts, name, ds_type, members=None):
         members = ["MEMBER1", "MEMBER2", "MEMBER3"]
     ds_list = ["{0}({1})".format(name, member) for member in members]
 
-    hosts.all.zos_data_set(name=name, type=ds_type, state="present")
+    hosts.all.shell(cmd=f"dtouch -t{ds_type} {name}")
 
     for member in ds_list:
         hosts.all.shell(
@@ -2514,7 +2512,7 @@ def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
 
 
 @pytest.mark.seq
-@pytest.mark.parametrize("backup", [None, "USER.TEST.SEQ.FUNCTEST.BACK"])
+@pytest.mark.parametrize("backup", [None, True])
 def test_backup_sequential_data_set(ansible_zos_module, backup):
     hosts = ansible_zos_module
     src = "/etc/profile"
@@ -2524,17 +2522,20 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
 
         if backup:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup)
+            backup_name = get_tmp_ds_name()
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup_name)
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+            assert result.get("backup_name") is not None
+            result_backup_name = result.get("backup_name")
+            if backup:
+                assert backup_name == result.get("backup_name")
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(result_backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -2544,7 +2545,7 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_name:
+        if backup:
             hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
@@ -4335,10 +4336,10 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
 
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="pds", backup=None),
-    dict(type="pds", backup="USER.TEST.PDS.BACKUP"),
-    dict(type="pdse", backup=None),
-    dict(type="pdse", backup="USER.TEST.PDSE.BACKUP"),
+    dict(type="pds", backup=False),
+    dict(type="pds", backup=True),
+    dict(type="pdse", backup=False),
+    dict(type="pdse", backup=True),
 ])
 def test_backup_pds(ansible_zos_module, args):
     hosts = ansible_zos_module
@@ -4352,7 +4353,8 @@ def test_backup_pds(ansible_zos_module, args):
         populate_partitioned_data_set(hosts, dest, args["type"], members)
 
         if args["backup"]:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=args["backup"])
+            backup_name = get_tmp_ds_name()
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup_name)
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
 
@@ -4361,12 +4363,12 @@ def test_backup_pds(ansible_zos_module, args):
             assert result.get("changed") is True
             assert result.get("dest") == dest
 
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+            result_backup_name = result.get("backup_name")
+            assert result_backup_name is not None
             if args["backup"]:
-                assert backup_name == args["backup"]
+                assert result_backup_name == backup_name
 
-        verify_copy = get_listcat_information(hosts, backup_name, args["type"])
+        verify_copy = get_listcat_information(hosts, result_backup_name, args["type"])
 
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None
@@ -4495,7 +4497,7 @@ def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
 
 
 @pytest.mark.vsam
-@pytest.mark.parametrize("backup", [None, "USER.TEST.VSAM.KSDS.BACK"])
+@pytest.mark.parametrize("backup", [False, True])
 def test_backup_ksds(ansible_zos_module, backup):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()
@@ -4507,21 +4509,22 @@ def test_backup_ksds(ansible_zos_module, backup):
         create_vsam_data_set(hosts, dest, "ksds", add_data=True, key_length=12, key_offset=0)
 
         if backup:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, backup_name=backup, remote_src=True, force=True)
+            backup_name = get_tmp_ds_name()
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, backup_name=backup_name, remote_src=True, force=True)
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, remote_src=True, force=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+            result_backup_name = result.get("backup_name")
+            assert result_backup_name is not None
 
             if backup:
-                assert backup_name == backup
+                assert result_backup_name == backup_name
 
         verify_copy = get_listcat_information(hosts, dest, "ksds")
-        verify_backup = get_listcat_information(hosts, backup_name, "ksds")
+        verify_backup = get_listcat_information(hosts, result_backup_name, "ksds")
 
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None

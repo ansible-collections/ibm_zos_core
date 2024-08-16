@@ -19,7 +19,6 @@ import shutil
 import re
 import time
 import tempfile
-from tempfile import mkstemp
 import subprocess
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
@@ -2317,10 +2316,11 @@ def test_copy_file_to_non_empty_sequential_data_set(ansible_zos_module, src):
 @pytest.mark.seq
 def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = "/tmp/ddchkpt"
 
     try:
+        hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{src_ds}' ")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
@@ -2338,6 +2338,7 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
             assert result.get("stdout") != ""
     finally:
         hosts.all.file(path=dest, state="absent")
+        hosts.all.zos_data_set(name=src_ds, state="absent")
 
 
 @pytest.mark.uss
@@ -2456,12 +2457,12 @@ def test_copy_ps_to_empty_ps(ansible_zos_module, force):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
-        hosts.all.zos_copy(content="Inline content", dest=dest)
+        hosts.all.shell(cmd=f"decho 'This is a test ' '{src_ds}' ")
+        hosts.all.shell(cmd=f"decho 'This is a test ' '{dest}' ")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
@@ -2487,12 +2488,12 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
-        hosts.all.zos_copy(content=DUMMY_DATA_SPECIAL_CHARS, dest=dest)
+        hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{src_ds}' ")
+        hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{dest}' ")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(

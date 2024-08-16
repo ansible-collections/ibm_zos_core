@@ -112,13 +112,8 @@ ASA_COPY_CONTENT = """  Space, do not advance.
 
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
-TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
-TEST_PDS = "IMSTESTL.COMNUC"
-TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
 TEST_VSAM = "IMSTESTL.LDS01.WADS2"
 TEST_VSAM_KSDS = "SYS1.STGINDEX"
-TEST_PDSE = "SYS1.NFSLIBE"
-TEST_PDSE_MEMBER = "SYS1.NFSLIBE(GFSAMAIN)"
 
 COBOL_PRINT_STR = "HELLO WORLD ONE"
 COBOL_PRINT_STR2 = "HELLO WORLD TWO"
@@ -2346,11 +2341,12 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = "/tmp/ddchkpt"
 
     try:
         hosts.all.file(path=dest, state="touch")
+        hosts.all.shell(cmd=f"decho 'test line' '{src_ds}' ")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         stat_res = hosts.all.stat(path=dest)
@@ -2371,6 +2367,7 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
     finally:
+        hosts.all.shell(cmd=f"drm '{src_ds}' ")
         hosts.all.file(path=dest, state="absent")
 
 
@@ -2378,11 +2375,12 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
 @pytest.mark.seq
 def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = "/tmp/ddchkpt"
-    dest_path = dest + "/" + TEST_PS
+    dest_path = dest + "/" + src_ds
 
     try:
+        hosts.all.shell(cmd=f"decho 'test line' '{src_ds}' " )
         hosts.all.file(path=dest, state="directory")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
@@ -2405,11 +2403,10 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
 @pytest.mark.seq
 def test_copy_ps_to_non_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, state="absent")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
@@ -2431,11 +2428,12 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_empty_ps(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        hosts.all.shell(cmd=f"decho 'test line ' '{src_ds}'")
+        hosts.all.shell(cmd=f"dtouch -tseq '{src_ds}'")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
@@ -4433,8 +4431,9 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
 @pytest.mark.vsam
 def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
+    src_ds = get_tmp_ds_name()
     dest_ds = get_tmp_ds_name()
+    create_vsam_data_set(hosts, src_ds, "ksds", add_data=True, key_length=12, key_offset=0)
 
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True)
@@ -4452,7 +4451,13 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
             assert "IN-CAT" in output
             assert re.search(r"\bINDEXED\b", output)
     finally:
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
+        hosts.all.zos_data_set(
+            batch=[
+                {"name": dest_ds, "state": "absent"},
+                {"name": src_ds, "state": "absent"}
+            ]
+        )
+
 
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])
@@ -4543,7 +4548,8 @@ def test_backup_ksds(ansible_zos_module, backup):
 @pytest.mark.vsam
 def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
+    src_ds = get_tmp_ds_name()
+    create_vsam_data_set(hosts, src_ds, "ksds", add_data=True, key_length=12, key_offset=0)
     dest_ds = get_tmp_ds_name()
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
@@ -4570,7 +4576,12 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
             assert re.search(r"\bINDEXED\b", output)
             assert re.search(r"\b{0}\b".format(volume_1), output)
     finally:
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
+        hosts.all.zos_data_set(
+            batch=[
+                {"name": dest_ds, "state": "absent"},
+                {"name": src_ds, "state": "absent"}
+            ]
+        )
 
 
 def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):

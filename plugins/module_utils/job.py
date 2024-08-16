@@ -90,7 +90,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
-        owner=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type=_username_pattern),
         job_name=dict(arg_type="qualifier_pattern"),
         dd_name=dict(arg_type=_ddname_pattern),
     )
@@ -224,7 +224,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     """
     arg_defs = dict(
         job_id=dict(arg_type="str"),
-        owner=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type=_username_pattern),
         job_name=dict(arg_type="str"),
     )
 
@@ -505,7 +505,8 @@ def _ddname_pattern(contents, resolve_dependencies):
     ----------
     contents : bool
         The contents of the argument.
-        resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+    resolved_dependencies : dict
+        Contains all of the dependencies and their contents,
         which have already been handled,
         for use during current arguments handling operations.
 
@@ -525,7 +526,44 @@ def _ddname_pattern(contents, resolve_dependencies):
         re.IGNORECASE,
     ):
         raise ValueError(
-            'Invalid argument type for "{0}". expected "ddname_pattern"'.format(
+            'Invalid argument type for "{0}". Expected "ddname_pattern"'.format(
+                contents
+            )
+        )
+    return str(contents)
+
+
+def _username_pattern(contents, resolve_dependencies):
+    """Resolver for username_pattern type arguments.
+
+    Parameters
+    ----------
+    contents : bool
+        The contents of the argument.
+    resolved_dependencies : dict
+        Contains all of the dependencies and their contents,
+        which have already been handled,
+        for use during current arguments handling operations.
+
+    Returns
+    -------
+    str
+        The arguments contents after any necessary operations.
+
+    Raises
+    ------
+    ValueError
+        When contents is invalid argument type.
+    """
+    # Valid characters are the following:
+    # A - Z, 0 - 9, $, @, #
+    if not re.fullmatch(
+        r"^([A-Z$#@]{1}[A-Z0-9$#@]{0,7})",
+        str(contents),
+        re.IGNORECASE,
+    ):
+        raise ValueError(
+            'Invalid argument type for "{0}". Expected a valid username.'.format(
                 contents
             )
         )

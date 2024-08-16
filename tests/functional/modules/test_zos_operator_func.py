@@ -19,7 +19,7 @@ import os
 import yaml
 from shellescape import quote
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+from ibm_zos_core.plugins.module_utils import (
     zoau_version_checker,
 )
 

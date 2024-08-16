@@ -616,7 +616,7 @@ def run_module():
         result["dest"] = dest
 
         if ds_type_dest == "GDG":
-            raise EncodeError("Encoding of a whole generation data group is not yet supported.")
+            raise EncodeError("Encoding of a whole generation data group is not supported.")
 
         new_src = src_data_set.name if src_data_set else src
         new_dest = dest_data_set.name if dest_data_set else dest

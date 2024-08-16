@@ -56,7 +56,7 @@ wait_time_s
 
   This option is helpful on a busy system requiring more time to execute commands.
 
-  Setting \ :emphasis:`wait`\  can instruct if execution should wait the full \ :emphasis:`wait\_time\_s`\ .
+  Setting *wait* can instruct if execution should wait the full *wait_time_s*.
 
   | **required**: False
   | **type**: int
@@ -100,7 +100,7 @@ Notes
 -----
 
 .. note::
-   Commands may need to use specific prefixes like $, they can be discovered by issuing the following command \ :literal:`D OPDATA,PREFIX`\ .
+   Commands may need to use specific prefixes like $, they can be discovered by issuing the following command ``D OPDATA,PREFIX``.
 
 
 

@@ -380,7 +380,7 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        use_adrdssu: True
+        use_adrdssu: true
 
 - name: Archive multiple data sets into a new GDS
   zos_archive:
@@ -389,7 +389,7 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        use_adrdssu: True
+        use_adrdssu: true
 '''
 
 RETURN = r'''

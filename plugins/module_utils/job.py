@@ -558,7 +558,7 @@ def _username_pattern(contents, resolve_dependencies):
     # Valid characters are the following:
     # A - Z, 0 - 9, $, @, #
     if not re.fullmatch(
-        r"^([A-Z$#@]{1}[A-Z0-9$#@]{0,7})",
+        r"^(?:[A-Z$#@]{1}[A-Z0-9$#@]{0,7})|(?:\*{1})|(?:[A-Z$#@]{1}[A-Z0-9$#@]{0,6}\*{1})$",
         str(contents),
         re.IGNORECASE,
     ):

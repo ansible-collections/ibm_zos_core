@@ -36,7 +36,7 @@ To upgrade the collection to the latest available version, run the following com
 ansible-galaxy collection install ibm.ibm_zos_core --upgrade
 ```
 
-<br/>You can also install a specific version of the collection, for example, if you need to downgrade for some reason. Use the following syntax to install version 1.0.0:
+<br/>You can also install a specific version of the collection, for example, if you need to install a different version. Use the following syntax to install version 1.0.0:
 
 ```sh
 ansible-galaxy collection install ibm.ibm_zos_core:1.0.0
@@ -123,7 +123,7 @@ environment_vars:
 
 ## Testing
 
-All releases, will meet the following test criteria.
+All releases will meet the following test criteria.
 
 * 100% success for [Functional](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/functional) tests.
 * 100% success for [Unit](https://github.com/ansible-collections/ibm_zos_core/tree/dev/tests/unit) tests.
@@ -134,9 +134,9 @@ All releases, will meet the following test criteria.
 <br/>This release of the collection was tested with following dependencies.
 
 * ansible-core v2.15.x
-* Python 3.9.x
+* Python 3.11.x
 * IBM Open Enterprise SDK for Python 3.11.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.0.x
+* IBM Z Open Automation Utilities (ZOAU) 1.3.1.x
 * z/OS V2R5
 
 This release introduces case sensitivity for option values and includes a porting guide in the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) to assist with which option values will need to be updated.
@@ -177,9 +177,10 @@ For Galaxy and GitHub users, to see the supported ansible-core versions, review 
 
 | Version  | Status         | Release notes | Changelogs |
 |----------|----------------|---------------|------------|
-| 1.11.x   | In development | unreleased    | unreleased |
+| 1.12.x   | In development | unreleased    | unreleased |
+| 1.11.x   | In preview     | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-11-0-beta.1) | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.11.0-beta.1/CHANGELOG.rst) |
 | 1.10.x   | Current        | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-10-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0/CHANGELOG.rst) |
-| 1.9.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-9-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.0/CHANGELOG.rst)  |
+| 1.9.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-9-2)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.2/CHANGELOG.rst)  |
 | 1.8.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-8-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.8.0/CHANGELOG.rst)  |
 | 1.7.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-7-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.7.0/CHANGELOG.rst)  |
 | 1.6.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-6-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.6.0/CHANGELOG.rst)  |

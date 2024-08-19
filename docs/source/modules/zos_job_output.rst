@@ -18,9 +18,9 @@ Synopsis
 --------
 - Display the z/OS job output for a given criteria (Job id/Job name/owner) with/without a data definition name as a filter.
 - At least provide a job id/job name/owner.
-- The job id can be specific such as "STC02560", or one that uses a pattern such as "STC\*" or "\*".
-- The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP\*" or "\*".
-- The owner can be specific such as "IBMUSER", or one that uses a pattern like "\*".
+- The job id can be specific such as "STC02560", or one that uses a pattern such as "STC*" or "*".
+- The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP*" or "*".
+- The owner can be specific such as "IBMUSER", or one that uses a pattern like "*".
 - If there is no ddname, or if ddname="?", output of all the ddnames under the given job will be displayed.
 
 
@@ -32,21 +32,21 @@ Parameters
 
 
 job_id
-  The z/OS job ID of the job containing the spool file. (e.g "STC02560", "STC\*")
+  The z/OS job ID of the job containing the spool file. (e.g "STC02560", "STC*")
 
   | **required**: False
   | **type**: str
 
 
 job_name
-  The name of the batch job. (e.g "TCPIP", "C\*")
+  The name of the batch job. (e.g "TCPIP", "C*")
 
   | **required**: False
   | **type**: str
 
 
 owner
-  The owner who ran the job. (e.g "IBMUSER", "\*")
+  The owner who ran the job. (e.g "IBMUSER", "*")
 
   | **required**: False
   | **type**: str
@@ -97,7 +97,7 @@ Return Values
 
 
 jobs
-  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret\_code dictionary with parameter msg\_txt = The job could not be found.
+  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret_code dictionary with parameter msg_txt = The job could not be found.
 
   | **returned**: success
   | **type**: list
@@ -416,7 +416,7 @@ jobs
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the \`msg\` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
+      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
 
       | **type**: str
       | **sample**: S0C4

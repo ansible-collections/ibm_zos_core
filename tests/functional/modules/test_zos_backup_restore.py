@@ -886,5 +886,5 @@ def test_backup_into_gds(ansible_zos_module, dstype):
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
-        hosts.all.shell(cmd=f"drm ANSIBLE.* ")
+        hosts.all.shell(cmd=f"drm ANSIBLE.* ; drm OMVSADM.*")
 

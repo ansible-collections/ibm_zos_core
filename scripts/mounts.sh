@@ -1,6 +1,6 @@
 #!/bin/sh
 # ==============================================================================
-# Copyright (c) IBM Corporation 2022, 2023
+# Copyright (c) IBM Corporation 2022, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -480,6 +480,10 @@ get_python_mount(){
 	fi
 }
 
+get_python_mount_echo(){
+	get_python_mount $1
+	echo "${PYZ_HOME}"
+}
 
 # Get the zoau home/path given $1/arg else error
 get_zoau_mount(){
@@ -505,6 +509,11 @@ get_zoau_mount(){
 		echo "ZOAU vesion [$arg] was not found in the mount table."
 		exit 1
 	fi
+}
+
+get_zoau_mount_echo(){
+	get_zoau_mount $1
+	echo "${ZOAU_HOME}"
 }
 
 # ==============================================================================
@@ -619,6 +628,12 @@ _test_arrays(){
 # Main arg parser
 ################################################################################
 case "$1" in
+  --get-python-mount)
+    get_python_mount_echo $2
+    ;;
+  --get-zoau-mount)
+    get_zoau_mount_echo $2
+    ;;
   --mount)
     mount "-r -t zfs -f"
     ;;
@@ -653,4 +668,3 @@ case "$1" in
       fi
    fi
 esac
-

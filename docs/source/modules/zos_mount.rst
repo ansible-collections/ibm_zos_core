@@ -16,9 +16,9 @@ zos_mount -- Mount a z/OS file system.
 
 Synopsis
 --------
-- The module \ `zos\_mount <./zos_mount.html>`__\  can manage mount operations for a z/OS UNIX System Services (USS) file system data set.
-- The \ :emphasis:`src`\  data set must be unique and a Fully Qualified Name (FQN).
-- The \ :emphasis:`path`\  will be created if needed.
+- The module `zos_mount <./zos_mount.html>`_ can manage mount operations for a z/OS UNIX System Services (USS) file system data set.
+- The *src* data set must be unique and a Fully Qualified Name (FQN).
+- The *path* will be created if needed.
 
 
 
@@ -31,7 +31,7 @@ Parameters
 path
   The absolute path name onto which the file system is to be mounted.
 
-  The \ :emphasis:`path`\  is case sensitive and must be less than or equal 1023 characters long.
+  The *path* is case sensitive and must be less than or equal 1023 characters long.
 
   | **required**: True
   | **type**: str
@@ -40,9 +40,9 @@ path
 src
   The name of the file system to be added to the file system hierarchy.
 
-  The file system \ :emphasis:`src`\  must be a data set of type \ :emphasis:`fs\_type`\ .
+  The file system *src* must be a data set of type *fs_type*.
 
-  The file system \ :emphasis:`src`\  data set must be cataloged.
+  The file system *src* data set must be cataloged.
 
   | **required**: True
   | **type**: str
@@ -53,7 +53,7 @@ fs_type
 
   The physical file systems data set format to perform the logical mount.
 
-  The \ :emphasis:`fs\_type`\  is required to be lowercase.
+  The *fs_type* is required to be lowercase.
 
   | **required**: True
   | **type**: str
@@ -63,25 +63,25 @@ fs_type
 state
   The desired status of the described mount (choice).
 
-  If \ :emphasis:`state=mounted`\  and \ :emphasis:`src`\  are not in use, the module will add the file system entry to the parmlib member \ :emphasis:`persistent/data\_store`\  if not present. The \ :emphasis:`path`\  will be updated, the device will be mounted and the module will complete successfully with \ :emphasis:`changed=True`\ .
+  If *state=mounted* and *src* are not in use, the module will add the file system entry to the parmlib member *persistent/data_store* if not present. The *path* will be updated, the device will be mounted and the module will complete successfully with *changed=True*.
 
 
-  If \ :emphasis:`state=mounted`\  and \ :emphasis:`src`\  are in use, the module will add the file system entry to the parmlib member \ :emphasis:`persistent/data\_store`\  if not present. The \ :emphasis:`path`\  will not be updated, the device will not be mounted and the module will complete successfully with \ :emphasis:`changed=False`\ .
+  If *state=mounted* and *src* are in use, the module will add the file system entry to the parmlib member *persistent/data_store* if not present. The *path* will not be updated, the device will not be mounted and the module will complete successfully with *changed=False*.
 
 
-  If \ :emphasis:`state=unmounted`\  and \ :emphasis:`src`\  are in use, the module will \ :strong:`not`\  add the file system entry to the parmlib member \ :emphasis:`persistent/data\_store`\ . The device will be unmounted and the module will complete successfully with \ :emphasis:`changed=True`\ .
+  If *state=unmounted* and *src* are in use, the module will **not** add the file system entry to the parmlib member *persistent/data_store*. The device will be unmounted and the module will complete successfully with *changed=True*.
 
 
-  If \ :emphasis:`state=unmounted`\  and \ :emphasis:`src`\  are not in use, the module will \ :strong:`not`\  add the file system entry to parmlib member \ :emphasis:`persistent/data\_store`\ .The device will remain unchanged and the module will complete with \ :emphasis:`changed=False`\ .
+  If *state=unmounted* and *src* are not in use, the module will **not** add the file system entry to parmlib member *persistent/data_store*.The device will remain unchanged and the module will complete with *changed=False*.
 
 
-  If \ :emphasis:`state=present`\ , the module will add the file system entry to the provided parmlib member \ :emphasis:`persistent/data\_store`\  if not present. The module will complete successfully with \ :emphasis:`changed=True`\ .
+  If *state=present*, the module will add the file system entry to the provided parmlib member *persistent/data_store* if not present. The module will complete successfully with *changed=True*.
 
 
-  If \ :emphasis:`state=absent`\ , the module will remove the file system entry to the provided parmlib member \ :emphasis:`persistent/data\_store`\  if present. The module will complete successfully with \ :emphasis:`changed=True`\ .
+  If *state=absent*, the module will remove the file system entry to the provided parmlib member *persistent/data_store* if present. The module will complete successfully with *changed=True*.
 
 
-  If \ :emphasis:`state=remounted`\ , the module will \ :strong:`not`\  add the file system entry to parmlib member \ :emphasis:`persistent/data\_store`\ . The device will be unmounted and mounted, the module will complete successfully with \ :emphasis:`changed=True`\ .
+  If *state=remounted*, the module will **not** add the file system entry to parmlib member *persistent/data_store*. The device will be unmounted and mounted, the module will complete successfully with *changed=True*.
 
 
   | **required**: False
@@ -91,7 +91,7 @@ state
 
 
 persistent
-  Add or remove mount command entries to provided \ :emphasis:`data\_store`\ 
+  Add or remove mount command entries to provided *data_store*
 
   | **required**: False
   | **type**: dict
@@ -105,9 +105,9 @@ persistent
 
 
   backup
-    Creates a backup file or backup data set for \ :emphasis:`data\_store`\ , including the timestamp information to ensure that you retrieve the original parameters defined in \ :emphasis:`data\_store`\ .
+    Creates a backup file or backup data set for *data_store*, including the timestamp information to ensure that you retrieve the original parameters defined in *data_store*.
 
-    \ :emphasis:`backup\_name`\  can be used to specify a backup file name if \ :emphasis:`backup=true`\ .
+    *backup_name* can be used to specify a backup file name if *backup=true*.
 
     The backup file name will be returned on either success or failure of module execution such that data can be retrieved.
 
@@ -119,11 +119,11 @@ persistent
   backup_name
     Specify the USS file name or data set name for the destination backup.
 
-    If the source \ :emphasis:`data\_store`\  is a USS file or path, the \ :emphasis:`backup\_name`\  name can be relative or absolute for file or path name.
+    If the source *data_store* is a USS file or path, the *backup_name* name can be relative or absolute for file or path name.
 
-    If the source is an MVS data set, the backup\_name must be an MVS data set name.
+    If the source is an MVS data set, the backup_name must be an MVS data set name.
 
-    If the backup\_name is not provided, the default \ :emphasis:`backup\_name`\  will be used. If the source is a USS file or path, the name of the backup file will be the source file or path name appended with a timestamp. For example, \ :literal:`/path/file\_name.2020-04-23-08-32-29-bak.tar`\ .
+    If the backup_name is not provided, the default *backup_name* will be used. If the source is a USS file or path, the name of the backup file will be the source file or path name appended with a timestamp. For example, ``/path/file_name.2020-04-23-08-32-29-bak.tar``.
 
     If the source is an MVS data set, it will be a data set with a random name generated by calling the ZOAU API. The MVS backup data set recovery can be done by renaming it.
 
@@ -132,9 +132,9 @@ persistent
 
 
   comment
-    If provided, this is used as a comment that surrounds the command in the \ :emphasis:`persistent/data\_store`\ 
+    If provided, this is used as a comment that surrounds the command in the *persistent/data_store*
 
-    Comments are used to encapsulate the \ :emphasis:`persistent/data\_store`\  entry such that they can easily be understood and located.
+    Comments are used to encapsulate the *persistent/data_store* entry such that they can easily be understood and located.
 
     | **required**: False
     | **type**: list
@@ -145,7 +145,7 @@ persistent
 unmount_opts
   Describes how the unmount will be performed.
 
-  For more on coded character set identifiers, review the IBM documentation topic \ :strong:`UNMOUNT - Remove a file system from the file hierarchy`\ .
+  For more on coded character set identifiers, review the IBM documentation topic **UNMOUNT - Remove a file system from the file hierarchy**.
 
   | **required**: False
   | **type**: str
@@ -156,13 +156,13 @@ unmount_opts
 mount_opts
   Options available to the mount.
 
-  If \ :emphasis:`mount\_opts=ro`\  on a mounted/remount, mount is performed read-only.
+  If *mount_opts=ro* on a mounted/remount, mount is performed read-only.
 
-  If \ :emphasis:`mount\_opts=same`\  and (unmount\_opts=remount), mount is opened in the same mode as previously opened.
+  If *mount_opts=same* and (unmount_opts=remount), mount is opened in the same mode as previously opened.
 
-  If \ :emphasis:`mount\_opts=nowait`\ , mount is performed asynchronously.
+  If *mount_opts=nowait*, mount is performed asynchronously.
 
-  If \ :emphasis:`mount\_opts=nosecurity`\ , security checks are not enforced for files in this file system.
+  If *mount_opts=nosecurity*, security checks are not enforced for files in this file system.
 
   | **required**: False
   | **type**: str
@@ -184,11 +184,11 @@ tag_untagged
 
   When the file system is unmounted, the tags are lost.
 
-  If \ :emphasis:`tag\_untagged=notext`\  none of the untagged files in the file system are automatically converted during file reading and writing.
+  If *tag_untagged=notext* none of the untagged files in the file system are automatically converted during file reading and writing.
 
-  If \ :emphasis:`tag\_untagged=text`\  each untagged file is implicitly marked as containing pure text data that can be converted.
+  If *tag_untagged=text* each untagged file is implicitly marked as containing pure text data that can be converted.
 
-  If this flag is used, use of tag\_ccsid is encouraged.
+  If this flag is used, use of tag_ccsid is encouraged.
 
   | **required**: False
   | **type**: str
@@ -198,13 +198,13 @@ tag_untagged
 tag_ccsid
   Identifies the coded character set identifier (ccsid) to be implicitly set for the untagged file.
 
-  For more on coded character set identifiers, review the IBM documentation topic \ :strong:`Coded Character Sets`\ .
+  For more on coded character set identifiers, review the IBM documentation topic **Coded Character Sets**.
 
   Specified as a decimal value from 0 to 65535. However, when TEXT is specified, the value must be between 0 and 65535.
 
   The value is not checked as being valid and the corresponding code page is not checked as being installed.
 
-  Required when \ :emphasis:`tag\_untagged=TEXT`\ .
+  Required when *tag_untagged=TEXT*.
 
   | **required**: False
   | **type**: int
@@ -214,10 +214,10 @@ allow_uid
   Specifies whether the SETUID and SETGID mode bits on an executable in this file system are considered. Also determines whether the APF extended attribute or the Program Control extended attribute is honored.
 
 
-  If \ :emphasis:`allow\_uid=True`\  the SETUID and SETGID mode bits are considered when a program in this file system is run. SETUID is the default.
+  If *allow_uid=True* the SETUID and SETGID mode bits are considered when a program in this file system is run. SETUID is the default.
 
 
-  If \ :emphasis:`allow\_uid=False`\  the SETUID and SETGID mode bits are ignored when a program in this file system is run. The program runs as though the SETUID and SETGID mode bits were not set. Also, if you specify the NOSETUID option on MOUNT, the APF extended attribute and the Program Control Bit values are ignored.
+  If *allow_uid=False* the SETUID and SETGID mode bits are ignored when a program in this file system is run. The program runs as though the SETUID and SETGID mode bits were not set. Also, if you specify the NOSETUID option on MOUNT, the APF extended attribute and the Program Control Bit values are ignored.
 
 
   | **required**: False
@@ -226,10 +226,10 @@ allow_uid
 
 
 sysname
-  For systems participating in shared file system, \ :emphasis:`sysname`\  specifies the particular system on which a mount should be performed. This system will then become the owner of the file system mounted. This system must be IPLed with SYSPLEX(YES).
+  For systems participating in shared file system, *sysname* specifies the particular system on which a mount should be performed. This system will then become the owner of the file system mounted. This system must be IPLed with SYSPLEX(YES).
 
 
-  \ :emphasis:`sysname`\  is the name of a system participating in shared file system. The name must be 1-8 characters long; the valid characters are A-Z, 0-9, $, @, and #.
+  *sysname* is the name of a system participating in shared file system. The name must be 1-8 characters long; the valid characters are A-Z, 0-9, $, @, and #.
 
 
   | **required**: False
@@ -240,13 +240,13 @@ automove
   These parameters apply only in a sysplex where systems are exploiting the shared file system capability. They specify what happens to the ownership of a file system when a shutdown, PFS termination, dead system takeover, or file system move occurs. The default setting is AUTOMOVE where the file system will be randomly moved to another system (no system list used).
 
 
-  \ :emphasis:`automove=automove`\  indicates that ownership of the file system can be automatically moved to another system participating in a shared file system.
+  *automove=automove* indicates that ownership of the file system can be automatically moved to another system participating in a shared file system.
 
 
-  \ :emphasis:`automove=noautomove`\  prevents movement of the file system's ownership in some situations.
+  *automove=noautomove* prevents movement of the file system's ownership in some situations.
 
 
-  \ :emphasis:`automove=unmount`\  allows the file system to be unmounted in some situations.
+  *automove=unmount* allows the file system to be unmounted in some situations.
 
 
   | **required**: False
@@ -275,7 +275,7 @@ automove_list
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup datasets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value \ :literal:`TMPHLQ`\  is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str
@@ -388,7 +388,7 @@ Notes
 
    If an uncataloged data set needs to be fetched, it should be cataloged first.
 
-   Uncataloged data sets can be cataloged using the \ `zos\_data\_set <./zos_data_set.html>`__\  module.
+   Uncataloged data sets can be cataloged using the `zos_data_set <./zos_data_set.html>`_ module.
 
 
 
@@ -466,7 +466,7 @@ persistent
     | **sample**: SYS1.FILESYS(PRMAABAK)
 
   comment
-    The text that was used in markers around the \ :emphasis:`Persistent/data\_store`\  entry.
+    The text that was used in markers around the *Persistent/data_store* entry.
 
     | **returned**: always
     | **type**: list
@@ -528,7 +528,7 @@ allow_uid
         true
 
 sysname
-  \ :emphasis:`sysname`\  specifies the particular system on which a mount should be performed.
+  *sysname* specifies the particular system on which a mount should be performed.
 
   | **returned**: if Non-None
   | **type**: str

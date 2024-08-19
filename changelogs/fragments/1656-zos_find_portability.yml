@@ -1,0 +1,3 @@
+trivial:
+  - test_zos_find_func.py - Remove the use of hard coded dataset names.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1656).

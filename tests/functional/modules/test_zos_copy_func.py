@@ -2380,23 +2380,6 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
         hosts.all.shell(cmd=f"drm '{src_ds}' ")
         hosts.all.file(path=dest, state="absent")
 
-        else:
-            # copy src loadlib to dest library pds w/o aliases
-            copy_res = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib),
-                remote_src=True,
-                executable=True,
-                aliases=False
-            )
-            # copy src loadlib to dest library pds w aliases
-            copy_res_aliases = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib_aliases),
-                remote_src=True,
-                executable=True,
-                aliases=True
-            )
 
 @pytest.mark.uss
 @pytest.mark.seq
@@ -2438,69 +2421,6 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
         )
-
-        # Copying the remote loadlibs in USS to a local dir.
-        # This section ONLY handles ONE host, so if we ever use multiple hosts to
-        # test, we will need to update this code.
-        remote_user = hosts["options"]["user"]
-        # Removing a trailing comma because the framework saves the hosts list as a
-        # string instead of a list.
-        remote_host = hosts["options"]["inventory"].replace(",", "")
-
-        tmp_folder =  tempfile.TemporaryDirectory(prefix="tmpfetch")
-        cmd = [
-            "sftp",
-            "-r",
-            f"{remote_user}@{remote_host}:{uss_location}",
-            f"{tmp_folder.name}"
-        ]
-        with subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE) as sftp_proc:
-            result = sftp_proc.stdout.read()
-
-        source_path = os.path.join(tmp_folder.name, os.path.basename(uss_location))
-
-        if not is_created:
-            # ensure dest data sets absent for this variation of the test case.
-            hosts.all.zos_data_set(name=dest_lib, state="absent")
-        else:
-            # allocate dest loadlib to copy over without an alias.
-            hosts.all.zos_data_set(
-                name=dest_lib,
-                state="present",
-                type="pdse",
-                record_format="u",
-                record_length=0,
-                block_size=32760,
-                space_primary=2,
-                space_type="m",
-                replace=True
-            )
-
-        if not is_created:
-            # dest data set does not exist, specify it in dest_dataset param.
-            # copy src loadlib to dest library pds w/o aliases
-            copy_res = hosts.all.zos_copy(
-                src=source_path,
-                dest="{0}".format(dest_lib),
-                executable=True,
-                aliases=False,
-                dest_data_set={
-                    'type': "pdse",
-                    'record_format': "u",
-                    'record_length': 0,
-                    'block_size': 32760,
-                    'space_primary': 2,
-                    'space_type': "m",
-                }
-            )
-        else:
-            # copy src loadlib to dest library pds w/o aliases
-            copy_res = hosts.all.zos_copy(
-                src=source_path,
-                dest="{0}".format(dest_lib),
-                executable=True,
-                aliases=False
-            )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None

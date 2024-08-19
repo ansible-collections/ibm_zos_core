@@ -292,6 +292,7 @@ backup_name:
     type: str
 '''
 
+import os
 import re
 import json
 from ansible.module_utils._text import to_text
@@ -312,7 +313,7 @@ except Exception:
 
 
 # supported data set types
-DS_TYPE = ['PS', 'PO']
+DS_TYPE = data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED)
 
 
 def backupOper(module, src, backup, tmphlq=None):
@@ -340,11 +341,15 @@ def backupOper(module, src, backup, tmphlq=None):
     fail_json
         Creating backup has failed.
     """
-    # analysis the file type
-    ds_utils = data_set.DataSetUtils(src)
-    file_type = ds_utils.ds_type()
+    file_type = None
+    if data_set.is_data_set(src):
+        file_type = data_set.DataSet.data_set_type(src)
+    else:
+        if os.path.exists(src):
+            file_type = 'USS'
+
     if file_type != 'USS' and file_type not in DS_TYPE:
-        message = "{0} data set type is NOT supported".format(str(file_type))
+        message = "Dataset {0} of type {1} is NOT supported".format(src, str(file_type))
         module.fail_json(msg=message)
 
     # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
@@ -357,8 +362,17 @@ def backupOper(module, src, backup, tmphlq=None):
             backup_name = Backup.uss_file_backup(src, backup_name=backup, compress=False)
         else:
             backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+    except Backup.BackupError as exc:
+        module.fail_json(
+            msg=exc.msg,
+            rc=exc.rc,
+            stdout=exc.stdout,
+            stderr=exc.stderr
+        )
     except Exception:
-        module.fail_json(msg="creating backup has failed")
+        module.fail_json(
+            msg="An error ocurred during backup."
+        )
 
     return backup_name
 

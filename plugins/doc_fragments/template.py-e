@@ -106,10 +106,10 @@ options:
         description:
           - Sequence that starts a newline in a template.
         type: str
-        default: "\n"
+        default: '\\n'
         choices:
-          - "\n"
-          - "\r"
+          - '\\n'
+          - '\\r'
           - "\r\n"
       auto_reload:
         description:

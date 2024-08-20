@@ -16,7 +16,7 @@ zos_script -- Run scripts in z/OS
 
 Synopsis
 --------
-- The \ `zos\_script <./zos_script.html>`__\  module runs a local or remote script in the remote machine.
+- The `zos_script <./zos_script.html>`_ module runs a local or remote script in the remote machine.
 
 
 
@@ -56,7 +56,7 @@ creates
 encoding
   Specifies which encodings the script should be converted from and to.
 
-  If \ :literal:`encoding`\  is not provided, the module determines which local and remote charsets to convert the data from and to.
+  If ``encoding`` is not provided, the module determines which local and remote charsets to convert the data from and to.
 
   | **required**: False
   | **type**: dict
@@ -87,9 +87,9 @@ executable
 
 
 remote_src
-  If set to \ :literal:`false`\ , the module will search the script in the controller.
+  If set to ``false``, the module will search the script in the controller.
 
-  If set to \ :literal:`true`\ , the module will search the script in the remote machine.
+  If set to ``true``, the module will search the script in the remote machine.
 
   | **required**: False
   | **type**: bool
@@ -103,13 +103,13 @@ removes
 
 
 use_template
-  Whether the module should treat \ :literal:`src`\  as a Jinja2 template and render it before continuing with the rest of the module.
+  Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
 
-  Only valid when \ :literal:`src`\  is a local file or directory.
+  Only valid when ``src`` is a local file or directory.
 
-  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as \ `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`__\ , such as \ :literal:`playbook\_dir`\ , \ :literal:`ansible\_version`\ , etc.
+  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
 
-  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order \ `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`__\ 
+  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
 
   | **required**: False
   | **type**: bool
@@ -119,9 +119,9 @@ use_template
 template_parameters
   Options to set the way Jinja2 will process templates.
 
-  Jinja2 already sets defaults for the markers it uses, you can find more information at its \ `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`__\ .
+  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
 
-  These options are ignored unless \ :literal:`use\_template`\  is true.
+  These options are ignored unless ``use_template`` is true.
 
   | **required**: False
   | **type**: dict
@@ -200,7 +200,7 @@ template_parameters
   trim_blocks
     Whether Jinja2 should remove the first newline after a block is removed.
 
-    Setting this option to \ :literal:`False`\  will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
+    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
 
     | **required**: False
     | **type**: bool
@@ -290,7 +290,7 @@ Notes
 .. note::
    When executing local scripts, temporary storage will be used on the remote z/OS system. The size of the temporary storage will correspond to the size of the file being copied.
 
-   The location in the z/OS system where local scripts will be copied to can be configured through Ansible's \ :literal:`remote\_tmp`\  option. Refer to \ `Ansible's documentation <https://docs.ansible.com/ansible/latest/collections/ansible/builtin/sh_shell.html#parameter-remote_tmp>`__\  for more information.
+   The location in the z/OS system where local scripts will be copied to can be configured through Ansible's ``remote_tmp`` option. Refer to `Ansible's documentation <https://docs.ansible.com/ansible/latest/collections/ansible/builtin/sh_shell.html#parameter-remote_tmp>`_ for more information.
 
    All local scripts copied to a remote z/OS system  will be removed from the managed node before the module finishes executing.
 
@@ -298,13 +298,13 @@ Notes
 
    The module will only add execution permissions for the file owner.
 
-   If executing REXX scripts, make sure to include a newline character on each line of the file. Otherwise, the interpreter may fail and return error \ :literal:`BPXW0003I`\ .
+   If executing REXX scripts, make sure to include a newline character on each line of the file. Otherwise, the interpreter may fail and return error ``BPXW0003I``.
 
-   For supported character sets used to encode data, refer to the \ `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`__\ .
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
-   This module uses \ `zos\_copy <./zos_copy.html>`__\  to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
+   This module uses `zos_copy <./zos_copy.html>`_ to copy local scripts to the remote machine which uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; SCP (secure copy protocol) and Co:Z SFTP are not supported. In the case of Co:z SFTP, you can exempt the Ansible user id on z/OS from using Co:Z thus falling back to using standard SFTP. If the module detects SCP, it will temporarily use SFTP for transfers, if not available, the module will fail.
 
-   This module executes scripts inside z/OS UNIX System Services. For running REXX scripts contained in data sets or CLISTs, consider issuing a TSO command with \ `zos\_tso\_command <./zos_tso_command.html>`__\ .
+   This module executes scripts inside z/OS UNIX System Services. For running REXX scripts contained in data sets or CLISTs, consider issuing a TSO command with `zos_tso_command <./zos_tso_command.html>`_.
 
    The community script module does not rely on Python to execute scripts on a managed node, while this module does. Python must be present on the remote machine.
 

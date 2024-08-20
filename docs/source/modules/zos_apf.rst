@@ -37,7 +37,7 @@ library
 
 
 state
-  Ensure that the library is added \ :literal:`state=present`\  or removed \ :literal:`state=absent`\ .
+  Ensure that the library is added ``state=present`` or removed ``state=absent``.
 
   The APF list format has to be "DYNAMIC".
 
@@ -58,24 +58,24 @@ force_dynamic
 
 
 volume
-  The identifier for the volume containing the library specified in the \ :literal:`library`\  parameter. The values must be one the following.
+  The identifier for the volume containing the library specified in the ``library`` parameter. The values must be one the following.
 
   1. The volume serial number.
 
-  2. Six asterisks \ :literal:`\*\*\*\*\*\*`\ , indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
+  2. Six asterisks ``******``, indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
 
-  3. \*MCAT\*, indicating that the system must use the volume serial number of the volume containing the master catalog.
+  3. *MCAT*, indicating that the system must use the volume serial number of the volume containing the master catalog.
 
-  If \ :literal:`volume`\  is not specified, \ :literal:`library`\  has to be cataloged.
+  If ``volume`` is not specified, ``library`` has to be cataloged.
 
   | **required**: False
   | **type**: str
 
 
 sms
-  Indicates that the library specified in the \ :literal:`library`\  parameter is managed by the storage management subsystem (SMS), and therefore no volume is associated with the library.
+  Indicates that the library specified in the ``library`` parameter is managed by the storage management subsystem (SMS), and therefore no volume is associated with the library.
 
-  If \ :literal:`sms=True`\ , \ :literal:`volume`\  value will be ignored.
+  If ``sms=True``, ``volume`` value will be ignored.
 
   | **required**: False
   | **type**: bool
@@ -83,13 +83,13 @@ sms
 
 
 operation
-  Change APF list format to "DYNAMIC" \ :literal:`operation=set\_dynamic`\  or "STATIC" \ :literal:`operation=set\_static`\ 
+  Change APF list format to "DYNAMIC" ``operation=set_dynamic`` or "STATIC" ``operation=set_static``
 
-  Display APF list current format \ :literal:`operation=check\_format`\ 
+  Display APF list current format ``operation=check_format``
 
-  Display APF list entries when \ :literal:`operation=list`\  \ :literal:`library`\ , \ :literal:`volume`\  and \ :literal:`sms`\  will be used as filters.
+  Display APF list entries when ``operation=list`` ``library``, ``volume`` and ``sms`` will be used as filters.
 
-  If \ :literal:`operation`\  is not set, add or remove operation will be ignored.
+  If ``operation`` is not set, add or remove operation will be ignored.
 
   | **required**: False
   | **type**: str
@@ -99,23 +99,23 @@ operation
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup datasets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value \ :literal:`TMPHLQ`\  is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str
 
 
 persistent
-  Add/remove persistent entries to or from \ :emphasis:`data\_set\_name`\ 
+  Add/remove persistent entries to or from *data_set_name*
 
-  \ :literal:`library`\  will not be persisted or removed if \ :literal:`persistent=None`\ 
+  ``library`` will not be persisted or removed if ``persistent=None``
 
   | **required**: False
   | **type**: dict
 
 
   data_set_name
-    The data set name used for persisting or removing a \ :literal:`library`\  from the APF list.
+    The data set name used for persisting or removing a ``library`` from the APF list.
 
     | **required**: True
     | **type**: str
@@ -124,13 +124,13 @@ persistent
   marker
     The marker line template.
 
-    \ :literal:`{mark}`\  will be replaced with "BEGIN" and "END".
+    ``{mark}`` will be replaced with "BEGIN" and "END".
 
-    Using a custom marker without the \ :literal:`{mark}`\  variable may result in the block being repeatedly inserted on subsequent playbook runs.
+    Using a custom marker without the ``{mark}`` variable may result in the block being repeatedly inserted on subsequent playbook runs.
 
-    \ :literal:`{mark}`\  length may not exceed 72 characters.
+    ``{mark}`` length may not exceed 72 characters.
 
-    The timestamp (\<timestamp\>) used in the default marker follows the '+%Y%m%d-%H%M%S' date format
+    The timestamp (<timestamp>) used in the default marker follows the '+%Y%m%d-%H%M%S' date format
 
     | **required**: False
     | **type**: str
@@ -138,9 +138,9 @@ persistent
 
 
   backup
-    Creates a backup file or backup data set for \ :emphasis:`data\_set\_name`\ , including the timestamp information to ensure that you retrieve the original APF list defined in \ :emphasis:`data\_set\_name`\ ".
+    Creates a backup file or backup data set for *data_set_name*, including the timestamp information to ensure that you retrieve the original APF list defined in *data_set_name*".
 
-    \ :emphasis:`backup\_name`\  can be used to specify a backup file name if \ :emphasis:`backup=true`\ .
+    *backup_name* can be used to specify a backup file name if *backup=true*.
 
     The backup file name will be return on either success or failure of module execution such that data can be retrieved.
 
@@ -152,11 +152,11 @@ persistent
   backup_name
     Specify the USS file name or data set name for the destination backup.
 
-    If the source \ :emphasis:`data\_set\_name`\  is a USS file or path, the backup\_name name must be a file or path name, and the USS file or path must be an absolute path name.
+    If the source *data_set_name* is a USS file or path, the backup_name name must be a file or path name, and the USS file or path must be an absolute path name.
 
-    If the source is an MVS data set, the backup\_name must be an MVS data set name.
+    If the source is an MVS data set, the backup_name must be an MVS data set name.
 
-    If the backup\_name is not provided, the default backup\_name will be used. If the source is a USS file or path, the name of the backup file will be the source file or path name appended with a timestamp. For example, \ :literal:`/path/file\_name.2020-04-23-08-32-29-bak.tar`\ .
+    If the backup_name is not provided, the default backup_name will be used. If the source is a USS file or path, the name of the backup file will be the source file or path name appended with a timestamp. For example, ``/path/file_name.2020-04-23-08-32-29-bak.tar``.
 
     If the source is an MVS data set, it will be a data set with a random name generated by calling the ZOAU API. The MVS backup data set recovery can be done by renaming it.
 
@@ -168,9 +168,9 @@ persistent
 batch
   A list of dictionaries for adding or removing libraries.
 
-  This is mutually exclusive with \ :literal:`library`\ , \ :literal:`volume`\ , \ :literal:`sms`\ 
+  This is mutually exclusive with ``library``, ``volume``, ``sms``
 
-  Can be used with \ :literal:`persistent`\ 
+  Can be used with ``persistent``
 
   | **required**: False
   | **type**: list
@@ -185,24 +185,24 @@ batch
 
 
   volume
-    The identifier for the volume containing the library specified on the \ :literal:`library`\  parameter. The values must be one of the following.
+    The identifier for the volume containing the library specified on the ``library`` parameter. The values must be one of the following.
 
     1. The volume serial number
 
-    2. Six asterisks \ :literal:`\*\*\*\*\*\*`\ , indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
+    2. Six asterisks ``******``, indicating that the system must use the volume serial number of the current system residence (SYSRES) volume.
 
-    3. \*MCAT\*, indicating that the system must use the volume serial number of the volume containing the master catalog.
+    3. *MCAT*, indicating that the system must use the volume serial number of the volume containing the master catalog.
 
-    If \ :literal:`volume`\  is not specified, \ :literal:`library`\  has to be cataloged.
+    If ``volume`` is not specified, ``library`` has to be cataloged.
 
     | **required**: False
     | **type**: str
 
 
   sms
-    Indicates that the library specified in the \ :literal:`library`\  parameter is managed by the storage management subsystem (SMS), and therefore no volume is associated with the library.
+    Indicates that the library specified in the ``library`` parameter is managed by the storage management subsystem (SMS), and therefore no volume is associated with the library.
 
-    If true \ :literal:`volume`\  will be ignored.
+    If true ``volume`` will be ignored.
 
     | **required**: False
     | **type**: bool
@@ -283,9 +283,9 @@ Return Values
 stdout
   The stdout from ZOAU command apfadm. Output varies based on the type of operation.
 
-  state\> stdout of the executed operator command (opercmd), "SETPROG" from ZOAU command apfadm
+  state> stdout of the executed operator command (opercmd), "SETPROG" from ZOAU command apfadm
 
-  operation\> stdout of operation options list\> Returns a list of dictionaries of APF list entries [{'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFHAUTH'}, {'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFJAUTH'}, ...] set\_dynamic\>  Set to DYNAMIC set\_static\>   Set to STATIC check\_format\> DYNAMIC or STATIC
+  operation> stdout of operation options list> Returns a list of dictionaries of APF list entries [{'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFHAUTH'}, {'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFJAUTH'}, ...] set_dynamic>  Set to DYNAMIC set_static>   Set to STATIC check_format> DYNAMIC or STATIC
 
   | **returned**: always
   | **type**: str

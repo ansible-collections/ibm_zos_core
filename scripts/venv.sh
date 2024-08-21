@@ -81,7 +81,7 @@ echo_requirements(){
 
     unset requirements_common
     unset requirements
-    requirements_common="requirements-common.env"
+    requirements_common="configurations/requirements-common.env"
     unset REQ_COMMON
 
     if [ -f "$requirements_common" ]; then
@@ -103,9 +103,7 @@ echo_requirements(){
         fi
     done
 
-    # for file in `ls requirements-*.sh`; do
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -118,11 +116,11 @@ echo_requirements(){
         fi
 
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             #echo $venv_name
@@ -169,14 +167,13 @@ make_venv_dirs(){
     # We should think about the idea of allowing:
     # --force, --synch, --update thus not sure we need this method and better to
     # manage this logic inline to write_req
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             #echo $venv_name
@@ -191,7 +188,7 @@ write_requirements(){
     unset requirements
     unset REQ
     unset REQ_COMMON
-    requirements_common_file="requirements-common.env"
+    requirements_common_file="configurations/requirements-common.env"
 
     # Source the requirements file for now, easy way to do this. Exit may not
     # not be needed but leave it for now.
@@ -214,9 +211,7 @@ write_requirements(){
         fi
     done
 
-    # for file in `ls requirements-*.sh`; do
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -229,12 +224,12 @@ write_requirements(){
         fi
 
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
             echo $venv_name
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             echo $venv_name
@@ -288,6 +283,9 @@ write_requirements(){
             cp hosts.env "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp venv.sh "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp profile.sh "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            cp ../tests/dependencyfinder.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            cp ce.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            cp -R modules "${VENV_HOME_MANAGED}"/"${venv_name}"/
 
             # Decrypt file
             if [ "$option_pass" ]; then
@@ -318,16 +316,15 @@ write_requirements(){
 
 create_venv_and_pip_install_req(){
 
-    # for file in `ls requirements-[0-9].[0-9]*.env`; do
-    for file in `ls *requirements-[0-9].[0-9]*.env* *requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
         unset venv
 
         if [[ "$file" =~ "latest" ]]; then
-            # eg extract 'latest' from requirements-latest file name
+            # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
-            # eg extract 2.14 from requirements-2.14.sh file name
+            # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
             #echo $venv_name
@@ -382,7 +379,7 @@ discover_python(){
     #   for python_found in `which python3 | cut -d" " -f3`; do
     #
     #   The 'pys' array will search for pythons in reverse order, once it finds one that matches
-    #   the requirements-x.xx.env it does not continue searching. Reverse order is important to
+    #   the configurations/requirements-x.xx.env it does not continue searching. Reverse order is important to
     #   maintain.
     pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
     rc=1
@@ -536,6 +533,39 @@ get_host_ids(){
     done
 }
 
+get_host_ids_production(){
+    set_hosts_to_array
+    unset host_index
+    unset host_prefix
+    unset host_production
+    first_entry=true
+    for tgt in "${HOSTS_ALL[@]}" ; do
+        host_index=`echo "${tgt}" | cut -d ":" -f 1`
+        host_prefix=`echo "${tgt}" | cut -d ":" -f 2`
+        host_production=`echo "${tgt}" | cut -d ":" -f 5`
+        if [ "$host_production" == "production" ];then
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                echo "$host_prefix"
+            else
+                echo " $host_prefix"
+            fi
+        fi
+    done
+}
+
+    first_entry=true
+    skip_tests=""
+    for i in $(echo $skip | sed "s/,/ /g")
+    do
+        if [ "$first_entry" == "true" ];then
+            first_entry=false
+            skip_tests="$CURR_DIR/tests/functional/modules/$i"
+        else
+            skip_tests="$skip_tests $CURR_DIR/tests/functional/modules/$i"
+        fi
+    done
+
 # Should renane this with a prefix of set_ to make it more readable
 ssh_host_credentials(){
 	arg=$1
@@ -647,12 +677,27 @@ case "$1" in
     ssh_host_credentials $2
     ssh_copy_key
     ;;
+--host-credentials)
+    ssh_host_credentials $2
+    echo "$host"
+    ;;
+--user-credentials)
+    ssh_host_credentials $2
+    echo "$user"
+    ;;
+--pass-credentials)
+    ssh_host_credentials $2
+    echo "$pass"
+    ;;
 --host-setup-files)  #ec33017a "mounts.env" "mounts.sh" "shell-helper.sh" "profile.sh"
     ssh_host_credentials $2
     ssh_copy_files_and_mount $3 $4 $5
     ;;
 --targets)
     get_host_ids
+    ;;
+--targets-production)
+    get_host_ids_production
     ;;
 --config)
     write_test_config $2 $3 $4 $5

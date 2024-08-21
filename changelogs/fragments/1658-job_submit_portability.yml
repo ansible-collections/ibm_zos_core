@@ -1,0 +1,3 @@
+trivial:
+  - zos_job_submit - Remove the use of hard coded dataset and files names.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1658).

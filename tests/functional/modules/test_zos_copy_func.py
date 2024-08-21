@@ -1290,28 +1290,30 @@ def test_backup_uss_file(ansible_zos_module, backup):
     try:
         hosts.all.file(path=dest_dir, state="directory")
         hosts.all.file(path=dest, state="touch")
+
         if backup:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup)
+            backup_name = get_random_file_name(dir=TMP_DIRECTORY)
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup_name)
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_name = result.get("backup_name")
+            backup_name_result = result.get("backup_name")
 
             if backup:
-                assert backup_name == backup
+                assert backup_name_result == backup_name
             else:
-                assert backup_name is not None
+                assert backup_name_result is not None
 
-        stat_res = hosts.all.stat(path=backup_name)
+        stat_res = hosts.all.stat(path=backup_name_result)
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
 
     finally:
         hosts.all.file(path=dest_dir, state="absent")
-        if backup_name:
-            hosts.all.file(path=backup_name, state="absent")
+        if backup_name_result:
+            hosts.all.file(path=backup_name_result, state="absent")
 
 
 @pytest.mark.uss

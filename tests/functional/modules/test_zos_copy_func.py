@@ -4193,8 +4193,8 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
     src = "{0}(MEMBER)".format(src_ds)
-    dest = get_random_file_name(dir=TMP_DIRECTORY)
-    dest_path = f"{dest}/MEMBER"
+    dest = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
+    dest_path = f"{dest}MEMBER"
 
     try:
         hosts.all.zos_data_set(name=src_ds, type=src_type, state="present")
@@ -4211,6 +4211,7 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
             assert result.get("changed") is False
             assert error_msg in result.get("msg")
 
+        hosts.all.file(path=dest, state="directory")
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(

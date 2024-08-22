@@ -276,7 +276,7 @@ class ActionModule(ActionBase):
         local_checksum = _get_file_checksum(dest)
 
         # ********************************************************** #
-        # Fetch remote data.
+        # Fetch remote data.                                         #
         # ********************************************************** #
         try:
             if ds_type in SUPPORTED_DS_TYPES:

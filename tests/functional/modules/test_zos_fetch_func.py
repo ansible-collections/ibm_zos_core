@@ -707,7 +707,7 @@ def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
     with tempfile.NamedTemporaryFile(delete=True) as dest_path:
         dest_path.write(b'Hello world!')
-    os.chmod(dest_path, stat.S_IREAD)
+    os.chmod(dest_path.name, stat.S_IREAD)
     params = {
         "src":"/etc/profile",
         "dest": dest_path,

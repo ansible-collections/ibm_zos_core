@@ -705,12 +705,11 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
 
 def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    with tempfile.NamedTemporaryFile(delete=True) as dest_path:
-        dest_path.write(b'Hello world!')
+    dest_path = tempfile.NamedTemporaryFile(mode='r+b')
     os.chmod(dest_path.name, stat.S_IREAD)
     params = {
         "src":"/etc/profile",
-        "dest": dest_path,
+        "dest": dest_path.name,
         "flat":True
     }
     results = hosts.all.zos_fetch(**params)

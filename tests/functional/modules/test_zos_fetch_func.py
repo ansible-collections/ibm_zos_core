@@ -18,9 +18,14 @@ import shutil
 import stat
 import re
 import pytest
+import string
+import random
+import tempfile
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
+from datetime import datetime
+
 from shellescape import quote
 
 # pylint: disable-next=import-error
@@ -38,7 +43,7 @@ DUMMY DATA == LINE 03 ==
 
 FROM_ENCODING = "IBM-1047"
 TO_ENCODING = "ISO8859-1"
-USS_FILE = "/tmp/fetch.data"
+
 TEST_DATA = """0001This is for encode conversion testsing
 0002This is for encode conversion testsing
 0003This is for encode conversion testsing
@@ -80,6 +85,11 @@ VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
 """
+
+def get_unique_uss_file_name():
+    unique_str = "EN" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + "CODE" + random.choice(string.ascii_letters)
+    return "/tmp/{0}".format(unique_str)
+
 
 def extract_member_name(data_set):
     start = data_set.find("(")
@@ -184,7 +194,7 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
         "src":"/etc/profile",
-        "dest":"/tmp/",
+        "dest": "/tmp/",
         "flat":True
     }
     dest_path = "/tmp/profile"
@@ -286,11 +296,12 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 
 def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    temp_jcl_path = "/tmp/ansible"
+    temp_jcl_path = get_unique_uss_file_name()
     test_vsam = get_tmp_ds_name()
     dest_path = "/tmp/" + test_vsam
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
+    uss_file = get_unique_uss_file_name()
     try:
         # start by creating the vsam dataset (could use a helper instead? )
         hosts.all.file(path=temp_jcl_path, state="directory")
@@ -300,9 +311,9 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
         hosts.all.zos_job_submit(
             src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
         )
-        hosts.all.shell(cmd=f"echo \"{TEST_DATA}\c\" > {USS_FILE}")
+        hosts.all.shell(cmd=f"echo \"{TEST_DATA}\c\" > {uss_file}")
         hosts.all.zos_encode(
-            src=USS_FILE,
+            src=uss_file,
             dest=test_vsam,
             encoding={
                 "from": FROM_ENCODING,
@@ -331,7 +342,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
         if os.path.exists(dest_path):
             None
             os.remove(dest_path)
-        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.file(path=uss_file, state="absent")
         hosts.all.file(path=temp_jcl_path, state="absent")
 
 
@@ -511,14 +522,14 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
         record_format="fba",
         record_length=25,
     )
+    dest_path = get_unique_uss_file_name()
     hosts.all.zos_data_set(name=pds_name, type="pds")
     hosts.all.zos_data_set(name=pds_name + "(MYDATA)", type="member", replace="yes")
     params = {
         "src":pds_name + "(MYDATA)",
-        "dest":"/tmp/",
+        "dest": dest_path,
         "flat":True
     }
-    dest_path = "/tmp/MYDATA"
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -630,7 +641,6 @@ def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
         space_type="m",
         space_primary=5
     )
-    ds_name = TEST_PS
     hosts.all.zos_data_set(name=TEST_PS, state="present")
     hosts.all.shell(cmd=f"decho \"{TEST_DATA}\" \"{TEST_PS}\"")
     dest_path = "/tmp/" + TEST_PS
@@ -660,7 +670,6 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
     pds_name = get_tmp_ds_name()
     dest_path = "/tmp/" + pds_name
     full_path = dest_path + "/MYDATA"
-    pds_name_mem = pds_name + "(MYDATA)"
     hosts.all.zos_data_set(
         name=pds_name,
         type="pds",
@@ -696,22 +705,17 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
 
 def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
-    with open(dest_path, "w",encoding="utf-8") as dest_file:
-        dest_file.close()
-    os.chmod(dest_path, stat.S_IREAD)
+    dest_path = tempfile.NamedTemporaryFile(mode='r+b')
+    os.chmod(dest_path.name, stat.S_IREAD)
     params = {
         "src":"/etc/profile",
-        "dest":"/tmp/",
+        "dest": dest_path.name,
         "flat":True
     }
-    try:
-        results = hosts.all.zos_fetch(**params)
-        for result in results.contacted.values():
-            assert "msg" in result.keys()
-    finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
+    results = hosts.all.zos_fetch(**params)
+    for result in results.contacted.values():
+        assert "msg" in result.keys()
+    dest_path.close()
 
 
 def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
@@ -738,7 +742,10 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()[:25]
     dest_path = "/tmp/"+ src
-    hosts.all.zos_data_set(name="OMVSADM." + src, type="seq", state="present")
+    results = hosts.all.shell(cmd="echo $USER")
+    for result in results.contacted.values():
+            hlq = result.get("stdout")
+    hosts.all.zos_data_set(name=hlq + '.' + src, type="seq", state="present")
     params = {
         "src":src,
         "dest":"/tmp/",
@@ -755,7 +762,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
-        hosts.all.zos_data_set(name="OMVSADM." + src, state="absent")
+        hosts.all.zos_data_set(name="{0}.".format(hlq) + src, state="absent")
 
 
 def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):

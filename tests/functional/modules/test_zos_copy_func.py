@@ -2424,6 +2424,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
     dest = get_tmp_ds_name()
 
     try:
+        hosts.all.shell(cmd=f"decho 'this is a test line' '{src_ds}'")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE

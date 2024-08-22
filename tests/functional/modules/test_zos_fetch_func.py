@@ -20,6 +20,7 @@ import re
 import pytest
 import string
 import random
+import tempfile
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
@@ -167,8 +168,7 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
 
 
 def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
-    tmp_path = get_unique_uss_file_name()
-    with open(tmp_path, "w",encoding="utf-8") as file:
+    with open("/tmp/profile", "w",encoding="utf-8") as file:
         file.close()
     hosts = ansible_zos_module
     params = {
@@ -176,7 +176,7 @@ def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
         "dest":"/tmp/",
         "flat":True
     }
-    dest_path = tmp_path
+    dest_path = "/tmp/profile"
     local_checksum = checksum(dest_path, hash_func=sha256)
 
     try:
@@ -192,12 +192,12 @@ def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
 
 def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = get_unique_uss_file_name()
     params = {
         "src":"/etc/profile",
-        "dest": dest_path,
+        "dest": "/tmp/",
         "flat":True
     }
+    dest_path = "/tmp/profile"
     hosts.all.zos_fetch(**params)
     local_checksum = checksum(dest_path, hash_func=sha256)
 
@@ -705,7 +705,7 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
 
 def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = get_unique_uss_file_name()
+    dest_path = tempfile.TemporaryFile(delete=True, delete_on_close=False)
     with open(dest_path, "w",encoding="utf-8") as dest_file:
         dest_file.close()
     os.chmod(dest_path, stat.S_IREAD)
@@ -714,13 +714,9 @@ def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
         "dest": dest_path,
         "flat":True
     }
-    try:
-        results = hosts.all.zos_fetch(**params)
-        for result in results.contacted.values():
-            assert "msg" in result.keys()
-    finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
+    results = hosts.all.zos_fetch(**params)
+    for result in results.contacted.values():
+        assert "msg" in result.keys()
 
 
 def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):

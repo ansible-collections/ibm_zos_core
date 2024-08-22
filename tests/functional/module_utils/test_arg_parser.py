@@ -18,7 +18,6 @@ __metaclass__ = type
 import re
 import pytest
 from ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
-from ibm_zos_core.plugins.module_utils.job import _username_pattern
 
 arg_defs = {
     "batch":{
@@ -938,7 +937,7 @@ def test_username_type_valid():
     # Mocking the arg definition from module_utils/job.py.
     arg_defs = {
         "job_id": {"arg_type": "str"},
-        "owner": {"arg_type": _username_pattern},
+        "owner": {"arg_type": "username_pattern"},
         "job_name": {"arg_type": "str"}
     }
 

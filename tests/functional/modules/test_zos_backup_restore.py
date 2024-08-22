@@ -706,7 +706,6 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_backup_location)
-        hosts.all.shell(cmd="dtouch -tseq {0}".format(data_set_name))
         hosts.all.shell(cmd="""decho "HELLO WORLD" {0}""".format(data_set_name))
         results = hosts.all.zos_backup_restore(
             operation="backup",

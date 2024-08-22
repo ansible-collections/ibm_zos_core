@@ -1,5 +1,5 @@
 minor_changes:
   - zos_backup_restore - Redefines the default behavior of module option hlq.
-    The original high level qualifiers in a backup will be used for a restore
-    operation if no value is provided in the module option.
+    When operation=restore and hlq is not provided the original high level
+    qualifiers in a backup will be used for a restore.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1632).

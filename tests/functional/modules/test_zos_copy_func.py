@@ -4229,7 +4229,7 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
     finally:
-        hosts.all.zos_data_set(name=src_ds, state="absent")
+        # hosts.all.zos_data_set(name=src_ds, state="absent")
         hosts.all.file(path=dest, state="absent")
 
 

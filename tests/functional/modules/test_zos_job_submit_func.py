@@ -422,7 +422,7 @@ def test_job_submit_pds(ansible_zos_module, location):
         results = None
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), temp_path)
@@ -456,7 +456,7 @@ def test_job_submit_pds(ansible_zos_module, location):
 def test_job_submit_pds_special_characters(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         data_set_name_special_chars = get_tmp_ds_name(symbols=True)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
@@ -489,7 +489,7 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
 def test_job_submit_uss(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), temp_path)
@@ -548,7 +548,7 @@ def test_job_submit_pds_volume(ansible_zos_module, volumes_on_systems):
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         volumes = Volume_Handler(volumes_on_systems)
         volume_1 = volumes.get_available_vol()
         hosts.all.file(path=temp_path, state="directory")
@@ -587,7 +587,7 @@ def test_job_submit_pds_5_sec_job_wait_15(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
         wait_time_s = 15
 
@@ -621,7 +621,7 @@ def test_job_submit_pds_30_sec_job_wait_60(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
         wait_time_s = 60
 
@@ -655,7 +655,7 @@ def test_job_submit_pds_30_sec_job_wait_10_negative(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         data_set_name = get_tmp_ds_name()
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
         wait_time_s = 10
 
@@ -831,7 +831,7 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
 def test_job_submit_full_input(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
             cmd=f"echo {quote(JCL_FULL_INPUT)} > {temp_path}/SAMPLE"
@@ -984,7 +984,7 @@ def test_job_from_gdg_source(ansible_zos_module, generation):
     try:
         # Creating a GDG for the test.
         source = get_tmp_ds_name()
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         gds_name = f"{source}({generation})"
         hosts.all.zos_data_set(name=source, state="present", type="gdg", limit=3)
         hosts.all.zos_data_set(name=f"{source}(+1)", state="present", type="seq")
@@ -1059,7 +1059,7 @@ def test_inexistent_positive_gds(ansible_zos_module):
 def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        temp_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='.dzp')
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
         # Copy C source and compile it.
         hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(

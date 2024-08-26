@@ -201,7 +201,7 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
     else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='BACK')
+        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
     try:
         if not overwrite:
             delete_data_set_or_file(hosts, backup_name)
@@ -241,7 +241,7 @@ def test_backup_of_data_set_when_backup_dest_exists(
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
     else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='BACK')
+        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
     try:
         create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
         assert_data_set_or_file_exists(hosts, backup_name)
@@ -289,7 +289,7 @@ def test_backup_and_restore_of_data_set(
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
     else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='BACK')
+        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -347,7 +347,7 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
     else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='BACK')
+        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -403,7 +403,7 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
     else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='BACK')
+        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -581,7 +581,7 @@ def test_restore_of_data_set_when_backup_does_not_exist(
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
     else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='BACK')
+        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
     new_hlq = "N" + get_random_q(4)
     hlqs.append(new_hlq)
     try:

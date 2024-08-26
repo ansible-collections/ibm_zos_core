@@ -18,10 +18,10 @@ import inspect
 from shellescape import quote
 import pytest
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
 
-TEST_FOLDER_BLOCKINFILE = "/tmp/ansible-core-tests/zos_blockinfile/"
 
 c_pgm="""#include <stdio.h>
 #include <stdlib.h>
@@ -434,18 +434,18 @@ DS_TYPE = ['seq', 'pds', 'pdse']
 # not supported data set types
 NS_DS_TYPE = ['esds', 'rrds', 'lds']
 
-USS_BACKUP_FILE = "/tmp/backup.tmp"
-BACKUP_OPTIONS = [None, "BLOCKIF.TEST.BACKUP", "BLOCKIF.TEST.BACKUP(BACKUP)"]
+TMP_DIRECTORY = "/tmp/"
+
+BACKUP_OPTIONS = [None, "SEQ", "MEM"]
 
 def set_uss_environment(ansible_zos_module, content, file):
     hosts = ansible_zos_module
-    hosts.all.shell(cmd=f"mkdir -p {TEST_FOLDER_BLOCKINFILE}")
     hosts.all.file(path=file, state="touch")
     hosts.all.shell(cmd=f"echo \"{content}\" > {file}")
 
-def remove_uss_environment(ansible_zos_module):
+def remove_uss_environment(ansible_zos_module, file):
     hosts = ansible_zos_module
-    hosts.all.shell(cmd="rm -rf" + TEST_FOLDER_BLOCKINFILE)
+    hosts.all.shell(cmd="rm " + file)
 
 def set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content):
     hosts = ansible_zos_module
@@ -479,7 +479,7 @@ def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
         "block":"ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -491,7 +491,7 @@ def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -502,7 +502,7 @@ def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
         "block":"unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -514,7 +514,7 @@ def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -525,7 +525,7 @@ def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
         "block":"export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -537,7 +537,7 @@ def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -548,7 +548,7 @@ def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
         "block":"# this is file is for setting env vars",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -560,7 +560,7 @@ def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -575,7 +575,7 @@ def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -587,7 +587,7 @@ def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 
@@ -603,7 +603,7 @@ def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -615,7 +615,7 @@ def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -630,7 +630,7 @@ def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -642,7 +642,7 @@ def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -657,7 +657,7 @@ def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -669,7 +669,7 @@ def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -679,7 +679,7 @@ def test_uss_block_absent_defaultmarker(ansible_zos_module):
         "block":"",
         "state":"absent"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -691,7 +691,7 @@ def test_uss_block_absent_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -704,7 +704,7 @@ def test_uss_block_absent_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_CUSTOMMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -716,7 +716,7 @@ def test_uss_block_absent_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -727,7 +727,7 @@ def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
         "block":"ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -739,7 +739,7 @@ def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -750,7 +750,7 @@ def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
         "block":"unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -762,7 +762,7 @@ def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -773,7 +773,7 @@ def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
         "block":"export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -785,7 +785,7 @@ def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_EOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -796,7 +796,7 @@ def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
         "block":"# this is file is for setting env vars",
         "state":"present"
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -808,7 +808,7 @@ def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_BOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -822,7 +822,7 @@ def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -834,7 +834,7 @@ def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_EOF_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -848,7 +848,7 @@ def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_CUSTOMMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -860,7 +860,7 @@ def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_BOF_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -874,7 +874,7 @@ def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_CUSTOMMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -886,7 +886,7 @@ def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -900,7 +900,7 @@ def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_CUSTOMMARKER
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -912,7 +912,7 @@ def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -924,7 +924,7 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         "state":"present",
         "indentation":16
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -936,7 +936,7 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERT_WITH_INDENTATION
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 # Test case base on bug of dataset.blockifile
 # GH Issue #1258
@@ -944,7 +944,7 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
 def test_uss_block_insert_with_doublequotes(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="sleep 30;", block='cat "//OMVSADMI.CAT"\ncat "//OMVSADM.COPYMEM.TESTS" > test.txt', marker="// {mark} ANSIBLE MANAGED BLOCK", state="present")
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DOUBLEQUOTES
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -957,7 +957,7 @@ def test_uss_block_insert_with_doublequotes(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_DOUBLE_QUOTES
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
@@ -969,7 +969,7 @@ def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
         "state":"present",
         "backup":True
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -984,20 +984,21 @@ def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         ansible_zos_module.all.file(path=backup_name, state="absent")
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
     hosts = ansible_zos_module
+    uss_backup_file = get_random_file_name(dir=TMP_DIRECTORY, suffix=".tmp")
     params = {
         "insertafter":"EOF",
         "block":"export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         "state":"present",
         "backup":True,
-        "backup_name":USS_BACKUP_FILE
+        "backup_name":uss_backup_file
     }
-    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
@@ -1005,8 +1006,8 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-            assert result.get("backup_name") == USS_BACKUP_FILE
-        cmd_str = f"cat {USS_BACKUP_FILE}"
+            assert result.get("backup_name") == uss_backup_file
+        cmd_str = f"cat {uss_backup_file}"
         results = ansible_zos_module.all.shell(cmd=cmd_str)
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
@@ -1014,8 +1015,8 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
-        ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent")
-        remove_uss_environment(ansible_zos_module)
+        ansible_zos_module.all.file(path=uss_backup_file, state="absent")
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 #########################
@@ -1332,7 +1333,10 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
         "backup":True
     }
     if backup_name:
-        params["backup_name"] = backup_name
+        if backup_ds_name == "SEQ":
+            params["backup_name"] = get_tmp_ds_name()
+        else:
+            params["backup_name"] = get_tmp_ds_name() + "(MEM)"
     ds_name = get_tmp_ds_name()
     temp_file = "/tmp/" + ds_name
     content = TEST_CONTENT
@@ -1349,8 +1353,6 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
-        if backup_name:
-            ansible_zos_module.all.zos_data_set(name="BLOCKIF.TEST.BACKUP", state="absent")
         if backup_ds_name != "":
             ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
@@ -1523,10 +1525,10 @@ def test_uss_encoding(ansible_zos_module, encoding):
         "state":"present"
     }
     params["encoding"] = encoding
-    full_path = TEST_FOLDER_BLOCKINFILE + encoding
+    full_path = get_random_file_name(dir=TMP_DIRECTORY) + encoding
     content = "SIMPLE LINE TO VERIFY"
+    ds_name = get_tmp_ds_name()
     try:
-        hosts.all.shell(cmd=f"mkdir -p {TEST_FOLDER_BLOCKINFILE}")
         hosts.all.file(path=full_path, state="touch")
         hosts.all.shell(cmd=f"echo \"{content}\" > {full_path}")
         hosts.all.zos_encode(
@@ -1573,46 +1575,18 @@ def test_uss_encoding(ansible_zos_module, encoding):
 @pytest.mark.ds
 def test_special_characters_ds_insert_block(ansible_zos_module):
     hosts = ansible_zos_module
-    ds_type = dstype
-    insert_data = "Insert this string"
-    params = {
-        "insertafter":"SIMPLE",
-        "block":insert_data,
-        "state":"present"
-    }
-    params["encoding"] = encoding
-    ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
-    content = "SIMPLE LINE TO VERIFY"
+    params = dict(insertafter="eof", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
+    ds_name = get_tmp_ds_name(5, 5, symbols=True)
+    backup = get_tmp_ds_name(6, 6, symbols=True)
     try:
-        hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
-        hosts.all.zos_encode(
-            src=temp_file,
-            dest=temp_file,
-            from_encoding="IBM-1047",
-            to_encoding=params["encoding"]
-        )
-        hosts.all.zos_data_set(name=ds_name, type=ds_type)
-        if ds_type in ["pds", "pdse"]:
-            ds_full_name = ds_name + "(MEM)"
-            hosts.all.zos_data_set(name=ds_full_name, state="present", type="member")
-            cmd_str = f"cp -CM {quote(temp_file)} \"//'{ds_full_name}'\""
-        else:
-            ds_full_name = ds_name
-            cmd_str = f"cp {quote(temp_file)} \"//'{ds_full_name}'\" "
-        hosts.all.shell(cmd=cmd_str)
-        hosts.all.shell(cmd="rm -rf " + temp_file)
-        params["path"] = ds_full_name
+        result = hosts.all.zos_data_set(name=ds_name, type="seq", state="present")
+
+        params["src"] = ds_name
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        hosts.all.zos_encode(
-            src=ds_full_name,
-            dest=ds_full_name,
-            from_encoding=params["encoding"],
-            to_encoding="IBM-1047"
-        )
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        src = ds_name.replace('$', "\$")
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(src))
         for result in results.contacted.values():
             assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
 

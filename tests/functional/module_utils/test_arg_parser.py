@@ -930,6 +930,28 @@ def test_custom_defined_values_second_level():
     assert result.get("person").get("name") == "john"
 
 
+def test_username_type_valid():
+    # Testing all valid characters for a TSO/RACF user.
+    username = "@4$user#"
+
+    # Mocking the arg definition from module_utils/job.py.
+    arg_defs = {
+        "job_id": {"arg_type": "str"},
+        "owner": {"arg_type": "username_pattern"},
+        "job_name": {"arg_type": "str"}
+    }
+
+    parser = BetterArgParser(arg_defs)
+    result = parser.parse_args({
+        "job_id": "*",
+        "owner": username,
+        "job_name": "*"
+    })
+
+    # The parser should accept the username as a valid value.
+    assert result.get("owner") == username
+
+
 @pytest.mark.parametrize(
     ("arg_type", "name"),
     [

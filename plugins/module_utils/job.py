@@ -181,7 +181,6 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_not_found_msg)
 
     job["class"] = ""
-    job["content_type"] = ""
 
     job["ddnames"] = []
     dd = {}
@@ -372,7 +371,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["queue_position"] = entry.queue_position
             job["program_name"] = entry.program_name
             job["class"] = ""
-            job["content_type"] = ""
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
             job["duration"] = duration

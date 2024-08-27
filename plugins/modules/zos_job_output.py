@@ -103,7 +103,7 @@ jobs:
       sample: HELLO
     job_type:
       description:
-         The type of address space the job uses.
+         Type of address space used by the job.
       type: str
       sample: STC
     subsystem:
@@ -116,11 +116,6 @@ jobs:
          Identifies the data set used in a system output data set, usually called a sysout data set.
       type: str
       sample:
-    content_type:
-      description:
-         Type of address space.
-      type: str
-      sample: JOB
     creation_date:
       description:
         Date, local to the target system, when the job was created.
@@ -280,7 +275,6 @@ jobs:
      [
       {
         "class": "R",
-        "content_type": "JOB",
         "ddnames": [
           {
             "byte_count": "775",

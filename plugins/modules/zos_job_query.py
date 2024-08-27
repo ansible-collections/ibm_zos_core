@@ -119,6 +119,11 @@ jobs:
          Unique job identifier assigned to the job by JES.
       type: str
       sample: JOB01427
+    job_type:
+      description:
+         Type of address space used by the job.
+      type: str
+      sample: STC
     ret_code:
       description:
          Return code output collected from job log.
@@ -225,6 +230,7 @@ jobs:
             "job_id": "JOB01427",
             "ret_code": "null",
             "job_class": "K",
+            "job_type": "JOB",
             "svc_class": "?",
             "priority": 1,
             "asid": 0,
@@ -236,6 +242,7 @@ jobs:
             "job_name": "LINKCBL",
             "owner": "ADMIN",
             "job_id": "JOB16577",
+            "job_type": "JOB",
             "ret_code": { "msg": "CANCELED", "code": "null" },
             "job_class": "A",
             "svc_class": "E",

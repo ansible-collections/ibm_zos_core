@@ -101,6 +101,11 @@ jobs:
          The name of the batch job.
       type: str
       sample: HELLO
+    job_type:
+      description:
+         The type of address space the job uses.
+      type: str
+      sample: STC
     subsystem:
       description:
          The job entry subsystem that MVS uses to do work.
@@ -387,6 +392,7 @@ jobs:
         "job_class": "R",
         "job_id": "JOB00134",
         "job_name": "HELLO",
+        "job_type": "JOB",
         "priority": "1",
         "program_name": "IEBGENER",
         "queue_position": "58",

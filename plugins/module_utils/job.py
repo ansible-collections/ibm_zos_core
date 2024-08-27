@@ -377,7 +377,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["ddnames"] = []
             job["duration"] = duration
 
-            # TODO: put type in here
             if dd_scan:
                 # If true, it means the job is not ready for DD queries and the duration and
                 # timeout should apply here instructing the user to add more time

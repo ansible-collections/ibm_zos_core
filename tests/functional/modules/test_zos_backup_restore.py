@@ -28,9 +28,7 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 DATA_SET_CONTENTS = "HELLO WORLD"
 TMP_DIRECTORY = "/tmp/"
 
-def get_unique_uss_file_name():
-    unique_str = "n" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + ".dzp"
-    return "/tmp/{0}".format(unique_str)
+
 
 
 c_pgm="""#include <stdio.h>
@@ -918,7 +916,7 @@ def test_backup_tolerate_enqueue(ansible_zos_module):
     hosts = ansible_zos_module
     default_data_set_name_1 =  get_tmp_ds_name()
     default_data_set_name_2 =  get_tmp_ds_name()
-    temp_file = get_unique_uss_file_name()
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     data_sets_hlq = "ANSIBLE.**"
     data_sets_backup_location = get_tmp_ds_name()
     try:

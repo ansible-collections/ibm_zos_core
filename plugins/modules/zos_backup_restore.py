@@ -186,15 +186,13 @@ options:
   hlq:
     description:
       - Specifies the new HLQ to use for the data sets being restored.
-      - Defaults to running user's username.
+      - If no value is provided, the data sets will be restored with their original HLQs.
     type: str
     required: false
   tmp_hlq:
     description:
-      - Override the default high level qualifier (HLQ) for temporary and backup
-        data sets.
-      - The default HLQ is the Ansible user that executes the module and if
-        that is not available, then the value of C(TMPHLQ) is used.
+      - Override the default high level qualifier (HLQ) for temporary data sets.
+      - If original HLQ is not available, then the value of C(TMPHLQ) is used.
     required: false
     type: str
 notes:
@@ -282,8 +280,8 @@ EXAMPLES = r"""
     space: 1
     space_type: g
 
-- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
-    Use z/OS username as new HLQ.
+- name: Restore data sets from a backup stored in the UNIX file /tmp/temp_backup.dzp.
+    Restore the data sets with the original high level qualifiers.
   zos_backup_restore:
     operation: restore
     backup_name: /tmp/temp_backup.dzp
@@ -511,7 +509,7 @@ def parse_and_validate_args(params):
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
-        hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
+        hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
     )
 
@@ -745,28 +743,7 @@ def hlq_type(contents, dependencies):
         raise ValueError("hlq_type is only valid when operation=restore.")
     if not match(r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})$", contents, IGNORECASE):
         raise ValueError("Invalid argument {0} for hlq_type.".format(contents))
-    return contents.upper()
-
-
-def hlq_default(contents, dependencies):
-    """Sets the default HLQ to use if none is provided.
-
-    Parameters
-    ----------
-    contents : str
-        The HLQ to use.
-    dependencies : dict
-        Any dependent arguments.
-
-    Returns
-    -------
-    str
-        The HLQ to use.
-    """
-    hlq = None
-    if dependencies.get("operation") == "restore":
-        hlq = datasets.get_hlq()
-    return hlq
+    return contents
 
 
 def sms_type(contents, dependencies):
@@ -1018,11 +995,14 @@ def to_dunzip_args(**kwargs):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
 
-    if kwargs.get("hlq"):
+    if kwargs.get("hlq") is None:
+        zoau_args["keep_original_hlq"] = True
+    else:
         zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
     if kwargs.get("tmp_hlq"):
-        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+        zoau_args["high_level_qualifier"] = str(kwargs.get("tmp_hlq"))
+        zoau_args["keep_original_hlq"] = False
 
     return zoau_args
 

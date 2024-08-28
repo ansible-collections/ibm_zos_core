@@ -468,11 +468,14 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
 
 
 def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
+    hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()
     data_set_name2 = get_tmp_ds_name()
     data_set_include = [data_set_name, data_set_name2]
     data_set_backup_location = get_tmp_ds_name(1, 1)
+    new_hlq = get_random_q()
+    hlqs.append(new_hlq)
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
@@ -495,13 +498,14 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
             backup_name=data_set_backup_location,
             overwrite=True,
             recover=True,
+            hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
         delete_data_set_or_file(hosts, data_set_backup_location)
-        delete_remnants(hosts)
+        delete_remnants(hosts, hlqs)
 
 
 def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
@@ -719,6 +723,35 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
         delete_data_set_or_file(hosts, data_set_restore_location)
         delete_data_set_or_file(hosts, data_set_backup_location)
         delete_remnants(hosts, hlqs)
+
+
+def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    data_set_backup_location = get_tmp_ds_name()
+    try:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_backup_location)
+        hosts.all.shell(cmd="""decho "HELLO WORLD" {0}""".format(data_set_name))
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_name),
+            backup_name=data_set_backup_location,
+        )
+        delete_data_set_or_file(hosts, data_set_name)
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, data_set_backup_location)
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=data_set_backup_location,
+        )
+        assert_module_did_not_fail(results)
+        # Check the HLQ in the response
+        assert_data_set_or_file_exists(hosts, data_set_name)
+    finally:
+        delete_data_set_or_file(hosts, data_set_name)
+        delete_data_set_or_file(hosts, data_set_backup_location)
+        delete_remnants(hosts)
 
 
 # def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module):

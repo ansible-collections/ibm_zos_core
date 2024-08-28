@@ -28,9 +28,6 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 DATA_SET_CONTENTS = "HELLO WORLD"
 TMP_DIRECTORY = "/tmp/"
 
-
-
-
 c_pgm="""#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

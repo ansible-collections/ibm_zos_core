@@ -413,7 +413,7 @@ def get_unique_uss_file_name():
         {
             "default_location":False
         },
-        ]
+    ]
 )
 def test_job_submit_pds(ansible_zos_module, location):
     """
@@ -504,6 +504,7 @@ def test_job_submit_uss(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
+            assert result.get("jobs")[0].get("job_type") == "JOB"
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=temp_path, state="absent")
@@ -854,6 +855,7 @@ def test_job_submit_full_input(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=temp_path, state="absent")
+
 
 def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)

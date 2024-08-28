@@ -123,3 +123,4 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
     qresults = hosts.all.zos_job_query(job_id="STC00*")
     for qresult in qresults.contacted.values():
         assert qresult.get("jobs") is not None
+        assert qresult.get("jobs")[0].get("job_type").strip() == "STC"

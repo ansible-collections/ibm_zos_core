@@ -1,0 +1,11 @@
+trivial:
+  - zos_copy - Remove the use of hard coded dataset and files names using a module_utils function.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1664).
+  - zos_backup_restore - Remove the use of hard coded dataset and files names using a module_utils function.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1664).
+  - zos_encode - Remove the use of hard coded dataset and files names using a module_utils function.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1664).
+  - zos_fetch - Remove the use of hard coded dataset and files names using a module_utils function.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1664).
+  - zos_job_submit - Remove the use of hard coded dataset and files names using a module_utils function.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1664).

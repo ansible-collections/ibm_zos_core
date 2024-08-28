@@ -14,16 +14,15 @@
 from __future__ import absolute_import, division, print_function
 from os import path
 from shellescape import quote
-from datetime import datetime
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 import pytest
-import string
-import random
 import re
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
 
+TMP_DIRECTORY = "/tmp/"
 USS_NONE_FILE = "/tmp/none"
 SHELL_EXECUTABLE = "/bin/sh"
 FROM_ENCODING = "IBM-1047"
@@ -79,11 +78,6 @@ VSAM_RECORDS = """00000001A record
 """
 
 
-def get_unique_uss_file_name():
-    unique_str = "EN" + datetime.now().strftime("%H:%M:%S").replace("-", "").replace(":", "") + "CODE" + random.choice(string.ascii_letters)
-    return "/tmp/{0}".format(unique_str)
-
-
 def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, key_offset=None):
     """Creates a new VSAM on the system.
 
@@ -119,7 +113,7 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
 
 def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
         results = hosts.all.zos_encode(
@@ -139,7 +133,7 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     hosts.all.copy(content=TEST_DATA, dest=uss_file)
     results = hosts.all.zos_encode(
         src=uss_file,
@@ -156,7 +150,7 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
@@ -181,7 +175,7 @@ def test_uss_encoding_conversion_without_dest(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
@@ -233,8 +227,8 @@ def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
-    uss_dest_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
+    uss_dest_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=uss_file)
@@ -262,8 +256,8 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
-    uss_dest_path = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
+    uss_dest_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=uss_dest_path, state="directory")
@@ -293,8 +287,8 @@ def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
 def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
     try:
         hosts = ansible_zos_module
-        uss_path = get_unique_uss_file_name()
-        uss_dest_path = get_unique_uss_file_name()
+        uss_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
+        uss_dest_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.file(path=uss_path, state="directory")
         hosts.all.copy(content=TEST_DATA, dest=uss_path + "/encode1")
         hosts.all.copy(content=TEST_DATA, dest=uss_path + "/encode2")
@@ -326,7 +320,7 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -351,7 +345,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
-    uss_dest_file = get_unique_uss_file_name()
+    uss_dest_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -383,7 +377,7 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -410,7 +404,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -448,7 +442,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
-    uss_dest_file = get_unique_uss_file_name()
+    uss_dest_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
@@ -492,8 +486,8 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
-        uss_path = get_unique_uss_file_name()
-        uss_dest_path = get_unique_uss_file_name()
+        uss_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
+        uss_dest_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.file(path=uss_path, state="directory")
         hosts.all.copy(content=TEST_DATA, dest=uss_path + "/encode1")
         hosts.all.copy(content=TEST_DATA, dest=uss_path + "/encode2")
@@ -571,8 +565,8 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
-    temp_jcl_path = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
+    temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         mvs_vs = get_tmp_ds_name(3)
@@ -609,7 +603,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
-    uss_dest_file = get_unique_uss_file_name()
+    uss_dest_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         mlq_size = 3
@@ -707,7 +701,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
         hosts = ansible_zos_module
         mvs_vs = get_tmp_ds_name(3)
         mvs_ps = get_tmp_ds_name()
-        temp_jcl_path = get_unique_uss_file_name()
+        temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.zos_data_set(name=mvs_ps, state="present", type="seq")
         hosts.all.file(path=temp_jcl_path, state="directory")
         hosts.all.shell(
@@ -772,7 +766,7 @@ def test_pds_backup(ansible_zos_module):
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
         backup_data_set = get_tmp_ds_name()
-        temp_jcl_path = get_unique_uss_file_name()
+        temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="present", type="pds")
@@ -802,7 +796,7 @@ def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
         backup_data_set = get_tmp_ds_name()
-        temp_jcl_path = get_unique_uss_file_name()
+        temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         tmphlq = "TMPHLQ"
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -838,7 +832,7 @@ def test_ps_backup(ansible_zos_module):
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
         backup_data_set = get_tmp_ds_name()
-        temp_jcl_path = get_unique_uss_file_name()
+        temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="present", type="seq")
@@ -868,7 +862,7 @@ def test_vsam_backup(ansible_zos_module):
         backup_data_set = get_tmp_ds_name()
         mvs_vs = get_tmp_ds_name()
         mvs_ps = get_tmp_ds_name()
-        temp_jcl_path = get_unique_uss_file_name()
+        temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         hosts.all.zos_data_set(name=mvs_vs, state="absent")
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -932,7 +926,7 @@ def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module)
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
         backup_data_set = get_tmp_ds_name()
-        temp_jcl_path = get_unique_uss_file_name()
+        temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         # create and fill PDS
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -999,7 +993,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         hosts = ansible_zos_module
         mvs_ps = get_tmp_ds_name()
         backup_data_set = get_tmp_ds_name()
-        temp_jcl_path = get_unique_uss_file_name()
+        temp_jcl_path = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
         hosts.all.zos_data_set(name=backup_data_set, state="absent")
         # create and fill PDS
         hosts.all.zos_data_set(name=mvs_ps, state="absent")
@@ -1131,7 +1125,7 @@ def test_gdg_encoding_conversion_invalid_gdg(ansible_zos_module):
 
         for result in results.contacted.values():
             assert result.get("msg") is not None
-            assert "not yet supported" in result.get("msg")
+            assert "Encoding of a whole generation data group is not supported." in result.get("msg")
             assert result.get("backup_name") is None
             assert result.get("changed") is False
             assert result.get("failed") is True
@@ -1141,7 +1135,7 @@ def test_gdg_encoding_conversion_invalid_gdg(ansible_zos_module):
 
 
 def test_encoding_conversion_gds_to_uss_file(ansible_zos_module):
-    uss_dest_file = get_unique_uss_file_name()
+    uss_dest_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         ds_name = get_tmp_ds_name()
@@ -1227,7 +1221,7 @@ def test_encoding_conversion_gds_no_dest(ansible_zos_module):
 
 
 def test_encoding_conversion_uss_file_to_gds(ansible_zos_module):
-    uss_file = get_unique_uss_file_name()
+    uss_file = get_random_file_name(dir=TMP_DIRECTORY, prefix='EN')
     try:
         hosts = ansible_zos_module
         ds_name = get_tmp_ds_name()

@@ -139,6 +139,7 @@ jobs
                 "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
+                "job_type": "JOB",
                 "owner": "ADMIN",
                 "priority": 1,
                 "queue_position": 3,
@@ -152,6 +153,7 @@ jobs
                 "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
+                "job_type": "JOB",
                 "owner": "ADMIN",
                 "priority": 0,
                 "queue_position": 0,
@@ -180,6 +182,12 @@ jobs
 
     | **type**: str
     | **sample**: JOB01427
+
+  job_type
+    Type of address space used by the job.
+
+    | **type**: str
+    | **sample**: STC
 
   ret_code
     Return code output collected from job log.

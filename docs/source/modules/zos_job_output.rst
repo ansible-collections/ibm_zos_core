@@ -109,7 +109,6 @@ jobs
         [
             {
                 "class": "R",
-                "content_type": "JOB",
                 "ddnames": [
                     {
                         "byte_count": "775",
@@ -221,6 +220,7 @@ jobs
                 "job_class": "R",
                 "job_id": "JOB00134",
                 "job_name": "HELLO",
+                "job_type": "JOB",
                 "owner": "OMVSADM",
                 "priority": "1",
                 "program_name": "IEBGENER",
@@ -253,6 +253,12 @@ jobs
     | **type**: str
     | **sample**: HELLO
 
+  job_type
+    Type of address space used by the job.
+
+    | **type**: str
+    | **sample**: STC
+
   subsystem
     The job entry subsystem that MVS uses to do work.
 
@@ -263,12 +269,6 @@ jobs
     Identifies the data set used in a system output data set, usually called a sysout data set.
 
     | **type**: str
-
-  content_type
-    Type of address space.
-
-    | **type**: str
-    | **sample**: JOB
 
   creation_date
     Date, local to the target system, when the job was created.

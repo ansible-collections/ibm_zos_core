@@ -358,7 +358,6 @@ jobs
             {
                 "asid": 0,
                 "class": "K",
-                "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
                 "ddnames": [
@@ -558,6 +557,7 @@ jobs
                 "job_class": "K",
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
+                "job_type": "JOB",
                 "owner": "OMVSADM",
                 "priority": 1,
                 "program_name": "IEBGENER",
@@ -591,6 +591,12 @@ jobs
 
     | **type**: str
     | **sample**: HELLO
+
+  job_type
+    Type of address space used by the job.
+
+    | **type**: str
+    | **sample**: STC
 
   duration
     The total lapsed time the JCL ran for.

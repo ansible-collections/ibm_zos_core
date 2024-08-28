@@ -1535,7 +1535,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
-        remove_uss_environment(ansible_zos_module)
+        remove_uss_environment(ansible_zos_module, full_path)
 
 
 

@@ -2384,23 +2384,6 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
     finally:
         hosts.all.file(path=dest, state="absent")
 
-        else:
-            # copy src loadlib to dest library pds w/o aliases
-            copy_res = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib),
-                remote_src=True,
-                executable=True,
-                aliases=False
-            )
-            # copy src loadlib to dest library pds w aliases
-            copy_res_aliases = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib_aliases),
-                remote_src=True,
-                executable=True,
-                aliases=True
-            )
 
 @pytest.mark.uss
 @pytest.mark.seq

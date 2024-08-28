@@ -1519,57 +1519,24 @@ def test_special_characters_ds_insert_block(ansible_zos_module):
 def test_uss_encoding(ansible_zos_module, encoding):
     hosts = ansible_zos_module
     insert_data = "Insert this string"
-    params = {
-        "insertafter":"SIMPLE",
-        "block":insert_data,
-        "state":"present"
-    }
+    params = dict(insertafter="SIMPLE", block=insert_data, state="present")
     params["encoding"] = encoding
-    full_path = get_random_file_name(dir=TMP_DIRECTORY) + encoding
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = "SIMPLE LINE TO VERIFY"
-    ds_name = get_tmp_ds_name()
     try:
         hosts.all.file(path=full_path, state="touch")
-        hosts.all.shell(cmd=f"echo \"{content}\" > {full_path}")
-        hosts.all.zos_encode(
-            src=full_path,
-            dest=full_path,
-            from_encoding="IBM-1047",
-            to_encoding=params["encoding"]
-        )
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
+        hosts.all.zos_encode(src=full_path, dest=full_path, from_encoding="IBM-1047", to_encoding=params["encoding"])
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["src"]))
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
-
-        params["src"] = ds_name + "(-1)"
-        results = hosts.all.zos_blockinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["src"]))
-        for result in results.contacted.values():
-            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
-
-        params_w_bck = dict(insertafter="eof", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=ds_name + "(+1)")
-        params_w_bck["src"] = ds_name + "(-1)"
-        results = hosts.all.zos_blockinfile(**params_w_bck)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-            assert result.get("rc") == 0
-        backup = ds_name + "(0)"
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
-        for result in results.contacted.values():
-            assert result.get("stdout") == "# BEGIN ANSIBLE MANAGED BLOCK\nZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=$ZOAU_ROOT\nZOAU_DIR=$ZOAU_ROOT\n# END ANSIBLE MANAGED BLOCK"
-
-        params["src"] = ds_name + "(-3)"
-        results = hosts.all.zos_blockinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 0
+            assert result.get("stdout") == EXPECTED_ENCODING
     finally:
-        hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
+        remove_uss_environment(ansible_zos_module)
+
 
 
 @pytest.mark.ds

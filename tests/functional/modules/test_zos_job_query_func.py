@@ -15,7 +15,6 @@ from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
-import tempfile
 import ansible.constants
 import ansible.errors
 import ansible.utils
@@ -105,16 +104,16 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         ndata_set_name = get_tmp_ds_name()
-        temp_paht = get_random_file_name(dir=TEMP_PATH)
-        hosts.all.file(path=temp_paht, state="directory")
+        temp_path = get_random_file_name(dir=TEMP_PATH)
+        hosts.all.file(path=temp_path, state="directory")
         hosts.all.shell(
-            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_paht}/SAMPLE"
+            cmd=f"echo {quote(JCLQ_FILE_CONTENTS)} > {temp_path}/SAMPLE"
         )
         hosts.all.zos_data_set(
             name=ndata_set_name, state="present", type="pds", replace=True
         )
         hosts.all.shell(
-            cmd=f"cp {temp_paht}/SAMPLE \"//'{ndata_set_name}(SAMPLE)'\""
+            cmd=f"cp {temp_path}/SAMPLE \"//'{ndata_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
             src=f"{ndata_set_name}(SAMPLE)", location="data_set", wait_time_s=10
@@ -129,7 +128,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
                 assert qresult.get("jobs") is not None
 
     finally:
-        hosts.all.file(path=temp_paht, state="absent")
+        hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=ndata_set_name, state="absent")
 
 

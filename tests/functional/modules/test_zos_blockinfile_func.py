@@ -16,7 +16,10 @@ import time
 import re
 from shellescape import quote
 import pytest
-from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.dataset import (
+    get_tmp_ds_name,
+    get_random_q,
+)
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
@@ -1261,15 +1264,16 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
     # This TMPHLQ only works with sequential datasets
     hosts = ansible_zos_module
     ds_type = "seq"
+    hlq = get_random_q()
     params={
         "insertafter":"EOF",
         "block":"export ZOAU_ROOT\n",
         "state":"present",
         "backup":True,
-        "tmp_hlq":"TMPHLQ"
+        "tmp_hlq": hlq
     }
     kwargs = {
-        "backup_name":r"TMPHLQ\.."
+        "backup_name":r"{hlq}\.."
     }
     content = TEST_CONTENT
     try:
@@ -1518,7 +1522,11 @@ def test_special_characters_ds_insert_block(ansible_zos_module):
 def test_uss_encoding(ansible_zos_module, encoding):
     hosts = ansible_zos_module
     insert_data = "Insert this string"
-    params = dict(insertafter="SIMPLE", block=insert_data, state="present")
+    params = {
+        "insertafter":"SIMPLE",
+        "block":insert_data,
+        "state":"present"
+    }
     params["encoding"] = encoding
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = "SIMPLE LINE TO VERIFY"

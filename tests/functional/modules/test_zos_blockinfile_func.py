@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 import time
 import re
-import inspect
 from shellescape import quote
 import pytest
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -1035,7 +1034,7 @@ def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1061,7 +1060,7 @@ def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1087,7 +1086,7 @@ def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1113,7 +1112,7 @@ def test_ds_block_insertbefore_bof(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1139,7 +1138,7 @@ def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1165,7 +1164,7 @@ def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1191,7 +1190,7 @@ def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1217,7 +1216,7 @@ def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
         "state":"present"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1242,7 +1241,7 @@ def test_ds_block_absent(ansible_zos_module, dstype):
         "state":"absent"
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT_DEFAULTMARKER
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1305,7 +1304,7 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
         "indentation":16
     }
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1338,7 +1337,7 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
         else:
             params["backup_name"] = get_tmp_ds_name() + "(MEM)"
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
@@ -1602,7 +1601,7 @@ def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
     }
     params["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
     ds_name = get_tmp_ds_name()
-    temp_file = "/tmp/" + ds_name
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)

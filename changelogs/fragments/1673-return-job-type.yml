@@ -1,10 +1,10 @@
 minor_changes:
-  - zos_job_query - Added address space used by jobs in return JSON
+  - zos_job_query - Added address space type used by jobs in return JSON
     as `job_type`.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
-  - zos_job_output - Added address space used by jobs in return JSON
+  - zos_job_output - Added address space type used by jobs in return JSON
     as `job_type`.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
-  - zos_job_submit - Added address space used by jobs in return JSON
+  - zos_job_submit - Added address space type used by jobs in return JSON
     as `job_type`.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1673).

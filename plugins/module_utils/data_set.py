@@ -1702,19 +1702,21 @@ class DataSet(object):
 
 
 class DataSetUtils(object):
-    def __init__(self, data_set):
+    def __init__(self, data_set, tmphlq=None):
         """A standard utility to gather information about
         a particular data set. Note that the input data set is assumed
         to be cataloged.
 
         Arguments:
             data_set {str} -- Name of the input data set
+            tmphlq {str} -- High Level Qualifier for temporary datasets.
         """
         self.module = AnsibleModuleHelper(argument_spec={})
         self.data_set = data_set.upper()
         self.path = data_set
         self.is_uss_path = "/" in data_set
         self.ds_info = dict()
+        self.tmphlq = tmphlq
         if not self.is_uss_path:
             self.ds_info.update(self._gather_data_set_info())
 
@@ -1845,7 +1847,9 @@ class DataSetUtils(object):
         result = dict()
         self.data_set = self.data_set.upper().replace("\\", '')
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
-            "  LISTDS '{0}'".format(self.data_set), authorized=True
+            "  LISTDS '{0}'".format(self.data_set),
+            authorized=True,
+            tmphlq=self.tmphlq
         )
 
         if listds_rc == 0:

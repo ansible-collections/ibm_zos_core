@@ -343,13 +343,15 @@ def check_pds_member(ds, mem):
     return check_rc
 
 
-def check_mvs_dataset(ds):
+def check_mvs_dataset(ds, tmphlq=None):
     """To call data_set utils to check if the MVS data set exists or not.
 
     Parameters
     ----------
     ds : str
         Data set name.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -372,19 +374,21 @@ def check_mvs_dataset(ds):
         )
     else:
         check_rc = True
-        ds_type = data_set.DataSetUtils(ds).ds_type()
+        ds_type = data_set.DataSetUtils(ds, tmphlq=tmphlq).ds_type()
         if not ds_type:
             raise EncodeError("Unable to determine data set type of {0}".format(ds))
     return check_rc, ds_type
 
 
-def check_file(file):
+def check_file(file, tmphlq=None):
     """Check file is a USS file or an MVS data set.
 
     Parameters
     ----------
     file : str
         File to check.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -406,7 +410,7 @@ def check_file(file):
         if "(" in ds:
             dsn = ds[: ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
-            rc, ds_type = check_mvs_dataset(dsn)
+            rc, ds_type = check_mvs_dataset(dsn, tmphlq=tmphlq)
             if rc:
                 if ds_type == "PO":
                     is_mvs = check_pds_member(dsn, mem)
@@ -416,7 +420,7 @@ def check_file(file):
                         "Data set {0} is not a partitioned data set".format(dsn)
                     )
         else:
-            is_mvs, ds_type = check_mvs_dataset(ds)
+            is_mvs, ds_type = check_mvs_dataset(ds, tmphlq=tmphlq)
     return is_uss, is_mvs, ds_type
 
 

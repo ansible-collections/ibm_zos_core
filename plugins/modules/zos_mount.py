@@ -587,7 +587,7 @@ def mt_backupOper(module, src, backup, tmphlq=None):
         Data set type is NOT supported.
     """
     # analysis the file type
-    ds_utils = data_set.DataSetUtils(src)
+    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
     file_type = ds_utils.ds_type()
     if file_type != "USS" and file_type not in mt_DS_TYPE:
         message = "{0} data set type is NOT supported".format(str(file_type))
@@ -818,7 +818,7 @@ def run_module(module, arg_def):
     )
 
     # data set to be mounted/unmounted must exist
-    fs_du = data_set.DataSetUtils(src)
+    fs_du = data_set.DataSetUtils(src, tmphlq=tmphlq)
     fs_exists = fs_du.exists()
     if fs_exists is False:
         module.fail_json(
@@ -1033,7 +1033,7 @@ def run_module(module, arg_def):
             stderr = "Mount called on data set that is already mounted.\n"
 
     if write_persistent and module.check_mode is False:
-        fst_du = data_set.DataSetUtils(data_store)
+        fst_du = data_set.DataSetUtils(data_store, tmphlq=tmphlq)
         fst_exists = fst_du.exists()
         if fst_exists is False:
             module.fail_json(

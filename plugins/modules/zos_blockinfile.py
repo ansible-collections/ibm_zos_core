@@ -772,7 +772,7 @@ def main():
     if data_set.DataSet.is_gds_relative_name(src):
         module.fail_json(msg="{0} does not exist".format(src))
 
-    ds_utils = data_set.DataSetUtils(src)
+    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
     if not ds_utils.exists():
         message = "{0} does NOT exist".format(str(src))
         module.fail_json(msg=message)

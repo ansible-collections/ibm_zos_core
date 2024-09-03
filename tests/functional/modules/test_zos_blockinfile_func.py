@@ -1291,7 +1291,7 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             for key in kwargs:
-                assert re.match(kwargs.get(key) in result.get(key))
+                assert kwargs.get(key) in result.get(key)
     finally:
         hosts.all.zos_data_set(name=ds_full_name, state="absent")
         hosts.all.file(name=temp_file, state="absent")

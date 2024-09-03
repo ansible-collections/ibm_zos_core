@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
 //STDPARM DD *
-SH /tmp/disp_shr/pdse-lock '{0}({1})'
+SH {2}pdse-lock '{0}({1})'
 //STDIN  DD DUMMY
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
@@ -1273,12 +1273,12 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
         "tmp_hlq": hlq
     }
     kwargs = {
-        "backup_name":r"{hlq}\.."
+        "backup_name":"{0}".format(hlq)
     }
     content = TEST_CONTENT
     try:
         ds_full_name = get_tmp_ds_name()
-        temp_file = "/tmp/" + ds_full_name
+        temp_file = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.zos_data_set(name=ds_full_name, type=ds_type, replace=True)
         hosts.all.shell(cmd=f"echo \"{content}\" > {temp_file}")
         cmd_str = f"cp {quote(temp_file)} \"//'{ds_full_name}'\" "
@@ -1291,9 +1291,10 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             for key in kwargs:
-                assert re.match(kwargs.get(key), result.get(key))
+                assert kwargs.get(key) in result.get(key)
     finally:
         hosts.all.zos_data_set(name=ds_full_name, state="absent")
+        hosts.all.file(name=temp_file, state="absent")
 
 
 @pytest.mark.ds
@@ -1375,7 +1376,7 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
         "force":True
     }
     member_1, member_2 = "MEM1", "MEM2"
-    temp_file = f"/tmp/{member_2}"
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
     if ds_type == "seq":
         params["path"] = f"{default_data_set_name}.{member_2}"
@@ -1410,14 +1411,15 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.file(path="/tmp/disp_shr/", state="directory")
-        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > /tmp/disp_shr/pdse-lock.c")
+        path = get_random_file_name(suffix="/", dir=TMP_DIRECTORY)
+        hosts.all.file(path=path, state="directory")
+        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > {path}pdse-lock.c")
         hosts.all.shell(
-            cmd=f"echo \"{call_c_jcl.format(default_data_set_name, member_1)}\""+
-            " > /tmp/disp_shr/call_c_pgm.jcl"
+            cmd=f"echo \"{call_c_jcl.format(default_data_set_name, member_1, path)}\""+
+            " > {0}call_c_pgm.jcl".format(path)
         )
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=path)
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=path)
         time.sleep(5)
         # call lineinfile to see results
         results = hosts.all.zos_blockinfile(**params)
@@ -1431,7 +1433,7 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
-        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.shell(cmd='rm -r {0}'.format(path))
         hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
 
@@ -1679,7 +1681,7 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
         "force":False
     }
     member_1, member_2 = "MEM1", "MEM2"
-    temp_file = f"/tmp/{member_2}"
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
     params["path"] = f"{default_data_set_name}({member_2})"
     content = TEST_CONTENT
     try:
@@ -1713,14 +1715,15 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.file(path="/tmp/disp_shr/", state="directory")
-        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > /tmp/disp_shr/pdse-lock.c")
+        path = get_random_file_name(suffix="/", dir=TMP_DIRECTORY)
+        hosts.all.file(path=path, state="directory")
+        hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > {path}pdse-lock.c")
         hosts.all.shell(
-            cmd=f"echo \"{call_c_jcl.format(default_data_set_name, member_1)}\""+
-            " > /tmp/disp_shr/call_c_pgm.jcl"
+            cmd=f"echo \"{call_c_jcl.format(default_data_set_name, member_1, path)}\""+
+            " > {0}call_c_pgm.jcl".format(path)
         )
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=path)
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=path)
         time.sleep(5)
         # call lineinfile to see results
         results = hosts.all.zos_blockinfile(**params)
@@ -1731,5 +1734,5 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
-        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        hosts.all.shell(cmd='rm -r {0}'.format(path))
         hosts.all.zos_data_set(name=default_data_set_name, state="absent")

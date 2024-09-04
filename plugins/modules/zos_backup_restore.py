@@ -124,7 +124,7 @@ options:
     required: True
   recover:
     description:
-      - Specifies if potentially recoverable errors should be ignored.
+      - When I(recover=true) and I(operation=backup) then potentially recoverable errors will be ignored.
     type: bool
     default: False
   overwrite:

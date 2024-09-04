@@ -411,11 +411,12 @@ class DataSet(object):
             )
 
     @staticmethod
-    def data_set_cataloged(name, volumes=None):
+    def data_set_cataloged(name, volumes=None, tmphlq=None):
         """Determine if a data set is in catalog.
 
         Arguments:
             name (str) -- The data set name to check if cataloged.
+            tmphlq (str) -- High Level Qualifier for temporary datasets.
 
         Returns:
             bool -- If data is is cataloged.
@@ -438,8 +439,15 @@ class DataSet(object):
 
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
+
+        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        if tmphlq:
+            cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, errors='replace'
+            cmd,
+            data=stdin,
+            errors='replace'
         )
 
         # The above 'listcat entries' command to idcams returns:
@@ -450,7 +458,7 @@ class DataSet(object):
             raise MVSCmdExecError(rc, stdout, stderr)
 
         if volumes:
-            cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
+            cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmphlq) or []
             if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
@@ -460,10 +468,11 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def data_set_cataloged_volume_list(name):
+    def data_set_cataloged_volume_list(name, tmphlq=None):
         """Get the volume list for a cataloged dataset name.
         Arguments:
             name (str) -- The data set name to check if cataloged.
+            tmphlq (str) -- High Level Qualifier for temporary datasets.
         Returns:
             list{str} -- A list of volumes where the dataset is cataloged.
         Raise:
@@ -472,8 +481,15 @@ class DataSet(object):
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}') ALL".format(name)
+
+        cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+        if tmphlq:
+            cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
         rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, errors='replace'
+            cmd,
+            data=stdin,
+            errors='replace'
         )
         # The above 'listcat entries all' command to idcams returns:
         # rc=0 if data set found in catalog
@@ -494,7 +510,7 @@ class DataSet(object):
         return volume_list
 
     @staticmethod
-    def data_set_exists(name, volume=None):
+    def data_set_exists(name, volume=None, tmphlq=None):
         """Determine if a data set exists.
         This will check the catalog in addition to
         the volume table of contents.
@@ -502,14 +518,15 @@ class DataSet(object):
         Arguments:
             name (str) -- The data set name to check if exists.
             volume (str) -- The volume the data set may reside on.
+            tmphlq (str) -- High Level Qualifier for temporary datasets.
 
         Returns:
             bool -- If data is found.
         """
-        if DataSet.data_set_cataloged(name):
+        if DataSet.data_set_cataloged(name, tmphlq=tmphlq):
             return True
         elif volume is not None:
-            return DataSet._is_in_vtoc(name, volume)
+            return DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq)
         return False
 
     @staticmethod
@@ -902,17 +919,18 @@ class DataSet(object):
         return changed, present
 
     @staticmethod
-    def _is_in_vtoc(name, volume):
+    def _is_in_vtoc(name, volume, tmphlq=None):
         """Determines if data set is in a volume's table of contents.
 
         Arguments:
             name (str) -- The name of the data set to search for.
             volume (str) -- The volume to search the table of contents of.
+            tmphlq (str) -- High Level Qualifier for temporary datasets.
 
         Returns:
             bool -- If data set was found in table of contents for volume.
         """
-        data_sets = vtoc.get_volume_entry(volume)
+        data_sets = vtoc.get_volume_entry(volume, tmphlq=tmphlq)
         data_set = vtoc.find_data_set_in_volume_output(name, data_sets)
         if data_set is not None:
             return True

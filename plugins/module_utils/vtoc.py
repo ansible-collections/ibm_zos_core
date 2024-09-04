@@ -20,7 +20,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 
 
-def get_volume_entry(volume):
+def get_volume_entry(volume, tmphlq=None):
     """Retrieve VTOC information for all data sets with entries
     on the volume.
 
@@ -28,6 +28,8 @@ def get_volume_entry(volume):
     ----------
     volume : str
         The name of the volume.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -43,7 +45,7 @@ def get_volume_entry(volume):
         stdin = "  LISTVTOC FORMAT,VOL=3390={0}".format(volume.upper())
         # dd = "SYS1.VVDS.V{0}".format(volume.upper())
         dd = "{0},vol".format(volume.upper())
-        stdout = _iehlist(dd, stdin)
+        stdout = _iehlist(dd, stdin, tmphlq=tmphlq)
         if stdout is None:
             return None
         data_sets = _process_output(stdout)
@@ -102,7 +104,7 @@ def find_data_set_in_volume_output(data_set_name, data_sets):
     return None
 
 
-def _iehlist(dd, stdin):
+def _iehlist(dd, stdin, tmphlq=None):
     """Calls IEHLIST program.
 
     Parameters
@@ -111,6 +113,8 @@ def _iehlist(dd, stdin):
         Volume information to pass as DD statement.
     stdin : str
         Input to stdin.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -119,9 +123,15 @@ def _iehlist(dd, stdin):
     """
     module = AnsibleModuleHelper(argument_spec={})
     response = None
+
+    cmd = "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd)
+    if tmphlq:
+        cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
     rc, stdout, stderr = module.run_command(
-        "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd),
-        data=stdin, errors='replace'
+        cmd,
+        data=stdin,
+        errors='replace'
     )
     if rc == 0:
         response = stdout

@@ -1,5 +1,5 @@
 bugfixes:
   - zos_backup_restore - When a recoverable error was encountered and ``recover=True``,
     the module would ignore the option and fail. Fix now does not fail when a recoverable
-    error is raised and ``recover=True``.
+    error is raised when ``recover=True``.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1643).

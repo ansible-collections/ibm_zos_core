@@ -152,6 +152,28 @@ echo_requirements(){
     done
 }
 
+# Customized ansible.cfg for each managed venv, ./ac will know how to source this so its used during execution.
+write_ansible_cfg(){
+    ansible_cfg=${ansible_cfg}"[defaults]\\n"
+    ansible_cfg=${ansible_cfg}"forks = 25\\n"
+    ansible_cfg=${ansible_cfg}"action_plugins = ${VENV_HOME_MANAGED}/${venv_name}/ansible_collections/ibm/ibm_zos_core/plugins/action\\n"
+    ansible_cfg=${ansible_cfg}"library = ${VENV_HOME_MANAGED}/${venv_name}/ansible_collections/ibm/ibm_zos_core/plugins/modules\\n"
+    ansible_cfg=${ansible_cfg}"collections_path = ${VENV_HOME_MANAGED}/${venv_name}/ansible_collections\\n"
+    ansible_cfg=${ansible_cfg}"remote_tmp = /tmp/ibmz/ansible\\n"
+    ansible_cfg=${ansible_cfg}"remote_port = 22\n"
+    ansible_cfg=${ansible_cfg}"\\n"
+    ansible_cfg=${ansible_cfg}"[connection]\\n"
+    ansible_cfg=${ansible_cfg}"pipelining = True\\n"
+    ansible_cfg=${ansible_cfg}"\\n"
+    ansible_cfg=${ansible_cfg}"[colors]\\n"
+    ansible_cfg=${ansible_cfg}"verbose = blue\\n"
+    ansible_cfg=${ansible_cfg}"\\n"
+    ansible_cfg=${ansible_cfg}"[persistent_connection]\\n"
+    ansible_cfg=${ansible_cfg}"command_timeout = 60\\n"
+
+    echo -e "${ansible_cfg}">"${VENV_HOME_MANAGED}"/"${venv_name}"/ansible.cfg
+    unset ansible_cfg
+}
 
 # Lest normalize the version from 3.10.2 to 3010002000
 # Do we we need that 4th octet?
@@ -289,6 +311,7 @@ write_requirements(){
             cp ../tests/dependencyfinder.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp ce.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp -R modules "${VENV_HOME_MANAGED}"/"${venv_name}"/
+            write_ansible_cfg
 
             # Decrypt file
             if [ "$option_pass" ]; then

@@ -444,7 +444,7 @@ class Job:
 
         Example Return:
         pytest tests/functional/modules/test_zos_job_submit_func.py::test_job_submit_pds[location1]\
-            --host-pattern=allNoneNone --zinventory-raw='{"host": "ec33025a.vmec.svl.ibm.com",\
+            --host-pattern=all --zinventory-raw='{"host": "ec33025a.vmec.svl.ibm.com",\
             "user": "omvsadm", "zoau": "/zoau/v1.3.1",\
             "pyz": "/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz",\
             "pythonpath": "/zoau/v1.3.1/lib/3.10", "extra_args": {"volumes": ["222222", "000000"]}}'
@@ -453,9 +453,7 @@ class Job:
         node_temp = self._nodes.get(self.get_hostname())
         node_inventory = node_temp.get_inventory_as_string()
 
-        return f"""pytest {self._testcase} --host-pattern={self._hostpattern}
-        {self._capture if self._capture else ""}
-        {self._verbose if self._verbose else ""} --zinventory-raw='{node_inventory}'"""
+        return f"""pytest {self._testcase} --host-pattern={self._hostpattern}{self._capture if self._capture else ""}{self._verbose if self._verbose else ""} --zinventory-raw='{node_inventory}'"""
 
 
     def get_hostnames(self) -> list[str]:

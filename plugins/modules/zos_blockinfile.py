@@ -39,7 +39,7 @@ options:
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
       - Generation data set (GDS) relative name of generation already
-        created.  C(e.g. SOME.CREATION(-1).)
+        created.  ``e.g. SOME.CREATION(-1).``
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -293,7 +293,7 @@ EXAMPLES = r'''
   zos_blockinfile:
     src: SOME.CREATION.TEST
     insertbefore: BOF
-    backup: True
+    backup: true
     backup_name: CREATION.GDS(+1)
     block: "{{ CONTENT }}"
 '''
@@ -583,7 +583,7 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
     else:
         cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
 
-    rc, stdout, stderr = module.run_command(cmd)
+    rc, stdout, stderr = module.run_command(cmd, errors='replace')
     cmd = clean_command(cmd)
     return rc, cmd
 

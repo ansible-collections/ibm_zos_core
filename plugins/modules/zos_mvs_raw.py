@@ -89,7 +89,7 @@ options:
             description:
               - The data set name.
               - A data set name can be a GDS relative name.
-              - When using GDS relative name and it is a positive generation, disposition new must be used.
+              - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
             type: str
             required: false
           type:
@@ -708,7 +708,7 @@ options:
                     description:
                       - The data set name.
                       - A data set name can be a GDS relative name.
-                      - When using GDS relative name and it is a positive generation, disposition new must be used.
+                      - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
                     type: str
                     required: false
                   type:
@@ -3114,6 +3114,7 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         "cat {0}{1}".format(formatted_name, conversion_command),
         use_unsafe_shell=True,
         environ_update=ENCODING_ENVIRONMENT_VARS,
+        errors='replace'
     )
     if rc:
         return ""

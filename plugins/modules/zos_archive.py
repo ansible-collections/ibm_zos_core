@@ -380,7 +380,7 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        use_adrdssu: True
+        use_adrdssu: true
 
 - name: Archive multiple data sets into a new GDS
   zos_archive:
@@ -389,7 +389,7 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        use_adrdssu: True
+        use_adrdssu: true
 '''
 
 RETURN = r'''
@@ -1219,7 +1219,7 @@ class MVSArchive(Archive):
             The SHA256 hash of the contents of input file.
         """
         sha256_cmd = "sha256 \"//'{0}'\"".format(src)
-        rc, out, err = self.module.run_command(sha256_cmd)
+        rc, out, err = self.module.run_command(sha256_cmd, errors='replace')
         checksums = out.split("= ")
         if len(checksums) > 0:
             return checksums[1]

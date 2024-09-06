@@ -61,7 +61,7 @@ class ActionModule(ActionBase):
         force_lock = _process_boolean(task_args.get('force_lock'), default=False)
         executable = _process_boolean(task_args.get('executable'), default=False)
         asa_text = _process_boolean(task_args.get('asa_text'), default=False)
-        ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
+        ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=True)
         backup_name = task_args.get("backup_name", None)
         encoding = task_args.get("encoding", None)
         mode = task_args.get("mode", None)

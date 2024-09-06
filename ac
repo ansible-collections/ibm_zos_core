@@ -591,6 +591,7 @@ ac_sanity(){
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test
+##  $ ac --ac-test --host ec01130a --python 3.10 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
 ac_test(){
     host=$1
     python=$2
@@ -1233,7 +1234,6 @@ ac_test_pytest_finder(){
     fi
 }
 
-
 # ------------------------------------------------------------------------------
 # Check the version of the ibm_zos_core collection installed
 # ------------------------------------------------------------------------------
@@ -1515,6 +1515,7 @@ host_mounts(){
 ## Example:
 ##  $ ac --host-nodes [--all <bool>] [--pretty <bool>]
 ##  $ ac --host-nodes
+##  $ ac --host-nodes --all false
 host_nodes(){
     # Uppercase value for --all
     all=`echo $1 | tr '[:lower:]' '[:upper:]'`

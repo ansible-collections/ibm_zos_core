@@ -234,7 +234,6 @@ EXAMPLES = r"""
     limit: 30
     scratch: true
     purge: true
-
 """
 
 
@@ -420,7 +419,7 @@ def data_set_filter(module, pds_paths, patterns):
                 if result[1] == "PO":
                     if pds_paths:
                         mls_rc, mls_out, mls_err = module.run_command(
-                            "mls '{0}(*)'".format(result[0])
+                            "mls '{0}(*)'".format(result[0]), errors='replace'
                         )
                         if mls_rc == 2:
                             filtered_data_sets["pds"][result[0]] = {}
@@ -876,7 +875,7 @@ def _dgrep_wrapper(
         dgrep_cmd += " -C{0}".format(context)
 
     dgrep_cmd += " {0} {1}".format(quote(content), quote(data_set_pattern))
-    return AnsibleModuleHelper(argument_spec={}).run_command(dgrep_cmd)
+    return AnsibleModuleHelper(argument_spec={}).run_command(dgrep_cmd, errors='replace')
 
 
 def _dls_wrapper(
@@ -933,7 +932,7 @@ def _dls_wrapper(
         dls_cmd += " -j"
 
     dls_cmd += " {0}".format(quote(data_set_pattern))
-    return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd)
+    return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd, errors='replace')
 
 
 def _vls_wrapper(pattern, details=False, verbose=False):
@@ -960,7 +959,7 @@ def _vls_wrapper(pattern, details=False, verbose=False):
         vls_cmd += " -v"
 
     vls_cmd += " {0}".format(quote(pattern))
-    return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
+    return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd, errors='replace')
 
 
 def _match_resource_type(type1, type2):

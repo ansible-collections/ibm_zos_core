@@ -37,7 +37,7 @@ options:
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
       - Generation data set (GDS) relative name of generation already
-        created. C(e.g. SOME.CREATION(-1).)
+        created. ``e.g. SOME.CREATION(-1).``
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -251,7 +251,7 @@ EXAMPLES = r"""
   zos_lineinfile:
     src: SOME.CREATION.TEST
     insertafter: EOF
-    backup: True
+    backup: true
     backup_name: CREATION.GDS(+1)
     line: 'Should be a working test now'
 """
@@ -483,7 +483,7 @@ def execute_dsed(src, state, encoding, module, line=False, first_match=False, fo
 
     cmd = "dsed {0}{1}{2}{3}".format(force, backrefs, encoding, options)
 
-    rc, stdout, stderr = module.run_command(cmd)
+    rc, stdout, stderr = module.run_command(cmd, errors='replace')
     cmd = clean_command_output(cmd)
     return rc, cmd, stdout
 

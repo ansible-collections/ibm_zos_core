@@ -1,0 +1,4 @@
+trivial:
+  - test_zos_apf_func - Change temp HLQ used in the test suite for a
+    standardized one.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1654).

@@ -825,19 +825,38 @@ test_concurrent(){
     returncode="${21}"
 
     # Invoke shell script helpers to set variables if host is not null
-     if [ ! -z "${host}" ]; then
-        hostname=$($VENV/./venv.sh --host-credentials "${host}")
+    if [ ! -z "${host}" ]; then
 
-        if [ -z "${user}" ]; then
-            user=$($VENV/./venv.sh --user-credentials "${host}")
+        count_delim=`echo $host | awk -F "," '{print NF-1}'`
+
+        if [ $count_delim -gt 0 ]; then
+            first_entry=true
+            # Parse comma delimited string, for each entry perfom an operaion.
+            for host_entry in $(echo $host | sed "s/,/ /g"); do
+                if [ "$first_entry" == "true" ]; then
+                    first_entry=false
+
+                    all_hosts=$($VENV/./venv.sh --host-credentials "${host_entry}")
+
+                    if [ -z "${user}" ]; then
+                        user=$($VENV/./venv.sh --user-credentials "${host_entry}")
+                    fi
+
+                    if [ -z "${pass}" ]; then
+                        pass=$($VENV/./venv.sh --pass-credentials "${host_entry}")
+                    fi
+                else
+                    host_entry=$($VENV/./venv.sh --host-credentials "${host_entry}")
+                    all_hosts="${all_hosts},${host_entry}"
+                fi
+            done
+
+            host=$all_hosts
+        else
+            host=$($VENV/./venv.sh --host-credentials "${host}")
         fi
-
-        if [ -z "${pass}" ]; then
-            pass=$($VENV/./venv.sh --pass-credentials "${host}")
-        fi
-
-        host=$hostname
     fi
+
 
     # Convert the python from short notation to absolute path
     python=$($VENV/./mounts.sh --get-python-mount "${python}")

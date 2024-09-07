@@ -1967,11 +1967,11 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
     ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""} ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
-    test_concurrent "${host:=''}" "${user:=''}" "${python:=''}" "${zoau:=''}" "${pythonpath:=''}"\
-    "${volumes:='222222,000000'}" "${file:='functional/*,unit/*'}" "${skip:='test_module_security.py'}"\
-    "${itr:='50'}" "${replay:='5'}" "${timeout:="300"}" "${throttle:='True'}" "${workers:="1"}"\
-    "${maxjob:="10"}" "${maxnode:="30"}" "${bal:="10"}" "${verbose:='False'}" "${verbosity:="0"}"\
-    "${debug:='False'}" "${extra:='cd `pwd`'}" "${returncode:='False'}"
+    test_concurrent "${host:=""}" "${user:=""}" "${python:=""}" "${zoau:=""}" "${pythonpath:=""}"\
+    "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\
+    "${itr:="50"}" "${replay:="5"}" "${timeout:="300"}" "${throttle:="True"}" "${workers:="1"}"\
+    "${maxjob:="10"}" "${maxnode:="30"}" "${bal:="10"}" "${verbose:="False"}" "${verbosity:="0"}"\
+    "${debug:="False"}" "${extra:="cd `pwd`"}" "${returncode:="False"}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then

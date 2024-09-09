@@ -54,7 +54,7 @@ def get_volume_entry(volume, tmphlq=None):
     return data_sets
 
 
-def get_data_set_entry(data_set_name, volume):
+def get_data_set_entry(data_set_name, volume, tmphlq=None):
     """Retrieve VTOC information for a single data set
     on a volume.
 
@@ -64,6 +64,8 @@ def get_data_set_entry(data_set_name, volume):
         The name of the data set to retrieve information for.
     volume : str
         The name of the volume.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -71,7 +73,7 @@ def get_data_set_entry(data_set_name, volume):
         The information for the data set found in VTOC.
     """
     data_set = None
-    data_sets = get_volume_entry(volume)
+    data_sets = get_volume_entry(volume, tmphlq=tmphlq)
     for ds in data_sets:
         if ds.get("data_set_name") == data_set_name.upper():
             data_set = ds

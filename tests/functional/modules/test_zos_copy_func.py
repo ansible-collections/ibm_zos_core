@@ -2350,17 +2350,6 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
     dest = get_random_file_name(dir=TMP_DIRECTORY)
 
     hosts = ansible_zos_module
-    mlq_size = 3
-    cobol_src_pds = get_tmp_ds_name(mlq_size)
-    cobol_src_mem = "HELLOCBL"
-    cobol_src_mem2 = "HICBL2"
-    src_lib = get_tmp_ds_name(mlq_size)
-    dest_lib = get_tmp_ds_name(mlq_size)
-    dest_lib_aliases = get_tmp_ds_name(mlq_size)
-    pgm_mem = "HELLO"
-    pgm2_mem = "HELLO2"
-    pgm_mem_alias = "ALIAS1"
-    pgm2_mem_alias = "ALIAS2"
     try:
         hosts.all.file(path=dest, state="touch")
         hosts.all.shell(cmd=f"decho 'test line' '{src_ds}' ")

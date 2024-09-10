@@ -158,6 +158,11 @@ jobs:
          The name of the batch job.
       type: str
       sample: HELLO
+    content_type:
+      description:
+         Type of address space used by the job.
+      type: str
+      sample: STC
     duration:
       description: The total lapsed time the JCL ran for.
       type: int

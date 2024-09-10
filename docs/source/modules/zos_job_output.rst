@@ -265,7 +265,7 @@ jobs
     | **type**: str
 
   content_type
-    Type of address space.
+    Type of address space used by the job.
 
     | **type**: str
     | **sample**: JOB

@@ -134,12 +134,12 @@ jobs
         [
             {
                 "asid": 0,
+                "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
                 "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
-                "job_type": "JOB",
                 "owner": "ADMIN",
                 "priority": 1,
                 "queue_position": 3,
@@ -148,12 +148,12 @@ jobs
             },
             {
                 "asid": 4,
+                "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:14:00",
                 "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
-                "job_type": "JOB",
                 "owner": "ADMIN",
                 "priority": 0,
                 "queue_position": 0,
@@ -183,7 +183,7 @@ jobs
     | **type**: str
     | **sample**: JOB01427
 
-  job_type
+  content_type
     Type of address space used by the job.
 
     | **type**: str

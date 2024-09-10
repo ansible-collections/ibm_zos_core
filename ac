@@ -1004,8 +1004,9 @@ test_concurrent(){
     #         "verbosity=${verbosity} debug=${debug} extra=${extra} returncode=${returncode}"
 
     # read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
+    #export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;
     message "Concurrent executor testing is evaluating supplied options and preparing to execute."
-    . $VENV_BIN/activate && python3 $VENV/ce.py\
+    . $VENV_BIN/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;python3 $VENV/ce.py\
         --hostnames  "${host}"\
         --user "${user}"\
         --pyz "${python}"\
@@ -1391,8 +1392,12 @@ host_auth(){
             # Parse comma delimited string, for each entry perfom an operaion.
             for host in $(echo $option_host | sed "s/,/ /g"); do
                 message "Copy SSH keys to the managed node $host"
+                touch /tmp/auth.${host}
                 $VENV/./venv.sh --cert $host >/tmp/auth.${host} 2>&1 &
                 pid=$!
+                # Sleep helps with target file does not exit
+                sleep .5
+
                 mv /tmp/auth.${host} /tmp/auth.${pid}.${host}
                 if [ "$first_entry" == "true" ]; then
                     first_entry=false
@@ -1404,7 +1409,7 @@ host_auth(){
 
             message "Processes peforming authenication [ $pids ]."
             message "Waiting on processes to complete remote authentication."
-            # Pefrom a global wait here to force all the mounts to finish
+            # Pefrom a global wait here to force all the mounts to finish (can also use jobs command to show more)
             wait
 
             # Wait is now done, run trhough the pids and evaluate
@@ -1461,8 +1466,11 @@ host_mount(){
                 rc=$?
                 if [ ${rc} -eq 0 ]; then
                     message "Copying mount.env, mount.sh, profile.sh scripts to host $host and then performing mounts."
+                    touch /tmp/mount.${host}
                     $VENV/./venv.sh --host-setup-files $host $VENV/"mounts.env" $VENV/"mounts.sh" $VENV/"profile.sh" >/tmp/mount.${host} 2>&1 &
                     pid=$!
+                    # Sleep helps with target file does not exit
+                    sleep .5
                     mv /tmp/mount.${host} /tmp/mount.${pid}.${host}
 
                     if [ "$first_entry" == "true" ];then

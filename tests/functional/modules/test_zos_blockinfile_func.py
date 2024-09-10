@@ -81,6 +81,24 @@ PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
 PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
 export ZOAU_ROOT"""
 
+TEST_CONTENT_NOT_DEFAULTMARKER = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+*HELLO USER MANAGED BLOCK
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+*BYE USER MANAGED BLOCK
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
 TEST_CONTENT_CUSTOMMARKER = """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -689,6 +707,30 @@ def test_uss_block_absent_defaultmarker(ansible_zos_module):
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_ABSENT
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+
+@pytest.mark.uss
+def test_uss_block_absent_not_defaultmarker(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "state":"absent",
+        "marker_begin":"HELLO",
+        "marker_end":"BYE",
+        "marker":"*{mark} USER MANAGED BLOCK"
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT_NOT_DEFAULTMARKER
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT

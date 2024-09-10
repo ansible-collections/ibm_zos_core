@@ -96,6 +96,7 @@ options:
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
+    - Required unique value different from marker_end
     required: false
     type: str
     default: BEGIN
@@ -103,6 +104,7 @@ options:
     required: false
     description:
     - This will be inserted at C({mark}) in the closing ansible block marker.
+    - Required unique value different from marker_begin
     type: str
     default: END
   backup:
@@ -759,7 +761,8 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
-
+    if marker_begin == marker_end:
+        module.fail_json(msg='marker begin and fail required unique values')
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
     # analysis the file type

@@ -349,7 +349,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["subsystem"] = ""
             job["system"] = ""
             job["owner"] = entry.owner
-            job["content_type"] = entry.job_type
+            # Sometimes, with job type STC, the first entry will have an extra
+            # space at the end of it.
+            job["content_type"] = entry.job_type.strip()
 
             # From v1.3.0, ZOAU sets unavailable job fields as None, instead of '?'.
             job["ret_code"] = {}

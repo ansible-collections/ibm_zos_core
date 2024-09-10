@@ -147,6 +147,13 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
     job_id = get_job_id(hosts, len_id)
     job_id = job_id[0:4] + '*'
     qresults = hosts.all.zos_job_query(job_id=job_id)
+
+    # Assuming we'll mostly deal with started tasks or normal jobs.
+    if "STC" in job_id:
+        content_type = "STC"
+    else:
+        content_type = "JOB"
+
     for qresult in qresults.contacted.values():
         assert qresult.get("jobs") is not None
-        assert qresult.get("jobs")[0].get("content_type").strip() == "STC"
+        assert qresult.get("jobs")[0].get("content_type") == content_type

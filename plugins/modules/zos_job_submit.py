@@ -158,7 +158,7 @@ jobs:
          The name of the batch job.
       type: str
       sample: HELLO
-    job_type:
+    content_type:
       description:
          Type of address space used by the job.
       type: str
@@ -344,6 +344,7 @@ jobs:
      [
           {
               "class": "K",
+              "content_type": "JOB",
               "ddnames": [
                   {
                       "byte_count": "677",
@@ -541,7 +542,6 @@ jobs:
               "job_id": "JOB00361",
               "job_name": "DBDGEN00",
               "owner": "OMVSADM",
-              "job_type": "JOB",
               "ret_code": {
                   "code": 0,
                   "msg": "CC 0000",

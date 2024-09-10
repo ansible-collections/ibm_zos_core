@@ -119,7 +119,7 @@ jobs:
          Unique job identifier assigned to the job by JES.
       type: str
       sample: JOB01427
-    job_type:
+    content_type:
       description:
          Type of address space used by the job.
       type: str
@@ -230,7 +230,7 @@ jobs:
             "job_id": "JOB01427",
             "ret_code": "null",
             "job_class": "K",
-            "job_type": "JOB",
+            "content_type": "JOB",
             "svc_class": "?",
             "priority": 1,
             "asid": 0,
@@ -242,7 +242,7 @@ jobs:
             "job_name": "LINKCBL",
             "owner": "ADMIN",
             "job_id": "JOB16577",
-            "job_type": "JOB",
+            "content_type": "JOB",
             "ret_code": { "msg": "CANCELED", "code": "null" },
             "job_class": "A",
             "svc_class": "E",
@@ -417,7 +417,7 @@ def parsing_jobs(jobs_raw):
             "job_name": job.get("job_name"),
             "owner": job.get("owner"),
             "job_id": job.get("job_id"),
-            "job_type": job.get("job_type"),
+            "content_type": job.get("content_type"),
             "system": job.get("system"),
             "subsystem": job.get("subsystem"),
             "ret_code": ret_code,

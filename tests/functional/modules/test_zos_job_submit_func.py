@@ -500,7 +500,7 @@ def test_job_submit_uss(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
-            assert result.get("jobs")[0].get("job_type") == "JOB"
+            assert result.get("jobs")[0].get("content_type") == "JOB"
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=temp_path, state="absent")

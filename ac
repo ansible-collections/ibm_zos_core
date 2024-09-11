@@ -1983,7 +1983,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; 
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then
-    ac_test_dep_finder ${branch:=""} "${skip:="test_module_security.py"}" ${pretty:="true"}
+    ac_test_dep_finder "${branch:=""}" "${skip:="test_module_security.py"}" ${pretty:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-find" ] ; then
     ac_test_pytest_finder ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
     ${pretty:="true"}

@@ -447,9 +447,8 @@ discover_python(){
     #   Don't use which, it only will find first in path within the script
     #   for python_found in `which python3 | cut -d" " -f3`; do
     #
-    #   The 'pys' array will search for pythons in reverse order, once it finds one that matches
-    #   the configurations/requirements-x.xx.env it does not continue searching. Reverse order is important to
-    #   maintain.
+    #  'pys' is in reverse order, once there is a match to configurationsrequirements-x.xx.env 
+    #   it does not continue searching. Reverse order is important to maintain.
     rc=-1
     pys="python3.14 python3.13 python3.12 python3.11 python3.10 python3.9 python3.8"
     for py in $(echo $pys| tr ' ' '\n');do
@@ -470,6 +469,7 @@ discover_python(){
         fi
     done
 
+    # Not posix compliant usage of arrays.
     # pys=("python3.14" "python3.13" "python3.12" "python3.11" "python3.10" "python3.9" "python3.8")
     # rc=1
     # for py in "${pys[@]}"; do
@@ -702,37 +702,21 @@ ssh_copy_files_and_mount(){
 }
 
 ################################################################################
-# Echo the configuration used by the ansible core python test framework
+# Write the configuration used by the ansible core python test framework
 ################################################################################
-echo_config(){
-unset CONFIG
-
-CONFIG=${CONFIG}"host: ${host}\\\n"
-CONFIG=${CONFIG}"user: ${user}\\\n"
-CONFIG=${CONFIG}"python_path: ${PYZ_HOME}/bin/python3\\\n"
-CONFIG=${CONFIG}"\\\n"
-CONFIG=${CONFIG}"environment:\\\n"
-CONFIG=${CONFIG}"  _BPXK_AUTOCVT: \"ON\"\\\n"
-CONFIG=${CONFIG}"  _CEE_RUNOPTS: \"'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'\"\\\n"
-CONFIG=${CONFIG}"  _TAG_REDIR_ERR: txt\\\n"
-CONFIG=${CONFIG}"  _TAG_REDIR_IN: txt\\\n"
-CONFIG=${CONFIG}"  _TAG_REDIR_OUT: txt\\\n"
-CONFIG=${CONFIG}"  LANG: C\\\n"
-CONFIG=${CONFIG}"  ZOAU_HOME: ${ZOAU_HOME}\\\n"
-CONFIG=${CONFIG}"  LIBPATH: ${ZOAU_HOME}/lib:${PYZ_HOME}/lib:/lib:/usr/lib:.\\\n"
-CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib\\\n"
-CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\\n"
-CONFIG=${CONFIG}"  PYTHONSTDINENCODING: \"cp1047\"\\n"
-
-echo  ${CONFIG}
-}
-
 write_test_config(){
 unset CONFIG
 host_zvm=$1
 pyz_version=$2
 zoau_version=$3
 managed_venv_path=$4
+
+zoau_pyz=`echo $pyz_version | cut -d "." -f1,2`
+
+# If the zoau version is less than 1.3 then set the wheel var to empty, else pass the py version.
+if [ $(normalize_version $zoau_version) -lt $(normalize_version "1.3") ]; then
+    zoau_pyz=""
+fi
 
 ssh_host_credentials "$host_zvm"
 get_python_mount "$pyz_version"
@@ -750,7 +734,7 @@ CONFIG=${CONFIG}"  _TAG_REDIR_OUT: txt\\n"
 CONFIG=${CONFIG}"  LANG: C\\n"
 CONFIG=${CONFIG}"  ZOAU_HOME: ${ZOAU_HOME}\\n"
 CONFIG=${CONFIG}"  LIBPATH: ${ZOAU_HOME}/lib:${PYZ_HOME}/lib:/lib:/usr/lib:.\\n"
-CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib\\n"
+CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib/$zoau_pyz\\n"
 CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\n"
 CONFIG=${CONFIG}"  PYTHONSTDINENCODING: \"cp1047\"\\n"
 

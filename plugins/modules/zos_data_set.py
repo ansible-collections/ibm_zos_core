@@ -1405,7 +1405,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     """
     changed = False
     if state == "present" and data_set.data_set_type in ["member", "gdg"]:
-        changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq)
+        changed = data_set.ensure_present(replace=replace)
     elif state == "present":
         changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
     elif state == "absent" and data_set.data_set_type == "member":

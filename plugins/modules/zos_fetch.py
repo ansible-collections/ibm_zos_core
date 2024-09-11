@@ -885,6 +885,7 @@ def run_module():
     fail_on_missing = boolean(parsed_args.get("fail_on_missing"))
     is_binary = boolean(parsed_args.get("is_binary"))
     encoding = module.params.get("encoding")
+    tmphlq = module.params.get("tmp_hlq")
 
     # ********************************************************** #
     #  Check for data set existence and determine its type       #
@@ -906,7 +907,8 @@ def run_module():
                 src_exists = data_set.DataSet.data_set_member_exists(src_data_set.name)
             else:
                 src_exists = data_set.DataSet.data_set_exists(
-                    src_data_set.name
+                    src_data_set.name,
+                    tmphlq=tmphlq
                 )
 
         if not src_exists:
@@ -936,7 +938,10 @@ def run_module():
         if "/" in src:
             ds_type = "USS"
         else:
-            ds_type = data_set.DataSet.data_set_type(data_set.extract_dsname(src_data_set.name))
+            ds_type = data_set.DataSet.data_set_type(
+                data_set.extract_dsname(src_data_set.name),
+                tmphlq=tmphlq
+            )
 
         if not ds_type:
             module.fail_json(msg="Unable to determine source type. No data was fetched.")

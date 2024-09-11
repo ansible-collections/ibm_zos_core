@@ -1405,7 +1405,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     """
     changed = False
     if state == "present" and data_set.data_set_type in ["member", "gdg"]:
-        changed = data_set.ensure_present(replace=replace)
+        changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq)
     elif state == "present":
         changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
     elif state == "absent" and data_set.data_set_type == "member":
@@ -1415,9 +1415,9 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     elif state == "absent":
         changed = data_set.ensure_absent()
     elif state == "cataloged":
-        changed = data_set.ensure_cataloged()
+        changed = data_set.ensure_cataloged(tmphlq=tmp_hlq)
     elif state == "uncataloged":
-        changed = data_set.ensure_uncataloged()
+        changed = data_set.ensure_uncataloged(tmphlq=tmp_hlq)
     return changed
 
 

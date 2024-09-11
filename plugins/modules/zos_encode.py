@@ -367,7 +367,7 @@ def check_mvs_dataset(ds, tmphlq=None):
     """
     check_rc = False
     ds_type = None
-    if not data_set.DataSet.data_set_exists(ds):
+    if not data_set.DataSet.data_set_exists(ds, tmphlq=tmphlq):
         raise EncodeError(
             "Data set {0} is not cataloged, please check data set provided in"
             "the src option.".format(ds)
@@ -544,9 +544,12 @@ def run_module():
             dest_exists = False
 
             if not is_name_member:
-                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name)
+                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
             else:
-                dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(src_data_set.name))
+                dest_exists = data_set.DataSet.data_set_exists(
+                    data_set.extract_dsname(src_data_set.name),
+                    tmphlq=tmphlq
+                )
 
             if not dest_exists:
                 raise EncodeError(
@@ -562,7 +565,7 @@ def run_module():
                     ))
                 ds_type_src = "PS"
             else:
-                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name)
+                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name, tmphlq=tmphlq)
 
             if not ds_type_src:
                 raise EncodeError("Unable to determine data set type of {0}".format(src_data_set.raw_name))
@@ -589,9 +592,12 @@ def run_module():
                 is_name_member = data_set.is_member(dest_data_set.name)
 
                 if not is_name_member:
-                    dest_exists = data_set.DataSet.data_set_exists(dest_data_set.name)
+                    dest_exists = data_set.DataSet.data_set_exists(dest_data_set.name, tmphlq=tmphlq)
                 else:
-                    dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(dest_data_set.name))
+                    dest_exists = data_set.DataSet.data_set_exists(
+                        data_set.extract_dsname(dest_data_set.name),
+                        tmphlq=tmphlq
+                    )
 
                 if not dest_exists:
                     raise EncodeError(
@@ -602,7 +608,7 @@ def run_module():
                 if is_name_member:
                     ds_type_dest = "PS"
                 else:
-                    ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name)
+                    ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name, tmphlq=tmphlq)
 
             if (not is_uss_dest) and (path.sep in dest):
                 try:
@@ -675,6 +681,7 @@ def run_module():
                 to_encoding,
                 src_type=ds_type_src,
                 dest_type=ds_type_dest,
+                tmphlq=tmphlq
             )
 
         if convert_rc:

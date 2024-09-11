@@ -762,7 +762,7 @@ def main():
     if not marker_end:
         marker_end = 'END'
     if marker_begin == marker_end:
-        module.fail_json(msg='marker begin and fail required unique values')
+        module.fail_json(msg='marker_begin and marker_end must be different.')
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
     # analysis the file type

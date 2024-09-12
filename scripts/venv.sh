@@ -406,10 +406,10 @@ create_venv_and_pip_install_req(){
             fi
         # elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
             # Nothing to do here for now, we may want to ensure sshpass in present for MacOS
-        else
-            ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"
         fi
+
         # Complete the VENV creation and installation of packages
+        ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"
         ${VENV_HOME_MANAGED}/${venv_name}/bin/pip3 install --upgrade pip
         ${VENV_HOME_MANAGED}/${venv_name}/bin/pip install --upgrade pip
         "${VENV_HOME_MANAGED}"/"${venv_name}"/bin/pip3 install -r "${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt

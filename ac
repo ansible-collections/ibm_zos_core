@@ -158,7 +158,7 @@ ensure_managed_venv_exists(){
         message_error "Option $1 requires that a managed virtual environment be configured.
        Run $0 -venv-setup to create managed viritual environments.
        For additional optons, use $0 --help."
-        exit_100
+        exit_all
     fi
 }
 
@@ -459,20 +459,25 @@ ac_install(){
 }
 
 # ------------------------------------------------------------------------------
-# Generate module documentation, will add RST changes in the local github branch
+# Generate module documentation, this will crate the *.rst in the local repo
 # ------------------------------------------------------------------------------
 #->ac-module-doc:
-## Run 'make module-doc' to generate module documentation in RST.
-## Usage: ac --ac-module-doc [--command <str>]
+## Generate module doc with options. Default behavior is to clean and then generate
+## module doc in RST. All options are appended makefile targets clean and module-doc.
+## If clean is seleceted, only clean is executed.
+## Usage: ac --ac-module-doc [--command <str,str>]
 ## Options:
 ##      command (optional)
-##          - Space or comma delimited make file targets.
-##          - choose from target 'role' or 'html',
-##          - role, check syntax of changelogs/changelog.yaml file
-##          - html, set up changelog infrastructure for collection, or an other project
+##          - Space or comma delimited make file targets to append to clean and module-doc.
+##          - If clean is selected it will be the only makefile target run.
+##          - choose from target 'role', 'html', 'clean'.
+##          - role, generate role documenation.
+##          - html, generate HTML and launch it in a local browser for viewing.
+##          - clean, remove staging directories used to generate HTML.
+##          - options are case sensitive.
 ## Example:
 ##  $ ac --ac-module-doc --command html,role
-##  $ ac --ac-module-doc --command html
+##  $ ac --ac-module-doc --command clean
 ##  $ ac --ac-module-doc
 ac_module_doc(){
     option_command=$1
@@ -484,11 +489,11 @@ ac_module_doc(){
         count_delim=`echo $option_command | awk -F "," '{print NF-1}'`
 
         if [ $count_delim -gt 0 ]; then
-            # Parse comma delimited string, for each entry perfom an operaion.
+            # Parse comma delimited string, clean is already in the base command so ignored.
             for command in $(echo $option_command | sed "s/,/ /g"); do
                 if [ "$command" == "role" ];then
                     cmd="${cmd} make role-doc;"
-                 elif [ "$command" == "html" ];then
+                elif [ "$command" == "html" ];then
                     cmd="${cmd} make html; make view-html;"
                 fi
             done
@@ -497,6 +502,8 @@ ac_module_doc(){
                 cmd="${cmd} make role-doc;"
             elif [ "$command" == "html" ];then
                 cmd="${cmd} make html; make view-html;"
+            elif [ "$command" == "clean" ];then
+                    cmd="make clean;"
             fi
         fi
     fi

@@ -256,17 +256,16 @@ write_requirements(){
             # eg extract 'latest' from configurations/requirements-latest file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
-            echo $venv_name
         elif echo "$file" | grep "doc" >/dev/null; then
             # eg extract 'doc' from configurations/requirements-doc file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
-            echo $venv_name
+            # Don't usee the common requirements for the venv-doc, it is all defined in the venv's env file. 
+            REQ_COMMON=""
         else
             # eg extract 2.14 from configurations/requirements-2.14.sh file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
             venv_name="venv"-$ansible_version
-            echo $venv_name
         fi
 
         for pkg in "${requirements[@]}" ; do
@@ -305,6 +304,7 @@ write_requirements(){
 			py_op="-ge"
 		fi
 
+        echo "Venv $venv_name requires Python $py_op version $py_req."
         discover_python $py_op $py_req
 
         # Is the discoverd python >= what the requirements.txt requires?
@@ -342,7 +342,7 @@ write_requirements(){
             fi
 
             # Call create_venv_and_pip_install_req here because calling in option '--vsetup' will lose the global python values and pick up the wrong python.
-            create_venv_and_pip_install_req
+            create_venv_and_pip_install_req $file
         else
             echo "Not able to create managed venv path: ${VENV_HOME_MANAGED}/${venv_name} , min python required is ${py_req}, found version $VERSION_PYTHON"
             echo "Consider installing another Python for your system, if on Mac 'brew install python@3.10', otherwise review your package manager"
@@ -353,81 +353,69 @@ write_requirements(){
 
 
 create_venv_and_pip_install_req(){
-    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* configurations/*requirements-doc* 2>/dev/null`; do
-        unset venv
+    unset venv
+    if echo "$file" | grep "latest" >/dev/null; then
+        # eg extract 'latest' from configurations/requirements-latest file name
+        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+        venv_name="venv"-$ansible_version
+    elif echo "$file" | grep "doc" >/dev/null; then
+        # eg extract 'doc' from configurations/requirements-doc file name
+        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+        venv_name="venv"-$ansible_version
+    else
+        # eg extract 2.14 from configurations/requirements-2.14.sh file name
+        ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
+        venv_name="venv"-$ansible_version
+        #echo $venv_name
+    fi
 
-        #if [[ "$file" =~ "latest" ]]; then
-        if echo "$file" | grep "latest" >/dev/null; then
-            # eg extract 'latest' from configurations/requirements-latest file name
-            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
-            venv_name="venv"-$ansible_version
-        elif echo "$file" | grep "doc" >/dev/null; then
-            # eg extract 'doc' from configurations/requirements-doc file name
-            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
-            venv_name="venv"-$ansible_version
-        else
-            # eg extract 2.14 from configurations/requirements-2.14.sh file name
-            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1,2`
-            venv_name="venv"-$ansible_version
-            #echo $venv_name
-        fi
-
-
-        if [ -f $VENV_HOME_MANAGED/$venv_name/requirements.txt ]; then
-            echo ${DIVIDER}
-		    echo "Creating python virtual environment: ${VENV_HOME_MANAGED}/${venv_name}."
-		    echo ${DIVIDER}
-
-            # --------------------------------------------------------------------------
-            # This OS pre-check is going beyond the intention of the script but
-            # without out, the tool will be unbale to run.
-            # --------------------------------------------------------------------------
-
-            # There is only support for Ubuntu and MacOS. To support other
-            # distirbutions, grep for: 'Debian' , 'CentOS', 'Fedora'.
-            # On Ubuntu, , so we need to
-            # install the python3-venv package using the following command.
-            if echo "$OSTYPE" |grep 'linux-gnu' >/dev/null; then
-                DISTRO=$(cat /etc/*release | grep ^NAME)
-
-                # On Ubuntu ensurepip is not available in LTS 24.x, support is limited
-                if echo "$DISTRO" |grep 'Ubuntu' >/dev/null; then
-                    # 'sshpass' will not be on the host, some additional work to add it.
-                    codename=`cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2`
-                    add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ $codename universe multiverse" -y
-                    apt-get update -y
-                    apt install sshpass -y
-
-                    # This is a less repository driven approach to setting up the venv, for safe keeping, commenting it out.
-                    ${VERSION_PYTHON_PATH} -m venv --without-pip "${VENV_HOME_MANAGED}"/"${venv_name}"
-                    curl https://bootstrap.pypa.io/get-pip.py -o ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
-                    ${VENV_HOME_MANAGED}/${venv_name}/bin/python${VERSION_PYTHON} ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
-
-                    # Below 2 lines result in an architecture issue that continues to be broken, so we need to use '--without-pip'.
-                    # Error: python3.12-venv : Depends: python3.12 (= 3.12.3-1) but 3.12.3-1ubuntu0.1 is to be installed
-                    # apt install python3-pip -y
-                    # apt install python$VERSION_PYTHON-venv -y
-
-                elif echo "$DISTRO" |grep 'Red Hat Enterprise Linux' >/dev/null; then
-                    # Install the Python versions
-                    dnf install python${VERSION_PYTHON} -y
-                    dnf install python${VERSION_PYTHON}-pip -y
-                    dnf install sshpass -y
-                fi
-            # elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
-                # Nothing to do here for now, we may want to ensure sshpass in present for MacOS
-            else
-                ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"
+    if [ -f $VENV_HOME_MANAGED/$venv_name/requirements.txt ]; then
+        echo ${DIVIDER}
+	    echo "Creating python virtual environment: ${VENV_HOME_MANAGED}/${venv_name}."
+	    echo ${DIVIDER}
+        # --------------------------------------------------------------------------
+        # This OS pre-check is going beyond the intention of the script but
+        # without out, the tool will be unbale to run.
+        # --------------------------------------------------------------------------
+        # There is only support for Ubuntu and MacOS. To support other
+        # distirbutions, grep for: 'Debian' , 'CentOS', 'Fedora'.
+        # On Ubuntu, , so we need to
+        # install the python3-venv package using the following command.
+        if echo "$OSTYPE" |grep 'linux-gnu' >/dev/null; then
+            DISTRO=$(cat /etc/*release | grep ^NAME)
+            # On Ubuntu ensurepip is not available in LTS 24.x, support is limited
+            if echo "$DISTRO" |grep 'Ubuntu' >/dev/null; then
+                # 'sshpass' will not be on the host, some additional work to add it.
+                codename=`cat /etc/os-release | grep UBUNTU_CODENAME | cut -d = -f 2`
+                add-apt-repository "deb http://us.archive.ubuntu.com/ubuntu/ $codename universe multiverse" -y
+                apt-get update -y
+                apt install sshpass -y
+                # This is a less repository driven approach to setting up the venv, for safe keeping, commenting it out.
+                ${VERSION_PYTHON_PATH} -m venv --without-pip "${VENV_HOME_MANAGED}"/"${venv_name}"
+                curl https://bootstrap.pypa.io/get-pip.py -o ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
+                ${VENV_HOME_MANAGED}/${venv_name}/bin/python${VERSION_PYTHON} ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
+                # Below 2 lines result in an architecture issue that continues to be broken, so we need to use '--without-pip'.
+                # Error: python3.12-venv : Depends: python3.12 (= 3.12.3-1) but 3.12.3-1ubuntu0.1 is to be installed
+                # apt install python3-pip -y
+                # apt install python$VERSION_PYTHON-venv -y
+            elif echo "$DISTRO" |grep 'Red Hat Enterprise Linux' >/dev/null; then
+                # Install the Python versions
+                dnf install python${VERSION_PYTHON} -y
+                dnf install python${VERSION_PYTHON}-pip -y
+                dnf install sshpass -y
             fi
-
-            # Complete the VENV creation and installation of packages
-            ${VENV_HOME_MANAGED}/${venv_name}/bin/pip3 install --upgrade pip
-            ${VENV_HOME_MANAGED}/${venv_name}/bin/pip install --upgrade pip
-            "${VENV_HOME_MANAGED}"/"${venv_name}"/bin/pip3 install -r "${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
+        # elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
+            # Nothing to do here for now, we may want to ensure sshpass in present for MacOS
         else
-            echo "Virtual environment "${VENV_HOME_MANAGED}"/"${venv_name}" already exists, no changes made."; \
+            ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"
         fi
-    done
+        # Complete the VENV creation and installation of packages
+        ${VENV_HOME_MANAGED}/${venv_name}/bin/pip3 install --upgrade pip
+        ${VENV_HOME_MANAGED}/${venv_name}/bin/pip install --upgrade pip
+        "${VENV_HOME_MANAGED}"/"${venv_name}"/bin/pip3 install -r "${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
+    else
+        echo "Virtual environment "${VENV_HOME_MANAGED}"/"${venv_name}" already exists or uanble to create venv, no changes made."; \
+    fi
 }
 
 
@@ -473,7 +461,7 @@ discover_python(){
             rc=$?
             ver=`echo $ver  |cut -d"." -f1,2`
             ver_path="$python_found"
-            echo "Found $ver_path"
+            echo "Found Python installation: $ver_path"
         done
 
         if [ $rc -eq 0  ];then

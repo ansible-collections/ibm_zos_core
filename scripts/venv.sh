@@ -495,7 +495,7 @@ discover_python(){
     # done
 
     echo ${DIVIDER}
-	echo "Selected Python version: ${VERSION_PYTHON}."
+	echo "Requested Python version: ${VERSION_PYTHON}."
     echo "Selected Python path: ${VERSION_PYTHON_PATH}."
 	echo ${DIVIDER}
 }

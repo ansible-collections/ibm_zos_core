@@ -848,8 +848,8 @@ test_concurrent(){
     # --extra       -> --extr       -> extra=$20     -> pass through                              -> "cd `pwd`"
     # ----------------------------------------------------------------------------------------------------------------------------------
 
-    echo "host=${1} user=${2} python=${3} zoau=${4} pythonpath=${5} volumes=${6} file=${7} skip=${8} itr=${9} replay=${10}"\
-    "timeout=${11} throttle=${12} workers=${13} maxjob=${14} maxnode=${15} bal=${16} verbose=${17} verbosity=${18} debug=${19} extra=${20} returncode=${21}"
+    # echo "host=${1} user=${2} python=${3} zoau=${4} pythonpath=${5} volumes=${6} file=${7} skip=${8} itr=${9} replay=${10}"\
+    # "timeout=${11} throttle=${12} workers=${13} maxjob=${14} maxnode=${15} bal=${16} verbose=${17} verbosity=${18} debug=${19} extra=${20} returncode=${21}"
 
     host="${1}"
     user="${2}"

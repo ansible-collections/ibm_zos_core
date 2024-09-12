@@ -56,14 +56,17 @@ latest_venv(){
 # Method will take a venv name such as venv-2.16 and validate that it exists, otherwise error and exit
 validate_venv(){
     option_venv=$1
-    #test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* 2>/dev/null`
 
     if [[ "$option_venv" =~ "latest" ]]; then
         test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-latest* 2>/dev/null`
         if [[ "$test_for_managed_venv" =~ "latest" ]]; then
             dir_version_latest=$option_venv
         fi
-    #elif [ ! -z "$test_for_managed_venv" ]; then
+    elif [[ "$option_venv" =~ "doc" ]]; then
+        test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-doc* 2>/dev/null`
+        if [[ "$test_for_managed_venv" =~ "doc" ]]; then
+            dir_version_latest=$option_venv
+        fi
     else
         for dir_version in `ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* | rev | cut -d"/" -f1| rev`; do
             if [ $dir_version == $option_venv ]; then
@@ -457,16 +460,55 @@ ac_install(){
 
 # ------------------------------------------------------------------------------
 # Generate module documentation, will add RST changes in the local github branch
-# TODO: add other make commands like view-hthml
 # ------------------------------------------------------------------------------
 #->ac-module-doc:
 ## Run 'make module-doc' to generate module documentation in RST.
-## Usage: ac --ac-module-doc
+## Usage: ac --ac-module-doc [--command <str>]
+## Options:
+##      command (optional)
+##          - Space or comma delimited make file targets.
+##          - choose from target 'role' or 'html',
+##          - role, check syntax of changelogs/changelog.yaml file
+##          - html, set up changelog infrastructure for collection, or an other project
 ## Example:
+##  $ ac --ac-module-doc --command html,role
+##  $ ac --ac-module-doc --command html
 ##  $ ac --ac-module-doc
 ac_module_doc(){
+    option_command=$1
+    cmd="make clean; make module-doc;"
+
+    # Invoke shell script helpers to set variables if host is not null
+    if [ ! -z "${option_command}" ]; then
+
+        count_delim=`echo $option_command | awk -F "," '{print NF-1}'`
+
+        if [ $count_delim -gt 0 ]; then
+            # Parse comma delimited string, for each entry perfom an operaion.
+            for command in $(echo $option_command | sed "s/,/ /g"); do
+                if [ "$command" == "role" ];then
+                    cmd="${cmd} make role-doc;"
+                 elif [ "$command" == "html" ];then
+                    cmd="${cmd} make html; make view-html;"
+                fi
+            done
+        else
+            if [ "$command" == "role" ];then
+                cmd="${cmd} make role-doc;"
+            elif [ "$command" == "html" ];then
+                cmd="${cmd} make html; make view-html;"
+            fi
+        fi
+    fi
+
+    # Must install collection on the control node to gen doc because doc needs
+    # the collections doc fragments
+    ac_build "local"
+
+    # Force the venv-doc virtual environment designed for doc generation.
+    VENV_BIN="$VENV_HOME_MANAGED"/venv-doc/bin
     message "Generating module documentation for branch '$GH_BRANCH'."
-    . $VENV_BIN/activate && cd docs/ && make module-doc
+    . $VENV_BIN/activate && cd docs/ ; eval ${cmd}
 }
 
 # ------------------------------------------------------------------------------
@@ -1965,7 +2007,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ]
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
     ac_changelog ${command:="lint"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-module-doc" ] ; then
-    ac_module_doc
+    ac_module_doc ${command:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then

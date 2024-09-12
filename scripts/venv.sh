@@ -190,10 +190,14 @@ make_venv_dirs(){
     # We should think about the idea of allowing:
     # --force, --synch, --update thus not sure we need this method and better to
     # manage this logic inline to write_req
-    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* configurations/*requirements-doc* 2>/dev/null`; do
         #if [[ "$file" =~ "latest" ]]; then
         if echo "$file" | grep "latest" >/dev/null; then
             # eg extract 'latest' from configurations/requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        elif echo "$file" | grep "doc" >/dev/null; then
+            # eg extract 'doc' from configurations/requirements-doc file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
@@ -235,7 +239,7 @@ write_requirements(){
         fi
     done
 
-    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* configurations/*requirements-doc* 2>/dev/null`; do
         # Unset the vars from any prior sourced files
         unset REQ
         unset requirements
@@ -250,6 +254,11 @@ write_requirements(){
         # if [[ "$file" =~ "latest" ]]; then
         if echo "$file" | grep "latest" >/dev/null; then
             # eg extract 'latest' from configurations/requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+            echo $venv_name
+        elif echo "$file" | grep "doc" >/dev/null; then
+            # eg extract 'doc' from configurations/requirements-doc file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
             echo $venv_name
@@ -331,6 +340,9 @@ write_requirements(){
                 echo "SSH_KEY_PIPELINE=\"\"">>"${VENV_HOME_MANAGED}"/"${venv_name}"/info.env.changeme
                 echo "No password was provided, a temporary 'info.env.changeme' file has been created for your convenience."
             fi
+
+            # Call create_venv_and_pip_install_req here because calling in option '--vsetup' will lose the global python values and pick up the wrong python.
+            create_venv_and_pip_install_req
         else
             echo "Not able to create managed venv path: ${VENV_HOME_MANAGED}/${venv_name} , min python required is ${py_req}, found version $VERSION_PYTHON"
             echo "Consider installing another Python for your system, if on Mac 'brew install python@3.10', otherwise review your package manager"
@@ -341,13 +353,16 @@ write_requirements(){
 
 
 create_venv_and_pip_install_req(){
-
-    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* 2>/dev/null`; do
+    for file in `ls configurations/*requirements-[0-9].[0-9]*.env* configurations/*requirements-latest* configurations/*requirements-doc* 2>/dev/null`; do
         unset venv
 
         #if [[ "$file" =~ "latest" ]]; then
         if echo "$file" | grep "latest" >/dev/null; then
             # eg extract 'latest' from configurations/requirements-latest file name
+            ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
+            venv_name="venv"-$ansible_version
+        elif echo "$file" | grep "doc" >/dev/null; then
+            # eg extract 'doc' from configurations/requirements-doc file name
             ansible_version=`echo $file | cut -d"-" -f2|cut -d"." -f1`
             venv_name="venv"-$ansible_version
         else
@@ -388,8 +403,8 @@ create_venv_and_pip_install_req(){
                     curl https://bootstrap.pypa.io/get-pip.py -o ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
                     ${VENV_HOME_MANAGED}/${venv_name}/bin/python${VERSION_PYTHON} ${VENV_HOME_MANAGED}/${venv_name}/bin/get-pip.py
 
-                    # Below 2 lines result in an architecture issue that continues to be broken, thus --without-pip is used.
-                    #   Error: python3.12-venv : Depends: python3.12 (= 3.12.3-1) but 3.12.3-1ubuntu0.1 is to be installed
+                    # Below 2 lines result in an architecture issue that continues to be broken, so we need to use '--without-pip'.
+                    # Error: python3.12-venv : Depends: python3.12 (= 3.12.3-1) but 3.12.3-1ubuntu0.1 is to be installed
                     # apt install python3-pip -y
                     # apt install python$VERSION_PYTHON-venv -y
 
@@ -401,10 +416,11 @@ create_venv_and_pip_install_req(){
                 fi
             # elif echo "$OSTYPE" |grep 'darwin' >/dev/null; then
                 # Nothing to do here for now, we may want to ensure sshpass in present for MacOS
+            else
+                ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"
             fi
 
             # Complete the VENV creation and installation of packages
-            ${VERSION_PYTHON_PATH} -m venv "${VENV_HOME_MANAGED}"/"${venv_name}"
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip3 install --upgrade pip
             ${VENV_HOME_MANAGED}/${venv_name}/bin/pip install --upgrade pip
             "${VENV_HOME_MANAGED}"/"${venv_name}"/bin/pip3 install -r "${VENV_HOME_MANAGED}"/"${venv_name}"/requirements.txt
@@ -491,8 +507,8 @@ discover_python(){
     # done
 
     echo ${DIVIDER}
-	echo "Discovered Python version: ${VERSION_PYTHON}."
-    echo "Discovered Python path: ${VERSION_PYTHON_PATH}."
+	echo "Selected Python version: ${VERSION_PYTHON}."
+    echo "Selected Python path: ${VERSION_PYTHON_PATH}."
 	echo ${DIVIDER}
 }
 ################################################################################
@@ -762,7 +778,7 @@ case "$1" in
     ssh_host_credentials $2
     echo "$pass"
     ;;
---host-setup-files)  #ec33017a "mounts.env" "mounts.sh" "shell-helper.sh" "profile.sh"
+--host-setup-files)
     ssh_host_credentials $2
     ssh_copy_files_and_mount $3 $4 $5
     ;;
@@ -779,20 +795,15 @@ case "$1" in
     discover_python
     ;;
 --vsetup)
-    #discover_python
     make_venv_dirs
-    #echo_requirements
     write_requirements $3
-    create_venv_and_pip_install_req
     ;;
 --latest_venv)
     latest_venv
     ;;
 --perform-unit-test)
     discover_python
-    #make_venv_dirs
     echo_requirements
-    #write_requirements $3
     ;;
 *)
     echo "ERROR: unknown parameter $1"

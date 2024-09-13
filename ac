@@ -604,12 +604,17 @@ ac_sanity(){
 }
 
 # ------------------------------------------------------------------------------
-# Build local Git Branch, install collection given -name option, run functional tests
-# given --name, this is helpful when you want to test on varoius ansible # venv's.
+# Run collection test cases using the pytest -ziventory fixture. Setting --name,
+# instructs the 'ac' tool which managed venv to use to run pytest. The collection
+# being tested must reside in the same managed venv, there is no option today to
+# choose the location of the collection and the named venv. For that we would need
+# a --location option, thus locally installed collections are not supported, all
+# collections must be installed into one of the managed venvs.
+# TODO: If --location is to be supported, the ANSIBLE_LIBRARY and ANSIBLE_CONFIG , would need to point to localhost
 # ------------------------------------------------------------------------------
 #->ac-test:
 ## Build local branch, install and run tests in the managed venv.
-## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug <boolean>] [--name]
+## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug <boolean>] [--name <str>]
 ## Options:
 ##     host (optional)
 ##          - z/OS managed node to run test cases, no selection defaults to
@@ -629,9 +634,9 @@ ac_sanity(){
 ##     debug (optional)
 ##          - enable debug for pytest (-s), choices are true and false
 ##     name (optional)
-##          - The location of collection, valid locations are venv names or 'local'.
-##          - Default, latest venv, eg venv-2.xx
-##          - If value 'local', collection is installed on the host
+##          - The managed venv to use to run the test instance.
+##          - Default, venv with largest value, eg venv-2.17
+##          - A name must be a managed venv, lochost installatiosn are not supported.
 ## Example:
 ##  $ ac --ac-test --host ec01150a --python 3.11 --zoau 1.3.1\
 ##  $    --file tests/functional/modules/test_zos_operator_func.py --test test_zos_operator_positive_path --debug true
@@ -640,7 +645,7 @@ ac_sanity(){
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test
-##  $ ac --ac-test --host ec01130a --python 3.10 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
+
 ac_test(){
     host=$1
     python=$2
@@ -650,10 +655,17 @@ ac_test(){
     debug=$6
     option_name=$7
 
-    # Build and install the collection given the name value
-    ac_build $option_name
+    # Check that a collection is installed in the named venv or default venv.
+    ac_version $option_name
 
-    # Run test by node IDs, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
+    # If a --name has been passed, update the the VENV var path appropriately.
+    if [ "$option_name" ]; then
+        VENV=`validate_venv $option_name`
+        VENV_BIN=$VENV/bin
+        VENV_BASENAME=`basename $VENV`
+    fi
+
+    # If test is parametized build a pytest string, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
     if [ "$file" ] && [ "$test" ]; then
         file="${file}::${test}"
     fi
@@ -669,8 +681,7 @@ ac_test(){
 
 	# Check configuration was created in venv/config.yml, else error and exit
 	if test ! -e  ${VENV}/config.yml; then
-	    echo "No configuration was able to be created in ${VENV}/config.yml "
-		exit 1
+	    message_error "Unable to find test configration in ${VENV}/config.yml."
 	fi
 
     if [ "$file" ]; then
@@ -688,14 +699,20 @@ ac_test(){
 }
 
 # ------------------------------------------------------------------------------
-# Run concurrent executor:
+# Run concurrent executor for identified tests cases.  Setting --name,
+# instructs the 'ac' tool which managed venv to use to run pytest. The collection
+# being tested must reside in the same managed venv, there is no option today to
+# choose the location of the collection and the named venv. For that we would need
+# a --location option, thus locally installed collections are not supported, all
+# collections must be installed into one of the managed venvs.
+# TODO: If --location is to be supported, the ANSIBLE_LIBRARY and ANSIBLE_CONFIG , would need to point to localhost
 # ------------------------------------------------------------------------------
 #->test-concurrent:
 ## Run the conncurrent executor (CE) that can drive test cases to a cluster of hosts.
 ## Usage: ac --test-concurrent [--host <str, str>] [--user <str>] --python <str> [--zoau <str>] [--pythonpath <str>]
 ##                             [--volumes <str, str>] [--file <str, str>] [--skip <str, str>] [--itr <int>] [--replay <int>]
 ##                             [--timeout <int>] [--throttle <bool>] [--workers <int>] [--maxjob <int>] [--maxnode <int>]
-##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>]
+##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>] [--name <str>]
 ## Options:
 ##     host (optional):
 ##          - Space or comma delimited managed nodes to use.
@@ -714,7 +731,7 @@ ac_test(){
 ##          - Default is to use the precompiled binary (until we establish wheel locations)
 ##     volumes (optional):
 ##          - The volumes to use with the test cases, overrides the auto volume assignment.
-#           - Defaults to, "222222,000000"
+##          - Defaults to, "222222,000000"
 ##     file (optional):
 ##          - Space or comma delimited test suites that should be included in the result.
 ##          - A test suite is a collection of test cases in a file that starts with
@@ -812,6 +829,10 @@ ac_test(){
 ##          - A zero return code means the overall execution has successed for the configuration submitted,
 ##            where a non-zero return code represents the number of failed tests.
 ##          - Default is False
+##       name (optional)
+##          - The managed venv to use to run the test instance.
+##          - Default, venv with largest value, eg venv-2.17
+##          - A name must be a managed venv, lochost installatiosn are not supported.
 ## Example:
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0 --file test_zos_operator_func.py --debug true
@@ -872,6 +893,17 @@ test_concurrent(){
     debug="${19}"
     extra="${20}"
     returncode="${21}"
+    option_name="${22}"
+
+    # Check that a collection is installed in the named venv or default venv.
+    ac_version $option_name
+
+    # If a --name has been passed, update the the VENV var path appropriately.
+    if [ "$option_name" ]; then
+        VENV=`validate_venv $option_name`
+        VENV_BIN=$VENV/bin
+        VENV_BASENAME=`basename $VENV`
+    fi
 
     # Invoke shell script helpers to set variables if host is not null
     if [ ! -z "${host}" ]; then
@@ -902,7 +934,16 @@ test_concurrent(){
 
             host=$all_hosts
         else
-            host=$($VENV/./venv.sh --host-credentials "${host}")
+            host_entry=$host
+            host=$($VENV/./venv.sh --host-credentials "${host_entry}")
+
+            if [ -z "${user}" ]; then
+                user=$($VENV/./venv.sh --user-credentials "${host_entry}")
+            fi
+
+            if [ -z "${pass}" ]; then
+                pass=$($VENV/./venv.sh --pass-credentials "${host_entry}")
+            fi
         fi
     fi
 
@@ -1323,7 +1364,7 @@ ac_test_pytest_finder(){
 ##  $ ac --ac-version
 ac_version(){
     option_name=$1
-    collection_path=""  # Empty installs to host default
+    collection_path=""  # No value, installs to host default
     base_name=""
 
 
@@ -1341,9 +1382,15 @@ ac_version(){
         base_name=`basename $VENV`
     fi
 
-    message "The ibm_zos_core collection version installed on ${base_name}."
-    cat ${collection_path}/ibm/ibm_zos_core/MANIFEST.json \
-    | grep version|cut -d ':' -f 2 | sed 's/,*$//g' | tr -d '"';
+    manifest=$(cat ${collection_path}/ibm/ibm_zos_core/MANIFEST.json > /dev/null 2>&1)
+    rc=$(echo $?)
+    if [ $rc -eq 0 ]; then
+        message "Discovered ibm_zos_core collection installation in ${base_name}."
+        cat ${collection_path}/ibm/ibm_zos_core/MANIFEST.json \
+        | grep version|cut -d ':' -f 2 | sed 's/,*$//g' | tr -d '"';
+    else
+        message_error "Unable to find a collection at $collection_path, consider running 'ac --install --name $option_name'."
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -1442,7 +1489,9 @@ host_auth(){
             for host in $(echo $option_host | sed "s/,/ /g"); do
                 message "Copy SSH keys to the managed node $host"
                 touch /tmp/auth.${host}
+                # Put command in background
                 $VENV/./venv.sh --cert $host >/tmp/auth.${host} 2>&1 &
+                # Capture the pid for identification later
                 pid=$!
                 # Sleep helps with target file does not exit
                 sleep .5
@@ -2028,7 +2077,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; 
     "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\
     "${itr:="50"}" "${replay:="5"}" "${timeout:="300"}" "${throttle:="True"}" "${workers:="1"}"\
     "${maxjob:="10"}" "${maxnode:="30"}" "${bal:="10"}" "${verbose:="False"}" "${verbosity:="0"}"\
-    "${debug:="False"}" "${extra:="cd `pwd`"}" "${returncode:="False"}"
+    "${debug:="False"}" "${extra:="cd `pwd`"}" "${returncode:="False"}" "${name:=""}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then

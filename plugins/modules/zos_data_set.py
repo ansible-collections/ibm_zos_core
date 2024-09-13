@@ -1415,9 +1415,9 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     elif state == "absent":
         changed = data_set.ensure_absent()
     elif state == "cataloged":
-        changed = data_set.ensure_cataloged(tmphlq=tmp_hlq)
+        changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
     elif state == "uncataloged":
-        changed = data_set.ensure_uncataloged(tmphlq=tmp_hlq)
+        changed = data_set.ensure_uncataloged(tmp_hlq=tmp_hlq)
     return changed
 
 

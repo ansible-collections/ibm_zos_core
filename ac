@@ -515,7 +515,7 @@ ac_module_doc(){
     # Force the venv-doc virtual environment designed for doc generation.
     VENV_BIN="$VENV_HOME_MANAGED"/venv-doc/bin
     message "Generating module documentation for branch '$GH_BRANCH'."
-    . $VENV_BIN/activate && cd docs/ ; eval ${cmd}
+    . $VENV_BIN/activate && export ANSIBLE_LIBRARY="$HOME/.ansible/collections/ansible_collections/ibm/ibm_zos_core/plugins/modules"; cd docs/ ; eval ${cmd}
 }
 
 # ------------------------------------------------------------------------------

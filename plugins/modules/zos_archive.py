@@ -1038,7 +1038,7 @@ class MVSArchive(Archive):
         """Finds target datasets in host.
         """
         for path in self.sources:
-            if data_set.DataSet.data_set_exists(path):
+            if data_set.DataSet.data_set_exists(path, tmphlq=self.tmphlq):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
@@ -1148,7 +1148,7 @@ class MVSArchive(Archive):
             Name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
         # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
@@ -1266,7 +1266,7 @@ class MVSArchive(Archive):
         bool
             If destination path exists.
         """
-        return data_set.DataSet.data_set_exists(self.dest)
+        return data_set.DataSet.data_set_exists(self.dest, tmphlq=self.tmphlq)
 
     def remove_targets(self):
         """Removes the archived targets and changes the state accordingly.

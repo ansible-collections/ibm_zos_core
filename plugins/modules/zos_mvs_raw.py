@@ -3064,8 +3064,7 @@ def get_data_set_content(name, base64_encode=False, from_encoding=None, to_encod
         with zoau_io.RecordIO("//{0}".format(quoted_name), "r") as records:
             content = base64.b64encode(b''.join(records.readrecords())).decode()
     else:
-        content = get_content('"//{0}"'.format(quoted_name), from_encoding, to_encoding
-    )
+        content = get_content('"//{0}"'.format(quoted_name), from_encoding, to_encoding)
     return content
 
 
@@ -3115,8 +3114,8 @@ def get_content(formatted_name, from_encoding=None, to_encoding=None):
     """
     module = AnsibleModuleHelper(argument_spec={})
     conversion_command = " | iconv -f {0} -t {1}".format(
-            quote(from_encoding), quote(to_encoding)
-        )
+        quote(from_encoding), quote(to_encoding)
+    )
     # * name argument should already be quoted by the time it reaches here
     # TODO: determine if response should be byte object
     rc, stdout, stderr = module.run_command(

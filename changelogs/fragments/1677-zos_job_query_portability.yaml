@@ -1,0 +1,3 @@
+trivial:
+  - zos_copy - Remove the use of hard coded job id for test cases.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1667).

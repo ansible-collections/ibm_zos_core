@@ -36,9 +36,9 @@ options:
     description:
       - The source file or data set containing the JCL to submit.
       - It could be a physical sequential data set, a partitioned data set
-        qualified by a member or a path (e.g. C(USER.TEST), V(USER.JCL(TEST\))),
+        qualified by a member or a path (e.g. C(USER.TEST), ``USER.JCL(TEST)``),
         or a generation data set from a generation data group
-        (for example, V(USER.TEST.GDG(-2\))).
+        (for example, ``USER.TEST.GDG(-2)``).
       - Or a USS file. (e.g C(/u/tester/demo/sample.jcl))
       - Or a LOCAL file in ansible control node.
         (e.g C(/User/tester/ansible-playbook/sample.jcl))
@@ -158,6 +158,11 @@ jobs:
          The name of the batch job.
       type: str
       sample: HELLO
+    content_type:
+      description:
+         Type of address space used by the job.
+      type: str
+      sample: STC
     duration:
       description: The total lapsed time the JCL ran for.
       type: int

@@ -119,6 +119,11 @@ jobs:
          Unique job identifier assigned to the job by JES.
       type: str
       sample: JOB01427
+    content_type:
+      description:
+         Type of address space used by the job.
+      type: str
+      sample: STC
     ret_code:
       description:
          Return code output collected from job log.
@@ -225,6 +230,7 @@ jobs:
             "job_id": "JOB01427",
             "ret_code": "null",
             "job_class": "K",
+            "content_type": "JOB",
             "svc_class": "?",
             "priority": 1,
             "asid": 0,
@@ -236,6 +242,7 @@ jobs:
             "job_name": "LINKCBL",
             "owner": "ADMIN",
             "job_id": "JOB16577",
+            "content_type": "JOB",
             "ret_code": { "msg": "CANCELED", "code": "null" },
             "job_class": "A",
             "svc_class": "E",
@@ -410,6 +417,7 @@ def parsing_jobs(jobs_raw):
             "job_name": job.get("job_name"),
             "owner": job.get("owner"),
             "job_id": job.get("job_id"),
+            "content_type": job.get("content_type"),
             "system": job.get("system"),
             "subsystem": job.get("subsystem"),
             "ret_code": ret_code,

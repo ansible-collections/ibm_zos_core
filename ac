@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # ==============================================================================
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,23 +13,27 @@
 # ==============================================================================
 
 # ==============================================================================
-# Global Vars
+# Global Vars and helpers
 # ==============================================================================
 
-# Note: using the venv.sh script to find the latest venv puts the current 'ac'
-# in the scripts directory because venv.sh performs a 'cd $(dirname $0)' and
-# then other scripts can't be found in the managed venv corectly. Although this
-# is probably a temporary solution, we now take the same code from venv.sh and
-# use it here in 'ac' to find the latst managed venv. What should be
-# done is to have some meta-data written out to venv/* that this command 'ac'
-# can easily find, might be helpful to have some stats like dates created and
-# so on.
-# VENV=`scripts/./venv.sh --latest_venv`
+# TODO:  - write stats to the venv such as date created, updated, etc
+
+# Trap custom exit value to exit child processes.
+trap "exit 100" TERM
+export PARENT_PID=$$
 
 VENV_HOME_MANAGED=${PWD%/venv}/venv
 
+# ------------------------------------------------------------------------------
+# This method will terminate the entire script by killing the parent process.
+# When exiting from within a function, use exit_all' not 'exit n' else the parent
+# proccess will not exit.
+# ------------------------------------------------------------------------------
+function exit_all(){
+   kill -s TERM $PARENT_PID
+}
+
 # Normalize the version from 3.10.2 to 3010002000
-# Do we we need that 4th octet?
 normalize_version() {
     echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
 }
@@ -49,17 +53,20 @@ latest_venv(){
     fi
 }
 
-# Method will take a venv name such as venv-2.16 and validate that it exists
+# Method will take a venv name such as venv-2.16 and validate that it exists, otherwise error and exit
 validate_venv(){
     option_venv=$1
-    #test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* 2>/dev/null`
 
     if [[ "$option_venv" =~ "latest" ]]; then
         test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-latest* 2>/dev/null`
         if [[ "$test_for_managed_venv" =~ "latest" ]]; then
             dir_version_latest=$option_venv
         fi
-    #elif [ ! -z "$test_for_managed_venv" ]; then
+    elif [[ "$option_venv" =~ "doc" ]]; then
+        test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-doc* 2>/dev/null`
+        if [[ "$test_for_managed_venv" =~ "doc" ]]; then
+            dir_version_latest=$option_venv
+        fi
     else
         for dir_version in `ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* | rev | cut -d"/" -f1| rev`; do
             if [ $dir_version == $option_venv ]; then
@@ -71,25 +78,31 @@ validate_venv(){
     if [ ! -z "$dir_version_latest" ]; then
         echo "${VENV_HOME_MANAGED}"/$dir_version_latest
     else
-        echo "Unable to validate managed venv option $option_venv, exiting."
+        message_error "Unable to validate managed venv option $option_venv, exiting."
         exit
-        fi
+    fi
 }
 
+# TODO: Wrap this with an exist check so that you can override the venv from the shell
 VENV=`latest_venv`
 
-file=""
-verbose=0
-DIV="-----------------------------------------------------------------------"
-CURRENT_DIR=`pwd`
-cd $CURRENT_DIR
-# VENV_BIN should equate to same as $VIRTUAL_ENV after the venv activate
 if [ ! -z "$VENV" ]; then
     VENV_BIN=$VENV/bin
     VENV_BASENAME=`basename $VENV`
 fi
 
+CURRENT_DIR=`pwd`
+cd $CURRENT_DIR
 CURR_DIR=`pwd`
+file=""
+verbose=0
+GH_BRANCH=`git branch |grep "*" | cut -d" " -f2`
+DIV="-----------------------------------------------------------------------"
+
+# if '0' then Docker is up, else '1' then docker is not up
+DOCKER_INFO=`podman info> /dev/null 2>&1;echo $?`
+
+# Vars used to aid in terminal message colors
 RED=$'\e[1;31m'
 GRN=$'\e[1;32m'
 YEL=$'\e[1;33m'
@@ -97,8 +110,6 @@ BLU=$'\e[1;34m'
 MAG=$'\e[1;35m'
 CYN=$'\e[1;36m'
 ENDC=$'\e[0m'
-# 0 Docker is up, 1 docker is not up
-DOCKER_INFO=`podman info> /dev/null 2>&1;echo $?`
 
 # ==============================================================================
 # Arg parsing helpers
@@ -121,22 +132,33 @@ message(){
 # Use this method for error messages to the console.
 # ------------------------------------------------------------------------------
 message_error(){
-    ERROR_MSG="${RED}ERROR${ENDC}: $1"
-    printf '%s\n' "${ERROR_MSG}" >&2
-    exit 1
+    printf '%s\n' "${RED}${DIV}${RED}" >&2
+    printf '%s\n' "${RED}ERROR:${ENDC} ${1}" >&2
+    printf '%s\n' "${RED}${DIV}${ENDC}" >&2
+    exit_all
 }
 
+# ------------------------------------------------------------------------------
+# This method generates an WARN message with yellow color. This message
+# will always be sent to STDERR so that STDOUT can be reserved for return codes.
+# Use this method for error messages to the console.
+# ------------------------------------------------------------------------------
 message_warn(){
-    WARN_MSG="${YEL}WARN${ENDC}: $1"
-    printf '%s\n' "${WARN_MSG}" >&2
+    printf '%s\n' "${YEL}${DIV}${YEL}" >&2
+    printf '%s\n' "${YEL}WARN:${ENDC} ${1}" >&2
+    printf '%s\n' "${YEL}${DIV}${YEL}" >&2
 }
 
+# ------------------------------------------------------------------------------
+# This method ehcecks to see the VENV variable has been set, if not it produces
+# an error message with instructions on how to correct it.
+# ------------------------------------------------------------------------------
 ensure_managed_venv_exists(){
     if [ -z "$VENV" ]; then
-        echo "Option $1 requires that a managed virtual environment be configured. "\
-        "Run $0 -venv-setup to create managed viritual environments. "\
-        "For additional optons, use $0 --help."
-        exit 1
+        message_error "Option $1 requires that a managed virtual environment be configured.
+       Run $0 -venv-setup to create managed viritual environments.
+       For additional optons, use $0 --help."
+        exit_all
     fi
 }
 
@@ -260,159 +282,311 @@ option_sanitize(){
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Run a bandit security scan on the plugin directory
+# Run a bandit static scan on the plugins directory on the hosts local branch
+# where the 'ac' is running.
 # ------------------------------------------------------------------------------
 #->ac-bandit:
-## Run a bandit security scan on the plugins directory, set the severity level.
-## Usage: ac [--bandit <level>]
-## Usage: ac [--bandit <level>]
-## <level> - choose from 'l', 'll', 'lll'
-##         - l all low, medium, high severity
-##         - ll all medium, high severity
-##         - lll all high severity
+## Run bandit static scan on the plugins directory on the local GH branch.
+## Usage: ac --ac-bandit [--level <str>]
+## Options:
+##     level (optional):
+##         - choose from 'l', 'll', 'lll'
+##         - Defaults to, 'l'
+##         - l, all low, medium, high severities
+##         - ll, all medium, high severities
+##         - lllm all high severities
 ## Example:
 ##  $ ac --ac-bandit --level ll
 ##  $ ac --ac-bandit
 ac_bandit(){
     option_level=$1
     if [ ! "$option_level" ]; then
-        option_level="ll"
+        option_level="l"
     fi
     message "Running Bandit scan with level '$option_level'"
     . $VENV_BIN/activate && python3 -m bandit -r plugins/* -"${option_level}"
 }
 
 # ------------------------------------------------------------------------------
-# Build and install collection of the local GH branch.
-# To not dirty the host, consider installing in the venv:
-# ansible-galaxy -vv collection install --force -p venv/lib/python3.8/site-packages/ansible_collections
+# Build and install a collection of the local branch checked out where 'ac' is
+# running. Installation is set the --name option, local host or venv.
 # ------------------------------------------------------------------------------
 #->ac-build:
-## Build and install collection of the local GH branch.
-## Usage: ac [--ac-build]
+## Build and install collection of the local GH branch, select installation path.
+## Usage: ac --ac-build [--name <str>]
+## Options:
+##      name (optional)
+##          - The location to install, by default it will install the collection
+##            in the latest venv. If value 'local' is set, it will
+##            install the collection on the host.
 ## Example:
+##  $ ac --ac-build --name local
+##  $ ac --ac-build --name venv-2.14
 ##  $ ac --ac-build
 ac_build(){
-    gh_branch=`git branch |grep "*" | cut -d" " -f2`
-    message "Build and install collection of the local GH branch: '$gh_branch'."
+    option_name=$1
+    galaxy_path=""  # Empty installs to host default
+    git_init=""
+    base_name=""
+
+    # There must be a parent git directory in non-default collection installations, see issues
+    # https://github.com/ansible/ansible/issues/68499#issuecomment-873660057
+    # https://github.com/ansible/ansible/issues/63032
+    # Work around is to perform a git init . and create an empty repo where the collection is installed,
+    # does not seem to to be an issue with the host installation thus far, only venv's. This is required
+    # for ansible-test sanity tests to run, else sanity fails with 'WARNING: All targets skipped.'
+
+    if [ "$option_name" ]; then
+        if [ "$option_name" == "local" ];then
+            base_name="$HOME/.ansible/collections/ansible_collections"
+        else
+            VENV=`validate_venv $option_name`
+            galaxy_path="-p ${VENV}"
+            base_name=`basename $VENV`
+            git_init="git init ${VENV}/ansible_collections --quiet"
+        fi
+    else
+        galaxy_path="-p ${VENV}"
+        base_name=`basename $VENV`
+        git_init="git init ${VENV}/ansible_collections --quiet"
+    fi
+
+    message "Creating 'ibm_zos_core' collection from the local GH branch: '$GH_BRANCH'."
     . $VENV_BIN/activate && rm -rf ibm-ibm_zos_core-*.tar.gz && \
-		$VENV_BIN/ansible-galaxy collection build && \
-			$VENV_BIN/ansible-galaxy collection install -f ibm-ibm_zos_core-*
+		$VENV_BIN/ansible-galaxy collection build
+
+    message "Installing 'ibm.ibm_zos_core' collection to ${base_name}."
+    . $VENV_BIN/activate && $VENV_BIN/ansible-galaxy collection install -f ibm-ibm_zos_core-* ${galaxy_path} && ${git_init}
 }
 
 # ------------------------------------------------------------------------------
-# Run galaxy importer on collection.
+# Build, install and validate the collection with 'galaxy importer'. This operation
+# is performed on the host, not on a venv.
 # ------------------------------------------------------------------------------
 #->ac-galaxy-importer:
-## Build current branch and run galaxy importer on collection.
-## Usage: ac [--ac-galaxy-importer]
+## Build current branch and run galaxy importer on the collection.
+## Usage: ac --ac-galaxy-importer
 ## Example:
 ##  $ ac --ac-galaxy-importer
 ac_galaxy_importer(){
-    message "Running Galaxy Importer"
-    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && python -m galaxy_importer.main $collection_name
+    message "Creating 'ibm_zos_core' collection with branch: '$GH_BRANCH'."
+    . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && ls -la $collection_name
+
+    message "Running Galaxy Importer for collection $collection_name"
+    . $VENV_BIN/activate && python3 -m galaxy_importer.main $collection_name
 }
 
-# Run a changelog lint locally
+# ------------------------------------------------------------------------------
+# Perform changelog operations on th elocal branch.
+# TODO: Add the ability to create a summary.
 # ------------------------------------------------------------------------------
 #->ac-changelog:
-## Runs antsibull-changelog to generate the release changelog or perform a lint
-## on changelog fragments or release notes.
-## Usage: ac [--ac-changelog <command>]
-## <command> - choose from 'init', 'lint', 'lint-changelog-yaml', 'release', 'generate'
-##         - generate generate the changelog
-##         - init set up changelog infrastructure for collection, or an other project
-##         - lint check changelog fragments for syntax errors
-##         - lint-changelog-yaml check syntax of changelogs/changelog.yaml file
-##         - release add a new release to the change metadata
+## Perform antsibull-changelog operations such as lint, release and generate, etc
+## Usage: ac --ac-changelog [--command <str>]
+## Options:
+##      command (optional)
+##          - choose from 'generate', 'lint', 'lint-changelog-yaml', 'init', 'release',
+##          - generate, TODO: Needs doc
+##          - lint, (default) check changelog fragments for syntax errors
+##          - lint-changelog-yaml, check syntax of changelogs/changelog.yaml file
+##          - init, set up changelog infrastructure for collection, or an other project
+##          - release, add a new release to the change metadata
 ## Example:
 ##  $ ac --ac-changelog --command lint
 ##  $ ac --ac-changelog --command release
 ##  $ ac --ac-changelog
 ac_changelog(){
     option_command=$1
-    if [ ! "$option_command" ]; then
-        option_command="lint"
-    fi
-    message "Running Changelog '$option_command'"
+    message "Performing  changelog operation '$option_command'"
     . $VENV_BIN/activate && antsibull-changelog "${option_command}"
 }
 
 # ------------------------------------------------------------------------------
-# Install an ibm_zos_core collection from galaxy (or how you have ansible.cfg configured)
+# Install an ibm_zos_core collection from repository
 # ------------------------------------------------------------------------------
 #->ac-install:
-## Install collection 'ibm_zos_core' from a repository such as Galaxy. If no
-## version is specified, latest GA level in repository will be installed.
-## Usage: ac [--ac-install] [--version <version>]
+## Install collection 'ibm_zos_core' from galaxy. If no version is specified,
+## the latest GA level in repository will be installed.
+## Usage: ac --ac-install [--version <int>] [--name <str>]
 ## Options:
-##  version - The collection version
+##      version (optional)
+##          - The collection version
+##      name (optional)
+##          - The location to install, valid locations are venv names or 'local'.
+##          - Default, latest venv, eg venv-2.xx
+##          - If value 'local', collection is installed on the host.
 ## Example:
+##  $ ac --ac-install --version 1.5.0-beta.1 --name venv-2.16
+##  $ ac --ac-install --version 1.5.0-beta.1 --name local
 ##  $ ac --ac-install --version 1.5.0-beta.1
 ##  $ ac --ac-install
 ac_install(){
     option_version=$1
+    option_name=$2
+    galaxy_path=""      # Empty installs to host default
+    git_init=""
+    base_name=""
+
+    # There must be a parent git directory in non-default collection installations, see issues
+    # https://github.com/ansible/ansible/issues/68499#issuecomment-873660057
+    # https://github.com/ansible/ansible/issues/63032
+    # Work around is to perform a git init . and create an empty repo where the collection is installed,
+    # does not seem to to be an issue with the host installation thus far, only venv's. This is required
+    # for ansible-test sanity tests to run, else sanity fails with 'WARNING: All targets skipped.'
+
+    if [ "$option_name" ]; then
+        if [ "$option_name" == "local" ];then
+            base_name="$HOME/.ansible/collections/ansible_collections"
+        else
+            VENV=`validate_venv $option_name`
+            galaxy_path="-p ${VENV}"
+            base_name=`basename $VENV`
+            git_init="git init ${VENV}/ansible_collections --quiet"
+        fi
+    else
+        galaxy_path="-p ${VENV}"
+        base_name=`basename $VENV`
+        git_init="git init ${VENV}/ansible_collections --quiet"
+    fi
 
     if [ "$option_version" ];then
-        message "Installing 'ibm.ibm_zos_core' collection version=${option_version}."
-        . $VENV_BIN/activate && $VENV_BIN/ansible-galaxy collection install -fc ibm.ibm_zos_core:${option_version}
+        message "Installing 'ibm.ibm_zos_core' collection version=${option_version} into ${base_name}."
+        . $VENV_BIN/activate && $VENV_BIN/ansible-galaxy collection install -fc ibm.ibm_zos_core:${option_version} ${galaxy_path} && ${git_init}
     else
-        message "Installing 'ibm.ibm_zos_core' lastet GA version."
-        . $VENV_BIN/activate && $VENV_BIN/ansible-galaxy collection install -fc ibm.ibm_zos_core
+        message "Installing 'ibm.ibm_zos_core' lastet GA version into ${VENV}."
+        . $VENV_BIN/activate && $VENV_BIN/ansible-galaxy collection install -fc ibm.ibm_zos_core ${galaxy_path} && ${git_init}
     fi
 }
 
-# Run a make module doc
+# ------------------------------------------------------------------------------
+# Generate module documentation, this will crate the *.rst in the local repo
 # ------------------------------------------------------------------------------
 #->ac-module-doc:
-## Runs make module-doc to generate the module documentation
-## Usage: ac [--ac-module-doc]
+## Generate module doc with options. Default behavior is to clean and then generate
+## module doc in RST. All options are appended makefile targets clean and module-doc.
+## If clean is seleceted, only clean is executed.
+## Usage: ac --ac-module-doc [--command <str,str>]
+## Options:
+##      command (optional)
+##          - Space or comma delimited make file targets to append to clean and module-doc.
+##          - If clean is selected it will be the only makefile target run.
+##          - choose from target 'role', 'html', 'clean'.
+##          - role, generate role documenation.
+##          - html, generate HTML and launch it in a local browser for viewing.
+##          - clean, remove staging directories used to generate HTML.
+##          - options are case sensitive.
 ## Example:
+##  $ ac --ac-module-doc --command html,role
+##  $ ac --ac-module-doc --command clean
 ##  $ ac --ac-module-doc
 ac_module_doc(){
-    message "Running make module-doc"
-    . $VENV_BIN/activate && cd docs/ && make module-doc
+    option_command=$1
+    cmd="make clean; make module-doc;"
+
+    # Invoke shell script helpers to set variables if host is not null
+    if [ ! -z "${option_command}" ]; then
+
+        count_delim=`echo $option_command | awk -F "," '{print NF-1}'`
+
+        if [ $count_delim -gt 0 ]; then
+            # Parse comma delimited string, clean is already in the base command so ignored.
+            for command in $(echo $option_command | sed "s/,/ /g"); do
+                if [ "$command" == "role" ];then
+                    cmd="${cmd} make role-doc;"
+                elif [ "$command" == "html" ];then
+                    cmd="${cmd} make html; make view-html;"
+                fi
+            done
+        else
+            if [ "$command" == "role" ];then
+                cmd="${cmd} make role-doc;"
+            elif [ "$command" == "html" ];then
+                cmd="${cmd} make html; make view-html;"
+            elif [ "$command" == "clean" ];then
+                    cmd="make clean;"
+            fi
+        fi
+    fi
+
+    # Must install collection on the control node to gen doc because doc needs
+    # the collections doc fragments
+    ac_build "local"
+
+    # Force the venv-doc virtual environment designed for doc generation.
+    VENV_BIN="$VENV_HOME_MANAGED"/venv-doc/bin
+    message "Generating module documentation for branch '$GH_BRANCH'."
+    . $VENV_BIN/activate && export ANSIBLE_LIBRARY="$HOME/.ansible/collections/ansible_collections/ibm/ibm_zos_core/plugins/modules"; cd docs/ ; eval ${cmd}
 }
 
 # ------------------------------------------------------------------------------
-# Run ansible-lint on the locally checked out GH Branch
+# Run ansible-lint on the local GH Branch
 # ------------------------------------------------------------------------------
 #->ac-lint:
 ## Run ansible-lint on the local GH branch with the production profile.
-## Usage: ac [--ac-lint]
+## Usage: ac --ac-lint
 ## Example:
 ##  $ ac --ac-lint
 ac_ansible_lint(){
-    gh_branch=`git branch |grep "*" | cut -d" " -f2`
-    message "Linting with ansible-lint on GH branch: '$gh_branch'."
+    message "Linting with ansible-lint on branch: '$GH_BRANCH'."
     . $VENV_BIN/activate && $VENV_BIN/ansible-lint --profile production
 }
 
 # ------------------------------------------------------------------------------
 # Run the sanity test using docker given python version else default to venv
+# TODO: investigate validate:
+#   https://docs.ansible.com/ansible/latest/dev_guide/testing/sanity/validate-modules.html#extending-validate-modules
 # ------------------------------------------------------------------------------
 #->ac-sanity:
 ## Run ansible-test in docker if the docker engine is running, else run them in
 ## a managed virtual environment using the installed python version.
-## Usage: ac [--ac-sanity] [--version <version>]
+## Usage: ac --ac-sanity [--version <float>] [--name <str>]
 ## Options:
-##   <version> - Only applies to when docker is running.
-##             - No version selection will run all available python versions in docker.
-##             - choose from '2.6', '2.7', '3.5', '3.6', '3.7', '3.8', '3.9', ....
+##      version (optional)
+##          - Only applies when a container is running.
+##          - choose from '2.6', '2.7', '3.5', '3.6', '3.7', '3.8', '3.9', ....
+##          - No version selection will run all available python versions in the container.
+##      name (optional)
+##          - The location of collection, valid locations are venv names or 'local'.
+##          - Default, latest venv, eg venv-2.xx
+##          - If value 'local', collection is installed on the host.
 ## Example:
-##  $ ac --ac-sanity
+##  $ ac --ac-sanity --version 3.10 --name local
 ##  $ ac --ac-sanity --version 3.10
+##  $ ac --ac-sanity
 ac_sanity(){
     option_version=$1
+    option_name=$2
+    collection_path=""
+    base_name=""
+
+    if [ "$option_name" ]; then
+        if [ "$option_name" == "local" ];then
+            collection_path="$HOME/.ansible/collections/ansible_collections/ibm/ibm_zos_core/"
+            # Must install collect to have parity with ansible-test
+            ac_build $option_name
+        else
+            VENV=`validate_venv $option_name`
+            collection_path="${VENV}/ansible_collections/ibm/ibm_zos_core/"
+            base_name=`basename $VENV`
+            # Must install collect to have parity with ansible-test
+            ac_build $option_name
+        fi
+    else
+        collection_path="${VENV}/ansible_collections/ibm/ibm_zos_core/"
+        base_name=`basename $VENV`
+        # Must install collect to have parity with ansible-test
+        ac_build
+    fi
+
     if [ "${DOCKER_INFO}" == "0" ]; then
         if [ "${option_version}" ]; then
-            message "Running ansible-test with docker container and python version ${option_version}."
-            . $VENV_BIN/activate && export ANSIBLE_TEST_PREFER_PODMAN=1 && cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && \
-                 ${VENV_BIN}/ansible-test sanity --python ${option_version} --requirements --docker default && \
-                    cd ${CURR_DIR};
+            message "Running ansible-test in a container with python ${option_version} and collection ${base_name}."
+            . $VENV_BIN/activate && export ANSIBLE_TEST_PREFER_PODMAN=1 && cd ${collection_path} && \
+            ${VENV_BIN}/ansible-test sanity --python ${option_version} --requirements --docker default && \
+            cd ${CURR_DIR};
         else
-            message "Running ansible-test with docker container and all python versions."
-            . $VENV_BIN/activate && export ANSIBLE_TEST_PREFER_PODMAN=1 && cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && \
+            message "Running ansible-test in a container all python versions and collection ${base_name}."
+            . $VENV_BIN/activate && export ANSIBLE_TEST_PREFER_PODMAN=1 && cd ${collection_path} && \
                 ${VENV_BIN}/ansible-test sanity --requirements --docker default && \
                     cd ${CURR_DIR};
         fi
@@ -423,37 +597,55 @@ ac_sanity(){
 
         . $VENV_BIN/activate && VENV_PY_VER=`python3 --version | cut -d" " -f2 | cut -d"." -f1,2`
         message "Running ansible-test with managed python virtual environment: ${VENV}."
-		. $VENV_BIN/activate && cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && \
+		. $VENV_BIN/activate && cd ${collection_path} && \
 			${VENV_BIN}/ansible-test sanity --python ${VENV_PY_VER} --requirements && \
 				cd ${CURR_DIR};
     fi
 }
 
 # ------------------------------------------------------------------------------
-# Run functional tests:
+# Run collection test cases using the pytest -ziventory fixture. Setting --name,
+# instructs the 'ac' tool which managed venv to use to run pytest. The collection
+# being tested must reside in the same managed venv, there is no option today to
+# choose the location of the collection and the named venv. For that we would need
+# a --location option, thus locally installed collections are not supported, all
+# collections must be installed into one of the managed venvs.
+# TODO: If --location is to be supported, the ANSIBLE_LIBRARY and ANSIBLE_CONFIG , would need to point to localhost
 # ------------------------------------------------------------------------------
 #->ac-test:
-## Run the functional tests inside the managed python virtual environment.
-## Usage: ac [--ac-test] [--host <host>] [--python <python>] [--zoau <zoau>] [--file <file>] [--debug <boolean>]
+## Build local branch, install and run tests in the managed venv.
+## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug <boolean>] [--name <str>]
 ## Options:
-##     host     - z/OS managed node to run test cases, no selection defaults to
-##                a host registerd to your user id (`whoami`).
-##     python   - IBM enterprise python version, choices are 3.8, 3.9, 3.10, 3.11,
-##                no selection defauls to 3.8.
-##     zoau     - ZOAU to use in testing, choices are 1.0.3, 1.1.1, 1.2.0, 1.2.1,
-##                no selection defaults to 1.1.1 .
-##     file     - the absoulte path to a test suite to run, no selection
-##                defaults to all test suite running.
-##     test     - a test case to run found in 'file', no selection
-##                defaults to all tests in file running.
-##     debug    - enable debug for pytest (-s), choices are true and false
+##     host (optional)
+##          - z/OS managed node to run test cases, no selection defaults to
+##            a host registerd to your the user id (`whoami`).
+##     python (optional)
+##          - IBM enterprise python version, choices are 3.8, 3.9, 3.10, 3.11, 3.12
+##            no selection defauls to 3.8.
+##     zoau (optional)
+##          - ZOAU to use in testing, choices are 1.0.3, 1.1.1, 1.2.0, 1.2.1,
+##            no selection defaults to 1.1.1 .
+##     file (optional)
+##          - the absoulte path to a test suite to run, no selection
+##            defaults to all test suite running.
+##     test (optional)
+##          - a test case to run found in 'file', no selection
+##            defaults to all tests in file running.
+##     debug (optional)
+##          - enable debug for pytest (-s), choices are true and false
+##     name (optional)
+##          - The managed venv to use to run the test instance.
+##          - Default, venv with largest value, eg venv-2.17
+##          - A name must be a managed venv, lochost installatiosn are not supported.
 ## Example:
-##  $ ac --ac-test --host ec01150a --python 3.10 --zoau 1.2.2\
+##  $ ac --ac-test --host ec01150a --python 3.11 --zoau 1.3.1\
 ##  $    --file tests/functional/modules/test_zos_operator_func.py --test test_zos_operator_positive_path --debug true
-##  $ ac --ac-test --host ec33012a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --debug true
+##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --debug true
+##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
+##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test
-##  $ ac --ac-test --host ec01130a --python 3.10 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
+
 ac_test(){
     host=$1
     python=$2
@@ -461,8 +653,19 @@ ac_test(){
     file=$4
     test=$5
     debug=$6
+    option_name=$7
 
-    # Run test by node IDs, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
+    # Check that a collection is installed in the named venv or default venv.
+    ac_version $option_name
+
+    # If a --name has been passed, update the the VENV var path appropriately.
+    if [ "$option_name" ]; then
+        VENV=`validate_venv $option_name`
+        VENV_BIN=$VENV/bin
+        VENV_BASENAME=`basename $VENV`
+    fi
+
+    # If test is parametized build a pytest string, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
     if [ "$file" ] && [ "$test" ]; then
         file="${file}::${test}"
     fi
@@ -478,16 +681,15 @@ ac_test(){
 
 	# Check configuration was created in venv/config.yml, else error and exit
 	if test ! -e  ${VENV}/config.yml; then
-	    echo "No configuration was able to be created in ${VENV}/config.yml "
-		exit 1
+	    message_error "Unable to find test configration in ${VENV}/config.yml."
 	fi
 
     if [ "$file" ]; then
-        . ${VENV_BIN}/activate && ${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
+        . ${VENV_BIN}/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
     else
         for file in `ls tests/functional/modules/*.py`; do
             if [ "$file" != "$skip" ]; then
-                . ${VENV_BIN}/activate && ${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
+                . ${VENV_BIN}/activate &&  export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
             fi
         done
     fi
@@ -497,14 +699,20 @@ ac_test(){
 }
 
 # ------------------------------------------------------------------------------
-# Run concurrent executor:
+# Run concurrent executor for identified tests cases.  Setting --name,
+# instructs the 'ac' tool which managed venv to use to run pytest. The collection
+# being tested must reside in the same managed venv, there is no option today to
+# choose the location of the collection and the named venv. For that we would need
+# a --location option, thus locally installed collections are not supported, all
+# collections must be installed into one of the managed venvs.
+# TODO: If --location is to be supported, the ANSIBLE_LIBRARY and ANSIBLE_CONFIG , would need to point to localhost
 # ------------------------------------------------------------------------------
 #->test-concurrent:
 ## Run the conncurrent executor (CE) that can drive test cases to a cluster of hosts.
 ## Usage: ac --test-concurrent [--host <str, str>] [--user <str>] --python <str> [--zoau <str>] [--pythonpath <str>]
 ##                             [--volumes <str, str>] [--file <str, str>] [--skip <str, str>] [--itr <int>] [--replay <int>]
 ##                             [--timeout <int>] [--throttle <bool>] [--workers <int>] [--maxjob <int>] [--maxnode <int>]
-##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>]
+##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>] [--name <str>]
 ## Options:
 ##     host (optional):
 ##          - Space or comma delimited managed nodes to use.
@@ -513,7 +721,7 @@ ac_test(){
 ##          - Only the host prefix is needed, e.g. 'ec01150a'
 ##     user (optional):
 ##          - Ansible user authorized to run tests on the managed node.
-##     python (requred): ->
+##     python (requred):
 ##          - IBM enterprise python version, e.g 3.10', '3.11', '3.12'
 ##     zoau (optional):
 ##          - ZOAU version to use. e.g. 1.2.5, 1.3.0, 1.3.1
@@ -523,7 +731,7 @@ ac_test(){
 ##          - Default is to use the precompiled binary (until we establish wheel locations)
 ##     volumes (optional):
 ##          - The volumes to use with the test cases, overrides the auto volume assignment.
-#           - Defaults to, "222222,000000"
+##          - Defaults to, "222222,000000"
 ##     file (optional):
 ##          - Space or comma delimited test suites that should be included in the result.
 ##          - A test suite is a collection of test cases in a file that starts with
@@ -621,6 +829,10 @@ ac_test(){
 ##          - A zero return code means the overall execution has successed for the configuration submitted,
 ##            where a non-zero return code represents the number of failed tests.
 ##          - Default is False
+##       name (optional)
+##          - The managed venv to use to run the test instance.
+##          - Default, venv with largest value, eg venv-2.17
+##          - A name must be a managed venv, lochost installatiosn are not supported.
 ## Example:
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0 --file test_zos_operator_func.py --debug true
@@ -681,21 +893,60 @@ test_concurrent(){
     debug="${19}"
     extra="${20}"
     returncode="${21}"
+    option_name="${22}"
+
+    # Check that a collection is installed in the named venv or default venv.
+    ac_version $option_name
+
+    # If a --name has been passed, update the the VENV var path appropriately.
+    if [ "$option_name" ]; then
+        VENV=`validate_venv $option_name`
+        VENV_BIN=$VENV/bin
+        VENV_BASENAME=`basename $VENV`
+    fi
 
     # Invoke shell script helpers to set variables if host is not null
-     if [ ! -z "${host}" ]; then
-        hostname=$($VENV/./venv.sh --host-credentials "${host}")
+    if [ ! -z "${host}" ]; then
 
-        if [ -z "${user}" ]; then
-            user=$($VENV/./venv.sh --user-credentials "${host}")
+        count_delim=`echo $host | awk -F "," '{print NF-1}'`
+
+        if [ $count_delim -gt 0 ]; then
+            first_entry=true
+            # Parse comma delimited string, for each entry perfom an operaion.
+            for host_entry in $(echo $host | sed "s/,/ /g"); do
+                if [ "$first_entry" == "true" ]; then
+                    first_entry=false
+
+                    all_hosts=$($VENV/./venv.sh --host-credentials "${host_entry}")
+
+                    if [ -z "${user}" ]; then
+                        user=$($VENV/./venv.sh --user-credentials "${host_entry}")
+                    fi
+
+                    if [ -z "${pass}" ]; then
+                        pass=$($VENV/./venv.sh --pass-credentials "${host_entry}")
+                    fi
+                else
+                    host_entry=$($VENV/./venv.sh --host-credentials "${host_entry}")
+                    all_hosts="${all_hosts},${host_entry}"
+                fi
+            done
+
+            host=$all_hosts
+        else
+            host_entry=$host
+            host=$($VENV/./venv.sh --host-credentials "${host_entry}")
+
+            if [ -z "${user}" ]; then
+                user=$($VENV/./venv.sh --user-credentials "${host_entry}")
+            fi
+
+            if [ -z "${pass}" ]; then
+                pass=$($VENV/./venv.sh --pass-credentials "${host_entry}")
+            fi
         fi
-
-        if [ -z "${pass}" ]; then
-            pass=$($VENV/./venv.sh --pass-credentials "${host}")
-        fi
-
-        host=$hostname
     fi
+
 
     # Convert the python from short notation to absolute path
     python=$($VENV/./mounts.sh --get-python-mount "${python}")
@@ -843,8 +1094,9 @@ test_concurrent(){
     #         "verbosity=${verbosity} debug=${debug} extra=${extra} returncode=${returncode}"
 
     # read _host _user _pass <<<$($VENV/./venv.sh --host-credentials "${host}")
+    #export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;
     message "Concurrent executor testing is evaluating supplied options and preparing to execute."
-    . $VENV_BIN/activate && python3 $VENV/ce.py\
+    . $VENV_BIN/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;python3 $VENV/ce.py\
         --hostnames  "${host}"\
         --user "${user}"\
         --pyz "${python}"\
@@ -873,20 +1125,31 @@ test_concurrent(){
 # ------------------------------------------------------------------------------
 #->ac-test-config:
 ## Disply the contents of configuration file used to run functional tests.
-## Usage: ac [--ac-test-config]
+## Usage: ac --ac-test-config [--name <str>]
+## Options:
+##      name (optional)
+##          - The test configuration location which must be a managed venv name, e.g 'venv-2.16'
+##          - The default location is the latest managed venv.
 ## Example:
+##  $ ac --ac-test-config --name venv-2.17
 ##  $ ac --ac-test-config
 ac_test_config(){
+    option_name=$1
+    if [ "$option_name" ]; then
+        VENV=`validate_venv $option_name`
+        base_name=`basename $VENV`
+    fi
+
 	if [ -f "${VENV}/config.yml" ]; then
-        message "Print test configuration used for functional testing."
+        message "Configuration for automated testing in ${base_name}."
 	    cat ${VENV}/config.yml;
 	else
-        message "No configuration was found, run '--ac-test' to generate a configuration."
+        message_error "Configuration was found in ${option_name}, run '--ac-test' to generate a configuration."
 	fi
 }
 
 # ------------------------------------------------------------------------------
-# Get a list of all test cases from the dependency finder depending on options
+# Get a list of test cases from the dependency finder depending on options.
 # ------------------------------------------------------------------------------
 #->test-dep-find:
 ## Determine which test suites to run given the options selected.
@@ -905,7 +1168,7 @@ ac_test_config(){
 ##          - Default is to skip 'test_module_security.py', this can not be removed but
 ##            it can be replaced with another test or tests.
 ##     pretty (optional):
-##          - Pretty formatting where each value is a line follwoed by a line feed,
+##          - Pretty formatting where each value is a line followed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
 ##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py" --pretty False
@@ -916,7 +1179,6 @@ ac_test_config(){
 ac_test_dep_finder(){
     branch=$1
     skip="$2"
-    gh_branch=`git branch |grep "*" | cut -d" " -f2`
 
     # Convert any comma separated strings to space delimited as needed by the tooling.
     first_entry=true
@@ -938,7 +1200,7 @@ ac_test_dep_finder(){
         message "Compiling a list functional and unit tests suites excluding skipped tests."
         . $VENV_BIN/activate && result=`$VENV_BIN/python ${VENV}/dependencyfinder.py -p ${CURRENT_DIR} -a -s "${skip}"`
     else
-        message "Compiling a list dependent tests cases to run based on the changes between local branch '$gh_branch' and target branch '$branch', excluding skipped tests."
+        message "Compiling a list dependent tests cases to run based on the changes between local branch '$GH_BRANCH' and target branch '$branch', excluding skipped tests."
         . $VENV_BIN/activate && result=`$VENV_BIN/python ${VENV}/dependencyfinder.py -p ${CURRENT_DIR} -b ${branch} -s "${skip}" -m`
     fi
 
@@ -990,7 +1252,9 @@ ac_test_dep_finder(){
 ac_test_pytest_finder(){
     file=$1
     skip="$2"
-    slience_messages="$4" # Undocumented internal interface option to disable INFO messages
+    # Uppercase value for --pretty
+    pretty=`echo $3 | tr '[:lower:]' '[:upper:]'`
+    slience_messages="$4" # This is an undocumented option to disable INFO messages
 
     first_entry=true
     file_tests=""
@@ -1071,8 +1335,6 @@ ac_test_pytest_finder(){
     . $VENV_BIN/activate && result=`export PYTHONPATH=$VENV;$VENV_BIN/python -c "from modules.utils import get_test_cases;from os import environ;\
         tests = get_test_cases(paths=environ['env_file'], skip=environ['env_skip']);all=','.join(tests);print(all)"`
 
-    # Uppercase value for --pretty
-    pretty=`echo $3 | tr '[:lower:]' '[:upper:]'`
     if [ "$pretty" == "TRUE" ];then
         echo $result |tr ',' '\n';
     else
@@ -1086,14 +1348,49 @@ ac_test_pytest_finder(){
 # Check the version of the ibm_zos_core collection installed
 # ------------------------------------------------------------------------------
 #->ac-version:
-## Obtain the version of the collection installed on the controller.
-## Usage: ac [--ac-version]
+## List the version of the collection installed in a managed venv or the controller.
+## Usage: ac --ac-version [--name <str>]
+## Options:
+##      name (optional)
+##          - The test configuration location which must be a managed venv name, e.g 'venv-2.16'
+##          - The default location is the latest managed venv.
+## Options:
+##      name (optional)
+##          - The location the collection is installed.
+##          - The default is the latest venv.
+##          - If value 'local' is set, it will search localhost for the collection.
 ## Example:
+##  $ ac --ac-version --name venv-2.17
 ##  $ ac --ac-version
 ac_version(){
-    message "Ansible collection version installed on this controller."
-    cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json \
-    | grep version|cut -d ':' -f 2 | sed 's/,*$//g' | tr -d '"';
+    option_name=$1
+    collection_path=""  # No value, installs to host default
+    base_name=""
+
+
+    if [ "$option_name" ]; then
+        if [ "$option_name" == "local" ];then
+            collection_path="$HOME/.ansible/collections/ansible_collections"
+            base_name=`hostname`
+        else
+            VENV=`validate_venv $option_name`
+            collection_path="${VENV}/ansible_collections"
+            base_name=`basename $VENV`
+        fi
+    else
+        collection_path="${VENV}/ansible_collections"
+        base_name=`basename $VENV`
+    fi
+
+    manifest=$(cat ${collection_path}/ibm/ibm_zos_core/MANIFEST.json > /dev/null 2>&1)
+    rc=$(echo $?)
+    if [ $rc -eq 0 ]; then
+        message "Discovered ibm_zos_core collection installation in ${base_name}."
+        cat ${collection_path}/ibm/ibm_zos_core/MANIFEST.json \
+        | grep version|cut -d ':' -f 2 | sed 's/,*$//g' | tr -d '"';
+    else
+        message_error "Unable to find a collection at $collection_path, consider running 'ac --install --name $option_name'."
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -1163,37 +1460,76 @@ file_decrypt(){
     chmod 700 $option_out_file
 }
 
-
-# Cleanup and remove geneated doc for the collection if its not going to be
-# checked in
-# Example:
-#     $ make cleanDoc
-clean(){
-    echo Todo
-    # @. $(VENV_BIN)/activate && make -C docs clean
-}
-
-clean_doc(){
-    echo Todo
-    # cleanDoc
-	# @. $(VENV_BIN)/activate && make -C docs clean
-}
-
 #->host-auth:
 ## Copy your ssh key to a `host` or the default which is your username.
-## Usage: ac [--host-auth] [--host <host>]
+## Usage: ac --host-auth [--host <str,str>]
 ## Options:
 ##     host     - z/OS managed node, no selection defaults to
 ##                a host registerd to your user id (`whoami`).
+## Options:
+##     host (optional):
+##         - Space or comma delimited string of host names, eg 'ec1234a,ec4321a'
+##         - Defaults to a host registered to your local laptops username , eg `whoami`
+##         - If more than one host name is set, the command will concurrently connect
+##           to each host, and 'wait' for completion and print the results.
 ## Example:
+##  $ ac --host-auth --host ec33012a,ec03190a,ec01135a
 ##  $ ac --host-auth --host ec33012a
 host_auth(){
     option_host=$1
     if [ ! "$option_host" ]; then
         host=`whoami`
+    else
+        count_delim=`echo $option_host | awk -F "," '{print NF-1}'`
+
+        if [ $count_delim -gt 0 ]; then
+            pids=""
+            first_entry=true
+            # Parse comma delimited string, for each entry perfom an operaion.
+            for host in $(echo $option_host | sed "s/,/ /g"); do
+                message "Copy SSH keys to the managed node $host"
+                touch /tmp/auth.${host}
+                # Put command in background
+                $VENV/./venv.sh --cert $host >/tmp/auth.${host} 2>&1 &
+                # Capture the pid for identification later
+                pid=$!
+                # Sleep helps with target file does not exit
+                sleep .5
+
+                mv /tmp/auth.${host} /tmp/auth.${pid}.${host}
+                if [ "$first_entry" == "true" ]; then
+                    first_entry=false
+                    pids="${pid}"
+                else
+                    pids="${pids},${pid}"
+                fi
+            done
+
+            message "Processes peforming authenication [ $pids ]."
+            message "Waiting on processes to complete remote authentication."
+            # Pefrom a global wait here to force all the mounts to finish (can also use jobs command to show more)
+            wait
+
+            # Wait is now done, run trhough the pids and evaluate
+            for p in $(echo $pids | sed "s/,/ /g"); do
+                # '#?' after 'ps -p' will return 0 if the process is running, otherwise 1
+                auth_rc=$(ps -p $p >/dev/null;echo $?)
+                auth_output=`ls /tmp/auth.${p}*`
+                auth_output_pid=`echo $auth_output | cut -d'.' -f2`
+                auth_output_host=`echo $auth_output | cut -d'.' -f3`
+                if [ $auth_rc -eq 1 ]; then
+                    message "Authentication for $auth_output_host completed."
+                else
+                    message "Unable to determine authenciation status for ${auth_output_host}."
+                fi
+                cat $auth_output
+                rm -rf ${auth_output}
+            done
+        else
+            message "Copy SSH keys to the managed node $option_host"
+            $VENV/./venv.sh --cert $option_host
+        fi
     fi
-    message "Copy SSH keys to the managed node $option_host"
-    $VENV/./venv.sh --cert $option_host
 }
 
 # ------------------------------------------------------------------------------
@@ -1201,23 +1537,75 @@ host_auth(){
 # mount script. Should automatically authenticate your ssh key.
 # ------------------------------------------------------------------------------
 #->host-mount:
-## Copy mount and profile scripts in users home directory and excute the mount.
-## Usage: ac [--host-mount --host <host>]
+## Copy helper scripts to remote machine and then perform mounts.
+## Usage: ac --host-mount [--host <str,str>]
 ## Options:
-##     host     - z/OS managed node id, no selection defaults to
-##                a host registerd to your user id (`whoami`).
+##     host (optional):
+##         - Space or comma delimited string of host names, eg 'ec1234a,ec4321a'
+##         - Defaults to a host registered to your local laptops username , eg `whoami`
+##         - If more than one host name is set, the command will concurrently connect
+##           to each host, and 'wait' for completion and print the results.
 ## Example:
+##  $ ac --host-mount --host ec33012a,ec03190a,ec01135a
 ##  $ ac --host-mount --host ec33012a
 host_mount(){
     option_host=$1
     if [ ! "$option_host" ]; then
         option_host=`whoami`
+    else
+        count_delim=`echo $option_host | awk -F "," '{print NF-1}'`
+
+        if [ $count_delim -gt 0 ]; then
+            pids=""
+            first_entry=true
+            # Parse comma delimited string, for each entry perfom an operaion.
+            for host in $(echo $option_host | sed "s/,/ /g"); do
+                host_auth $host
+                rc=$?
+                if [ ${rc} -eq 0 ]; then
+                    message "Copying mount.env, mount.sh, profile.sh scripts to host $host and then performing mounts."
+                    touch /tmp/mount.${host}
+                    $VENV/./venv.sh --host-setup-files $host $VENV/"mounts.env" $VENV/"mounts.sh" $VENV/"profile.sh" >/tmp/mount.${host} 2>&1 &
+                    pid=$!
+                    # Sleep helps with target file does not exit
+                    sleep .5
+                    mv /tmp/mount.${host} /tmp/mount.${pid}.${host}
+
+                    if [ "$first_entry" == "true" ];then
+                        first_entry=false
+                        pids="${pid}"
+                    else
+                        pids="${pids},${pid}"
+                    fi
+                fi
+            done
+
+            message "Processes peforming mounts [ $pids ]"
+            message "Waiting on processes to complete remote mounts."
+            # Pefrom a global wait here to force all the mounts to finish
+            wait
+
+            # Wait is now done, run trhough the pids and evaluate
+            for p in $(echo $pids | sed "s/,/ /g"); do
+                # '#?' after 'ps -p' will return 0 if the process is running, otherwise 1
+                mount_rc=$(ps -p $p >/dev/null;echo $?)
+                mount_output=`ls /tmp/mount.${p}*`
+                mount_output_pid=`echo $mount_output | cut -d'.' -f2`
+                mount_output_host=`echo $mount_output | cut -d'.' -f3`
+                if [ $mount_rc -eq 1 ]; then
+                    message "Mounts for $mount_output_host completed."
+                else
+                    message "Unable to determine status for ${mount_output_host}."
+                fi
+                cat ${mount_output}
+                rm -rf ${mount_output}
+            done
+        else
+            host_auth $option_host
+            message "Copying mount.env, mount.sh, profile.sh scripts to host $option_host and then performing mounts."
+            $VENV/./venv.sh --host-setup-files $option_host $VENV/"mounts.env" $VENV/"mounts.sh" $VENV/"profile.sh"
+        fi
     fi
-    host_auth $option_host
-    message "Copying mount.env, mount.sh, profile.sh scripts to host $option_host and then mounting shared drive."
-    #$VENV/./hosts.sh --cert $1
-    $VENV/./venv.sh --host-setup-files $option_host $VENV/"mounts.env" $VENV/"mounts.sh" $VENV/"profile.sh"
-    #$VENV/./hosts.sh --mount $1 $VENV/"mounts.env" $VENV/"mounts.sh" $VENV/"shell-helper.sh" $VENV/"profile.sh"
 }
 
 # ------------------------------------------------------------------------------
@@ -1225,7 +1613,7 @@ host_mount(){
 # ------------------------------------------------------------------------------
 #->host-mounts:
 ## Print the ZOAU and Python mount tables used by this utility.
-## Usage: ac [--host-mounts]
+## Usage: ac --host-mounts
 ## Example:
 ##  $ ac --host-mounts
 host_mounts(){
@@ -1234,28 +1622,48 @@ host_mounts(){
 }
 
 # ------------------------------------------------------------------------------
-# Print the z/OS node IDs and hostnames
+# Print the z/OS host IDs and hostnames
 # ------------------------------------------------------------------------------
 #->host-nodes:
-## Display the z/OS node IDs and hostnames
-## Usage: ac [--host-nodes --all <boolean>]
+## Print all managed nodes hostnames.
+## Usage: ac --host-nodes [--all <bool>] [--pretty <bool>]
 ## Options:
-##     all      - A list of all nodes, default is true. If all is set to false,
-##                only a list space delimited nodes are returned.
+##     all      - Print all managed nodes hostnames.
+## Options:
+##     all (optional):
+##         - Option will control what content is printed.
+##         - If true (default), both the ID and hostname are printed as space delimited.
+##         - If false, only the hostnames marked for production are printed as space delimited.
+##     pretty (optional):
+##          - Pretty formatting where each value is a line followed by a line feed,
+##            otherwise a list[str] format is returned.
 ## Example:
+##  $ ac --host-nodes [--all <bool>] [--pretty <bool>]
 ##  $ ac --host-nodes
 ##  $ ac --host-nodes --all false
 host_nodes(){
+    # Uppercase value for --all
+    all=`echo $1 | tr '[:lower:]' '[:upper:]'`
+    pretty=`echo $2 | tr '[:lower:]' '[:upper:]'`
 
-
-    if [ "$all" == "false" ]; then
-        message "Print z/OS production hostnames."
+    if [ "$all" == "FALSE" ]; then
+        message "Producution managed hosts."
         result=`$VENV/venv.sh --targets-production`
+        if [ "$pretty" == "TRUE" ];then
+            echo $result |tr ' ' '\n';
+        else
+            echo [$result] |tr ' ' ', ';
+        fi
     else
-        message "Print z/OS node IDs and hostnames."
+        message "All managed hosts."
         result=`$VENV/venv.sh --targets`
+        if [ "$pretty" == "TRUE" ];then
+            echo $result |sed 's/ID/\n&/g'
+        else
+            result=`echo $result |sed 's/ID/,&/g' | cut -c2-`
+            echo [$result]
+        fi
     fi
-    echo $result
 }
 
 # ------------------------------------------------------------------------------
@@ -1649,36 +2057,36 @@ done
 if [ "$option_submitted" ] && [ "$option_submitted" = "--ac-bandit" ] ; then
     ac_bandit $level
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
-    ac_build
+    ac_build $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-galaxy-importer" ] ; then
     ac_galaxy_importer
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-changelog" ] ; then
-    ac_changelog $command
+    ac_changelog ${command:="lint"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-module-doc" ] ; then
-    ac_module_doc
+    ac_module_doc ${command:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
-    ac_install $version
+    ac_install $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
     ac_ansible_lint
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
-    ac_sanity $version
+    ac_sanity $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""}
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""} ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
-    test_concurrent ${host:=""} ${user:=""} ${python:=""} ${zoau:=""} ${pythonpath:=""}\
-    ${volumes:="222222,000000"} ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
-    ${itr:="50"} ${replay:="5"} ${timeout:="300"} ${throttle:="True"} ${workers:="1"}\
-    ${maxjob:="10"} ${maxnode:="30"} ${bal:="10"} ${verbose:="False"} ${verbosity:="0"}\
-    ${debug:="False"} ${extra:="cd `pwd`"} ${returncode:="False"}
+    test_concurrent "${host:=""}" "${user:=""}" "${python:=""}" "${zoau:=""}" "${pythonpath:=""}"\
+    "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\
+    "${itr:="50"}" "${replay:="5"}" "${timeout:="300"}" "${throttle:="True"}" "${workers:="1"}"\
+    "${maxjob:="10"}" "${maxnode:="30"}" "${bal:="10"}" "${verbose:="False"}" "${verbosity:="0"}"\
+    "${debug:="False"}" "${extra:="cd `pwd`"}" "${returncode:="False"}" "${name:=""}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
-    ac_test_config
+    ac_test_config ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then
-    ac_test_dep_finder ${branch:=""} "${skip:="test_module_security.py"}" ${pretty:="true"}
+    ac_test_dep_finder "${branch:=""}" "${skip:="test_module_security.py"}" ${pretty:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-find" ] ; then
     ac_test_pytest_finder ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
     ${pretty:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then
-    ac_version
+    ac_version ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--file-encrypt" ] ; then
     file_encrypt $file $out_file $password
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--file-decrypt" ] ; then
@@ -1690,7 +2098,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-mount" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-mounts" ] ; then
     host_mounts
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-nodes" ] ; then
-    host_nodes ${all}
+    host_nodes ${all:="true"}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-setup" ] ; then
     venv_setup $password
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then

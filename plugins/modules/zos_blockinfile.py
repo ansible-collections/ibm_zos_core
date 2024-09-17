@@ -96,7 +96,7 @@ options:
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
-    - Required unique value different from marker_end.
+    - Value needs to be different from marker_end.
     required: false
     type: str
     default: BEGIN

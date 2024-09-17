@@ -344,34 +344,15 @@ JCL_FULL_INPUT = """//HLQ0  JOB MSGLEVEL=(1,1),
 C_SRC_INVALID_UTF8 = """#include <stdio.h>
 int main()
 {
-    unsigned char a=0x64;
-    unsigned char b=0x2A;
-    unsigned char c=0xB8;
-    unsigned char d=0xFF;
-    unsigned char e=0x81;
-    unsigned char f=0x82;
-    unsigned char g=0x83;
-    unsigned char h=0x00;
-    /* The following are non-printables from DBB. */
-    unsigned char nl=0x15;
-    unsigned char cr=0x0D;
-    unsigned char lf=0x25;
-    unsigned char shiftOut=0x0E;
-    unsigned char shiftIn=0x0F;
+    /* Generate and print all EBCDIC characters to stdout to
+     * ensure non-printable chars can be handled by Python.
+     * This will included the non-printable hex from DBB docs:
+     * nl=0x15, cr=0x0D, lf=0x25, shiftOut=0x0E, shiftIn=0x0F
+    */
 
-    printf("Value of a: Hex: %X, character: %c",a,a);
-    printf("Value of b: Hex: %X, character: %c",b,b);
-    printf("Value of c: Hex: %X, character: %c",c,c);
-    printf("Value of d: Hex: %X, character: %c",d,d);
-    printf("Value of e: Hex: %X, character: %c",e,e);
-    printf("Value of f: Hex: %X, character: %c",f,f);
-    printf("Value of g: Hex: %X, character: %c",g,g);
-    printf("Value of h: Hex: %X, character: %c",h,h);
-    printf("Value of NL: Hex: %X, character: %c",nl,nl);
-    printf("Value of CR: Hex: %X, character: %c",cr,cr);
-    printf("Value of LF: Hex: %X, character: %c",lf,lf);
-    printf("Value of Shift-Out: Hex: %X, character: %c",shiftOut,shiftOut);
-    printf("Value of Shift-In: Hex: %X, character: %c",shiftIn,shiftIn);
+    for (int i = 0; i <= 255; i++) {
+        printf("Hex 0x%X is character: (%c)\\\\n",i,(char)(i));
+    }
 
     return 0;
 }

@@ -1018,6 +1018,7 @@ class MVSArchive(Archive):
             High level qualifier for temporary datasets.
         """
         super(MVSArchive, self).__init__(module)
+        self.tmphlq = module.params.get("tmp_hlq")
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
         self.expanded_sources = self.expand_mvs_paths(self.sources)
@@ -1026,7 +1027,6 @@ class MVSArchive(Archive):
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
-        self.tmphlq = module.params.get("tmp_hlq")
 
     def open(self):
         pass

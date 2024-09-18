@@ -90,7 +90,7 @@ class ZTestHelper(object):
         """
         #TODO: add support for a positional string, eg "host,user,zoau,pyz" then convert it as needed
 
-        host, user, zoau, pyz, pythonpath, extra_args, extra = None, None, None, None, None, None, None
+        host, user, zoau, pyz, pythonpath, extra_args = None, None, None, None, None, None
 
         src = json.loads(src)
         # Traverse the src here , can we trow an exception?

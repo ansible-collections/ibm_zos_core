@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
 //STDPARM DD *
-SH {2}pdse-lock '{0}({1})'
+SH {0}pdse-lock '{1}({2})'
 //STDIN  DD DUMMY
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
@@ -1103,7 +1103,7 @@ def test_ds_line_force(ansible_zos_module, dstype):
         hosts.all.file(path=path, state="directory")
         hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > {path}pdse-lock.c")
         hosts.all.shell(
-            cmd=f"echo \"{call_c_jcl.format(default_data_set_name, member_1, path)}\""+
+            cmd=f"echo \"{call_c_jcl.format(path, default_data_set_name, member_1)}\""+
             " > {0}call_c_pgm.jcl".format(path)
         )
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=path)
@@ -1169,7 +1169,7 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
         hosts.all.file(path=path, state="directory")
         hosts.all.shell(cmd=f"echo \"{c_pgm}\"  > {path}pdse-lock.c")
         hosts.all.shell(
-            cmd=f"echo \"{call_c_jcl.format(default_data_set_name, member_1, path)}\""+
+            cmd=f"echo \"{call_c_jcl.format(path, default_data_set_name, member_1)}\""+
             " > {0}call_c_pgm.jcl".format(path)
         )
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=path)

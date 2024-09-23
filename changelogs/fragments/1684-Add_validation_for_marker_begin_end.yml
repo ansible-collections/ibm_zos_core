@@ -1,4 +1,4 @@
 bugfixes:
-  - zos_blockinfile - User could set same values for marker begin and end generate issue on ZOAU python API.
-    Change now validates that ``marker_begin`` and ``marker_end`` are different and fails if they are the same.
+  - zos_blockinfile - Previously module was not able to delete a block when 'marker_begin' and 'marker_end'
+    were set to the same value. Fix introduces a requirement for 'marker_begin' and 'marker_end' to have different values.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1684).

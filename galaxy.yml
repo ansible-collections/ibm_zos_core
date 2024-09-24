@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: "1.11.0-beta.1"
+version: "1.11.0"
 
 # Collection README file
 readme: README.md
@@ -18,7 +18,6 @@ authors:
   - Ketan Kelkar <ketan.kelkar@ibm.com>
   - Ivan Moreno <ivan.moreno.soto@ibm.com>
   - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
-  - Jenny Huang <jennyhuang@ibm.com>
   - Marcel Gutierrez <andre.marcel.gutierrez@ibm.com>
 
 # Description

@@ -104,7 +104,7 @@ options:
     required: false
     description:
     - This will be inserted at C({mark}) in the closing ansible block marker.
-    - Value must be different from marker_end..
+    - Value must be different from marker_end.
     type: str
     default: END
   backup:

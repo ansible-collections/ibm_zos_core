@@ -1,31 +1,31 @@
 bugfixes:
-  - zos_apf - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_apf - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_archive - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_archive - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_blockinfile - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_blockinfile - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_copy - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_copy - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_data_set - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_data_set - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_encode - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_encode - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_fetch - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_fetch - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_lineinfile - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_lineinfile - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_mount - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_mount - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
-  - zos_unarchive - The value of ``tmp_hlq`` would not be used when running
-    MVS commands. Fix now passes the value to them.
+  - zos_unarchive - The ``tmp_hlq`` option was previously ignored and default
+    values were used instead. Fix now honors the value set in the module option.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1695).

@@ -13,6 +13,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from gh.ibm_zos_core.tests.helpers.users import ManagedUsers
 import pytest
 import os
 import shutil
@@ -2043,6 +2044,19 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set_1, state="absent")
         hosts.all.zos_data_set(name=data_set_2, state="absent")
 
+
+# @pytest.mark.seq
+# @pytest.mark.parametrize("ds_type, f_lock, managed_user",[
+#     ( "pds", False, ManagedUsers.zoau_limited_access_opercmd),  # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name),
+#     ( "pdse", False, None), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+#     ( "seq", False, None),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+# ])
+# def test_copy_dest_lock_test_apf_authorization_2(ansible_zos_module, ds_type, f_lock, managed_user ):
+#     hosts = ansible_zos_module
+#     # Request a user not be apf authorized for opercmd
+#     if managed_user:
+#         #x =call users.py , eg users.get_user(managed_user)
+#          hosts["options"]["user"] = x
 
 @pytest.mark.seq
 @pytest.mark.parametrize("ds_type, f_lock, apf_auth_user",[

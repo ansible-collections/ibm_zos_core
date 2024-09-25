@@ -295,7 +295,7 @@ Examples
      zos_blockinfile:
        src: SOME.CREATION.TEST
        insertbefore: BOF
-       backup: True
+       backup: true
        backup_name: CREATION.GDS(+1)
        block: "{{ CONTENT }}"
 

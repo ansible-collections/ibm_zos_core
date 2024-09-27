@@ -39,7 +39,7 @@ src
 
   MVS data sets supported types are ``SEQ``, ``PDS``, ``PDSE``.
 
-  GDS relative names are supported ``e.g. USER.GDG(-1)``.
+  GDS relative names are supported. e.g. *USER.GDG(-1*).
 
   | **required**: True
   | **type**: str
@@ -151,7 +151,7 @@ owner
 include
   A list of directories, files or data set names to extract from the archive.
 
-  GDS relative names are supported ``e.g. USER.GDG(-1)``.
+  GDS relative names are supported. e.g. *USER.GDG(-1*).
 
   When ``include`` is set, only those files will we be extracted leaving the remaining files in the archive.
 
@@ -165,7 +165,7 @@ include
 exclude
   List the directory and file or data set names that you would like to exclude from the unarchive action.
 
-  GDS relative names are supported ``e.g. USER.GDG(-1)``.
+  GDS relative names are supported. e.g. *USER.GDG(-1*).
 
   Mutually exclusive with include.
 

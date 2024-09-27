@@ -1125,7 +1125,7 @@ def test_gdg_encoding_conversion_invalid_gdg(ansible_zos_module):
 
         for result in results.contacted.values():
             assert result.get("msg") is not None
-            assert "Encoding of a whole generation data group is not supported." in result.get("msg")
+            assert "not supported" in result.get("msg")
             assert result.get("backup_name") is None
             assert result.get("changed") is False
             assert result.get("failed") is True

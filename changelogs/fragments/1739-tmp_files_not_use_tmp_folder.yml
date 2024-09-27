@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_copy - Previously, the module ignored the variable of remote_tmp of the configuration file and used the
+    tmp folder. Change now use the variable remote_tmp variable. If it is not given by default, the value is .ansible/tmp.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1739).

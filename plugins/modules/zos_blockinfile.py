@@ -39,7 +39,7 @@ options:
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
       - Generation data set (GDS) relative name of generation already
-        created.  ``e.g. SOME.CREATION(-1).``
+        created. e.g. I(SOME.CREATION(-1)).
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -96,6 +96,7 @@ options:
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
+    - Value needs to be different from marker_end.
     required: false
     type: str
     default: BEGIN
@@ -103,6 +104,7 @@ options:
     required: false
     description:
     - This will be inserted at C({mark}) in the closing ansible block marker.
+    - Value must be different from marker_end.
     type: str
     default: END
   backup:
@@ -759,7 +761,8 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
-
+    if marker_begin == marker_end:
+        module.fail_json(msg='marker_begin and marker_end must be different.')
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
     # analysis the file type

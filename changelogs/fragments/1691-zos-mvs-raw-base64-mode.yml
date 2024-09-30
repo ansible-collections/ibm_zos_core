@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_mvs_raw - base64 sub-option for return_content under option for retrieving
+    DD output did not return base64. Fix now returns the base64 encoded contents of the DD.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1691).

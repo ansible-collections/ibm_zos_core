@@ -2147,15 +2147,20 @@ class MVSDataSet():
         self.set_state("present")
         return rc
 
-    def ensure_absent(self):
+    def ensure_absent(self, tmp_hlq=None):
         """Removes the data set.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
 
         Returns
         -------
         int
             Indicates if changes were made.
         """
-        rc = DataSet.ensure_absent(self.name, self.volumes)
+        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq)
         if rc == 0:
             self.set_state("absent")
         return rc

@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_script - The module would discard command line arguments in a command,
+    except for the first one. Fix now makes sure that all arguments are
+    passed to the remote command that gets executed.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1698).

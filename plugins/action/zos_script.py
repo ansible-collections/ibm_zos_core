@@ -46,7 +46,7 @@ class ActionModule(ActionBase):
             return result
 
         script_path = cmd_parts[0]
-        script_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
+        script_args = ' '.join(cmd_parts[1:]) if len(cmd_parts) > 1 else ""
         remote_src = self._process_boolean(module_args.get('remote_src'))
         user_cmd = tempfile_path = None
 

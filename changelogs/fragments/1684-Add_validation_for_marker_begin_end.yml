@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_blockinfile - Previously module was not able to delete a block when 'marker_begin' and 'marker_end'
+    were set to the same value. Fix introduces a requirement for 'marker_begin' and 'marker_end' to have different values.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1684).

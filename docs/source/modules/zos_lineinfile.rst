@@ -33,7 +33,7 @@ src
 
   The USS file must be an absolute pathname.
 
-  Generation data set (GDS) relative name of generation already created. ``e.g. SOME.CREATION(-1).``
+  Generation data set (GDS) relative name of generation already created. e.g. *SOME.CREATION(-1*).
 
   | **required**: True
   | **type**: str

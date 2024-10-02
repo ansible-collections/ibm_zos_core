@@ -37,7 +37,7 @@ options:
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
       - Generation data set (GDS) relative name of generation already
-        created. ``e.g. SOME.CREATION(-1).``
+        created. e.g. I(SOME.CREATION(-1)).
     type: str
     aliases: [ path, destfile, name ]
     required: true

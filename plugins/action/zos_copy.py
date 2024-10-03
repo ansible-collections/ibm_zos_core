@@ -155,7 +155,7 @@ class ActionModule(ActionBase):
                 try:
                     local_content = _write_content_to_temp_file(content)
                     transfer_res = self._copy_to_remote(
-                        local_content, task_vars=task_vars, ignore_stderr=ignore_sftp_stderr
+                        local_content, ignore_stderr=ignore_sftp_stderr
                     )
                 finally:
                     os.remove(local_content)
@@ -224,7 +224,7 @@ class ActionModule(ActionBase):
 
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
-                    src, task_vars=task_vars, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
                 )
 
             temp_path = transfer_res.get("temp_path")
@@ -291,20 +291,15 @@ class ActionModule(ActionBase):
 
         return _update_result(is_binary, copy_res, self._task.args, original_src)
 
-    def _copy_to_remote(self, src, task_vars, is_dir=False, ignore_stderr=False):
+    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
-        remote_tmp_path = self._connection._shell._options.get("remote_tmp")
-        tempfile_args = dict(
-            state="directory",
-            path=remote_tmp_path,
-        )
-        tempfile_result = self._execute_module(
-            module_name="ansible.builtin.file",
-            module_args=tempfile_args,
-            task_vars=task_vars
-        )
-        remote_tmp_path = tempfile_result.get("path")
-        temp_path = "{0}/{1}/{2}".format(remote_tmp_path, _create_temp_path_name(), os.path.basename(src))
+        tmp_parent = self._connection._shell._options.get("remote_tmp")
+        rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_parent))
+        if rc > 0:
+            msg = f"Failed to resolve remote temporary directory {tmp_parent}. Ensure that the directory exists and user has proper access."
+            return self._exit_action({}, msg, failed=True)
+        tmp_parent = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+        temp_path = "{0}/{1}/{2}".format(tmp_parent, _create_temp_path_name(), os.path.basename(src))
         self._connection.exec_command("mkdir -p {0}".format(os.path.dirname(temp_path)))
         _src = src.replace("#", "\\#")
         _sftp_action = 'put'

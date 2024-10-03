@@ -1277,7 +1277,7 @@ class CopyHandler(object):
         if os.path.isdir(new_src):
             try:
                 if remote_src:
-                    temp_dir = tempfile.mkdtemp()
+                    temp_dir = tempfile.mkdtemp(prefix=os.environ['TMP'])
                     shutil.copytree(new_src, temp_dir, dirs_exist_ok=True)
                     new_src = temp_dir
 
@@ -1295,7 +1295,7 @@ class CopyHandler(object):
         else:
             try:
                 if remote_src:
-                    fd, temp_src = tempfile.mkstemp()
+                    fd, temp_src = tempfile.mkstemp(prefix=os.environ['TMP'])
                     os.close(fd)
                     shutil.copy(new_src, temp_src)
                     new_src = temp_src
@@ -1458,7 +1458,7 @@ class CopyHandler(object):
             If the conversion fails.
         """
         try:
-            fd, converted_src = tempfile.mkstemp()
+            fd, converted_src = tempfile.mkstemp(prefix=os.environ['TMP'])
             os.close(fd)
 
             with open(converted_src, "wb") as converted_file:
@@ -2216,7 +2216,7 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
     DataSetMemberAttributeError
         When the call to dcp fails.
     """
-    fd, temp_path = tempfile.mkstemp()
+    fd, temp_path = tempfile.mkstemp(prefix=os.environ['TMP'])
     os.close(fd)
 
     copy_args = dict()
@@ -2699,7 +2699,7 @@ def get_file_checksum(src):
 
 def cleanup(src_list):
     """Remove all files or directories listed in src_list. Also perform
-    additional cleanup of the /tmp directory.
+    additional cleanup of the tmp directory.
 
     Parameters
     ----------
@@ -2707,7 +2707,7 @@ def cleanup(src_list):
         A list of file paths.
     """
     module = AnsibleModuleHelper(argument_spec={})
-    tmp_prefix = tempfile.gettempprefix()
+    tmp_prefix = os.environ['TMP']
     tmp_dir = os.path.realpath("/" + tmp_prefix)
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
     conv_list = glob.glob(tmp_dir + "/converted*")
@@ -3116,7 +3116,7 @@ def normalize_line_endings(src, encoding=None):
         src_tag = encoding["from"]
 
     if src_tag != "IBM-037":
-        fd, converted_src = tempfile.mkstemp()
+        fd, converted_src = tempfile.mkstemp(prefix=os.environ['TMP'])
         os.close(fd)
 
         enc_utils.uss_convert_encoding(
@@ -3244,6 +3244,10 @@ def run_module(module, arg_def):
     force_lock = module.params.get('force_lock')
     content = module.params.get('content')
 
+    # Set temporary directory at os environment level
+    # as opposed to using module.tmpdir, this remote_tmp is the same directory used by the action plugin.
+    os.environ['TMP'] = f"{os.path.expanduser(module.tmpdir)}/"
+
     dest_data_set = module.params.get('dest_data_set')
     if dest_data_set:
         if volume:
@@ -3347,7 +3351,7 @@ def run_module(module, arg_def):
                             src_tag = encode.Defaults.get_default_system_charset()
 
                     # Converting the original src to a temporary one in UTF-8.
-                    fd, converted_src = tempfile.mkstemp()
+                    fd, converted_src = tempfile.mkstemp(prefix=os.environ['TMP'])
                     os.close(fd)
                     encode_utils.uss_convert_encoding(
                         new_src,

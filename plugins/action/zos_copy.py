@@ -267,6 +267,9 @@ class ActionModule(ActionBase):
         # Erasing all rendered Jinja2 templates from the controller.
         if template_dir:
             shutil.rmtree(template_dir, ignore_errors=True)
+        # Remove temporary directory from remote
+        path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
+        self._connection.exec_command(f"rm -rf {path}*")
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
@@ -293,13 +296,13 @@ class ActionModule(ActionBase):
 
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
-        tmp_parent = self._connection._shell._options.get("remote_tmp")
-        rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_parent))
+        self.tmp_dir = self._connection._shell._options.get("remote_tmp")
+        rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(self.tmp_dir))
         if rc > 0:
-            msg = f"Failed to resolve remote temporary directory {tmp_parent}. Ensure that the directory exists and user has proper access."
+            msg = f"Failed to resolve remote temporary directory {self.tmp_dir}. Ensure that the directory exists and user has proper access."
             return self._exit_action({}, msg, failed=True)
-        tmp_parent = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
-        temp_path = "{0}/{1}/{2}".format(tmp_parent, _create_temp_path_name(), os.path.basename(src))
+        self.tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+        temp_path = "{0}/{1}/{2}".format(self.tmp_dir, _create_temp_path_name(), os.path.basename(src))
         self._connection.exec_command("mkdir -p {0}".format(os.path.dirname(temp_path)))
         _src = src.replace("#", "\\#")
         _sftp_action = 'put'

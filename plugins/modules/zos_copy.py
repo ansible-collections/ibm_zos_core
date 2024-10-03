@@ -3245,7 +3245,6 @@ def run_module(module, arg_def):
     content = module.params.get('content')
 
     # Set temporary directory at os environment level
-    # as opposed to using module.tmpdir, this remote_tmp is the same directory used by the action plugin.
     os.environ['TMP'] = f"{os.path.expanduser(module.tmpdir)}/"
 
     dest_data_set = module.params.get('dest_data_set')

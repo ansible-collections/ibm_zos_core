@@ -71,6 +71,8 @@ class ActionModule(ActionBase):
         is_src_dir = False
         temp_path = is_uss = None
 
+        self.tmp_dir = None
+
         if dest:
             if not isinstance(dest, string_types):
                 msg = "Invalid type supplied for 'dest' option, it must be a string"
@@ -268,8 +270,9 @@ class ActionModule(ActionBase):
         if template_dir:
             shutil.rmtree(template_dir, ignore_errors=True)
         # Remove temporary directory from remote
-        path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-        self._connection.exec_command(f"rm -rf {path}*")
+        if self.tmp_dir is not None:
+            path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
+            self._connection.exec_command(f"rm -rf {path}*")
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")

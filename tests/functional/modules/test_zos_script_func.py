@@ -23,7 +23,7 @@ __metaclass__ = type
 
 # Using || to concatenate strings without extra spaces.
 REXX_SCRIPT_ARGS = """/* REXX */
-parse arg A ',' B
+parse arg 'FIRST=' A ' SECOND=' B
 say 'args are ' || A || ',' || B
 return 0
 
@@ -180,7 +180,9 @@ def test_rexx_script_with_args(ansible_zos_module):
         rexx_script = REXX_SCRIPT_ARGS
         script_path = create_local_file(rexx_script, 'rexx')
 
-        args = '1,2'
+        first_arg = 'one'
+        second_arg = 'two'
+        args = f'FIRST={first_arg} SECOND={second_arg}'
         cmd = f"{script_path} '{args}'"
 
         zos_script_result = hosts.all.zos_script(
@@ -191,7 +193,11 @@ def test_rexx_script_with_args(ansible_zos_module):
             assert result.get('changed') is True
             assert result.get('failed', False) is False
             assert result.get('rc') == 0
-            assert result.get('stdout', '').strip() == f'args are {args}'
+            assert first_arg in result.get('stdout', '')
+            assert second_arg in result.get('stdout', '')
+            # Making sure the action plugin passed every argument to the module.
+            assert args in result.get('invocation').get('module_args').get('cmd')
+            assert args in result.get('remote_cmd')
             assert result.get('stderr', '') == ''
     finally:
         if os.path.exists(script_path):

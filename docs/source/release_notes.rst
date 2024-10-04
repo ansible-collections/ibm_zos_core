@@ -6,75 +6,92 @@
 Releases
 ========
 
-Version 1.11.0-beta.1
-=====================
+Version 1.11.0
+==============
 
 Minor Changes
 -------------
 
-- ``zos_apf`` - Added support that auto-escapes 'library' names containing symbols.
-- ``zos_archive`` - Added support for GDG and GDS relative name notation to archive data sets. Added support for data set names with special characters like $, /#, /- and @.
-- ``zos_backup_restore`` - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @.
-- ``zos_blockinfile`` - Added support for GDG and GDS relative name notation to specify a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @.
-- ``zos_copy`` - Added support for copying from and copying to generation data sets (GDS) and generation data groups (GDG) including using a GDS for backup.
-- ``zos_data_set`` - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @.
-- ``zos_encode`` - Added support for converting the encodings of generation data sets (GDS). Also added support to backup into GDS.
-- ``zos_fetch`` - Added support for fetching generation data groups (GDG) and generation data sets (GDS). Added support for specifying data set names with special characters like $, /#, /- and @.
-- ``zos_find`` - Added support for finding generation data groups (GDG) and generation data sets (GDS). Added support for specifying data set names with special characters like $, /#, /- and @.
+- ``zos_apf`` - Added support for data set names (libraries) with special characters ($, /#, /- and @).
+- ``zos_archive``
+
+   - Added support for GDG and GDS relative name notation to archive data sets.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_backup_restore``
+
+   - Added support for GDS relative name notation to include or exclude data sets when operation is backup.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_blockinfile``
+
+   - Added support for GDG and GDS relative name notation to specify a data set. And backup in new generations.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_copy``
+
+   - Added support for copying from and to generation data sets (GDS) and generation data groups (GDG) including using a GDS for backup.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_data_set``
+
+   - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_encode``
+
+   - Added support for converting the encodings of generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_fetch``
+
+   - Added support for fetching generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_find``
+
+   - Added support for finding generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
 - ``zos_job_submit``
 
    - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
    - Added support for running JCL stored in generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
 
-- ``zos_lineinfile`` - Added support for GDG and GDS relative name notation to specify the target data set and to backup into new generations. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_lineinfile``
+
+   - Added support for GDG and GDS relative name notation to specify the target data set and to backup into new generations.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
 - ``zos_mount`` - Added support for data set names with special characters ($, /#, /- and @).
-- ``zos_mvs_raw`` - Added support for GDG and GDS relative name notation to specify data set names. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_mvs_raw``
+
+   - Added support for GDG and GDS relative name notation to specify data set names.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
 - ``zos_script`` - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
-- ``zos_tso_command`` - Added support for using GDG and GDS relative name notation in running TSO commands. Added support for data set names with special characters like $, /#, /- and @.
+- ``zos_tso_command``
+
+   - Added support for using GDG and GDS relative name notation in running TSO commands.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
 - ``zos_unarchive``
 
-   - Added support for data set names with special characters like $, /#, /- and @.
    - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+   - Added support for data set names with special characters ($, /#, /- and @).
 
 Bugfixes
 --------
 
 - ``zos_copy``
 
-   - a regression in version 1.4.0 made the module stop automatically computing member names when copying a single file into a PDS/E. Fix now lets a user copy a single file into a PDS/E without adding a member in the dest option.
-   - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present.
+   - Fixes the issue that prevents the module from automatically computing member names when copying a file into a PDS/E. The module now computes the member name when copying into a PDS/E.
+   - Fixes an issue that would perform an unnecessary check if a destination data set is locked for data sets the module created. The module only performs this check for destinations that are present.
 
-- ``zos_data_set`` - When checking if a data set is cataloged, module failed to account for exceptions which occurred during the LISTCAT. The fix now raises an MVSCmdExecError if the return code from LISTCAT is too high.
-- ``zos_job_submit`` - The module was not propagating any error types including UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered. The fix now shares the type error in the error message.
-- ``zos_mvs_raw`` - The first character of each line in dd_output was missing. The fix now includes the first character of each line.
-
-Availability
-------------
-
-* `Galaxy`_
-* `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
-Known Issues
-------------
-- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
-- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
-- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
-- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
-
-
-Version 1.9.2
-=============
-
-Bugfixes
---------
-
-- ``zos_copy`` - when creating the destination data set, the module would unnecessarily check if a data set is locked by another process. The module no longer performs this check when it creates the data set.
+- ``zos_data_set`` - When checking if a data set is cataloged, module failed to account for exceptions which occurred during the LISTCAT. The module now raises an MVSCmdExecError if the return code from LISTCAT exceeds the determined threshold.
+- ``zos_job_submit`` - Was not propagating any error types including UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered. The module now shares the error type (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) in the error message.
+- ``zos_mvs_raw`` - The first character of each line in dd_output was missing. The module now includes the first character of each line.
 
 Availability
 ------------
@@ -87,28 +104,13 @@ Requirements
 ------------
 
 The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
+control node and z/OS managed node dependencies.
 
 Known Issues
 ------------
-
-- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
-
-- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
-
-   - If the appropriate level of ZOAU can not be installed, some options are to:
-
-      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
-      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
-      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
-        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
-      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
-
-- ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
-
-- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
-
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
 
 Version 1.10.0
 ==============
@@ -228,6 +230,46 @@ Known Issues
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
 - Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
 
+Version 1.9.2
+=============
+
+Bugfixes
+--------
+
+- ``zos_copy`` - when creating the destination data set, the module would unnecessarily check if a data set is locked by another process. The module no longer performs this check when it creates the data set.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
+
+Known Issues
+------------
+
+- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
+
+   - If the appropriate level of ZOAU can not be installed, some options are to:
+
+      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
+
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
 
 Version 1.9.1
 =============

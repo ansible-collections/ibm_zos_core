@@ -76,6 +76,8 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
         It could be an MVS PS/PDS/PDSE/VSAM(KSDS), etc.
     bk_dsn : str
         The name of the backup data set.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -128,14 +130,14 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             if DataSet.is_gds_positive_relative_name(bk_dsn):
                 cp_rc = datasets.copy(dsn, bk_dsn)
             else:
-                cp_rc = _copy_ds(dsn, bk_dsn)
+                cp_rc = _copy_ds(dsn, bk_dsn, tmphlq=tmphlq)
 
         if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()
             # Safe to delete because _copy_ds() would have raised an exception if it did
             # not successfully create the backup data set, so no risk of it predating module invocation
             datasets.delete(bk_dsn)
-            _allocate_model(bk_dsn, dsn)
+            _allocate_model(bk_dsn, dsn, tmphlq=tmphlq)
             rc, out, err = _copy_pds(dsn, bk_dsn)
             if rc != 0:
                 raise BackupError(
@@ -222,7 +224,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
     return backup_name
 
 
-def _copy_ds(ds, bk_ds):
+def _copy_ds(ds, bk_ds, tmphlq=None):
     """Copy the contents of a data set to another.
 
     Parameters
@@ -231,6 +233,8 @@ def _copy_ds(ds, bk_ds):
         The source data set to be copied from. Should be SEQ or VSAM.
     bk_dsn : str
         The destination data set to copy to.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -243,14 +247,19 @@ def _copy_ds(ds, bk_ds):
         When copying data fails.
     """
     module = AnsibleModuleHelper(argument_spec={})
-    _allocate_model(bk_ds, ds)
+    _allocate_model(bk_ds, ds, tmphlq=tmphlq)
     repro_cmd = """  REPRO -
     INDATASET('{0}') -
     OUTDATASET('{1}')""".format(
         ds, bk_ds
     )
+
+    cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
+    if tmphlq:
+        cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
     rc, out, err = module.run_command(
-        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=repro_cmd, errors='replace'
+        cmd, data=repro_cmd, errors='replace'
     )
     if rc != 0 and rc != 12:
         datasets.delete(bk_ds)
@@ -259,12 +268,12 @@ def _copy_ds(ds, bk_ds):
                 ds, out, err
             )
         )
-    if rc != 0 and DataSet.is_empty(ds):
+    if rc != 0 and DataSet.is_empty(ds, tmphlq=tmphlq):
         rc = 0
     return rc
 
 
-def _allocate_model(ds, model):
+def _allocate_model(ds, model, tmphlq=None):
     """Allocate a data set using allocation information of a model data set.
 
     Parameters
@@ -273,6 +282,8 @@ def _allocate_model(ds, model):
         The name of the data set to be allocated.
     model : str
         The name of the data set whose allocation parameters should be used.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -290,7 +301,11 @@ def _allocate_model(ds, model):
     LIKE('{1}')""".format(
         ds, model
     )
+
     cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
+    if tmphlq:
+        cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
     rc, out, err = module.run_command(cmd, data=alloc_cmd, errors='replace')
     if rc != 0:
         raise BackupError(

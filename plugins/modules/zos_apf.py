@@ -343,7 +343,7 @@ def backupOper(module, src, backup, tmphlq=None):
     """
     file_type = None
     if data_set.is_data_set(src):
-        file_type = data_set.DataSet.data_set_type(src)
+        file_type = data_set.DataSet.data_set_type(src, tmphlq=tmphlq)
     else:
         if os.path.exists(src):
             file_type = 'USS'

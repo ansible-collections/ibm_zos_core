@@ -674,7 +674,7 @@ def main():
     if data_set.DataSet.is_gds_relative_name(src) and is_gds is False:
         module.fail_json(msg="{0} does not exist".format(src))
 
-    ds_utils = data_set.DataSetUtils(src)
+    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
 
     # Check if dest/src exists
     if not ds_utils.exists():

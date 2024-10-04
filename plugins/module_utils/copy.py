@@ -393,8 +393,10 @@ def copy_asa_uss2mvs(src, dest):
     str
         The stderr after the copy command executed successfully.
     """
-    oget_cmd = "OGET '{0}' '{1}'".format(src, dest)
-    rc, out, err = ikjeft01(oget_cmd, authorized=True)
+
+    module = AnsibleModuleHelper(argument_spec={})
+    oget_cmd = f"tsocmd \" OGET '{src}' '{dest}' \""
+    rc, out, err = module.run_command(oget_cmd)
 
     return TSOCmdResponse(rc, out, err)
 

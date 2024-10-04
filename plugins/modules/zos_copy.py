@@ -1295,7 +1295,7 @@ class CopyHandler(object):
         else:
             try:
                 if remote_src:
-                    fd, temp_src = tempfile.mkstemp(prefix=os.environ['TMP'])
+                    fd, temp_src = tempfile.mkstemp(dir=os.environ['TMP'])
                     os.close(fd)
                     shutil.copy(new_src, temp_src)
                     new_src = temp_src
@@ -1458,7 +1458,7 @@ class CopyHandler(object):
             If the conversion fails.
         """
         try:
-            fd, converted_src = tempfile.mkstemp(prefix=os.environ['TMP'])
+            fd, converted_src = tempfile.mkstemp(dir=os.environ['TMP'])
             os.close(fd)
 
             with open(converted_src, "wb") as converted_file:
@@ -2216,7 +2216,7 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
     DataSetMemberAttributeError
         When the call to dcp fails.
     """
-    fd, temp_path = tempfile.mkstemp(prefix=os.environ['TMP'])
+    fd, temp_path = tempfile.mkstemp(dir=os.environ['TMP'])
     os.close(fd)
 
     copy_args = dict()
@@ -3116,7 +3116,7 @@ def normalize_line_endings(src, encoding=None):
         src_tag = encoding["from"]
 
     if src_tag != "IBM-037":
-        fd, converted_src = tempfile.mkstemp(prefix=os.environ['TMP'])
+        fd, converted_src = tempfile.mkstemp(dir=os.environ['TMP'])
         os.close(fd)
 
         enc_utils.uss_convert_encoding(
@@ -3350,7 +3350,7 @@ def run_module(module, arg_def):
                             src_tag = encode.Defaults.get_default_system_charset()
 
                     # Converting the original src to a temporary one in UTF-8.
-                    fd, converted_src = tempfile.mkstemp(prefix=os.environ['TMP'])
+                    fd, converted_src = tempfile.mkstemp(dir=os.environ['TMP'])
                     os.close(fd)
                     encode_utils.uss_convert_encoding(
                         new_src,

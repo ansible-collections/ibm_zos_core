@@ -146,35 +146,21 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers) -> str
     # Match the list user results and place in variables (not all are used)
     model_owner = [v for v in model_listuser_attributes if "OWNER" in v][0].split('OWNER=')[1].split()[0].strip() or ""
 
-    print(f"model_owner: [{model_owner}]")
-
+    # The shell command consisting of shell and tso operations to create a user.
     add_user_cmd = StringIO()
 
-    # Construct a shell command consisting of shell and tso operations to create a user.
-    # -------------------------------------------------------------------------
     # (1) Create group ANSIGRP for general identification of users and auto assign the UID
-    #     General success of the command yields:
-    #       tsocmd "ADDGROUP ANSIGRP OMVS(AUTOGID)"
-    #       ADDGROUP ANSIGRP OMVS(AUTOGID)
-    #       Group ANSIGRP was assigned an OMVS GID value of 4.``
-    #     If the group exists, it will error but will change or matter, in the future we can advance this snippet.
-    #       tsocmd "ADDGROUP ANSIGRP OMVS(AUTOGID)"
-    #       ADDGROUP ANSIGRP OMVS(AUTOGID)
-    #       INVALID GROUP, ANSIGRP
-    # -------------------------------------------------------------------------
+    #     Success of the command yields 'Group ANSIGRP was assigned an OMVS GID value of 4'
+    #     Failure of the command yields 'INVALID GROUP, ANSIGRP' with usually a RC 8 if the group exists.
     user_group = "ANSIGRP"
     add_user_cmd.write(f"tsocmd 'ADDGROUP {user_group} OMVS(AUTOGID)';")
     add_user_cmd.write(f"echo Create {user_group} RC=$?;")
 
-    # -------------------------------------------------------------------------
-    # (2) Create/add the user to be owned by the model_owner
-    #     Expect a similar error (below) because when a new TSO userid is defined,
-    #     that id can not receive deferred messages until the id is defined in
-    #     SYS1.BRODCAST and thus the SEND message fails to that user id.
+    # (2) Add the user to be owned by the model_owner. Expect a similar error when a new TSO userid is defined,
+    #     because that id can't receive deferred messages until the id is defined in SYS1.BRODCAST,  thus the SEND
+    #     message fails to that user id.
     #       BROADCAST DATA SET NOT USABLE+
     #       I/O SYNAD ERROR
-    #     # tsocmd "ADDUSER FOOBAR DFLTGRP(ANSIGRP) OWNER(RACF000) PASSWORD(BOOBAR) TSO(ACCTNUM(ACCT#) PROC(ISPFPROC)) OMVS(HOME('/u/{user}') PROGRAM(' bin/sh') AUTOUID"
-    # -------------------------------------------------------------------------
     add_user_cmd.write(f"tsocmd ADDUSER {user} DFLTGRP\\({user_group}\\) OWNER\\({model_owner}\\) PASSWORD\\({passwd}\\) TSO\\(ACCTNUM\\({model_tso_acctnum}\\) PROC\\({model_tso_proc}\\)\\) OMVS\\(HOME\\('/u/{user}'\\) PROGRAM\\(' bin/sh'\\) AUTOUID;")
     add_user_cmd.write(f"echo ADDUSER {user} RC=$?;")
     add_user_cmd.write(f"mkdir /u/{user};")              # Do we need to create this home directory for a temporary user?
@@ -190,7 +176,27 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers) -> str
             cmd=f"{add_user_cmd.getvalue()}"
     )
 
-    print(f"results_tso_noracf.contacted.values() are [{results_add_user_cmd.contacted.values()}]")
+    # Extract the new user stdout lines for evaluation
+    add_user_attributes = list(results_add_user_cmd.contacted.values())[0].get("stdout_lines")
+    print("results_add_user_cmd.contacted.values() " + str(results_add_user_cmd.contacted.values()))
+    print("add_user_attributes: " + str(add_user_attributes))
+    # Match the new user return codes
+    assigned_omvs_uid = True if [v for v in add_user_attributes if f"User {user} was assigned an OMVS UID value" in v] else False
+    create_group_rc = [v for v in add_user_attributes if f"Create {user_group} RC=" in v][0].split('=')[1].strip() or None
+    add_user_rc = [v for v in add_user_attributes if f"ADDUSER {user} RC=" in v][0].split('=')[1].strip() or None
+    mkdir_rc = [v for v in add_user_attributes if f"mkdir {user} RC=" in v][0].split('=')[1].strip() or None
+    chown_rc = [v for v in add_user_attributes if f"chown {user} RC=" in v][0].split('=')[1].strip() or None
+    chgrp_rc = [v for v in add_user_attributes if f"chgrp {user_group} RC=" in v][0].split('=')[1].strip() or None
+
+    # Print the RCs for validation
+    print(f"assigned_omvs_uid: [{assigned_omvs_uid}]")
+    print(f"create_group_rc: [{create_group_rc}]")
+    print(f"add_user_rc: [{add_user_rc}]")
+    print(f"mkdir_rc: [{mkdir_rc}]")
+    print(f"chown_rc: [{chown_rc}]")
+    print(f"chgrp_rc: [{chgrp_rc}]")
+
+
     return None #operations[managed_user.name](ansible_zos_module)
 
 

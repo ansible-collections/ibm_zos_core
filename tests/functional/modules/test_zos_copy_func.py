@@ -13,7 +13,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-from gh.ibm_zos_core.tests.helpers.users import ManagedUsers
+from ibm_zos_core.tests.helpers.users import ManagedUsers
 import pytest
 import os
 import shutil
@@ -21,6 +21,7 @@ import re
 import time
 import tempfile
 import subprocess
+from ibm_zos_core.tests.helpers.users import *
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -2010,7 +2011,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         )
         for result in results.contacted.values():
             print(result)
-            if f_lock and apf_auth_user:
+            if f_lock: #and apf_auth_user:
                 assert result.get("changed") == True
                 assert result.get("msg") is None
                 # verify that the content is the same
@@ -2045,18 +2046,19 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
-# @pytest.mark.seq
-# @pytest.mark.parametrize("ds_type, f_lock, managed_user",[
-#     ( "pds", False, ManagedUsers.zoau_limited_access_opercmd),  # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name),
-#     ( "pdse", False, None), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-#     ( "seq", False, None),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-# ])
-# def test_copy_dest_lock_test_apf_authorization_2(ansible_zos_module, ds_type, f_lock, managed_user ):
-#     hosts = ansible_zos_module
-#     # Request a user not be apf authorized for opercmd
-#     if managed_user:
-#         #x =call users.py , eg users.get_user(managed_user)
-#          hosts["options"]["user"] = x
+@pytest.mark.seq
+@pytest.mark.parametrize("ds_type, f_lock, managed_user",[
+    ( "pds", False, ManagedUsers.ZOAU_LIMITED_ACCESS_OPERCMD),  # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name),
+    ( "pdse", False, None), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ( "seq", False, None),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+])
+def test_copy_dest_lock_test_apf_authorization_2(ansible_zos_module, ds_type, f_lock, managed_user ):
+    hosts = ansible_zos_module
+    # Request a user not be apf authorized for opercmd
+    if managed_user:
+        #x =call users.py , eg users.get_user(managed_user)
+        hosts["options"]["user"] = "omvsadm"
+        get_managed_user_name(hosts, managed_user)
 
 @pytest.mark.seq
 @pytest.mark.parametrize("ds_type, f_lock, apf_auth_user",[

@@ -1054,7 +1054,6 @@ def run_module():
             job_output_txt = job_output(
                 job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
                 dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
-
             # This is resolvig a bug where the duration coming from job_output is passed by value, duration
             # being an immutable type can not be changed and must be returned or accessed from the job.py.
             if job_output is not None:
@@ -1106,10 +1105,10 @@ def run_module():
                                 job_ret_code.update({"msg_txt": _msg})
                                 raise Exception(_msg)
 
-                    if job_ret_code_code is None:
+                    if job_ret_code_code is None or job_ret_code_msg == 'NOEXEC':
                         # If there is no job_ret_code_code (Job return code) it may NOT be an error,
-                        # some jobs will never return have an RC, eg Jobs with TYPRUN=*,
-                        # Started tasks (which are not supported) so further analyze the
+                        # some jobs will never return have an RC, eg Started tasks(which are not supported),
+                        # so further analyze the
                         # JESJCL DD to figure out if its a TYPRUN job
 
                         job_dd_names = job_output_txt[0].get("ddnames")
@@ -1126,19 +1125,18 @@ def run_module():
 
                         jes_jcl_dd_content = jes_jcl_dd[0].get("content")
                         jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
-
                         # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
                         special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
-                                                               .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
+                                                                .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
 
-                        if special_processing_keyword:
+                        if job_ret_code_msg == 'NOEXEC':
                             job_ret_code.update({"msg": special_processing_keyword[0]})
                             job_ret_code.update({"code": None})
                             job_ret_code.update({"msg_code": None})
                             job_ret_code.update({"msg_txt": "The job {0} was run with special job "
                                                  "processing {1}. This will result in no completion, "
                                                  "return code or job steps and changed will be false."
-                                                 .format(job_submitted_id, special_processing_keyword[0])})
+                                                 .format(job_submitted_id,  special_processing_keyword[0])})
                             is_changed = False
                         else:
                             # The job_ret_code_code is None at this point, but the job_ret_code_msg_code could be populated

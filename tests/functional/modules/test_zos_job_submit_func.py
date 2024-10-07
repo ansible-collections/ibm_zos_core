@@ -487,6 +487,47 @@ def test_job_submit_uss(ansible_zos_module):
         hosts.all.file(path=temp_path, state="absent")
 
 
+def test_job_submit_and_forget_uss(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
+        hosts.all.file(path=temp_path, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), temp_path)
+        )
+        results = hosts.all.zos_job_submit(
+            src=f"{temp_path}/SAMPLE", location="uss", volume=None, wait_time_s=0,
+        )
+        for result in results.contacted.values():
+            assert result.get("job_id") is not None
+            assert result.get("changed") is True
+            assert len(result.get("jobs")) == 0
+            assert result.get("job_name") is None
+            assert result.get("duration") is None
+            assert result.get("ddnames") is not None
+            assert result.get("ddnames").get("ddname") is None
+            assert result.get("ddnames").get("record_count") is None
+            assert result.get("ddnames").get("id") is None
+            assert result.get("ddnames").get("stepname") is None
+            assert result.get("ddnames").get("procstep") is None
+            assert result.get("ddnames").get("byte_count") is None
+            assert len(result.get("ddnames").get("content")) == 0  
+            assert result.get("ret_code") is not None
+            assert result.get("ret_code").get("msg") is None
+            assert result.get("ret_code").get("msg_code") is None
+            assert result.get("ret_code").get("code") is None
+            assert len(result.get("ret_code").get("steps")) == 0 
+            assert result.get("job_class") is None
+            assert result.get("svc_class") is None
+            assert result.get("priority") is None
+            assert result.get("asid") is None
+            assert result.get("creation_time") is None
+            assert result.get("queue_position") is None
+            assert result.get("program_name") is None
+    finally:
+        hosts.all.file(path=temp_path, state="absent")
+
+
 def test_job_submit_local(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w",encoding="utf-8") as f:

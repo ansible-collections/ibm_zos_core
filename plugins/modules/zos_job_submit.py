@@ -1127,7 +1127,7 @@ def run_module():
                         jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
                         # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
                         special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
-                                                                .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
+                                                               .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
 
                         if job_ret_code_msg == 'NOEXEC':
                             job_ret_code.update({"msg": special_processing_keyword[0]})
@@ -1136,7 +1136,7 @@ def run_module():
                             job_ret_code.update({"msg_txt": "The job {0} was run with special job "
                                                  "processing {1}. This will result in no completion, "
                                                  "return code or job steps and changed will be false."
-                                                 .format(job_submitted_id,  special_processing_keyword[0])})
+                                                 .format(job_submitted_id, special_processing_keyword[0])})
                             is_changed = False
                         else:
                             # The job_ret_code_code is None at this point, but the job_ret_code_msg_code could be populated

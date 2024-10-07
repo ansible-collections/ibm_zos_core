@@ -21,11 +21,17 @@ from io import StringIO
 from enum import Enum
 import random
 import string
-
+import subprocess
+import sys
+import os
+import glob
 
 def get_random_passwd():
     letters = string.ascii_uppercase
-    return ''.join(random.choice(letters) for i in range(8))
+    start = ''.join(random.choice(letters) for i in range(3))
+    middle = ''.join(str(random.randint(1,9)))
+    finish = ''.join(random.choice(letters) for i in range(4))
+    return f"{start}{middle}{finish}"
 
 def get_random_user():
     letters = string.ascii_uppercase
@@ -99,10 +105,32 @@ class ManagedUsers (Enum):
         return self.value.upper()
 
 
-def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers) -> str:
+def read_files_in_directory(directory: str = "~/.ssh", pattern: str = "*.pub") -> list:
+    """Reads files in a directory that match the pattern and return file contents as a list entry."""
 
-    # TODO: Check if user exists and retry? Given this a randomly generated user, we can pass on this
-    # until it becomes an issue to reduce the compute. 
+    file_contents_as_list = []
+
+    # Expand the tilde to the home directory
+    expanded_directory = os.path.expanduser(directory)
+
+    for filename in glob.glob(os.path.join(expanded_directory, pattern)):
+        with open(filename, 'r') as f:
+            file_contents_as_list.append(f.read().rstrip('\n'))
+    return file_contents_as_list
+
+def copy_ssh_key(user, passwd, host, key_path):
+    """Copy SSH key to a remote host using subprocess, note that some systems will not have sshpass installed."""
+
+    command = ["sshpass", "-p", f"{passwd}", "ssh-copy-id", "-o", "StrictHostKeyChecking=no", "-i", f"{key_path}", f"{user}@{host}"] #, "&>/dev/null"]
+    result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+    if result.returncode != 0:
+        raise Exception("Unable to copy public keys to remote host, check that sshpass is installed.") 
+
+def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers = None) -> str:
+
+    # TODO: Check if user exists and retry? Given this a randomly generated user, we can assume
+    # this won't be an issue and save the compute.
     user = get_random_user()
 
     # Generate the password to establish an password-less connection and use with RACF.
@@ -155,21 +183,25 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers) -> str
     user_group = "ANSIGRP"
     add_user_cmd.write(f"tsocmd 'ADDGROUP {user_group} OMVS(AUTOGID)';")
     add_user_cmd.write(f"echo Create {user_group} RC=$?;")
+    public_keys = read_files_in_directory("~/.ssh/", "*.pub")
+    print(str(public_keys))
 
     # (2) Add the user to be owned by the model_owner. Expect a similar error when a new TSO userid is defined,
     #     because that id can't receive deferred messages until the id is defined in SYS1.BRODCAST,  thus the SEND
     #     message fails to that user id.
     #       BROADCAST DATA SET NOT USABLE+
     #       I/O SYNAD ERROR
-    add_user_cmd.write(f"tsocmd ADDUSER {user} DFLTGRP\\({user_group}\\) OWNER\\({model_owner}\\) PASSWORD\\({passwd}\\) TSO\\(ACCTNUM\\({model_tso_acctnum}\\) PROC\\({model_tso_proc}\\)\\) OMVS\\(HOME\\('/u/{user}'\\) PROGRAM\\(' bin/sh'\\) AUTOUID;")
+    add_user_cmd.write(f"tsocmd ADDUSER {user} DFLTGRP\\({user_group}\\) OWNER\\({model_owner}\\) NOPASSWORD TSO\\(ACCTNUM\\({model_tso_acctnum}\\) PROC\\({model_tso_proc}\\)\\) OMVS\\(HOME\\('/u/{user}'\\) PROGRAM\\('/bin/sh'\\) AUTOUID;")
     add_user_cmd.write(f"echo ADDUSER {user} RC=$?;")
-    add_user_cmd.write(f"mkdir /u/{user};")              # Do we need to create this home directory for a temporary user?
+    add_user_cmd.write(f"mkdir -p /u/{user}/.ssh;")
     add_user_cmd.write(f"echo mkdir {user} RC=$?;")
-    add_user_cmd.write(f"chown {user} /u/{user};")
+    add_user_cmd.write(f"umask 0022;")
+    add_user_cmd.write(f"touch /u/{user}/.ssh/authorized_keys;")
+    add_user_cmd.write(f"chown -R {user} /u/{user};")
     add_user_cmd.write(f"echo chown {user} RC=$?;")
-    add_user_cmd.write(f"chgrp {user_group} /u/{user};")
-    add_user_cmd.write(f"echo chgrp {user_group} RC=$?;")
-
+    for pub_key in public_keys:
+        add_user_cmd.write(f"echo {pub_key} >> /u/{user}/.ssh/authorized_keys;")
+    add_user_cmd.write(f"tsocmd ALTUSER {user} PASSWORD\\({passwd}\\) NOEXPIRED")
     print(f"add_user_cmd [{add_user_cmd.getvalue()}]")
 
     results_add_user_cmd = ansible_zos_module.all.shell(
@@ -186,7 +218,6 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers) -> str
     add_user_rc = [v for v in add_user_attributes if f"ADDUSER {user} RC=" in v][0].split('=')[1].strip() or None
     mkdir_rc = [v for v in add_user_attributes if f"mkdir {user} RC=" in v][0].split('=')[1].strip() or None
     chown_rc = [v for v in add_user_attributes if f"chown {user} RC=" in v][0].split('=')[1].strip() or None
-    chgrp_rc = [v for v in add_user_attributes if f"chgrp {user_group} RC=" in v][0].split('=')[1].strip() or None
 
     # Print the RCs for validation
     print(f"assigned_omvs_uid: [{assigned_omvs_uid}]")
@@ -194,19 +225,12 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers) -> str
     print(f"add_user_rc: [{add_user_rc}]")
     print(f"mkdir_rc: [{mkdir_rc}]")
     print(f"chown_rc: [{chown_rc}]")
-    print(f"chgrp_rc: [{chgrp_rc}]")
 
-
+    # remote_host = ansible_zos_module["options"]["inventory"].replace(",", "")
     return None #operations[managed_user.name](ansible_zos_module)
-
-
-
 
     # These will serve the general purpose of our test cases
 def create_user_zoau_limited_access_opercmd(ansible_zos_module) -> str:
-
-
-
 
 
     # tsocmd f"ADDUSER ANSUSR01 DFLTGRP(ANSIGROUP) OWNER(RACF000) PASSWORD(PASSWD) TSO(ACCTNUM(ACCT#) PROC(ISPFPROC)) OMVS(HOME('/u/fflores') PROGRAM(' bin/sh') AUTOUID "

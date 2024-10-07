@@ -997,6 +997,7 @@ def run_module():
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
+    # Builds return value schema to make sure we return the return values schema.
     result = build_return_schema(result)
 
     if wait_time_s < 0 or wait_time_s > MAX_WAIT_TIME_S:
@@ -1045,7 +1046,6 @@ def run_module():
     # used and return undersirable results
     job_output_txt = None
     result['job_id'] = job_submitted_id
-    # Populate return schema to not have a conditional return schema.
     is_changed = True
     # If wait_time_s is 0, we do a deploy and forget strategy.
     if wait_time_s != 0:

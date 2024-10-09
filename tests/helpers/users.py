@@ -25,6 +25,7 @@ import subprocess
 import sys
 import os
 import glob
+import re
 
 class ManagedUsers (Enum):
     """
@@ -135,10 +136,8 @@ def read_files_in_directory(directory: str = "~/.ssh", pattern: str = "*.pub") -
 def copy_ssh_key(user, passwd, host, key_path):
     """
     Copy SSH key to a remote host using subprocess.
-
     Note:
         This requires the host have sshpass installed.
-
     See:
         Method read_files_in_directory instead to copy the public keys.
     """
@@ -155,11 +154,11 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers = None)
     # Given this a randomly generated user, we can assume this won't be an issue and save the compute.
     user = get_random_user(managed_user)
 
-    # print("USER " + user)
+    print("USER " + user)
     # Generate the password to establish a password-less connection and use with RACF.
     passwd = get_random_passwd()
 
-    # print("PASSWD " + user)
+    print("PASSWD " + passwd)
     # An existing user (model) will be used to access system specific values used to create a new user
     model_user = ansible_zos_module["options"]["user"]
 
@@ -180,21 +179,13 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers = None)
     if not model_tso_proc:
         raise Exception(f"Unable to determine the TSO Proc required for adding TSO {user}.")
 
-    # These are currently not used when creating the user but are with considering minimally SIZE and MAXXSIZE
+    # TODO: These are currently not used when creating the user, consider minimally adding SIZE and MAXXSIZE to dynamic users
     # model_tso_size = [v for v in model_listuser_tso_attributes if "SIZE" in v][0].split('=')[1].strip() or None
     # model_tso_maxsize = [v for v in model_listuser_tso_attributes if "MAXSIZE" in v][0].split('=')[1].strip() or None
     # model_tso_unit = [v for v in model_listuser_tso_attributes if "UNIT" in v][0].split('=')[1].strip() or ""
     # model_tso_userdata = [v for v in model_listuser_tso_attributes if "USERDATA" in v][0].split('=')[1].strip() or ""
     # model_tso_command = [v for v in model_listuser_tso_attributes if "COMMAND" in v][0].split('=')[1].strip() or ""
 
-    # Print the matches for validation, leaving this for debugging given this is new code.
-    # print(f"model_tso_acctnum: [{model_tso_acctnum}]")
-    # print(f"model_tso_proc: [{model_tso_proc}]")
-    # print(f"model_tso_size: [{model_tso_size}]")
-    # print(f"model_tso_maxsize: [{model_tso_maxsize}]")
-    # print(f"model_tso_unit: [{model_tso_unit}]")
-    # print(f"model_tso_userdata: [{model_tso_userdata}]")
-    # print(f"model_tso_command: [{model_tso_command}]")
 
     # Access additional module user attributes for use in a new user.
     results_listuser = ansible_zos_module.all.shell(
@@ -213,6 +204,9 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers = None)
     # The command consisting of shell and tso operations to create a user.
     add_user_cmd = StringIO()
 
+    # For verbosity, extract the host for debugging if needed. 
+    remote_host = ansible_zos_module["options"]["inventory"].replace(",", "")
+
     # (1) Create group ANSIGRP for general identification of users and auto assign the UID
     #     Success of the command yields 'Group ANSIGRP was assigned an OMVS GID value of...'
     #     Failure of the command yields 'INVALID GROUP, ANSIGRP' with usually a RC 8 if the group exists.
@@ -220,12 +214,13 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers = None)
     add_user_cmd.write(f"tsocmd 'ADDGROUP {user_group} OMVS(AUTOGID)';")
     add_user_cmd.write(f"echo Create {user_group} RC=$?;")
 
-    # (2) Add the user to be owned by the model_owner. Expect a similar error when a new TSO userid is defined,
-    #     because that id can't receive deferred messages until the id is defined in SYS1.BRODCAST, thus the SEND
-    #     message fails to that user id.
+    # (2) Add a user owned by the model_owner. Expect an error when a new TSO userid is defined since the ID can't
+    #     receive deferred messages until the id is defined in SYS1.BRODCAST, thus the SEND message fails.
     #       BROADCAST DATA SET NOT USABLE+
     #       I/O SYNAD ERROR
-    add_user_cmd.write(f"tsocmd ADDUSER {user} DFLTGRP\\({user_group}\\) OWNER\\({model_owner}\\) NOPASSWORD TSO\\(ACCTNUM\\({model_tso_acctnum}\\) PROC\\({model_tso_proc}\\)\\) OMVS\\(HOME\\('/u/{user}'\\) PROGRAM\\('/bin/sh'\\) AUTOUID;")
+    user = re.escape(user)
+    add_user_cmd.write(f"Creating USER '{user}' with PASSWORD {passwd} for remote host {remote_host};")
+    add_user_cmd.write(f"tsocmd ADDUSER {user} DFLTGRP\\({user_group}\\) OWNER\\({model_owner}\\) NOPASSWORD TSO\\(ACCTNUM\\({model_tso_acctnum}\\) PROC\\({model_tso_proc}\\)\\) OMVS\\(HOME\\(/u/{user}\\) PROGRAM\\('/bin/sh'\\) AUTOUID;")
     add_user_cmd.write(f"echo ADDUSER '{user}' RC=$?;")
     add_user_cmd.write(f"mkdir -p /u/{user}/.ssh;")
     add_user_cmd.write(f"echo mkdir '{user}' RC=$?;")
@@ -236,12 +231,13 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers = None)
     add_user_cmd.write(f"echo chown '{user}' RC=$?;")
     for pub_key in public_keys:
         add_user_cmd.write(f"echo {pub_key} >> /u/{user}/.ssh/authorized_keys;")
+        add_user_cmd.write(f"echo PUB_KEY RC=$?;")
     add_user_cmd.write(f"tsocmd ALTUSER {user} PASSWORD\\({passwd}\\) NOEXPIRED;")
     add_user_cmd.write(f"echo ALTUSER '{user}' RC=$?;")
 
-    # Print the command being used to add the new user. Commented out for now.
-    # print(f"add_user_cmd [{add_user_cmd.getvalue()}]")
-
+    # Now that the user is created, update the user according to the managedUsers type
+    add_user_cmd = operations[managed_user.name](user, add_user_cmd)
+    # Extract command from from StringsIO and run it on the z/OS managed node.
     results_add_user_cmd = ansible_zos_module.all.shell(
             cmd=f"{add_user_cmd.getvalue()}"
     )
@@ -249,121 +245,61 @@ def get_managed_user_name(ansible_zos_module, managed_user: ManagedUsers = None)
     # Extract the new user stdout lines for evaluation
     add_user_attributes = list(results_add_user_cmd.contacted.values())[0].get("stdout_lines")
 
-    # Print stdout from add user.
-    # print("add_user_attributes stdout: " + str(add_user_attributes))
-
-    # Because this is a tsocmd run through shell, any user with a $ will be expanded and thus truncated so you can't change
-    # that behavior since its happening on the managed node, solution is to match a shorter pattern without the user. 
+    # Because this is a tsocmd run through shell, any user with a $ will be expanded and thus truncated, you can't change
+    # that behavior since its happening on the managed node, solution is to match a shorter pattern without the user.
     is_assigned_omvs_uid = True if [v for v in add_user_attributes if f"was assigned an OMVS UID value" in v] else False
     if not is_assigned_omvs_uid:
-        raise Exception(f"Unable to create OMVS UID.")
+        raise Exception(f"Unable to create OMVS UID, please review the command output {add_user_attributes}.")
 
     create_group_rc = [v for v in add_user_attributes if f"Create {user_group} RC=" in v][0].split('=')[1].strip() or None
     if not create_group_rc or int(create_group_rc[0]) > 8:
-        raise Exception(f"Unable to create user group {user_group}.")
+        raise Exception(f"Unable to create user group {user_group}, please review the command output {add_user_attributes}.")
 
     add_user_rc = [v for v in add_user_attributes if f"ADDUSER {user} RC=" in v][0].split('=')[1].strip() or None
     if not add_user_rc or int(add_user_rc[0]) > 0:
-        raise Exception(f"Unable to ADDUSER {user}.")
+        raise Exception(f"Unable to ADDUSER {user}, please review the command output {add_user_attributes}.")
 
     mkdir_rc = [v for v in add_user_attributes if f"mkdir {user} RC=" in v][0].split('=')[1].strip() or None
     if not mkdir_rc or int(mkdir_rc[0]) > 0:
-        raise Exception(f"Unable to make home directories for {user}.")
+        raise Exception(f"Unable to make home directories for {user}, please review the command output {add_user_attributes}.")
 
     authorized_keys_rc = [v for v in add_user_attributes if f"touch authorized_keys RC=" in v][0].split('=')[1].strip() or None
     if not authorized_keys_rc or int(authorized_keys_rc[0]) > 0:
-        raise Exception(f"Unable to make authorized_keys file for {user}.")
+        raise Exception(f"Unable to make authorized_keys file for {user}, please review the command output {add_user_attributes}.")
 
     chown_rc = [v for v in add_user_attributes if f"chown {user} RC=" in v][0].split('=')[1].strip() or None
     if not chown_rc or int(chown_rc[0]) > 0:
-        raise Exception(f"Unable to change ownership of home directory for {user}.")
+        raise Exception(f"Unable to change ownership of home directory for {user}, please review the command output {add_user_attributes}.")
 
     altuser_rc = [v for v in add_user_attributes if f"ALTUSER {user} RC=" in v][0].split('=')[1].strip() or None
     if not altuser_rc or int(altuser_rc[0]) > 0:
-        raise Exception(f"Unable to update password for {user}.")
+        raise Exception(f"Unable to update password for {user}, please review the command output {add_user_attributes}.")
 
-    # Print the RCs for validation
-    # print(f"is_assigned_omvs_uid: [{is_assigned_omvs_uid}]")
-    # print(f"create_group_rc: [{create_group_rc}]")
-    # print(f"add_user_rc: [{add_user_rc}]")
-    # print(f"mkdir_rc: [{mkdir_rc}]")
-    # print(f"authorized_keys_rc: [{authorized_keys_rc}]")
-    # print(f"chown_rc: [{chown_rc}]")
+    rdefine_rc = [v for v in add_user_attributes if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
+    if not rdefine_rc or int(rdefine_rc[0]) > 4:
+        raise Exception(f"Unable to rdefine {saf_class} {saf_profile}, please review the command output {add_user_attributes}.")
+    permit_rc = [v for v in add_user_attributes if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
+    if not permit_rc or int(permit_rc[0]) > 4:
+        raise Exception(f"Unable to permit {saf_profile} class {saf_class} for ID {user}, please review the command output {add_user_attributes}.")
+    setropts_rc = [v for v in add_user_attributes if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
+    if not setropts_rc or int(setropts_rc[0]) > 4:
+        raise Exception(f"Unable to setropts raclist {saf_class} refresh, please review the command output {add_user_attributes}.")
 
-    # remote_host = ansible_zos_module["options"]["inventory"].replace(",", "")
-    # return None #operations[managed_user.name](ansible_zos_module)
+    # TODO: Return a tuple of the ansible connection and user, maybe password
 
-    # These will serve the general purpose of our test cases
-def create_user_zoau_limited_access_opercmd(ansible_zos_module) -> str:
+def create_user_zoau_limited_access_opercmd(user: str, command: StringIO) -> StringIO:
+    saf_profile="MVS.MCSOPER.ZOAU"
+    saf_class="OPERCMDS"
 
+    command.write(f"Redefining USER '{user}';")
+    command.write(f"tsocmd RDEFINE {saf_class} {saf_profile} UACC\\(NONE\\) AUDIT\\(ALL\\);")
+    command.write(f"echo RDEFINE RC=$?;")
+    command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({user}\\) ACCESS\\(NONE\\);")
+    command.write(f"echo PERMIT RC=$?;")
+    command.write(f"tsocmd SETROPTS RACLIST\\({saf_class}\\) REFRESH;")
+    command.write(f"echo SETROPTS RC=$?;")
 
-    # tsocmd f"ADDUSER ANSUSR01 DFLTGRP(ANSIGROUP) OWNER(RACF000) PASSWORD(PASSWD) TSO(ACCTNUM(ACCT#) PROC(ISPFPROC)) OMVS(HOME('/u/fflores') PROGRAM(' bin/sh') AUTOUID "
-    # _USER="usrt001"
-    # SAF_PROFILE="MVS.MCSOPER.ZOAU"
-    # SAF_CLASS="OPERCMDS"
-    # tsocmd "RDEFINE ${SAF_CLASS} ${SAF_PROFILE} UACC(NONE) AUDIT(ALL)"
-    # tsocmd "PERMIT ${SAF_PROFILE} CLASS(${SAF_CLASS}) ID(${_USER}) ACCESS(NONE)"
-    # tsocmd "SETROPTS RACLIST(${SAF_CLASS}) REFRESH"
-    # return None
-
-    # Build a command from this and the below and above for a new user with limited powers.
-    # To start, we can create a new group for our use.
-    # ```bash
-    # tsocmd "ADDGROUP ANSUSER1 OMVS(AUTOGID) "
-    # ```
-
-    # We can create a user using the following:
-    # ```bash
-    # tsocmd "ADDUSER fflores DFLTGRP(ANSUSER1) OWNER(SYS1) PASSWORD(RESET1A) TSO(ACCTNUM(ACCT#) PROC(ISPFPROC)) OMVS(HOME('/u/fflores') PROGRAM('/bin/sh') AUTOUID "
-    # mkdir /u/fflores
-    # chown fflores /u/fflores
-    # chgrp ANSUSER1 /u/fflores
-    # ```
-
-
-    # LISTUSER USRt001 RESULTS:
-    # USER=USRT001  NAME=UNKNOWN  OWNER=RACF000   CREATED=81.208
-    # DEFAULT-GROUP=SYS1     PASSDATE=24.273 PASS-INTERVAL= 90 PHRASEDATE=N/A
-    # ATTRIBUTES=NONE
-    # REVOKE DATE=NONE   RESUME DATE=NONE
-    # LAST-ACCESS=24.275/15:51:54
-    # CLASS AUTHORIZATIONS=NONE
-    # NO-INSTALLATION-DATA
-    # NO-MODEL-NAME
-    # LOGON ALLOWED   (DAYS)          (TIME)
-    # ---------------------------------------------
-    # ANYDAY                          ANYTIME
-    # GROUP=SYS1      AUTH=USE      CONNECT-OWNER=RACF000   CONNECT-DATE=81.208
-    #     CONNECTS=   900  UACC=NONE     LAST-CONNECT=24.275/15:51:54
-    #     CONNECT ATTRIBUTES=NONE
-    #     REVOKE DATE=NONE   RESUME DATE=NONE
-    # GROUP=RAD       AUTH=USE      CONNECT-OWNER=RACF000   CONNECT-DATE=87.056
-    #     CONNECTS=    00  UACC=NONE     LAST-CONNECT=UNKNOWN
-    #     CONNECT ATTRIBUTES=NONE
-    #     REVOKE DATE=NONE   RESUME DATE=NONE
-    # GROUP=DB2       AUTH=USE      CONNECT-OWNER=USER000   CONNECT-DATE=94.287
-    #     CONNECTS=    00  UACC=NONE     LAST-CONNECT=UNKNOWN
-    #     CONNECT ATTRIBUTES=NONE
-    #     REVOKE DATE=NONE   RESUME DATE=NONE
-    # SECURITY-LEVEL=NONE SPECIFIED
-    # CATEGORY-AUTHORIZATION
-    # NONE SPECIFIED
-    # SECURITY-LABEL=NONE SPECIFIED
-
-    # tsocmd LISTUSER OMVSADM TSO NORACF
-    # LISTUSER OMVSADM TSO NORACF
-    # USER=OMVSADM
-
-    # TSO INFORMATION
-    # ---------------
-    # ACCTNUM= D1001
-    # PROC= TPROC02
-    # SIZE= 00512000
-    # MAXSIZE= 00000000
-    # UNIT= SYSDA
-    # USERDATA= 0000
-
-    return "result create_user_zoau_limited_access_opercmd"
+    return command
 
 def create_user_zos_limited_hlq(ansible_zos_module) -> str:
     return "result create_user_zos_limited_hlq"
@@ -371,10 +307,20 @@ def create_user_zos_limited_hlq(ansible_zos_module) -> str:
 def create_user_zos_limited_tmp_hlq(ansible_zos_module) -> str:
     return "result create_user_zos_limited_tmp_hlq"
 
+def noop(*arg) -> None:
+    """
+    Method intentionally takes any number of args and does nothing.
+    It is meant to be a NOOP function to be used as a stub.
+    """
+    pass
+
 operations = {
     ManagedUsers.ZOAU_LIMITED_ACCESS_OPERCMD.name: create_user_zoau_limited_access_opercmd,
     ManagedUsers.ZOS_LIMITED_HLQ.name: create_user_zos_limited_hlq,
-    ManagedUsers.ZOS_LIMITED_TMP_HLQ.name: create_user_zos_limited_tmp_hlq
+    ManagedUsers.ZOS_LIMITED_TMP_HLQ.name: create_user_zos_limited_tmp_hlq,
+    ManagedUsers.ZOS_BEGIN_WITH_AT_SIGN.name: noop,
+    ManagedUsers.ZOS_BEGIN_WITH_POUND.name: noop,
+    ManagedUsers.ZOS_RANDOM_SYMBOLS.name: noop
 }
 
 
@@ -393,19 +339,6 @@ class Racf:
     racf['rdefine'] = []
     racf['permit'] = []
     racf['setropts'] = []
-
-
-    # tsocmd "ADDUSER fflores DFLTGRP(ANSUSER1) OWNER(SYS1) PASSWORD(RESET1A) TSO(ACCTNUM(ACCT#) PROC(ISPFPROC)) OMVS(HOME('/u/fflores') PROGRAM(' bin/sh') AUTOUID "
-    # mkdir /u/fflores
-    # chown fflores /u/fflores
-    # chgrp ANSUSER1 /u/fflores
-
-    # tsocmd "ADDGROUP (MISC) OWNER(OMVSADM) SUPGROUP(SYS1) DATA('HLQ STUB')"
-    # tsocmd "CONNECT FFLORES GROUP(MISC)"
-    # tsocmd "ADDSD 'MISC.FFLORES.*'    UACC(NONE)   DATA ('only allow to create under misc.fflores')"
-    # tsocmd "PERMIT 'MISC.FFLORES.*'  CLASS(DATASET) ACCESS(ALTER) ID(FFLORES)"
-    # tsocmd "SETROPTS GENERIC(DATASET) REFRESH"
-    # tsocmd "LISTDSD ALL PREFIX(MISC.FFLORES)"
 
     class Adduser:
         user = OrderedDict()

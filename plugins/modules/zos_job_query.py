@@ -119,6 +119,16 @@ jobs:
          Unique job identifier assigned to the job by JES.
       type: str
       sample: JOB01427
+    system:
+      description:
+         The job entry system that MVS uses to do work.
+      type: str
+      sample: STL1
+    subsystem:
+      description:
+         The job entry subsystem that MVS uses to do work.
+      type: str
+      sample: STL1
     ret_code:
       description:
          Return code output collected from job log.

@@ -189,13 +189,13 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
 
-    job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_scan=False)
+    job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name)
 
     if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_scan=False)
+        job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name)
 
     return job_status_result
 

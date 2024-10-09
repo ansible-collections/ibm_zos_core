@@ -74,6 +74,8 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
             qresults = hosts.all.zos_job_query(job_id=jobmask)
             for qresult in qresults.contacted.values():
                 assert qresult.get("jobs") is not None
+                assert qresult.get("jobs")[0].get("system") is not None
+                assert qresult.get("jobs")[0].get("subsystem") is not None
 
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")

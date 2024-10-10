@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_job_submit - Add deploy and forget capability. Now when wait_time_s is 0, the module will
+    submit the job and will not wait to get the job details or content, returning only the job id.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1746).

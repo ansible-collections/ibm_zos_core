@@ -249,6 +249,8 @@ jobs:
             - Job status `SEC` or `SEC ERROR` indicates the job as encountered a security error.
             - Job status `SYS` indicates a system failure.
             - Job status `?` indicates status can not be determined.
+            - Job status `TYPRUN=SCAN` indicates that the job had the TYPRUN parameter with SCAN option.
+            - Job status `NOEXEC` indicates that the job had the TYPRUN parameter with COPY option.
             - Jobs where status can not be determined will result in None (NULL).
           type: str
           sample: AC

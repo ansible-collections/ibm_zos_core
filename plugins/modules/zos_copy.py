@@ -3164,14 +3164,14 @@ def data_set_locked(dataset_name):
             for out in stdout.split("\n"):
                 if out:
                     result["stdout"].append(out)
-
+        #raise CopyOperationError(msg=f"Unable to determine if the dest {stdout}")
         if len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
             return False
 
         return True
     except zoau_exceptions.ZOAUException as copy_exception:
         raise CopyOperationError(
-            msg="Unable to determine if the source {0} is in use.".format(dataset_name),
+            msg="Unable to determine if the dest {0} is in use.".format(dataset_name),
                 rc=copy_exception.response.rc,
                 stdout=copy_exception.response.stdout_response,
                 stderr=copy_exception.response.stderr_response

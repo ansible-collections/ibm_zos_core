@@ -1107,7 +1107,19 @@ def run_module():
                                 job_ret_code.update({"msg_txt": _msg})
                                 raise Exception(_msg)
 
-                    if job_ret_code_code is None or job_ret_code_msg == 'NOEXEC':
+                    if job_ret_code_code is not None and job_ret_code_msg == 'NOEXEC':
+                        job_dd_names = job_output_txt[0].get("ddnames")
+                        jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
+                        # These are the conditions for a job run with TYPRUN=COPY.
+                        if not jes_jcl_dd:
+                            job_ret_code.update({"msg": "TYPRUN=COPY"})
+                            _msg = ("The job was run with TYPRUN=COPY. "
+                                    "This way, the steps are not executed, but the JCL is validated and stored "
+                                    "in the JES spool. "
+                                    "Please review the job log for further details.")
+                            job_ret_code.update({"msg_txt": _msg})
+
+                    if job_ret_code_code is None:
                         # If there is no job_ret_code_code (Job return code) it may NOT be an error,
                         # some jobs will never return have an RC, eg Started tasks(which are not supported),
                         # so further analyze the

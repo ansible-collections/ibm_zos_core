@@ -567,10 +567,6 @@ class ManagedUser:
         cmd=f"{command.getvalue()}"
         results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
 
-        # Shared error message and details.
-        err_details = ""
-        err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
-
         try:
             # Evaluate the results
             rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None

@@ -190,7 +190,11 @@ class ManagedUser:
         ssh_command = ["ssh", f"{model_user}@{remote_host}", command]
         result = subprocess.run(ssh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        # std_err = result.stderr # Command return codes are evaluated over stderr
+        # RC 20 command failure - let this fall through for now, will be caught by command processors
+        # RC 255 failed connection
+        if result.returncode == 255:
+            raise Exception(f"Unable to connect remote user [{model_user}] to remote host [{remote_host}], RC [{result.returncode}], stdout [{result.stdout}], stderr [{result.stderr}].")
+
         return [line.strip() for line in result.stdout.split('\n')]
 
 
@@ -382,22 +386,29 @@ class ManagedUser:
 
         # Generate the password to establish a password-less connection and use with RACF.
         passwd = self._get_random_passwd()
+
         try:
             # Access module user's TSO attributes for reuse
             cmd=f"tsocmd LISTUSER {self._model_user} TSO NORACF"
             model_listuser_tso_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
             # Match the tso list results and place in variables (not all are used)
-            try:
-                model_tso_acctnum = [v for v in model_listuser_tso_attributes if "ACCTNUM" in v][0].split('=')[1].strip() or None
-            except IndexError as err:
-                raise Exception(f"Unable to determine the TSO Account number required when adding TSO ID [{self._managed_racf_user}], exception [{err}].")
-            try:
-                model_tso_proc = [v for v in model_listuser_tso_attributes if "PROC" in v][0].split('=')[1].strip() or None
-            except IndexError as err:
-                raise Exception(f"Unable to determine the TSO Proc required for adding TSO ID [{self._managed_racf_user}], exception [{err}].")
+            model_tso_acctnum = [v for v in model_listuser_tso_attributes if "ACCTNUM" in v][0].split('=')[1].strip() or None
+            if not model_tso_acctnum:
+                err_details = "TSO account number"
+                err_msg = f"Unable access the model user [{self._managed_racf_user}] {err_details}, this is required to create user [{self._managed_racf_user}]."
+                raise Exception(err_msg)
+
+            model_tso_proc = [v for v in model_listuser_tso_attributes if "PROC" in v][0].split('=')[1].strip() or None
+            if not model_tso_proc:
+                err_details = "TSO Proc"
+                err_msg = f"Unable access the model user [{self._managed_racf_user}] {err_details}, this is required to create user [{self._managed_racf_user}]."
+                raise Exception(err_msg)
+        except IndexError as err:
+            err_msg = f"Unable access the model user [{self._managed_racf_user}] results, this is required to create user [{self._managed_racf_user}]."
+            raise Exception(f"{err_msg}, exception [{err}].")
         except Exception as err:
-            raise Exception(f"Unable to LISTUSER TSO NORACF for {self._model_user}, exception [{err}]")
+            raise Exception(f"Unable to LISTUSER TSO NORACF for [{self._model_user}], exception [{err}]")
 
         # TODO: These are currently not used when creating the user, consider minimally adding SIZE and MAXXSIZE to dynamic users
         # model_tso_size = [v for v in model_listuser_tso_attributes if "SIZE" in v][0].split('=')[1].strip() or None
@@ -411,11 +422,16 @@ class ManagedUser:
             cmd=f"tsocmd LISTUSER {self._model_user}"
             model_listuser_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
-            try:
-                # Match the list user results and place in variables (not all are used)
-                model_owner = [v for v in model_listuser_attributes if "OWNER" in v][0].split('OWNER=')[1].split()[0].strip() or ""
-            except IndexError as err:
-                raise Exception(f"Unable to determine the OWNER required for adding the RACF ID [{self._managed_racf_user}], exception [{err}].")
+            # Match the list user results and place in variables (not all are used)
+            model_owner = [v for v in model_listuser_attributes if "OWNER" in v][0].split('OWNER=')[1].split()[0].strip() or None
+
+            if not model_owner:
+                err_details = "OWNER"
+                err_msg = f"Unable access the model user [{self._managed_racf_user}] {err_details}, this is required to create user [{self._managed_racf_user}]."
+                raise Exception(err_msg)
+        except IndexError as err:
+            err_msg = f"Unable access the results, this is required to create user [{self._managed_racf_user}]."
+            raise Exception(f"{err_msg}, exception [{err}].")
         except Exception as err:
             raise Exception(f"Unable to LISTUSER for {self._model_user}, exception [{err}]")
 
@@ -462,41 +478,58 @@ class ManagedUser:
             # that behavior since its happening on the managed node, solution is to match a shorter pattern without the user.
             is_assigned_omvs_uid = True if [v for v in add_user_attributes if f"was assigned an OMVS UID value" in v] else False
             if not is_assigned_omvs_uid:
-                raise Exception(f"Unable to create OMVS UID, please review the command output {add_user_attributes}.")
+                err_details = "create OMVS UID"
+                err_msg = f"Unable to {err_details}, this is required to create user [{self._managed_racf_user}, review output {add_user_attributes}."
+                raise Exception(err_msg)
 
             create_group_rc = [v for v in add_user_attributes if f"Create {self._managed_user_group} RC=" in v][0].split('=')[1].strip() or None
             if not create_group_rc or int(create_group_rc[0]) > 8:
-                raise Exception(f"Unable to create user group {self._managed_user_group}, please review the command output {add_user_attributes}.")
+                err_details = "create user group"
+                err_msg = f"Unable to {err_details}, this is required to create user [{self._managed_racf_user}, review output {add_user_attributes}."
+                raise Exception(err_msg)
 
             add_user_rc = [v for v in add_user_attributes if f"ADDUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
             if not add_user_rc or int(add_user_rc[0]) > 0:
-                raise Exception(f"Unable to ADDUSER {escaped_user}, please review the command output {add_user_attributes}.")
+                err_details = "ADDUSER"
+                err_msg = f"Unable to {err_details}, this is required to create user [{self._managed_racf_user}, review output {add_user_attributes}."
+                raise Exception(err_msg)
 
             mkdir_rc = [v for v in add_user_attributes if f"mkdir {escaped_user} RC=" in v][0].split('=')[1].strip() or None
             if not mkdir_rc or int(mkdir_rc[0]) > 0:
-                raise Exception(f"Unable to make home directories for {escaped_user}, please review the command output {add_user_attributes}.")
+                err_details = "create home directory for {escaped_user}"
+                err_msg = f"Unable to {err_details}, this is required to create user [{self._managed_racf_user}, review output {add_user_attributes}."
+                raise Exception(err_msg)
 
             authorized_keys_rc = [v for v in add_user_attributes if f"touch authorized_keys RC=" in v][0].split('=')[1].strip() or None
             if not authorized_keys_rc or int(authorized_keys_rc[0]) > 0:
-                raise Exception(f"Unable to make authorized_keys file for {escaped_user}, please review the command output {add_user_attributes}.")
+                err_details = "create authorized_keys file for {escaped_user}"
+                err_msg = f"Unable to {err_details}, this is required to create user [{self._managed_racf_user}, review output {add_user_attributes}."
+                raise Exception(err_msg)
 
             chown_rc = [v for v in add_user_attributes if f"chown {escaped_user} RC=" in v][0].split('=')[1].strip() or None
             if not chown_rc or int(chown_rc[0]) > 0:
-                raise Exception(f"Unable to change ownership of home directory for {escaped_user}, please review the command output {add_user_attributes}.")
+                err_details = "change ownership of home directory for {escaped_user}"
+                err_msg = f"Unable to {err_details}, this is required to create user [{self._managed_racf_user}, review output {add_user_attributes}."
+                raise Exception(err_msg)
 
             altuser_rc = [v for v in add_user_attributes if f"ALTUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
             if not altuser_rc or int(altuser_rc[0]) > 0:
-                raise Exception(f"Unable to update password for {escaped_user}, please review the command output {add_user_attributes}.")
-
-            # Update the user according to the ManagedUserType type by invoking the mapped function
-            self.operations[managed_user.name](self, self._managed_racf_user)
+                err_details = "update password for {escaped_user}"
+                err_msg = f"Unable to {err_details}, this is required to create user [{self._managed_racf_user}, review output {add_user_attributes}."
+                raise Exception(err_msg)
+        except IndexError as err:
+            err_msg = f"Unable access the results, this is required to create user [{self._managed_racf_user}]."
+            raise Exception(f"{err_msg}, exception [{err}].")
         except Exception as err:
-            raise Exception(f"Model user {self._model_user} is unable to create managed RACF user {escaped_user}, review exception [{err}]")
+            raise Exception(f"The model user {self._model_user} is unable to create managed RACF user {escaped_user}, exception [{err}]")
+
+        # Update the user according to the ManagedUserType type by invoking the mapped function
+        self.operations[managed_user.name](self, self._managed_racf_user)
 
         return (self._managed_racf_user, passwd)
 
 
-    def _create_user_zoau_limited_access_opercmd(self, managed_user_id: str) -> None:
+    def _create_user_zoau_limited_access_opercmd(self, managed_racf_user: str) -> None:
         """
         Update a managed user id for the remote node with restricted access to ZOAU
         SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS with universal access
@@ -505,7 +538,7 @@ class ManagedUser:
 
         Parameters
         ----------
-        managed_user_id (str)
+        managed_racf_user (str)
             The managed user created that will we updated according tho the ManagedUseeType selected.
 
         See Also
@@ -523,10 +556,10 @@ class ManagedUser:
         saf_class="OPERCMDS"
         command = StringIO()
 
-        command.write(f"Redefining USER '{managed_user_id}';")
+        command.write(f"Redefining USER '{managed_racf_user}';")
         command.write(f"tsocmd RDEFINE {saf_class} {saf_profile} UACC\\(NONE\\) AUDIT\\(ALL\\);")
         command.write(f"echo RDEFINE RC=$?;")
-        command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({managed_user_id}\\) ACCESS\\(NONE\\);")
+        command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({managed_racf_user}\\) ACCESS\\(NONE\\);")
         command.write(f"echo PERMIT RC=$?;")
         command.write(f"tsocmd SETROPTS RACLIST\\({saf_class}\\) REFRESH;")
         command.write(f"echo SETROPTS RC=$?;")
@@ -534,28 +567,47 @@ class ManagedUser:
         cmd=f"{command.getvalue()}"
         results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
 
-        # Evaluate the results
-        rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
-        if not rdefine_rc or int(rdefine_rc[0]) > 4:
-            raise Exception(f"Unable to rdefine {saf_class} {saf_profile}, please review the command output {results_stdout_lines}.")
-        permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
-        if not permit_rc or int(permit_rc[0]) > 4:
-            raise Exception(f"Unable to permit {saf_profile} class {saf_class} for ID {user}, please review the command output {results_stdout_lines}.")
-        setropts_rc = [v for v in results_stdout_lines if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
-        if not setropts_rc or int(setropts_rc[0]) > 4:
-            raise Exception(f"Unable to setropts raclist {saf_class} refresh, please review the command output {results_stdout_lines}.")
+        # Shared error message and details.
+        err_details = ""
+        err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
 
-    def _create_user_zos_limited_hlq(self, managed_user_id: str) -> None:
+        try:
+            # Evaluate the results
+            rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
+            if not rdefine_rc or int(rdefine_rc[0]) > 4:
+                err_details = f"rdefine {saf_class} {saf_profile}"
+                err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
+
+            permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
+            if not permit_rc or int(permit_rc[0]) > 4:
+                err_details = f"permit {saf_profile} class {saf_class}"
+                err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
+
+            setropts_rc = [v for v in results_stdout_lines if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
+            if not setropts_rc or int(setropts_rc[0]) > 4:
+                err_details = f"setropts raclist {saf_class} refresh"
+                err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
+        except IndexError as err:
+            err_msg = f"Unable access the results, this is required to reduce permissions for user [{managed_racf_user}]."
+            raise Exception(f"{err_msg}, exception [{err}].")
+        except Exception as err:
+            raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {managed_racf_user}, exception [{err}]")
+
+    # TODO: Implement this method in the future
+    def _create_user_zos_limited_hlq(self, managed_racf_user: str) -> None:
         """
         Update a managed user id for the remote node with restricted access to
         High LevelQualifiers:
         - RESTRICT
         - NOPERMIT
-        Any attempt for this user to access the HLQ will be rejected. 
+        Any attempt for this user to access the HLQ will be rejected.
 
         Parameters
         ----------
-        managed_user_id (str)
+        managed_racf_user (str)
             The managed user created that will we updated according tho the ManagedUseeType selected.
 
         See Also
@@ -571,7 +623,9 @@ class ManagedUser:
         """
         print("Needs to be implemented")
 
-    def _create_user_zos_limited_tmp_hlq(self, managed_user_id: str) -> None:
+
+    # TODO: Implement this method in the future
+    def _create_user_zos_limited_tmp_hlq(self, managed_racf_user: str) -> None:
         """
         Update a managed user id for the remote node with restricted access to
         temporary data set High LevelQualifiers:
@@ -581,7 +635,7 @@ class ManagedUser:
 
         Parameters
         ----------
-        managed_user_id (str)
+        managed_racf_user (str)
             The managed user created that will we updated according tho the ManagedUseeType selected.
 
         See Also

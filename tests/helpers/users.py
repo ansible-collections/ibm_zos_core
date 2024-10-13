@@ -12,11 +12,29 @@
 # limitations under the License.
 
 """
+from ibm_zos_core.tests.helpers.users import ManagedUserType
+from ibm_zos_core.tests.helpers.users import *
+
 The users.py file contains various utility functions that
 will support functional test cases. For example, request a randomly
 generated user with specific limitations.
 
-Usage:
+Usage
+-----
+The pytest fixture (ansible_zos_module) is a generator object done so by 'yield'ing;
+where a yield essentially pauses (streaming) a function and the state and control is
+goes to the function that called it. Thus the fixture can't be passed to this API to
+be updated with the new user or use the fixture to perform managed node inquiries,
+thus SSH is used for those managed node commands.
+
+Another important not is when using this API, you can't parametrize test cases, because
+once the pytest fixture (ansible_zos_module) is updated with a new user and performs a
+remote operation on a managed node, the fixture's user can not be changed because control
+is passed back and all attempts to change the user for reuse will fail, unless your goal
+is to use the same managedUserType in the parametrization this is not recommended.
+
+Example
+-------
 def test_copy_dest_lock_test_apf_authorization_3(ansible_zos_module):
     # Request a user who has no authority to execute zoau opercmd
     hosts = ansible_zos_module
@@ -51,23 +69,24 @@ from enum import Enum
 import random
 import string
 import subprocess
-import sys
 import os
 import glob
 import re
 import subprocess
+from typing import List, Tuple
 
 class ManagedUserType (Enum):
     """
     Represents the z/OS users available for functional testing.
 
-    Managed user types:
-        ZOAU_LIMITED_ACCESS_OPERCMD
-        ZOS_BEGIN_WITH_AT_SIGN
-        ZOS_BEGIN_WITH_POUND
-        ZOS_RANDOM_SYMBOLS
-        ZOS_LIMITED_HLQ
-        ZOS_LIMITED_TMP_HLQ
+    Managed user types
+    ------------------
+    - ZOAU_LIMITED_ACCESS_OPERCMD
+    - ZOS_BEGIN_WITH_AT_SIGN
+    - ZOS_BEGIN_WITH_POUND
+    - ZOS_RANDOM_SYMBOLS
+    - ZOS_LIMITED_HLQ
+    - ZOS_LIMITED_TMP_HLQ
     """
 
     ZOAU_LIMITED_ACCESS_OPERCMD=("zoau_limited_access_opercmd")
@@ -112,71 +131,141 @@ class ManagedUserType (Enum):
 
     def __str__(self) -> str:
         """
-        Return the enum name as upper case.
+        Return the ManagedUserType name as upper case.
         """
         return self.name.upper()
 
     def string(self) -> str:
         """
-        Returns the enum value as uppercase.
+        Returns the ManagedUserType value as uppercase.
         """
         return self.value.upper()
 
 class ManagedUser:
     """
-    This class provides methods to augment the pytest-ansible fixture with the
-    requested managed user and on completion restore the fixture.
+    This class provides methods in which can provide a user and password for a requested
+    ManagedUserType. See users.py documentation for usage.
     """
     _model_user = None
-    _user = None
-    _user_group = None
-    _ansible_zos_module = None
-    _host = None
+    _managed_racf_user = None
+    _managed_user_group = None
+    _remote_host = None
 
-    def __init__(self, model_user, host):
+    def __init__(self, model_user: str, remote_host: str) -> None:
+        """
+        Initialize class with necessary parameters.
+
+        Parameters
+        ----------
+        model_user (str):
+            The user that will connect to the managed node and execute RACF commands
+            and serve as a model for other users attributes.
+            This user should have enough authority to perform RACF operations.
+        remote_host (str):
+            The z/OS managed node (host) to connect to to create the managed user.
+        """
         self._model_user = model_user
-        self._host = host
+        self._remote_host = remote_host
 
-    def connect(self, host, user, command):
-        ssh_command = ["ssh", f"{user}@{host}", command]
+    def _connect(self, remote_host:str , model_user: str, command: str) -> List[str]:
+        """
+        Connect to the remote managed node and execute requested command.
+
+        Parameters
+        ----------
+        remote_host (str)
+            The z/OS managed node (host) to connect to to create the managed user.
+        model_user (str)
+            The user that will connect to the managed node and execute RACF commands
+            and serve as a model for other users attributes.
+            This user should have enough authority to perform RACF operations.
+        command (str)
+            Command to run on the managed node.
+
+        Returns
+        -------
+        List[str]
+            Command result as a list of strings.
+        """
+        ssh_command = ["ssh", f"{model_user}@{remote_host}", command]
         result = subprocess.run(ssh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        # Don't do anything with stderr, there is code that will check RCs to determine if there is an error
-        # std_err = result.stderr
-
+        # std_err = result.stderr # Command return codes are evaluated over stderr
         return [line.strip() for line in result.stdout.split('\n')]
 
-    def delete_managed_user(self):
-        escaped_user = re.escape(self._user)
+
+    def delete_managed_user(self) -> None:
+        """
+        Delete managed user from z/OS managed node. Performs clean up of the remote
+        system removing the RACF user, RACF Group, TSO ID and home directory and its
+        contents.
+
+        Raises
+        ------
+        Exception
+            If any of the remote commands return codes are out of range an exception
+            and the stdout and stderr is returned.
+        """
+        escaped_user = re.escape(self._managed_racf_user)
         command = StringIO()
-        command.write(f"echo Deleting USER '{self._user}';")
+        command.write(f"echo Deleting USER '{self._managed_racf_user}';")
         command.write(f"tsocmd DELUSER {escaped_user};")
         command.write(f"echo DELUSER '{escaped_user}' RC=$?;")
-        command.write(f"tsocmd DELGROUP {self._user_group};")
-        command.write(f"echo DELGROUP '{self._user_group}' RC=$?;")
+        command.write(f"tsocmd DELGROUP {self._managed_user_group};")
+        command.write(f"echo DELGROUP '{self._managed_user_group}' RC=$?;")
 
         # Access additional module user attributes for use in a new user.
         cmd=f"{command.getvalue()}"
-        results_stdout_lines = self.connect(self._host, self._model_user,cmd)
+        results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
 
         deluser_rc = [v for v in results_stdout_lines if f"DELUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
         if not deluser_rc or int(deluser_rc[0]) > 0:
             raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
-        delgroup_rc = [v for v in results_stdout_lines if f"DELGROUP {self._user_group} RC=" in v][0].split('=')[1].strip() or None
+        delgroup_rc = [v for v in results_stdout_lines if f"DELGROUP {self._managed_user_group} RC=" in v][0].split('=')[1].strip() or None
         if not delgroup_rc or int(delgroup_rc[0]) > 0:
             raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
 
-    def __get_random_passwd(self) -> str:
+    def _get_random_passwd(self) -> str:
+        """
+        Generate a random password of length 8 adhering a supported common password
+        pattern.
+
+        Returns
+        -------
+        str
+            Password string with pattern [CCCNCCCC].
+            - (C) Random characters A - Z
+            - (N) Random integers 1 - 9
+        """
         letters = string.ascii_uppercase
         start = ''.join(random.choice(letters) for i in range(3))
         middle = ''.join(str(random.randint(1,9)))
-        finish = ''.join(random.choice(letters) for i in range(4))
-        return f"{start}{middle}{finish}"
+        end = ''.join(random.choice(letters) for i in range(4))
+        return f"{start}{middle}{end}"
 
-    def __get_random_user(self, managed_user: ManagedUserType = None) -> str:
-        """A-Z, 0-9, #, $, or @."""
+    def _get_random_user(self, managed_user: ManagedUserType = None) -> str:
+        """
+        Generate a random user of length 8 adhering the ManagedUserType
+        requested.
+
+        Parameters
+        ----------
+        managed_user (ManagedUserType)
+            The requested managed user type that correlates to how the user name will be created.
+            Default is a user id consistent with random A - Z.
+
+        See Also
+        --------
+            :py:class:`ManagedUserType`
+
+        Returns
+        -------
+        str
+            A user id suitable for RACF and based on the ManagedUserType.
+            A user id can contain any of the supported symbols A-Z, 0-9, #, $, or @.
+        """
         letters = string.ascii_uppercase
         if managed_user is not None:
             if managed_user.name == ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN.name:
@@ -200,9 +289,23 @@ class ManagedUser:
         # All other cases can use any formatted user name, so random 8 letters is fine.
         return ''.join(random.choice(letters) for i in range(8))
 
-    def __read_files_in_directory(self, directory: str = "~/.ssh", pattern: str = "*.pub") -> list:
-        """Reads files in a directory that match the pattern and return file contents as a list entry."""
+    def _read_files_in_directory(self, directory: str = "~/.ssh", pattern: str = "*.pub") -> List[str]:
+        """
+        Reads files in a directory that match the pattern and return file names
+        as a list of strings, each list index is a file name.
 
+        Parameters
+        ----------
+        directory (str):
+            The directory to search for files matching a pattern. Default, '~/.ssh'.
+        pattern (str):
+            The pattern to match file names. Default, '*.pub'.
+
+        Returns
+        -------
+        List[str]
+            A list of file names, each list index is a file name matching the pattern.
+        """
         file_contents_as_list = []
 
         # Expand the tilde to the home directory
@@ -213,40 +316,88 @@ class ManagedUser:
                 file_contents_as_list.append(f.read().rstrip('\n'))
         return file_contents_as_list
 
-    def __copy_ssh_key(user, passwd, host, key_path):
+
+    def _copy_ssh_key(model_user: str, passwd: str, remote_host: str, key_path: str):
         """
         Copy SSH key to a remote host using subprocess.
-        Note:
-            This requires the host have sshpass installed.
-        See:
-            Method __read_files_in_directory instead to copy the public keys.
-        """
 
-        command = ["sshpass", "-p", f"{passwd}", "ssh-copy-id", "-o", "StrictHostKeyChecking=no", "-i", f"{key_path}", f"{user}@{host}"] #, "&>/dev/null"]
+        Note
+        ----
+        This requires that the host have 'sshpass' installed.
+
+        Parameters
+        ----------
+        remote_host (str)
+            The z/OS managed node (host) to connect to to create the managed user.
+        model_user (str)
+            The user that will connect to the managed node and execute RACF commands
+            and serve as a model for other users attributes. This user should have
+            enough authority to perform RACF operations.
+        command (str)
+            Command to run on the managed node.
+
+        Returns
+        -------
+        List[str]
+            A list of file names, each list index is a file name matching the pattern.
+
+        See Also
+        --------
+        :py:func:`_read_files_in_directory` to copy the public keys.
+        """
+        command = ["sshpass", "-p", f"{passwd}", "ssh-copy-id", "-o", "StrictHostKeyChecking=no", "-i", f"{key_path}", f"{model_user}@{remote_host}"] #, "&>/dev/null"]
         result = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
 
         if result.returncode != 0:
             raise Exception("Unable to copy public keys to remote host, check that sshpass is installed.")
 
-    def create_managed_user(self, managed_user: ManagedUserType) -> str:
+
+    def create_managed_user(self, managed_user: ManagedUserType) -> Tuple[str, str]:
+        """
+        Generate a managed user for the remote node according to the ManagedUseeType selected.
+
+        Parameters
+        ----------
+        managed_user (ManagedUserType)
+            The requested managed user type that correlates to how the user name will be created.
+            Default is a user id consistent with random A - Z.
+
+        See Also
+        --------
+            :py:class:`ManagedUserType`
+
+        Returns
+        -------
+        Tuple[str, str]
+            A managed users ID and password as a tuple. eg (user, passwd)
+
+        Raises
+        ------
+        Exception
+            If any of the remote commands return codes are out of range an exception
+            and the stdout and stderr is returned.
+        """
         # Create random user based on ManagedUserType requirements
-        self._user = self.__get_random_user(managed_user)
+        self._managed_racf_user = self._get_random_user(managed_user)
 
         # Generate the password to establish a password-less connection and use with RACF.
-        passwd = self.__get_random_passwd()
+        passwd = self._get_random_passwd()
+        try:
+            # Access module user's TSO attributes for reuse
+            cmd=f"tsocmd LISTUSER {self._model_user} TSO NORACF"
+            model_listuser_tso_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
-        # Access module user's TSO attributes for reuse
-        cmd=f"tsocmd LISTUSER {self._model_user} TSO NORACF"
-        model_listuser_tso_attributes = self.connect(self._host, self._model_user,cmd)
-
-        # Match the tso list results and place in variables (not all are used)
-        model_tso_acctnum = [v for v in model_listuser_tso_attributes if "ACCTNUM" in v][0].split('=')[1].strip() or None
-        if not model_tso_acctnum:
-            raise Exception(f"Unable to determine the TSO Account number required for adding TSO {self._user}.")
-
-        model_tso_proc = [v for v in model_listuser_tso_attributes if "PROC" in v][0].split('=')[1].strip() or None
-        if not model_tso_proc:
-            raise Exception(f"Unable to determine the TSO Proc required for adding TSO {self._user}.")
+            # Match the tso list results and place in variables (not all are used)
+            try:
+                model_tso_acctnum = [v for v in model_listuser_tso_attributes if "ACCTNUM" in v][0].split('=')[1].strip() or None
+            except IndexError as err:
+                raise Exception(f"Unable to determine the TSO Account number required when adding TSO ID [{self._managed_racf_user}], exception [{err}].")
+            try:
+                model_tso_proc = [v for v in model_listuser_tso_attributes if "PROC" in v][0].split('=')[1].strip() or None
+            except IndexError as err:
+                raise Exception(f"Unable to determine the TSO Proc required for adding TSO ID [{self._managed_racf_user}], exception [{err}].")
+        except Exception as err:
+            raise Exception(f"Unable to LISTUSER TSO NORACF for {self._model_user}, exception [{err}]")
 
         # TODO: These are currently not used when creating the user, consider minimally adding SIZE and MAXXSIZE to dynamic users
         # model_tso_size = [v for v in model_listuser_tso_attributes if "SIZE" in v][0].split('=')[1].strip() or None
@@ -255,15 +406,21 @@ class ManagedUser:
         # model_tso_userdata = [v for v in model_listuser_tso_attributes if "USERDATA" in v][0].split('=')[1].strip() or ""
         # model_tso_command = [v for v in model_listuser_tso_attributes if "COMMAND" in v][0].split('=')[1].strip() or ""
 
-        # Access additional module user attributes for use in a new user.
-        cmd=f"tsocmd LISTUSER {self._model_user}"
-        model_listuser_attributes = self.connect(self._host, self._model_user,cmd)
+        try:
+            # Access additional module user attributes for use in a new user.
+            cmd=f"tsocmd LISTUSER {self._model_user}"
+            model_listuser_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
-        # Match the list user results and place in variables (not all are used)
-        model_owner = [v for v in model_listuser_attributes if "OWNER" in v][0].split('OWNER=')[1].split()[0].strip() or ""
+            try:
+                # Match the list user results and place in variables (not all are used)
+                model_owner = [v for v in model_listuser_attributes if "OWNER" in v][0].split('OWNER=')[1].split()[0].strip() or ""
+            except IndexError as err:
+                raise Exception(f"Unable to determine the OWNER required for adding the RACF ID [{self._managed_racf_user}], exception [{err}].")
+        except Exception as err:
+            raise Exception(f"Unable to LISTUSER for {self._model_user}, exception [{err}]")
 
         # Collect the various public keys for use with the z/OS managed node, some accept only RSA and others ED25519
-        public_keys = self.__read_files_in_directory("~/.ssh/", "*.pub")
+        public_keys = self._read_files_in_directory("~/.ssh/", "*.pub")
 
         # The command consisting of shell and tso operations to create a user.
         add_user_cmd = StringIO()
@@ -271,18 +428,18 @@ class ManagedUser:
         # (1) Create group ANSIGRP for general identification of users and auto assign the UID
         #     Success of the command yields 'Group ANSIGRP was assigned an OMVS GID value of...'
         #     Failure of the command yields 'INVALID GROUP, ANSIGRP' with usually a RC 8 if the group exists.
-        self._user_group = self.__get_random_user()
+        self._managed_user_group = self._get_random_user()
 
-        add_user_cmd.write(f"tsocmd 'ADDGROUP {self._user_group} OMVS(AUTOGID)';")
-        add_user_cmd.write(f"echo Create {self._user_group} RC=$?;")
+        add_user_cmd.write(f"tsocmd 'ADDGROUP {self._managed_user_group} OMVS(AUTOGID)';")
+        add_user_cmd.write(f"echo Create {self._managed_user_group} RC=$?;")
 
         # (2) Add a user owned by the model_owner. Expect an error when a new TSO userid is defined since the ID can't
         #     receive deferred messages until the id is defined in SYS1.BRODCAST, thus the SEND message fails.
         #       BROADCAST DATA SET NOT USABLE+
         #       I/O SYNAD ERROR
-        escaped_user = re.escape(self._user)
-        add_user_cmd.write(f"Creating USER '{escaped_user}' with PASSWORD {passwd} for remote host {self._host};")
-        add_user_cmd.write(f"tsocmd ADDUSER {escaped_user} DFLTGRP\\({self._user_group}\\) OWNER\\({model_owner}\\) NOPASSWORD TSO\\(ACCTNUM\\({model_tso_acctnum}\\) PROC\\({model_tso_proc}\\)\\) OMVS\\(HOME\\(/u/{escaped_user}\\) PROGRAM\\('/bin/sh'\\) AUTOUID;")
+        escaped_user = re.escape(self._managed_racf_user)
+        add_user_cmd.write(f"Creating USER '{escaped_user}' with PASSWORD {passwd} for remote host {self._remote_host};")
+        add_user_cmd.write(f"tsocmd ADDUSER {escaped_user} DFLTGRP\\({self._managed_user_group}\\) OWNER\\({model_owner}\\) NOPASSWORD TSO\\(ACCTNUM\\({model_tso_acctnum}\\) PROC\\({model_tso_proc}\\)\\) OMVS\\(HOME\\(/u/{escaped_user}\\) PROGRAM\\('/bin/sh'\\) AUTOUID;")
         add_user_cmd.write(f"echo ADDUSER '{escaped_user}' RC=$?;")
         add_user_cmd.write(f"mkdir -p /u/{escaped_user}/.ssh;")
         add_user_cmd.write(f"echo mkdir '{escaped_user}' RC=$?;")
@@ -297,60 +454,85 @@ class ManagedUser:
         add_user_cmd.write(f"tsocmd ALTUSER {escaped_user} PASSWORD\\({passwd}\\) NOEXPIRED;")
         add_user_cmd.write(f"echo ALTUSER '{escaped_user}' RC=$?;")
 
-        cmd=f"{add_user_cmd.getvalue()}"
-        add_user_attributes = self.connect(self._host, self._model_user,cmd)
+        try:
+            cmd=f"{add_user_cmd.getvalue()}"
+            add_user_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
-        # Because this is a tsocmd run through shell, any user with a $ will be expanded and thus truncated, you can't change
-        # that behavior since its happening on the managed node, solution is to match a shorter pattern without the user.
-        is_assigned_omvs_uid = True if [v for v in add_user_attributes if f"was assigned an OMVS UID value" in v] else False
-        if not is_assigned_omvs_uid:
-            raise Exception(f"Unable to create OMVS UID, please review the command output {add_user_attributes}.")
+            # Because this is a tsocmd run through shell, any user with a $ will be expanded and thus truncated, you can't change
+            # that behavior since its happening on the managed node, solution is to match a shorter pattern without the user.
+            is_assigned_omvs_uid = True if [v for v in add_user_attributes if f"was assigned an OMVS UID value" in v] else False
+            if not is_assigned_omvs_uid:
+                raise Exception(f"Unable to create OMVS UID, please review the command output {add_user_attributes}.")
 
-        create_group_rc = [v for v in add_user_attributes if f"Create {self._user_group} RC=" in v][0].split('=')[1].strip() or None
-        if not create_group_rc or int(create_group_rc[0]) > 8:
-            raise Exception(f"Unable to create user group {self._user_group}, please review the command output {add_user_attributes}.")
+            create_group_rc = [v for v in add_user_attributes if f"Create {self._managed_user_group} RC=" in v][0].split('=')[1].strip() or None
+            if not create_group_rc or int(create_group_rc[0]) > 8:
+                raise Exception(f"Unable to create user group {self._managed_user_group}, please review the command output {add_user_attributes}.")
 
-        add_user_rc = [v for v in add_user_attributes if f"ADDUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
-        if not add_user_rc or int(add_user_rc[0]) > 0:
-            raise Exception(f"Unable to ADDUSER {escaped_user}, please review the command output {add_user_attributes}.")
+            add_user_rc = [v for v in add_user_attributes if f"ADDUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
+            if not add_user_rc or int(add_user_rc[0]) > 0:
+                raise Exception(f"Unable to ADDUSER {escaped_user}, please review the command output {add_user_attributes}.")
 
-        mkdir_rc = [v for v in add_user_attributes if f"mkdir {escaped_user} RC=" in v][0].split('=')[1].strip() or None
-        if not mkdir_rc or int(mkdir_rc[0]) > 0:
-            raise Exception(f"Unable to make home directories for {escaped_user}, please review the command output {add_user_attributes}.")
+            mkdir_rc = [v for v in add_user_attributes if f"mkdir {escaped_user} RC=" in v][0].split('=')[1].strip() or None
+            if not mkdir_rc or int(mkdir_rc[0]) > 0:
+                raise Exception(f"Unable to make home directories for {escaped_user}, please review the command output {add_user_attributes}.")
 
-        authorized_keys_rc = [v for v in add_user_attributes if f"touch authorized_keys RC=" in v][0].split('=')[1].strip() or None
-        if not authorized_keys_rc or int(authorized_keys_rc[0]) > 0:
-            raise Exception(f"Unable to make authorized_keys file for {escaped_user}, please review the command output {add_user_attributes}.")
+            authorized_keys_rc = [v for v in add_user_attributes if f"touch authorized_keys RC=" in v][0].split('=')[1].strip() or None
+            if not authorized_keys_rc or int(authorized_keys_rc[0]) > 0:
+                raise Exception(f"Unable to make authorized_keys file for {escaped_user}, please review the command output {add_user_attributes}.")
 
-        chown_rc = [v for v in add_user_attributes if f"chown {escaped_user} RC=" in v][0].split('=')[1].strip() or None
-        if not chown_rc or int(chown_rc[0]) > 0:
-            raise Exception(f"Unable to change ownership of home directory for {escaped_user}, please review the command output {add_user_attributes}.")
+            chown_rc = [v for v in add_user_attributes if f"chown {escaped_user} RC=" in v][0].split('=')[1].strip() or None
+            if not chown_rc or int(chown_rc[0]) > 0:
+                raise Exception(f"Unable to change ownership of home directory for {escaped_user}, please review the command output {add_user_attributes}.")
 
-        altuser_rc = [v for v in add_user_attributes if f"ALTUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
-        if not altuser_rc or int(altuser_rc[0]) > 0:
-            raise Exception(f"Unable to update password for {escaped_user}, please review the command output {add_user_attributes}.")
+            altuser_rc = [v for v in add_user_attributes if f"ALTUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
+            if not altuser_rc or int(altuser_rc[0]) > 0:
+                raise Exception(f"Unable to update password for {escaped_user}, please review the command output {add_user_attributes}.")
 
-        # Update the user according to the ManagedUserType type by invoking the mapped function
-        self.operations[managed_user.name](self, self._user)
+            # Update the user according to the ManagedUserType type by invoking the mapped function
+            self.operations[managed_user.name](self, self._managed_racf_user)
+        except Exception as err:
+            raise Exception(f"Model user {self._model_user} is unable to create managed RACF user {escaped_user}, review exception [{err}]")
 
-        return (self._user, passwd)
+        return (self._managed_racf_user, passwd)
 
 
-    def create_user_zoau_limited_access_opercmd(self, user: str) -> None:
+    def _create_user_zoau_limited_access_opercmd(self, managed_user_id: str) -> None:
+        """
+        Update a managed user id for the remote node with restricted access to ZOAU
+        SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS with universal access
+        authority set to UACC(NONE). With UACC as NONE, this user will be refused
+        access to the ZOAU opercmd utility.
+
+        Parameters
+        ----------
+        managed_user_id (str)
+            The managed user created that will we updated according tho the ManagedUseeType selected.
+
+        See Also
+        --------
+            :py:class:`ManagedUserType`
+            :py:func:`create_managed_user`
+
+        Raises
+        ------
+        Exception
+            If any of the remote commands return codes are out of range an exception
+            and the stdout and stderr is returned.
+        """
         saf_profile="MVS.MCSOPER.ZOAU"
         saf_class="OPERCMDS"
         command = StringIO()
 
-        command.write(f"Redefining USER '{user}';")
+        command.write(f"Redefining USER '{managed_user_id}';")
         command.write(f"tsocmd RDEFINE {saf_class} {saf_profile} UACC\\(NONE\\) AUDIT\\(ALL\\);")
         command.write(f"echo RDEFINE RC=$?;")
-        command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({user}\\) ACCESS\\(NONE\\);")
+        command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({managed_user_id}\\) ACCESS\\(NONE\\);")
         command.write(f"echo PERMIT RC=$?;")
         command.write(f"tsocmd SETROPTS RACLIST\\({saf_class}\\) REFRESH;")
         command.write(f"echo SETROPTS RC=$?;")
 
         cmd=f"{command.getvalue()}"
-        results_stdout_lines = self.connect(self._host, self._model_user,cmd)
+        results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
 
         # Evaluate the results
         rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
@@ -363,24 +545,76 @@ class ManagedUser:
         if not setropts_rc or int(setropts_rc[0]) > 4:
             raise Exception(f"Unable to setropts raclist {saf_class} refresh, please review the command output {results_stdout_lines}.")
 
-    def create_user_zos_limited_hlq(self, user) -> None:
+    def _create_user_zos_limited_hlq(self, managed_user_id: str) -> None:
+        """
+        Update a managed user id for the remote node with restricted access to
+        High LevelQualifiers:
+        - RESTRICT
+        - NOPERMIT
+        Any attempt for this user to access the HLQ will be rejected. 
+
+        Parameters
+        ----------
+        managed_user_id (str)
+            The managed user created that will we updated according tho the ManagedUseeType selected.
+
+        See Also
+        --------
+            :py:class:`ManagedUserType`
+            :py:func:`create_managed_user`
+
+        Raises
+        ------
+        Exception
+            If any of the remote commands return codes are out of range an exception
+            and the stdout and stderr is returned.
+        """
         print("Needs to be implemented")
 
-    def create_user_zos_limited_tmp_hlq(self, user) -> None:
+    def _create_user_zos_limited_tmp_hlq(self, managed_user_id: str) -> None:
+        """
+        Update a managed user id for the remote node with restricted access to
+        temporary data set High LevelQualifiers:
+        - TSTRICT
+        - TNOPERM
+        Any attempt for this user to access the HLQ will be rejected.
+
+        Parameters
+        ----------
+        managed_user_id (str)
+            The managed user created that will we updated according tho the ManagedUseeType selected.
+
+        See Also
+        --------
+            :py:class:`ManagedUserType`
+            :py:func:`create_managed_user`
+
+        Raises
+        ------
+        Exception
+            If any of the remote commands return codes are out of range an exception
+            and the stdout and stderr is returned.
+        """
         print("Needs to be implemented")
 
-    def noop(self, *arg) -> None:
+    def _noop(self, *arg) -> None:
         """
         Method intentionally takes any number of args and does nothing.
-        It is meant to be a NOOP function to be used as a stub.
+        It is meant to be a NOOP function to be used as a stub with several
+        of the ManagedUserTypes.
         """
         pass
 
+
+    """
+    Function pointer mapping of ManagedUserType to functions that complete the requested
+    access for for the user. Simple lookup table to reduce the if/else proliferation.
+    """
     operations = {
-        ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD.name: create_user_zoau_limited_access_opercmd,
-        ManagedUserType.ZOS_LIMITED_HLQ.name: create_user_zos_limited_hlq,
-        ManagedUserType.ZOS_LIMITED_TMP_HLQ.name: create_user_zos_limited_tmp_hlq,
-        ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN.name: noop,
-        ManagedUserType.ZOS_BEGIN_WITH_POUND.name: noop,
-        ManagedUserType.ZOS_RANDOM_SYMBOLS.name: noop
+        ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD.name: _create_user_zoau_limited_access_opercmd,
+        ManagedUserType.ZOS_LIMITED_HLQ.name: _create_user_zos_limited_hlq,
+        ManagedUserType.ZOS_LIMITED_TMP_HLQ.name: _create_user_zos_limited_tmp_hlq,
+        ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN.name: _noop,
+        ManagedUserType.ZOS_BEGIN_WITH_POUND.name: _noop,
+        ManagedUserType.ZOS_RANDOM_SYMBOLS.name: _noop
     }

@@ -11,58 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-from ibm_zos_core.tests.helpers.users import ManagedUserType
-from ibm_zos_core.tests.helpers.users import *
+# ####################################################################
+# The users.py file contains various utility functions that
+# will support functional test cases. For example, request a randomly
+# generated user with specific limitations.
+# ####################################################################
 
-The users.py file contains various utility functions that
-will support functional test cases. For example, request a randomly
-generated user with specific limitations.
-
-Usage
------
-The pytest fixture (ansible_zos_module) is a generator object done so by 'yield'ing;
-where a yield essentially pauses (streaming) a function and the state and control is
-goes to the function that called it. Thus the fixture can't be passed to this API to
-be updated with the new user or use the fixture to perform managed node inquiries,
-thus SSH is used for those managed node commands.
-
-Another important not is when using this API, you can't parametrize test cases, because
-once the pytest fixture (ansible_zos_module) is updated with a new user and performs a
-remote operation on a managed node, the fixture's user can not be changed because control
-is passed back and all attempts to change the user for reuse will fail, unless your goal
-is to use the same managedUserType in the parametrization this is not recommended.
-
-Example
--------
-def test_copy_dest_lock_test_apf_authorization_3(ansible_zos_module):
-    # Request a user who has no authority to execute zoau opercmd
-    hosts = ansible_zos_module
-    managed_user, user, passwd = None, None, None
-    managed_user_type = ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
-
-    # Instance of the ManagedUser initialized with a user who has authority to create users and the remote host.
-    remote_host = hosts["options"]["inventory"].replace(",", "")
-    remote_user = hosts["options"]["user"]
-    try:
-        # Check for a managed user type request
-        if managed_user_type:
-            managed_user = ManagedUser(remote_user, remote_host)
-            user, passwd = managed_user.create_managed_user(managed_user_type)
-            print(f"New managed user created = {user}")
-            print(f"New managed password created = {passwd}")
-
-        # Update fixture with the new user
-        hosts["options"]["user"] = user
-
-        who = hosts.all.shell(cmd="whoami")
-        for person in who.contacted.values():
-            print("Who am I = " + str(person))
-
-    finally:
-        # Delete the managed user on the remote host to avoid proliferation of users.
-        managed_user.delete_managed_user()
-"""
 from collections import OrderedDict
 from io import StringIO
 from enum import Enum
@@ -144,7 +98,64 @@ class ManagedUserType (Enum):
 class ManagedUser:
     """
     This class provides methods in which can provide a user and password for a requested
-    ManagedUserType. See users.py documentation for usage.
+    ManagedUserType.
+
+    Usage
+    -----
+    The pytest fixture (ansible_zos_module) is a generator object done so by 'yield'ing;
+    where a yield essentially pauses (streaming) a function and the state and control is
+    goes to the function that called it. Thus the fixture can't be passed to this API to
+    be updated with the new user or use the fixture to perform managed node inquiries,
+    thus SSH is used for those managed node commands.
+
+    Another important not is when using this API, you can't parametrize test cases, because
+    once the pytest fixture (ansible_zos_module) is updated with a new user and performs a
+    remote operation on a managed node, the fixture's user can not be changed because control
+    is passed back and all attempts to change the user for reuse will fail, unless your goal
+    is to use the same managedUserType in the parametrization this is not recommended.
+
+    Example
+    -------
+    from ibm_zos_core.tests.helpers.users import ManagedUserType
+
+    def test_demo_how_to_use_managed_user(ansible_zos_module):
+        # Request a user who has no authority to execute zoau opercmd
+        hosts = ansible_zos_module
+        managed_user, user, passwd = None, None, None
+
+        # Managed user type requested, requesting a z/OS user with no opercmd access
+        managed_user_type = ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
+
+        try:
+
+            # Instance of the ManagedUser initialized with a user who has authority to create users and the remote host.
+            remote_host = hosts["options"]["inventory"].replace(",", "")
+            remote_user = hosts["options"]["user"]
+
+            # Initialize the Managed user API
+            managed_user = ManagedUser(remote_user, remote_host)
+            # Pass the managed user type needed, there are several types.
+            user, passwd = managed_user.create_managed_user(managed_user_type)
+            # Print the results.
+            print(f"\nNew managed user created = {user}")
+            print(f"New managed password created = {passwd}")
+
+            # Update the pytest fixture (hosts) with the newly created managed user, important step.
+            hosts["options"]["user"] = user
+
+            # Perform operations as usual.
+            who = hosts.all.shell(cmd="whoami")
+            for person in who.contacted.values():
+                print(f"Who am I = {person.get("stdout")}")
+        finally:
+            # Delete the managed user on the remote host to avoid proliferation of users.
+            managed_user.delete_managed_user()
+
+    Example Output
+    --------------
+        New managed user created = MVKPJKNV
+        New managed password created = JQT9GAZL
+        Who am I = MVKPJKNV
     """
     _model_user = None
     _managed_racf_user = None
@@ -524,12 +535,12 @@ class ManagedUser:
             raise Exception(f"The model user {self._model_user} is unable to create managed RACF user {escaped_user}, exception [{err}]")
 
         # Update the user according to the ManagedUserType type by invoking the mapped function
-        self.operations[managed_user.name](self, self._managed_racf_user)
+        self.operations[managed_user.name](self)
 
         return (self._managed_racf_user, passwd)
 
 
-    def _create_user_zoau_limited_access_opercmd(self, managed_racf_user: str) -> None:
+    def _create_user_zoau_limited_access_opercmd(self) -> None:
         """
         Update a managed user id for the remote node with restricted access to ZOAU
         SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS with universal access
@@ -556,10 +567,10 @@ class ManagedUser:
         saf_class="OPERCMDS"
         command = StringIO()
 
-        command.write(f"Redefining USER '{managed_racf_user}';")
+        command.write(f"Redefining USER '{self._managed_racf_user}';")
         command.write(f"tsocmd RDEFINE {saf_class} {saf_profile} UACC\\(NONE\\) AUDIT\\(ALL\\);")
         command.write(f"echo RDEFINE RC=$?;")
-        command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({managed_racf_user}\\) ACCESS\\(NONE\\);")
+        command.write(f"tsocmd PERMIT {saf_profile} CLASS\\({saf_class}\\) ID\\({self._managed_racf_user}\\) ACCESS\\(NONE\\);")
         command.write(f"echo PERMIT RC=$?;")
         command.write(f"tsocmd SETROPTS RACLIST\\({saf_class}\\) REFRESH;")
         command.write(f"echo SETROPTS RC=$?;")
@@ -572,28 +583,28 @@ class ManagedUser:
             rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
             if not rdefine_rc or int(rdefine_rc[0]) > 4:
                 err_details = f"rdefine {saf_class} {saf_profile}"
-                err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
                 raise Exception(err_msg)
 
             permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
             if not permit_rc or int(permit_rc[0]) > 4:
                 err_details = f"permit {saf_profile} class {saf_class}"
-                err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
                 raise Exception(err_msg)
 
             setropts_rc = [v for v in results_stdout_lines if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
             if not setropts_rc or int(setropts_rc[0]) > 4:
                 err_details = f"setropts raclist {saf_class} refresh"
-                err_msg = f"Unable to {err_details} for managed user [{managed_racf_user}, review output {results_stdout_lines}."
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
                 raise Exception(err_msg)
         except IndexError as err:
-            err_msg = f"Unable access the results, this is required to reduce permissions for user [{managed_racf_user}]."
+            err_msg = f"Unable access the results, this is required to reduce permissions for user [{self._managed_racf_user}]."
             raise Exception(f"{err_msg}, exception [{err}].")
         except Exception as err:
-            raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {managed_racf_user}, exception [{err}]")
+            raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {self._managed_racf_user}, exception [{err}]")
 
     # TODO: Implement this method in the future
-    def _create_user_zos_limited_hlq(self, managed_racf_user: str) -> None:
+    def _create_user_zos_limited_hlq(self) -> None:
         """
         Update a managed user id for the remote node with restricted access to
         High LevelQualifiers:
@@ -621,7 +632,7 @@ class ManagedUser:
 
 
     # TODO: Implement this method in the future
-    def _create_user_zos_limited_tmp_hlq(self, managed_racf_user: str) -> None:
+    def _create_user_zos_limited_tmp_hlq(self) -> None:
         """
         Update a managed user id for the remote node with restricted access to
         temporary data set High LevelQualifiers:
@@ -647,7 +658,7 @@ class ManagedUser:
         """
         print("Needs to be implemented")
 
-    def _noop(self, *arg) -> None:
+    def _noop(self) -> None:
         """
         Method intentionally takes any number of args and does nothing.
         It is meant to be a NOOP function to be used as a stub with several

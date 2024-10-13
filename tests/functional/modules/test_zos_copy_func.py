@@ -13,7 +13,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-from ibm_zos_core.tests.helpers.users import ManagedUsers
+from ibm_zos_core.tests.helpers.users import ManagedUserType
 import pytest
 import os
 import shutil
@@ -2046,35 +2046,60 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
-@pytest.mark.seq
-@pytest.mark.parametrize("ds_type, f_lock, managed_user",[
-    ( "pds", False, ManagedUsers.ZOAU_LIMITED_ACCESS_OPERCMD),  # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name),
-    ( "pdse", False, None), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ( "seq", False, None),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-])
-def test_copy_dest_lock_test_apf_authorization_2(ansible_zos_module, ds_type, f_lock, managed_user ):
-    hosts = ansible_zos_module
-    # Request a user not be apf authorized for opercmd
-    if managed_user:
-        #x =call users.py , eg users.get_user(managed_user)
-        hosts["options"]["user"] = "omvsadm"
-        get_managed_user_name(hosts, managed_user)
+def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
+    """
+    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "pds", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
 
-@pytest.mark.seq
-@pytest.mark.parametrize("ds_type, f_lock, apf_auth_user",[
-    ( "pds", False, False),  # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name),
-    ( "pdse", False, False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ( "seq", False, False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-])
-def test_copy_dest_lock_test_apf_authorization(ansible_zos_module, ds_type, f_lock, apf_auth_user ):
-    hosts = ansible_zos_module
-    # Request a user not be apf authorized for opercmd
-    if not apf_auth_user:
-        hosts["options"]["user"] = "usrt001"
-    else:
-        hosts["options"]["user"] = "omvsadm"
 
-    print("USER = " + hosts["options"]["user"])
+def test_copy_dest_lock_test_with_no_opercmd_access_pdse_without_force_lock(ansible_zos_module):
+    """
+    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "pdse", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+
+def test_copy_dest_lock_test_with_no_opercmd_access_seq_without_force_lock(ansible_zos_module):
+    """
+    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "seq", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+
+def test_copy_dest_lock_test_with_no_opercmd_access_seq_with_force_lock(ansible_zos_module):
+    """
+    Opercmd is not called so a user with limited UACC will not matter and should succeed
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "seq", True, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+
+def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock, managed_user_type ):
+    # Instruct pytest to not collect this, it shouldn't given the pytest.ini specifies tests start with 'test_'.
+    __test__ = False
+    """
+    When force_lock option is false, it exercies the opercmd call which requres RACF universal access.
+    This negative test will ensure that if the user does not have RACF universal access that the module
+    not halt execution and instead bubble up the ZOAU exception.
+    """
+    hosts = ansible_zos_module
+    user, passwd = None, None
+
+    # Instance of the ManagedUser initialized with a user who has authority to create users and the remote host.
+    remote_host = hosts["options"]["inventory"].replace(",", "")
+    remote_user = hosts["options"]["user"]
+
+    # Check for a managed user type request
+    if managed_user_type:
+        managed_user = ManagedUser(remote_user, remote_host)
+        user, passwd = managed_user.create_managed_user(managed_user_type)
+
+    # Update fixture with the new user
+    hosts["options"]["user"] = user
 
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()
@@ -2114,8 +2139,7 @@ def test_copy_dest_lock_test_apf_authorization(ansible_zos_module, ds_type, f_lo
             force_lock=f_lock,
         )
         for result in results.contacted.values():
-            print(result)
-            if f_lock and apf_auth_user:
+            if f_lock and managed_user_type:
                 assert result.get("changed") == True
                 assert result.get("msg") is None
                 # verify that the content is the same
@@ -2124,27 +2148,23 @@ def test_copy_dest_lock_test_apf_authorization(ansible_zos_module, ds_type, f_lo
                     executable=SHELL_EXECUTABLE,
                 )
                 for vp_result in verify_copy.contacted.values():
-                    print(vp_result)
                     verify_copy_2 = hosts.all.shell(
                         cmd="dcat \"{0}\"".format(src_data_set),
                         executable=SHELL_EXECUTABLE,
                     )
                     for vp_result_2 in verify_copy_2.contacted.values():
-                        print(vp_result_2)
                         assert vp_result_2.get("stdout") == vp_result.get("stdout")
-            elif not f_lock and not apf_auth_user:
+            elif not f_lock and managed_user_type:
                 assert result.get("failed") is True
                 assert result.get("changed") == False
-                assert "Unable to determine if the source" in result.get("msg")
+                assert "Unable to determine if the dest" in result.get("msg")
                 assert "BGYSC0819E Insufficient security authorization for resource MVS.MCSOPER.ZOAU in class OPERCMDS" in result.get("stderr")
                 assert result.get("rc") == 6
-            else:
-                assert result.get("failed") is True
-                assert result.get("changed") == False
-                assert "because a task is accessing the data set" in result.get("msg")
-                assert result.get("rc") is None
-            result = None
     finally:
+        # When the operations are complete reset the user back to the remote_user who has authority to create users.
+        hosts["options"]["user"] = remote_user
+        # Delete the managed user on the remote host to avoid proliferation of users.
+        managed_user.delete_managed_user()
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         # kill process - release lock - this also seems to end the job

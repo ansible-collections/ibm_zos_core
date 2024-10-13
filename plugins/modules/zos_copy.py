@@ -3141,13 +3141,19 @@ def data_set_locked(dataset_name):
 
     Parameters
     ----------
-    dataset_name : str
+    dataset_name (str):
         The data set name used to check if there is a lock.
 
     Returns
     -------
     bool
         True if the data set is locked, or False if the data set is not locked.
+
+    Raises
+    ------
+    CopyOperationError
+        When the user does not have Universal Access Authority to
+        ZOAU SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS.
     """
     # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
     # is in use, when a data set is in use it will have "EXC/SHR and SHARE"

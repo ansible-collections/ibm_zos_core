@@ -2134,7 +2134,7 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
         # submit jcl
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
         # pause to ensure c code acquires lock
-        time.sleep(5)
+        time.sleep(10)
         results = hosts.all.zos_copy(
             src = src_data_set,
             dest = dest_data_set,
@@ -2166,7 +2166,7 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
                 assert result.get("rc") == 6
     finally:
         # Delete the managed user on the remote host to avoid proliferation of users.
-        managed_user.delete_managed_user()
+        #managed_user.delete_managed_user()
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         # kill process - release lock - this also seems to end the job

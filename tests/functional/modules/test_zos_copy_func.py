@@ -2074,11 +2074,13 @@ def test_demo_how_to_use_managed_user(ansible_zos_module):
             # Perform operations as usual.
             who = hosts.all.shell(cmd="whoami")
             for person in who.contacted.values():
-                print(f"Who am I = {person.get("stdout")}")
+                val = person.get("stdout")
+                print(f"Who am I = {val}")
 
             who = hosts.all.shell(cmd="opercmd 'd t'")
             for person in who.contacted.values():
-                print(f"opercmd output = {person.get("stdout")}")
+                val = person.get("stdout")
+                print(f"opercmd output = {val}")
 
         finally:
             # Delete the managed user on the remote host to avoid proliferation of users.

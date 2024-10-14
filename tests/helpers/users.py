@@ -447,7 +447,9 @@ class ManagedUser:
             raise Exception(f"Unable to LISTUSER for {self._model_user}, exception [{err}]")
 
         # Collect the various public keys for use with the z/OS managed node, some accept only RSA and others ED25519
-        public_keys = self._read_files_in_directory("~/.ssh/", "*.pub")
+        #public_keys = self._read_files_in_directory("~/.ssh/", "*.pub")
+        public_keys = self._read_files_in_directory("/var/lib/jenkins/workspace/ansible-zos-core-dev-2@tmp/", "*.pub")
+        
 
         # The command consisting of shell and tso operations to create a user.
         add_user_cmd = StringIO()

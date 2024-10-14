@@ -2046,6 +2046,44 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
+def test_demo_how_to_use_managed_user(ansible_zos_module):
+        # Request a user who has no authority to execute zoau opercmd
+        hosts = ansible_zos_module
+        managed_user, user, passwd = None, None, None
+
+        # Managed user type requested, requesting a z/OS user with no opercmd access
+        managed_user_type = ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
+
+        try:
+
+            # Instance of the ManagedUser initialized with a user who has authority to create users and the remote host.
+            remote_host = hosts["options"]["inventory"].replace(",", "")
+            remote_user = hosts["options"]["user"]
+
+            # Initialize the Managed user API
+            managed_user = ManagedUser(remote_user, remote_host)
+            # Pass the managed user type needed, there are several types.
+            user, passwd = managed_user.create_managed_user(managed_user_type)
+            # Print the results.
+            print(f"\nNew managed user created = {user}")
+            print(f"New managed password created = {passwd}")
+
+            # Update the pytest fixture (hosts) with the newly created managed user, important step.
+            hosts["options"]["user"] = user
+
+            # Perform operations as usual.
+            who = hosts.all.shell(cmd="whoami")
+            for person in who.contacted.values():
+                print(f"Who am I = {person.get("stdout")}")
+
+            who = hosts.all.shell(cmd="opercmd 'd t'")
+            for person in who.contacted.values():
+                print(f"opercmd output = {person.get("stdout")}")
+
+        finally:
+            # Delete the managed user on the remote host to avoid proliferation of users.
+            managed_user.delete_managed_user()
+
 def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
     """
     Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
@@ -2105,13 +2143,14 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
 
     print(f"\nNew managed user created = {user}")
 
+    # Perform operations as usual.
     who = hosts.all.shell(cmd="whoami")
     for person in who.contacted.values():
         print(f"Who am I = {person.get("stdout")}")
 
     who = hosts.all.shell(cmd="opercmd 'd t'")
     for person in who.contacted.values():
-        print(f"Who am I = {person.get("stdout")}")
+        print(f"opercmd output = {person.get("stdout")}")
 
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()

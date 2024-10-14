@@ -2103,8 +2103,16 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
     # Update fixture with the new user
     hosts["options"]["user"] = user
 
-
     print(f"\nNew managed user created = {user}")
+
+    who = hosts.all.shell(cmd="whoami")
+    for person in who.contacted.values():
+        print(f"Who am I = {person.get("stdout")}")
+
+    who = hosts.all.shell(cmd="opercmd 'd t'")
+    for person in who.contacted.values():
+        print(f"Who am I = {person.get("stdout")}")
+
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()
     member_1 = "MEM1"

@@ -42,6 +42,8 @@ display = Display()
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """
+        self._supports_async = True
+
         if task_vars is None:
             task_vars = dict()
 
@@ -262,6 +264,7 @@ class ActionModule(ActionBase):
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,
             task_vars=task_vars,
+            wrap_async=self._task.async_val
         )
 
         # Erasing all rendered Jinja2 templates from the controller.
@@ -286,7 +289,8 @@ class ActionModule(ActionBase):
             )
             if backup or backup_name:
                 result["backup_name"] = copy_res.get("backup_name")
-            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
+            if not self._task.async_val:
+                self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
         return _update_result(is_binary, copy_res, self._task.args, original_src)

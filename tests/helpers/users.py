@@ -485,7 +485,7 @@ class ManagedUser:
             cmd=f"{add_user_cmd.getvalue()}"
             add_user_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
-            print(r"DEBUG OUT {add_user_attributes}")
+            print(f"DEBUG OUT {add_user_attributes}")
             # Because this is a tsocmd run through shell, any user with a $ will be expanded and thus truncated, you can't change
             # that behavior since its happening on the managed node, solution is to match a shorter pattern without the user.
             is_assigned_omvs_uid = True if [v for v in add_user_attributes if f"was assigned an OMVS UID value" in v] else False

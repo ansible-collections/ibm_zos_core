@@ -3194,7 +3194,6 @@ def data_set_locked(dataset_name):
             for out in stdout.split("\n"):
                 if out:
                     result["stdout"].append(out)
-        #raise CopyOperationError(msg=f"Unable to determine if the dest {stdout}")
         if len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
             return False
 

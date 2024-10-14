@@ -2097,10 +2097,14 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
     if managed_user_type:
         managed_user = ManagedUser(remote_user, remote_host)
         user, passwd = managed_user.create_managed_user(managed_user_type)
+        print(f"\nNew managed user created = {user}")
+        print(f"New managed password created = {passwd}")
 
     # Update fixture with the new user
     hosts["options"]["user"] = user
 
+
+    print(f"\nNew managed user created = {hosts["options"]["user"] }")
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()
     member_1 = "MEM1"
@@ -2161,8 +2165,6 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
                 assert "BGYSC0819E Insufficient security authorization for resource MVS.MCSOPER.ZOAU in class OPERCMDS" in result.get("stderr")
                 assert result.get("rc") == 6
     finally:
-        # When the operations are complete reset the user back to the remote_user who has authority to create users.
-        hosts["options"]["user"] = remote_user
         # Delete the managed user on the remote host to avoid proliferation of users.
         managed_user.delete_managed_user()
         # extract pid

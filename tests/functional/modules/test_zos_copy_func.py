@@ -2084,7 +2084,8 @@ def test_demo_how_to_use_managed_user(ansible_zos_module):
 
         finally:
             # Delete the managed user on the remote host to avoid proliferation of users.
-            managed_user.delete_managed_user()
+            # managed_user.delete_managed_user()
+            print("END")
 
 def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
     """

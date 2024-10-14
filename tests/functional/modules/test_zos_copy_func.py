@@ -2104,7 +2104,7 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
     hosts["options"]["user"] = user
 
 
-    print(f"\nNew managed user created = {hosts["options"]["user"] }")
+    print(f"\nNew managed user created = {user}")
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()
     member_1 = "MEM1"

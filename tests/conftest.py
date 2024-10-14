@@ -13,8 +13,9 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 import pytest
-from ibm_zos_core.tests.helpers.ztest import ZTestHelper
+from ibm_zos_core.tests.helpers.ztest import ZTestHelper, z_dispatcher_run
 from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
+from pytest_ansible.module_dispatcher.v213 import ModuleDispatcherV213
 import sys
 from mock import MagicMock
 import importlib
@@ -57,7 +58,7 @@ def z_python_interpreter(request):
     interpreter_str = helper.build_interpreter_string()
     inventory = helper.get_inventory_info()
     python_path = helper.get_python_path()
-    yield (interpreter_str, inventory, python_path)
+    yield (helper._environment, interpreter_str, inventory, python_path)
 
 
 def clean_logs(adhoc):
@@ -81,7 +82,7 @@ def clean_logs(adhoc):
 def ansible_zos_module(request, z_python_interpreter):
     """ Initialize pytest-ansible plugin with values from
     our YAML config and inject interpreter path into inventory. """
-    interpreter, inventory, python_path = z_python_interpreter
+    env_vars, interpreter, inventory, python_path = z_python_interpreter
 
     # next two lines perform similar action to ansible_adhoc fixture
     plugin = request.config.pluginmanager.getplugin("ansible")
@@ -93,9 +94,14 @@ def ansible_zos_module(request, z_python_interpreter):
     # Courtesy, pass along the python_path for some test cases need this information
     adhoc["options"]["ansible_python_path"] = python_path
 
+    # Replacing the base _run method with another one that handles environment
+    # variables when creating the playbook that Ansible executes whenever
+    # adhoc.all.zos_* gets called.
+    setattr(ModuleDispatcherV213, 'environment_vars', env_vars)
+    adhoc._dispatcher._run = z_dispatcher_run
+
     for host in hosts.values():
-        host.vars["ansible_python_interpreter"] = interpreter
-        # host.vars["ansible_connection"] = "zos_ssh"
+        host.vars["ansible_python_interpreter"] = python_path
     yield adhoc
     try:
         clean_logs(adhoc)

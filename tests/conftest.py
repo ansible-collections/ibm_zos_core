@@ -13,12 +13,25 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 import pytest
-from ibm_zos_core.tests.helpers.ztest import ZTestHelper, z_dispatcher_run
+from ibm_zos_core.tests.helpers.ztest import ZTestHelper
 from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
-from pytest_ansible.module_dispatcher.v213 import ModuleDispatcherV213
+from ansible.plugins.action import ActionBase
 import sys
 from mock import MagicMock
 import importlib
+
+
+def add_vars_to_compute_environment(env_vars):
+    """This decorator injects the environment variables defined in a config
+    file to the Ansible method responsible for constructing the environment
+    string used by the SSH connection plugin."""
+    def wrapper_compute_env(compute_environment_string):
+        def wrapped_compute_environment_string(self, *args, **kwargs):
+            self._task.environment = env_vars
+            env_string = compute_environment_string(self, *args, **kwargs)
+            return env_string
+        return wrapped_compute_environment_string
+    return wrapper_compute_env
 
 
 def pytest_addoption(parser):
@@ -94,11 +107,8 @@ def ansible_zos_module(request, z_python_interpreter):
     # Courtesy, pass along the python_path for some test cases need this information
     adhoc["options"]["ansible_python_path"] = python_path
 
-    # Replacing the base _run method with another one that handles environment
-    # variables when creating the playbook that Ansible executes whenever
-    # adhoc.all.zos_* gets called.
-    setattr(ModuleDispatcherV213, 'environment_vars', env_vars)
-    adhoc._dispatcher._run = z_dispatcher_run
+    # Adding the environment variables decorator to the Ansible engine.
+    ActionBase._compute_environment_string = add_vars_to_compute_environment(env_vars)(ActionBase._compute_environment_string)
 
     for host in hosts.values():
         host.vars["ansible_python_interpreter"] = python_path

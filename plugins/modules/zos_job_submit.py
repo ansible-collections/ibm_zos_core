@@ -1119,7 +1119,7 @@ def run_module():
                                     "Please review the job log for further details.")
                             job_ret_code.update({"msg_txt": _msg})
 
-                    if job_ret_code_code is None:
+                    if job_ret_code_code is None or job_ret_code.get("msg") == 'NOEXEC':
                         # If there is no job_ret_code_code (Job return code) it may NOT be an error,
                         # some jobs will never return have an RC, eg Started tasks(which are not supported),
                         # so further analyze the

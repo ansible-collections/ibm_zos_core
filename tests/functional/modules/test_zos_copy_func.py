@@ -2069,7 +2069,7 @@ def test_demo_how_to_use_managed_user(ansible_zos_module):
             print(f"New managed password created = {passwd}")
 
             # Update the pytest fixture (hosts) with the newly created managed user, important step.
-            hosts["options"]["user"] = user
+            hosts["options"]["user"] = remote_user
 
             # Perform operations as usual.
             who = hosts.all.shell(cmd="whoami")

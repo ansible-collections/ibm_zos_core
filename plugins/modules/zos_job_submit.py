@@ -69,7 +69,7 @@ options:
         node.
       - I(wait_time_s) is measured in seconds and must be a value greater than 0
         and less than 86400.
-      - The module can submit and forget by setting I(wait_time_s) to 0. This way the
+      - The module can submit and forget jobs by setting I(wait_time_s) to 0. This way the
         module will not try to retrieve the job details other than job id.
         Job details and contents can be retrieved later by using
         L(zos_job_query,./zos_job_query.html) or L(zos_job_output,./zos_job_output.html)

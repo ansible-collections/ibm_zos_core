@@ -208,6 +208,48 @@ class ManagedUser:
 
         return [line.strip() for line in result.stdout.split('\n')]
 
+    def _create_ssh_keys(self, directory:str) -> None:
+        """
+        Create SSH keys for the new managed used to be used for password-less authentication
+
+        Parameters
+        ----------
+        directory (str)
+            The directory where to create the ssh keys
+        """
+        escaped_user = re.escape(self._managed_racf_user)
+        key_command = ["mkdir", "-p", f"{directory}/{escaped_user}"]
+        result = subprocess.run(key_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode != 0:
+            raise Exception(f"Unable to create keys {result.stdout}, {result.stdout}")
+
+        key_command = ["ssh-keygen", "-q","-t", "rsa", "-N", "", "-f",  f"{directory}/{escaped_user}/id_rsa"]
+        result = subprocess.run(key_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode != 0:
+            raise Exception(f"Unable to create keys {result.stdout}, {result.stdout}")
+
+        key_command = ["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", f"{directory}/{escaped_user}/id_ed25519"]
+        result = subprocess.run(key_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode != 0:
+            raise Exception(f"Unable to create keys {result.stdout}, {result.stdout}")
+
+        #return [line.strip() for line in result.stdout.split('\n')]
+
+    def append_to_ssh_config(self, hostname):
+        # To delete entry  sed 's/^Host/\n&/' ~/.ssh/config | sed '/^Host '"$host"'$/,/^$/d;/^$/d'
+        """Appends a new host entry to the SSH config file."""
+        escaped_user = re.escape(self._managed_racf_user)
+        config_file = os.path.expanduser("~/.ssh/config")
+
+        with open(config_file, "a") as f:
+            f.write(f"\nHost {hostname}\n")
+            f.write(f"    Hostname {hostname}\n")
+            #f.write(f"    User {user}\n")
+            f.write(f"    IdentityFile ~/.ssh/id_rsa\n")
+            f.write(f"    IdentityFile ~/.ssh/id_ed25519\n")
+            f.write(f"    IdentityFile /tmp/{escaped_user}/id_ed25519\n")
+            f.write(f"    IdentityFile /tmp/{escaped_user}/id_rsa\n")
+
 
     def delete_managed_user(self) -> None:
         """
@@ -447,9 +489,19 @@ class ManagedUser:
             raise Exception(f"Unable to LISTUSER for {self._model_user}, exception [{err}]")
 
         # Collect the various public keys for use with the z/OS managed node, some accept only RSA and others ED25519
+        # Since this code could run in a container and not connected to the host via a venv, we must create new keys
+        # for the managed user and share their location with ssh.
         #public_keys = self._read_files_in_directory("~/.ssh/", "*.pub")
-        public_keys = self._read_files_in_directory("/var/lib/jenkins/workspace/ansible-zos-core-dev-2@tmp/", "*.pub")
-        
+
+        # Create ssh keys for the new managed user, `/tmp/{user}/*.pub`
+        self._create_ssh_keys("/tmp")
+
+        # public_keys = self._read_files_in_directory("/var/lib/jenkins/workspace/ansible-zos-core-dev-2@tmp/", "*.pub")
+        esc_user = re.escape(self._managed_racf_user)
+        public_keys = self._read_files_in_directory(f"/tmp/{esc_user}", "*.pub")
+
+        # Since pytest-ansible does not support user specified key files, this trick to append to ~/.ssh/config will enable pytest-ansible to find the key
+        self.append_to_ssh_config(self._remote_host)
 
         # The command consisting of shell and tso operations to create a user.
         add_user_cmd = StringIO()
@@ -485,6 +537,7 @@ class ManagedUser:
 
         try:
             cmd=f"{add_user_cmd.getvalue()}"
+            # need to connect with ssh  -i /tmp/UPGLSFLH/id_rsa UPGLSFLH@ec01136a.vmec.svl.ibm.com
             add_user_attributes = self._connect(self._remote_host, self._model_user,cmd)
 
             print(f"DEBUG OUT {add_user_attributes}")

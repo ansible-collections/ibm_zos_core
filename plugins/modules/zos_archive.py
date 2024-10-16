@@ -40,6 +40,7 @@ options:
       - GDS relative notation is supported.
       - "MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE)."
       - VSAMs are not supported.
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: list
     required: true
     elements: str
@@ -121,6 +122,7 @@ options:
         source data sets provided and/or found by expanding the pattern name.
         Calculating space can impact module performance. Specifying space attributes
         in the I(dest_data_set) option will improve performance.
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: str
     required: true
   exclude:
@@ -131,6 +133,7 @@ options:
       - "Patterns (wildcards) can contain one of the following, `?`, `*`."
       - "* matches everything."
       - "? matches any single character."
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: list
     required: false
     elements: str

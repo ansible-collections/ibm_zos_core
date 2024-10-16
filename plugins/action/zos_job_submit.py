@@ -53,10 +53,15 @@ class ActionModule(ActionBase):
         if location == "local":
 
             source = self._task.args.get("src", None)
+            tmp_path = self._connection._shell._options.get("remote_tmp")
 
             # Get a temporary file on the managed node
             tempfile = self._execute_module(
-                module_name="tempfile", module_args={}, task_vars=task_vars,
+                module_name="tempfile",
+                module_args={
+                    path=tmp_path
+                },
+                task_vars=task_vars,
             )
             dest_path = tempfile.get("path")
             # Calling execute_module from this step with tempfile leaves behind a tmpdir.

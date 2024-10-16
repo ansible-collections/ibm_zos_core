@@ -235,15 +235,31 @@ class ManagedUser:
 
         #return [line.strip() for line in result.stdout.split('\n')]
 
-    def append_to_ssh_config(self, hostname):
+    def _ssh_config_append(self, remote_host):
         # To delete entry  sed 's/^Host/\n&/' ~/.ssh/config | sed '/^Host '"$host"'$/,/^$/d;/^$/d'
-        """Appends a new host entry to the SSH config file."""
+        """
+        Appends necessary configurations needed to use the managed user in a containerized environment. It will
+        append an entry that includes the local ~/.ssh/* and new paths where they generated keys were created,
+        typically /tmp/{user}/*.
+
+        Notes
+        -----
+        Although this logic of creating temporary keys is not needed when managed VENVs are used via `.ac/` , because
+        those have access to the controller's keys are are passed to the managed node as the new users id. For now
+        this logic is applied to both venv's and containers. I don't forsee any concurrent issues with updating
+        the config at this time.
+
+        Parameters
+        ----------
+        remote_host (str)
+            The z/OS managed node (host) to connect to to create the managed user.
+        """
         escaped_user = re.escape(self._managed_racf_user)
         config_file = os.path.expanduser("~/.ssh/config")
 
         with open(config_file, "a") as f:
-            f.write(f"\nHost {hostname}\n")
-            f.write(f"    Hostname {hostname}\n")
+            f.write(f"\nHost {remote_host}\n")
+            f.write(f"    Hostname {remote_host}\n")
             #f.write(f"    User {user}\n")
             f.write(f"    IdentityFile ~/.ssh/id_rsa\n")
             f.write(f"    IdentityFile ~/.ssh/id_ed25519\n")
@@ -501,7 +517,7 @@ class ManagedUser:
         public_keys = self._read_files_in_directory(f"/tmp/{esc_user}", "*.pub")
 
         # Since pytest-ansible does not support user specified key files, this trick to append to ~/.ssh/config will enable pytest-ansible to find the key
-        self.append_to_ssh_config(self._remote_host)
+        self._ssh_config_append(self._remote_host)
 
         # The command consisting of shell and tso operations to create a user.
         add_user_cmd = StringIO()

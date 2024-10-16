@@ -2070,6 +2070,9 @@ def test_demo_how_to_use_managed_user(ansible_zos_module):
 
             # Update the pytest fixture (hosts) with the newly created managed user, important step.
             hosts["options"]["user"] = user
+            # hosts["options"]["ansible_ssh_private_key_file"] = f"/tmp/{user}/id_ed25519"
+            # import pprint
+            # pprint.pprint(vars(hosts))
 
             # Perform operations as usual.
             who = hosts.all.shell(cmd="whoami")
@@ -2081,6 +2084,11 @@ def test_demo_how_to_use_managed_user(ansible_zos_module):
             for person in who.contacted.values():
                 val = person.get("stdout")
                 print(f"opercmd output = {val}")
+
+            who = hosts.all.shell(cmd="cat ~/.ssh/config")
+            for person in who.contacted.values():
+                val = person.get("stdout")
+                print(f"config out = {val}")
 
         finally:
             # Delete the managed user on the remote host to avoid proliferation of users.

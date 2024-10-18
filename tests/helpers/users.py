@@ -21,6 +21,7 @@ from collections import OrderedDict
 from io import StringIO
 from enum import Enum
 import random
+import shutil
 import string
 import subprocess
 import os
@@ -119,12 +120,17 @@ class ManagedUser:
     from ibm_zos_core.tests.helpers.users import ManagedUserType
 
     def test_demo_how_to_use_managed_user(ansible_zos_module):
-        # Request a user who has no authority to execute zoau opercmd
+        # This demonstrates a user who has specific requirements
         hosts = ansible_zos_module
         managed_user, user, passwd = None, None, None
 
-        # Managed user type requested, requesting a z/OS user with no opercmd access
+        # Request managed user who has no ZOAU Opercmd authority
         managed_user_type = ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
+
+        # Consider other supported types
+        # managed_user_type = ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN
+        # managed_user_type = ManagedUserType.ZOS_BEGIN_WITH_POUND
+        # managed_user_type = ManagedUserType.ZOS_RANDOM_SYMBOLS
 
         try:
 
@@ -146,7 +152,8 @@ class ManagedUser:
             # Perform operations as usual.
             who = hosts.all.shell(cmd="whoami")
             for person in who.contacted.values():
-                print(f"Who am I = {person.get("stdout")}")
+                val = person.get("stdout")
+                print(f"Who am I = {val}")
         finally:
             # Delete the managed user on the remote host to avoid proliferation of users.
             managed_user.delete_managed_user()
@@ -161,6 +168,8 @@ class ManagedUser:
     _managed_racf_user = None
     _managed_user_group = None
     _remote_host = None
+    _ssh_config_file_size = 0
+    _ssh_directory_present = True
 
     def __init__(self, model_user: str, remote_host: str) -> None:
         """
@@ -177,6 +186,7 @@ class ManagedUser:
         """
         self._model_user = model_user
         self._remote_host = remote_host
+        self._create_ssh_config_and_directory()
 
     def _connect(self, remote_host:str , model_user: str, command: str) -> List[str]:
         """
@@ -235,36 +245,107 @@ class ManagedUser:
 
         #return [line.strip() for line in result.stdout.split('\n')]
 
-    def _ssh_config_append(self, remote_host):
-        # To delete entry  sed 's/^Host/\n&/' ~/.ssh/config | sed '/^Host '"$host"'$/,/^$/d;/^$/d'
+    def _ssh_config_append(self):
         """
-        Appends necessary configurations needed to use the managed user in a containerized environment. It will
-        append an entry that includes the local ~/.ssh/* and new paths where they generated keys were created,
-        typically /tmp/{user}/*.
+        Appends necessary configurations needed to use the managed user in a containerized environment but also
+        works for non-containerized. This will append the custom ssh key paths to '~/.ssh/config', typically /tmp/{user}/*.
 
         Notes
         -----
         Although this logic of creating temporary keys is not needed when managed VENVs are used via `.ac/` , because
-        those have access to the controller's keys are are passed to the managed node as the new users id. For now
+        those IDs have access to the controller's keys are are passed to the managed node as the new users id. For now,
         this logic is applied to both venv's and containers. I don't forsee any concurrent issues with updating
         the config at this time.
 
-        Parameters
-        ----------
-        remote_host (str)
-            The z/OS managed node (host) to connect to to create the managed user.
+        See Also
+        --------
+        :py:member:`delete_managed_user()` for cleaning up and restoring the '~/.ssh/config' which calls
+        `_ssh_config_remove_host()`.
         """
         escaped_user = re.escape(self._managed_racf_user)
         config_file = os.path.expanduser("~/.ssh/config")
 
         with open(config_file, "a") as f:
-            f.write(f"\nHost {remote_host}\n")
-            f.write(f"    Hostname {remote_host}\n")
-            #f.write(f"    User {user}\n")
+            f.write(f"\nHost {self._remote_host}\n")
+            f.write(f"    Hostname {self._remote_host}\n")
             f.write(f"    IdentityFile ~/.ssh/id_rsa\n")
             f.write(f"    IdentityFile ~/.ssh/id_ed25519\n")
             f.write(f"    IdentityFile /tmp/{escaped_user}/id_ed25519\n")
             f.write(f"    IdentityFile /tmp/{escaped_user}/id_rsa\n")
+
+
+    def _create_ssh_config_and_directory(self):
+        """
+        This method will create and track the prior state of the ssh config and .ssh directory.
+
+        Notes:
+        Class variable '_ssh_config_file_size' can have values:
+        - `-1`  - if the file does not exist
+        - `0` - if the file exists and has no content
+        - `> 0` - if the file existed prior to updates.
+        Default '_ssh_config_file_size = True'
+
+        Class variable '_ssh_directory_present' can have values:
+        - `True` if the '~/.ssh' directory was present at the time this class was instantiated
+        - `False` if the '~/.ssh' directory was not present at the time this class was instantiated
+        Default '_ssh_directory_present = 0'
+        """
+        ssh_config_dir = os.path.expanduser("~/.ssh")
+        ssh_config_file = os.path.expanduser("~/.ssh/config")
+
+        if not os.path.exists(ssh_config_dir):
+            # Set class variable indicators
+            self._ssh_directory_present = False
+            self._ssh_config_file_size = -1
+
+            # Create the empty directory
+            os.makedirs(ssh_config_dir)
+
+            # Create the empty file
+            open(ssh_config_dir, 'a').close()
+        else:
+            try:
+                self._ssh_config_file_size = os.stat(ssh_config_file).st_size
+            except FileNotFoundError:
+                # If the config does not exist, set it to -1 so we know to completely remove the config.
+                self._ssh_config_file_size = -1
+                # Create the empty file
+                open(ssh_config_dir, 'a').close()
+
+
+    def _ssh_config_remove_host(self):
+        """
+        This method looks for '~/.ssh/config' and based on the remote host, the config is restored.
+        """
+
+        # To delete entry from shell: sed 's/^Host/\n&/' ~/.ssh/config | sed '/^Host '"$host"'$/,/^$/d;/^$/d'
+        # Optionally Python: cmd = f"sed 's/^Host/\\n&/' {file} | sed '/^Host '\"{host}\"'$/,/^$/d;/^$/d'"
+        #                    subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        ssh_config_dir = os.path.expanduser("~/.ssh")
+        ssh_config_file = os.path.expanduser("~/.ssh/config")
+
+        # No .ssh/ dir existed to begin with, delete it all.
+        if not self._ssh_directory_present:
+            shutil.rmtree(ssh_config_dir)
+        # .ssh/ dir exists but no config existed, remove config
+        elif self._ssh_config_file_size == -1:
+            os.remove(ssh_config_file)
+        # File previously existed so remove only the updated portions, restoring the original.
+        elif self._ssh_config_file_size >= 0:
+            is_host = False
+            with open(ssh_config_file, "r") as fr:
+                lines = fr.readlines()
+
+            with open(ssh_config_file, "w") as fw:
+                for line in lines:
+                    if len(line.split()) > 0 and line.split()[0] == "Host":
+                        if self._remote_host in line:
+                            is_host = True
+                        else:
+                            is_host = False
+                    if not is_host:
+                        fw.write(line)
 
 
     def delete_managed_user(self) -> None:
@@ -279,6 +360,10 @@ class ManagedUser:
             If any of the remote commands return codes are out of range an exception
             and the stdout and stderr is returned.
         """
+        # Clean up the ~/.ssh/config file
+        self._ssh_config_remove_host()
+
+        # Remove the OMVS segment from the remote hoste
         escaped_user = re.escape(self._managed_racf_user)
         command = StringIO()
         command.write(f"echo Deleting USER '{self._managed_racf_user}';")
@@ -507,17 +592,14 @@ class ManagedUser:
         # Collect the various public keys for use with the z/OS managed node, some accept only RSA and others ED25519
         # Since this code could run in a container and not connected to the host via a venv, we must create new keys
         # for the managed user and share their location with ssh.
-        #public_keys = self._read_files_in_directory("~/.ssh/", "*.pub")
 
         # Create ssh keys for the new managed user, `/tmp/{user}/*.pub`
         self._create_ssh_keys("/tmp")
-
-        # public_keys = self._read_files_in_directory("/var/lib/jenkins/workspace/ansible-zos-core-dev-2@tmp/", "*.pub")
         esc_user = re.escape(self._managed_racf_user)
         public_keys = self._read_files_in_directory(f"/tmp/{esc_user}", "*.pub")
 
-        # Since pytest-ansible does not support user specified key files, this trick to append to ~/.ssh/config will enable pytest-ansible to find the key
-        self._ssh_config_append(self._remote_host)
+        # Append the new users key paths to the ssh/config so that ansible can find the private key for password-less connections
+        self._ssh_config_append()
 
         # The command consisting of shell and tso operations to create a user.
         add_user_cmd = StringIO()
@@ -555,8 +637,7 @@ class ManagedUser:
             cmd=f"{add_user_cmd.getvalue()}"
             # need to connect with ssh  -i /tmp/UPGLSFLH/id_rsa UPGLSFLH@ec01136a.vmec.svl.ibm.com
             add_user_attributes = self._connect(self._remote_host, self._model_user,cmd)
-            os.system("cat ~/.ssh/config")
-            print(f"DEBUG OUT {add_user_attributes}")
+
             # Because this is a tsocmd run through shell, any user with a $ will be expanded and thus truncated, you can't change
             # that behavior since its happening on the managed node, solution is to match a shorter pattern without the user.
             is_assigned_omvs_uid = True if [v for v in add_user_attributes if f"was assigned an OMVS UID value" in v] else False

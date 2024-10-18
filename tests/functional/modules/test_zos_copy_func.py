@@ -13,6 +13,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from ibm_zos_core.tests.helpers.users import ManagedUserType
 import pytest
 import os
 import shutil
@@ -20,6 +21,7 @@ import re
 import time
 import tempfile
 import subprocess
+from ibm_zos_core.tests.helpers.users import *
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -1960,8 +1962,15 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
 
 @pytest.mark.seq
-@pytest.mark.parametrize("ds_type", [ "pds", "pdse", "seq"])
-def test_copy_dest_lock(ansible_zos_module, ds_type):
+@pytest.mark.parametrize("ds_type, f_lock",[
+    ( "pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ( "pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ( "seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ( "pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ( "pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ( "seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+])
+def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
     hosts = ansible_zos_module
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()
@@ -1973,7 +1982,6 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         src_data_set = data_set_1
         dest_data_set = data_set_2
     try:
-        hosts = ansible_zos_module
         hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
         hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
         if ds_type == "pds" or ds_type == "pdse":
@@ -1999,28 +2007,165 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
             dest = dest_data_set,
             remote_src = True,
             force=True,
-            force_lock=True,
+            force_lock=f_lock,
         )
         for result in results.contacted.values():
             print(result)
-            assert result.get("changed") == True
-            assert result.get("msg") is None
-            # verify that the content is the same
-            verify_copy = hosts.all.shell(
-                cmd="dcat \"{0}\"".format(dest_data_set),
-                executable=SHELL_EXECUTABLE,
-            )
-            for vp_result in verify_copy.contacted.values():
-                print(vp_result)
-                verify_copy_2 = hosts.all.shell(
-                    cmd="dcat \"{0}\"".format(src_data_set),
+            if f_lock: #and apf_auth_user:
+                assert result.get("changed") == True
+                assert result.get("msg") is None
+                # verify that the content is the same
+                verify_copy = hosts.all.shell(
+                    cmd="dcat \"{0}\"".format(dest_data_set),
                     executable=SHELL_EXECUTABLE,
                 )
-                for vp_result_2 in verify_copy_2.contacted.values():
-                    print(vp_result_2)
-                    assert vp_result_2.get("stdout") == vp_result.get("stdout")
-
+                for vp_result in verify_copy.contacted.values():
+                    print(vp_result)
+                    verify_copy_2 = hosts.all.shell(
+                        cmd="dcat \"{0}\"".format(src_data_set),
+                        executable=SHELL_EXECUTABLE,
+                    )
+                    for vp_result_2 in verify_copy_2.contacted.values():
+                        print(vp_result_2)
+                        assert vp_result_2.get("stdout") == vp_result.get("stdout")
+            elif not f_lock:
+                assert result.get("failed") is True
+                assert result.get("changed") == False
+                assert "because a task is accessing the data set" in result.get("msg")
+                assert result.get("rc") is None
     finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd=f'rm -r {temp_dir}')
+        # remove pdse
+        hosts.all.zos_data_set(name=data_set_1, state="absent")
+        hosts.all.zos_data_set(name=data_set_2, state="absent")
+
+
+def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
+    """
+    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "pds", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+
+def test_copy_dest_lock_test_with_no_opercmd_access_pdse_without_force_lock(ansible_zos_module):
+    """
+    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "pdse", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+
+def test_copy_dest_lock_test_with_no_opercmd_access_seq_without_force_lock(ansible_zos_module):
+    """
+    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "seq", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+
+def test_copy_dest_lock_test_with_no_opercmd_access_seq_with_force_lock(ansible_zos_module):
+    """
+    Opercmd is not called so a user with limited UACC will not matter and should succeed
+    Because this rely's on a managedUser, the test should not be parametized.
+    """
+    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "seq", True, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+
+def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock, managed_user_type ):
+    # Instruct pytest to not collect this, it shouldn't given the pytest.ini specifies tests start with 'test_'.
+    __test__ = False
+    """
+    When force_lock option is false, it exercies the opercmd call which requres RACF universal access.
+    This negative test will ensure that if the user does not have RACF universal access that the module
+    not halt execution and instead bubble up the ZOAU exception.
+    """
+    hosts = ansible_zos_module
+    user, passwd = None, None
+
+    # Instance of the ManagedUser initialized with a user who has authority to create users and the remote host.
+    remote_host = hosts["options"]["inventory"].replace(",", "")
+    remote_user = hosts["options"]["user"]
+
+    # Check for a managed user type request
+    if managed_user_type:
+        managed_user = ManagedUser(remote_user, remote_host)
+        user, passwd = managed_user.create_managed_user(managed_user_type)
+        # print(f"\nNew managed user created = {user}")
+        # print(f"New managed password created = {passwd}")
+
+    # Update fixture with the new user
+    hosts["options"]["user"] = user
+    print(f"\nNew managed user created = {user}")
+
+    data_set_1 = get_tmp_ds_name()
+    data_set_2 = get_tmp_ds_name()
+    member_1 = "MEM1"
+    if ds_type == "pds" or ds_type == "pdse":
+        src_data_set = data_set_1 + "({0})".format(member_1)
+        dest_data_set = data_set_2 + "({0})".format(member_1)
+    else:
+        src_data_set = data_set_1
+        dest_data_set = data_set_2
+    try:
+        hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
+        if ds_type == "pds" or ds_type == "pdse":
+            hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
+            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
+        # copy text_in source
+        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
+        hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(temp_dir, dest_data_set),
+            dest=f'{temp_dir}/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
+        # pause to ensure c code acquires lock
+        time.sleep(10)
+        results = hosts.all.zos_copy(
+            src = src_data_set,
+            dest = dest_data_set,
+            remote_src = True,
+            force=True,
+            force_lock=f_lock,
+        )
+        for result in results.contacted.values():
+            if f_lock and managed_user_type:
+                assert result.get("changed") == True
+                assert result.get("msg") is None
+                # verify that the content is the same
+                verify_copy = hosts.all.shell(
+                    cmd="dcat \"{0}\"".format(dest_data_set),
+                    executable=SHELL_EXECUTABLE,
+                )
+                for vp_result in verify_copy.contacted.values():
+                    verify_copy_2 = hosts.all.shell(
+                        cmd="dcat \"{0}\"".format(src_data_set),
+                        executable=SHELL_EXECUTABLE,
+                    )
+                    for vp_result_2 in verify_copy_2.contacted.values():
+                        assert vp_result_2.get("stdout") == vp_result.get("stdout")
+            elif not f_lock and managed_user_type:
+                assert result.get("failed") is True
+                assert result.get("changed") == False
+                assert "Unable to determine if the dest" in result.get("msg")
+                assert "BGYSC0819E Insufficient security authorization for resource MVS.MCSOPER.ZOAU in class OPERCMDS" in result.get("stderr")
+                assert result.get("rc") == 6
+    finally:
+        # Delete the managed user on the remote host to avoid proliferation of users.
+        managed_user.delete_managed_user()
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         # kill process - release lock - this also seems to end the job

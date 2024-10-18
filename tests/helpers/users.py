@@ -310,7 +310,7 @@ class ManagedUser:
                 # If the config does not exist, set it to -1 so we know to completely remove the config.
                 self._ssh_config_file_size = -1
                 # Create the empty file
-                open(ssh_config_dir, 'a').close()
+                open(ssh_config_file, 'a').close()
 
 
     def _ssh_config_remove_host(self):

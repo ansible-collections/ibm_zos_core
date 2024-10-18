@@ -124,6 +124,16 @@ jobs:
          Type of address space used by the job.
       type: str
       sample: STC
+    system:
+      description:
+         The job entry system that MVS uses to do work.
+      type: str
+      sample: STL1
+    subsystem:
+      description:
+         The job entry subsystem that MVS uses to do work.
+      type: str
+      sample: STL1
     ret_code:
       description:
          Return code output collected from job log.

@@ -240,7 +240,6 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_id=job_id,
         owner=owner,
         job_name=job_name,
-        dd_scan=False
     )
 
     if len(job_status_result) == 0:
@@ -252,7 +251,6 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
             job_id=job_id,
             owner=owner,
             job_name=job_name,
-            dd_scan=False
         )
 
     return job_status_result

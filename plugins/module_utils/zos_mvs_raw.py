@@ -43,6 +43,8 @@ class MVSCmd(object):
             MVSCmd._build_command(pgm, dds, parm),
         )
         rc, out, err = module.run_command(command)
+        if rc == 0 and verbose:
+            out = err
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod
@@ -65,8 +67,9 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
-
         rc, out, err = module.run_command(command)
+        if rc == 0 and verbose:
+            out = err
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod

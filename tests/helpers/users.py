@@ -17,9 +17,10 @@
 # generated user with specific limitations.
 # ####################################################################
 
-from collections import OrderedDict
+import inspect
 from io import StringIO
 from enum import Enum
+import json
 import random
 import shutil
 import string
@@ -115,6 +116,7 @@ class ManagedUser:
     is passed back and all attempts to change the user for reuse will fail, unless your goal
     is to use the same managedUserType in the parametrization this is not recommended.
 
+
     Example
     -------
     from ibm_zos_core.tests.helpers.users import ManagedUserType
@@ -124,54 +126,51 @@ class ManagedUser:
         hosts = ansible_zos_module
         managed_user, user, passwd = None, None, None
 
+        who = hosts.all.shell(cmd="whoami")
+        for person in who.contacted.values():
+            print(f"Who am BEFORE asking for a managed user = {person.get("stdout")}")
+
         # Request managed user who has no ZOAU Opercmd authority
         managed_user_type = ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
 
-        # Consider other supported types
-        # managed_user_type = ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN
-        # managed_user_type = ManagedUserType.ZOS_BEGIN_WITH_POUND
-        # managed_user_type = ManagedUserType.ZOS_RANDOM_SYMBOLS
-
         try:
+            # Initialize the Managed user API from the pytest fixture.
+            managed_user = ManagedUser.from_fixture(ansible_zos_module)
 
-            # Instance of the ManagedUser initialized with a user who has authority to create users and the remote host.
-            remote_host = hosts["options"]["inventory"].replace(",", "")
-            remote_user = hosts["options"]["user"]
-
-            # Initialize the Managed user API
-            managed_user = ManagedUser(remote_user, remote_host)
-            # Pass the managed user type needed, there are several types.
+            # Create the managed user and password.
             user, passwd = managed_user.create_managed_user(managed_user_type)
-            # Print the results.
             print(f"\nNew managed user created = {user}")
             print(f"New managed password created = {passwd}")
 
-            # Update the pytest fixture (hosts) with the newly created managed user, important step.
-            hosts["options"]["user"] = user
+            # <-------------------- IMPORTANT STEP --------------------->
+            # Execute the test case with the newly created managed user.
+            managed_user.execute_managed_user_test("managed_user_test_demo_how_to_use_managed_user",True)
 
-            # Perform operations as usual.
-            who = hosts.all.shell(cmd="whoami")
-            for person in who.contacted.values():
-                val = person.get("stdout")
-                print(f"Who am I = {val}")
         finally:
             # Delete the managed user on the remote host to avoid proliferation of users.
             managed_user.delete_managed_user()
 
+    def managed_user_test_demo_how_to_use_managed_user(ansible_zos_module):
+        hosts = ansible_zos_module
+        who = hosts.all.shell(cmd="whoami")
+        for person in who.contacted.values():
+            print(f"Who am AFTER asking for a managed user = {person.get("stdout")}")
+
     Example Output
     --------------
-        New managed user created = MVKPJKNV
-        New managed password created = JQT9GAZL
-        Who am I = MVKPJKNV
+        Who am BEFORE asking for a managed user = BPXROOT
+        New managed user created = VKPGCDNK
+        New managed password created = EXM2QTGD
+        Who am AFTER asking for a managed user = VKPGCDNK
     """
-    _model_user = None
-    _managed_racf_user = None
-    _managed_user_group = None
-    _remote_host = None
-    _ssh_config_file_size = 0
-    _ssh_directory_present = True
+    # _model_user = None
+    # _managed_racf_user = None
+    # _managed_user_group = None
+    # _remote_host = None
+    # _ssh_config_file_size = 0
+    # _ssh_directory_present = True
 
-    def __init__(self, model_user: str, remote_host: str) -> None:
+    def __init__(self, model_user: str = None, remote_host: str = None, zoau_path: str = None, pyz_path: str = None, pythonpath: str = None, volumes: str = None, hostpattern: str = None) -> None:
         """
         Initialize class with necessary parameters.
 
@@ -186,7 +185,34 @@ class ManagedUser:
         """
         self._model_user = model_user
         self._remote_host = remote_host
+        self._zoau_path = zoau_path
+        self._pyz_path = pyz_path
+        self._pythonpath = pythonpath
+        self._volumes = volumes
+        self._hostpattern = "all" # can also get it from options host_pattern
+        self._managed_racf_user = None
+        self._managed_user_group = None
+        self._ssh_config_file_size = 0
+        self._ssh_directory_present = True
         self._create_ssh_config_and_directory()
+
+    @classmethod
+    def from_fixture(cls, pytest_fixture):
+
+        remote_host = pytest_fixture["options"]["inventory"].replace(",", "")
+        model_user = pytest_fixture["options"]["user"]
+        inventory_hosts = pytest_fixture["options"]["inventory_manager"]._inventory.hosts
+        inventory_list = list(inventory_hosts.values())[0].vars.get('ansible_python_interpreter').split(";")
+        zoau_path = [v for v in inventory_list if f"ZOAU_HOME=" in v][0].split('=')[1].strip() or None
+        pythonpath = [v for v in inventory_list if f"PYTHONPATH=" in v][0].split('=')[1].strip() or None
+        pyz_path = [v for v in inventory_list if f"bin/python" in v][0].split('/bin')[0].strip() or None
+        # TODO: To make this dynamic, we need to update AC and then also test with the new fixture because
+        # the legacy fixture is using a VOLUMES keyword while raw fixture uses extra_args. Best to move
+        # volumes to extra_args. 
+        volumes = "000000,222222"
+        hostpattern = pytest_fixture["options"]["host_pattern"]
+        return cls(model_user, remote_host, zoau_path, pyz_path, pythonpath, volumes, hostpattern)
+
 
     def _connect(self, remote_host:str , model_user: str, command: str) -> List[str]:
         """
@@ -211,8 +237,8 @@ class ManagedUser:
         ssh_command = ["ssh", f"{model_user}@{remote_host}", command]
         result = subprocess.run(ssh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        # RC 20 command failure - let this fall through for now, will be caught by command processors
-        # RC 255 failed connection
+        # If the RC=20 (command failure) - let this fall through for now, will be caught by command processors.
+        # If the RC=255, raise exection for the connection
         if result.returncode == 255:
             raise Exception(f"Unable to connect remote user [{model_user}] to remote host [{remote_host}], RC [{result.returncode}], stdout [{result.stdout}], stderr [{result.stderr}].")
 
@@ -220,12 +246,18 @@ class ManagedUser:
 
     def _create_ssh_keys(self, directory:str) -> None:
         """
-        Create SSH keys for the new managed used to be used for password-less authentication
+        Create SSH keys for the new managed user to be used for password-less authentication.
+        Creates both RSA and ED25519 because some of the systems only take one or the other
+        so both are generated and shared now.
 
         Parameters
         ----------
         directory (str)
-            The directory where to create the ssh keys
+            The directory where to create the ssh keys.
+
+        Raise
+        -----
+        Exception - if unable to create or run ssh-keygen.
         """
         escaped_user = re.escape(self._managed_racf_user)
         key_command = ["mkdir", "-p", f"{directory}/{escaped_user}"]
@@ -243,7 +275,6 @@ class ManagedUser:
         if result.returncode != 0:
             raise Exception(f"Unable to create keys {result.stdout}, {result.stdout}")
 
-        #return [line.strip() for line in result.stdout.split('\n')]
 
     def _ssh_config_append(self):
         """
@@ -261,6 +292,7 @@ class ManagedUser:
         --------
         :py:member:`delete_managed_user()` for cleaning up and restoring the '~/.ssh/config' which calls
         `_ssh_config_remove_host()`.
+        :py:member:`_create_ssh_keys` for creating the ssh keys for the new managed user.
         """
         escaped_user = re.escape(self._managed_racf_user)
         config_file = os.path.expanduser("~/.ssh/config")
@@ -273,10 +305,16 @@ class ManagedUser:
             f.write(f"    IdentityFile /tmp/{escaped_user}/id_ed25519\n")
             f.write(f"    IdentityFile /tmp/{escaped_user}/id_rsa\n")
 
+        # If you need to debug, uncomment this to see what is put in to the ssh/config.
+        # with open(config_file, 'r') as f:
+        #    print(f"Config file {config_file} contents, f.read()")
 
-    def _create_ssh_config_and_directory(self):
+    def _create_ssh_config_and_directory(self) -> None:
         """
-        This method will create and track the prior state of the ssh config and .ssh directory.
+        This method will create as well as track the prior state of the ssh config and .ssh directory.
+        During class initialization this is called to determine the ssh config state, eg does the
+        'ssh/' dir exit, does the 'ssh/config' exist, is the 'ssh/config', empty, etc. This is done
+        so that on deletion of the user, the config file or directory can be properly restored.
 
         Notes:
         Class variable '_ssh_config_file_size' can have values:
@@ -313,12 +351,18 @@ class ManagedUser:
                 open(ssh_config_file, 'a').close()
 
 
-    def _ssh_config_remove_host(self):
+    def _ssh_config_remove_host(self) -> None:
         """
-        This method looks for '~/.ssh/config' and based on the remote host, the config is restored.
+        This method reads the '~/.ssh/config' and will remove any added entries that match to the newly
+        created managed user, ensuring that the original filed be restored to its previous state.
+
+        This method uses class variable '_ssh_directory_present' which can have values:
+        - `True` if the '~/.ssh' directory was present at the time this class was instantiated
+        - `False` if the '~/.ssh' directory was not present at the time this class was instantiated
+        -  Default '_ssh_directory_present = 0'
         """
 
-        # To delete entry from shell: sed 's/^Host/\n&/' ~/.ssh/config | sed '/^Host '"$host"'$/,/^$/d;/^$/d'
+        # Delete entry from shell (useful for AC): sed 's/^Host/\n&/' ~/.ssh/config | sed '/^Host '"$host"'$/,/^$/d;/^$/d'
         # Optionally Python: cmd = f"sed 's/^Host/\\n&/' {file} | sed '/^Host '\"{host}\"'$/,/^$/d;/^$/d'"
         #                    subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -346,6 +390,70 @@ class ManagedUser:
                             is_host = False
                     if not is_host:
                         fw.write(line)
+
+
+    def execute_managed_user_test(self, managed_user_test_case: str, debug: bool = False, verbose: bool = False) -> None:
+        """
+        Executes the test case using articulated pytest options when the test case needs a managed user. This is required
+        to execute any test that needs a manage user, a wrapper test case should call this method, the 'managed_user_test_case'
+        must begin with 'managed_user_' as opposed to 'test_', this because the pytest command built will override the ini
+        with this value.
+
+        Parameters
+        ----------
+        managed_user_test_case (str)
+            The managed user test case that begins with 'managed_user_'
+        debug (str)
+            Enable verbose output for pytest, the equivalent command line option of '-s'.
+        verbose (str)
+            Enables pytest verbosity level 4 (-vvvv)
+
+        Raises
+        ------
+        Exception - if the test case fails (non-zero RC from pytest/subprocess), the stdout and stderr are returned for evaluation.
+        ValueError - if the managed user is not created, you must call `self._managed_racf_user()`.
+
+        See Also
+        --------
+        :py:member:`create_managed_user` required before this function can be used as a managed user needs to exist.
+        """
+
+        if managed_user_test_case is None or not managed_user_test_case.startswith("managed_user_"):
+            raise ValueError("Test cases using a managed user must begin with 'managed_user_' to be collected for execution.")
+
+        if not self._managed_racf_user:
+            raise ValueError("No managed user has been created, please ensure that the method `self._managed_racf_user()` has been called prior.")
+
+        # Get the file path of the caller function
+        calling_test_path = inspect.getfile(inspect.currentframe().f_back)
+
+        # Get the test case name that this code is being run from, this is not an function arg.
+        # managed_user_test_case = inspect.stack()[1][3]
+
+        testcase = f"{calling_test_path}::{managed_user_test_case}"
+        # hostpattern = "all" # can also get it from options host_pattern
+        capture = " -s"
+        verbosity = " -vvvv"
+
+        inventory: dict [str, str] = {}
+        inventory.update({'host': self._remote_host})
+        inventory.update({'user': self._managed_racf_user})
+        inventory.update({'zoau': self._zoau_path})  # get this from fixture
+        inventory.update({'pyz': self._pyz_path})    # get this from fixture
+        inventory.update({'pythonpath': self._pythonpath}) # get this from fixture
+        extra_args = {}
+        extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}}) # get this from fixture
+        inventory.update(extra_args)
+
+        node_inventory = json.dumps(inventory)
+
+        # Carefully crafted 'pytest' command to be allow for it to be called from anther test driven by pytest and uses the zinventory-raw fixture.
+        pytest_cmd = f"""pytest {testcase} --override-ini "python_functions=managed_user_" --host-pattern={self._hostpattern}{capture if debug else ""}{verbosity if verbose else ""} --zinventory-raw='{node_inventory}'"""
+        result = subprocess.run(pytest_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+        if result.returncode != 0:
+             raise Exception(result.stdout + result.stderr)
+        else:
+            print(result.stdout)
 
 
     def delete_managed_user(self) -> None:

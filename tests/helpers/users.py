@@ -124,27 +124,20 @@ class ManagedUser:
     def test_demo_how_to_use_managed_user(ansible_zos_module):
         # This demonstrates a user who has specific requirements
         hosts = ansible_zos_module
-        managed_user, user, passwd = None, None, None
+        managed_user = None
 
-        who = hosts.all.shell(cmd="whoami")
+        who = hosts.all.shell(cmd = "whoami")
         for person in who.contacted.values():
-            print(f"Who am BEFORE asking for a managed user = {person.get("stdout")}")
-
-        # Request managed user who has no ZOAU Opercmd authority
-        managed_user_type = ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
+            print(f"Who am I BEFORE asking for a managed user = {person.get("stdout")}")
 
         try:
             # Initialize the Managed user API from the pytest fixture.
             managed_user = ManagedUser.from_fixture(ansible_zos_module)
 
-            # Create the managed user and password.
-            user, passwd = managed_user.create_managed_user(managed_user_type)
-            print(f"\nNew managed user created = {user}")
-            print(f"New managed password created = {passwd}")
-
-            # <-------------------- IMPORTANT STEP --------------------->
-            # Execute the test case with the newly created managed user.
-            managed_user.execute_managed_user_test("managed_user_test_demo_how_to_use_managed_user",True)
+            # Important: Execute the test case with the managed users execution utility.
+            managed_user.execute_managed_user_test(
+                managed_user_test_case = "managed_user_test_demo_how_to_use_managed_user",
+                debug = True, verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
 
         finally:
             # Delete the managed user on the remote host to avoid proliferation of users.
@@ -152,16 +145,15 @@ class ManagedUser:
 
     def managed_user_test_demo_how_to_use_managed_user(ansible_zos_module):
         hosts = ansible_zos_module
-        who = hosts.all.shell(cmd="whoami")
+        who = hosts.all.shell(cmd = "whoami")
         for person in who.contacted.values():
-            print(f"Who am AFTER asking for a managed user = {person.get("stdout")}")
+            print(f"Who am I AFTER asking for a managed user = {person.get("stdout")}")
+
 
     Example Output
     --------------
-        Who am BEFORE asking for a managed user = BPXROOT
-        New managed user created = VKPGCDNK
-        New managed password created = EXM2QTGD
-        Who am AFTER asking for a managed user = VKPGCDNK
+        Who am I BEFORE asking for a managed user = BPXROOT
+        Who am I AFTER asking for a managed user = LJBXMONV
     """
     # _model_user = None
     # _managed_racf_user = None
@@ -392,7 +384,7 @@ class ManagedUser:
                         fw.write(line)
 
 
-    def execute_managed_user_test(self, managed_user_test_case: str, debug: bool = False, verbose: bool = False) -> None:
+    def execute_managed_user_test(self, managed_user_test_case: str, debug: bool = False, verbose: bool = False, managed_user_type: ManagedUserType = None) -> None:
         """
         Executes the test case using articulated pytest options when the test case needs a managed user. This is required
         to execute any test that needs a manage user, a wrapper test case should call this method, the 'managed_user_test_case'
@@ -415,14 +407,16 @@ class ManagedUser:
 
         See Also
         --------
-        :py:member:`create_managed_user` required before this function can be used as a managed user needs to exist.
+        :py:member:`_create_managed_user` required before this function can be used as a managed user needs to exist.
         """
 
         if managed_user_test_case is None or not managed_user_test_case.startswith("managed_user_"):
             raise ValueError("Test cases using a managed user must begin with 'managed_user_' to be collected for execution.")
 
-        if not self._managed_racf_user:
-            raise ValueError("No managed user has been created, please ensure that the method `self._managed_racf_user()` has been called prior.")
+        # if not self._managed_racf_user:
+        #     raise ValueError("No managed user has been created, please ensure that the method `self._managed_racf_user()` has been called prior.")
+
+        self._create_managed_user(managed_user_type)
 
         # Get the file path of the caller function
         calling_test_path = inspect.getfile(inspect.currentframe().f_back)
@@ -618,7 +612,7 @@ class ManagedUser:
             raise Exception("Unable to copy public keys to remote host, check that sshpass is installed.")
 
 
-    def create_managed_user(self, managed_user: ManagedUserType) -> Tuple[str, str]:
+    def _create_managed_user(self, managed_user: ManagedUserType) -> Tuple[str, str]:
         """
         Generate a managed user for the remote node according to the ManagedUseeType selected.
 
@@ -795,7 +789,7 @@ class ManagedUser:
         except Exception as err:
             raise Exception(f"The model user {self._model_user} is unable to create managed RACF user {escaped_user}, exception [{err}]")
 
-        # Update the user according to the ManagedUserType type by invoking the mapped function
+        # Update the user according to the ManagedUserType type by invoking the mapped function pointer
         self.operations[managed_user.name](self)
 
         return (self._managed_racf_user, passwd)
@@ -816,7 +810,7 @@ class ManagedUser:
         See Also
         --------
             :py:class:`ManagedUserType`
-            :py:func:`create_managed_user`
+            :py:func:`_create_managed_user`
 
         Raises
         ------
@@ -881,7 +875,7 @@ class ManagedUser:
         See Also
         --------
             :py:class:`ManagedUserType`
-            :py:func:`create_managed_user`
+            :py:func:`_create_managed_user`
 
         Raises
         ------
@@ -909,7 +903,7 @@ class ManagedUser:
         See Also
         --------
             :py:class:`ManagedUserType`
-            :py:func:`create_managed_user`
+            :py:func:`_create_managed_user`
 
         Raises
         ------

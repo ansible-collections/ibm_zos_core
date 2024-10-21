@@ -2051,62 +2051,39 @@ def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansib
     Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
     Because this rely's on a managedUser, the test should not be parametized.
     """
-    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "pds", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+    managed_user = None
 
+    try:
+        # Initialize the Managed user API from the pytest fixture.
+        managed_user = ManagedUser.from_fixture(ansible_zos_module)
 
-def test_copy_dest_lock_test_with_no_opercmd_access_pdse_without_force_lock(ansible_zos_module):
-    """
-    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    Because this rely's on a managedUser, the test should not be parametized.
-    """
-    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "pdse", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+        # Important: Execute the test case with the managed users execution utility.
+        managed_user.execute_managed_user_test(
+            managed_user_test_case = "managed_user_copy_dest_lock_test_with_no_opercmd_access",
+            debug = True, verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
 
+    finally:
+        # Delete the managed user on the remote host to avoid proliferation of users.
+        managed_user.delete_managed_user()
 
-def test_copy_dest_lock_test_with_no_opercmd_access_seq_without_force_lock(ansible_zos_module):
-    """
-    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    Because this rely's on a managedUser, the test should not be parametized.
-    """
-    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "seq", False, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
-
-
-def test_copy_dest_lock_test_with_no_opercmd_access_seq_with_force_lock(ansible_zos_module):
-    """
-    Opercmd is not called so a user with limited UACC will not matter and should succeed
-    Because this rely's on a managedUser, the test should not be parametized.
-    """
-    copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, "seq", True, ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
-
-
-def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock, managed_user_type ):
-    # Instruct pytest to not collect this, it shouldn't given the pytest.ini specifies tests start with 'test_'.
-    __test__ = False
+@pytest.mark.parametrize("ds_type, f_lock",[
+    ( "pds", False),    # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    ( "pdse", False),   # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    ( "seq", False),    # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    ( "seq", True),     # Opercmd is not called so a user with limited UACC will not matter and will succeed
+])
+def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock ):
     """
     When force_lock option is false, it exercies the opercmd call which requres RACF universal access.
     This negative test will ensure that if the user does not have RACF universal access that the module
     not halt execution and instead bubble up the ZOAU exception.
     """
     hosts = ansible_zos_module
-    user, passwd = None, None
-
-    # Instance of the ManagedUser initialized with a user who has authority to create users and the remote host.
-    remote_host = hosts["options"]["inventory"].replace(",", "")
-    remote_user = hosts["options"]["user"]
-
-    # Check for a managed user type request
-    if managed_user_type:
-        managed_user = ManagedUser(remote_user, remote_host)
-        user, passwd = managed_user.create_managed_user(managed_user_type)
-        # print(f"\nNew managed user created = {user}")
-        # print(f"New managed password created = {passwd}")
-
-    # Update fixture with the new user
-    hosts["options"]["user"] = user
-    print(f"\nNew managed user created = {user}")
 
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name()
     member_1 = "MEM1"
+
     if ds_type == "pds" or ds_type == "pdse":
         src_data_set = data_set_1 + "({0})".format(member_1)
         dest_data_set = data_set_2 + "({0})".format(member_1)
@@ -2142,7 +2119,7 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
             force_lock=f_lock,
         )
         for result in results.contacted.values():
-            if f_lock and managed_user_type:
+            if f_lock:
                 assert result.get("changed") == True
                 assert result.get("msg") is None
                 # verify that the content is the same
@@ -2157,15 +2134,13 @@ def copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lo
                     )
                     for vp_result_2 in verify_copy_2.contacted.values():
                         assert vp_result_2.get("stdout") == vp_result.get("stdout")
-            elif not f_lock and managed_user_type:
+            elif not f_lock:
                 assert result.get("failed") is True
                 assert result.get("changed") == False
                 assert "Unable to determine if the dest" in result.get("msg")
                 assert "BGYSC0819E Insufficient security authorization for resource MVS.MCSOPER.ZOAU in class OPERCMDS" in result.get("stderr")
                 assert result.get("rc") == 6
     finally:
-        # Delete the managed user on the remote host to avoid proliferation of users.
-        managed_user.delete_managed_user()
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         # kill process - release lock - this also seems to end the job

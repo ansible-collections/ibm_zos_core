@@ -1849,13 +1849,18 @@ def run_module():
                 verbose=verbose,
                 tmp_hlq=tmphlq,
             )
+<<<<<<< Updated upstream
             if program_response.rc != 0 or program_response.stderr:
+=======
+            response = build_response(program_response.rc, dd_statements)
+            
+            if program_response.rc != 0 and program_response.stderr:
+>>>>>>> Stashed changes
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),
                 )
 
-            response = build_response(program_response.rc, dd_statements)
             result["changed"] = True
         except Exception as e:
             result["backups"] = backups

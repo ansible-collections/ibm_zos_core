@@ -1850,7 +1850,7 @@ def run_module():
                 tmp_hlq=tmphlq,
             )
             response = build_response(program_response.rc, dd_statements)
-            
+
             if program_response.rc != 0 and program_response.stderr:
                 raise ZOSRawError(
                     program,

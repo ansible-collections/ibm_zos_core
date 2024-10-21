@@ -1849,7 +1849,7 @@ def run_module():
                 verbose=verbose,
                 tmp_hlq=tmphlq,
             )
-            if program_response.rc != 0 and program_response.stderr:
+            if program_response.rc != 0 or program_response.stderr:
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),

@@ -1824,8 +1824,13 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
 
-
-def test_authorized_program_run_authorized(ansible_zos_module):
+@pytest.mark.parametrize(
+        # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
+        "verbose",
+        [True, False]
+)
+def test_authorized_program_run_authorized(ansible_zos_module, verbose):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
@@ -1833,6 +1838,7 @@ def test_authorized_program_run_authorized(ansible_zos_module):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
+            verbose=verbose,
             dds=[
                 dict(
                     dd_output=dict(

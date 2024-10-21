@@ -1850,6 +1850,7 @@ def run_module():
                 tmp_hlq=tmphlq,
             )
             response = build_response(program_response.rc, dd_statements)
+            result = combine_dicts(result, response)
 
             if program_response.rc != 0 or program_response.stderr:
                 raise ZOSRawError(
@@ -1863,8 +1864,7 @@ def run_module():
             module.fail_json(msg=repr(e), **result)
     else:
         result = dict(changed=True, dd_names=[], ret_code=dict(code=0))
-    to_return = combine_dicts(result, response)
-    module.exit_json(**to_return)
+    module.exit_json(**result)
 
     # ---------------------------------------------------------------------------- #
 

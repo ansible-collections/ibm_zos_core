@@ -1851,7 +1851,7 @@ def run_module():
             )
             response = build_response(program_response.rc, dd_statements)
 
-            if program_response.rc != 0 and program_response.stderr:
+            if program_response.rc != 0 or program_response.stderr:
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),

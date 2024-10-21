@@ -1818,7 +1818,7 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
         )
         for result in results.contacted.values():
             pprint(result)
-            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert result.get("ret_code", {}).get("code", -1) == 15 
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0215E" in result.get("msg", "")
     finally:

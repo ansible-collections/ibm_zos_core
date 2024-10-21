@@ -684,6 +684,7 @@ ac_test(){
 	    message_error "Unable to find test configration in ${VENV}/config.yml."
 	fi
 
+    # TODO: Consider adding the -vvvv like so `$CURR_DIR/${file}  -vvvv --ignore="${skip}"` so that you can access the verbosity feature of pytest.
     if [ "$file" ]; then
         . ${VENV_BIN}/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
     else

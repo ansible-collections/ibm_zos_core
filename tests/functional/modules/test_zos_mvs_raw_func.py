@@ -1799,7 +1799,7 @@ def test_authorized_program_run_unauthorized(ansible_zos_module):
         )
         for result in results.contacted.values():
             pprint(result)
-            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert result.get("ret_code", {}).get("code", -1) == 36 
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0236E" in result.get("msg", "")
     finally:
@@ -1828,7 +1828,7 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
         # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
         # Where a program will fail if rc != 0 only if verbose was True.
         "verbose",
-        [True, False]
+True, False]
 )
 def test_authorized_program_run_authorized(ansible_zos_module, verbose):
     try:

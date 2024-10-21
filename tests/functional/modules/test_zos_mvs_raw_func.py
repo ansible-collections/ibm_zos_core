@@ -1828,7 +1828,7 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
         # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
         # Where a program will fail if rc != 0 only if verbose was True.
         "verbose",
-True, False]
+        [True, False],
 )
 def test_authorized_program_run_authorized(ansible_zos_module, verbose):
     try:

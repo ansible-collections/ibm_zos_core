@@ -3,10 +3,10 @@ bugfixes:
     universal access authority set to UACC(READ) for SAF Profile
     'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception
     and returns an informative message.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1744).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1766).
 trivial:
   - pipeline - Deliver a new users.py framework that allows functional test cases to
     request a managed user type where this user can have limited access to some SAF
     profile, or saf class as well as user id's with specific patterns such as including
     supported special characters such as '@', '#', etc.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1744).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1766).

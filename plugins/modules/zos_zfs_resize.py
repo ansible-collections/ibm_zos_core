@@ -73,12 +73,17 @@ options:
 
 EXAMPLES = r"""
 - name: Resize an aggregate data set to 4 megabytes (4,096 Kb).
-  zos_resize:
-    target: SOMEUSER.VVV.ZFS
-    size: 4096
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    size: 2500
 """
 
 RETURN = r"""
+cmd:
+    description: The actual zosadm command that was attempted.
+    returned: always
+    type: str
+    sample: zfsadm grow -aggregate SOMEUSER.VVV.ZFS -size 4096
 target:
     description:
         - The Fully Qualified Name of zfs data set that is to be resized.
@@ -97,11 +102,6 @@ size:
     returned: always
     type: int
     sample: 4024
-cmd:
-    description: The actual zosadm command that was attempted.
-    returned: always
-    type: str
-    sample: zfsadm grow -aggregate SOMEUSER.VVV.ZFS -size 4096
 rc:
     description: The return code of the zfsadm command.
     returned: always
@@ -115,7 +115,7 @@ oldsize:
     sample: 3096
 oldfree:
     description:
-        - The reported size, in 8K blocks, of the free space in the data set before the resizing is performed.
+        - The reported size, in Kilobytes, of the free space in the data set before the resizing is performed.
     returned: always
     type: int
     sample: 108
@@ -127,13 +127,12 @@ newsize:
     sample: 4032
 newfree:
     description:
-        - The reported size, in 8K blocks, of the free space in the data set after the resizing is performed.
+        - The reported size, in Kilobytes, of the free space in the data set after the resizing is performed.
     returned: success
     type: int
     sample: 48
 """
 
-import re
 import os
 import tempfile
 import traceback
@@ -161,11 +160,9 @@ def get_agg_size(data_set, module):
     rc, stdout, stderr = module.run_command(cmd)
 
     if rc == 0:
-        searchstr = r"^\s*Size:\s*([0-9]*)K\s*Free\s8K\sBlocks:\s*([0-9]*)"
-        found = re.search(searchstr, stdout, re.MULTILINE | re.DOTALL)
-        if found is not None:
-            size = found.group(1).strip()
-            free = found.group(2).strip()
+        numbers = [int(word) for word in stdout.split() if word.isdigit()]
+        size = numbers[1]
+        free = numbers[0]
 
     return(size, free)
 
@@ -276,12 +273,13 @@ def run_module():
     target, mount_target = found_mount_target(module=module, target=target)
 
     old_size, old_free = get_agg_size(data_set=target, module=module)
-    old_size, old_free = int(old_size), int(old_free)
 
     res_args.update(
         dict(
             target=target,
             mount_target=mount_target,
+            oldsize=old_size,
+            oldfree=old_free,
             size=size,
             cmd="",
             changed=changed,
@@ -311,7 +309,6 @@ def run_module():
 
     if rc == 0:
         new_size, new_free = get_agg_size(data_set=target, module=module)
-        new_size, new_free = int(new_size), int(new_free)
         changed = True
     else:
         module.fail_json(

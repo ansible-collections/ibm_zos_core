@@ -13,7 +13,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-from ibm_zos_core.tests.helpers.users import ManagedUserType
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 import pytest
 import os
 import shutil
@@ -21,7 +21,6 @@ import re
 import time
 import tempfile
 import subprocess
-from ibm_zos_core.tests.helpers.users import *
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -367,6 +366,7 @@ def link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, lo
             wait_time_s=60
         )
         for result in job_result.contacted.values():
+            print(result)
             rc = result.get("jobs")[0].get("ret_code").get("code")
     finally:
         hosts.all.file(path=temp_jcl_uss_path, state="absent")
@@ -2048,28 +2048,28 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
 
 def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
     """
-    Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    Because this rely's on a managedUser, the test should not be parametized.
+    This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'. 
+    This this a wrapper for the actual test case `managed_user_copy_dest_lock_test_with_no_opercmd_access`.
     """
     managed_user = None
-
+    managed_user_test_case_name = "managed_user_copy_dest_lock_test_with_no_opercmd_access"
     try:
         # Initialize the Managed user API from the pytest fixture.
         managed_user = ManagedUser.from_fixture(ansible_zos_module)
 
         # Important: Execute the test case with the managed users execution utility.
         managed_user.execute_managed_user_test(
-            managed_user_test_case = "managed_user_copy_dest_lock_test_with_no_opercmd_access",
-            debug = True, verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+            managed_user_test_case = managed_user_test_case_name,debug = True,
+            verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
 
     finally:
         # Delete the managed user on the remote host to avoid proliferation of users.
         managed_user.delete_managed_user()
 
 @pytest.mark.parametrize("ds_type, f_lock",[
-    ( "pds", False),    # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "pdse", False),   # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "seq", False),    # Module exeception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    ( "pds", False),    # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    ( "pdse", False),   # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
+    ( "seq", False),    # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
     ( "seq", True),     # Opercmd is not called so a user with limited UACC will not matter and will succeed
 ])
 def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock ):

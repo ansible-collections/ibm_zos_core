@@ -110,7 +110,7 @@ class ManagedUser:
     be updated with the new user or use the fixture to perform managed node inquiries,
     thus SSH is used for those managed node commands.
 
-    Another important not is when using this API, you can't parametrize test cases, because
+    Another important note is when using this API, you can't parametrize test cases, because
     once the pytest fixture (ansible_zos_module) is updated with a new user and performs a
     remote operation on a managed node, the fixture's user can not be changed because control
     is passed back and all attempts to change the user for reuse will fail, unless your goal
@@ -155,12 +155,6 @@ class ManagedUser:
         Who am I BEFORE asking for a managed user = BPXROOT
         Who am I AFTER asking for a managed user = LJBXMONV
     """
-    # _model_user = None
-    # _managed_racf_user = None
-    # _managed_user_group = None
-    # _remote_host = None
-    # _ssh_config_file_size = 0
-    # _ssh_directory_present = True
 
     def __init__(self, model_user: str = None, remote_host: str = None, zoau_path: str = None, pyz_path: str = None, pythonpath: str = None, volumes: str = None, hostpattern: str = None) -> None:
         """

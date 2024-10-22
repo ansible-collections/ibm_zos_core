@@ -2074,7 +2074,7 @@ def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansib
 ])
 def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock ):
     """
-    When force_lock option is false, it exercies the opercmd call which requres RACF universal access.
+    When force_lock option is false, it exercises the opercmd call which requires RACF universal access.
     This negative test will ensure that if the user does not have RACF universal access that the module
     not halt execution and instead bubble up the ZOAU exception.
     """

@@ -614,7 +614,7 @@ class ManagedUser:
 
     def _create_managed_user(self, managed_user: ManagedUserType) -> Tuple[str, str]:
         """
-        Generate a managed user for the remote node according to the ManagedUseeType selected.
+        Generate a managed user for the remote node according to the ManagedUserType selected.
 
         Parameters
         ----------

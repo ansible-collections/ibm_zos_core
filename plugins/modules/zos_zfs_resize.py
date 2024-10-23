@@ -54,7 +54,7 @@ options:
       - trk
     required: false
     default: k
-  noai:
+  no_auto_increment:
     description:
       - Option to not allow automatic increase on shrinking process.
       - If set to C(true), in the process of shrinking a zfs data set if a new file or
@@ -95,7 +95,7 @@ mount_target:
         - The original share/mount name provided.
     returned: always
     type: str
-    sample: SOMEUSER.VVV.ZFS
+    sample: /tmp/zfs_agg
 size:
     description:
         - The approximate size, in Kilobytes, of the data set after the resizing is performed.
@@ -107,71 +107,59 @@ rc:
     returned: always
     type: int
     sample: 0
-oldsize:
+old_size:
     description:
         - The reported size, in Kilobytes, of the data set before the resizing is performed.
     returned: always
     type: int
     sample: 3096
-oldfree:
+old_free:
     description:
         - The reported size, in Kilobytes, of the free space in the data set before the resizing is performed.
     returned: always
     type: int
     sample: 108
-newsize:
+new_size:
     description:
         - The reported size, in Kilobytes, of the data set after the resizing is performed.
     returned: success
     type: int
     sample: 4032
-newfree:
+new_free:
     description:
         - The reported size, in Kilobytes, of the free space in the data set after the resizing is performed.
     returned: success
     type: int
     sample: 48
+verbose_output:
+    description:
+        - If C(verbose=true) the full traceback of operation will show on this variable.
+    returned: C(verbose=true) and success
+    type: str
+    sample: 6FB2F8 print_trace_table: printing contents of table: Main Trace Table\nStart Record found in trace, total records 700,
+    30204 bytes to format\n*** Timestamp: Wed Oct 23 16:52:50 2024\n*** Thread assignment: thread=0001 asid=004A tcb=006FB2F8\n(001 .000000)
+    signal_initialization: recovery_function = 00000000\n(001 .000000) osi_Alloc: a1=x0DDAEE40 s1=x2F0 a2=x0DDAEE48 s2=x2E0 total=752 off=x00000096
+    subr=osi_lock_initialization\n(001 .000000) osi_Alloc: a1=x0DDAF138 s1=x1780 a2=x0DDAF140 s2=x1770 total=6768 off=x000000CC subr=osi_lock_initialization\n(001 .000000)
+    osi_Alloc: a1=x0DDB08C0 s1=x20E0 a2=x0DDB08C8 s2=x20D0 total=15184 off=x00000140 subr=osi_lock_initialization\n(001 .000000) fp_pool_create: cachesize=0 eyecatch=WAITPOOL\n(001 .000000)
+    osi_Alloc: a1=x0DDB29A8 s1=x60 a2=x0DDB29B0 s2=x50 total=15280 off=x00000138 subr=fp_pool_create\n(001 .000000) fp_pool_create: tablep=0DDB29B0 cachesize=0\n(001 .000000)
+    osi_lock_init: pool = 0DDB29B0 nonauth\n(001 .000000) osi_Alloc: a1=x0DDB2A10 s1=x40 a2=x0DDB2A18
 """
 
 import os
 import tempfile
-import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
-    data_set,
 )
-
-try:
-    from zoautil_py import MVSCmd as mvscmd
-except Exception:
-    mvscmd = ZOAUImportError(traceback.format_exc())
-
-
-def get_agg_size(data_set, module):
-    size = 0
-    free = 0
-    cmd = "zfsadm aggrinfo {0}".format(data_set.upper())
-
-    rc, stdout, stderr = module.run_command(cmd)
-
-    if rc == 0:
-        numbers = [int(word) for word in stdout.split() if word.isdigit()]
-        size = numbers[1]
-        free = numbers[0]
-
-    return(size, free)
 
 
 def calculate_size_on_k(size, size_type):
     if size_type == "m":
-        size *= 1000
+        size *= 1024
     if size_type == "g":
-        size *= 1000000
+        size *= 1048576
     if size_type == "cyl":
         size *= 720
     if size_type == "trk":
@@ -179,10 +167,19 @@ def calculate_size_on_k(size, size_type):
     return size
 
 
-def execute_zfsadm(dataset, module, size, grow=False, shrink=False, noai=False, verbose=False):
+def get_full_output(file, module):
     output = ""
+    cmd = "cat {0}".format(file)
+    rc, output, stderr = module.run_command(cmd)
+    if rc != 0:
+        output = "Unable to obtain full output for verbose mode."
 
-    execute = "grow" if grow else "shrink" if shrink else module.fail_json(msg="Required a size that allow perform an option")
+    os.unlink(file)
+
+    return output
+
+
+def create_command(size, noai=False, verbose=False):
     noai = "-noai" if noai else ""
 
     if verbose:
@@ -191,15 +188,14 @@ def execute_zfsadm(dataset, module, size, grow=False, shrink=False, noai=False, 
     else:
         trace = ""
 
-    cmd = "zfsadm {0} -aggregate {1} -size {2} {3} {4}".format(execute, dataset.upper(), size, noai, trace)
-    if verbose:
-        cmd_verbose = "cat {0}".format(temp.name)
-        rc_cat, output, stderr_cat = module.run_command(cmd_verbose)
-        os.unlink(temp.name)
+    cmd_str = "-size {0} {1} {2}".format(size, noai, trace)
 
-    rc, stdout, stderr = module.run_command(cmd)
+    return cmd_str, temp.name
 
-    return rc, stdout, stderr, output, cmd
+
+def get_size_and_free(string):
+    numbers = [int(word) for word in string.split() if word.isdigit()]
+    return numbers[1], numbers[0]
 
 
 def found_mount_target(module, target):
@@ -207,13 +203,10 @@ def found_mount_target(module, target):
     found = False
     if rc == 0:
         stdout_lines = stdout.split("\n")
-        #module.fail_json(msg="{0} \n {1}".format(target, str(stdout_lines)))
         for line in stdout_lines:
             if len(line) > 2:
                 columns = line.split()
                 if target in columns[1]:
-                    new_target = columns[1].strip("\t\n\r\')(")
-                    target = new_target
                     mount_point = columns[0]
                     found = True
                     break
@@ -234,7 +227,7 @@ def run_module():
                     choices=["k", "m", "g", "cyl", "trk"],
                     default="k",
                 ),
-            noai=dict(type="bool", required=False, default=False),
+            no_auto_increment=dict(type="bool", required=False, default=False),
             verbose=dict(type="bool", required=False, default=False),
         ),
         supports_check_mode=False
@@ -248,7 +241,7 @@ def run_module():
                 choices=["k", "m", "g", "cyl", "trk"],
                 default="k",
             ),
-        noai=dict(type="bool", required=False, default=False),
+        no_auto_increment=dict(type="bool", required=False, default=False),
         verbose=dict(type="bool", required=False, default=False),
     )
 
@@ -266,20 +259,25 @@ def run_module():
     target = module.params.get("target")
     size = module.params.get("size")
     size_type = module.params.get("size_type")
-    noai = module.params.get("noai")
+    noai = module.params.get("no_auto_increment")
     verbose = module.params.get("verbose")
     changed = False
 
     target, mount_target = found_mount_target(module=module, target=target)
 
-    old_size, old_free = get_agg_size(data_set=target, module=module)
+    aggregate_name = zfsadm(target, module)
+
+    rc, stdout, stderr = aggregate_name.get_agg_size()
+
+    if rc == 0:
+        old_size, old_free = get_size_and_free(string=stdout)
 
     res_args.update(
         dict(
             target=target,
             mount_target=mount_target,
-            oldsize=old_size,
-            oldfree=old_free,
+            old_size=old_size,
+            old_free=old_free,
             size=size,
             cmd="",
             changed=changed,
@@ -298,18 +296,28 @@ def run_module():
     if size == old_size:
         module.fail_json(msg="Same size declared with the size of the zfz")
     elif size > old_size:
-        grow, shrink = True, False
+        grow = True
     elif size >= minimum_size_t_shrink and size < old_size:
-        shrink, grow = True, False
+        shrink = True
     else:
         module.fail_json(msg="Error code 119 not enough space to shrink")
 
-    rc, stdout, stderr, output, cmd = execute_zfsadm(dataset=target, module=module, size=size, grow=grow,
-                                                shrink=shrink, noai=noai, verbose=verbose)
+    cmd, tmp_file = create_command(size=size, noai=noai, verbose=verbose)
+
+    rc, stdout, stderr, cmd = aggregate_name.grow_shrink(grow, shrink, cmd)
 
     if rc == 0:
-        new_size, new_free = get_agg_size(data_set=target, module=module)
         changed = True
+
+        rc_size, stdout_size, stderr_size = aggregate_name.get_agg_size()
+        if rc_size == 0:
+            new_size, new_free = get_size_and_free(string=stdout_size)
+
+        if verbose:
+            output = get_full_output(file=tmp_file, module=module)
+            res_args.update(
+                verbose_output=output,
+            )
     else:
         module.fail_json(
             msg="Resize: resize command returned non-zero code: rc=" +

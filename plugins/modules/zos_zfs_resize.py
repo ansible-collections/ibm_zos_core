@@ -136,13 +136,9 @@ verbose_output:
         - If C(verbose=true) the full traceback of operation will show on this variable.
     returned: C(verbose=true) and success
     type: str
-    sample: 6FB2F8 print_trace_table: printing contents of table: Main Trace Table\nStart Record found in trace, total records 700,
-    30204 bytes to format\n*** Timestamp: Wed Oct 23 16:52:50 2024\n*** Thread assignment: thread=0001 asid=004A tcb=006FB2F8\n(001 .000000)
-    signal_initialization: recovery_function = 00000000\n(001 .000000) osi_Alloc: a1=x0DDAEE40 s1=x2F0 a2=x0DDAEE48 s2=x2E0 total=752 off=x00000096
-    subr=osi_lock_initialization\n(001 .000000) osi_Alloc: a1=x0DDAF138 s1=x1780 a2=x0DDAF140 s2=x1770 total=6768 off=x000000CC subr=osi_lock_initialization\n(001 .000000)
-    osi_Alloc: a1=x0DDB08C0 s1=x20E0 a2=x0DDB08C8 s2=x20D0 total=15184 off=x00000140 subr=osi_lock_initialization\n(001 .000000) fp_pool_create: cachesize=0 eyecatch=WAITPOOL\n(001 .000000)
-    osi_Alloc: a1=x0DDB29A8 s1=x60 a2=x0DDB29B0 s2=x50 total=15280 off=x00000138 subr=fp_pool_create\n(001 .000000) fp_pool_create: tablep=0DDB29B0 cachesize=0\n(001 .000000)
-    osi_lock_init: pool = 0DDB29B0 nonauth\n(001 .000000) osi_Alloc: a1=x0DDB2A10 s1=x40 a2=x0DDB2A18
+    sample: 6FB2F8 print_trace_table: printing contents of table: Main Trace Table
+            Start Record found in trace, total records 700,
+            30204 bytes to format
 """
 
 import os

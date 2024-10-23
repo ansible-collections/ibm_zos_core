@@ -263,8 +263,10 @@ def run_module():
     verbose = module.params.get("verbose")
     changed = False
 
+    #Validation to found target on the system and also get the mount_point
     target, mount_target = found_mount_target(module=module, target=target)
 
+    #Initialize the class with the target
     aggregate_name = zfsadm(target, module)
 
     rc, stdout, stderr = aggregate_name.get_agg_size()
@@ -290,6 +292,7 @@ def run_module():
     if size_type != "k":
         size = calculate_size_on_k(size=size, size_type=size_type)
 
+    #Validations to know witch function will be execute
     grow, shrink = False, False
     minimum_size_t_shrink = old_size - old_free
 
@@ -304,6 +307,7 @@ def run_module():
 
     cmd, tmp_file = create_command(size=size, noai=noai, verbose=verbose)
 
+    #Execute the function
     rc, stdout, stderr, cmd = aggregate_name.grow_shrink(grow, shrink, cmd)
 
     if rc == 0:

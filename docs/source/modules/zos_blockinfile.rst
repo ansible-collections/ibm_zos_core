@@ -104,6 +104,8 @@ insertbefore
 marker_begin
   This will be inserted at ``{mark}`` in the opening ansible block marker.
 
+  Value needs to be different from marker_end.
+
   | **required**: False
   | **type**: str
   | **default**: BEGIN
@@ -111,6 +113,8 @@ marker_begin
 
 marker_end
   This will be inserted at ``{mark}`` in the closing ansible block marker.
+
+  Value must be different from marker_end.
 
   | **required**: False
   | **type**: str

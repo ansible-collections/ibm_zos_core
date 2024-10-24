@@ -4,6 +4,7 @@
 # For additonal doc, see https://ansible.readthedocs.io/projects/lint/configuring/
 exclude_paths:
   - .tar.gz
+  - .log
   - __pycache__/
   - .ansible-lint
   - .cache/

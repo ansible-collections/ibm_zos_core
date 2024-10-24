@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.9.2
+version: 1.9.3
 
 # Collection README file
 readme: README.md
@@ -18,7 +18,6 @@ authors:
   - Ketan Kelkar <ketan.kelkar@ibm.com>
   - Ivan Moreno <ivan.moreno.soto@ibm.com>
   - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
-  - Jenny Huang <jennyhuang@ibm.com>
   - Marcel Gutierrez <andre.marcel.gutierrez@ibm.com>
 
 # Description
@@ -65,6 +64,7 @@ issues: https://github.com/ansible-collections/ibm_zos_core/issues
 # Ignore files and directories matching the following patterns
 build_ignore:
   - '*.tar.gz'
+  - '*.log'
   - __pycache__
   - .cache
   - .DS_Store

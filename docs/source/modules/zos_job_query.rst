@@ -181,6 +181,18 @@ jobs
     | **type**: str
     | **sample**: JOB01427
 
+  system
+    The job entry system that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
+  subsystem
+    The job entry subsystem that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
   ret_code
     Return code output collected from job log.
 

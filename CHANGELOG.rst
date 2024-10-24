@@ -4,6 +4,53 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.12.0-beta.1
+==============
+
+Release Summary
+---------------
+
+Release Date: '2024-10-31'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_backup_restore - Redefines the default behavior of module option `hlq`. When option `operation` is set to `restore` and the `hlq` is not provided, the original high level qualifiers in a backup will be used for a restore. (https://github.com/ansible-collections/ibm_zos_core/pull/1632).
+- zos_job_output - Added address space type used by jobs in return JSON as `content_type`. (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+- zos_job_query - Added address space type used by jobs in return JSON as `content_type`. (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+- zos_job_submit - Added address space type used by jobs in return JSON as `content_type`. (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+- zos_mvs_raw - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+- zos_operator - Added new option ``case_sensitive`` to module, allowing users to control how case in a command is handled by it. (https://github.com/ansible-collections/ibm_zos_core/pull/1641)
+- zos_script - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+- zos_tso_command - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+
+Bugfixes
+--------
+
+- zos_apf - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_archive - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_backup_restore - When a recoverable error was encountered and ``recover=True``, the module would ignore the option and fail. Fix now does not fail when a recoverable error is raised when ``recover=True``. (https://github.com/ansible-collections/ibm_zos_core/pull/1643).
+- zos_blockinfile - Previously module was not able to delete a block when 'marker_begin' and 'marker_end' were set to the same value. Fix introduces a requirement for 'marker_begin' and 'marker_end' to have different values. (https://github.com/ansible-collections/ibm_zos_core/pull/1684).
+- zos_blockinfile - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_copy - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message. (https://github.com/ansible-collections/ibm_zos_core/pull/1766).
+- zos_copy - Previously, the module ignored the value of ``remote_tmp`` set in Ansible configuration file and used the ``/tmp/`` directory. Fix now uses the value of ``remote_tmp`` or the default value ``~/.ansible/tmp`` if none is given. (https://github.com/ansible-collections/ibm_zos_core/pull/1739).
+- zos_copy - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_data_set - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_encode - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_fetch - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_job_output - RACF user names containing a ``@``, ``$``, or ``#`` raised an invalid argument error. Fix now allows the use of all valid characters for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
+- zos_job_query - Module was not returning values for system and subsystem. Fix now returns these values. (https://github.com/ansible-collections/ibm_zos_core/pull/1761).
+- zos_job_query - RACF user names containing a ``@``, ``$``, or ``#`` raised an invalid argument error. Fix now allows the use of all valid characters for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
+- zos_lineinfile - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_mount - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_mvs_raw - base64 sub-option for return_content under option for retrieving DD output did not return base64. Fix now returns the base64 encoded contents of the DD. (https://github.com/ansible-collections/ibm_zos_core/pull/1691).
+- zos_script - The module would discard command line arguments in a command, except for the first one. Fix now makes sure that all arguments are passed to the remote command that gets executed. (https://github.com/ansible-collections/ibm_zos_core/pull/1698).
+- zos_unarchive - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+
 v1.11.0
 =======
 

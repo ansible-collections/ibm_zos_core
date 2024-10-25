@@ -141,6 +141,7 @@ verbose_output:
             30204 bytes to format
 """
 
+import pathlib
 import os
 import tempfile
 
@@ -165,28 +166,30 @@ def calculate_size_on_k(size, size_type):
 
 def get_full_output(file, module):
     output = ""
-    cmd = "cat {0}".format(file)
+    cmd = "cat '{0}'".format(file)
     rc, output, stderr = module.run_command(cmd)
     if rc != 0:
         output = "Unable to obtain full output for verbose mode."
 
-    os.unlink(file)
+    os.remove(file)
 
     return output
 
 
 def create_command(size, noai=False, verbose=False):
+    temp = ""
     noai = "-noai" if noai else ""
 
     if verbose:
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        trace = "-trace {0}".format(temp.name)
+        temp = tempfile.NamedTemporaryFile(dir=os.environ['TMPDIR'], delete=False)
+        temp = temp.name
+        trace = """-trace "{0}" """.format(temp)
     else:
         trace = ""
 
     cmd_str = "-size {0} {1} {2}".format(size, noai, trace)
 
-    return cmd_str, temp.name
+    return cmd_str, temp
 
 
 def get_size_and_free(string):
@@ -263,7 +266,7 @@ def run_module():
     target, mount_target = found_mount_target(module=module, target=target)
 
     #Initialize the class with the target
-    aggregate_name = zfsadm(target, module)
+    aggregate_name = zfsadm(aggregate_name=target, module=module)
 
     rc, stdout, stderr = aggregate_name.get_agg_size()
 
@@ -289,22 +292,26 @@ def run_module():
         size = calculate_size_on_k(size=size, size_type=size_type)
 
     #Validations to know witch function will be execute
-    grow, shrink = False, False
+    operation = ""
     minimum_size_t_shrink = old_size - old_free
 
     if size == old_size:
         module.fail_json(msg="Same size declared with the size of the zfz")
     elif size > old_size:
-        grow = True
+        operation = "grow"
     elif size >= minimum_size_t_shrink and size < old_size:
-        shrink = True
+        operation = "shrink"
     else:
         module.fail_json(msg="Error code 119 not enough space to shrink")
+
+    if verbose:
+        path =  f"{os.path.realpath(module.tmpdir)}/"
+        os.environ['TMPDIR'] = path
 
     cmd, tmp_file = create_command(size=size, noai=noai, verbose=verbose)
 
     #Execute the function
-    rc, stdout, stderr, cmd = aggregate_name.grow_shrink(grow, shrink, cmd)
+    rc, stdout, stderr, cmd = aggregate_name.grow_shrink(operation=operation, cmd=cmd)
 
     if rc == 0:
         changed = True
@@ -322,7 +329,7 @@ def run_module():
         module.fail_json(
             msg="Resize: resize command returned non-zero code: rc=" +
             str(rc) + ".",
-            stderr=str(res_args)
+            stderr=str(stderr)
         )
 
     res_args.update(

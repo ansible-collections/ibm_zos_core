@@ -31,7 +31,7 @@ class zfsadm:
         self.module = module
 
 
-    def grow_shrink(self, grow, shrink, cmd):
+    def grow_shrink(self, operation, cmd):
         """Execute grow or shrink operation over a zfs dataset.
 
         Parameters
@@ -54,9 +54,7 @@ class zfsadm:
             cmd_str : str
                 The full command that was execute.
         """
-        execute = "grow" if grow else "shrink" if shrink else self.module.fail_json(msg="Required a size that allow perform an option")
-
-        cmd_str = "zfsadm {0} -aggregate {1} {2}".format(execute, self.aggregate_name, cmd)
+        cmd_str = "zfsadm {0} -aggregate {1} {2}".format(operation, self.aggregate_name, cmd)
 
         rc, stdout, stderr = self.module.run_command(cmd_str)
 

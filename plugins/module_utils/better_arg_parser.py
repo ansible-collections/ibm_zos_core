@@ -687,6 +687,9 @@ class BetterArgHandler(object):
         elif given_path.startswith("."):
             wd = str(path.realpath("."))
             final_path = wd + given_path[1:]
+        elif not given_path.startswith("/"):
+            wd = str(path.realpath("."))
+            final_path = path.join(wd, given_path)
 
         return str(final_path)
 

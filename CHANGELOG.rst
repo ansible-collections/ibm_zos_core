@@ -20,8 +20,8 @@ Bugfixes
 --------
 
 - zos_job_submit - Module was not returning values for system and subsystem. Fix now returns these values. (https://github.com/ansible-collections/ibm_zos_core/pull/1723).
-- zos_mvs_raw - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would failed. Fix now has a consistent behavior and fails in both cases. (https://github.com/ansible-collections/ibm_zos_core/pull/1723).
-- zos_mvs_raw - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program. (https://github.com/ansible-collections/ibm_zos_core/pull/1723).
+- zos_mvs_raw - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would failed. Fix now has a consistent behavior and fails in both cases. (https://github.com/ansible-collections/ibm_zos_core/pull/1762).
+- zos_mvs_raw - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program. (https://github.com/ansible-collections/ibm_zos_core/pull/1762).
 
 v1.9.2
 ======

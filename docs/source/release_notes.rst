@@ -124,14 +124,15 @@ Known Issues
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
 - Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
 
-v1.9.3
-======
+Version 1.9.3
+=============
 
 Bugfixes
 --------
 
 - ``zos_job_submit`` - Module was not returning values for system and subsystem. Fix now returns these values.
 - ``zos_mvs_raw``
+
     - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail. Fix now has a consistent behavior and fails in both cases.
     - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
 

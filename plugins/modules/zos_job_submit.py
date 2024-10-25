@@ -166,7 +166,7 @@ jobs:
         - JOB for a Batch job.
         - STC for a Started task.
         - TSU for a Time sharing user.
-        - ? for an unknown or pending.
+        - \? for an unknown or pending.
       type: str
       sample: STC
     duration:

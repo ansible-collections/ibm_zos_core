@@ -1,4 +1,0 @@
-trivial:
-  - docs/scripts - Change to sed "-i" in place option which ensures compatibility between MacOS
-    and GNU versions of sed command.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1202).

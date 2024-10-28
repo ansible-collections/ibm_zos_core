@@ -207,18 +207,11 @@ hlq
 
 
 tmp_hlq
-  Override the default high level qualifier (HLQ) for temporary data sets.
+  Override the default high level qualifier (HLQ) for temporary data sets used in the modules operation.
 
-  If original HLQ is not available, then the value of ``TMPHLQ`` is used.
+  If *tmp_hlq* is set, this value will be applied to all temporary data sets.
 
-  | **required**: False
-  | **type**: str
-
-
-tmp_hlq
-  Override the default high level qualifier (HLQ) for temporary and backup data sets.
-
-  The default HLQ is the Ansible user that executes the module and if that is not available, then the value of ``TMPHLQ`` is used.
+  If *tmp_hlq* is not set, the value will be the username who submits the ansible task, this is the default behavior. If the username can not be identified, the value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str

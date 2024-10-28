@@ -37,9 +37,10 @@ Bugfixes
 
 - ``zos_backup_restore`` - when a recoverable error was encountered and **recover = True**, the module would fail. The change now allows the module to recover.
 
-- ``zos_blockinfile`` - when the modules **marker_begin** and **marker_end** were set to the same value, the module would not delete the block. Now the module requires the **marker_begin** and **marker_end** to have different values.
+- ``zos_blockinfile``
 
-- ``zos_blockinfile`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option..
+   - when the modules **marker_begin** and **marker_end** were set to the same value, the module would not delete the block. Now the module requires the **marker_begin** and **marker_end** to have different values.
+   - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option..
 
 - ``zos_copy``
 

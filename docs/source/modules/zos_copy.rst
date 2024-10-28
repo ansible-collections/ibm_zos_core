@@ -185,7 +185,7 @@ force_lock
 
 
 ignore_sftp_stderr
-  During data transfer through SFTP, the SFTP command directs content to stderr. By default, the module essentially ignores the stderr stream produced by SFTP and continues execution. The user is able to override this behavior by setting this parameter to ``false``. By doing so, any content written to stderr is considered an error by Ansible and will have module fail.
+  During data transfer through SFTP, the SFTP command directs content to stderr. By default, the module essentially ignores the stderr stream produced by SFTP and continues execution. The user is able to override this behavior by setting this parameter to ``false``. By doing so, any content written to stderr is considered an error by Ansible and will cause the module to fail.
 
   When Ansible verbosity is set to greater than 3, either through the command line interface (CLI) using **-vvvv** or through environment variables such as **verbosity = 4**, then this parameter will automatically be set to ``true``.
 

@@ -1,4 +1,4 @@
 bugfixes:
-  - better_arg_parser.py - Relative paths were not accepted as a parameter.
+  - zos_fetch - Relative paths were not accepted as a parameter.
     Change now allow the user to use a relative path as a parameter.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1769).

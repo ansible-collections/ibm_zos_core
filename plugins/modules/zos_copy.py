@@ -3454,6 +3454,13 @@ def run_module(module, arg_def):
                 dest_exists = False
                 dest_ds_type = None
 
+            # When dealing with a new generation, we'll override its type to None
+            # so it will be the same type as the source (or whatever dest_data_set has)
+            # a couple lines down.
+            if is_dest_gds and not is_dest_gds_active:
+                dest_exists = False
+                dest_ds_type = None
+
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type").upper()

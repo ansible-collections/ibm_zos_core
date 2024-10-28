@@ -140,6 +140,29 @@ def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None)
     hosts.all.zos_data_set(**params)
 
 
+def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None):
+    """Creates a new VSAM on the system.
+
+    Arguments:
+        hosts (object) -- Ansible instance(s) that can call modules.
+        name (str) -- Name of the VSAM data set.
+        type (str) -- Type of the VSAM (ksds, esds, rrds, lds)
+        add_data (bool, optional) -- Whether to add records to the VSAM.
+        key_length (int, optional) -- Key length (only for KSDS data sets).
+        key_offset (int, optional) -- Key offset (only for KSDS data sets).
+    """
+    params = {
+        "name":name,
+        "type":ds_type,
+        "state":"present"
+    }
+    if ds_type == "ksds":
+        params["key_length"] = key_length
+        params["key_offset"] = key_offset
+
+    hosts.all.zos_data_set(**params)
+
+
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -667,6 +690,7 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
     pds_name = get_tmp_ds_name()
     dest_path = "/tmp/" + pds_name
     full_path = dest_path + "/MYDATA"
+    pds_name_mem = pds_name + "(MYDATA)"
     hosts.all.zos_data_set(
         name=pds_name,
         type="pds",
@@ -752,6 +776,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") is True
             assert result.get("data_set_type") == "Sequential"
             assert result.get("module_stderr") is None

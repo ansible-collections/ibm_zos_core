@@ -120,6 +120,9 @@ SHELL_EXECUTABLE = "/bin/sh"
 COBOL_PRINT_STR = "HELLO WORLD ONE"
 COBOL_PRINT_STR2 = "HELLO WORLD TWO"
 
+COBOL_PRINT_STR = "HELLO WORLD ONE"
+COBOL_PRINT_STR2 = "HELLO WORLD TWO"
+
 COBOL_SRC = """
        IDENTIFICATION DIVISION.\n
        PROGRAM-ID. HELLOWRD.\n
@@ -2606,6 +2609,7 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
     finally:
+        hosts.all.shell(cmd='rm -r /tmp/c')
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
@@ -4591,7 +4595,6 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
                 {"name": src_ds, "state": "absent"}
             ]
         )
-
 
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])

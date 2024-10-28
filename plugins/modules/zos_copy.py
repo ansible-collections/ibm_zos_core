@@ -3165,13 +3165,19 @@ def data_set_locked(dataset_name):
 
     Parameters
     ----------
-    dataset_name : str
+    dataset_name (str):
         The data set name used to check if there is a lock.
 
     Returns
     -------
     bool
         True if the data set is locked, or False if the data set is not locked.
+
+    Raises
+    ------
+    CopyOperationError
+        When the user does not have Universal Access Authority to
+        ZOAU SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS.
     """
     # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
     # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
@@ -3179,18 +3185,26 @@ def data_set_locked(dataset_name):
     result = dict()
     result["stdout"] = []
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
-    response = opercmd.execute(command=command_dgrs)
-    stdout = response.stdout_response
-    if stdout is not None:
-        for out in stdout.split("\n"):
-            if out:
-                result["stdout"].append(out)
-    if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
+
+    try:
+        response = opercmd.execute(command=command_dgrs)
+        stdout = response.stdout_response
+
+        if stdout is not None:
+            for out in stdout.split("\n"):
+                if out:
+                    result["stdout"].append(out)
+        if len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
+            return False
+
         return True
-    elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
-        return False
-    else:
-        return False
+    except zoau_exceptions.ZOAUException as copy_exception:
+        raise CopyOperationError(
+            msg="Unable to determine if the dest {0} is in use.".format(dataset_name),
+                rc=copy_exception.response.rc,
+                stdout=copy_exception.response.stdout_response,
+                stderr=copy_exception.response.stderr_response
+        )
 
 
 def run_module(module, arg_def):

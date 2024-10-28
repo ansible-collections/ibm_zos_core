@@ -57,6 +57,7 @@ Bugfixes
 - ``zos_job_output`` - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
 
 - ``zos_job_query``
+
    - module did not return values for properties **system** and **subsystem**. Now the module returns these values.
    - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
 

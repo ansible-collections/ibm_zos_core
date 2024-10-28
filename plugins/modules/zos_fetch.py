@@ -296,6 +296,7 @@ import tempfile
 import re
 import os
 import traceback
+from os import path
 from math import ceil
 from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
@@ -791,6 +792,41 @@ class FetchHandler:
         return file_path
 
 
+def dest_path(contents, dependencies):
+    """Validate access group dest_path argument.
+
+    Parameters
+    ----------
+        contents : str
+                 The contents provided for the dest argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
+
+    Returns
+    -------
+        contents : str
+                 A proper construction of the path
+    """
+    aux_path = ""
+
+    if not contents:
+        return None
+
+    if contents.startswith("~"):
+        aux_path = path.expanduser(contents)
+    elif contents.startswith(".."):
+        pwd = str(path.realpath(".."))
+        aux_path = pwd + contents[2:]
+    elif contents.startswith("."):
+        wd = str(path.realpath("."))
+        aux_path = wd + contents[1:]
+    elif not (contents.startswith("/")):
+        wd = str(path.realpath("."))
+        aux_path = path.join(wd, contents)
+
+    return str(aux_path)
+
+
 def run_module():
     """Runs the module.
 
@@ -839,7 +875,7 @@ def run_module():
 
     arg_def = dict(
         src=dict(arg_type="data_set_or_path", required=True),
-        dest=dict(arg_type="path", required=True),
+        dest=dict(arg_type=dest_path, required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
         use_qualifier=dict(arg_type="bool", required=False, default=False),

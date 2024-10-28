@@ -355,7 +355,7 @@ def test_normal_dispositions_data_set(
         ("cyl", 3, 1, 2549880),
         ("b", 3, 1, 56664),
         ("k", 3, 1, 56664),
-        ("m", 3, 1, 3173184),
+        ("m", 3, 1, 3003192),
     ],
 )
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):

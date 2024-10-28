@@ -6,7 +6,7 @@
 Releases and maintenance
 ========================
 
-This section describes the collections release dates, dependency versions and End of Life dates (EOL)
+This section describes the collections release dates, dependency versions, End of Life dates (EOL),
 and support coverage.
 
 The ``ibm_zos_core`` collection is developed and released on a flexible release cycle; generally, each quarter

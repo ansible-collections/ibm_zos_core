@@ -37,7 +37,7 @@ cmd
 
   For example, to display job by job name the command would be ``cmd:"\\$dj''HELLO''"``
 
-  By default, the command will be converted to uppercase before execution, to control this behavior, see the \ :emphasis:`case\_sensitive`\  option below.
+  By default, the command will be converted to uppercase before execution, to control this behavior, see the *case_sensitive* option below.
 
   | **required**: True
   | **type**: str
@@ -66,7 +66,7 @@ wait_time_s
 
 
 case_sensitive
-  If \ :literal:`true`\ , the command will not be converted to uppercase before execution. Instead, the casing will be preserved just as it was written in a task.
+  If ``true``, the command will not be converted to uppercase before execution. Instead, the casing will be preserved just as it was written in a task.
 
   | **required**: False
   | **type**: bool

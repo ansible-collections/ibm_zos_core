@@ -104,7 +104,7 @@ insertbefore
 marker_begin
   This will be inserted at ``{mark}`` in the opening ansible block marker.
 
-  Value needs to be different from marker_end.
+  Value needs to be different from *marker_end*.
 
   | **required**: False
   | **type**: str
@@ -114,7 +114,7 @@ marker_begin
 marker_end
   This will be inserted at ``{mark}`` in the closing ansible block marker.
 
-  Value must be different from marker_end.
+  Value must be different from *marker_begin*.
 
   | **required**: False
   | **type**: str
@@ -128,7 +128,7 @@ backup
 
   The backup file name will be returned on either success or failure of module execution such that data can be retrieved.
 
-  Use generation data set (GDS) relative positive name. ``e.g. SOME.CREATION(+1``)
+  Use generation data set (GDS) relative positive name. e.g. *SOME.CREATION(+1*).
 
   | **required**: False
   | **type**: bool

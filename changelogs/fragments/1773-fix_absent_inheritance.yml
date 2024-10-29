@@ -1,4 +1,4 @@
 trivial:
 - zos_unarchive - Module was not able to unarchive xmit files.
-    Fix now restores allows to unarchive modules.
+    Fix now restores allows to unarchive xmit files.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1773).

@@ -23,6 +23,8 @@ import os
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
+from datetime import datetime
+from os import path
 
 display = Display()
 
@@ -53,28 +55,10 @@ class ActionModule(ActionBase):
         if location == "local":
 
             source = self._task.args.get("src", None)
-            tmp_path = self._connection._shell._options.get("remote_tmp")
-
-            # Get a temporary file on the managed node
-            tempfile = self._execute_module(
-                module_name="tempfile",
-                module_args={
-                    path=tmp_path
-                },
-                task_vars=task_vars,
-            )
-            dest_path = tempfile.get("path")
-            # Calling execute_module from this step with tempfile leaves behind a tmpdir.
-            # This is called to ensure the proper removal.
-            tmpdir = self._connection._shell.tmpdir
-            if tmpdir:
-                self._remove_tmp_path(tmpdir)
 
             result["failed"] = True
             if source is None:
                 result["msg"] = "Source is required."
-            elif dest_path is None:
-                result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
             elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
                 result["msg"] = "Source must be a file."
             else:
@@ -90,8 +74,16 @@ class ActionModule(ActionBase):
                 result["msg"] = to_text(e)
                 return result
 
-            if tmp is None or "-tmp-" not in tmp:
-                tmp = self._make_tmp_path()
+            tmp_dir = self._connection._shell._options.get("remote_tmp")
+
+            # rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_dir))
+            # if rc > 0:
+            #     msg = f"Failed to resolve remote temporary directory {tmp_dir}. Ensure that the directory exists and user has proper access."
+            #     return self._exit_action({}, msg, failed=True)
+
+            # Creating the name for the temp file needed.
+            temp_file_name = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
+            dest_path = path.join(tmp_dir, temp_file_name)
 
             source_full = None
             try:
@@ -106,9 +98,9 @@ class ActionModule(ActionBase):
             # if self._connection._shell.path_has_trailing_slash(dest):
             #     dest_file = self._connection._shell.join_path(dest, source_rel)
             # else:
-            self._connection._shell.join_path(dest_path)
+            # self._connection._shell.join_path(dest_path)
 
-            tmp_src = self._connection._shell.join_path(tmp, "source")
+            # tmp_src = self._connection._shell.join_path(tmp, "source")
 
             rendered_file = None
             if use_template:
@@ -134,11 +126,11 @@ class ActionModule(ActionBase):
 
                 source_full = rendered_file
 
-            remote_path = None
-            remote_path = self._transfer_file(source_full, tmp_src)
-
-            if remote_path:
-                self._fixup_perms2((tmp, remote_path))
+            # remote_path = None
+            # remote_path = self._transfer_file(source_full, tmp_src)
+            #
+            # if remote_path:
+            #     self._fixup_perms2((tmp, remote_path))
 
             result = {}
             copy_module_args = {}
@@ -146,12 +138,12 @@ class ActionModule(ActionBase):
 
             copy_module_args.update(
                 dict(
-                    src=tmp_src,
+                    src=source_full,
                     dest=dest_path,
                     mode="0600",
                     force=True,
                     encoding=module_args.get('encoding'),
-                    remote_src=True,
+                    remote_src=False,
                 )
             )
             copy_task = self._task.copy()
@@ -163,7 +155,8 @@ class ActionModule(ActionBase):
                 play_context=self._play_context,
                 loader=self._loader,
                 templar=self._templar,
-                shared_loader_obj=self._shared_loader_obj)
+                shared_loader_obj=self._shared_loader_obj
+            )
             result.update(copy_action.run(task_vars=task_vars))
             if result.get("msg") is None:
                 module_args["src"] = dest_path

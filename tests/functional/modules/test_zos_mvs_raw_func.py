@@ -2236,7 +2236,7 @@ def test_authorized_program_run_unauthorized(ansible_zos_module):
             dds=[],
         )
         for result in results.contacted.values():
-            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert result.get("ret_code", {}).get("code", -1) == 36
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0236E" in result.get("msg", "")
     finally:
@@ -2254,14 +2254,19 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
             dds=[],
         )
         for result in results.contacted.values():
-            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert result.get("ret_code", {}).get("code", -1) == 15
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0215E" in result.get("msg", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
 
-
-def test_authorized_program_run_authorized(ansible_zos_module):
+@pytest.mark.parametrize(
+        # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
+        "verbose",
+        [True, False],
+)
+def test_authorized_program_run_authorized(ansible_zos_module, verbose):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
@@ -2269,6 +2274,7 @@ def test_authorized_program_run_authorized(ansible_zos_module):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
+            verbose=True,
             dds=[
                 {
                     "dd_output":{

@@ -157,6 +157,10 @@ class ActionModule(ActionBase):
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
+        dest = os.path.realpath(dest)
+        dest = dest if dest.startswith("/") else os.path.join(os.getcwd(), dest)
+        new_module_args.update(dest=dest)
+
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #

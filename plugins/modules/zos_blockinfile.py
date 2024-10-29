@@ -96,6 +96,7 @@ options:
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
+    - Value needs to be different from I(marker_end).
     required: false
     type: str
     default: BEGIN
@@ -103,6 +104,7 @@ options:
     required: false
     description:
     - This will be inserted at C({mark}) in the closing ansible block marker.
+    - Value must be different from I(marker_begin).
     type: str
     default: END
   backup:
@@ -112,7 +114,7 @@ options:
       - When set to C(true), the module creates a backup file or data set.
       - The backup file name will be returned on either success or failure of
         module execution such that data can be retrieved.
-      - Use generation data set (GDS) relative positive name. C(e.g. SOME.CREATION(+1))
+      - Use generation data set (GDS) relative positive name. e.g. I(SOME.CREATION(+1)).
     required: false
     type: bool
     default: false
@@ -583,7 +585,7 @@ def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=Non
     else:
         cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
 
-    rc, stdout, stderr = module.run_command(cmd)
+    rc, stdout, stderr = module.run_command(cmd, errors='replace')
     cmd = clean_command(cmd)
     return rc, cmd
 
@@ -759,7 +761,8 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
-
+    if marker_begin == marker_end:
+        module.fail_json(msg='marker_begin and marker_end must be different.')
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
     # analysis the file type
@@ -772,7 +775,7 @@ def main():
     if data_set.DataSet.is_gds_relative_name(src):
         module.fail_json(msg="{0} does not exist".format(src))
 
-    ds_utils = data_set.DataSetUtils(src)
+    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
     if not ds_utils.exists():
         message = "{0} does NOT exist".format(str(src))
         module.fail_json(msg=message)

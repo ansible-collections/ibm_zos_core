@@ -134,6 +134,7 @@ jobs
         [
             {
                 "asid": 0,
+                "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
                 "job_class": "K",
@@ -147,6 +148,7 @@ jobs
             },
             {
                 "asid": 4,
+                "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:14:00",
                 "job_class": "A",
@@ -180,6 +182,36 @@ jobs
 
     | **type**: str
     | **sample**: JOB01427
+
+  content_type
+    Type of address space used by the job, can be one of the following types.
+
+    APPC for a APPC Initiator.
+
+    JGRP for a JOBGROUP.
+
+    JOB for a Batch job.
+
+    STC for a Started task.
+
+    TSU for a Time sharing user.
+
+    \? for an unknown or pending.
+
+    | **type**: str
+    | **sample**: STC
+
+  system
+    The job entry system that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
+  subsystem
+    The job entry subsystem that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
 
   ret_code
     Return code output collected from job log.

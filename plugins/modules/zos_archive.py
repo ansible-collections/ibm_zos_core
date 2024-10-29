@@ -1018,6 +1018,7 @@ class MVSArchive(Archive):
             High level qualifier for temporary datasets.
         """
         super(MVSArchive, self).__init__(module)
+        self.tmphlq = module.params.get("tmp_hlq")
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
         self.expanded_sources = self.expand_mvs_paths(self.sources)
@@ -1026,7 +1027,6 @@ class MVSArchive(Archive):
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
-        self.tmphlq = module.params.get("tmp_hlq")
 
     def open(self):
         pass
@@ -1038,7 +1038,7 @@ class MVSArchive(Archive):
         """Finds target datasets in host.
         """
         for path in self.sources:
-            if data_set.DataSet.data_set_exists(path):
+            if data_set.DataSet.data_set_exists(path, tmphlq=self.tmphlq):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
@@ -1148,7 +1148,7 @@ class MVSArchive(Archive):
             Name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
         # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
@@ -1219,7 +1219,7 @@ class MVSArchive(Archive):
             The SHA256 hash of the contents of input file.
         """
         sha256_cmd = "sha256 \"//'{0}'\"".format(src)
-        rc, out, err = self.module.run_command(sha256_cmd)
+        rc, out, err = self.module.run_command(sha256_cmd, errors='replace')
         checksums = out.split("= ")
         if len(checksums) > 0:
             return checksums[1]
@@ -1266,7 +1266,7 @@ class MVSArchive(Archive):
         bool
             If destination path exists.
         """
-        return data_set.DataSet.data_set_exists(self.dest)
+        return data_set.DataSet.data_set_exists(self.dest, tmphlq=self.tmphlq)
 
     def remove_targets(self):
         """Removes the archived targets and changes the state accordingly.

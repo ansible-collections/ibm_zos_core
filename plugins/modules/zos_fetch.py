@@ -122,18 +122,19 @@ options:
     type: str
   ignore_sftp_stderr:
     description:
-      - During data transfer through sftp, the module fails if the sftp command
-        directs any content to stderr. The user is able to override this
-        behavior by setting this parameter to C(true). By doing so, the module
-        would essentially ignore the stderr stream produced by sftp and continue
-        execution.
+      - During data transfer through SFTP, the SFTP command directs content to
+        stderr. By default, the module essentially ignores the stderr stream
+        produced by SFTP and continues execution. The user is able to override
+        this behavior by setting this parameter to C(false). By doing so, any
+        content written to stderr is considered an error by Ansible and will
+        cause the module to fail.
       - When Ansible verbosity is set to greater than 3, either through the
         command line interface (CLI) using B(-vvvv) or through environment
         variables such as B(verbosity = 4), then this parameter will
         automatically be set to C(true).
     type: bool
     required: false
-    default: false
+    default: true
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -349,7 +350,7 @@ class FetchHandler:
         tuple(int,str,str)
             Return code, standard output and standard error.
         """
-        return self.module.run_command(cmd, **kwargs)
+        return self.module.run_command(cmd, errors='replace', **kwargs)
 
     def _get_vsam_size(self, vsam):
         """Invoke IDCAMS LISTCAT command to get the record length and space used.
@@ -821,7 +822,7 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            ignore_sftp_stderr=dict(type="bool", default=False, required=False),
+            ignore_sftp_stderr=dict(type="bool", default=True, required=False),
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
@@ -884,6 +885,7 @@ def run_module():
     fail_on_missing = boolean(parsed_args.get("fail_on_missing"))
     is_binary = boolean(parsed_args.get("is_binary"))
     encoding = module.params.get("encoding")
+    tmphlq = module.params.get("tmp_hlq")
 
     # ********************************************************** #
     #  Check for data set existence and determine its type       #
@@ -905,7 +907,8 @@ def run_module():
                 src_exists = data_set.DataSet.data_set_member_exists(src_data_set.name)
             else:
                 src_exists = data_set.DataSet.data_set_exists(
-                    src_data_set.name
+                    src_data_set.name,
+                    tmphlq=tmphlq
                 )
 
         if not src_exists:
@@ -935,7 +938,10 @@ def run_module():
         if "/" in src:
             ds_type = "USS"
         else:
-            ds_type = data_set.DataSet.data_set_type(data_set.extract_dsname(src_data_set.name))
+            ds_type = data_set.DataSet.data_set_type(
+                data_set.extract_dsname(src_data_set.name),
+                tmphlq=tmphlq
+            )
 
         if not ds_type:
             module.fail_json(msg="Unable to determine source type. No data was fetched.")

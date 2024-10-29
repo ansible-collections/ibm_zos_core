@@ -196,7 +196,7 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         f.write(script)
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
     for command in commands:
-        rc, stdout, stderr = module.run_command([tmp_file.name, command])
+        rc, stdout, stderr = module.run_command([tmp_file.name, command], errors='replace')
         command_results = {}
         command_results["command"] = command
         command_results["rc"] = rc

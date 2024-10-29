@@ -133,7 +133,7 @@ backup_name
 
 
 recover
-  Specifies if potentially recoverable errors should be ignored.
+  When *recover=true* and *operation=backup* then potentially recoverable errors will be ignored.
 
   | **required**: False
   | **type**: bool
@@ -200,16 +200,18 @@ space_type
 hlq
   Specifies the new HLQ to use for the data sets being restored.
 
-  Defaults to running user's username.
+  If no value is provided, the data sets will be restored with their original HLQs.
 
   | **required**: False
   | **type**: str
 
 
 tmp_hlq
-  Override the default high level qualifier (HLQ) for temporary and backup data sets.
+  Override the default high level qualifier (HLQ) for temporary data sets used in the modules operation.
 
-  The default HLQ is the Ansible user that executes the module and if that is not available, then the value of ``TMPHLQ`` is used.
+  If *tmp_hlq* is set, this value will be applied to all temporary data sets.
+
+  If *tmp_hlq* is not set, the value will be the username who submits the ansible task, this is the default behavior. If the username can not be identified, the value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str
@@ -290,8 +292,8 @@ Examples
        space: 1
        space_type: g
 
-   - name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
-       Use z/OS username as new HLQ.
+   - name: Restore data sets from a backup stored in the UNIX file /tmp/temp_backup.dzp.
+       Restore the data sets with the original high level qualifiers.
      zos_backup_restore:
        operation: restore
        backup_name: /tmp/temp_backup.dzp
@@ -346,6 +348,16 @@ Examples
 
 
 
+
+Notes
+-----
+
+.. note::
+   It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured to run either the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
+
+   When using this module, if the RACF FACILITY class profile **STGADMIN.ADR.DUMP.TOLERATE.ENQF** is active, you must have READ access authority to use the module option *recover=true*. If the RACF FACILITY class checking is not set up, any user can use the module option without access to the class.
+
+   If your system uses a different security product, consult that product's documentation to configure the required security classes.
 
 
 

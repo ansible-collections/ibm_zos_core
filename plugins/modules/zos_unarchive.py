@@ -783,7 +783,7 @@ class MVSUnarchive(Unarchive):
         return rc
 
     def src_exists(self):
-        return data_set.DataSet.data_set_exists(self.src)
+        return data_set.DataSet.data_set_exists(self.src, tmphlq=self.tmphlq)
 
     def _get_restored_datasets(self, output):
         ds_list = list()
@@ -831,7 +831,7 @@ class MVSUnarchive(Unarchive):
     def _list_content(self, source):
         restore_cmd = " RESTORE INDD(ARCHIVE) DS(INCL(**)) "
         cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(source)
-        rc, out, err = self.module.run_command(cmd, data=restore_cmd)
+        rc, out, err = self.module.run_command(cmd, data=restore_cmd, errors='replace')
         self._get_restored_datasets(out)
 
     def list_archive_content(self):

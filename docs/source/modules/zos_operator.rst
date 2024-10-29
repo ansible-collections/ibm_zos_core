@@ -37,6 +37,8 @@ cmd
 
   For example, to display job by job name the command would be ``cmd:"\\$dj''HELLO''"``
 
+  By default, the command will be converted to uppercase before execution, to control this behavior, see the *case_sensitive* option below.
+
   | **required**: True
   | **type**: str
 
@@ -61,6 +63,14 @@ wait_time_s
   | **required**: False
   | **type**: int
   | **default**: 1
+
+
+case_sensitive
+  If ``true``, the command will not be converted to uppercase before execution. Instead, the casing will be preserved just as it was written in a task.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
 
 
 

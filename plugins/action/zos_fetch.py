@@ -123,7 +123,7 @@ class ActionModule(ActionBase):
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
-            self._task.args.get("ignore_sftp_stderr"), default=False
+            self._task.args.get("ignore_sftp_stderr"), default=True
         )
         validate_checksum = _process_boolean(
             self._task.args.get("validate_checksum"), default=True

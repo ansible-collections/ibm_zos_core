@@ -6,6 +6,89 @@
 Releases
 ========
 
+Version 1.12.0-beta.1
+=====================
+
+Minor Changes
+-------------
+
+- ``zos_backup_restore`` - default behavior for module option **hlq** changed. When option **operation** is set to **restore** and the **hlq** is not provided, the original high level qualifiers in a backup will be used for a restore.
+
+- ``zos_job_output`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_job_query`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_job_submit`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_mvs_raw`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+- ``zos_operator`` - has added the option **case_sensitive**, allowing the module to control the commands case.
+
+- ``zos_script`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+- ``zos_tso_command`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+Bugfixes
+--------
+
+- ``zos_apf`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_archive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_backup_restore`` - when a recoverable error was encountered and **recover = True**, the module would fail. The change now allows the module to recover.
+
+- ``zos_blockinfile``
+
+   - when the modules **marker_begin** and **marker_end** were set to the same value, the module would not delete the block. Now the module requires the **marker_begin** and **marker_end** to have different values.
+   - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option..
+
+- ``zos_copy``
+
+   - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+   - module would fail if the user did not have Universal Access Authority for SAF Profile **MVS.MCSOPER.ZOAU** and SAF Class **OPERCMDS**. Now the module handles the exception and returns an informative message.
+   - module would ignore the value set for **remote_tmp** in the Ansible configuration file. Now the module uses the value of **remote_tmp** or the default value **~/.ansible/tmp** if none is given.
+
+- ``zos_data_set`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_encode`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_fetch`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_job_output`` - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
+
+- ``zos_job_query``
+
+   - module did not return values for properties **system** and **subsystem**. Now the module returns these values.
+   - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
+
+- ``zos_lineinfile`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_mount`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_mvs_raw`` - module sub-option **base64** for **return_content** did not retrieve DD output as Base64. Now the module returns Base64 encoded contents for the DD.
+
+- ``zos_script`` - module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
+
+- ``zos_unarchive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+control node and z/OS managed node dependencies.
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
+
 Version 1.11.0
 ==============
 
@@ -96,7 +179,7 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -110,7 +193,7 @@ Known Issues
 ------------
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
-- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
 
 Version 1.10.0
 ==============
@@ -201,7 +284,7 @@ It is intended to assist in updating your playbooks so this collection will cont
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -230,6 +313,52 @@ Known Issues
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
 - Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
 
+Version 1.9.3
+=============
+
+Bugfixes
+--------
+
+- ``zos_job_submit`` - module did not return values for properties **system** and **subsystem**. Now the module returns these values.
+- ``zos_mvs_raw``
+
+    - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail. Fix now has a consistent behavior and fails in both cases.
+    - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+controller and z/OS managed node dependencies.
+
+Known Issues
+------------
+
+- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
+
+   - If the appropriate level of ZOAU can not be installed, some options are to:
+
+      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
+
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+
+
 Version 1.9.2
 =============
 
@@ -241,7 +370,7 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -301,7 +430,7 @@ Known Issues
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -423,7 +552,7 @@ and documented **space_primary** option.
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -507,7 +636,7 @@ unique, some options to work around the error are below.
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -572,7 +701,7 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -633,7 +762,7 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -747,7 +876,7 @@ Deprecated Features
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -764,7 +893,7 @@ controller and z/OS managed node dependencies.
    https://github.com/ansible-collections/ibm_zos_core
 .. _Galaxy:
    https://galaxy.ansible.com/ibm/ibm_zos_core
-.. _Automation Hub:
+.. _Ansible Automation Platform:
    https://www.ansible.com/products/automation-hub
 .. _IBM Open Enterprise SDK for Python:
    https://www.ibm.com/products/open-enterprise-python-zos

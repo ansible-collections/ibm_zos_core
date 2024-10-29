@@ -174,7 +174,7 @@ def idcams(cmd, dds=None, authorized=False):
     return _run_mvs_command("IDCAMS", cmd.upper(), dds, authorized)
 
 
-def ikjeft01(cmd, dds=None, authorized=False):
+def ikjeft01(cmd, dds=None, authorized=False, tmphlq=None):
     """IKJEFT01 is the TSO/E program. You can use it whenever you wish to perform
     a TSO function within a batch job. It allows you to perform any TSO function.
     For a general list of all TSO functions, type TSO HELP. Additionally,
@@ -191,13 +191,15 @@ def ikjeft01(cmd, dds=None, authorized=False):
     authorized : bool
         Whether the command should be run in authorized
         mode.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
     tuple(int, str, str)
         A tuple of return code, stdout and stderr.
     """
-    return _run_mvs_command("IKJEFT01", cmd, dds, authorized)
+    return _run_mvs_command("IKJEFT01", cmd, dds, authorized, tmphlq=tmphlq)
 
 
 def iehlist(cmd, dds=None, authorized=False):
@@ -262,7 +264,7 @@ def adrdssu(cmd, dds=None, authorized=False):
     return _run_mvs_command("ADRDSSU", cmd, dds, authorized)
 
 
-def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
+def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
     """Run a particular MVS command.
 
     Parameters
@@ -279,6 +281,8 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
     authorized : bool
         Indicates whether the MVS program should run
         as authorized. (Default {False})
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -296,9 +300,11 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
     mvscmd = "mvscmd"
     if authorized:
         mvscmd += "auth"
+    if tmphlq:
+        mvscmd += " -Q={0}".format(tmphlq)
     mvscmd += " --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin)
     if dd:
         for k, v in dd.items():
             mvscmd += " --{0}={1}".format(k, v)
 
-    return module.run_command(mvscmd, data=cmd)
+    return module.run_command(mvscmd, data=cmd, errors='replace')

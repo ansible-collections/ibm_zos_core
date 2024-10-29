@@ -59,7 +59,7 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
-        rc, out, err = module.run_command(command)
+        rc, out, err = module.run_command(command, errors='replace')
         if rc == 0 and verbose:
             out = err
         return MVSCmdResponse(rc, out, err)
@@ -91,7 +91,7 @@ class MVSCmd(object):
             "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
-        rc, out, err = module.run_command(command)
+        rc, out, err = module.run_command(command, errors='replace')
         if rc == 0 and verbose:
             out = err
         return MVSCmdResponse(rc, out, err)

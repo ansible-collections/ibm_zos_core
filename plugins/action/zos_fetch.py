@@ -159,12 +159,12 @@ class ActionModule(ActionBase):
 
         dest = os.path.realpath(dest)
         dest = dest if dest.startswith("/") else os.path.join(os.getcwd(), dest)
-        new_module_args.update(dest=dest)
 
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #
         new_module_args = self._task.args.copy()
+        new_module_args.update(dest=dest)
         encoding_to = None
         if encoding:
             encoding_to = encoding.get("to", None)

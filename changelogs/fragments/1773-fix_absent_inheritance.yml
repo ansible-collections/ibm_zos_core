@@ -1,0 +1,4 @@
+bugfixes:
+- zos_unarchive - Module was not able to execute zos_unarchive xmit files.
+    Fix now restores allows to unarchive modules.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1773).

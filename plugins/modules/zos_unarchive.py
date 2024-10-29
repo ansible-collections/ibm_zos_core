@@ -1140,6 +1140,7 @@ class AMATerseUnarchive(MVSUnarchive):
 
 class XMITUnarchive(MVSUnarchive):
     def __init__(self, module):
+        super(XMITUnarchive, self).__init__(module)
         """Unarchive for XMIT archives.
 
         Parameters

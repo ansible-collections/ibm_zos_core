@@ -144,6 +144,8 @@ verbose_output:
 import pathlib
 import os
 import tempfile
+import sys
+import stat
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
@@ -178,14 +180,13 @@ def get_full_output(file, module):
 
 def create_command(size, noai=False, verbose=False):
     temp = ""
+    trace = ""
     noai = "-noai" if noai else ""
 
     if verbose:
         temp = tempfile.NamedTemporaryFile(dir=os.environ['TMPDIR'], delete=False)
         temp = temp.name
-        trace = """-trace "{0}" """.format(temp)
-    else:
-        trace = ""
+        trace = "-trace '{0}'".format(temp)
 
     cmd_str = "-size {0} {1} {2}".format(size, noai, trace)
 

@@ -240,7 +240,6 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_id=job_id,
         owner=owner,
         job_name=job_name,
-        dd_scan=False
     )
 
     if len(job_status_result) == 0:
@@ -252,7 +251,6 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
             job_id=job_id,
             owner=owner,
             job_name=job_name,
-            dd_scan=False
         )
 
     return job_status_result
@@ -477,9 +475,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                     job["ddnames"].append(dd)
                     if len(job["class"]) < 1:
-                        if "- CLASS " in tmpcont:
-                            tmptext = tmpcont.split("- CLASS ")[1]
-                            job["class"] = tmptext.split(" ")[0]
+                        job["class"] = entry.job_class
 
                     if len(job["system"]) < 1:
                         if "--  S Y S T E M  " in tmpcont:

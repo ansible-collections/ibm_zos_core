@@ -56,7 +56,7 @@ options:
     default: k
   no_auto_increment:
     description:
-      - Option to not allow automatic increase on shrinking process.
+      - Option to not allow auto increase on shrinking process.
       - If set to C(true), in the process of shrinking a zfs data set if a new file or
         folder is create or added to the point and its over the new size the process will fail.
     type: bool

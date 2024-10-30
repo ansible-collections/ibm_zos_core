@@ -36,7 +36,7 @@ PARALLEL_RUNNING = """- hosts : zvm
   environment:
     _BPXK_AUTOCVT: "ON"
     ZOAU_HOME: "{0}"
-    PYTHONPATH: "{0}/lib"
+    PYTHONPATH: "{0}/lib/{2}"
     LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
     PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
     _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
@@ -212,8 +212,9 @@ def test_zos_operator_parallel_terminal(get_config):
     python_path = enviroment["python_path"]
     cut_python_path = python_path[:python_path.find('/bin')].strip()
     zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = "3.11"
     
-    print(quote(PARALLEL_RUNNING.format(zoau, cut_python_path)))
+    print(quote(PARALLEL_RUNNING.format(zoau, cut_python_path, python_version)))
 
     try:
         playbook = "playbook.yml"
@@ -221,6 +222,7 @@ def test_zos_operator_parallel_terminal(get_config):
         os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
             zoau,
             cut_python_path,
+            python_version
         )), playbook))
         os.system("echo {0} > {1}".format(quote(INVENTORY.format(
             hosts,

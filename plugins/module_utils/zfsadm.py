@@ -36,10 +36,8 @@ class zfsadm:
 
         Parameters
         ----------
-            grow : bool
-                If operation grow will be execute.
-            shrink : bool
-                If operation shrink will be execute.
+            operation : str
+                Whether the operation to execute is grow or shrink
             cmd : str
                 Arguments to be added to the zfsadm -aggregate command"".
 

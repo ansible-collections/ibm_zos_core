@@ -62,7 +62,7 @@ INVENTORY = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: /allpython/3.9/usr/lpp/IBM/cyp/v3r9/pyz/bin/python3.9"""
+      ansible_python_interpreter: /allpython/3.11/usr/lpp/IBM/cyp/v3r11/pyz/bin/python3"""
 
 
 def test_zos_operator_various_command(ansible_zos_module):
@@ -212,6 +212,7 @@ def test_zos_operator_parallel_terminal(get_config):
     python_path = enviroment["python_path"]
     cut_python_path = python_path[:python_path.find('/bin')].strip()
     zoau = enviroment["environment"]["ZOAU_ROOT"]
+    print(f"Current python path for playbooks: {python_path}")
     try:
         playbook = "playbook.yml"
         inventory = "inventory.yml"

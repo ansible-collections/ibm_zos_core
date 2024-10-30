@@ -1,0 +1,4 @@
+trivial:
+  - test_zos_mvs_raw_func.py - Correct the size used when allocating datasets inside
+    the test suite.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1775).

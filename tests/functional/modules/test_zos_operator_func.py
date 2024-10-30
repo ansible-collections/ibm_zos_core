@@ -212,9 +212,7 @@ def test_zos_operator_parallel_terminal(get_config):
     python_path = enviroment["python_path"]
     cut_python_path = python_path[:python_path.find('/bin')].strip()
     zoau = enviroment["environment"]["ZOAU_ROOT"]
-    python_version = "3.11"
-    
-    print(quote(PARALLEL_RUNNING.format(zoau, cut_python_path, python_version)))
+    python_version = cut_python_path.split('/')[2]
 
     try:
         playbook = "playbook.yml"

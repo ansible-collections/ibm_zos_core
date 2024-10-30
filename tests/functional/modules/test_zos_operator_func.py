@@ -212,7 +212,9 @@ def test_zos_operator_parallel_terminal(get_config):
     python_path = enviroment["python_path"]
     cut_python_path = python_path[:python_path.find('/bin')].strip()
     zoau = enviroment["environment"]["ZOAU_ROOT"]
-    print(f"Current python path for playbooks: {python_path}")
+    
+    print(quote(PARALLEL_RUNNING.format(zoau, cut_python_path))
+
     try:
         playbook = "playbook.yml"
         inventory = "inventory.yml"

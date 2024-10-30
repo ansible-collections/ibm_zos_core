@@ -157,14 +157,15 @@ class ActionModule(ActionBase):
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
-        dest = os.path.realpath(dest)
-        dest = dest if dest.startswith("/") else os.path.join(os.getcwd(), dest)
+        if not (dest.startswith("/")) or not (dest.startswith("~")) or not(dest.startswith(".")):
+            dest = os.path.realpath(dest)
+            dest = os.path.join(os.getcwd(), dest)
 
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #
         new_module_args = self._task.args.copy()
-        new_module_args.update(dest=dest)
+        new_module_args.update(dest=str(dest))
         encoding_to = None
         if encoding:
             encoding_to = encoding.get("to", None)

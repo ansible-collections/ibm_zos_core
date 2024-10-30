@@ -72,7 +72,7 @@ options:
 """
 
 EXAMPLES = r"""
-- name: Resize an aggregate data set to 4 megabytes (4,096 Kb).
+- name: Resize an aggregate data set to 2500 Kilobytes.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
@@ -137,15 +137,10 @@ verbose_output:
     returned: C(verbose=true) and success
     type: str
     sample: 6FB2F8 print_trace_table: printing contents of table: Main Trace Table
-            Start Record found in trace, total records 700,
-            30204 bytes to format
 """
 
-import pathlib
 import os
 import tempfile
-import sys
-import stat
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
@@ -155,6 +150,20 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 
 
 def calculate_size_on_k(size, size_type):
+    """Function to convert size depending on the size_type.
+
+    Parameters
+    ----------
+        size : int
+            Size to grow or shrink the zfs
+        size_type : str
+            Type of space to be use
+
+    Returns
+    -------
+        size : int
+            Size on kilobytes
+    """
     if size_type == "m":
         size *= 1024
     if size_type == "g":
@@ -167,6 +176,20 @@ def calculate_size_on_k(size, size_type):
 
 
 def get_full_output(file, module):
+    """Function to get the verbose output and delete the tmp file
+
+    Parameters
+    ----------
+        file : str
+            Name of the tmp file where the full verbose output is store
+        module : object
+            Ansible object to execute commands.
+
+    Returns
+    -------
+        output : str
+            Verbose output
+    """
     output = ""
     cmd = "cat '{0}'".format(file)
     rc, output, stderr = module.run_command(cmd)
@@ -178,13 +201,33 @@ def get_full_output(file, module):
     return output
 
 
-def create_command(size, noai=False, verbose=False):
-    temp = ""
+def create_command(size, noai=False, verbose=""):
+    """Function create the command to execute the grow o shrink operation.
+
+    Parameters
+    ----------
+        size : int
+            Size to be assign to the zfs
+        noai : bool
+            If there will be activate no auto increase option
+        verbose : str
+            Folder where the tmp file for full output will be store
+
+    Returns
+    -------
+        cmd : str
+            Command to execute for aggregate
+
+        temp : str
+            Name of the tmp file where the verbose output will be store.
+    """
     trace = ""
+    temp = ""
+
     noai = "-noai" if noai else ""
 
-    if verbose:
-        temp = tempfile.NamedTemporaryFile(dir=os.environ['TMPDIR'], delete=False)
+    if len(verbose) > 0:
+        temp = tempfile.NamedTemporaryFile(dir=verbose, delete=False)
         temp = temp.name
         trace = "-trace '{0}'".format(temp)
 
@@ -194,11 +237,40 @@ def create_command(size, noai=False, verbose=False):
 
 
 def get_size_and_free(string):
+    """Function to parsing the response of get aggregation size.
+
+    Parameters
+    ----------
+        string : str
+            stout of the get aggregation size function
+
+    Returns
+    -------
+        numbers[1] : int
+            Size on kilobytes of the zfs
+
+        numbers[0] : int
+            Total free on kilobytes of the zfs
+    """
     numbers = [int(word) for word in string.split() if word.isdigit()]
     return numbers[1], numbers[0]
 
 
 def found_mount_target(module, target):
+    """Execute df command to access the information of mount points.
+
+    Parameters
+    ----------
+        module : object
+            Ansible object to execute commands.
+        target : str
+            ZFZ to check
+
+    Returns
+    -------
+        mount_point : str
+            The folder where the zfs is mount
+    """
     rc, stdout, stderr = module.run_command("df")
     found = False
     if rc == 0:
@@ -213,7 +285,7 @@ def found_mount_target(module, target):
         if found is False:
             module.fail_json(msg="Resize: could not locate {0}".format(target),
                 stderr="No error reported: string not found." )
-    return target, mount_point
+    return mount_point
 
 
 def run_module():
@@ -264,7 +336,7 @@ def run_module():
     changed = False
 
     #Validation to found target on the system and also get the mount_point
-    target, mount_target = found_mount_target(module=module, target=target)
+    mount_target = found_mount_target(module=module, target=target)
 
     #Initialize the class with the target
     aggregate_name = zfsadm(aggregate_name=target, module=module)
@@ -305,11 +377,9 @@ def run_module():
     else:
         module.fail_json(msg="Error code 119 not enough space to shrink")
 
-    if verbose:
-        path =  f"{os.path.realpath(module.tmpdir)}/"
-        os.environ['TMPDIR'] = path
+    path = module._remote_tmp if verbose else ""
 
-    cmd, tmp_file = create_command(size=size, noai=noai, verbose=verbose)
+    cmd, tmp_file = create_command(size=size, noai=noai, verbose=path)
 
     #Execute the function
     rc, stdout, stderr, cmd = aggregate_name.grow_shrink(operation=operation, cmd=cmd)
@@ -327,6 +397,8 @@ def run_module():
                 verbose_output=output,
             )
     else:
+        if verbose:
+            os.remove(tmp_file)
         module.fail_json(
             msg="Resize: resize command returned non-zero code: rc=" +
             str(rc) + ".",

@@ -765,7 +765,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
 def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
     z_int = z_python_interpreter
     hosts = ansible_zos_module
-    remote_host = z_int[1].get("inventory").strip(",")
+    remote_host = z_int[2].get("inventory").strip(",")
     dest_path = f"/tmp/{remote_host}/etc/ssh/ssh_config"
     params = {
         "src":"/etc/ssh/ssh_config",

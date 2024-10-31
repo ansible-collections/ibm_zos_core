@@ -1,0 +1,3 @@
+trivial:
+  - module_utils/job.py - Avoid parsing of job output and use job class from ZOAU python API.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1751).

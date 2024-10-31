@@ -69,6 +69,14 @@ options:
     type: bool
     required: false
     default: false
+  wait_full_time:
+    description:
+      - If I(wait_time_s) is non-zero, indicates whether to wait the full time,
+      or only until the first response is returned.
+    type: bool
+    required: false
+    default: true
+
 notes:
     - Commands may need to use specific prefixes like $, they can be discovered by
       issuing the following command C(D OPDATA,PREFIX).
@@ -214,6 +222,7 @@ def execute_command(operator_cmd, timeout_s=1, preserve=False, *args, **kwargs):
     timeout_c = 100 * timeout_s
 
     start = timer()
+    ## downstream point to opercmd, which needs the 'wait=f' to work.
     response = opercmd.execute(operator_cmd, timeout=timeout_c, preserve=preserve, *args, **kwargs)
     end = timer()
     rc = response.rc
@@ -242,6 +251,7 @@ def run_module():
         verbose=dict(type="bool", required=False, default=False),
         wait_time_s=dict(type="int", required=False, default=1),
         case_sensitive=dict(type="bool", required=False, default=False),
+        wait_full_time=dict(type="bool", required=False, default=True)
     )
 
     result = dict(changed=False)
@@ -329,6 +339,7 @@ def parse_params(params):
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
         case_sensitive=dict(arg_type="bool", required=False),
+        wait_full_time=dict(type="bool", required=False)
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -360,13 +371,17 @@ def run_operator_command(params):
     wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
     preserve = params.get("case_sensitive")
+    wait_full_time = params.get("wait_full_time")
 
     use_wait_arg = False
     if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
         use_wait_arg = True
 
     if use_wait_arg:
-        kwargs.update({"wait": True})
+        if wait_full_time:
+            kwargs.update("wait": true)
+        else:
+            kwargs.update("wait": false)
 
     args = []
     rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, preserve=preserve, *args, **kwargs)

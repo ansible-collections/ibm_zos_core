@@ -22,6 +22,7 @@ module: zos_mvs_raw
 author:
   - "Xiao Yuan Ma (@bjmaxy)"
   - "Blake Becker (@blakeinate)"
+  - "Oscar Fernando Flores (@fernandofloresg)"
 short_description: Run a z/OS program.
 description:
   - Run a z/OS program.
@@ -1899,7 +1900,7 @@ def run_module():
             )
             response = build_response(program_response.rc, dd_statements, program_response.stdout)
             result = combine_dicts(result, response)
-            if program_response.rc != 0 or program_response.stderr:
+            if program_response.rc != 0 :
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),

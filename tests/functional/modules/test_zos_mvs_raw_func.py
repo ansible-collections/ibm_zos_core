@@ -59,8 +59,13 @@ def test_failing_name_format(ansible_zos_module):
     for result in results.contacted.values():
         assert "ValueError" in result.get("msg")
 
-
-def test_disposition_new(ansible_zos_module):
+@pytest.mark.parametrize(
+        # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
+        "verbose",
+        [True, False],
+)
+def test_disposition_new(ansible_zos_module, verbose):
     idcams_dataset = None
     try:
         hosts = ansible_zos_module
@@ -71,6 +76,7 @@ def test_disposition_new(ansible_zos_module):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
+            verbose=verbose,
             dds=[
                 {
                     "dd_data_set":{
@@ -94,6 +100,7 @@ def test_disposition_new(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
+            assert result.get("failed", False) is False
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:

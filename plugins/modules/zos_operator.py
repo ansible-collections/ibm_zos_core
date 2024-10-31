@@ -222,7 +222,7 @@ def execute_command(operator_cmd, timeout_s=1, preserve=False, *args, **kwargs):
     timeout_c = 100 * timeout_s
 
     start = timer()
-    ## downstream point to opercmd, which needs the 'wait=f' to work.
+    # downstream point to opercmd, which needs the 'wait=f' to work.
     response = opercmd.execute(operator_cmd, timeout=timeout_c, preserve=preserve, *args, **kwargs)
     end = timer()
     rc = response.rc

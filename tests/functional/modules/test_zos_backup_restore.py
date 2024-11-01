@@ -25,7 +25,6 @@ import string
 import random
 import time
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
-import shlex
 
 DATA_SET_CONTENTS = "HELLO WORLD"
 TMP_DIRECTORY = "/tmp/"
@@ -898,7 +897,7 @@ def test_backup_into_gds(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"drm \"{shlex.quote(ds_name)}\"")
+        results = hosts.all.shell(cmd=f"drm \"{ds_name.replace('$', '\$')}\"")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

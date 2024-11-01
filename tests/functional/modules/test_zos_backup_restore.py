@@ -897,7 +897,8 @@ def test_backup_into_gds(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-        results = hosts.all.shell(cmd=f"drm \"{ds_name.replace('$', '\$')}\"")
+        escaped_ds_name = ds_name.replace('$', '\$')
+        results = hosts.all.shell(cmd=f"drm \"{escaped_ds_name}\"")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None

@@ -1713,8 +1713,14 @@ venv_start(){
     fi
 
     message "Starting managed python virtual environment: $VENV_BASENAME"
+    # Original , see comments below.
     #. $VENV_BIN/activate; exec /bin/sh -i
-    /bin/bash -c ". $VENV_BIN/activate; exec /bin/sh -i;"
+
+    # TODO: Document wny /bin/bash -c was introduced , the shebang already forces this, could have been because of original CE design which should not depend on bash.
+    # /bin/bash -c ". $VENV_BIN/activate; exec /bin/sh -i;"
+
+    # Invoke venv with epxorts that can find the ansible collection within the venv.
+    /bin/bash -c ". $VENV_BIN/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg; exec /bin/sh -i;"
 }
 
 # ------------------------------------------------------------------------------

@@ -175,6 +175,17 @@ write_ansible_cfg(){
     unset ansible_cfg
 }
 
+# Customized galaxy-importer.cfg for each managed venv, ./ac will know how to source this so its used during execution.
+write_galaxy_cfg(){
+    galaxy_cfg=${galaxy_cfg}"[galaxy-importer]\\n"
+    galaxy_cfg=${galaxy_cfg}"LOG_LEVEL_MAIN = INFO\\n"
+    galaxy_cfg=${galaxy_cfg}"RUN_ANSIBLE_TEST = False\\n"
+    galaxy_cfg=${galaxy_cfg}"ANSIBLE_LOCAL_TMP = '~/.ansible/tmp'\\n"
+    galaxy_cfg=${galaxy_cfg}"RUN_FLAKE8 = True\\n"
+    echo -e "${galaxy_cfg}">"${VENV_HOME_MANAGED}"/"${venv_name}"/ansible.cfg
+    unset galaxy_cfg
+}
+
 # Lest normalize the version from 3.10.2 to 3010002000
 # Do we we need that 4th octet?
 normalize_version() {
@@ -321,6 +332,7 @@ write_requirements(){
             cp ce.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp -R modules "${VENV_HOME_MANAGED}"/"${venv_name}"/
             write_ansible_cfg
+            write_galaxy_cfg
 
             # Decrypt file
             if [ "$option_pass" ]; then

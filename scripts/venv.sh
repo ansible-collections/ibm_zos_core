@@ -193,29 +193,13 @@ write_galaxy_cfg(){
     galaxy_cfg=${galaxy_cfg}"    ./.venv/*,\\n"
     galaxy_cfg=${galaxy_cfg}"    ./.pytest_cache/*,\\n\\n"
 
-    galaxy_cfg=${galaxy_cfg}"ignore = BLK,W503,Q000,D,D100,D101,D102,D103,D104,D105,D106,D107,D200,D401,D402,E203\\n"
-    galaxy_cfg=${galaxy_cfg}"max-line-length = 100\\n\\n"
+    galaxy_cfg=${galaxy_cfg}"ignore = E402,W503,W504\\n\\n"
 
-    galaxy_cfg=${galaxy_cfg}"# Flake8 builtin codes\\n"
+    galaxy_cfg=${galaxy_cfg}"# Flake8 codes\\n"
     galaxy_cfg=${galaxy_cfg}"# --------------------\\n"
     galaxy_cfg=${galaxy_cfg}"# W503: This enforces operators before line breaks which is not pep8 or black compatible.\\n"
-    galaxy_cfg=${galaxy_cfg}"# E203: no whitespace around ':'. disabled until https://github.com/PyCQA/pycodestyle/issues/373 is fixed\\n\\n"
-    galaxy_cfg=${galaxy_cfg}"# Flake8-quotes extension codes\\n"
-    galaxy_cfg=${galaxy_cfg}"# -----------------------------\\n"
-    galaxy_cfg=${galaxy_cfg}"# Q000: double or single quotes only, default is double (don't want to enforce this)\\n\\n"
-    galaxy_cfg=${galaxy_cfg}"# Flake8-docstring extension codes\\n"
-    galaxy_cfg=${galaxy_cfg}"# --------------------------------\\n"
-    galaxy_cfg=${galaxy_cfg}"# D100: missing docstring in public module\\n"
-    galaxy_cfg=${galaxy_cfg}"# D101 Missing docstring in public class\\n"
-    galaxy_cfg=${galaxy_cfg}"# D102 Missing docstring in public method\\n"
-    galaxy_cfg=${galaxy_cfg}"# D103 Missing docstring in public function\\n"
-    galaxy_cfg=${galaxy_cfg}"# D104: missing docstring in public package\\n"
-    galaxy_cfg=${galaxy_cfg}"# D105 Missing docstring in magic method\\n"
-    galaxy_cfg=${galaxy_cfg}"# D106: missing docstring in public nested class (complains about "class Meta:" and documenting those is silly)\\n"
-    galaxy_cfg=${galaxy_cfg}"# D107 Missing docstring in __init__\\n"
-    galaxy_cfg=${galaxy_cfg}"# D200: one-line docstring should fit on one line with quotes\\n"
-    galaxy_cfg=${galaxy_cfg}"# D401: first line should be imperative (nitpicky)\\n"
-    galaxy_cfg=${galaxy_cfg}"# D402: first line should not be the function’s “signature” (false positives)\\n\\n"
+    galaxy_cfg=${galaxy_cfg}"# W504: This enforces operators after line breaks which is not pep8 or black compatible.\\n"
+    galaxy_cfg=${galaxy_cfg}"# E402: This enforces module level imports at the top of the file.\\n\\n"
 
     echo -e "${galaxy_cfg}">"${VENV_HOME_MANAGED}"/"${venv_name}"/galaxy-importer.cfg
     unset galaxy_cfg

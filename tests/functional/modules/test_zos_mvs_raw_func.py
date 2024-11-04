@@ -215,7 +215,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
     This tests the error message when a user cannot create data sets with a given HLQ.
     """
     managed_user = None
-    managed_user_test_case_name = "list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user"
+    managed_user_test_case_name = "managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option"
     try:
         # Initialize the Managed user API from the pytest fixture.
         managed_user = ManagedUser.from_fixture(ansible_zos_module)
@@ -229,7 +229,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
         # Delete the managed user on the remote host to avoid proliferation of users.
         managed_user.delete_managed_user()
 
-def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
+def managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
     idcams_dataset = None
     try:
         hosts = ansible_zos_module

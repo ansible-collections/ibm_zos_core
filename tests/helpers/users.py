@@ -890,12 +890,12 @@ class ManagedUser:
 
         cmd=f"{command.getvalue()}"
         results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
-
+        print(results_stdout_lines)
         try:
             # Evaluate the results
-            rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
-            if not rdefine_rc or int(rdefine_rc[0]) > 4:
-                err_details = f"rdefine {saf_class} {saf_profile}"
+            addgroup_rc = [v for v in results_stdout_lines if f"ADDGROUP RC=" in v][0].split('=')[1].strip() or None
+            if not addgroup_rc or int(addgroup_rc[0]) > 4:
+                err_details = f"addgroup {group}"
                 err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
                 raise Exception(err_msg)
 

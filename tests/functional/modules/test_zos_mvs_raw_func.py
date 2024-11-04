@@ -17,6 +17,7 @@ __metaclass__ = type
 
 import pytest
 
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
@@ -151,6 +152,81 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
+
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
+    idcams_dataset = None
+    try:
+        hosts = ansible_zos_module
+        tmphlq = "TMPHLQ"
+        volumes = Volume_Handler(volumes_on_systems)
+        default_volume = volumes.get_available_vol()
+        default_data_set = get_tmp_ds_name()[:25]
+        hosts.all.zos_data_set(
+            name=default_data_set, type="seq", state="present", replace=True
+        )
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
+
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            tmp_hlq=tmphlq,
+            dds=[
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "return_content":{
+                            "type":"text"
+                        },
+                        "replace":True,
+                        "backup":True,
+                        "type":"seq",
+                        "space_primary":5,
+                        "space_secondary":1,
+                        "space_type":"m",
+                        "volumes":default_volume,
+                        "record_format":"fb"
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":idcams_listcat_dataset_cmd
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+            for backup in result.get("backups"):
+                backup.get("backup_name")[:6] == tmphlq
+        for result in results.contacted.values():
+            assert result.get("changed", False) is True
+    finally:
+        results = hosts.all.zos_data_set(name=default_data_set, state="absent")
+        if idcams_dataset:
+            hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansible_zos_module):
+    """
+    This tests the error message when a user cannot create data sets with a given HLQ.
+    """
+    managed_user = None
+    managed_user_test_case_name = "list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user"
+    try:
+        # Initialize the Managed user API from the pytest fixture.
+        managed_user = ManagedUser.from_fixture(ansible_zos_module)
+
+        # Important: Execute the test case with the managed users execution utility.
+        managed_user.execute_managed_user_test(
+            managed_user_test_case = managed_user_test_case_name, debug = True,
+            verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+    finally:
+        # Delete the managed user on the remote host to avoid proliferation of users.
+        managed_user.delete_managed_user()
 
 def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
     idcams_dataset = None

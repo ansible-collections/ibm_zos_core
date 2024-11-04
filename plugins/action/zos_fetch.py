@@ -156,7 +156,7 @@ class ActionModule(ActionBase):
             member_name = src[src.find("(") + 1: src.find(")")]
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
-    
+
         # To manage relative paths we verify and add the current directory
         # Required to be cast to str
         if not (dest.startswith("/")):

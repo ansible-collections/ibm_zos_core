@@ -121,6 +121,7 @@ ENDC=$'\e[0m'
 # return codes.. Use this method for messages to the console.
 # ------------------------------------------------------------------------------
 message(){
+    printf '%s\n' "" >&2
     printf '%s\n' "${GRN}${DIV}${ENDC}" >&2
     printf '%s\n' "${GRN}INFO:${ENDC} ${1}" >&2
     printf '%s\n' "${GRN}${DIV}${ENDC}" >&2
@@ -132,6 +133,7 @@ message(){
 # Use this method for error messages to the console.
 # ------------------------------------------------------------------------------
 message_error(){
+    printf '%s\n' "" >&2
     printf '%s\n' "${RED}${DIV}${RED}" >&2
     printf '%s\n' "${RED}ERROR:${ENDC} ${1}" >&2
     printf '%s\n' "${RED}${DIV}${ENDC}" >&2
@@ -144,6 +146,7 @@ message_error(){
 # Use this method for error messages to the console.
 # ------------------------------------------------------------------------------
 message_warn(){
+    printf '%s\n' "" >&2
     printf '%s\n' "${YEL}${DIV}${YEL}" >&2
     printf '%s\n' "${YEL}WARN:${ENDC} ${1}" >&2
     printf '%s\n' "${YEL}${DIV}${YEL}" >&2
@@ -369,11 +372,27 @@ ac_build(){
 ## Example:
 ##  $ ac --ac-galaxy-importer
 ac_galaxy_importer(){
+    # Extract the pytest ignore errors from `$VENV/galaxy-importer.cfg` and trim all white space
+    FLAKE8_IGNORE=`cat $VENV/galaxy-importer.cfg| grep -i "ignore = " | cut -d "=" -f 2 | tr -d ' '`
+
+    # Path to the installed constants.py
+    eval "ORIGINAL_CONSTANTS_DIR=(${VENV}/lib/*/site-packages/galaxy_importer/)"
+
+    # Backup up the constants.py file before editing it.
+    cp $ORIGINAL_CONSTANTS_DIR/constants.py /tmp/
+
+    # Update constants.py with our choice of FLAKE8_IGNORE entry
+    sed "s/E402/$FLAKE8_IGNORE/" ${ORIGINAL_CONSTANTS_DIR}/constants.py > ${ORIGINAL_CONSTANTS_DIR}/constants.py.tmp
+
+    mv ${ORIGINAL_CONSTANTS_DIR}/constants.py.tmp ${ORIGINAL_CONSTANTS_DIR}/constants.py
+
     message "Creating 'ibm_zos_core' collection with branch: '$GH_BRANCH'."
     . $VENV_BIN/activate && collection_name=$($VENV_BIN/ansible-galaxy collection build --force | awk -F/ '{print $NF}') && ls -la $collection_name
 
     message "Running Galaxy Importer for collection $collection_name"
-    . $VENV_BIN/activate && python3 -m galaxy_importer.main $collection_name
+    . $VENV_BIN/activate && export GALAXY_IMPORTER_CONFIG=$VENV/galaxy-importer.cfg; python3 -m galaxy_importer.main $collection_name
+
+    mv /tmp/constants.py ${ORIGINAL_CONSTANTS_DIR}/constants.py
 }
 
 # ------------------------------------------------------------------------------
@@ -1711,8 +1730,14 @@ venv_start(){
     fi
 
     message "Starting managed python virtual environment: $VENV_BASENAME"
+    # Original , see comments below.
     #. $VENV_BIN/activate; exec /bin/sh -i
-    /bin/bash -c ". $VENV_BIN/activate; exec /bin/sh -i;"
+
+    # TODO: Document wny /bin/bash -c was introduced , the shebang already forces this, could have been because of original CE design which should not depend on bash.
+    # /bin/bash -c ". $VENV_BIN/activate; exec /bin/sh -i;"
+
+    # Invoke venv with epxorts that can find the ansible collection within the venv.
+    /bin/bash -c ". $VENV_BIN/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg; exec /bin/sh -i;"
 }
 
 # ------------------------------------------------------------------------------

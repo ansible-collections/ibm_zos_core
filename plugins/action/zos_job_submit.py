@@ -75,12 +75,12 @@ class ActionModule(ActionBase):
                 return result
 
             tmp_dir = self._connection._shell._options.get("remote_tmp")
+            rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_dir))
+            if rc > 0:
+                msg = f"Failed to resolve remote temporary directory {tmp_dir}. Ensure that the directory exists and user has proper access."
+                return self._exit_action({}, msg, failed=True)
 
-            # rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_dir))
-            # if rc > 0:
-            #     msg = f"Failed to resolve remote temporary directory {tmp_dir}. Ensure that the directory exists and user has proper access."
-            #     return self._exit_action({}, msg, failed=True)
-
+            tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
             # Creating the name for the temp file needed.
             temp_file_name = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
             dest_path = path.join(tmp_dir, temp_file_name)

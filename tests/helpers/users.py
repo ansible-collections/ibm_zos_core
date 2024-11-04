@@ -852,12 +852,10 @@ class ManagedUser:
         except Exception as err:
             raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {self._managed_racf_user}, exception [{err}]")
 
-    # TODO: Implement this method in the future
     def _create_user_zos_limited_hlq(self) -> None:
         """
         Update a managed user id for the remote node with restricted access to
         High LevelQualifiers:
-        - RESTRICT
         - NOPERMIT
         Any attempt for this user to access the HLQ will be rejected.
 
@@ -877,8 +875,46 @@ class ManagedUser:
             If any of the remote commands return codes are out of range an exception
             and the stdout and stderr is returned.
         """
-        print("Needs to be implemented")
+        group="NOPERMIT"
+        restricted_hlq="NOPERMIT.*"
+        saf_class = "DATASET"
+        command = StringIO()
 
+        command.write(f"echo create GROUP '{group}';")
+        command.write(f"tsocmd ADDGROUP \\({group}\\) OWNER\\(SYS1\\) SUPGROUP\\(SYS1\\) AUDIT\\(ALL\\);")
+        command.write(f"echo ADDGROUP RC=$?;")
+        command.write(f"tsocmd PERMIT {restricted_hlq} CLASS\\({saf_class}\\) ID\\({self._managed_racf_user}\\) ACCESS\\(NONE\\);")
+        command.write(f"echo PERMIT RC=$?;")
+        command.write(f"tsocmd SETROPTS GENERIC(DATASET) REFRESH;")
+        command.write(f"echo SETROPTS RC=$?;")
+
+        cmd=f"{command.getvalue()}"
+        results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
+
+        try:
+            # Evaluate the results
+            rdefine_rc = [v for v in results_stdout_lines if f"RDEFINE RC=" in v][0].split('=')[1].strip() or None
+            if not rdefine_rc or int(rdefine_rc[0]) > 4:
+                err_details = f"rdefine {saf_class} {saf_profile}"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
+
+            permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
+            if not permit_rc or int(permit_rc[0]) > 4:
+                err_details = f"permit {saf_profile} class {saf_class}"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
+
+            setropts_rc = [v for v in results_stdout_lines if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
+            if not setropts_rc or int(setropts_rc[0]) > 4:
+                err_details = f"setropts raclist {saf_class} refresh"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
+        except IndexError as err:
+            err_msg = f"Unable access the results, this is required to reduce permissions for user [{self._managed_racf_user}]."
+            raise Exception(f"{err_msg}, exception [{err}].")
+        except Exception as err:
+            raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {self._managed_racf_user}, exception [{err}]")
 
     # TODO: Implement this method in the future
     def _create_user_zos_limited_tmp_hlq(self) -> None:

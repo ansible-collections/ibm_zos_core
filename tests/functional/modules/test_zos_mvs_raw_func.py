@@ -61,7 +61,7 @@ def test_failing_name_format(ansible_zos_module):
 
 @pytest.mark.parametrize(
         # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
-        # Where a program will fail if rc != 0 only if verbose was True.
+        # Where previously a program would NOT fail when rc != 0 unless verbose was True.
         "verbose",
         [True, False],
 )

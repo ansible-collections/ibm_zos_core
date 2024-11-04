@@ -1,0 +1,9 @@
+trivial:
+  - ac - Enabled flake8 support through galaxy-importer, updates
+    venv.sh to create the galaxy-importer.cfg needed to activate
+    flake8.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1784).
+
+  - ac - Enabled managed venv's ability to detect locally installed
+    collections. 
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1784).

@@ -2281,7 +2281,7 @@ def test_authorized_program_run_authorized(ansible_zos_module, verbose):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
-            verbose=True,
+            verbose=verbose,
             dds=[
                 {
                     "dd_output":{

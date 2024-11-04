@@ -209,6 +209,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
+
 def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansible_zos_module):
     """
     This tests the error message when a user cannot create data sets with a given HLQ.
@@ -222,7 +223,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
         # Important: Execute the test case with the managed users execution utility.
         managed_user.execute_managed_user_test(
             managed_user_test_case = managed_user_test_case_name, debug = True,
-            verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+            verbose = False, managed_user_type=ManagedUserType.ZOS_LIMITED_HLQ)
 
     finally:
         # Delete the managed user on the remote host to avoid proliferation of users.
@@ -232,8 +233,9 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
     idcams_dataset = None
     try:
         hosts = ansible_zos_module
-        tmphlq = "TMPHLQ"
-        volumes = Volume_Handler(volumes_on_systems)
+        # IMPORTANT: Do not replace this HLQ unless it changes in the users utility, since this is the HLQ that
+        # the restricted hlq user don't have access to.
+        tmphlq = "NOPERMIT"
         default_volume = volumes.get_available_vol()
         default_data_set = get_tmp_ds_name()[:25]
         hosts.all.zos_data_set(

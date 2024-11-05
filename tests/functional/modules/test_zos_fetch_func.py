@@ -924,7 +924,7 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
         "dest":"tmp/",
         "flat":True
     }
-    dest_path = "/tmp/profile"
+    dest_path = "/tmp"
 
     try:
         results = hosts.all.zos_fetch(**params)

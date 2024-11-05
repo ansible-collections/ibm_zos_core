@@ -924,6 +924,7 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
     current_working_directory = os.getcwd()
     src = "/etc/profile"
 
+    # If the test suite is running on on root to avoid an issue we check the current directory
     if relative_path == "../tmp/":
         aux = os.path.basename(os.path.normpath(current_working_directory))
         relative_path = "../" + aux + "/tmp/"
@@ -934,11 +935,12 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
         "flat":True
     }
 
+    # Case to create the dest path to verify allow running any system
     if relative_path == "~/tmp/":
         dest = os.path.expanduser("~")
         dest = dest + "/tmp"
     elif relative_path == ".":
-        dest = dest = current_working_directory + "/profile"
+        dest = current_working_directory + "/profile"
     else:
         dest = current_working_directory + "/tmp"
 

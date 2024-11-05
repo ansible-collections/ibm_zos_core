@@ -160,10 +160,11 @@ class ActionModule(ActionBase):
         # To manage relative paths we verify and add the current directory
         # Required to be cast to str
         if not (dest.startswith("/")):
+            if dest.startswith("~"):
+                dest = os.path.expanduser(dest)
             dest = os.path.realpath(dest)
             dest = os.path.join(os.getcwd(), dest)
             dest = f"{dest}/" if os.path.isdir(dest) else str(dest)
-
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #

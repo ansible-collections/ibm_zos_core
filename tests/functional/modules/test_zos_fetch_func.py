@@ -936,6 +936,8 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
 
     if relative_path == "~/tmp":
         dest = os.path.expanduser(relative_path)
+    elif relative_path == ".":
+        dest = dest = current_working_directory + "/profile"
     else:
         dest = current_working_directory + "/tmp"
 
@@ -943,6 +945,7 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
         results = hosts.all.zos_fetch(**params)
 
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") is True
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None

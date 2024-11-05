@@ -33,7 +33,7 @@ cmd
 
   For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
 
-  If the command contains any special characters ($, &, etc), they must be escaped using double backslashes like \\\\$.
+  If the command contains any special characters ($, &, etc), they must be escaped using double backslashes like \\\\\\$.
 
   For example, to display job by job name the command would be ``cmd:"\\$dj''HELLO''"``
 

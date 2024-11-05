@@ -917,16 +917,18 @@ def test_fetch_gdg(ansible_zos_module):
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
 
-def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_module):
+
+@pytest.mark.parametrize("relative_path", ["tmp/", ".", "../tmp/"])
+def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_module, relative_path):
     hosts = ansible_zos_module
     src = "/etc/profile"
     params = {
         "src": src,
-        "dest":"tmp/",
+        "dest": relative_path,
         "flat":True
     }
 
-    dest = "~/tmp/profile"
+    dest = "/profile" if relative_path == "." else "/tmp"
 
     try:
         results = hosts.all.zos_fetch(**params)
@@ -936,6 +938,7 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
             assert result.get("changed") is True
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None
+            assert dest in result.get("dest")
             dest = result.get("dest")
     finally:
         if os.path.exists(dest):

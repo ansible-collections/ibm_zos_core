@@ -114,12 +114,12 @@ jobs:
     content_type:
       description:
         Type of address space used by the job, can be one of the following types.
-        - APPC for a APPC Initiator.
+        - APPC for an APPC Initiator.
         - JGRP for a JOBGROUP.
         - JOB for a Batch job.
         - STC for a Started task.
         - TSU for a Time sharing user.
-        - \? for an unknown or pending.
+        - \? for an unknown or pending job.
       type: str
       sample: JOB
     creation_date:

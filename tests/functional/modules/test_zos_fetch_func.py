@@ -922,7 +922,7 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
     src = "/etc/profile"
     params = {
         "src": src,
-        "dest":"tmp/profile",
+        "dest":"tmp/prof.txt",
         "flat":True
     }
 

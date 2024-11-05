@@ -922,7 +922,7 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
     src = "/etc/profile"
     params = {
         "src": src,
-        "dest":"tmp/",
+        "dest":"tmp/profile",
         "flat":True
     }
 
@@ -936,5 +936,5 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
             assert result.get("module_stderr") is None
             dest = result.get("dest")
     finally:
-        if os.path.exists(dest + src):
-            os.remove(dest + src)
+        if os.path.exists(dest):
+            os.remove(dest)

@@ -935,7 +935,6 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
 
         for result in results.contacted.values():
 
-            print(result)
             assert result.get("changed") is True
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None

@@ -64,7 +64,7 @@ def test_failing_name_format(ansible_zos_module):
         # Where a program will fail if rc != 0 only if verbose was True.
         "verbose",
         [True, False],
-)
+ )
 def test_disposition_new(ansible_zos_module, verbose):
     idcams_dataset = None
     try:
@@ -98,6 +98,7 @@ def test_disposition_new(ansible_zos_module, verbose):
             ],
         )
         for result in results.contacted.values():
+            assert len(result.get("stdout")) > 0
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert result.get("failed", False) is False

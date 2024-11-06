@@ -32,6 +32,8 @@ display = Display()
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """
+        self._supports_async = True
+
         if task_vars is None:
             task_vars = {}
 
@@ -81,9 +83,10 @@ class ActionModule(ActionBase):
                 return self._exit_action({}, msg, failed=True)
 
             tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+            temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
+            dest_path = path.join(tmp_dir, temp_file_dir, path.basename(source))
             # Creating the name for the temp file needed.
-            temp_file_name = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
-            dest_path = path.join(tmp_dir, temp_file_name)
+            self._connection.exec_command("mkdir -p {0}".format(path.dirname(dest_path)))
 
             source_full = None
             try:
@@ -148,6 +151,9 @@ class ActionModule(ActionBase):
             )
             copy_task = self._task.copy()
             copy_task.args = copy_module_args
+            # Making the zos_copy task run synchronously every time.
+            copy_task.async_val = 0
+
             copy_action = self._shared_loader_obj.action_loader.get(
                 'ibm.ibm_zos_core.zos_copy',
                 task=copy_task,
@@ -157,6 +163,7 @@ class ActionModule(ActionBase):
                 templar=self._templar,
                 shared_loader_obj=self._shared_loader_obj
             )
+
             result.update(copy_action.run(task_vars=task_vars))
             if result.get("msg") is None:
                 module_args["src"] = dest_path
@@ -165,6 +172,7 @@ class ActionModule(ActionBase):
                         module_name="ibm.ibm_zos_core.zos_job_submit",
                         module_args=module_args,
                         task_vars=task_vars,
+                        wrap_async=self._task.async_val
                     )
                 )
             else:
@@ -176,6 +184,7 @@ class ActionModule(ActionBase):
                     module_name="ibm.ibm_zos_core.zos_job_submit",
                     module_args=module_args,
                     task_vars=task_vars,
+                    wrap_async=self._task.async_val
                 )
             )
 

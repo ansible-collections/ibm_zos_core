@@ -169,9 +169,9 @@ def calculate_size_on_k(size, size_type):
     if size_type == "g":
         size *= 1048576
     if size_type == "cyl":
-        size *= 720
+        size *= 849960
     if size_type == "trk":
-        size *= 48
+        size *= 56664
     return size
 
 

@@ -64,7 +64,7 @@ def test_failing_name_format(ansible_zos_module):
         # Where a program will fail if rc != 0 only if verbose was True.
         "verbose",
         [True, False],
- )
+)
 def test_disposition_new(ansible_zos_module, verbose):
     idcams_dataset = None
     try:

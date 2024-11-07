@@ -22,6 +22,7 @@ module: zos_mvs_raw
 author:
   - "Xiao Yuan Ma (@bjmaxy)"
   - "Blake Becker (@blakeinate)"
+  - "Oscar Fernando Flores (@fernandofloresg)"
 short_description: Run a z/OS program.
 description:
   - Run a z/OS program.
@@ -1894,21 +1895,21 @@ def run_module():
                 verbose=verbose,
                 tmphlq=tmphlq,
             )
-            if program_response.rc != 0 and program_response.stderr:
+            response = build_response(program_response.rc, dd_statements, program_response.stdout)
+            result = combine_dicts(result, response)
+            if program_response.rc != 0 :
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),
                 )
 
-            response = build_response(program_response.rc, dd_statements, program_response.stdout)
             result["changed"] = True
         except Exception as e:
             result["backups"] = backups
             module.fail_json(msg=repr(e), **result)
     else:
         result = dict(changed=True, dd_names=[], ret_code=dict(code=0))
-    to_return = combine_dicts(result, response)
-    module.exit_json(**to_return)
+    module.exit_json(**result)
     # ---------------------------------------------------------------------------- #
 
 

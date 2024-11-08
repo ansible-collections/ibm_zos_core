@@ -936,7 +936,9 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
         "flat":True
     }
 
-    # Case to create the dest path to verify allow running any system
+    # Case to create the dest path to verify allow running on any path.
+    # There are some relative paths for which we need to change our cwd to be able to validate that
+    # the path returned by the module is correct.
     if relative_path == "~/tmp/":
         dest = os.path.expanduser("~")
         dest = dest + "/tmp"

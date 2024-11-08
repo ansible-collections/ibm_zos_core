@@ -41,6 +41,8 @@ src
 
   VSAMs are not supported.
 
+  GDS relative names are supported. e.g. *USER.GDG(-1*).
+
   | **required**: True
   | **type**: list
   | **elements**: str
@@ -123,6 +125,8 @@ dest
 
   Destination data set space will be calculated based on space of source data sets provided and/or found by expanding the pattern name. Calculating space can impact module performance. Specifying space attributes in the *dest_data_set* option will improve performance.
 
+  GDS relative names are supported. e.g. *USER.GDG(-1*).
+
   | **required**: True
   | **type**: str
 
@@ -135,6 +139,8 @@ exclude
   * matches everything.
 
   ? matches any single character.
+
+  GDS relative names are supported. e.g. *USER.GDG(-1*).
 
   | **required**: False
   | **type**: list

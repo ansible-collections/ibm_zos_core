@@ -425,7 +425,7 @@ dds
 
         *src_encoding* and *response_encoding* are only used when *type=text*.
 
-        ``base64`` means return content in binary mode.
+        ``base64`` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -616,7 +616,7 @@ dds
 
         *src_encoding* and *response_encoding* are only used when *type=text*.
 
-        ``base64`` means return content in binary mode.
+        ``base64`` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -690,7 +690,7 @@ dds
 
         *src_encoding* and *response_encoding* are only used when *type=text*.
 
-        ``base64`` means return content in binary mode.
+        ``base64`` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -747,7 +747,7 @@ dds
 
         *src_encoding* and *response_encoding* are only used when *type=text*.
 
-        ``base64`` means return content in binary mode.
+        ``base64`` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -1164,7 +1164,7 @@ dds
 
             *src_encoding* and *response_encoding* are only used when *type=text*.
 
-            ``base64`` means return content in binary mode.
+            ``base64`` means return content as base64 encoded in binary.
 
             | **required**: True
             | **type**: str
@@ -1348,7 +1348,7 @@ dds
 
             *src_encoding* and *response_encoding* are only used when *type=text*.
 
-            ``base64`` means return content in binary mode.
+            ``base64`` means return content as base64 encoded in binary.
 
             | **required**: True
             | **type**: str
@@ -1415,7 +1415,7 @@ dds
 
             *src_encoding* and *response_encoding* are only used when *type=text*.
 
-            ``base64`` means return content in binary mode.
+            ``base64`` means return content as base64 encoded in binary.
 
             | **required**: True
             | **type**: str

@@ -1,7 +1,7 @@
 name: Report a bug
 description: Request that a bug be reviewed. Complete all required fields.
 title: "[Bug] Enter description"
-labels: ["Bug", "Needs Triage" ]
+labels: ["Bug", "Needs Triage"]
 assignees:
   - IBMAnsibleHelper
 body:
@@ -36,16 +36,15 @@ body:
         - v1.12.0
         - v1.12.0-beta.1
         - v1.11.0
-        - v1.11.0-beta.1
         - v1.10.0
-        - v1.10.0-beta.1
+        - v1.9.3
         - v1.9.2
-        - v1.9.0 (default)
+        - v1.9.0
         - v1.8.0
         - v1.7.0
         - v1.6.0
         - v1.5.0
-      default: 6
+      default: 3
     validations:
       required: true
   - type: dropdown
@@ -60,11 +59,11 @@ body:
         - v1.3.2
         - v1.3.1
         - v1.3.0
-        - v1.2.5 (default)
+        - v1.2.5
         - v1.2.4
         - v1.2.3
         - v1.2.2
-      default: 5
+      default: 3
     validations:
       required: true
   - type: dropdown
@@ -76,7 +75,7 @@ body:
       options:
         - v3.13.x
         - v3.12.x
-        - v3.11.x (default)
+        - v3.11.x
         - v3.10.x
       default: 2
     validations:
@@ -89,10 +88,10 @@ body:
       multiple: false
       options:
         - v2.17.x
-        - v2.16.x (default)
+        - v2.16.x
         - v2.15.x
         - v2.14.x
-      default: 1
+      default: 3
     validations:
       required: true
   - type: dropdown
@@ -102,8 +101,8 @@ body:
       description: What is the version of z/OS on the managed node? Please review the supported dependencies in the release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       multiple: false
       options:
-        - v3.1 (unsupported)
-        - v2.5 (default)
+        - v3.1
+        - v2.5
         - v2.4
       default: 1
     validations:

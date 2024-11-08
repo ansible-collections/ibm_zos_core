@@ -924,7 +924,8 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
     current_working_directory = os.getcwd()
     src = "/etc/profile"
 
-    # If the test suite is running on on root to avoid an issue we check the current directory
+    # If the test suite is running on root to avoid an issue we check the current directory
+    # Also, user can run the tests from ibm_zos_core or tests folder, so this will give us the absolute path of our working dir.
     if relative_path == "../tmp/":
         aux = os.path.basename(os.path.normpath(current_working_directory))
         relative_path = "../" + aux + "/tmp/"

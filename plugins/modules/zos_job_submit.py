@@ -23,6 +23,7 @@ author:
     - "Xiao Yuan Ma (@bjmaxy)"
     - "Rich Parker (@richp405)"
     - "Demetrios Dimatos (@ddimatos)"
+    - "Ivan Moreno (@rexemin)"
 short_description: Submit JCL
 description:
     - Submit JCL in a data set, USS file, or file on the controller.

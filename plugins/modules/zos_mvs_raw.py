@@ -1852,7 +1852,7 @@ def run_module():
             response = build_response(program_response.rc, dd_statements)
             result = combine_dicts(result, response)
 
-            if program_response.rc != 0 or program_response.stderr:
+            if program_response.rc != 0:
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),

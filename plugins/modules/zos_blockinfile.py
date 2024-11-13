@@ -96,7 +96,7 @@ options:
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
-    - Value needs to be different from marker_end.
+    - Value needs to be different from I(marker_end).
     required: false
     type: str
     default: BEGIN
@@ -104,7 +104,7 @@ options:
     required: false
     description:
     - This will be inserted at C({mark}) in the closing ansible block marker.
-    - Value must be different from marker_end.
+    - Value must be different from I(marker_begin).
     type: str
     default: END
   backup:
@@ -114,7 +114,7 @@ options:
       - When set to C(true), the module creates a backup file or data set.
       - The backup file name will be returned on either success or failure of
         module execution such that data can be retrieved.
-      - Use generation data set (GDS) relative positive name. C(e.g. SOME.CREATION(+1))
+      - Use generation data set (GDS) relative positive name. e.g. I(SOME.CREATION(+1)).
     required: false
     type: bool
     default: false

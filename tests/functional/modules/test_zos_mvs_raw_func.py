@@ -47,8 +47,11 @@ def test_failing_name_format(ansible_zos_module):
         pprint(result)
         assert "ValueError" in result.get("msg")
 
-
-def test_disposition_new(ansible_zos_module):
+@pytest.mark.parametrize(
+    "verbose",
+    [True, False],
+)
+def test_disposition_new(ansible_zos_module, verbose):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
@@ -56,6 +59,7 @@ def test_disposition_new(ansible_zos_module):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
+            verbose=verbose,
             dds=[
                 dict(
                     dd_data_set=dict(

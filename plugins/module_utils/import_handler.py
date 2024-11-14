@@ -74,7 +74,6 @@ class ZOAUImportError(object):
         """
         self.traceback = exception_traceback
 
-
     def __getattr__(self, name):
         """This code is virtually the same from `MissingZOAUImport`. What we
         do here is hijack all calls to any method from a missing ZOAU library
@@ -102,6 +101,7 @@ class ZOAUImportError(object):
                 "Complete traceback: {0}".format(self.traceback)
             )
         )
+
 
 class MissingImport(object):
     def __init__(self, import_name=""):

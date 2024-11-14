@@ -879,29 +879,33 @@ class ManagedUser:
         restricted_hlq="NOPERMIT.*"
         saf_class = "DATASET"
         command = StringIO()
-
+        command.write(f"echo delete GROUP '{group}';")
+        command.write(f"tsocmd DELGROUP \\({group}\\);")
         command.write(f"echo create GROUP '{group}';")
-        command.write(f"tsocmd ADDGROUP \\({group}\\) OWNER\\(SYS1\\) SUPGROUP\\(SYS1\\) AUDIT\\(ALL\\);")
+        command.write(f"tsocmd ADDGROUP \\({group}\\) OWNER\\(OMVSADM\\) SUPGROUP\\(SYS1\\);")
         command.write(f"echo ADDGROUP RC=$?;")
-        command.write(f"tsocmd PERMIT {restricted_hlq} CLASS\\({saf_class}\\) ID\\({self._managed_racf_user}\\) ACCESS\\(NONE\\);")
+        command.write(f"export TSOPROFILE=\"noprefix\";")
+        command.write(f"tsocmd ADDSD 'NOPERMIT.*' UACC\\(NONE\\);")
+        command.write(f"tsocmd PERMIT \'{restricted_hlq}\' CLASS\\({saf_class}\\) ID\\({self._managed_racf_user}\\) ACCESS\\(NONE\\);")
         command.write(f"echo PERMIT RC=$?;")
-        command.write(f"tsocmd SETROPTS GENERIC(DATASET) REFRESH;")
+        command.write(f"tsocmd SETROPTS GENERIC\\(DATASET\\) REFRESH;")
         command.write(f"echo SETROPTS RC=$?;")
 
         cmd=f"{command.getvalue()}"
         results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
+        print(cmd)
         print(results_stdout_lines)
         try:
             # Evaluate the results
-            addgroup_rc = [v for v in results_stdout_lines if f"ADDGROUP RC=" in v][0].split('=')[1].strip() or None
-            if not addgroup_rc or int(addgroup_rc[0]) > 4:
-                err_details = f"addgroup {group}"
-                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
-                raise Exception(err_msg)
+            # addgroup_rc = [v for v in results_stdout_lines if f"ADDGROUP RC=" in v][0].split('=')[1].strip() or None
+            # if not addgroup_rc or int(addgroup_rc[0]) > 4:
+            #     err_details = f"addgroup {group}"
+            #     err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+            #     raise Exception(err_msg)
 
             permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
             if not permit_rc or int(permit_rc[0]) > 4:
-                err_details = f"permit {saf_profile} class {saf_class}"
+                err_details = f"permit {restricted_hlq} class {saf_class}"
                 err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
                 raise Exception(err_msg)
 

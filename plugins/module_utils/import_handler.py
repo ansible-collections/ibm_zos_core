@@ -13,18 +13,17 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+
 class MissingZOAUImport(Exception):
-    """Error when importing ZOAU.
-    """
     def __init__(self):
         """Error when it is unable to import a module due to it being missing.
 
         Attributes
         ----------
         msg : str
-            Human readable string describing th exception.
+            Human readable string describing the exception.
         """
-        self.msg = """ZOAU is not properly configured for Ansible. Unable to import zoautil_py. 
+        self.msg = """ZOAU is not properly configured for Ansible. Unable to import zoautil_py.
 Ensure environment variables are properly configured in Ansible for use with ZOAU."""
         super().__init__(self.msg)
 
@@ -58,8 +57,11 @@ class ZOAUImportError(Exception):
         ----------
         exception_traceback : str
             The formatted traceback of the exception.
+        msg : str
+            Human readable string describing the exception.
         """
-        self.msg = """ZOAU is not properly configured for Ansible. Unable to import zoautil_py. 
+        self.traceback = exception_traceback
+        self.msg = """ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
 Ensure environment variables are properly configured in Ansible for use with ZOAU.
 Complete traceback: {0}""".format(self.traceback)
         super().__init__(self.msg)
@@ -78,6 +80,9 @@ class MissingImport(Exception):
         ----------
         import_name : str
             The name of the module to import.
+        msg : str
+            Human readable string describing the exception.
         """
-        self.msg = "Import {0} was not available.".format(import_name)
+        self.import_name = import_name
+        self.msg = "Import {0} was not available.".format(self.import_name)
         super().__init__(self.msg)

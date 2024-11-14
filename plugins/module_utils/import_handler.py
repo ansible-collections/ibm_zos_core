@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-class MissingZOAUImport(Exception):
+class MissingZOAUImport(object):
     """Error when importing ZOAU.
     """
     def __getattr__(self, name):
@@ -42,7 +42,7 @@ class MissingZOAUImport(Exception):
         return method
 
 
-class ZOAUImportError(Exception):
+class ZOAUImportError(object):
     def __init__(self, exception_traceback):
         """This class serves as a wrapper for any kind of error when importing
         ZOAU. Since ZOAU is used by both modules and module_utils, we need a way
@@ -81,31 +81,29 @@ class ZOAUImportError(Exception):
         and instead return a method that will alert the user that there was
         an error while importing ZOAU.
         """
-        def method(*args, **kwargs):
-            """Raises ImportError as a result of a failed ZOAU import.
+        """Raises ImportError as a result of a failed ZOAU import.
 
-            Parameters
-            ----------
-            *args : dict
-                Arguments ordered in a dictionary.
-            **kwargs : dict
-                Arguments ordered in a dictionary.
+        Parameters
+        ----------
+        *args : dict
+            Arguments ordered in a dictionary.
+        **kwargs : dict
+            Arguments ordered in a dictionary.
 
-            Raises
-            ------
-            ImportError
-                Unable to import a module or library.
-            """
-            raise ImportError(
-                (
-                    "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
-                    "Ensure environment variables are properly configured in Ansible for use with ZOAU. "
-                    "Complete traceback: {0}".format(self.traceback)
-                )
+        Raises
+        ------
+        ImportError
+            Unable to import a module or library.
+        """
+        raise ImportError(
+            (
+                "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
+                "Ensure environment variables are properly configured in Ansible for use with ZOAU. "
+                "Complete traceback: {0}".format(self.traceback)
             )
-        return method
+        )
 
-class MissingImport(Exception):
+class MissingImport(object):
     def __init__(self, import_name=""):
         """Error when it is unable to import a module due to it being missing.
 
@@ -122,20 +120,18 @@ class MissingImport(Exception):
         self.import_name = import_name
 
     def __getattr__(self, name):
-        def method(*args, **kwargs):
-            """Raises ImportError as a result of trying to import a missing module.
+        """Raises ImportError as a result of trying to import a missing module.
 
-            Parameter
-            ---------
-            *args : dict
-                Arguments ordered in a dictionary.
-            **kwargs : dict
-                Arguments ordered in a dictionary.
+        Parameter
+        ---------
+        *args : dict
+            Arguments ordered in a dictionary.
+        **kwargs : dict
+            Arguments ordered in a dictionary.
 
-            Raises
-            ------
-            ImportError
-                Unable to import a module or library.
-            """
-            raise ImportError("Import {0} was not available.".format(self.import_name))
-        return method
+        Raises
+        ------
+        ImportError
+            Unable to import a module or library.
+        """
+        raise ImportError("Import {0} was not available.".format(self.import_name))

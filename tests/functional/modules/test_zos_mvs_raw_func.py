@@ -201,7 +201,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             for backup in result.get("backups"):
-                backup.get("backup_name")[:6] == tmphlq
+                assert backup.get("backup_name")[:6] == tmphlq
         for result in results.contacted.values():
             assert result.get("changed", False) is True
     finally:
@@ -236,6 +236,7 @@ def managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option(a
         # IMPORTANT: Do not replace this HLQ unless it changes in the users utility, since this is the HLQ that
         # the restricted hlq user don't have access to.
         tmphlq = "NOPERMIT"
+        volumes = Volume_Handler(volumes_on_systems)
         default_volume = volumes.get_available_vol()
         default_data_set = get_tmp_ds_name()[:25]
         hosts.all.zos_data_set(
@@ -249,24 +250,6 @@ def managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option(a
             tmp_hlq=tmphlq,
             dds=[
                 {
-                    "dd_data_set":{
-                        "dd_name":SYSPRINT_DD,
-                        "data_set_name":default_data_set,
-                        "disposition":"new",
-                        "return_content":{
-                            "type":"text"
-                        },
-                        "replace":True,
-                        "backup":True,
-                        "type":"seq",
-                        "space_primary":5,
-                        "space_secondary":1,
-                        "space_type":"m",
-                        "volumes":default_volume,
-                        "record_format":"fb"
-                    },
-                },
-                {
                     "dd_input":{
                         "dd_name":SYSIN_DD,
                         "content":idcams_listcat_dataset_cmd
@@ -275,9 +258,10 @@ def managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option(a
             ],
         )
         for result in results.contacted.values():
+            print(result)
             # TODO know which error codes are used.
-            # assert result.get("ret_code", {}).get("code", -1) == 0
-            # assert len(result.get("dd_names", [])) > 0
+            assert result.get("ret_code", {}).get("code", -1) == 16
+            assert len(result.get("dd_names", [])) == 0
             # for backup in result.get("backups"):
             #    backup.get("backup_name")[:6] == tmphlq
             assert result.get("changed", False) is False

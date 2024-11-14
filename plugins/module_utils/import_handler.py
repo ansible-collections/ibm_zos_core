@@ -15,17 +15,31 @@ __metaclass__ = type
 
 
 class MissingZOAUImport(Exception):
-    def __init__(self):
-        """Error when it is unable to import a module due to it being missing.
+    """Error when importing ZOAU.
+    """
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            """Raises ImportError as a result of a failed ZOAU import.
 
-        Attributes
-        ----------
-        msg : str
-            Human readable string describing the exception.
-        """
-        self.msg = """ZOAU is not properly configured for Ansible. Unable to import zoautil_py.
-Ensure environment variables are properly configured in Ansible for use with ZOAU."""
-        super().__init__(self.msg)
+            Parameters
+            ----------
+            *args : dict
+                Arguments ordered in a dictionary.
+            **kwargs : dict
+                Arguments ordered in a dictionary.
+
+            Raises
+            ------
+            ImportError
+                Unable to import a module or library.
+            """
+            raise ImportError(
+                (
+                    "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
+                    "Ensure environment variables are properly configured in Ansible for use with ZOAU."
+                )
+            )
+        return method
 
 
 class ZOAUImportError(Exception):
@@ -57,15 +71,39 @@ class ZOAUImportError(Exception):
         ----------
         exception_traceback : str
             The formatted traceback of the exception.
-        msg : str
-            Human readable string describing the exception.
         """
         self.traceback = exception_traceback
-        self.msg = """ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
-Ensure environment variables are properly configured in Ansible for use with ZOAU.
-Complete traceback: {0}""".format(self.traceback)
-        super().__init__(self.msg)
 
+
+    def __getattr__(self, name):
+        """This code is virtually the same from `MissingZOAUImport`. What we
+        do here is hijack all calls to any method from a missing ZOAU library
+        and instead return a method that will alert the user that there was
+        an error while importing ZOAU.
+        """
+        def method(*args, **kwargs):
+            """Raises ImportError as a result of a failed ZOAU import.
+
+            Parameters
+            ----------
+            *args : dict
+                Arguments ordered in a dictionary.
+            **kwargs : dict
+                Arguments ordered in a dictionary.
+
+            Raises
+            ------
+            ImportError
+                Unable to import a module or library.
+            """
+            raise ImportError(
+                (
+                    "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
+                    "Ensure environment variables are properly configured in Ansible for use with ZOAU. "
+                    "Complete traceback: {0}".format(self.traceback)
+                )
+            )
+        return method
 
 class MissingImport(Exception):
     def __init__(self, import_name=""):
@@ -80,9 +118,24 @@ class MissingImport(Exception):
         ----------
         import_name : str
             The name of the module to import.
-        msg : str
-            Human readable string describing the exception.
         """
         self.import_name = import_name
-        self.msg = "Import {0} was not available.".format(self.import_name)
-        super().__init__(self.msg)
+
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            """Raises ImportError as a result of trying to import a missing module.
+
+            Parameter
+            ---------
+            *args : dict
+                Arguments ordered in a dictionary.
+            **kwargs : dict
+                Arguments ordered in a dictionary.
+
+            Raises
+            ------
+            ImportError
+                Unable to import a module or library.
+            """
+            raise ImportError("Import {0} was not available.".format(self.import_name))
+        return method

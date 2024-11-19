@@ -339,7 +339,7 @@ def run_module():
     elif size >= minimum_size_t_shrink and size < old_size:
         operation = "shrink"
     else:
-        module.fail_json(msg="Error code 119 not enough space to shrink")
+        module.fail_json(msg="Not enough space to grow.")
 
     noai = " -noai " if noai else ""
 

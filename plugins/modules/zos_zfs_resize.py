@@ -37,7 +37,7 @@ options:
     required: true
   size:
     description:
-      - The approximate size, of the data set after the resizing is performed.
+      - The approximate size of the data set after the resizing is performed.
     type: int
     required: True
     size_type:

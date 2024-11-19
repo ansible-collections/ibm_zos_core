@@ -84,10 +84,8 @@ class ZOAUImportError(object):
 
         Parameters
         ----------
-        *args : dict
-            Arguments ordered in a dictionary.
-        **kwargs : dict
-            Arguments ordered in a dictionary.
+        name : str
+            Value of object not properly imported.
 
         Raises
         ------
@@ -124,10 +122,8 @@ class MissingImport(object):
 
         Parameter
         ---------
-        *args : dict
-            Arguments ordered in a dictionary.
-        **kwargs : dict
-            Arguments ordered in a dictionary.
+        name : str
+            Value of object not properly imported.
 
         Raises
         ------

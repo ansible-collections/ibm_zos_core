@@ -220,7 +220,7 @@ def get_size_and_free(string):
     return numbers[1], numbers[0]
 
 
-def found_mount_target(module, target):
+def find_mount_target(module, target):
     """Execute df command to access the information of mount points.
 
     Parameters
@@ -300,7 +300,7 @@ def run_module():
     changed = False
 
     #Validation to found target on the system and also get the mount_point
-    mount_target = found_mount_target(module=module, target=target)
+    mount_target = find_mount_target(module=module, target=target)
 
     #Initialize the class with the target
     aggregate_name = zfsadm(aggregate_name=target, module=module)

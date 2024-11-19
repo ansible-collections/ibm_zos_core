@@ -1178,49 +1178,44 @@ def test_job_submit_async(get_config):
     zoau = enviroment["environment"]["ZOAU_ROOT"]
     python_version = cut_python_path.split('/')[2]
 
-    try:
-        playbook = "playbook.yml"
-        inventory = "inventory.yml"
+    playbook = tempfile.NamedTemporaryFile(delete=True)
+    inventory = tempfile.NamedTemporaryFile(delete=True)
 
-        os.system("echo {0} > {1}".format(
-            quote(PLAYBOOK_ASYNC_TEST.format(
-                zoau,
-                cut_python_path,
-                python_version,
-                tmp_file.name
-            )), 
-            playbook
-        ))
+    os.system("echo {0} > {1}".format(
+        quote(PLAYBOOK_ASYNC_TEST.format(
+            zoau,
+            cut_python_path,
+            python_version,
+            tmp_file.name
+        )), 
+        playbook.name
+    ))
 
-        os.system("echo {0} > {1}".format(
-            quote(INVENTORY_ASYNC_TEST.format(
-                hosts,
-                ssh_key,
-                user,
-                python_path
-            )), 
-            inventory
-        ))
+    os.system("echo {0} > {1}".format(
+        quote(INVENTORY_ASYNC_TEST.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), 
+        inventory.name
+    ))
 
-        command = "ansible-playbook -i {0} {1}".format(
-            inventory,
-            playbook
-        )
+    command = "ansible-playbook -i {0} {1}".format(
+        inventory.name,
+        playbook.name
+    )
 
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            shell=True,
-            timeout=120,
-            encoding='utf-8'
-        )
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        shell=True,
+        timeout=120,
+        encoding='utf-8'
+    )
 
-        assert result.returncode == 0
-        assert "ok=2" in result.stdout
-        assert "changed=2" in result.stdout
-        assert result.stderr == ""
-
-    finally:
-        os.remove("inventory.yml")
-        os.remove("playbook.yml")
+    assert result.returncode == 0
+    assert "ok=2" in result.stdout
+    assert "changed=2" in result.stdout
+    assert result.stderr == ""
 

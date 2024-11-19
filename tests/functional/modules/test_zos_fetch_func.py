@@ -140,6 +140,29 @@ def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None)
     hosts.all.zos_data_set(**params)
 
 
+def create_vsam_data_set(hosts, name, ds_type, key_length=None, key_offset=None):
+    """Creates a new VSAM on the system.
+
+    Arguments:
+        hosts (object) -- Ansible instance(s) that can call modules.
+        name (str) -- Name of the VSAM data set.
+        type (str) -- Type of the VSAM (ksds, esds, rrds, lds)
+        add_data (bool, optional) -- Whether to add records to the VSAM.
+        key_length (int, optional) -- Key length (only for KSDS data sets).
+        key_offset (int, optional) -- Key offset (only for KSDS data sets).
+    """
+    params = {
+        "name":name,
+        "type":ds_type,
+        "state":"present"
+    }
+    if ds_type == "ksds":
+        params["key_length"] = key_length
+        params["key_offset"] = key_offset
+
+    hosts.all.zos_data_set(**params)
+
+
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
@@ -916,3 +939,47 @@ def test_fetch_gdg(ansible_zos_module):
 
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
+
+
+@pytest.mark.parametrize("relative_path", ["tmp/", ".", "../tmp/", "~/tmp/"])
+def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_module, relative_path):
+    hosts = ansible_zos_module
+    current_working_directory = os.getcwd()
+    src = "/etc/profile"
+
+    # If the test suite is running on root to avoid an issue we check the current directory
+    # Also, user can run the tests from ibm_zos_core or tests folder, so this will give us the absolute path of our working dir.
+    if relative_path == "../tmp/":
+        aux = os.path.basename(os.path.normpath(current_working_directory))
+        relative_path = "../" + aux + "/tmp/"
+
+    params = {
+        "src": src,
+        "dest": relative_path,
+        "flat":True
+    }
+
+    # Case to create the dest path to verify allow running on any path.
+    # There are some relative paths for which we need to change our cwd to be able to validate that
+    # the path returned by the module is correct.
+    if relative_path == "~/tmp/":
+        dest = os.path.expanduser("~")
+        dest = dest + "/tmp"
+    elif relative_path == ".":
+        dest = current_working_directory + "/profile"
+    else:
+        dest = current_working_directory + "/tmp"
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "USS"
+            assert result.get("module_stderr") is None
+            assert dest == result.get("dest")
+            dest = result.get("dest")
+
+    finally:
+        if os.path.exists(dest):
+            os.remove(dest)

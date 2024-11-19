@@ -447,9 +447,6 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
             name=data_set_name_special_chars, state="present", type="pds", replace=True
         )
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), temp_path)
-        )
-        hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
                 temp_path, data_set_name_special_chars.replace('$', '\$')
             )
@@ -511,12 +508,12 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             assert result.get("ddnames").get("stepname") is None
             assert result.get("ddnames").get("procstep") is None
             assert result.get("ddnames").get("byte_count") is None
-            assert len(result.get("ddnames").get("content")) == 0  
+            assert len(result.get("ddnames").get("content")) == 0
             assert result.get("ret_code") is not None
             assert result.get("ret_code").get("msg") is None
             assert result.get("ret_code").get("msg_code") is None
             assert result.get("ret_code").get("code") is None
-            assert len(result.get("ret_code").get("steps")) == 0 
+            assert len(result.get("ret_code").get("steps")) == 0
             assert result.get("job_class") is None
             assert result.get("svc_class") is None
             assert result.get("priority") is None

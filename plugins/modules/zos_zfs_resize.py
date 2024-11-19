@@ -40,8 +40,7 @@ options:
       - The approximate size of the data set after the resizing is performed.
     type: int
     required: True
-    size_type:
-  size_type:
+  space_type:
     description:
       - The unit of measurement to use when defining the size.
       - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
@@ -149,14 +148,14 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 
 
-def calculate_size_on_k(size, size_type):
-    """Function to convert size depending on the size_type.
+def calculate_size_on_k(size, space_type):
+    """Function to convert size depending on the space_type.
 
     Parameters
     ----------
         size : int
             Size to grow or shrink the zfs
-        size_type : str
+        space_type : str
             Type of space to be use
 
     Returns
@@ -164,13 +163,13 @@ def calculate_size_on_k(size, size_type):
         size : int
             Size on kilobytes
     """
-    if size_type == "m":
+    if space_type == "m":
         size *= 1024
-    if size_type == "g":
+    if space_type == "g":
         size *= 1048576
-    if size_type == "cyl":
+    if space_type == "cyl":
         size *= 849960
-    if size_type == "trk":
+    if space_type == "trk":
         size *= 56664
     return size
 
@@ -258,7 +257,7 @@ def run_module():
         argument_spec=dict(
             target=dict(type="str", required=True),
             size=dict(type="int", required=True),
-            size_type=dict(
+            space_type=dict(
                     type="str",
                     required=False,
                     choices=["k", "m", "g", "cyl", "trk"],
@@ -272,7 +271,7 @@ def run_module():
     args_def = dict(
         target=dict(type="data_set", required=True),
         size=dict(type="int", required=True),
-        size_type=dict(
+        space_type=dict(
                 type="str",
                 required=False,
                 choices=["k", "m", "g", "cyl", "trk"],
@@ -295,7 +294,7 @@ def run_module():
     res_args = dict()
     target = module.params.get("target")
     size = module.params.get("size")
-    size_type = module.params.get("size_type")
+    space_type = module.params.get("space_type")
     noai = module.params.get("no_auto_increment")
     verbose = module.params.get("verbose")
     changed = False
@@ -326,8 +325,8 @@ def run_module():
         )
     )
 
-    if size_type != "k":
-        size = calculate_size_on_k(size=size, size_type=size_type)
+    if space_type != "k":
+        size = calculate_size_on_k(size=size, space_type=space_type)
 
     #Validations to know witch function will be execute
     operation = ""

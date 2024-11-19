@@ -25,7 +25,7 @@ short_description: Resize a zfs data set.
 description:
   - The module M(zos_resize) can resize a zfs aggregate data set.
   - The I(target) data set must be either:
-    - A unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set, or
+    - A unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
     - A full path of a mount point, which will be used to look up the data set's FQDN.
   - The data set must be attached read-write, and contain only one Operating system.
   - I(size) in K must be provided.

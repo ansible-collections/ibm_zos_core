@@ -228,7 +228,7 @@ def found_mount_target(module, target):
         module : object
             Ansible object to execute commands.
         target : str
-            ZFZ to check
+            ZFS to check.
 
     Returns
     -------

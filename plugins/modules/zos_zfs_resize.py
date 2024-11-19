@@ -79,7 +79,7 @@ EXAMPLES = r"""
 
 RETURN = r"""
 cmd:
-    description: The actual zosadm command that was attempted.
+    description: The zfsadm command executed on the remote node.
     returned: always
     type: str
     sample: zfsadm grow -aggregate SOMEUSER.VVV.ZFS -size 4096

@@ -31,15 +31,19 @@ class zfsadm:
         self.module = module
 
 
-    def grow_shrink(self, operation, cmd):
+    def execute_resizing(self, operation, size, noai, verbose):
         """Execute grow or shrink operation over a zfs dataset.
 
         Parameters
         ----------
             operation : str
                 Whether the operation to execute is grow or shrink
-            cmd : str
-                Arguments to be added to the zfsadm -aggregate command"".
+            size : int
+                Size to be assign to the zfs
+            noai : str
+                Command str if there will be activate no auto increase option
+            verbose : str
+                Command str with the file to get traceback
 
         Returns
         -------
@@ -52,6 +56,7 @@ class zfsadm:
             cmd_str : str
                 The full command that was execute.
         """
+        cmd = "-size {0}{1}{2}".format(size, noai, verbose)
         cmd_str = "zfsadm {0} -aggregate {1} {2}".format(operation, self.aggregate_name, cmd)
 
         rc, stdout, stderr = self.module.run_command(cmd_str)
@@ -59,7 +64,7 @@ class zfsadm:
         return rc, stdout, stderr, cmd_str
 
 
-    def get_agg_size(self):
+    def get_aggregate_size(self):
         """Execute a command to get the size of the zfs dataset.
 
         Returns
@@ -67,7 +72,7 @@ class zfsadm:
             rc : int
                 The rc of the execution of command.
             stdout : str
-                The stout of the execution of command
+                The stdout of the execution of command
             stderr : str
                 The stderr of the execution of command.
         """

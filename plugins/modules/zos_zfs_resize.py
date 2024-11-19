@@ -201,41 +201,6 @@ def get_full_output(file, module):
     return output
 
 
-def create_command(size, noai=False, verbose=""):
-    """Function create the command to execute the grow o shrink operation.
-
-    Parameters
-    ----------
-        size : int
-            Size to be assign to the zfs
-        noai : bool
-            If there will be activate no auto increase option
-        verbose : str
-            Folder where the tmp file for full output will be store
-
-    Returns
-    -------
-        cmd : str
-            Command to execute for aggregate
-
-        temp : str
-            Name of the tmp file where the verbose output will be store.
-    """
-    trace = ""
-    temp = ""
-
-    noai = "-noai" if noai else ""
-
-    if len(verbose) > 0:
-        temp = tempfile.NamedTemporaryFile(dir=verbose, delete=False)
-        temp = temp.name
-        trace = "-trace '{0}'".format(temp)
-
-    cmd_str = "-size {0} {1} {2}".format(size, noai, trace)
-
-    return cmd_str, temp
-
-
 def get_size_and_free(string):
     """Function to parsing the response of get aggregation size.
 
@@ -341,7 +306,7 @@ def run_module():
     #Initialize the class with the target
     aggregate_name = zfsadm(aggregate_name=target, module=module)
 
-    rc, stdout, stderr = aggregate_name.get_agg_size()
+    rc, stdout, stderr = aggregate_name.get_aggregate_size()
 
     if rc == 0:
         old_size, old_free = get_size_and_free(string=stdout)
@@ -377,17 +342,23 @@ def run_module():
     else:
         module.fail_json(msg="Error code 119 not enough space to shrink")
 
-    path = module._remote_tmp if verbose else ""
+    noai = " -noai " if noai else ""
 
-    cmd, tmp_file = create_command(size=size, noai=noai, verbose=path)
+    if verbose:
+        temp = tempfile.NamedTemporaryFile(dir=module._remote_tmp, delete=False)
+        tmp_file = temp.name
+        trace = " -trace '{0}'".format(tmp_file)
+    else:
+        trace = ""
+        tmp_file = ""
 
     #Execute the function
-    rc, stdout, stderr, cmd = aggregate_name.grow_shrink(operation=operation, cmd=cmd)
+    rc, stdout, stderr, cmd = aggregate_name.execute_resizing(operation=operation, size=size, noai=noai, verbose=trace)
 
     if rc == 0:
         changed = True
 
-        rc_size, stdout_size, stderr_size = aggregate_name.get_agg_size()
+        rc_size, stdout_size, stderr_size = aggregate_name.get_aggregate_size()
         if rc_size == 0:
             new_size, new_free = get_size_and_free(string=stdout_size)
 

@@ -91,19 +91,11 @@ class ActionModule(ActionBase):
             source_full = None
             try:
                 source_full = self._loader.get_real_file(source)
-                # source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
                 result["msg"] = "Source {0} not found. {1}".format(source_full, e)
                 self._remove_tmp_path(tmp)
                 return result
-
-            # if self._connection._shell.path_has_trailing_slash(dest):
-            #     dest_file = self._connection._shell.join_path(dest, source_rel)
-            # else:
-            # self._connection._shell.join_path(dest_path)
-
-            # tmp_src = self._connection._shell.join_path(tmp, "source")
 
             rendered_file = None
             if use_template:
@@ -128,12 +120,6 @@ class ActionModule(ActionBase):
                     return result
 
                 source_full = rendered_file
-
-            # remote_path = None
-            # remote_path = self._transfer_file(source_full, tmp_src)
-            #
-            # if remote_path:
-            #     self._fixup_perms2((tmp, remote_path))
 
             result = {}
             copy_module_args = {}

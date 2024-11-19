@@ -85,7 +85,7 @@ cmd:
     sample: zfsadm grow -aggregate SOMEUSER.VVV.ZFS -size 4096
 target:
     description:
-        - The Fully Qualified Name of zfs data set that is to be resized.
+        - The Fully Qualified Name of the resized zfs data set.
     returned: always
     type: str
     sample: SOMEUSER.VVV.ZFS

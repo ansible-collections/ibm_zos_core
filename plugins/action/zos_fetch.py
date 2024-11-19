@@ -157,10 +157,19 @@ class ActionModule(ActionBase):
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
+        # To manage relative paths we verify and add the current directory
+        # Required to be cast to str
+        if not (dest.startswith("/")):
+            if dest.startswith("~"):
+                dest = os.path.expanduser(dest)
+            dest = os.path.realpath(dest)
+            dest = os.path.join(os.getcwd(), dest)
+            dest = f"{dest}/" if os.path.isdir(dest) else str(dest)
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #
         new_module_args = self._task.args.copy()
+        new_module_args.update(dest=dest)
         encoding_to = None
         if encoding:
             encoding_to = encoding.get("to", None)

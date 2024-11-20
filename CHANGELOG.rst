@@ -27,7 +27,7 @@ v1.9.3
 Release Summary
 ---------------
 
-Release Date: '2024-10-23'
+Release Date: '2024-10-28'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review

@@ -130,7 +130,7 @@ Version 1.9.4
 Bugfixes
 --------
 
-- ``zos_mvs_raw`` - If a program return code was 0 and verbose was true, the module will fail. Fix now will not fail the module.
+- ``zos_mvs_raw`` - If verbose was true, even if the program return code was 0, the module would fail. Fix now ensures the module fails on non-zero return code only.
 
 
 Version 1.9.3

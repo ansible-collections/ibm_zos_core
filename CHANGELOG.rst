@@ -4,13 +4,30 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.9.4
+======
+
+Release Summary
+---------------
+
+Release Date: '2024-11-20'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Bugfixes
+--------
+
+- zos_mvs_raw - If a program return code was 0 and verbose was true, the module will fail. Fix now will not fail the module. (https://github.com/ansible-collections/ibm_zos_core/pull/1801).
+
 v1.9.3
 ======
 
 Release Summary
 ---------------
 
-Release Date: '2024-10-28'
+Release Date: '2024-10-23'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review

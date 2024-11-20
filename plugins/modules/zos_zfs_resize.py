@@ -28,7 +28,7 @@ description:
     - A unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
     - A full path of a mount point, which will be used to look up the data set's FQDN.
   - The data set must be attached read-write, and contain only one Operating system.
-  - I(size) in K must be provided.
+  - I(size) must be provided.
 options:
   target:
     description:
@@ -56,8 +56,8 @@ options:
   no_auto_increment:
     description:
       - Option to not allow auto increase on shrinking process.
-      - If set to C(true), in the process of shrinking a zfs data set if a new file or
-        folder is create or added to the point and its over the new size the process will fail.
+      - When set to C(true), If during the shrinking process of a zfs aggregate more space is needed
+        the new total size is not to be increased and the module will fail.
     type: bool
     required: false
     default: false
@@ -91,7 +91,7 @@ target:
     sample: SOMEUSER.VVV.ZFS
 mount_target:
     description:
-        - The original share/mount name provided.
+        - The original share/mount.
     returned: always
     type: str
     sample: /tmp/zfs_agg
@@ -195,17 +195,16 @@ def get_full_output(file, module):
     if rc != 0:
         output = "Unable to obtain full output for verbose mode."
 
-    os.remove(file)
 
     return output
 
 
-def get_size_and_free(string):
+def get_size_and_free(line):
     """Function to parsing the response of get aggregation size.
 
     Parameters
     ----------
-        string : str
+        line : str
             stout of the get aggregation size function
 
     Returns
@@ -216,7 +215,7 @@ def get_size_and_free(string):
         numbers[0] : int
             Total free on kilobytes of the zfs
     """
-    numbers = [int(word) for word in string.split() if word.isdigit()]
+    numbers = [int(word) for word in line.split() if word.isdigit()]
     return numbers[1], numbers[0]
 
 
@@ -247,8 +246,7 @@ def find_mount_target(module, target):
                     found = True
                     break
         if found is False:
-            module.fail_json(msg="Resize: could not locate {0}".format(target),
-                stderr="No error reported: string not found." )
+            module.fail_json(msg="No mount points were found in the following output: {0}".format(stdout))
     return mount_point
 
 
@@ -291,7 +289,7 @@ def run_module():
             stderr=str(err)
         )
 
-    res_args = dict()
+    result = dict()
     target = module.params.get("target")
     size = module.params.get("size")
     space_type = module.params.get("space_type")
@@ -303,14 +301,14 @@ def run_module():
     mount_target = find_mount_target(module=module, target=target)
 
     #Initialize the class with the target
-    aggregate_name = zfsadm(aggregate_name=target, module=module)
+    zfsadm = zfsadm(aggregate_name=target, module=module)
 
-    rc, stdout, stderr = aggregate_name.get_aggregate_size()
+    rc, stdout, stderr = zfsadm.get_aggregate_size()
 
     if rc == 0:
-        old_size, old_free = get_size_and_free(string=stdout)
+        old_size, old_free = get_size_and_free(line=stdout)
 
-    res_args.update(
+    result.update(
         dict(
             target=target,
             mount_target=mount_target,
@@ -333,9 +331,22 @@ def run_module():
     minimum_size_t_shrink = old_size - old_free
 
     if size == old_size:
-        module.fail_json(msg="Same size declared with the size of the zfz")
+        result.update(
+        dict(
+            cmd="",
+            rc=0,
+            stdout="Same size as size of the file {0}".format(target),
+            stderr="",
+            changed=False,
+            new_size=old_size,
+            new_free=old_free,
+            )
+        )
+        module.exit_json(**result)
+
     elif size > old_size:
         operation = "grow"
+
     elif size >= minimum_size_t_shrink and size < old_size:
         operation = "shrink"
     else:
@@ -352,30 +363,33 @@ def run_module():
         tmp_file = ""
 
     #Execute the function
-    rc, stdout, stderr, cmd = aggregate_name.execute_resizing(operation=operation, size=size, noai=noai, verbose=trace)
+    rc, stdout, stderr, cmd = zfsadm.execute_resizing(operation=operation, size=size, noai=noai, verbose=trace)
 
     if rc == 0:
         changed = True
 
-        rc_size, stdout_size, stderr_size = aggregate_name.get_aggregate_size()
+        rc_size, stdout_size, stderr_size = zfsadm.get_aggregate_size()
         if rc_size == 0:
-            new_size, new_free = get_size_and_free(string=stdout_size)
+            new_size, new_free = get_size_and_free(line=stdout_size)
 
         if verbose:
             output = get_full_output(file=tmp_file, module=module)
-            res_args.update(
+            result.update(
                 verbose_output=output,
             )
+            os.remove(tmp_file)
+
     else:
         if verbose:
             os.remove(tmp_file)
         module.fail_json(
             msg="Resize: resize command returned non-zero code: rc=" +
             str(rc) + ".",
-            stderr=str(stderr)
+            stderr=str(stderr),
+            **result
         )
 
-    res_args.update(
+    result.update(
         dict(
             cmd=cmd,
             rc=rc,
@@ -387,7 +401,7 @@ def run_module():
         )
     )
 
-    module.exit_json(**res_args)
+    module.exit_json(**result)
 
 def main():
     run_module()

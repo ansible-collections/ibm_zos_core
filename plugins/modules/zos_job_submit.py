@@ -944,6 +944,7 @@ def run_module():
                     choices=['\n', '\r', '\r\n']
                 ),
                 auto_reload=dict(type='bool', default=False),
+                autoescape=dict(type='bool', default=True),
             )
         ),
     )

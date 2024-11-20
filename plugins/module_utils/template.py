@@ -84,6 +84,8 @@ def create_template_environment(template_parameters, src, template_encoding=None
         template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
     if template_parameters.get("auto_reload"):
         template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
+    if template_parameters.get("autoescape"):
+        template_parameters["autoescape"] = _process_boolean(template_parameters.get("autoescape"), default=True)
 
     if not template_encoding:
         template_encoding = encode.Defaults.get_default_system_charset()
@@ -117,6 +119,7 @@ class TemplateRenderer:
         keep_trailing_newline=False,
         newline_sequence="\n",
         auto_reload=False,
+        autoescape=True
     ):
         """This class implements functionality to load and render Jinja2
         templates. To add support for Jinja2 in a module, you need to include
@@ -174,6 +177,8 @@ class TemplateRenderer:
         auto_reload : bool, optional
             Whether to reload a template file when it
             has changed after creating the Jinja2 environment.
+        autoescape : bool, optional
+            Whether to enable autoescape of XML/HTML elements.
 
         Attributes
         ----------
@@ -231,7 +236,7 @@ class TemplateRenderer:
                 encoding=encoding,
             ),
             auto_reload=auto_reload,
-            autoescape=True,
+            autoescape=autoescape,
         )
 
     def render_file_template(self, file_path, variables):

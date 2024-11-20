@@ -319,6 +319,7 @@ def test_rexx_script_removes_option(ansible_zos_module):
             os.remove(script_path)
 
 
+@pytest.mark.template
 def test_script_template_with_default_markers(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -350,6 +351,7 @@ def test_script_template_with_default_markers(ansible_zos_module):
             os.remove(script_path)
 
 
+@pytest.mark.template
 def test_script_template_with_custom_markers(ansible_zos_module):
     hosts = ansible_zos_module
 

@@ -330,9 +330,9 @@ def run_module():
     mount_target = find_mount_target(module=module, target=target)
 
     #Initialize the class with the target
-    zfsadm = zfsadm(aggregate_name=target, module=module)
+    zfsadm_obj = zfsadm(aggregate_name=target, module=module)
 
-    rc, stdout, stderr = zfsadm.get_aggregate_size()
+    rc, stdout, stderr = zfsadm_obj.get_aggregate_size()
 
     if rc == 0:
         old_size, old_free = get_size_and_free(line=stdout)
@@ -400,12 +400,12 @@ def run_module():
         tmp_file = ""
 
     #Execute the function
-    rc, stdout, stderr, cmd = zfsadm.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)
+    rc, stdout, stderr, cmd = zfsadm_obj.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)
 
     if rc == 0:
         changed = True
 
-        rc_size, stdout_size, stderr_size = zfsadm.get_aggregate_size()
+        rc_size, stdout_size, stderr_size = zfsadm_obj.get_aggregate_size()
         if rc_size == 0:
             new_size, new_free = get_size_and_free(line=stdout_size)
 

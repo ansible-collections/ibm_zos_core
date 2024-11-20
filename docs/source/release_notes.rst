@@ -124,6 +124,15 @@ Known Issues
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
 - Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
 
+Version 1.9.4
+=============
+
+Bugfixes
+--------
+
+- ``zos_mvs_raw`` - If verbose was true, even if the program return code was 0, the module would fail. Fix now ensures the module fails on non-zero return code only.
+
+
 Version 1.9.3
 =============
 

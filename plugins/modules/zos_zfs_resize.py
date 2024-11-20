@@ -250,6 +250,32 @@ def find_mount_target(module, target):
     return mount_point
 
 
+def convert_size(size, space_type):
+    """Function to convert size from kb to the space_type.
+
+    Parameters
+    ----------
+        size : int
+            Size to grow or shrink the zfs
+        space_type : str
+            Type of space to be use
+
+    Returns
+    -------
+        size : int
+            Size on kilobytes
+    """
+    if space_type == "m":
+        size /= 1024
+    if space_type == "g":
+        size /= 1048576
+    if space_type == "cyl":
+        size /= 849960
+    if space_type == "trk":
+        size /= 56664
+    return size
+
+
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
@@ -296,6 +322,9 @@ def run_module():
     noai = module.params.get("no_auto_increment")
     verbose = module.params.get("verbose")
     changed = False
+    #Variables to return the value on the space_type by the user
+    size_on_type = ""
+    free_on_type = ""
 
     #Validation to found target on the system and also get the mount_point
     mount_target = find_mount_target(module=module, target=target)
@@ -308,12 +337,25 @@ def run_module():
     if rc == 0:
         old_size, old_free = get_size_and_free(line=stdout)
 
+    if space_type != "k":
+        space = calculate_size_on_k(size=size, space_type=space_type)
+    else:
+        space = size
+
+    #Validations to know witch function will be execute
+    operation = ""
+    minimum_size_t_shrink = old_size - old_free
+
+    if space_type != "k":
+        size_on_type = convert_size(size=old_size, space_type=space_type)
+        free_on_type = convert_size(size=old_size, space_type=space_type)
+
     result.update(
         dict(
             target=target,
             mount_target=mount_target,
-            old_size=old_size,
-            old_free=old_free,
+            old_size=old_size if space_type == "k" else size_on_type,
+            old_free=old_free if space_type == "k" else free_on_type,
             size=size,
             cmd="",
             changed=changed,
@@ -323,14 +365,7 @@ def run_module():
         )
     )
 
-    if space_type != "k":
-        size = calculate_size_on_k(size=size, space_type=space_type)
-
-    #Validations to know witch function will be execute
-    operation = ""
-    minimum_size_t_shrink = old_size - old_free
-
-    if size == old_size:
+    if space == old_size:
         result.update(
         dict(
             cmd="",
@@ -338,17 +373,19 @@ def run_module():
             stdout="Same size as size of the file {0}".format(target),
             stderr="",
             changed=False,
-            new_size=old_size,
-            new_free=old_free,
+            size=size,
+            new_size=old_size if space_type == "k" else size_on_type,
+            new_free=old_free if space_type == "k" else free_on_type,
             )
         )
         module.exit_json(**result)
 
-    elif size > old_size:
+    elif space > old_size:
         operation = "grow"
 
-    elif size >= minimum_size_t_shrink and size < old_size:
+    elif space >= minimum_size_t_shrink and space < old_size:
         operation = "shrink"
+
     else:
         module.fail_json(msg="Not enough space to grow.")
 
@@ -363,7 +400,7 @@ def run_module():
         tmp_file = ""
 
     #Execute the function
-    rc, stdout, stderr, cmd = zfsadm.execute_resizing(operation=operation, size=size, noai=noai, verbose=trace)
+    rc, stdout, stderr, cmd = zfsadm.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)
 
     if rc == 0:
         changed = True
@@ -371,6 +408,10 @@ def run_module():
         rc_size, stdout_size, stderr_size = zfsadm.get_aggregate_size()
         if rc_size == 0:
             new_size, new_free = get_size_and_free(line=stdout_size)
+
+        if space_type != "k":
+            size_on_type = convert_size(size=new_size, space_type=space_type)
+            free_on_type = convert_size(size=new_free, space_type=space_type)
 
         if verbose:
             output = get_full_output(file=tmp_file, module=module)
@@ -396,8 +437,8 @@ def run_module():
             stdout=stdout,
             stderr=stderr,
             changed=changed,
-            new_size=new_size,
-            new_free=new_free,
+            new_size=new_size if space_type == "k" else size_on_type,
+            new_free=new_free if space_type == "k" else free_on_type,
         )
     )
 

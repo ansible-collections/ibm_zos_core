@@ -4,6 +4,25 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.11.1
+=======
+
+Release Summary
+---------------
+
+Release Date: '2024-11-21'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Bugfixes
+--------
+
+- zos_mvs_raw - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail(false positive). Fix now has a consistent behavior and fails in both cases. (https://github.com/ansible-collections/ibm_zos_core/pull/1799).
+- zos_mvs_raw - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program. (https://github.com/ansible-collections/ibm_zos_core/pull/1799).
+- zos_mvs_raw - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr. (https://github.com/ansible-collections/ibm_zos_core/pull/1799).
+
 v1.11.0
 =======
 

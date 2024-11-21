@@ -132,6 +132,12 @@ Bugfixes
 
 - ``zos_mvs_raw`` - If verbose was true, even if the program return code was 0, the module would fail. Fix now ensures the module fails on non-zero return code only.
 
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
 
 Version 1.9.3
 =============

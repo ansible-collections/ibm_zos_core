@@ -1,0 +1,4 @@
+minor_changes:
+  - module_utils/import_handler - When importing a non supported ZOAU version like 1.2.x the module would throw a non user friendly error message.
+    Error message is now explicit about ZOAU not being properly configured for Ansible.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1804).

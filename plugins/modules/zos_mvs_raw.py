@@ -62,7 +62,8 @@ options:
     required: false
     type: int
     description:
-      - Specifies the maximum return code allowed for the program output. If the program generates a return code higher than the specified maximum, the module will fail.
+      - Specifies the maximum return code allowed for any program output.
+    default: 0
   dds:
     description:
       - The input data source.
@@ -1857,7 +1858,7 @@ def run_module():
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False, default=None),
-        max_rc=dict(type="int", required=False),
+        max_rc=dict(type="int", required=False, default=0),
         dds=dict(
             type="list",
             elements="dict",
@@ -1908,19 +1909,14 @@ def run_module():
             response = build_response(program_response.rc, dd_statements, program_response.stdout)
             result = combine_dicts(result, response)
 
-            if program_response.rc != 0 and max_rc is None:
+            if program_response.rc > max_rc:
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),
                 )
 
-            if program_response.rc != 0 and program_response.rc <= max_rc:
+            if program_response.rc != 0:
                 result["changed"] = False
-            elif program_response.rc != 0 and program_response.rc > max_rc:
-                raise ZOSRawError(
-                    program,
-                    "{0} {1}".format(program_response.stdout, program_response.stderr),
-                )
             else:
                 result["changed"] = True
 
@@ -2102,7 +2098,7 @@ def parse_and_validate_args(params):
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         tmp_hlq=dict(type="qualifier_or_empty", required=False, default=None),
-        max_rc=dict(type="int", required=False),
+        max_rc=dict(type="int", required=False, default=0),
         dds=dict(
             type="list",
             elements="dict",

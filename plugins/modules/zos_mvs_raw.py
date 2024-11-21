@@ -62,7 +62,7 @@ options:
     required: false
     type: int
     description:
-      - Specifies the maximum return code allowed for any program output.
+      - Specifies the maximum return code allowed for the program output. If the program generates a return code higher than the specified maximum, the module will fail.
   dds:
     description:
       - The input data source.

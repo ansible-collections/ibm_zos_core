@@ -78,13 +78,6 @@ class ManagedUserType (Enum):
     Qualifiers (HLQ): (RESTRICT, NOPERMIT, ....).
     """
 
-    # TODO: Implement this, use the recommended tmp HLQ
-    ZOS_LIMITED_TMP_HLQ=("zos_limited_tmp_hlq")
-    """
-    A z/OS managed user with restricted access to temporary
-    High Level Qualifiers (HLQ): (TSTRICT, TNOPERM, ....).
-    """
-
     def __str__(self) -> str:
         """
         Return the ManagedUserType name as upper case.
@@ -178,6 +171,7 @@ class ManagedUser:
         self._hostpattern = "all" # can also get it from options host_pattern
         self._managed_racf_user = None
         self._managed_user_group = None
+        self._managed_group = None
         self._ssh_config_file_size = 0
         self._ssh_directory_present = True
         self._create_ssh_config_and_directory()
@@ -467,10 +461,13 @@ class ManagedUser:
         command.write(f"echo DELUSER '{escaped_user}' RC=$?;")
         command.write(f"tsocmd DELGROUP {self._managed_user_group};")
         command.write(f"echo DELGROUP '{self._managed_user_group}' RC=$?;")
-
+        if self._managed_group is not None:
+            command.write(f"tsocmd DELGROUP {self._managed_group};")
+            command.write(f"echo DELMANAGEDGROUP '{self._managed_group}' RC=$?;")
         # Access additional module user attributes for use in a new user.
         cmd=f"{command.getvalue()}"
         results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
+        print(results_stdout_lines)
 
         deluser_rc = [v for v in results_stdout_lines if f"DELUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
         if not deluser_rc or int(deluser_rc[0]) > 0:
@@ -480,6 +477,9 @@ class ManagedUser:
         if not delgroup_rc or int(delgroup_rc[0]) > 0:
             raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
+        delmanagedgroup_rc = [v for v in results_stdout_lines if f"DELMANAGEDGROUP {self._managed_group} RC=" in v][0].split('=')[1].strip() or None
+        if not delgroup_rc or int(delgroup_rc[0]) > 0:
+            raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
     def _get_random_passwd(self) -> str:
         """
@@ -882,7 +882,7 @@ class ManagedUser:
         command.write(f"echo delete GROUP '{group}';")
         command.write(f"tsocmd DELGROUP \\({group}\\);")
         command.write(f"echo create GROUP '{group}';")
-        command.write(f"tsocmd ADDGROUP \\({group}\\) OWNER\\(OMVSADM\\) SUPGROUP\\(SYS1\\);")
+        command.write(f"tsocmd ADDGROUP \\({group}\\) OMVS\\(AUTOGID\\);")
         command.write(f"echo ADDGROUP RC=$?;")
         command.write(f"export TSOPROFILE=\"noprefix\";")
         command.write(f"tsocmd ADDSD 'NOPERMIT.*' UACC\\(NONE\\);")
@@ -919,33 +919,7 @@ class ManagedUser:
             raise Exception(f"{err_msg}, exception [{err}].")
         except Exception as err:
             raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {self._managed_racf_user}, exception [{err}]")
-
-    # TODO: Implement this method in the future
-    def _create_user_zos_limited_tmp_hlq(self) -> None:
-        """
-        Update a managed user id for the remote node with restricted access to
-        temporary data set High LevelQualifiers:
-        - TSTRICT
-        - TNOPERM
-        Any attempt for this user to access the HLQ will be rejected.
-
-        Parameters
-        ----------
-        managed_racf_user (str)
-            The managed user created that will we updated according tho the ManagedUseeType selected.
-
-        See Also
-        --------
-            :py:class:`ManagedUserType`
-            :py:func:`_create_managed_user`
-
-        Raises
-        ------
-        Exception
-            If any of the remote commands return codes are out of range an exception
-            and the stdout and stderr is returned.
-        """
-        print("Needs to be implemented")
+        self._managed_group = group
 
     def _noop(self) -> None:
         """
@@ -963,7 +937,6 @@ class ManagedUser:
     operations = {
         ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD.name: _create_user_zoau_limited_access_opercmd,
         ManagedUserType.ZOS_LIMITED_HLQ.name: _create_user_zos_limited_hlq,
-        ManagedUserType.ZOS_LIMITED_TMP_HLQ.name: _create_user_zos_limited_tmp_hlq,
         ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN.name: _noop,
         ManagedUserType.ZOS_BEGIN_WITH_POUND.name: _noop,
         ManagedUserType.ZOS_RANDOM_SYMBOLS.name: _noop

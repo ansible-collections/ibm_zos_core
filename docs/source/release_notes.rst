@@ -6,6 +6,35 @@
 Releases
 ========
 
+Version 1.11.1
+==============
+
+Bugfixes
+--------
+
+- ``zos_mvs_raw`` - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail(false positive). Fix now has a consistent behavior and fails in both cases.
+- ``zos_mvs_raw`` - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+- ``zos_mvs_raw`` - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+control node and z/OS managed node dependencies.
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
+
 Version 1.11.0
 ==============
 

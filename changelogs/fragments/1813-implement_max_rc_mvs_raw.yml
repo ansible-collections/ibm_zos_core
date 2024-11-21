@@ -1,5 +1,6 @@
 minor_changes:
-  - zos_mvs_raw - Add max_rc parameter. Now when the user set a number the module will return
-    the full output when the program rc is less or equal to the max_rc, but change equal False
+  - zos_mvs_raw - Add max_rc parameter. Now when the user set max_rc the module will return
+    the stdout when the program rc is less or equal to the max_rc, but change equal False
     if the rc is not 0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1813).
+    

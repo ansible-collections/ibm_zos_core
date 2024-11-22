@@ -218,26 +218,33 @@ class TemplateRenderer:
 
         self.encoding = encoding
         self.template_dir = template_dir
-        self.templating_env = jinja2.Environment(
-            block_start_string=block_start_string,
-            block_end_string=block_end_string,
-            variable_start_string=variable_start_string,
-            variable_end_string=variable_end_string,
-            comment_start_string=comment_start_string,
-            comment_end_string=comment_end_string,
-            line_statement_prefix=line_statement_prefix,
-            line_comment_prefix=line_comment_prefix,
-            trim_blocks=trim_blocks,
-            lstrip_blocks=lstrip_blocks,
-            newline_sequence=newline_sequence,
-            keep_trailing_newline=keep_trailing_newline,
-            loader=jinja2.FileSystemLoader(
+
+        environment_args = {
+            'block_start_string': block_start_string,
+            'block_end_string': block_end_string,
+            'variable_start_string': variable_start_string,
+            'variable_end_string': variable_end_string,
+            'comment_start_string': comment_start_string,
+            'comment_end_string': comment_end_string,
+            'line_statement_prefix': line_statement_prefix,
+            'line_comment_prefix': line_comment_prefix,
+            'trim_blocks': trim_blocks,
+            'lstrip_blocks': lstrip_blocks,
+            'newline_sequence': newline_sequence,
+            'keep_trailing_newline': keep_trailing_newline,
+            'loader': jinja2.FileSystemLoader(
                 searchpath=template_dir,
                 encoding=encoding,
             ),
-            auto_reload=auto_reload,
-            autoescape=autoescape,
-        )
+            'auto_reload': auto_reload
+        }
+
+        # Setting autoescape this way so bandit understands we're following best
+        # practices in regards to jinja autoescaping.
+        if autoescape:
+            self.templating_env = jinja2.Environment(autoescape=True, **environment_args)
+        else:
+            self.templating_env = jinja2.Environment(autoescape=jinja2.select_autoescape(), **environment_args)
 
     def render_file_template(self, file_path, variables):
         """Loads a template from the templates directory and renders

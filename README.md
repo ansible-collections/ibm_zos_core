@@ -175,7 +175,7 @@ For Galaxy and GitHub users, to see the supported ansible-core versions, review 
 | Version  | Status         | Release notes | Changelogs |
 |----------|----------------|---------------|------------|
 | 1.13.x   | In development | unreleased    | unreleased |
-| 1.12.x   | Current   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-11-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.12.0-beta.1/CHANGELOG.rst#v1-12-0-beta-1) |
+| 1.12.x   | Current   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-12-0-beta-1)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.12.0-beta.1/CHANGELOG.rst#v1-12-0-beta-1) |
 | 1.11.x   | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-11-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.11.0/CHANGELOG.rst#v1-11-0) |
 | 1.10.x   | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-10-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0/CHANGELOG.rst#v1-10-0) |
 | 1.9.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-9-2)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.2/CHANGELOG.rst#v1-9-2)  |

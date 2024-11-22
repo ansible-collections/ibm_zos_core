@@ -12,9 +12,12 @@ Version 1.11.1
 Bugfixes
 --------
 
-- ``zos_mvs_raw`` - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail(false positive). Fix now has a consistent behavior and fails in both cases.
-- ``zos_mvs_raw`` - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
-- ``zos_mvs_raw`` - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+- ``zos_mvs_raw``
+
+  - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail(false positive). Fix now has a consistent behavior and fails in both cases.
+  - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+  - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+
 
 Availability
 ------------

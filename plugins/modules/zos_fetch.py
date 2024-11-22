@@ -372,6 +372,7 @@ class FetchHandler:
         """
         space_pri = 0
         total_size = 0
+        rec_total = 0
         # Default record length
         max_recl = 80
         # Bytes per cylinder for a 3390 DASD

@@ -417,6 +417,7 @@ class EncodeUtils(object):
         to_code = self._validate_encoding(to_code)
         convert_rc = False
         file_list = list()
+        dest_f = ""
         if path.isdir(src):
             for (dir, subdir, files) in walk(src):
                 for file in files:

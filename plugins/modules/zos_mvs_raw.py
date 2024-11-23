@@ -61,7 +61,7 @@ options:
   max_rc:
     description:
       - Specifies the maximum return code allowed for the program output. If the
-      program generates a return code higher than the specified maximum, the module will fail.
+        program generates a return code higher than the specified maximum, the module will fail.
     required: false
     type: int
     default: 0

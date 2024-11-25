@@ -26,7 +26,6 @@ description:
   - The module M(zos_resize) can resize a zfs aggregate data set.
   - The I(target) data set must be either:
     - A unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
-    - A full path of a mount point, which will be used to look up the data set's FQDN.
   - The data set must be attached read-write, and contain only one Operating system.
   - I(size) must be provided.
 options:
@@ -84,20 +83,17 @@ cmd:
     type: str
     sample: zfsadm grow -aggregate SOMEUSER.VVV.ZFS -size 4096
 target:
-    description:
-        - The Fully Qualified Name of the resized zfs data set.
+    description: The Fully Qualified Name of the resized zfs data set.
     returned: always
     type: str
     sample: SOMEUSER.VVV.ZFS
 mount_target:
-    description:
-        - The original share/mount.
+    description: The original share/mount.
     returned: always
     type: str
     sample: /tmp/zfs_agg
 size:
-    description:
-        - The approximate size, in Kilobytes, of the data set after the resizing is performed.
+    description: The approximate size, in Kilobytes, of the data set after the resizing is performed.
     returned: always
     type: int
     sample: 4024
@@ -107,32 +103,27 @@ rc:
     type: int
     sample: 0
 old_size:
-    description:
-        - The reported size, in Kilobytes, of the data set before the resizing is performed.
+    description: The reported size, in Kilobytes, of the data set before the resizing is performed.
     returned: always
     type: int
     sample: 3096
 old_free:
-    description:
-        - The reported size, in Kilobytes, of the free space in the data set before the resizing is performed.
+    description: The reported size, in Kilobytes, of the free space in the data set before the resizing is performed.
     returned: always
     type: int
     sample: 108
 new_size:
-    description:
-        - The reported size, in Kilobytes, of the data set after the resizing is performed.
+    description: The reported size, in Kilobytes, of the data set after the resizing is performed.
     returned: success
     type: int
     sample: 4032
 new_free:
-    description:
-        - The reported size, in Kilobytes, of the free space in the data set after the resizing is performed.
+    description: The reported size, in Kilobytes, of the free space in the data set after the resizing is performed.
     returned: success
     type: int
     sample: 48
 verbose_output:
-    description:
-        - If C(verbose=true) the full traceback of operation will show on this variable.
+    description: If C(verbose=true) the full traceback of operation will show on this variable.
     returned: C(verbose=true) and success
     type: str
     sample: 6FB2F8 print_trace_table: printing contents of table: Main Trace Table

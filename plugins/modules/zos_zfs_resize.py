@@ -41,6 +41,7 @@ options:
     description:
       - The unit of measurement to use when defining the size.
       - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+      - k for kilobytes, m for megabytes, g for gigabytes, cyl for cylinder and trk for track
     required: false
     type: str
     choices:

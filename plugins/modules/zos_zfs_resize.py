@@ -66,6 +66,15 @@ options:
     required: false
     type: bool
     default: false
+  trace:
+    description:
+      - Determines if the verbose output will be store in a data set or path type.
+      - Required verbose=true
+    required: false
+    type: str
+    choices:
+      - dataset
+      - path
 """
 
 EXAMPLES = r"""
@@ -122,20 +131,26 @@ new_free:
     type: int
     sample: 48
 verbose_output:
-    description: If C(verbose=true) the full traceback of operation will show on this variable.
+    description: If C(verbose=true) the full traceback of operation will show on this variable. If C(trace) will return the data set or path name.
     returned: C(verbose=true) and success
     type: str
-    sample: 6FB2F8 print_trace_table: printing contents of table: Main Trace Table
+    sample: 6FB2F8 print_trace_table printing contents of table Main Trace Table
 """
 
 import os
 import tempfile
-
+import traceback
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
-)
+    data_set
+    )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
+
+try:
+    from zoautil_py import datasets
+except ImportError:
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 def calculate_size_on_k(size, space_type):
@@ -279,6 +294,11 @@ def run_module():
                 ),
             no_auto_increment=dict(type="bool", required=False, default=False),
             verbose=dict(type="bool", required=False, default=False),
+            trace=dict(
+                    type="str",
+                    required=False,
+                    choices=["dataset","path"],
+                ),
         ),
         supports_check_mode=False
     )
@@ -293,6 +313,11 @@ def run_module():
             ),
         no_auto_increment=dict(type="bool", required=False, default=False),
         verbose=dict(type="bool", required=False, default=False),
+        trace=dict(
+                type="str",
+                required=False,
+                choices=["dataset","path"],
+            ),
     )
 
     try:
@@ -311,6 +336,7 @@ def run_module():
     space_type = module.params.get("space_type")
     noai = module.params.get("no_auto_increment")
     verbose = module.params.get("verbose")
+    trace_path = module.params.get("trace")
     changed = False
     #Variables to return the value on the space_type by the user
     size_on_type = ""
@@ -382,9 +408,20 @@ def run_module():
     noai = " -noai " if noai else ""
 
     if verbose:
-        temp = tempfile.NamedTemporaryFile(dir=module._remote_tmp, delete=False)
-        tmp_file = temp.name
-        trace = " -trace '{0}'".format(tmp_file)
+        if trace_path != None and trace_path== "dataset":
+            hlq = datasets.get_hlq()
+            cmd = "mvstmp '{0}'".format(hlq)
+            rc, stdout, stderr = module.run_command(cmd)
+            data_set.DataSet.ensure_present(name=stdout, replace=False, type="SEQ")
+            trace = " -trace '{0}'".format(stdout)
+            trace_path = stdout
+        else:
+            temp = tempfile.NamedTemporaryFile(dir=module._remote_tmp, delete=False)
+            tmp_file = temp.name
+            trace = " -trace '{0}'".format(tmp_file)
+
+        if trace_path != None and trace_path== "path":
+            trace_path = tmp_file
     else:
         trace = ""
         tmp_file = ""
@@ -404,14 +441,19 @@ def run_module():
             free_on_type = convert_size(size=new_free, space_type=space_type)
 
         if verbose:
-            output = get_full_output(file=tmp_file, module=module)
-            result.update(
-                verbose_output=output,
-            )
-            os.remove(tmp_file)
+            if trace_path == None:
+                output = get_full_output(file=tmp_file, module=module)
+                result.update(
+                    verbose_output=output,
+                )
+                os.remove(tmp_file)
+            else:
+                result.update(
+                    verbose_output=trace_path,
+                )
 
     else:
-        if verbose:
+        if verbose and trace_path == None:
             os.remove(tmp_file)
         module.fail_json(
             msg="Resize: resize command returned non-zero code: rc=" +

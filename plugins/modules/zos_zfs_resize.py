@@ -16,17 +16,16 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 DOCUMENTATION = r"""
----
 module: zos_resize
-author:
-  - "Rich Parker (@richp405)"
-  - "Marcel Gutierrez (@andre.marcel.gutierre)"
 short_description: Resize a zfs data set.
 description:
   - The module M(zos_resize) can resize a zfs aggregate data set.
   - The I(target) data set must be a unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
   - The data set must be attached read-write, and contain only one Operating system.
   - I(size) must be provided.
+author:
+  - "Rich Parker (@richp405)"
+  - "Marcel Gutierrez (@andre.marcel.gutierre)"
 options:
   target:
     description:

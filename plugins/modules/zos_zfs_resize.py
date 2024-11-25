@@ -19,30 +19,30 @@ DOCUMENTATION = r"""
 ---
 module: zos_resize
 author:
-    - "Rich Parker (@richp405)"
-    - "Marcel Gutierrez (@andre.marcel.gutierre)"
+  - "Rich Parker (@richp405)"
+  - "Marcel Gutierrez (@andre.marcel.gutierre)"
 short_description: Resize a zfs data set.
 description:
   - The module M(zos_resize) can resize a zfs aggregate data set.
-  - The I(target) data set must be either:
-    - A unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
+  - The I(target) data set must be a unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
   - The data set must be attached read-write, and contain only one Operating system.
   - I(size) must be provided.
 options:
   target:
     description:
       - The Fully Qualified Name of zfs data set that is to be resized.
-    type: str
     required: true
+    type: str
   size:
     description:
       - The approximate size of the data set after the resizing is performed.
-    type: int
     required: True
+    type: int
   space_type:
     description:
       - The unit of measurement to use when defining the size.
       - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
+    required: false
     type: str
     choices:
       - k
@@ -50,15 +50,14 @@ options:
       - g
       - cyl
       - trk
-    required: false
     default: k
   no_auto_increment:
     description:
       - Option to not allow auto increase on shrinking process.
       - When set to C(true), If during the shrinking process of a zfs aggregate more space is needed
         the new total size is not to be increased and the module will fail.
-    type: bool
     required: false
+    type: bool
     default: false
   verbose:
     description:

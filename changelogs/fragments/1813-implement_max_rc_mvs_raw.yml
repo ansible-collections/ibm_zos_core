@@ -1,5 +1,5 @@
 minor_changes:
-  - zos_mvs_raw - Added ``max_rc`` option. Now when the user sets ``max_rc``, the module tolerate the failure
+  - zos_mvs_raw - Added ``max_rc`` option. Now when the user sets ``max_rc``, the module tolerates the failure
      if the return code is smaller than the ``max_rc`` specified, however, return value ``changed`` will be False if
      the program return code is not 0.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1813).

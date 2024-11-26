@@ -58,6 +58,13 @@ options:
     required: false
     type: bool
     default: false
+  max_rc:
+    description:
+      - Specifies the maximum return code allowed for the program output. If the
+        program generates a return code higher than the specified maximum, the module will fail.
+    required: false
+    type: int
+    default: 0
   dds:
     description:
       - The input data source.
@@ -1852,6 +1859,7 @@ def run_module():
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False, default=None),
+        max_rc=dict(type="int", required=False, default=0),
         dds=dict(
             type="list",
             elements="dict",
@@ -1890,6 +1898,7 @@ def run_module():
             program_parm = parms.get("parm")
             authorized = parms.get("auth")
             verbose = parms.get("verbose")
+            max_rc = parms.get("max_rc")
             program_response = run_zos_program(
                 program=program,
                 parm=program_parm,
@@ -1900,13 +1909,18 @@ def run_module():
             )
             response = build_response(program_response.rc, dd_statements, program_response.stdout, program_response.stderr)
             result = combine_dicts(result, response)
-            if program_response.rc != 0 :
+
+            if program_response.rc > max_rc:
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),
                 )
 
-            result["changed"] = True
+            if program_response.rc != 0:
+                result["changed"] = False
+            else:
+                result["changed"] = True
+
         except Exception as e:
             result["backups"] = backups
             module.fail_json(msg=repr(e), **result)
@@ -2085,6 +2099,7 @@ def parse_and_validate_args(params):
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         tmp_hlq=dict(type="qualifier_or_empty", required=False, default=None),
+        max_rc=dict(type="int", required=False, default=0),
         dds=dict(
             type="list",
             elements="dict",

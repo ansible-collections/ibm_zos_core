@@ -101,6 +101,8 @@ def test_disposition_new(ansible_zos_module, verbose):
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert result.get("failed", False) is False
+            if verbose:
+                assert result.get("stderr") is not None
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:
@@ -975,6 +977,37 @@ def test_data_set_name_special_characters(ansible_zos_module):
         hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+
+@pytest.mark.parametrize("max_rc", [4, 8])
+def test_new_disposition_for_data_set_members_max_rc(ansible_zos_module, max_rc):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_mvs_raw(
+        program_name="idcams",
+        auth=True,
+        max_rc=max_rc,
+        dds=[
+            {
+                "dd_output":{
+                    "dd_name":"sysprint",
+                    "return_content":{
+                        "type":"text"
+                    }
+                }
+            },
+            {
+                "dd_input":{
+                    "dd_name":"sysin",
+                    "content":" DELETE THIS.DATASET.DOES.NOT.EXIST"
+                }
+            },
+        ],
+    )
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("ret_code", {}).get("code", -1) == 8
+        if max_rc != 8:
+            assert result.get("msg") is not None
+            assert result.get("failed") is True
 
 # ---------------------------------------------------------------------------- #
 #                                 Input DD Tests                                #

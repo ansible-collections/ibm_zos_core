@@ -15,9 +15,23 @@ __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
 from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
+from ansible.plugins.action import ActionBase
 import sys
 from mock import MagicMock
 import importlib
+
+
+def add_vars_to_compute_environment(env_vars):
+    """This decorator injects the environment variables defined in a config
+    file to the Ansible method responsible for constructing the environment
+    string used by the SSH connection plugin."""
+    def wrapper_compute_env(compute_environment_string):
+        def wrapped_compute_environment_string(self, *args, **kwargs):
+            self._task.environment = env_vars
+            env_string = compute_environment_string(self, *args, **kwargs)
+            return env_string
+        return wrapped_compute_environment_string
+    return wrapper_compute_env
 
 
 def pytest_addoption(parser):
@@ -57,7 +71,7 @@ def z_python_interpreter(request):
     interpreter_str = helper.build_interpreter_string()
     inventory = helper.get_inventory_info()
     python_path = helper.get_python_path()
-    yield (interpreter_str, inventory, python_path)
+    yield (helper._environment, interpreter_str, inventory, python_path)
 
 
 def clean_logs(adhoc):
@@ -81,7 +95,7 @@ def clean_logs(adhoc):
 def ansible_zos_module(request, z_python_interpreter):
     """ Initialize pytest-ansible plugin with values from
     our YAML config and inject interpreter path into inventory. """
-    interpreter, inventory, python_path = z_python_interpreter
+    env_vars, interpreter, inventory, python_path = z_python_interpreter
 
     # next two lines perform similar action to ansible_adhoc fixture
     plugin = request.config.pluginmanager.getplugin("ansible")
@@ -93,9 +107,11 @@ def ansible_zos_module(request, z_python_interpreter):
     # Courtesy, pass along the python_path for some test cases need this information
     adhoc["options"]["ansible_python_path"] = python_path
 
+    # Adding the environment variables decorator to the Ansible engine.
+    ActionBase._compute_environment_string = add_vars_to_compute_environment(env_vars)(ActionBase._compute_environment_string)
+
     for host in hosts.values():
-        host.vars["ansible_python_interpreter"] = interpreter
-        # host.vars["ansible_connection"] = "zos_ssh"
+        host.vars["ansible_python_interpreter"] = python_path
     yield adhoc
     try:
         clean_logs(adhoc)

@@ -1158,7 +1158,7 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
             assert result.get("dest") == archive_data_set
             assert f"{data_set_name}.G0001V00" in result.get("archived")
             assert f"{data_set_name}.G0002V00" in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
@@ -1178,10 +1178,10 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
             assert len(result.get("missing")) == 0
             assert f"{data_set_name}.G0001V00" in result.get("targets")
             assert f"{data_set_name}.G0002V00" in result.get("targets")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert f"{data_set_name}.G0001V00" in c_result.get("stdout")
                 assert f"{data_set_name}.G0002V00" in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd=f"drm {HLQ}.*")
+        hosts.all.shell(cmd=f'drm "{HLQ}.*"')
 

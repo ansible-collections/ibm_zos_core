@@ -138,7 +138,10 @@ verbose_output:
 import os
 import tempfile
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import better_arg_parser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser,
+    data_set,
+)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
 
@@ -320,6 +323,10 @@ def run_module():
     noai = module.params.get("no_auto_increment")
     verbose = module.params.get("verbose")
     trace_destination = module.params.get("trace_destination")
+
+    if not(verbose) and trace_destination is not None:
+        module.fail_json(msg="If you want the full traceback on a file or dataset required verbose=True")
+
     changed = False
     #Variables to return the value on the space_type by the user
     size_on_type = ""
@@ -397,6 +404,12 @@ def run_module():
             tmp_file = temp.name
             trace = " -trace '{0}'".format(tmp_file)
         else:
+            if "/" in trace_destination:
+                if not(os.path.exists(trace_destination)):
+                    module.fail_json(msg="Destination file does not exist")
+            else:
+                if not(data_set.DataSet.data_set_exists(trace_destination)):
+                    module.fail_json(msg="Destination dataset does not exist")
             tmp_file = trace_destination
             trace = " -trace '{0}'".format(trace_destination)
     else:

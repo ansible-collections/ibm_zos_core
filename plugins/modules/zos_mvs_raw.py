@@ -1898,7 +1898,7 @@ def run_module():
                 verbose=verbose,
                 tmphlq=tmphlq,
             )
-            response = build_response(program_response.rc, dd_statements, program_response.stdout)
+            response = build_response(program_response.rc, dd_statements, program_response.stdout, program_response.stderr)
             result = combine_dicts(result, response)
             if program_response.rc != 0 :
                 raise ZOSRawError(
@@ -2766,7 +2766,7 @@ def run_zos_program(
     return response
 
 
-def build_response(rc, dd_statements, stdout):
+def build_response(rc, dd_statements, stdout, stderr):
     """Build response dictionary to return at module completion.
 
     Parameters
@@ -2785,6 +2785,7 @@ def build_response(rc, dd_statements, stdout):
     response["backups"] = gather_backups(dd_statements)
     response["dd_names"] = gather_output(dd_statements)
     response["stdout"] = stdout
+    response["stderr"] = stderr
     return response
 
 

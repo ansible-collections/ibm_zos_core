@@ -101,6 +101,8 @@ def test_disposition_new(ansible_zos_module, verbose):
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert result.get("failed", False) is False
+            if verbose:
+                assert result.get("stderr") is not None
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:

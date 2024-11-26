@@ -152,19 +152,20 @@ def copy_ps2uss(src, dest, is_binary=False):
 
     Raises
     ------
-    USSCmdExecError
-        When any exception is raised during the conversion.
+    DatasetCopyError
+        When any exception is raised during the copy.
     """
-    module = AnsibleModuleHelper(argument_spec={})
+    # module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
-    cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
-    if is_binary:
-        cp_ps2uss = cp_ps2uss.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_ps2uss, errors='replace')
-    if rc:
-        raise USSCmdExecError(cp_ps2uss, rc, out, err)
-    return rc, out, err
+    # cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
+    # if is_binary:
+    #     cp_ps2uss = cp_ps2uss.replace("rec", "bin", 1)
+    # rc, out, err = module.run_command(cp_ps2uss, errors='replace')
+    response = datasets._copy(src, dest, binary=is_binary)
+    if response.rc:
+        raise DatasetCopyError(response.rc, response.stdout_response, response.stderr_response)
+    return response.rc, response.stdout_response, response.stderr_response
 
 
 def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
@@ -196,29 +197,30 @@ def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
 
     Raises
     ------
-    USSCmdExecError
+    DatasetCopyError
         When any exception is raised during the conversion.
     """
-    module = AnsibleModuleHelper(argument_spec={})
+    # module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
 
-    cp_pds2uss = "cp -U -F rec \"//'{0}'\" {1}".format(src, quote(dest))
+    # cp_pds2uss = "cp -U -F rec \"//'{0}'\" {1}".format(src, quote(dest))
 
     # When dealing with ASA control chars, each record follows a
     # different format than what '-F rec' means, so we remove it
     # to allow the system to leave the control chars in the
     # destination.
-    if asa_text:
-        cp_pds2uss = cp_pds2uss.replace("-F rec", "", 1)
-    elif is_binary:
-        cp_pds2uss = cp_pds2uss.replace("rec", "bin", 1)
+    # if asa_text:
+    #     cp_pds2uss = cp_pds2uss.replace("-F rec", "", 1)
+    # elif is_binary:
+    #     cp_pds2uss = cp_pds2uss.replace("rec", "bin", 1)
 
-    rc, out, err = module.run_command(cp_pds2uss, errors='replace')
-    if rc:
-        raise USSCmdExecError(cp_pds2uss, rc, out, err)
+    # rc, out, err = module.run_command(cp_pds2uss, errors='replace')
+    response = datasets._copy(src, dest, binary=is_binary)
+    if response.rc:
+        raise DatasetCopyError(response.rc, response.stdout_response, response.stderr_response)
 
-    return rc, out, err
+    return response.rc, response.stdout_response, response.stderr_response
 
 
 def copy_gdg2uss(src, dest, is_binary=False, asa_text=False):
@@ -324,19 +326,20 @@ def copy_mvs2mvs(src, dest, is_binary=False):
 
     Raises
     ------
-    USSCmdExecError
+    DatasetCopyError
         When any exception is raised during the conversion.
     """
-    module = AnsibleModuleHelper(argument_spec={})
+    # module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_data_set_name(dest)
-    cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
-    if is_binary:
-        cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_mvs2mvs, errors='replace')
-    if rc:
-        raise USSCmdExecError(cp_mvs2mvs, rc, out, err)
-    return rc, out, err
+    # cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
+    # if is_binary:
+    #     cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin", 1)
+    # rc, out, err = module.run_command(cp_mvs2mvs, errors='replace')
+    response = datasets._copy(src, dest, binary=is_binary)
+    if response.rc:
+        raise DatasetCopyError(response.rc, response.stdout_response, response.stderr_response)
+    return response.rc, response.stdout_response, response.stderr_response
 
 
 def copy_vsam_ps(src, dest, tmphlq=None):
@@ -514,6 +517,31 @@ class TSOCmdResponse():
         self.stderr_response = stderr
 
 
+class DatasetCopyError(Exception):
+    def __init__(self, uss_cmd, rc, out, err):
+        """Error during a copy operation of ZOAU's datasets API.
+
+        Parameters
+        ----------
+        rc : int
+            Return code.
+        out : str
+            Standard output.
+        err : str
+            Standard error.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
+        self.msg = (
+            "Failure during dataset copy. Return code: {1}; "
+            "stdout: {2}; stderr: {3}".format(rc, out, err)
+        )
+        super().__init__(self.msg)
+
+
 class USSCmdExecError(Exception):
     def __init__(self, uss_cmd, rc, out, err):
         """Error during USS cmd execution.
@@ -539,3 +567,4 @@ class USSCmdExecError(Exception):
             "stdout: {2}; stderr: {3}".format(uss_cmd, rc, out, err)
         )
         super().__init__(self.msg)
+

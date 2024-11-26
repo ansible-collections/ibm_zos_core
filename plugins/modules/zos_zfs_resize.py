@@ -446,9 +446,7 @@ def run_module():
         if verbose and trace_destination is None:
             os.remove(tmp_file)
         module.fail_json(
-            msg="Resize: resize command returned non-zero code: rc=" +
-            str(rc) + ".",
-            stderr=str(stderr),
+            msg="Resize: resize command returned non-zero code: rc= {0}. \nstderr: {1}".format(rc, stderr),
             **result
         )
 

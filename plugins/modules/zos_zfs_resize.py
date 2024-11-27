@@ -356,12 +356,17 @@ def run_module():
         size_on_type = convert_size(size=old_size, space_type=space_type)
         free_on_type = convert_size(size=old_size, space_type=space_type)
 
+    str_old_size = old_size if space_type == "k" else size_on_type
+    str_old_size = "{:.1f}".format(str_old_size) + " {0}".format(space_type)
+    str_old_free = old_free if space_type == "k" else free_on_type
+    str_old_free = "{:.1f}".format(str_old_free) + " {0}".format(space_type)
+
     result.update(
         dict(
             target=target,
             mount_target=mount_target,
-            old_size=old_size if space_type == "k" else size_on_type,
-            old_free=old_free if space_type == "k" else free_on_type,
+            old_size=str_old_size,
+            old_free=str_old_free,
             size=size,
             cmd="",
             changed=changed,
@@ -380,8 +385,8 @@ def run_module():
             stderr="",
             changed=False,
             size=size,
-            new_size=old_size if space_type == "k" else size_on_type,
-            new_free=old_free if space_type == "k" else free_on_type,
+            new_size=str_old_size,
+            new_free=str_old_free,
             )
         )
         module.exit_json(**result)
@@ -450,6 +455,11 @@ def run_module():
             **result
         )
 
+    str_new_size = new_size if space_type == "k" else size_on_type
+    str_new_size = "{:.1f}".format(str_new_size) + " {0}".format(space_type)
+    str_new_free = new_free if space_type == "k" else free_on_type
+    str_new_free = "{:.1f}".format(str_new_free) + " {0}".format(space_type)
+
     result.update(
         dict(
             cmd=cmd,
@@ -457,8 +467,8 @@ def run_module():
             stdout=stdout,
             stderr=stderr,
             changed=changed,
-            new_size=new_size if space_type == "k" else size_on_type,
-            new_free=new_free if space_type == "k" else free_on_type,
+            new_size=str_new_size,
+            new_free=str_new_free,
         )
     )
 

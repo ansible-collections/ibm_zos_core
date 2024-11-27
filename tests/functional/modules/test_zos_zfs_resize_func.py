@@ -84,3 +84,22 @@ def test_shrink_operation(ansible_zos_module):
             assert result.get('new_size') <= size
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+
+@pytest.mark.parametrize("size_type",["m", "g", "cyl", "trk"])
+def test_grow_operation_different_size_types(ansible_zos_module, size_type):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    size = 5 if size_type != "g" or size_type != "cyl" else 2
+    try:
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+        results = hosts.all.zos_zfs_resize(target=ds_name, size=size, space_type=size_type)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get('target') == ds_name
+            assert result.get('mount_target') == "/SYSTEM" + mount_folder
+            assert result.get('rc') == 0
+            assert "grown" in result.get('stdout')
+            assert result.get('new_size') >= size
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)

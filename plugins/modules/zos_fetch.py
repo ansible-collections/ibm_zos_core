@@ -627,10 +627,16 @@ class FetchHandler:
             Error converting encoding of the member.
         """
         dir_path = tempfile.mkdtemp(dir=temp_dir)
-        cmd = "cp -B \"//'{0}'\" {1}"
-        if not is_binary:
-            cmd = cmd.replace(" -B", "")
-        rc, out, err = self._run_command(cmd.format(src, dir_path))
+
+        copy_args = {
+            "options": ""
+        }
+
+        if is_binary:
+            copy_args["options"] = "-B"
+
+        rc = datasets.copy(source=src, target=file_path, **copy_args)
+
         if rc != 0:
             rmtree(dir_path)
             self._fail_json(
@@ -638,10 +644,10 @@ class FetchHandler:
                     "Error copying partitioned data set {0} to USS. Make sure it is"
                     " not empty".format(src)
                 ),
-                stdout=out,
-                stderr=err,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
+                stdout="",
+                stderr="Error copying partitioned data set {0} to USS. Make sure it is",
+                stdout_lines="",
+                stderr_lines="Error copying partitioned data set {0} to USS. Make sure it is".splitlines(),
                 rc=rc,
             )
         if (not is_binary) and encoding:
@@ -754,21 +760,24 @@ class FetchHandler:
             fd, file_path = tempfile.mkstemp(dir=temp_dir)
             os.close(fd)
 
-        cmd = "cp -B \"//'{0}'\" {1}"
-        if not is_binary:
-            cmd = cmd.replace(" -B", "")
+        copy_args = {
+            "options": ""
+        }
 
-        rc, out, err = self._run_command(cmd.format(src, file_path))
+        if is_binary:
+            copy_args["options"] = "-B"
+
+        rc = datasets.copy(source=src, target=file_path, **copy_args)
 
         if rc != 0:
             os.remove(file_path)
             self._fail_json(
                 msg="Unable to copy {0} to USS".format(src),
-                stdout=str(out),
-                stderr=str(err),
+                stdout="",
+                stderr="Unable to copy {0} to USS".format(src),
                 rc=rc,
-                stdout_lines=str(out).splitlines(),
-                stderr_lines=str(err).splitlines(),
+                stdout_lines="",
+                stderr_lines="Unable to copy {0} to USS".format(src).splitlines(),
             )
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()

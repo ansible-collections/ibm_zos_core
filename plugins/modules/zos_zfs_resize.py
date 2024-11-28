@@ -137,6 +137,7 @@ verbose_output:
 
 import os
 import tempfile
+import math
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
@@ -166,10 +167,10 @@ def calculate_size_on_k(size, space_type):
     if space_type == "g":
         size *= 1048576
     if space_type == "cyl":
-        size *= 849960
+        size *= 830
     if space_type == "trk":
-        size *= 56664
-    return size
+        size *= 55
+    return math.ceil(size)
 
 
 def get_full_output(file, module):
@@ -268,9 +269,9 @@ def convert_size(size, space_type):
     if space_type == "g":
         size /= 1048576
     if space_type == "cyl":
-        size /= 849960
+        size /= 830
     if space_type == "trk":
-        size /= 56664
+        size /= 55
     return size
 
 

@@ -398,7 +398,6 @@ def test_find_data_sets_in_volume(ansible_zos_module, volumes_on_systems):
         hosts.all.zos_data_set(name=data_set_name, state="absent")
 
 
-
 def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     try:
@@ -408,6 +407,8 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
             volume = volumes.get_available_vol()
             create_vsam_ksds(vsam, hosts, volume)
 
+        # A KSDS VSAM has 3 different components, cluster, data and index
+        # This test should find all three
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
             resource_type='cluster'
@@ -415,6 +416,25 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
+            assert val.get('data_sets')[0].get("name", None) == VSAM_NAMES[0]
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
+            resource_type='data'
+        )
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 1
+            assert val.get('matched') == len(val.get('data_sets'))
+            assert val.get('data_sets')[0].get("name", None) == f"{VSAM_NAMES[0]}.DATA"
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
+            resource_type='index'
+        )
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 1
+            assert val.get('matched') == len(val.get('data_sets'))
+            assert val.get('data_sets')[0].get("name", None) == f"{VSAM_NAMES[0]}.INDEX"
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -424,6 +444,7 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
                 } for i in VSAM_NAMES
             ]
         )
+
 
 def test_find_vsam_pattern_disp_old(ansible_zos_module, volumes_on_systems):
     """

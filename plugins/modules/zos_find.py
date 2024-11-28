@@ -1104,7 +1104,7 @@ def run_module(module):
 
         res_args['examined'] = init_filtered_data_sets.get("searched")
 
-    elif resource_type == "CLUSTER":
+    elif resource_type in ["CLUSTER", "DATA", "INDEX"]:
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         res_args['examined'] = len(filtered_data_sets)
     elif resource_type == "GDG":

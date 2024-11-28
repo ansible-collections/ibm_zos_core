@@ -635,7 +635,7 @@ class FetchHandler:
         if is_binary:
             copy_args["options"] = "-B"
 
-        rc = datasets.copy(source=src, target=file_path, **copy_args)
+        rc = datasets.copy(source=src, target=dir_path, **copy_args)
 
         if rc != 0:
             rmtree(dir_path)

@@ -42,6 +42,13 @@ VSAM_NAMES = [
 
 DATASET_TYPES = ['seq', 'pds', 'pdse']
 
+LOCK_VSAM_JCL = """//SLEEP    JOB (T043JM,JM00,1,0,0,0),'SLEEP - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+//STEP1     EXEC PGM=BPXBATCH,PARM='SH sleep 60'
+//VSAM1   DD DISP=OLD,DSN={0}
+//STDOUT    DD SYSOUT=*
+//STDERR    DD SYSOUT=*
+"""
 
 def create_vsam_ksds(ds_name, ansible_zos_module, volume):
     hosts = ansible_zos_module
@@ -418,6 +425,37 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
             ]
         )
 
+def test_find_vsam_pattern_disp_old(ansible_zos_module, volumes_on_systems):
+    """
+    Creates a VSAM cluster and runs a JCL to lock the data set with DISP=OLD. 
+    Then make sure that we can query the VSAM. Currently, if using age + cluster 
+    resource_type the module will not find the vsam.
+    """
+    hosts = ansible_zos_module
+    try:
+        volumes = Volume_Handler(volumes_on_systems)
+        jcl_ds = get_tmp_ds_name()
+        for vsam in VSAM_NAMES:
+            volume = volumes.get_available_vol()
+            create_vsam_ksds(vsam, hosts, volume)
+
+        hosts.all.shell(cmd=f"decho \"{LOCK_VSAM_JCL.format(VSAM_NAMES[0])}\" '{jcl_ds}'; jsub '{jcl_ds}'")
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
+            resource_type='cluster'
+        )
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 1
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name":i,
+                    "state":'absent'
+                } for i in VSAM_NAMES
+            ]
+        )
 
 def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module

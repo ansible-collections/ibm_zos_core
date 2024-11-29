@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_copy - Add validation for copies from MVS data sets with members, if the member
+    does not exist the new error message is explanatory about why fail.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1821).

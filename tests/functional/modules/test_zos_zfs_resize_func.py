@@ -18,6 +18,8 @@ import pytest
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
+
 __metaclass__ = type
 
 def make_temp_folder(hosts):
@@ -162,6 +164,50 @@ def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "shrunk" in result.get('stdout')
+            #assert result.get('new_size') <= shrink_size
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+
+@pytest.mark.parametrize("trace_destination", [None, "uss", "dataset"])
+def test_grow_n_shrink_operations_verbose_options(ansible_zos_module, trace_destination):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    grow_size = 2500
+    shrink_size = 2000
+
+    if trace_destination == "uss":
+        trace_destination = "/" + get_random_file_name(dir="tmp")
+        hosts.all.shell(cmd="touch {0}".format(trace_destination))
+    elif trace_destination == "dataset":
+        trace_destination = get_tmp_ds_name()
+        hosts.all.shell(cmd="dtouch {0}".format(trace_destination))
+
+    try:
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+
+        results = hosts.all.zos_zfs_resize(target=ds_name, size=grow_size, verbose=True, trace_destination=trace_destination)
+        for result in results.contacted.values():
+            assert result.get('target') == ds_name
+            assert result.get('mount_target') == "/SYSTEM" + mount_folder
+            assert result.get('rc') == 0
+            assert "grown" in result.get('stdout')
+            assert result.get("verbose_output") is not None
+            if trace_destination != None:
+                assert result.get("verbose_output") == trace_destination
+
+            #assert result.get('new_size') >= grow_size
+
+        results = hosts.all.zos_zfs_resize(target=ds_name, size=shrink_size, verbose=True, trace_destination=trace_destination)
+        for result in results.contacted.values():
+            assert result.get('target') == ds_name
+            assert result.get('mount_target') == "/SYSTEM" + mount_folder
+            assert result.get('rc') == 0
+            assert "shrunk" in result.get('stdout')
+            assert result.get("verbose_output") is not None
+            if trace_destination != None:
+                assert result.get("verbose_output") == trace_destination
+
             #assert result.get('new_size') <= shrink_size
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)

@@ -1075,7 +1075,7 @@ class ZOSFetchError(Exception):
             stdout=stdout,
             stderr=stderr,
             stdout_lines=stdout_lines,
-            stderr_lines= stderr_lines,
+            stderr_lines=stderr_lines,
         )
         super().__init__(self.msg)
 

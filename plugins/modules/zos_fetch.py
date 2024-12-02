@@ -645,7 +645,7 @@ class FetchHandler:
                     " not empty".format(src)
                 ),
                 stdout="",
-                stderr="Error copying partitioned data set {0} to USS. Make sure it is",
+                stderr="Error copying partitioned data set {0} to USS. Make sure it is not empty",
                 stdout_lines="",
                 stderr_lines="Error copying partitioned data set {0} to USS. Make sure it is".splitlines(),
                 rc=rc,

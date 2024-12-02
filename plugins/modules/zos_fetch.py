@@ -647,7 +647,7 @@ class FetchHandler:
                 stdout="",
                 stderr="Error copying partitioned data set {0} to USS. Make sure it is not empty",
                 stdout_lines="",
-                stderr_lines="Error copying partitioned data set {0} to USS. Make sure it is".splitlines(),
+                stderr_lines="Error copying partitioned data set {0} to USS. Make sure it is not empty".splitlines(),
                 rc=rc,
             )
         if (not is_binary) and encoding:

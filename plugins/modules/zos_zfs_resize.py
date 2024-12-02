@@ -25,7 +25,7 @@ description:
   - I(size) must be provided.
 author:
   - "Rich Parker (@richp405)"
-  - "Marcel Gutierrez (@andre.marcel.gutierre)"
+  - "Marcel Gutierrez (@andre.marcel.gutierrez)"
 options:
   target:
     description:
@@ -194,7 +194,6 @@ def get_full_output(file, module):
     if rc != 0:
         output = "Unable to obtain full output for verbose mode."
 
-
     return output
 
 
@@ -281,11 +280,11 @@ def run_module():
             target=dict(type="str", required=True),
             size=dict(type="int", required=True),
             space_type=dict(
-                    type="str",
-                    required=False,
-                    choices=["k", "m", "g", "cyl", "trk"],
-                    default="k",
-                ),
+                type="str",
+                required=False,
+                choices=["k", "m", "g", "cyl", "trk"],
+                default="k",
+            ),
             no_auto_increment=dict(type="bool", required=False, default=False),
             verbose=dict(type="bool", required=False, default=False),
             trace_destination=dict(type="str", required=False),
@@ -296,15 +295,14 @@ def run_module():
         target=dict(type="data_set", required=True),
         size=dict(type="int", required=True),
         space_type=dict(
-                type="str",
-                required=False,
-                choices=["k", "m", "g", "cyl", "trk"],
-                default="k",
-            ),
+            type="str",
+            required=False,
+            choices=["k", "m", "g", "cyl", "trk"],
+            default="k",
+        ),
         no_auto_increment=dict(type="bool", required=False, default=False),
         verbose=dict(type="bool", required=False, default=False),
-        trace_destination=dict(type="data_set_or_path", required=False
-            ),
+        trace_destination=dict(type="data_set_or_path", required=False),
     )
 
     try:
@@ -325,18 +323,20 @@ def run_module():
     verbose = module.params.get("verbose")
     trace_destination = module.params.get("trace_destination")
 
-    if not(verbose) and trace_destination is not None:
-        raise ResizingOperationError(msg="If you want the full traceback on a file or dataset required verbose=True")
+    if not (verbose) and trace_destination is not None:
+        raise ResizingOperationError(
+            msg="If you want the full traceback on a file or dataset required verbose=True"
+        )
 
     changed = False
-    #Variables to return the value on the space_type by the user
+    # Variables to return the value on the space_type by the user
     size_on_type = ""
     free_on_type = ""
 
-    #Validation to found target on the system and also get the mount_point
+    # Validation to found target on the system and also get the mount_point
     mount_target = find_mount_target(module=module, target=target)
 
-    #Initialize the class with the target
+    # Initialize the class with the target
     zfsadm_obj = zfsadm(aggregate_name=target, module=module)
 
     rc, stdout, stderr = zfsadm_obj.get_aggregate_size()
@@ -349,7 +349,7 @@ def run_module():
     else:
         space = size
 
-    #Validations to know witch function will be execute
+    # Validations to know witch function will be execute
     operation = ""
     minimum_size_t_shrink = old_size - old_free
 
@@ -379,15 +379,15 @@ def run_module():
 
     if space == old_size:
         result.update(
-        dict(
-            cmd="",
-            rc=0,
-            stdout="Same size as size of the file {0}".format(target),
-            stderr="",
-            changed=False,
-            size=size,
-            new_size=str_old_size,
-            new_free=str_old_free,
+            dict(
+                cmd="",
+                rc=0,
+                stdout="Same size as size of the file {0}".format(target),
+                stderr="",
+                changed=False,
+                size=size,
+                new_size=str_old_size,
+                new_free=str_old_free,
             )
         )
         module.exit_json(**result)
@@ -411,10 +411,10 @@ def run_module():
             trace = " -trace '{0}'".format(tmp_file)
         else:
             if "/" in trace_destination:
-                if not(os.path.exists(trace_destination)):
+                if not (os.path.exists(trace_destination)):
                     raise ResizingOperationError(msg="Destination file does not exist")
             else:
-                if not(data_set.DataSet.data_set_exists(trace_destination)):
+                if not (data_set.DataSet.data_set_exists(trace_destination)):
                     raise ResizingOperationError(msg="Destination dataset does not exist")
             tmp_file = trace_destination
             trace = " -trace '{0}'".format(trace_destination)
@@ -422,7 +422,7 @@ def run_module():
         trace = ""
         tmp_file = ""
 
-    #Execute the function
+    # Execute the function
     rc, stdout, stderr, cmd = zfsadm_obj.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)
 
     if rc == 0:
@@ -500,7 +500,7 @@ class ResizingOperationError(Exception):
             changed=False,
             old_size="",
             old_free="",
-        ):
+    ):
         """Error in a copy operation.
 
         Parameters

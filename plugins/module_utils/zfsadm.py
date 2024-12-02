@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 # Copyright (c) IBM Corporation 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +11,7 @@
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
+
 
 class zfsadm:
     """Provides an interface to execute zfsadm commands.
@@ -29,7 +27,6 @@ class zfsadm:
         """
         self.aggregate_name = aggregate_name.upper()
         self.module = module
-
 
     def execute_resizing(self, operation, size, noai, verbose):
         """Execute grow or shrink operation over a zfs dataset.
@@ -63,7 +60,6 @@ class zfsadm:
 
         return rc, stdout, stderr, cmd_str
 
-
     def get_aggregate_size(self):
         """Execute a command to get the size of the zfs dataset.
 
@@ -81,4 +77,3 @@ class zfsadm:
         rc, stdout, stderr = self.module.run_command(cmd)
 
         return rc, stdout, stderr
-

@@ -777,7 +777,7 @@ class FetchHandler:
                 stderr="Unable to copy {0} to USS".format(src),
                 rc=rc,
                 stdout_lines="",
-                stderr_lines="Unable to copy {0} to USS".format(src).splitlines(),
+                stderr_lines="Unable to copy {0} to USS".format(src),
             )
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()

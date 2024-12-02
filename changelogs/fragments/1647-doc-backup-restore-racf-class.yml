@@ -1,0 +1,5 @@
+trivial:
+  - zos_backup_restore - Added supplemental documentation explaining the RACF class
+    requirement when using module option restore. 
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1647).
+

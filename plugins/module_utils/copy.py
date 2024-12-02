@@ -119,7 +119,7 @@ def copy_uss2mvs(src, dest, ds_type, is_binary=False):
         cp_uss2mvs = "cp -F rec {0} \"//'{1}'\"".format(quote(src), dest)
     if is_binary:
         cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_uss2mvs)
+    rc, out, err = module.run_command(cp_uss2mvs, errors='replace')
     if rc:
         raise USSCmdExecError(cp_uss2mvs, rc, out, err)
     return rc, out, err
@@ -161,7 +161,7 @@ def copy_ps2uss(src, dest, is_binary=False):
     cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
     if is_binary:
         cp_ps2uss = cp_ps2uss.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_ps2uss)
+    rc, out, err = module.run_command(cp_ps2uss, errors='replace')
     if rc:
         raise USSCmdExecError(cp_ps2uss, rc, out, err)
     return rc, out, err
@@ -214,7 +214,7 @@ def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
     elif is_binary:
         cp_pds2uss = cp_pds2uss.replace("rec", "bin", 1)
 
-    rc, out, err = module.run_command(cp_pds2uss)
+    rc, out, err = module.run_command(cp_pds2uss, errors='replace')
     if rc:
         raise USSCmdExecError(cp_pds2uss, rc, out, err)
 
@@ -292,7 +292,7 @@ def copy_uss2uss_binary(src, dest):
     src = _validate_path(src)
     dest = _validate_path(dest)
     cp_uss2uss = "cp -F bin {0} {1}".format(quote(src), quote(dest))
-    rc, out, err = module.run_command(cp_uss2uss)
+    rc, out, err = module.run_command(cp_uss2uss, errors='replace')
     if rc:
         raise USSCmdExecError(cp_uss2uss, rc, out, err)
     return rc, out, err
@@ -333,13 +333,13 @@ def copy_mvs2mvs(src, dest, is_binary=False):
     cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
     if is_binary:
         cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_mvs2mvs)
+    rc, out, err = module.run_command(cp_mvs2mvs, errors='replace')
     if rc:
         raise USSCmdExecError(cp_mvs2mvs, rc, out, err)
     return rc, out, err
 
 
-def copy_vsam_ps(src, dest):
+def copy_vsam_ps(src, dest, tmphlq=None):
     """Copy a VSAM(KSDS) data set to a PS data set vise versa.
 
     Parameters
@@ -348,6 +348,8 @@ def copy_vsam_ps(src, dest):
         The VSAM(KSDS) or PS data set to be copied.
     dest : str
         The PS or VSAM(KSDS) data set.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -367,14 +369,18 @@ def copy_vsam_ps(src, dest):
     src = _validate_data_set_name(src)
     dest = _validate_data_set_name(dest)
     repro_cmd = REPRO.format(src, dest)
+
     cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
-    rc, out, err = module.run_command(cmd, data=repro_cmd)
+    if tmphlq:
+        cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
+    rc, out, err = module.run_command(cmd, data=repro_cmd, errors='replace')
     if rc:
         raise USSCmdExecError(cmd, rc, out, err)
     return rc, out, err
 
 
-def copy_asa_uss2mvs(src, dest):
+def copy_asa_uss2mvs(src, dest, tmphlq=None):
     """Copy a file from USS to an ASA sequential data set or PDS/E member.
 
     Parameters
@@ -383,6 +389,8 @@ def copy_asa_uss2mvs(src, dest):
         Path of the USS file.
     dest : str
         The MVS destination data set or member.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -393,13 +401,15 @@ def copy_asa_uss2mvs(src, dest):
     str
         The stderr after the copy command executed successfully.
     """
-    oget_cmd = "OGET '{0}' '{1}'".format(src, dest)
-    rc, out, err = ikjeft01(oget_cmd, authorized=True)
+
+    module = AnsibleModuleHelper(argument_spec={})
+    oget_cmd = f"tsocmd \" OGET '{src}' '{dest}' \""
+    rc, out, err = module.run_command(oget_cmd)
 
     return TSOCmdResponse(rc, out, err)
 
 
-def copy_asa_mvs2uss(src, dest):
+def copy_asa_mvs2uss(src, dest, tmphlq=None):
     """Copy an ASA sequential data set or member to USS.
 
     Parameters
@@ -408,6 +418,8 @@ def copy_asa_mvs2uss(src, dest):
         The MVS data set to be copied.
     dest : str
         Destination path in USS.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -422,12 +434,12 @@ def copy_asa_mvs2uss(src, dest):
     dest = _validate_path(dest)
 
     oput_cmd = "OPUT '{0}' '{1}'".format(src, dest)
-    rc, out, err = ikjeft01(oput_cmd, authorized=True)
+    rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
 
     return TSOCmdResponse(rc, out, err)
 
 
-def copy_asa_pds2uss(src, dest):
+def copy_asa_pds2uss(src, dest, tmphlq=None):
     """Copy all members from an ASA PDS/E to USS.
 
     Parameters
@@ -436,6 +448,8 @@ def copy_asa_pds2uss(src, dest):
         The MVS data set to be copied.
     dest : str
         Destination path in USS (must be a directory).
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -465,7 +479,7 @@ def copy_asa_pds2uss(src, dest):
         dest_path = path.join(dest, member)
 
         oput_cmd = "OPUT '{0}' '{1}'".format(src_member, dest_path)
-        rc, out, err = ikjeft01(oput_cmd, authorized=True)
+        rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
 
         if rc != 0:
             return TSOCmdResponse(rc, out, err)

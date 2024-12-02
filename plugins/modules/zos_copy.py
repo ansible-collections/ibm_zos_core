@@ -206,7 +206,7 @@ options:
         produced by SFTP and continues execution. The user is able to override
         this behavior by setting this parameter to C(false). By doing so, any
         content written to stderr is considered an error by Ansible and will
-        have module fail.
+        cause the module to fail.
       - When Ansible verbosity is set to greater than 3, either through the
         command line interface (CLI) using B(-vvvv) or through environment
         variables such as B(verbosity = 4), then this parameter will
@@ -967,6 +967,7 @@ class CopyHandler(object):
         asa_text=False,
         backup_name=None,
         force_lock=False,
+        tmphlq=None
     ):
         """Utility class to handle copying data between two targets.
 
@@ -995,6 +996,8 @@ class CopyHandler(object):
             Whether the dest data set should be copied into
             using disp=shr when is opened by another
             process.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
 
         Attributes
         ----------
@@ -1018,6 +1021,8 @@ class CopyHandler(object):
             Whether the dest data set should be copied into
             using disp=shr when is opened by another
             process.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
         """
         self.module = module
         self.is_binary = is_binary
@@ -1026,6 +1031,7 @@ class CopyHandler(object):
         self.aliases = aliases
         self.backup_name = backup_name
         self.force_lock = force_lock
+        self.tmphlq = tmphlq
 
     def run_command(self, cmd, **kwargs):
         """Wrapper for AnsibleModule.run_command.
@@ -1042,7 +1048,7 @@ class CopyHandler(object):
         tuple(int, str, str)
             A tuple of return code, stdout and stderr.
         """
-        return self.module.run_command(cmd, **kwargs)
+        return self.module.run_command(cmd, errors='replace', **kwargs)
 
     def copy_to_seq(
         self,
@@ -1077,7 +1083,7 @@ class CopyHandler(object):
         copy_args["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(new_src, dest)
+            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq)
 
             if response.rc != 0:
                 raise CopyOperationError(
@@ -1277,7 +1283,7 @@ class CopyHandler(object):
         if os.path.isdir(new_src):
             try:
                 if remote_src:
-                    temp_dir = tempfile.mkdtemp()
+                    temp_dir = tempfile.mkdtemp(prefix=os.environ['TMPDIR'])
                     shutil.copytree(new_src, temp_dir, dirs_exist_ok=True)
                     new_src = temp_dir
 
@@ -1295,7 +1301,7 @@ class CopyHandler(object):
         else:
             try:
                 if remote_src:
-                    fd, temp_src = tempfile.mkstemp()
+                    fd, temp_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
                     os.close(fd)
                     shutil.copy(new_src, temp_src)
                     new_src = temp_src
@@ -1458,7 +1464,7 @@ class CopyHandler(object):
             If the conversion fails.
         """
         try:
-            fd, converted_src = tempfile.mkstemp()
+            fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
             os.close(fd)
 
             with open(converted_src, "wb") as converted_file:
@@ -1487,6 +1493,7 @@ class USSCopyHandler(CopyHandler):
         aliases=False,
         common_file_args=None,
         backup_name=None,
+        tmphlq=None
     ):
         """Utility class to handle copying files or data sets to USS target.
 
@@ -1505,6 +1512,8 @@ class USSCopyHandler(CopyHandler):
             Whether the file to be copied contains binary data.
         backup_name : str
             The USS path or data set name of destination backup.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
 
         Attributes
         ----------
@@ -1518,7 +1527,8 @@ class USSCopyHandler(CopyHandler):
             executable=executable,
             asa_text=asa_text,
             aliases=aliases,
-            backup_name=backup_name
+            backup_name=backup_name,
+            tmphlq=tmphlq
         )
         self.common_file_args = common_file_args
 
@@ -1865,7 +1875,7 @@ class USSCopyHandler(CopyHandler):
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 if self.asa_text:
-                    response = copy.copy_asa_mvs2uss(src, dest)
+                    response = copy.copy_asa_mvs2uss(src, dest, tmphlq=self.tmphlq)
                     rc = response.rc
                 elif self.executable:
                     try:
@@ -1911,7 +1921,7 @@ class USSCopyHandler(CopyHandler):
                             stderr=copy_exception.response.stderr_response
                         )
                 elif self.asa_text:
-                    response = copy.copy_asa_pds2uss(src, dest)
+                    response = copy.copy_asa_pds2uss(src, dest, tmphlq=self.tmphlq)
 
                     if response.rc != 0:
                         raise CopyOperationError(
@@ -1943,6 +1953,7 @@ class PDSECopyHandler(CopyHandler):
         asa_text=False,
         backup_name=None,
         force_lock=False,
+        tmphlq=None
     ):
         """ Utility class to handle copying to partitioned data sets or
         partitioned data set members.
@@ -1960,6 +1971,8 @@ class PDSECopyHandler(CopyHandler):
             binary data.
         backup_name : str
             The USS path or data set name of destination backup.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
         """
         super().__init__(
             module,
@@ -1968,7 +1981,8 @@ class PDSECopyHandler(CopyHandler):
             aliases=aliases,
             asa_text=asa_text,
             backup_name=backup_name,
-            force_lock=force_lock
+            force_lock=force_lock,
+            tmphlq=tmphlq
         )
 
     def copy_to_pdse(
@@ -2140,7 +2154,7 @@ class PDSECopyHandler(CopyHandler):
         opts["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(src, dest)
+            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq)
             rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
@@ -2216,7 +2230,7 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
     DataSetMemberAttributeError
         When the call to dcp fails.
     """
-    fd, temp_path = tempfile.mkstemp()
+    fd, temp_path = tempfile.mkstemp(dir=os.environ['TMPDIR'])
     os.close(fd)
 
     copy_args = dict()
@@ -2334,7 +2348,8 @@ def create_seq_dataset_from_file(
     is_binary,
     asa_text,
     record_length=None,
-    volume=None
+    volume=None,
+    tmphlq=None
 ):
     """Creates a new sequential dataset with attributes suitable to copy the
     contents of a file into it.
@@ -2353,6 +2368,8 @@ def create_seq_dataset_from_file(
         Whether the file has ASA control characters.
     volume : str, optional
         Volume where the data set should be.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
     """
     src_size = os.stat(file).st_size
     # record_format = record_length = None
@@ -2387,7 +2404,7 @@ def create_seq_dataset_from_file(
         volume=volume
     )
 
-    data_set.DataSet.ensure_present(replace=force, **dest_params)
+    data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
 
 
 def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
@@ -2601,7 +2618,8 @@ def does_destination_allow_copy(
     dest_type,
     is_uss,
     force,
-    volume=None
+    volume=None,
+    tmphlq=None
 ):
     """Checks whether or not the module can copy into the destination
     specified.
@@ -2626,6 +2644,8 @@ def does_destination_allow_copy(
         Whether or not the module can replace existing destinations.
     volume : str, optional
         Volume where the destination should be.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -2644,7 +2664,7 @@ def does_destination_allow_copy(
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
     if (dest_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_VSAM) and dest_exists:
-        is_dest_empty = data_set.DataSet.is_empty(dest, volume)
+        is_dest_empty = data_set.DataSet.is_empty(dest, volume, tmphlq=tmphlq)
         if not (is_dest_empty or force):
             return False
 
@@ -2699,7 +2719,7 @@ def get_file_checksum(src):
 
 def cleanup(src_list):
     """Remove all files or directories listed in src_list. Also perform
-    additional cleanup of the /tmp directory.
+    additional cleanup of the tmp directory.
 
     Parameters
     ----------
@@ -2707,7 +2727,7 @@ def cleanup(src_list):
         A list of file paths.
     """
     module = AnsibleModuleHelper(argument_spec={})
-    tmp_prefix = tempfile.gettempprefix()
+    tmp_prefix = os.environ['TMPDIR']
     tmp_dir = os.path.realpath("/" + tmp_prefix)
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
     conv_list = glob.glob(tmp_dir + "/converted*")
@@ -2832,7 +2852,8 @@ def allocate_destination_data_set(
     is_gds,
     is_active_gds,
     dest_data_set=None,
-    volume=None
+    volume=None,
+    tmphlq=None
 ):
     """
     Allocates a new destination data set to copy into, erasing a preexistent one if
@@ -2867,6 +2888,8 @@ def allocate_destination_data_set(
         of the new data set; they will take precedence over any other allocation logic.
     volume : str, optional
         Volume where the data set should be allocated into.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -2920,20 +2943,20 @@ def allocate_destination_data_set(
             del dest_params["purge"]
             del dest_params["extended"]
             del dest_params["fifo"]
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
+            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
-            create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume)
+            create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
                 data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         else:
             temp_dump = None
             try:
@@ -2949,7 +2972,8 @@ def allocate_destination_data_set(
                     is_binary,
                     asa_text,
                     record_length=record_length,
-                    volume=volume
+                    volume=volume,
+                    tmphlq=tmphlq
                 )
             finally:
                 if temp_dump:
@@ -2961,7 +2985,7 @@ def allocate_destination_data_set(
             if is_gds and not is_active_gds:
                 data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
@@ -2978,7 +3002,7 @@ def allocate_destination_data_set(
                 type="PDSE",
                 volume=volume
             )
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
+            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
                 # This is almost the same as allocating a sequential dataset.
@@ -3036,13 +3060,13 @@ def allocate_destination_data_set(
                         volume=volume
                     )
 
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
+            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
-        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, tmphlq=tmphlq)
     elif dest_ds_type == "GDG":
         src_view = gdgs.GenerationDataGroupView(src)
 
@@ -3116,7 +3140,7 @@ def normalize_line_endings(src, encoding=None):
         src_tag = encoding["from"]
 
     if src_tag != "IBM-037":
-        fd, converted_src = tempfile.mkstemp()
+        fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
         os.close(fd)
 
         enc_utils.uss_convert_encoding(
@@ -3141,13 +3165,19 @@ def data_set_locked(dataset_name):
 
     Parameters
     ----------
-    dataset_name : str
+    dataset_name (str):
         The data set name used to check if there is a lock.
 
     Returns
     -------
     bool
         True if the data set is locked, or False if the data set is not locked.
+
+    Raises
+    ------
+    CopyOperationError
+        When the user does not have Universal Access Authority to
+        ZOAU SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS.
     """
     # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
     # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
@@ -3155,18 +3185,26 @@ def data_set_locked(dataset_name):
     result = dict()
     result["stdout"] = []
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
-    response = opercmd.execute(command=command_dgrs)
-    stdout = response.stdout_response
-    if stdout is not None:
-        for out in stdout.split("\n"):
-            if out:
-                result["stdout"].append(out)
-    if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
+
+    try:
+        response = opercmd.execute(command=command_dgrs)
+        stdout = response.stdout_response
+
+        if stdout is not None:
+            for out in stdout.split("\n"):
+                if out:
+                    result["stdout"].append(out)
+        if len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
+            return False
+
         return True
-    elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
-        return False
-    else:
-        return False
+    except zoau_exceptions.ZOAUException as copy_exception:
+        raise CopyOperationError(
+            msg="Unable to determine if the dest {0} is in use.".format(dataset_name),
+                rc=copy_exception.response.rc,
+                stdout=copy_exception.response.stdout_response,
+                stderr=copy_exception.response.stderr_response
+        )
 
 
 def run_module(module, arg_def):
@@ -3243,6 +3281,9 @@ def run_module(module, arg_def):
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
     content = module.params.get('content')
+
+    # Set temporary directory at os environment level
+    os.environ['TMPDIR'] = f"{os.path.realpath(module.tmpdir)}/"
 
     dest_data_set = module.params.get('dest_data_set')
     if dest_data_set:
@@ -3347,7 +3388,7 @@ def run_module(module, arg_def):
                             src_tag = encode.Defaults.get_default_system_charset()
 
                     # Converting the original src to a temporary one in UTF-8.
-                    fd, converted_src = tempfile.mkstemp()
+                    fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
                     os.close(fd)
                     encode_utils.uss_convert_encoding(
                         new_src,
@@ -3360,11 +3401,11 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, is_binary=is_binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            if (is_src_gds and data_set.DataSet.data_set_exists(src)) or (
-                    not is_src_gds and data_set.DataSet.data_set_exists(src_name)):
+            if (is_src_gds and data_set.DataSet.data_set_exists(src, tmphlq=tmphlq)) or (
+                    not is_src_gds and data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq)):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
-                src_ds_type = data_set.DataSet.data_set_type(src_name)
+                src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
 
                 if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
                     src_attributes = datasets.list_datasets(src_name)[0]
@@ -3403,8 +3444,8 @@ def run_module(module, arg_def):
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
         else:
-            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
+            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
+            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)
@@ -3597,7 +3638,8 @@ def run_module(module, arg_def):
         dest_ds_type,
         is_uss,
         force,
-        volume
+        volume,
+        tmphlq
     ):
         module.fail_json(
             msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(raw_dest),
@@ -3627,7 +3669,8 @@ def run_module(module, arg_def):
                 is_dest_gds,
                 is_dest_gds_active,
                 dest_data_set=dest_data_set,
-                volume=volume
+                volume=volume,
+                tmphlq=tmphlq
             )
     except Exception as err:
         if converted_src:
@@ -3655,6 +3698,7 @@ def run_module(module, arg_def):
         asa_text=asa_text,
         backup_name=backup_name,
         force_lock=force_lock,
+        tmphlq=tmphlq
     )
 
     try:
@@ -3677,6 +3721,7 @@ def run_module(module, arg_def):
                 aliases=aliases,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
                 backup_name=backup_name,
+                tmphlq=tmphlq
             )
 
             original_checksum = None
@@ -3744,6 +3789,7 @@ def run_module(module, arg_def):
                 aliases=aliases,
                 backup_name=backup_name,
                 force_lock=force_lock,
+                tmphlq=tmphlq
             )
 
             pdse_copy_handler.copy_to_pdse(

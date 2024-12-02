@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -46,7 +46,7 @@ class ActionModule(ActionBase):
             return result
 
         script_path = cmd_parts[0]
-        script_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
+        script_args = ' '.join(cmd_parts[1:]) if len(cmd_parts) > 1 else ""
         remote_src = self._process_boolean(module_args.get('remote_src'))
         user_cmd = tempfile_path = None
 

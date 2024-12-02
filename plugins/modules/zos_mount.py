@@ -587,7 +587,7 @@ def mt_backupOper(module, src, backup, tmphlq=None):
         Data set type is NOT supported.
     """
     # analysis the file type
-    ds_utils = data_set.DataSetUtils(src)
+    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
     file_type = ds_utils.ds_type()
     if file_type != "USS" and file_type not in mt_DS_TYPE:
         message = "{0} data set type is NOT supported".format(str(file_type))
@@ -818,7 +818,7 @@ def run_module(module, arg_def):
     )
 
     # data set to be mounted/unmounted must exist
-    fs_du = data_set.DataSetUtils(src)
+    fs_du = data_set.DataSetUtils(src, tmphlq=tmphlq)
     fs_exists = fs_du.exists()
     if fs_exists is False:
         module.fail_json(
@@ -846,7 +846,7 @@ def run_module(module, arg_def):
     # Need to see if mountpoint is in use for idempotence
     currently_mounted = False
 
-    rc, stdout, stderr = module.run_command("df", use_unsafe_shell=False)
+    rc, stdout, stderr = module.run_command("df", use_unsafe_shell=False, errors='replace')
 
     if rc != 0:
         module.fail_json(
@@ -1003,7 +1003,7 @@ def run_module(module, arg_def):
                     # )
                     fullumcmd = "tsocmd " + fullumcmd
                     (rc, stdout, stderr) = module.run_command(
-                        fullumcmd, use_unsafe_shell=False
+                        fullumcmd, use_unsafe_shell=False, errors='replace'
                     )
                     currently_mounted = False
                 except Exception as err:
@@ -1022,7 +1022,7 @@ def run_module(module, arg_def):
                     # )
                     fullcmd = "tsocmd " + fullcmd
                     (rc, stdout, stderr) = module.run_command(
-                        fullcmd, use_unsafe_shell=False
+                        fullcmd, use_unsafe_shell=False, errors='replace'
                     )
                 except Exception as err:
                     msg = "Exception occurrend when running mount: {0}".format(str(err))
@@ -1033,7 +1033,7 @@ def run_module(module, arg_def):
             stderr = "Mount called on data set that is already mounted.\n"
 
     if write_persistent and module.check_mode is False:
-        fst_du = data_set.DataSetUtils(data_store)
+        fst_du = data_set.DataSetUtils(data_store, tmphlq=tmphlq)
         fst_exists = fst_du.exists()
         if fst_exists is False:
             module.fail_json(
@@ -1048,7 +1048,7 @@ def run_module(module, arg_def):
         copy_ps2uss(data_store, tmp_file_filename, False)
 
         module.run_command(
-            "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False
+            "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False, errors='replace'
         )
 
         with open(tmp_file_filename, "r") as fh:
@@ -1074,7 +1074,7 @@ def run_module(module, arg_def):
             fh.close()
             # pre-clear to prevent caching behavior on the copy-back
             module.run_command(
-                "mrm " + data_store, use_unsafe_shell=False
+                "mrm " + data_store, use_unsafe_shell=False, errors='replace'
             )
             copy_uss2mvs(tmp_file_filename, data_store, "", True)
 

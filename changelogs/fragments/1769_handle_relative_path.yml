@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_fetch - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file).
+    Change now allows the user to use different types of relative paths as a parameter.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1769).

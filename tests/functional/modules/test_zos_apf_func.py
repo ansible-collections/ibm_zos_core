@@ -41,6 +41,9 @@ APFADDDSNAME({4})VOLUME({5})
 DEL_EXPECTED = """/*BEGINAPFLIST*/
 /*ENDAPFLIST*/"""
 
+TEST_HLQ = "ANSIBLE"
+
+
 def clean_test_env(hosts, test_info):
     cmd_str = f"drm '{test_info['library']}' "
     hosts.all.shell(cmd=cmd_str)
@@ -69,7 +72,7 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -115,7 +118,7 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -157,7 +160,7 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -230,7 +233,7 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -263,11 +266,6 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
     finally:
         clean_test_env(hosts, test_info)
 
-
-# keyword: ENABLE-FOR-1-3
-# Test commented because there is a failure in ZOAU 1.2.x, that should be fixed in 1.3.x, so
-# whoever works in issue https://github.com/ansible-collections/ibm_zos_core/issues/726
-# should uncomment this test as part of the validation process.
 
 def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
     try:
@@ -380,7 +378,7 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -429,7 +427,7 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -470,7 +468,7 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -494,7 +492,7 @@ def test_add_not_found(ansible_zos_module):
         "state":"present",
         "force_dynamic":True
     }
-    test_info['library'] = 'APFTEST.FOO.BAR'
+    test_info['library'] = f'{TEST_HLQ}.FOO.BAR'
     results = hosts.all.zos_apf(**test_info)
     for result in results.contacted.values():
         # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
@@ -523,7 +521,7 @@ def test_add_with_wrong_volume(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -565,7 +563,7 @@ def test_persist_invalid_ds_format(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -608,7 +606,7 @@ def test_persist_invalid_marker(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
@@ -649,7 +647,7 @@ def test_persist_invalid_marker_len(ansible_zos_module, volumes_with_vvds):
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")

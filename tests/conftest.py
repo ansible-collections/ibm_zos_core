@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,31 +15,63 @@ __metaclass__ = type
 import pytest
 from ibm_zos_core.tests.helpers.ztest import ZTestHelper
 from ibm_zos_core.tests.helpers.volumes import get_volumes, get_volumes_with_vvds
+from ansible.plugins.action import ActionBase
 import sys
 from mock import MagicMock
 import importlib
 
 
+def add_vars_to_compute_environment(env_vars):
+    """This decorator injects the environment variables defined in a config
+    file to the Ansible method responsible for constructing the environment
+    string used by the SSH connection plugin."""
+    def wrapper_compute_env(compute_environment_string):
+        def wrapped_compute_environment_string(self, *args, **kwargs):
+            self._task.environment = env_vars
+            env_string = compute_environment_string(self, *args, **kwargs)
+            return env_string
+        return wrapped_compute_environment_string
+    return wrapper_compute_env
+
+
 def pytest_addoption(parser):
-    """ Add CLI options and modify optons for pytest-ansible where needed. """
+    """
+    Add CLI options and modify options for pytest-ansible where needed.
+    Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
+    will always return true because a default will be returned.
+    """
     parser.addoption(
         "--zinventory",
         "-Z",
         action="store",
-        default="test_config.yml",
+        default=None,
         help="Absolute path to YAML file containing inventory info for functional testing.",
+    )
+    parser.addoption(
+        "--zinventory-raw",
+        "-R",
+        action="store",
+        default=None,
+        help="Str - dictionary with values {'host': 'ibm.com', 'user': 'root', 'zoau': '/usr/lpp/zoau', 'pyz': '/usr/lpp/IBM/pyz'}",
     )
 
 
 @pytest.fixture(scope="session")
 def z_python_interpreter(request):
     """ Generate temporary shell wrapper for python interpreter. """
-    path = request.config.getoption("--zinventory")
-    helper = ZTestHelper.from_yaml_file(path)
+    src = None
+    helper = None
+    if request.config.getoption("--zinventory"):
+        src = request.config.getoption("--zinventory")
+        helper = ZTestHelper.from_yaml_file(src)
+    elif request.config.getoption("--zinventory-raw"):
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+
     interpreter_str = helper.build_interpreter_string()
     inventory = helper.get_inventory_info()
     python_path = helper.get_python_path()
-    yield (interpreter_str, inventory, python_path)
+    yield (helper._environment, interpreter_str, inventory, python_path)
 
 
 def clean_logs(adhoc):
@@ -63,7 +95,7 @@ def clean_logs(adhoc):
 def ansible_zos_module(request, z_python_interpreter):
     """ Initialize pytest-ansible plugin with values from
     our YAML config and inject interpreter path into inventory. """
-    interpreter, inventory, python_path = z_python_interpreter
+    env_vars, interpreter, inventory, python_path = z_python_interpreter
 
     # next two lines perform similar action to ansible_adhoc fixture
     plugin = request.config.pluginmanager.getplugin("ansible")
@@ -75,9 +107,11 @@ def ansible_zos_module(request, z_python_interpreter):
     # Courtesy, pass along the python_path for some test cases need this information
     adhoc["options"]["ansible_python_path"] = python_path
 
+    # Adding the environment variables decorator to the Ansible engine.
+    ActionBase._compute_environment_string = add_vars_to_compute_environment(env_vars)(ActionBase._compute_environment_string)
+
     for host in hosts.values():
-        host.vars["ansible_python_interpreter"] = interpreter
-        # host.vars["ansible_connection"] = "zos_ssh"
+        host.vars["ansible_python_interpreter"] = python_path
     yield adhoc
     try:
         clean_logs(adhoc)
@@ -90,8 +124,17 @@ def ansible_zos_module(request, z_python_interpreter):
 def volumes_on_systems(ansible_zos_module, request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
     path = request.config.getoption("--zinventory")
-    list_Volumes = get_volumes(ansible_zos_module, path)
-    yield list_Volumes
+    list_volumes = None
+
+    # If path is None, check if zinventory-raw is used instead and if so, extract the
+    # volumes dictionary and pass it along.
+    if path is None:
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+        list_volumes = helper.get_volumes_list()
+    else:
+        list_volumes = get_volumes(ansible_zos_module, path)
+    yield list_volumes
 
 
 @pytest.fixture(scope="session")
@@ -100,8 +143,18 @@ def volumes_with_vvds(ansible_zos_module, request):
     then it will try to create one for each volume found and return volumes only
     if a VVDS was successfully created for it."""
     path = request.config.getoption("--zinventory")
-    volumes = get_volumes(ansible_zos_module, path)
-    volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, volumes)
+    list_volumes = None
+
+    # If path is None, check if zinventory-raw is used instead and if so, extract the
+    # volumes dictionary and pass it along.
+    if path is None:
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+        list_volumes = helper.get_volumes_list()
+    else:
+        list_volumes = get_volumes(ansible_zos_module, path)
+
+    volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, list_volumes)
     yield volumes_with_vvds
 
 

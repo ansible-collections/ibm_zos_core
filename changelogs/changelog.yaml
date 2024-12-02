@@ -259,6 +259,258 @@ releases:
     - 992-fix-sanity4to6.yml
     - v1.10.0-beta.1_summary.yml
     release_date: '2024-05-08'
+  1.11.0:
+    changes:
+      release_summary: 'Release Date: ''2024-10-01''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - v1.11.0_summary.yml
+    release_date: '2024-09-25'
+  1.11.0-beta.1:
+    changes:
+      bugfixes:
+      - module_util/data_set.py - DataSet.data_set_cataloged function previously only
+        returned True or False, but failed to account for exceptions which occurred
+        during the LISTCAT. The fix now raises an MVSCmdExecError if the return code
+        from LISTCAT is too high. (https://github.com/ansible-collections/ibm_zos_core/pull/1535).
+      - zos_copy - a regression in version 1.4.0 made the module stop automatically
+        computing member names when copying a single file into a PDS/E. Fix now lets
+        a user copy a single file into a PDS/E without adding a member in the dest
+        option. (https://github.com/ansible-collections/ibm_zos_core/pull/1570).
+      - zos_copy - module would use opercmd to check if a non existent destination
+        data set is locked. Fix now only checks if the destination is already present.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1623).
+      - zos_job_submit - Was not propagating any error types UnicodeDecodeError, JSONDecodeError,
+        TypeError, KeyError when encountered, now the error message shares the type
+        error. (https://github.com/ansible-collections/ibm_zos_core/pull/1560).
+      - zos_mvs_raw - DD_output first character from each line was missing. Change
+        now includes the first character of each line. (https://github.com/ansible-collections/ibm_zos_core/pull/1543).
+      minor_changes:
+      - zos_apf - Change input to auto-escape 'library' names containing symbols (https://github.com/ansible-collections/ibm_zos_core/pull/1493).
+      - zos_archive - Added support for GDG and GDS relative name notation to archive
+        data sets. Added support for data set names with special characters like $,
+        /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1511).
+      - zos_backup_restore - Added support for GDS relative name notation to include
+        or exclude data sets when operation is backup. Added support for data set
+        names with special characters like $, /#, and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1527).
+      - zos_blockinfile - Added support for GDG and GDS relative name notation to
+        use a data set. And backup in new generations. Added support for data set
+        names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
+      - zos_copy - add support for copying generation data sets (GDS) and generation
+        data groups (GDG), as well as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1564).
+      - zos_data_set - Added support for GDG and GDS relative name notation to create,
+        delete, catalog and uncatalog a data set. Added support for data set names
+        with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1504).
+      - zos_encode - add support for encoding generation data sets (GDS), as well
+        as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1531).
+      - zos_fetch - add support for fetching generation data groups and generation
+        data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1519)
+      - zos_find - added support for GDG/GDS and special characters (https://github.com/ansible-collections/ibm_zos_core/pull/1518).
+      - zos_job_submit - Improved the copy to remote mechanic to avoid using deepcopy
+        that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+      - zos_job_submit - add support for generation data groups and generation data
+        sets as sources for jobs. (https://github.com/ansible-collections/ibm_zos_core/pull/1497)
+      - zos_lineinfile - Added support for GDG and GDS relative name notation to use
+        a data set. And backup in new generations. Added support for data set names
+        with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
+      - zos_mount - Added support for data set names with special characters ($, /#,
+        /- and @). This is for both src and backup data set names. (https://github.com/ansible-collections/ibm_zos_core/pull/1631).
+      - zos_mvs_raw - Added support for GDG and GDS relative name notation to use
+        a data set. Added support for data set names with special characters like
+        $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1525).
+      - zos_mvs_raw - Added support for GDG and GDS relative positive name notation
+        to use a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1541).
+      - zos_mvs_raw - Redesign the wrappers of dd clases to use properly the arguments.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1470).
+      - zos_script - Improved the copy to remote mechanic to avoid using deepcopy
+        that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+      - zos_tso_command - Added support for GDG and GDS relative name notation to
+        use a data set name. Added support for data set names with special characters
+        like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1563).
+      - zos_unarchive - Added support for data set names with special characters like
+        $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1511).
+      - zos_unarchive - Improved the copy to remote mechanic to avoid using deepcopy
+        that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+      release_summary: 'Release Date: ''2024-08-05''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - 1170-enhancememt-make-pipeline-217-compatible.yml
+    - 1323-Update_docstring-dd_statement.yml
+    - 1334-update-docstring-mcs_cmd.yml
+    - 1335-update-docstring-template.yml
+    - 1337-update-docstring-vtoc.yml
+    - 1338-update-docstring-zoau_version_checker.yml
+    - 1342-update-docstring-zos_backup_restore.yml
+    - 1343-update-docstring-zos_blockinline.yml
+    - 1344-update-docstring-zos_copy.yml
+    - 1361-update-docstring-zos_operator.yml
+    - 1362-update-docstring-file.yml
+    - 1363-update-docstring-system.yml
+    - 1374-enhancement-zos-find-gdg-gds-special-chars.yml
+    - 1380-enhancement-add-sybols-zos_apf.yml
+    - 1384-update-docstring-backup.yml
+    - 1385-update-docstring-better_arg_parser.yml
+    - 1386-gdg-symbols-support.yml
+    - 1387-update-docstring-copy.yml
+    - 1415-Update_docstring-zos_archive.yml
+    - 1470-redesign_mvs_raw.yml
+    - 1484-update-ac-tool-ansible-lint.yml
+    - 1488-zos_copy-refactor-force.yml
+    - 1495-default-values-data-set-class.yml
+    - 1496-fix-gds-resolve.yml
+    - 1497-gdg-support-zos-job-submit.yml
+    - 1504-zos_data_set-gdg-support.yml
+    - 1507-zos_operator-docs.yml
+    - 1511-zos_archive_unarchive-gdg-support.yml
+    - 1512-bugfix-zos_job_submit-error-type.yml
+    - 1515-gdg_batch_creation.yml
+    - 1516-lineinfile_blockinfile_gdgsgds_and_special_character_support.yml
+    - 1519-zos_fetch-gdg-support.yml
+    - 1525-mvs_raw_support_gdg_gds_special_character.yml
+    - 1527-zos_backup-gdg.yml
+    - 1531-zos_encode_gdg_support.yml
+    - 1535-raise-error-in-module-util-data_set-function-data_set_cataloged.yml
+    - 1541-output_mvs_raw_gds_positive_was_false_positive.yml
+    - 1543-mvs_raw_fix_verbose_and_first_character.yml
+    - 1550-lower_case_idcams_utility.yml
+    - 1552-readme-support-updates.yml
+    - 1553-Console_parallel.yml
+    - 1561-remove_deep_copy.yml
+    - 1563-zos_tso_command-gdg-support.yml
+    - 1564-zos_copy_gdg_support.yml
+    - 1565-remove-deprecated-pipes-library.yml
+    - 1570-compute-member-name-zos_copy.yml
+    - 1623-zos_copy-avoid-opercmd.yml
+    - 1631-enabler-zos_mount-special-character-support.yml
+    - v1.11.0-beta.1_summary.yml
+    release_date: '2024-08-05'
+  1.12.0-beta.1:
+    changes:
+      bugfixes:
+      - zos_apf - The ``tmp_hlq`` option was previously ignored and default values
+        were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_archive - The ``tmp_hlq`` option was previously ignored and default values
+        were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_backup_restore - When a recoverable error was encountered and ``recover=True``,
+        the module would ignore the option and fail. Fix now does not fail when a
+        recoverable error is raised when ``recover=True``. (https://github.com/ansible-collections/ibm_zos_core/pull/1643).
+      - zos_blockinfile - Previously module was not able to delete a block when 'marker_begin'
+        and 'marker_end' were set to the same value. Fix introduces a requirement
+        for 'marker_begin' and 'marker_end' to have different values. (https://github.com/ansible-collections/ibm_zos_core/pull/1684).
+      - zos_blockinfile - The ``tmp_hlq`` option was previously ignored and default
+        values were used instead. Fix now honors the value set in the module option.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_copy - Improve module zos_copy error handling when the user does not have
+        universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU'
+        and SAF Class OPERCMDS. The module now handles the exception and returns an
+        informative message. (https://github.com/ansible-collections/ibm_zos_core/pull/1766).
+      - zos_copy - Previously, the module ignored the value of ``remote_tmp`` set
+        in Ansible configuration file and used the ``/tmp/`` directory. Fix now uses
+        the value of ``remote_tmp`` or the default value ``~/.ansible/tmp`` if none
+        is given. (https://github.com/ansible-collections/ibm_zos_core/pull/1739).
+      - zos_copy - The ``tmp_hlq`` option was previously ignored and default values
+        were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_data_set - The ``tmp_hlq`` option was previously ignored and default values
+        were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_encode - The ``tmp_hlq`` option was previously ignored and default values
+        were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_fetch - The ``tmp_hlq`` option was previously ignored and default values
+        were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_job_output - RACF user names containing a ``@``, ``$``, or ``#`` raised
+        an invalid argument error. Fix now allows the use of all valid characters
+        for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
+      - zos_job_query - Module was not returning values for system and subsystem.
+        Fix now returns these values. (https://github.com/ansible-collections/ibm_zos_core/pull/1761).
+      - zos_job_query - RACF user names containing a ``@``, ``$``, or ``#`` raised
+        an invalid argument error. Fix now allows the use of all valid characters
+        for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
+      - zos_lineinfile - The ``tmp_hlq`` option was previously ignored and default
+        values were used instead. Fix now honors the value set in the module option.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_mount - The ``tmp_hlq`` option was previously ignored and default values
+        were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      - zos_mvs_raw - base64 sub-option for return_content under option for retrieving
+        DD output did not return base64. Fix now returns the base64 encoded contents
+        of the DD. (https://github.com/ansible-collections/ibm_zos_core/pull/1691).
+      - zos_script - The module would discard command line arguments in a command,
+        except for the first one. Fix now makes sure that all arguments are passed
+        to the remote command that gets executed. (https://github.com/ansible-collections/ibm_zos_core/pull/1698).
+      - zos_unarchive - The ``tmp_hlq`` option was previously ignored and default
+        values were used instead. Fix now honors the value set in the module option.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+      minor_changes:
+      - zos_backup_restore - Redefines the default behavior of module option `hlq`.
+        When option `operation` is set to `restore` and the `hlq` is not provided,
+        the original high level qualifiers in a backup will be used for a restore.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1632).
+      - zos_job_output - Added address space type used by jobs in return JSON as `content_type`.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+      - zos_job_query - Added address space type used by jobs in return JSON as `content_type`.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+      - zos_job_submit - Added address space type used by jobs in return JSON as `content_type`.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+      - zos_mvs_raw - Un-mappable chars in stdout/stderr streams are now replaced
+        with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+      - zos_operator - Added new option ``case_sensitive`` to module, allowing users
+        to control how case in a command is handled by it. (https://github.com/ansible-collections/ibm_zos_core/pull/1641)
+      - zos_script - Un-mappable chars in stdout/stderr streams are now replaced with
+        the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+      - zos_tso_command - Un-mappable chars in stdout/stderr streams are now replaced
+        with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+      release_summary: 'Release Date: ''2024-10-31''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - 1632-Validate_to_restore_keep_orginial_hlq.yml
+    - 1633-zos_mvs_raw_tests_portability.yml
+    - 1634-updates-for-non-utf8-depr-warning.yml
+    - 1635-backup_restore_portability.yml
+    - 1639-zos_tso_command_portability.yml
+    - 1641-case-sensitivity-zos_operator.yml
+    - 1642-Ensure_portability_zos_encode.yml
+    - 1643-Validate_parameter_recover_to_tolerate_enqueue.yml
+    - 1647-doc-backup-restore-racf-class.yml
+    - 1654-zos_apf_tests_change_temphlq.yml
+    - 1656-zos_find_portability.yml
+    - 1657-test_fetch_portability.yml
+    - 1658-job_submit_portability.yml
+    - 1661-job-owner-valid-characters.yml
+    - 1664-portability-zos_copy.yml
+    - 1673-return-job-type.yml
+    - 1676-portability_zos_blockinfile.yml
+    - 1677-zos_job_query_portability.yaml
+    - 1684-Add_validation_for_marker_begin_end.yml
+    - 1687-lineinfile_portability.yml
+    - 1689-add-non-utf8-testcase.yml
+    - 1691-zos-mvs-raw-base64-mode.yml
+    - 1695-tmp_hlq_when_calling_mvscmd.yml
+    - 1698-multiple-args-zos_script.yml
+    - 1739-tmp_files_not_use_tmp_folder.yml
+    - 1761-system-subsystem-job_query.yml
+    - 1766-zos_copy-racf-uacc-updates.yml
+    - 828-adds-concurrent-executor.yml
+    - v1.12.0-beta.1_summary.yml
+    release_date: '2024-10-24'
   1.2.1:
     changes:
       bugfixes:

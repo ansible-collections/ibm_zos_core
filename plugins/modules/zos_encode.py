@@ -343,13 +343,15 @@ def check_pds_member(ds, mem):
     return check_rc
 
 
-def check_mvs_dataset(ds):
+def check_mvs_dataset(ds, tmphlq=None):
     """To call data_set utils to check if the MVS data set exists or not.
 
     Parameters
     ----------
     ds : str
         Data set name.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -365,26 +367,28 @@ def check_mvs_dataset(ds):
     """
     check_rc = False
     ds_type = None
-    if not data_set.DataSet.data_set_exists(ds):
+    if not data_set.DataSet.data_set_exists(ds, tmphlq=tmphlq):
         raise EncodeError(
             "Data set {0} is not cataloged, please check data set provided in"
             "the src option.".format(ds)
         )
     else:
         check_rc = True
-        ds_type = data_set.DataSetUtils(ds).ds_type()
+        ds_type = data_set.DataSetUtils(ds, tmphlq=tmphlq).ds_type()
         if not ds_type:
             raise EncodeError("Unable to determine data set type of {0}".format(ds))
     return check_rc, ds_type
 
 
-def check_file(file):
+def check_file(file, tmphlq=None):
     """Check file is a USS file or an MVS data set.
 
     Parameters
     ----------
     file : str
         File to check.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -406,7 +410,7 @@ def check_file(file):
         if "(" in ds:
             dsn = ds[: ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
-            rc, ds_type = check_mvs_dataset(dsn)
+            rc, ds_type = check_mvs_dataset(dsn, tmphlq=tmphlq)
             if rc:
                 if ds_type == "PO":
                     is_mvs = check_pds_member(dsn, mem)
@@ -416,7 +420,7 @@ def check_file(file):
                         "Data set {0} is not a partitioned data set".format(dsn)
                     )
         else:
-            is_mvs, ds_type = check_mvs_dataset(ds)
+            is_mvs, ds_type = check_mvs_dataset(ds, tmphlq=tmphlq)
     return is_uss, is_mvs, ds_type
 
 
@@ -540,9 +544,12 @@ def run_module():
             dest_exists = False
 
             if not is_name_member:
-                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name)
+                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
             else:
-                dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(src_data_set.name))
+                dest_exists = data_set.DataSet.data_set_exists(
+                    data_set.extract_dsname(src_data_set.name),
+                    tmphlq=tmphlq
+                )
 
             if not dest_exists:
                 raise EncodeError(
@@ -558,7 +565,7 @@ def run_module():
                     ))
                 ds_type_src = "PS"
             else:
-                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name)
+                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name, tmphlq=tmphlq)
 
             if not ds_type_src:
                 raise EncodeError("Unable to determine data set type of {0}".format(src_data_set.raw_name))
@@ -585,9 +592,12 @@ def run_module():
                 is_name_member = data_set.is_member(dest_data_set.name)
 
                 if not is_name_member:
-                    dest_exists = data_set.DataSet.data_set_exists(dest_data_set.name)
+                    dest_exists = data_set.DataSet.data_set_exists(dest_data_set.name, tmphlq=tmphlq)
                 else:
-                    dest_exists = data_set.DataSet.data_set_exists(data_set.extract_dsname(dest_data_set.name))
+                    dest_exists = data_set.DataSet.data_set_exists(
+                        data_set.extract_dsname(dest_data_set.name),
+                        tmphlq=tmphlq
+                    )
 
                 if not dest_exists:
                     raise EncodeError(
@@ -598,7 +608,7 @@ def run_module():
                 if is_name_member:
                     ds_type_dest = "PS"
                 else:
-                    ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name)
+                    ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name, tmphlq=tmphlq)
 
             if (not is_uss_dest) and (path.sep in dest):
                 try:
@@ -616,7 +626,7 @@ def run_module():
         result["dest"] = dest
 
         if ds_type_dest == "GDG":
-            raise EncodeError("Encoding of a whole generation data group is not yet supported.")
+            raise EncodeError("Encoding of a whole generation data group is not supported.")
 
         new_src = src_data_set.name if src_data_set else src
         new_dest = dest_data_set.name if dest_data_set else dest
@@ -671,6 +681,7 @@ def run_module():
                 to_encoding,
                 src_type=ds_type_src,
                 dest_type=ds_type_dest,
+                tmphlq=tmphlq
             )
 
         if convert_rc:

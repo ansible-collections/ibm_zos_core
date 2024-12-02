@@ -90,7 +90,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
-        owner=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type="username_pattern"),
         job_name=dict(arg_type="qualifier_pattern"),
         dd_name=dict(arg_type=_ddname_pattern),
     )
@@ -181,7 +181,6 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_not_found_msg)
 
     job["class"] = ""
-    job["content_type"] = ""
 
     job["ddnames"] = []
     dd = {}
@@ -224,7 +223,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     """
     arg_defs = dict(
         job_id=dict(arg_type="str"),
-        owner=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type="username_pattern"),
         job_name=dict(arg_type="str"),
     )
 
@@ -241,7 +240,6 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_id=job_id,
         owner=owner,
         job_name=job_name,
-        dd_scan=False
     )
 
     if len(job_status_result) == 0:
@@ -253,7 +251,6 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
             job_id=job_id,
             owner=owner,
             job_name=job_name,
-            dd_scan=False
         )
 
     return job_status_result
@@ -350,6 +347,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["subsystem"] = ""
             job["system"] = ""
             job["owner"] = entry.owner
+            # Sometimes, with job type STC, the first entry will have an extra
+            # space at the end of it.
+            job["content_type"] = entry.job_type.strip()
 
             # From v1.3.0, ZOAU sets unavailable job fields as None, instead of '?'.
             job["ret_code"] = {}
@@ -371,7 +371,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["queue_position"] = entry.queue_position
             job["program_name"] = entry.program_name
             job["class"] = ""
-            job["content_type"] = ""
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
             job["duration"] = duration
@@ -476,9 +475,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                     job["ddnames"].append(dd)
                     if len(job["class"]) < 1:
-                        if "- CLASS " in tmpcont:
-                            tmptext = tmpcont.split("- CLASS ")[1]
-                            job["class"] = tmptext.split(" ")[0]
+                        job["class"] = entry.job_class
 
                     if len(job["system"]) < 1:
                         if "--  S Y S T E M  " in tmpcont:
@@ -505,7 +502,8 @@ def _ddname_pattern(contents, resolve_dependencies):
     ----------
     contents : bool
         The contents of the argument.
-        resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+    resolved_dependencies : dict
+        Contains all of the dependencies and their contents,
         which have already been handled,
         for use during current arguments handling operations.
 
@@ -525,7 +523,7 @@ def _ddname_pattern(contents, resolve_dependencies):
         re.IGNORECASE,
     ):
         raise ValueError(
-            'Invalid argument type for "{0}". expected "ddname_pattern"'.format(
+            'Invalid argument type for "{0}". Expected "ddname_pattern"'.format(
                 contents
             )
         )

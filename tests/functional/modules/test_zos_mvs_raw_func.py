@@ -59,8 +59,13 @@ def test_failing_name_format(ansible_zos_module):
     for result in results.contacted.values():
         assert "ValueError" in result.get("msg")
 
-
-def test_disposition_new(ansible_zos_module):
+@pytest.mark.parametrize(
+        # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
+        "verbose",
+        [True, False],
+)
+def test_disposition_new(ansible_zos_module, verbose):
     idcams_dataset = None
     try:
         hosts = ansible_zos_module
@@ -71,6 +76,7 @@ def test_disposition_new(ansible_zos_module):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
+            verbose=verbose,
             dds=[
                 {
                     "dd_data_set":{
@@ -94,6 +100,9 @@ def test_disposition_new(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
+            assert result.get("failed", False) is False
+            if verbose:
+                assert result.get("stderr") is not None
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:
@@ -355,7 +364,7 @@ def test_normal_dispositions_data_set(
         ("cyl", 3, 1, 2549880),
         ("b", 3, 1, 56664),
         ("k", 3, 1, 56664),
-        ("m", 3, 1, 3003192),
+        ("m", 3, 1, 3173184),
     ],
 )
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):
@@ -563,7 +572,10 @@ def test_record_formats(ansible_zos_module, record_format, volumes_on_systems):
         ("text", "IDCAMS  SYSTEM"),
         (
             "base64",
-            "\udcc9\udcc4\udcc3\udcc1\udcd4\udce2@@\udce2\udce8\udce2\udce3\udcc5",
+            "8cnEw8HU4kBA4uji48XUQOLF2eXJw8Xi"
+            # the above corresponds to the following bytes:
+            # f1 c9 c4 c3 c1 d4 e2 40 40 e2 e8 e2 e3 c5 d4 40 e2 c5 d9 e5 c9 c3 c5 e2
+            # which translate in ebdic to: "1IDCAMS  SYSTEM SERVICE"
         ),
     ],
 )
@@ -620,7 +632,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected, 
 @pytest.mark.parametrize(
     "src_encoding,response_encoding,expected",
     [
-        ("iso8859-1", "ibm-1047", "qcfe\udcebB||BTBFg\udceb|Bg\udcfdGqfgB"),
+        ("iso8859-1", "ibm-1047", "qcfe�B||BTBFg�|Bg�GqfgB||"),
         (
             "ibm-1047",
             "iso8859-1",
@@ -966,6 +978,37 @@ def test_data_set_name_special_characters(ansible_zos_module):
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
+@pytest.mark.parametrize("max_rc", [4, 8])
+def test_new_disposition_for_data_set_members_max_rc(ansible_zos_module, max_rc):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_mvs_raw(
+        program_name="idcams",
+        auth=True,
+        max_rc=max_rc,
+        dds=[
+            {
+                "dd_output":{
+                    "dd_name":"sysprint",
+                    "return_content":{
+                        "type":"text"
+                    }
+                }
+            },
+            {
+                "dd_input":{
+                    "dd_name":"sysin",
+                    "content":" DELETE THIS.DATASET.DOES.NOT.EXIST"
+                }
+            },
+        ],
+    )
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("ret_code", {}).get("code", -1) == 8
+        if max_rc != 8:
+            assert result.get("msg") is not None
+            assert result.get("failed") is True
+
 # ---------------------------------------------------------------------------- #
 #                                 Input DD Tests                                #
 # ---------------------------------------------------------------------------- #
@@ -1096,7 +1139,10 @@ def test_input_provided_as_list(ansible_zos_module):
         ("text", "LISTCAT ENTRIES"),
         (
             "base64",
-            "@\udcd3\udcc9\udce2\udce3\udcc3\udcc1\udce3@\udcc5\udcd5\udce3\udcd9\udcc9\udcc5",
+            "QNPJ4uPDweNAxdXj2cnF4k1",
+            # the above corresponds to the following bytes:
+            # 40 d3 c9 e2 e3 c3 c1 e3 40 c5 d5 e3 d9 c9 c5 e2
+            # which translate in ebdic to: " LISTCAT ENTRIES"
         ),
     ],
 )
@@ -1147,7 +1193,7 @@ def test_input_return_content_types(ansible_zos_module, return_content_type, exp
         (
             "iso8859-1",
             "ibm-1047",
-            "|\udceeqBFfeF|g\udcefF\udcfdqgB\udcd4\udcd0",
+            "|�qBFfeF|g�F�qgB��",
         ),
         (
             "ibm-1047",
@@ -1568,7 +1614,10 @@ def test_file_record_format(ansible_zos_module, record_format):
         ("text", "IDCAMS  SYSTEM"),
         (
             "base64",
-            "@\udcd3\udcc9\udce2\udce3\udcc3\udcc1\udce3@\udcc5\udcd5\udce3\udcd9\udcc9\udcc5",
+            "8cnEw8HU4kBA4uji48XUQOLF2eXJw8Xi",
+            # the above corresponds to the following bytes:
+            # f1 c9 c4 c3 c1 d4 e2 40 40 e2 e8 e2 e3 c5 d4 40 e2 c5 d9 e5 c9 c3 c5 e2
+            # which translate in ebdic to: "1IDCAMS  SYSTEM SERVICES"
         ),
     ],
 )
@@ -1614,7 +1663,7 @@ def test_file_return_content(ansible_zos_module, return_content_type, expected):
 @pytest.mark.parametrize(
     "src_encoding,response_encoding,expected",
     [
-        ("iso8859-1", "ibm-1047", "qcfe\udcebB||BTBFg\udceb|Bg\udcfdGqfgB"),
+        ("iso8859-1", "ibm-1047", "qcfe�B||BTBFg�|Bg�GqfgB|"),
         (
             "ibm-1047",
             "iso8859-1",
@@ -2227,7 +2276,7 @@ def test_authorized_program_run_unauthorized(ansible_zos_module):
             dds=[],
         )
         for result in results.contacted.values():
-            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert result.get("ret_code", {}).get("code", -1) == 36
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0236E" in result.get("msg", "")
     finally:
@@ -2245,14 +2294,19 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
             dds=[],
         )
         for result in results.contacted.values():
-            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert result.get("ret_code", {}).get("code", -1) == 15
             assert len(result.get("dd_names", [])) == 0
             assert "BGYSC0215E" in result.get("msg", "")
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
 
-
-def test_authorized_program_run_authorized(ansible_zos_module):
+@pytest.mark.parametrize(
+        # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
+        "verbose",
+        [True, False],
+)
+def test_authorized_program_run_authorized(ansible_zos_module, verbose):
     try:
         hosts = ansible_zos_module
         default_data_set = get_tmp_ds_name()
@@ -2260,6 +2314,7 @@ def test_authorized_program_run_authorized(ansible_zos_module):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
+            verbose=True,
             dds=[
                 {
                     "dd_output":{

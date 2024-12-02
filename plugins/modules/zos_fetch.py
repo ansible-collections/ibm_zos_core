@@ -314,11 +314,15 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 
 
 try:
-    from zoautil_py import datasets, mvscmd, ztypes, gdgs, zoau_exceptions
+    from zoautil_py import datasets, mvscmd, ztypes, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
+
+try:
+    from zoautil_py import exceptions as zoau_exceptions
+except Exception:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
@@ -637,7 +641,7 @@ class FetchHandler:
             copy_args["options"] = "-B"
 
         try:
-            rc = datasets.copy(source=src, target=dir_path, **copy_args)
+            datasets.copy(source=src, target=dir_path, **copy_args)
 
         except zoau_exceptions.ZOAUException as copy_exception:
             rmtree(dir_path)
@@ -771,7 +775,7 @@ class FetchHandler:
             copy_args["options"] = "-B"
 
         try:
-            rc = datasets.copy(source=src, target=file_path, **copy_args)
+            datasets.copy(source=src, target=file_path, **copy_args)
 
         except zoau_exceptions.ZOAUException as copy_exception:
             os.remove(file_path)

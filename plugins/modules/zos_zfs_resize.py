@@ -99,7 +99,7 @@ mount_target:
     type: str
     sample: /tmp/zfs_agg
 size:
-    description: The approximate size, in Kilobytes, of the data set after the resizing is performed.
+    description: The approximate size, of the data set after the resizing is performed.
     returned: always
     type: int
     sample: 4024
@@ -109,22 +109,22 @@ rc:
     type: int
     sample: 0
 old_size:
-    description: The reported size, in Kilobytes, of the data set before the resizing is performed.
+    description: The reported size, in space_type, of the data set before the resizing is performed.
     returned: always
     type: int
     sample: 3096
 old_free:
-    description: The reported size, in Kilobytes, of the free space in the data set before the resizing is performed.
+    description: The reported size, in space_type, of the free space in the data set before the resizing is performed.
     returned: always
     type: int
     sample: 108
 new_size:
-    description: The reported size, in Kilobytes, of the data set after the resizing is performed.
+    description: The reported size, in space_type, of the data set after the resizing is performed.
     returned: success
     type: int
     sample: 4032
 new_free:
-    description: The reported size, in Kilobytes, of the free space in the data set after the resizing is performed.
+    description: The reported size, in space_type, of the free space in the data set after the resizing is performed.
     returned: success
     type: int
     sample: 48
@@ -326,7 +326,7 @@ def run_module():
     trace_destination = module.params.get("trace_destination")
 
     if not(verbose) and trace_destination is not None:
-        module.fail_json(msg="If you want the full traceback on a file or dataset required verbose=True")
+        raise ResizingOperationError(msg="If you want the full traceback on a file or dataset required verbose=True")
 
     changed = False
     #Variables to return the value on the space_type by the user
@@ -399,7 +399,7 @@ def run_module():
         operation = "shrink"
 
     else:
-        module.fail_json(msg="Not enough space to grow.")
+        raise ResizingOperationError(msg="Not enough space to grow.")
 
     noai = " -noai " if noai else ""
 
@@ -412,10 +412,10 @@ def run_module():
         else:
             if "/" in trace_destination:
                 if not(os.path.exists(trace_destination)):
-                    module.fail_json(msg="Destination file does not exist")
+                    raise ResizingOperationError(msg="Destination file does not exist")
             else:
                 if not(data_set.DataSet.data_set_exists(trace_destination)):
-                    module.fail_json(msg="Destination dataset does not exist")
+                    raise ResizingOperationError(msg="Destination dataset does not exist")
             tmp_file = trace_destination
             trace = " -trace '{0}'".format(trace_destination)
     else:
@@ -451,9 +451,19 @@ def run_module():
     else:
         if verbose and trace_destination is None:
             os.remove(tmp_file)
-        module.fail_json(
-            msg="Resize: resize command returned non-zero code: rc= {0}. \nstderr: {1}".format(rc, stderr),
-            **result
+
+        raise ResizingOperationError(
+            msg="Resize: resize command returned non-zero code",
+            target=target,
+            mount_target=mount_target,
+            cmd=cmd,
+            rc=rc,
+            size=size,
+            stdout=stdout,
+            stderr=stderr,
+            changed=False,
+            old_size=str_old_size,
+            old_free=str_old_free,
         )
 
     str_new_size = new_size if space_type == "k" else size_on_type
@@ -474,6 +484,65 @@ def run_module():
     )
 
     module.exit_json(**result)
+
+
+class ResizingOperationError(Exception):
+    def __init__(
+            self,
+            msg,
+            target="",
+            mount_target="",
+            size="",
+            cmd="",
+            rc="",
+            stdout="",
+            stderr="",
+            changed=False,
+            old_size="",
+            old_free="",
+        ):
+        """Error in a copy operation.
+
+        Parameters
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        target : str
+            The Fully Qualified Name of the resized zfs data set
+        mount_target : str
+            The original share/mount
+        size : str
+            The approximate size of the target
+        rc : int
+            Result code.
+        stdout : str
+            Standart output.
+        stderr : str
+            Standart error.
+        cmd : str
+            The zfsadm command try to execute on the remote node.
+        changed : bool
+            If the operation was executed.
+        old_size : list
+            The reported size, of the data set before the resizing is performed.
+        old_free : list
+            The reported size, of the free space in the data set before the resizing is performed.
+        """
+        self.json_args = dict(
+            msg=msg,
+            target=target,
+            mount_target=mount_target,
+            cmd=cmd,
+            rc=rc,
+            size=size,
+            stdout=stdout,
+            stderr=stderr,
+            changed=changed,
+            old_size=old_size,
+            old_free=old_free,
+        )
+        super().__init__(self.msg)
+
 
 def main():
     run_module()

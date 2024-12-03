@@ -833,7 +833,7 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
             "pgm_name":"HELLO",
             "input_dataset":"DUMMY",
             "message":"Hello, world",
-            "parameter":"'HELLO WORLD - JRM'",
+            "parameter":"'HELLO WORLD - &JRM'",
             "steps":[
                 {
                     "step_name":"IN",

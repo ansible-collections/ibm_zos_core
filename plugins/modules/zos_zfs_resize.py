@@ -325,7 +325,7 @@ def run_module():
 
     if not (verbose) and trace_destination is not None:
         raise ResizingOperationError(
-            msg="If you want the full traceback on a file or dataset required verbose=True"
+            msg="If you want the full traceback on a file or dataset required verbose=True",
         )
 
     changed = False
@@ -399,7 +399,7 @@ def run_module():
         operation = "shrink"
 
     else:
-        raise ResizingOperationError(msg="Not enough space to grow.")
+        raise ResizingOperationError(msg="Not enough space to grow.",)
 
     noai = " -noai " if noai else ""
 
@@ -412,10 +412,10 @@ def run_module():
         else:
             if "/" in trace_destination:
                 if not (os.path.exists(trace_destination)):
-                    raise ResizingOperationError(msg="Destination file does not exist")
+                    raise ResizingOperationError(msg="Destination file does not exist",)
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
-                    raise ResizingOperationError(msg="Destination dataset does not exist")
+                    raise ResizingOperationError(msg="Destination dataset does not exist",)
             tmp_file = trace_destination
             trace = " -trace '{0}'".format(trace_destination)
     else:
@@ -541,7 +541,7 @@ class ResizingOperationError(Exception):
             old_size=old_size,
             old_free=old_free,
         )
-        super().__init__(self.msg)
+        super().__init__(msg)
 
 
 def main():

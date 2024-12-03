@@ -60,7 +60,8 @@ def test_grow_operation(ansible_zos_module):
     size = 2500
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=size)
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=size)
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -77,7 +78,8 @@ def test_shrink_operation(ansible_zos_module):
     size = 1400
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=size)
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=size)
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -96,7 +98,9 @@ def test_grow_n_shrink_operations_size_m(ansible_zos_module):
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=grow_size, space_type="m")
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                                size=grow_size,
+                                                space_type="m")
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -104,7 +108,9 @@ def test_grow_n_shrink_operations_size_m(ansible_zos_module):
             assert "grown" in result.get('stdout')
             #assert result.get('new_size') >= grow_size
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=shrink_size, space_type="m")
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=shrink_size,
+                                            space_type="m")
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -123,7 +129,9 @@ def test_grow_n_shrink_operations_size_trk(ansible_zos_module):
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=grow_size, space_type="trk")
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=grow_size,
+                                            space_type="trk")
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -131,7 +139,9 @@ def test_grow_n_shrink_operations_size_trk(ansible_zos_module):
             assert "grown" in result.get('stdout')
             #assert result.get('new_size') >= grow_size
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=shrink_size, space_type="trk")
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=shrink_size,
+                                            space_type="trk")
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -150,7 +160,9 @@ def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=grow_size, space_type="cyl")
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=grow_size,
+                                            space_type="cyl")
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -158,7 +170,9 @@ def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
             assert "grown" in result.get('stdout')
             #assert result.get('new_size') >= grow_size
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=shrink_size, space_type="cyl")
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=shrink_size,
+                                            space_type="cyl")
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -186,7 +200,10 @@ def test_grow_n_shrink_operations_verbose_options(ansible_zos_module, trace_dest
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=grow_size, verbose=True, trace_destination=trace_destination)
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=grow_size,
+                                            verbose=True,
+                                            trace_destination=trace_destination)
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -198,7 +215,10 @@ def test_grow_n_shrink_operations_verbose_options(ansible_zos_module, trace_dest
 
             #assert result.get('new_size') >= grow_size
 
-        results = hosts.all.zos_zfs_resize(target=ds_name, size=shrink_size, verbose=True, trace_destination=trace_destination)
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=shrink_size,
+                                            verbose=True,
+                                            trace_destination=trace_destination)
         for result in results.contacted.values():
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
@@ -209,5 +229,30 @@ def test_grow_n_shrink_operations_verbose_options(ansible_zos_module, trace_dest
                 assert result.get("verbose_output") == trace_destination
 
             #assert result.get('new_size') <= shrink_size
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+
+#########################
+# Negative test cases
+#########################
+
+def test_trace_operation_fail(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    trace_destination = "/tmp/test.txt"
+    size = 2500
+    try:
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=size,
+                                            trace_destination=trace_destination)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get('target') == ds_name
+            assert result.get('mount_target') == "/SYSTEM" + mount_folder
+            assert result.get('rc') == 0
+            assert "grown" in result.get('stdout')
+            assert result.get('new_size') >= size
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)

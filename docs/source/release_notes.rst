@@ -99,6 +99,7 @@ Known Issues
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
+- ``zos_find`` - When trying to find a VSAM data set that is allocated with DISP=OLD using age filter the module will not find it.
 
 Version 1.11.1
 ==============

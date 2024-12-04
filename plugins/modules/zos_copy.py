@@ -3307,7 +3307,7 @@ def run_module(module, arg_def):
 
     # Validation for copy from a member
     if src_member:
-        if not(data_set.DataSet.data_set_member_exists(src)):
+        if not (data_set.DataSet.data_set_member_exists(src)):
             module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
                 data_set.extract_member_name(src)
             ))

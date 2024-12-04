@@ -705,11 +705,11 @@ ac_test(){
 
     # TODO: Consider adding the -vvvv like so `$CURR_DIR/${file}  -vvvv --ignore="${skip}"` so that you can access the verbosity feature of pytest.
     if [ "$file" ]; then
-        . ${VENV_BIN}/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
+        . ${VENV_BIN}/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_ACTION_PLUGINS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/action;export ANSIBLE_MODULE_UTILS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/module_utils;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
     else
         for file in `ls tests/functional/modules/*.py`; do
             if [ "$file" != "$skip" ]; then
-                . ${VENV_BIN}/activate &&  export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
+                . ${VENV_BIN}/activate &&  export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_ACTION_PLUGINS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/action;export ANSIBLE_MODULE_UTILS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/module_utils;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
             fi
         done
     fi

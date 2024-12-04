@@ -684,9 +684,9 @@ ac_test(){
         VENV_BASENAME=`basename $VENV`
     fi
 
-    # If test is parametized build a pytest string, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
+    # If test is parametrized build a pytest string, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
     if [ "$file" ] && [ "$test" ]; then
-        file="${file}::${test}"
+        file="${file} -k ${test}"
     fi
 
     if [ "$debug" ]; then

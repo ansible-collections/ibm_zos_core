@@ -503,7 +503,8 @@ def vsam_filter(module, patterns, resource_type, age=None):
     filtered_data_sets = set()
     now = time.time()
     for pattern in patterns:
-        rc, out, err = _vls_wrapper(pattern, details=True)
+        request_details = age is not None
+        rc, out, err = _vls_wrapper(pattern, details=request_details)
         if rc > 4:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
@@ -1069,7 +1070,6 @@ def run_module(module):
             size = int(m.group(1)) * bytes_per_unit.get(m.group(2), 1)
         else:
             module.fail_json(size=size, msg="failed to process size")
-
     if resource_type == "NONVSAM":
         if contains:
             init_filtered_data_sets = content_filter(
@@ -1104,7 +1104,7 @@ def run_module(module):
 
         res_args['examined'] = init_filtered_data_sets.get("searched")
 
-    elif resource_type == "CLUSTER":
+    elif resource_type in ["CLUSTER", "DATA", "INDEX"]:
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         res_args['examined'] = len(filtered_data_sets)
     elif resource_type == "GDG":

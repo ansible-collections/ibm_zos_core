@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_find - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1822).
+  - zos_find - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1822).

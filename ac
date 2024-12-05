@@ -633,7 +633,7 @@ ac_sanity(){
 # ------------------------------------------------------------------------------
 #->ac-test:
 ## Build local branch, install and run tests in the managed venv.
-## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug <boolean>] [--name <str>] [--verbose <boolean>]
+## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug <boolean>] [--name <str>] [--verbose <boolean>] [--mark <str>] [--stop <boolean>]
 ## Options:
 ##     host (optional)
 ##          - z/OS managed node to run test cases, no selection defaults to
@@ -658,13 +658,19 @@ ac_sanity(){
 ##          - A name must be a managed venv, lochost installatiosn are not supported.
 ##     verbose (optional)
 ##          - Whether to run pytest in verbose mode.
+##     mark (optional)
+##          - Pytest mark to use to filter tests.
+##          - Only runs tests with the given mark.
+##     stop (optional)
+##          - Whether to stop running tests after a failure is found.
 ## Example:
 ##  $ ac --ac-test --host ec01150a --python 3.11 --zoau 1.3.1\
 ##  $    --file tests/functional/modules/test_zos_operator_func.py --test test_zos_operator_positive_path --debug true
 ##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17
-##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true --verbose true
+##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true --verbose true --stop true
+##  $ ac --ac-test --file tests/functional/modules/test_zos_copy_func.py --mark template
 ##  $ ac --ac-test
 
 ac_test(){
@@ -676,6 +682,8 @@ ac_test(){
     debug=$6
     option_name=$7
     verbose=$8
+    mark=$9
+    stop=$10
 
     # Check that a collection is installed in the named venv or default venv.
     ac_version $option_name
@@ -687,9 +695,12 @@ ac_test(){
         VENV_BASENAME=`basename $VENV`
     fi
 
-    # If test is parametrized build a pytest string, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
     if [ "$file" ] && [ "$test" ]; then
         file="${file} -k ${test}"
+    fi
+
+    if [ "$file" ] && [ "$mark" ]; then
+        file="${file} -m ${mark}"
     fi
 
     if [ "$debug" ]; then
@@ -699,6 +710,12 @@ ac_test(){
     if [ "$verbose" ]; then
         verbose="-v"
     fi
+
+    if [ "$stop" ]; then
+        stop="-x"
+    fi
+
+    echo "pytest command constructed: ${file}"
 
     skip=$CURR_DIR/tests/functional/modules/test_module_security.py
 
@@ -712,7 +729,7 @@ ac_test(){
 
     # TODO: Consider adding the -vvvv like so `$CURR_DIR/${file}  -vvvv --ignore="${skip}"` so that you can access the verbosity feature of pytest.
     if [ "$file" ]; then
-        . ${VENV_BIN}/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_ACTION_PLUGINS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/action;export ANSIBLE_MODULE_UTILS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/module_utils;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} ${verbose} >&2 ; echo $? >&1
+        . ${VENV_BIN}/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_ACTION_PLUGINS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/action;export ANSIBLE_MODULE_UTILS=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/module_utils;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} ${verbose} ${stop} >&2 ; echo $? >&1
     else
         for file in `ls tests/functional/modules/*.py`; do
             if [ "$file" != "$skip" ]; then
@@ -1952,6 +1969,11 @@ while true; do
             option_sanitize $level
             shift
             ;;
+      --mark|--mark=?*)                         # option
+            mark=`option_processor $1 $2`
+            option_sanitize $mark
+            shift
+            ;;
       --maxjob|--maxjob=?*)                     # option
             maxjob=`option_processor $1 $2`
             option_sanitize $maxjob
@@ -2005,6 +2027,11 @@ while true; do
       --skip|--skip=?*)                         # option
             skip=`option_processor $1 "$2"`
             option_sanitize "$skip"
+            shift
+            ;;
+      --stop|--stop=?*)                         # option
+            stop=`option_processor $1 $2`
+            option_sanitize $stop
             shift
             ;;
       --test|--test=?*)                         # option
@@ -2104,7 +2131,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""} ${name:=""} ${verbose:=""}
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""} ${name:=""} ${verbose:=""} ${mark:=""} ${stop:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
     test_concurrent "${host:=""}" "${user:=""}" "${python:=""}" "${zoau:=""}" "${pythonpath:=""}"\
     "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\

@@ -39,7 +39,6 @@ exclude_paths:
   - tests/sanity/ignore-2.14.txt
   - venv*
   - ansible_collections/
-  - *.log
 parseable: true
 quiet: false
 use_default_rules: true

@@ -111,23 +111,28 @@ rc:
 old_size:
     description: The reported size, in space_type, of the data set before the resizing is performed.
     returned: always
-    type: int
+    type: float
     sample: 3096
 old_free:
     description: The reported size, in space_type, of the free space in the data set before the resizing is performed.
     returned: always
-    type: int
+    type: float
     sample: 108
 new_size:
     description: The reported size, in space_type, of the data set after the resizing is performed.
     returned: success
-    type: int
+    type: float
     sample: 4032
 new_free:
     description: The reported size, in space_type, of the free space in the data set after the resizing is performed.
     returned: success
-    type: int
+    type: float
     sample: 48
+space_type:
+    description: The reported space_type that the size and free variables are reported.
+    returned: always
+    type: str
+    sample: K
 verbose_output:
     description: If C(verbose=true) the full traceback of operation will show on this variable. If C(trace) will return the data set or path name.
     returned: C(verbose=true) and success
@@ -189,8 +194,13 @@ def get_full_output(file, module):
             Verbose output
     """
     output = ""
-    cmd = "cat '{0}'".format(file)
+    if "/" in file:
+        cmd = "cat {0}".format(file)
+    else:
+        cmd = "dcat '{0}'".format(file)
+
     rc, output, stderr = module.run_command(cmd)
+
     if rc != 0:
         output = "Unable to obtain full output for verbose mode."
 
@@ -217,7 +227,7 @@ def get_size_and_free(line):
     return numbers[1], numbers[0]
 
 
-def find_mount_target(module, target):
+def find_mount_target(module, target, results):
     """Execute df command to access the information of mount points.
 
     Parameters
@@ -244,7 +254,7 @@ def find_mount_target(module, target):
                     found = True
                     break
         if found is False:
-            module.fail_json(msg="No mount points were found in the following output: {0}".format(stdout))
+            module.fail_json(msg="No mount points were found in the following output: {0}".format(stdout), **results)
     return mount_point
 
 
@@ -323,18 +333,29 @@ def run_module():
     verbose = module.params.get("verbose")
     trace_destination = module.params.get("trace_destination")
 
-    if not (verbose) and trace_destination is not None:
-        raise ResizingOperationError(
-            msg="If you want the full traceback on a file or dataset required verbose=True",
-        )
-
     changed = False
     # Variables to return the value on the space_type by the user
     size_on_type = ""
     free_on_type = ""
 
+    result.update(
+        dict(
+            target=target,
+            size=size,
+            space_type=space_type.upper(),
+            cmd="",
+            changed=changed,
+            rc=1,
+            stdout="",
+            stderr="",
+        )
+    )
+
+    if not (data_set.DataSet.data_set_exists(target)):
+        module.fail_json(msg="ZFS Target {0} does not exist".format(target), **result)
+
     # Validation to found target on the system and also get the mount_point
-    mount_target = find_mount_target(module=module, target=target)
+    mount_target = find_mount_target(module=module, target=target, results=result)
 
     # Initialize the class with the target
     zfsadm_obj = zfsadm(aggregate_name=target, module=module)
@@ -358,22 +379,15 @@ def run_module():
         free_on_type = convert_size(size=old_size, space_type=space_type)
 
     str_old_size = old_size if space_type == "k" else size_on_type
-    str_old_size = "{:.1f}".format(str_old_size) + " {0}".format(space_type)
+    str_old_size = float("{:.1f}".format(str_old_size))
     str_old_free = old_free if space_type == "k" else free_on_type
-    str_old_free = "{:.1f}".format(str_old_free) + " {0}".format(space_type)
+    str_old_free = float("{:.1f}".format(str_old_free))
 
     result.update(
         dict(
-            target=target,
             mount_target=mount_target,
             old_size=str_old_size,
             old_free=str_old_free,
-            size=size,
-            cmd="",
-            changed=changed,
-            rc=0,
-            stdout="",
-            stderr="",
         )
     )
 
@@ -398,29 +412,29 @@ def run_module():
     elif space >= minimum_size_t_shrink and space < old_size:
         operation = "shrink"
 
-    else:
-        raise ResizingOperationError(msg="Not enough space to grow.",)
+    elif space < minimum_size_t_shrink:
+        module.fail_json(msg="Not enough space to shrink", **result)
 
     noai = " -noai " if noai else ""
 
-    if verbose:
-        if trace_destination is None:
-            tmp_fld = os.path.expanduser(module._remote_tmp)
-            temp = tempfile.NamedTemporaryFile(dir=tmp_fld, delete=False)
-            tmp_file = temp.name
-            trace = " -trace '{0}'".format(tmp_file)
+    trace = ""
+    tmp_file = ""
+
+    if verbose and trace_destination is None:
+        tmp_fld = os.path.expanduser(module._remote_tmp)
+        temp = tempfile.NamedTemporaryFile(dir=tmp_fld, delete=False)
+        tmp_file = temp.name
+        trace = " -trace '{0}'".format(tmp_file)
+
+    if trace_destination is not None:
+        if "/" in trace_destination:
+            if not (os.path.exists(trace_destination)):
+                module.fail_json(msg="Destination trace file does not exist", **result)
         else:
-            if "/" in trace_destination:
-                if not (os.path.exists(trace_destination)):
-                    raise ResizingOperationError(msg="Destination file does not exist",)
-            else:
-                if not (data_set.DataSet.data_set_exists(trace_destination)):
-                    raise ResizingOperationError(msg="Destination dataset does not exist",)
-            tmp_file = trace_destination
-            trace = " -trace '{0}'".format(trace_destination)
-    else:
-        trace = ""
-        tmp_file = ""
+            if not (data_set.DataSet.data_set_exists(trace_destination)):
+                module.fail_json(msg="Destination trace dataset does not exist", **result)
+        tmp_file = trace_destination
+        trace = " -trace '{0}'".format(trace_destination)
 
     # Execute the function
     rc, stdout, stderr, cmd = zfsadm_obj.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)
@@ -445,7 +459,7 @@ def run_module():
                 os.remove(tmp_file)
             else:
                 result.update(
-                    verbose_output=trace_destination,
+                    verbose_output=get_full_output(file=tmp_file, module=module),
                 )
 
     else:
@@ -467,9 +481,9 @@ def run_module():
         )
 
     str_new_size = new_size if space_type == "k" else size_on_type
-    str_new_size = "{:.1f}".format(str_new_size) + " {0}".format(space_type)
+    str_new_size = float("{:.1f}".format(str_new_size))
     str_new_free = new_free if space_type == "k" else free_on_type
-    str_new_free = "{:.1f}".format(str_new_free) + " {0}".format(space_type)
+    str_new_free = float("{:.1f}".format(str_new_free))
 
     result.update(
         dict(

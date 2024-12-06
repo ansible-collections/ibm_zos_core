@@ -1830,6 +1830,7 @@ while true; do
         fi
     fi
     case $1 in
+      # Start of main command list.
       -h|-\?|--help)
         if [ "$1" = "-h" ] || [ "$1" = "-?" ]; then
             help
@@ -1933,21 +1934,32 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
+      # End of main command list.
+      # Start of command options.
+      # Used by:
+      # - host_nodes
       --all|--all=?*)                           # option
             all=`option_processor $1 $2`
             option_sanitize $all
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --bal|--bal=?*)                           # option
             bal=`option_processor $1 $2`
             option_sanitize $bal
             shift
             ;;
+      # Used by:
+      # - ac_changelog
+      # - ac_module_doc
       --command|--command=?*)                   # option
             command=`option_processor $1 $2`
             option_sanitize $command
             shift
             ;;
+      # Used by:
+      # - ac_test_dep_finder
       --branch|--branch=?*)                     # option
             branch=`option_processor $1 $2`
             option_sanitize $branch
@@ -1959,96 +1971,147 @@ while true; do
       --debug|--debug=?*)                       # option
             debug="true"
             ;;
+      # Used by:
+      # - test_concurrent
       --extra|--extra=?*)                       # option
             extra=`option_processor $1 $2`
             option_sanitize $extra
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - test_concurrent
+      # - ac_test_pytest_finder
+      # - file_encrypt
+      # - file_decrypt
       --file|--file=?*)                         # option
             file=`option_processor $1 "$2"`
             option_sanitize "$file"
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - test_concurrent
+      # - host_auth
+      # - host_mount
       --host|--host=?*)                         # option
             host=`option_processor $1 $2`
             option_sanitize $host
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --itr|--itr=?*)                           # option
             itr=`option_processor $1 $2`
             option_sanitize $itr
             shift
             ;;
+      # Used by:
+      # - ac_bandit
       --level|--level=?*)                       # option
             level=`option_processor $1 $2`
             option_sanitize $level
             shift
             ;;
-      --level|--level=?*)                       # option
-            level=`option_processor $1 $2`
-            option_sanitize $level
-            shift
-            ;;
+      # Used by:
+      # - ac_test
       --mark|--mark=?*)                         # option
             mark=`option_processor $1 $2`
             option_sanitize $mark
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --maxjob|--maxjob=?*)                     # option
             maxjob=`option_processor $1 $2`
             option_sanitize $maxjob
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --maxnode|--maxnode=?*)                   # option
             maxnode=`option_processor $1 $2`
             option_sanitize $maxnode
             shift
             ;;
+      # Used by:
+      # - ac_build
+      # - ac_install
+      # - ac_sanity
+      # - ac_test_config
+      # - ac_version
+      # - venv_start
+      # - venv_stop
       --name|--name=?*)                         # option
             name=`option_processor $1 $2`
             option_sanitize $name
             shift
             ;;
+      # Used by:
+      # - file_encrypt
+      # - file_decrypt
       --out-file|--out-file=?*)                 # option
             out_file=`option_processor $1 $2`
             option_sanitize $out_file
             shift
             ;;
+      # Used by:
+      # - file_encrypt
+      # - file_decrypt
+      # - venv_setup
       --password|--password=?*)                 # option
             password=`option_processor $1 $2`
             option_sanitize $password
             shift
             ;;
+      # Used by:
+      # - ac_test_dep_finder
+      # - ac_test_pytest_finder
       --pretty|--pretty=?*)                     # option
             pretty=`option_processor $1 $2`
             option_sanitize $pretty
             shift
             ;;
+      # Used by:
+      # - ac_ansible_lint
       --profile|--profile=?*)                   # option
             profile=`option_processor $1 $2`
             option_sanitize $profile
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - test_concurrent
       --python|--python=?*)                     # option
             python=`option_processor $1 $2`
             option_sanitize $python
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --pythonpath|--pythonpath=?*)             # option
             pythonpath=`option_processor $1 $2`
             option_sanitize $pythonpath
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --replay|--replay=?*)                         # option
             replay=`option_processor $1 "$2"`
             option_sanitize "$replay"
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --returncode|--returncode=?*)                         # option
             returncode=`option_processor $1 "$2"`
             option_sanitize "$returncode"
             shift
             ;;
+      # Used by:
+      # - test_concurrent
+      # - ac_test_dep_finder
+      # - ac_test_pytest_finder
       --skip|--skip=?*)                         # option
             skip=`option_processor $1 "$2"`
             option_sanitize "$skip"
@@ -2059,61 +2122,81 @@ while true; do
       --stop|--stop=?*)                         # option
             stop="true"
             ;;
+      # Used by:
+      # - ac_test
       --test|--test=?*)                         # option
             test=`option_processor $1 $2`
             option_sanitize $test
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --timeout|--timeout=?*)                         # option
             timeout=`option_processor $1 $2`
             option_sanitize $timeout
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --throttle|--throttle=?*)                         # option
             throttle=`option_processor $1 $2`
             option_sanitize $throttle
             shift
             ;;
-    #  --tests|--tests=?*)                      # option
-    #         tests=`option_processor $1 $2`
-    #         option_sanitize $tests
-    #         shift
-    #         ;;
+      # Used by:
+      # - test_concurrent
       --user|--user=?*)                         # option
             user=`option_processor $1 $2`
             option_sanitize $user
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --verbose|--verbose=?*)                   # option
             verbose=`option_processor $1 $2`
             option_sanitize $verbose
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - test_concurrent
       --verbosity|--verbosity=?*)                   # option
             verbosity=`option_processor $1 $2`
             option_sanitize $verbosity
             shift
             ;;
+      # Used by:
+      # - ac_install
+      # - ac_sanity
+      # - ac_version
       --version|--version=?*)                   # option
             version=`option_processor $1 $2`
             option_sanitize $version
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --workers|--workers=?*)                   # option
             workers=`option_processor $1 $2`
             option_sanitize $workers
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --volumes|--volumes=?*)                   # option
             volumes=`option_processor $1 $2`
             option_sanitize $volumes
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - test_concurrent
       --zoau|--zoau=?*)                         # option
             zoau=`option_processor $1 $2`
             option_sanitize $zoau
             shift
             ;;
+      # End of command options.
         --)                                     # End Arg parsing
             #shift
             break

@@ -1216,7 +1216,7 @@ ac_test_config(){
 # ------------------------------------------------------------------------------
 #->test-dep-find:
 ## Determine which test suites to run given the options selected.
-## Usage: ac --test-dep-find [--branch <str,str>] [--skip <str, str>]
+## Usage: ac --test-dep-find [--branch <str,str>] [--skip <str, str>] [--pretty]
 ## Options:
 ##      branch (optional):
 ##          - The branch to compare to when performing dependency analaysis. The
@@ -1234,7 +1234,7 @@ ac_test_config(){
 ##          - Pretty formatting where each value is a line followed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py" --pretty False
+##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py" --pretty
 ##  $ ac --test-dep-find --branch dev --skip "test_zos_apf_func.py"
 ##  $ ac --test-dep-find --branch main
 ##  $ ac --test-dep-find
@@ -1283,7 +1283,7 @@ ac_test_dep_finder(){
 # ------------------------------------------------------------------------------
 #->test-pytest-find:
 ## Get a list of parametizd test cases used by pytest
-## Usage: ac --test-pytest-find [--file <str, str>] [--skip <str, str>] [--pretty <bool>]
+## Usage: ac --test-pytest-find [--file <str, str>] [--skip <str, str>] [--pretty]
 ## Options:
 ##     file (optional):
 ##         - Space or comma delimited test suites that should be included
@@ -1307,10 +1307,10 @@ ac_test_dep_finder(){
 ##          - Pretty formatting where each value is a line follwoed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --test-pytest-find --file "test_zos_copy_func.py,test_zos_mvs_raw_unit.py" --skip "test_zos_job_submit_func.py,test_module_security.py" --pretty false
+##  $ ac --test-pytest-find --file "test_zos_copy_func.py,test_zos_mvs_raw_unit.py" --skip "test_zos_job_submit_func.py,test_module_security.py"
 ##  $ ac --test-pytest-find --file "functional/*,unit/*" --skip "test_module_security.py"
 ##  $ ac --test-pytest-find --file "test_zos_copy_func.py"
-##  $ ac --test-pytest-find --pretty true
+##  $ ac --test-pytest-find --pretty
 ##  $ ac --test-pytest-find|wc -l
 ac_test_pytest_finder(){
     file=$1
@@ -1689,7 +1689,7 @@ host_mounts(){
 # ------------------------------------------------------------------------------
 #->host-nodes:
 ## Print all managed nodes hostnames.
-## Usage: ac --host-nodes [--all <bool>] [--pretty <bool>]
+## Usage: ac --host-nodes [--all] [--pretty]
 ## Options:
 ##     all      - Print all managed nodes hostnames.
 ## Options:
@@ -1701,15 +1701,14 @@ host_mounts(){
 ##          - Pretty formatting where each value is a line followed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --host-nodes [--all <bool>] [--pretty <bool>]
 ##  $ ac --host-nodes
-##  $ ac --host-nodes --all false
+##  $ ac --host-nodes --all --pretty
 host_nodes(){
     # Uppercase value for --all
     all=`echo $1 | tr '[:lower:]' '[:upper:]'`
     pretty=`echo $2 | tr '[:lower:]' '[:upper:]'`
 
-    if [ "$all" == "FALSE" ]; then
+    if [ -z "$all" ]; then
         message "Producution managed hosts."
         result=`$VENV/venv.sh --targets-production`
         if [ "$pretty" == "TRUE" ];then
@@ -1939,9 +1938,7 @@ while true; do
       # Used by:
       # - host_nodes
       --all|--all=?*)                           # option
-            all=`option_processor $1 $2`
-            option_sanitize $all
-            shift
+            all="true"
             ;;
       # Used by:
       # - test_concurrent
@@ -2068,9 +2065,7 @@ while true; do
       # - ac_test_dep_finder
       # - ac_test_pytest_finder
       --pretty|--pretty=?*)                     # option
-            pretty=`option_processor $1 $2`
-            option_sanitize $pretty
-            shift
+            pretty="true"
             ;;
       # Used by:
       # - ac_ansible_lint
@@ -2249,10 +2244,10 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; 
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then
-    ac_test_dep_finder "${branch:=""}" "${skip:="test_module_security.py"}" ${pretty:="true"}
+    ac_test_dep_finder "${branch:=""}" "${skip:="test_module_security.py"}" ${pretty:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-find" ] ; then
     ac_test_pytest_finder ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
-    ${pretty:="true"}
+    ${pretty:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then
     ac_version ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--file-encrypt" ] ; then
@@ -2266,7 +2261,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-mount" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-mounts" ] ; then
     host_mounts
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-nodes" ] ; then
-    host_nodes ${all:="true"}
+    host_nodes ${all:=""} ${pretty:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-setup" ] ; then
     venv_setup $password
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then

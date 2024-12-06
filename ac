@@ -541,13 +541,21 @@ ac_module_doc(){
 # Run ansible-lint on the local GH Branch
 # ------------------------------------------------------------------------------
 #->ac-lint:
-## Run ansible-lint on the local GH branch with the production profile.
-## Usage: ac --ac-lint
+## Run ansible-lint on the local GH branch with the given profile.
+## Usage: ac --ac-lint [--profile <str>]
+## Options:
+##      profile (optional)
+##          - Ansible lint profile to use.
+##          - Defaults to 'production' if not given.
+##          - Possible values are 'min', 'basic', 'shared', 'safety', 'moderate', 'production'.
 ## Example:
 ##  $ ac --ac-lint
+##  $ ac --ac-lint --profile moderate
 ac_ansible_lint(){
+    profile=$1
+
     message "Linting with ansible-lint on branch: '$GH_BRANCH'."
-    . $VENV_BIN/activate && $VENV_BIN/ansible-lint --profile production
+    . $VENV_BIN/activate && $VENV_BIN/ansible-lint --profile $profile
 }
 
 # ------------------------------------------------------------------------------
@@ -2015,6 +2023,11 @@ while true; do
             option_sanitize $pretty
             shift
             ;;
+      --profile|--profile=?*)                   # option
+            profile=`option_processor $1 $2`
+            option_sanitize $profile
+            shift
+            ;;
       --python|--python=?*)                     # option
             python=`option_processor $1 $2`
             option_sanitize $python
@@ -2138,7 +2151,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-module-doc" ] ; th
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
-    ac_ansible_lint
+    ac_ansible_lint "${profile:="production"}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then

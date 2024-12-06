@@ -734,28 +734,25 @@ ac_test(){
         message_error "Unable to find test configration in ${VENV}/config.yml."
     fi
 
+    # Populating file with every test file available.
+    if [ -z "${file}" ]; then
+      for test_file in `ls tests/functional/modules/*.py`; do
+          if [ "${test_file}" != "$skip" ]; then
+              file="${file} ${test_file}"
+          fi
+      done
+    fi
+
     # Define the needed env vars that pytest needs to locate modules and plugins.
     export ANSIBLE_LIBRARY=${VENV}/ansible_collections/ibm/ibm_zos_core/plugins/modules
     export ANSIBLE_ACTION_PLUGINS=${VENV}/ansible_collections/ibm/ibm_zos_core/plugins/action
     export ANSIBLE_MODULE_UTILS=${VENV}/ansible_collections/ibm/ibm_zos_core/plugins/module_utils
     export ANSIBLE_CONFIG=${VENV}/ansible.cfg
 
-    if [ "$file" ]; then
-        pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml ${file} ${mark} --ignore="${skip}""
-        echo "pytest command constructed: ${pytest_cmd}"
+    pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml ${file} ${mark} --ignore="${skip}""
+    echo "pytest command constructed: ${pytest_cmd}"
 
-        . ${VENV_BIN}/activate;${pytest_cmd} >&2 ; echo $? >&1
-    else
-        for file in `ls tests/functional/modules/*.py`; do
-            file="${file}"
-            if [ "$file" != "$skip" ]; then
-                pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml ${file} ${mark} --ignore="${skip}""
-                echo "pytest command constructed: ${pytest_cmd}"
-
-                . ${VENV_BIN}/activate;${pytest_cmd} >&2 ; echo $? >&1
-            fi
-        done
-    fi
+    . ${VENV_BIN}/activate;${pytest_cmd} >&2 ; echo $? >&1
 
     # Clean up the collections folder after running the tests, temporary work around.
     rm -rf collections/ansible_collections

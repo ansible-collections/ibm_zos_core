@@ -254,7 +254,7 @@ help(){
 option_processor(){
 
     opt=$1
-    arg=$2
+    arg="$2"
     if [ "$arg" ]; then
        echo "$arg"
     elif [ "$opt" ]; then
@@ -724,7 +724,7 @@ ac_test(){
         stop="-x"
     fi
 
-    skip=$CURR_DIR/tests/functional/modules/test_module_security.py
+    skip=tests/functional/modules/test_module_security.py
 
     # Create the config always overwriting existing
     ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV}
@@ -741,13 +741,13 @@ ac_test(){
     export ANSIBLE_CONFIG=${VENV}/ansible.cfg
 
     if [ "$file" ]; then
-        pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml $CURR_DIR/${file} ${mark} --ignore="${skip}""
+        pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml ${file} ${mark} --ignore="${skip}""
         echo "pytest command constructed: ${pytest_cmd}"
 
         . ${VENV_BIN}/activate;${pytest_cmd} >&2 ; echo $? >&1
     else
         for file in `ls tests/functional/modules/*.py`; do
-            file="${CURR_DIR}/${file}"
+            file="${file}"
             if [ "$file" != "$skip" ]; then
                 pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml ${file} ${mark} --ignore="${skip}""
                 echo "pytest command constructed: ${pytest_cmd}"
@@ -1964,8 +1964,8 @@ while true; do
             shift
             ;;
       --file|--file=?*)                         # option
-            file=`option_processor $1 $2`
-            option_sanitize $file
+            file=`option_processor $1 "$2"`
+            option_sanitize "$file"
             shift
             ;;
       --host|--host=?*)                         # option
@@ -2155,7 +2155,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${mark:=""} ${stop:=""}
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} "${file:=""}" ${test:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${mark:=""} ${stop:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
     test_concurrent "${host:=""}" "${user:=""}" "${python:=""}" "${zoau:=""}" "${pythonpath:=""}"\
     "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\

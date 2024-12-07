@@ -746,6 +746,7 @@ host_zvm=$1
 pyz_version=$2
 zoau_version=$3
 managed_venv_path=$4
+volumes=$5
 
 zoau_pyz=`echo $pyz_version | cut -d "." -f1,2`
 
@@ -772,6 +773,13 @@ CONFIG=${CONFIG}"  ZOAU_HOME: ${ZOAU_HOME}\\n"
 CONFIG=${CONFIG}"  LIBPATH: ${ZOAU_HOME}/lib:${PYZ_HOME}/lib:/lib:/usr/lib:.\\n"
 CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib/$zoau_pyz\\n"
 CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\n"
+
+if [ "${volumes}" ]; then
+    CONFIG=${CONFIG}"VOLUMES:\\n"
+    for volume in ${volumes}; do
+        CONFIG=${CONFIG}"  - '${volume}'\\n"
+    done
+fi
 
 echo -e $CONFIG>$managed_venv_path/config.yml
 }
@@ -808,7 +816,7 @@ case "$1" in
     get_host_ids_production
     ;;
 --config)
-    write_test_config $2 $3 $4 $5
+    write_test_config $2 $3 $4 $5 "$6"
     ;;
 --disc)
     discover_python

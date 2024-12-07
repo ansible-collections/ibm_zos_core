@@ -641,7 +641,7 @@ ac_sanity(){
 # ------------------------------------------------------------------------------
 #->ac-test:
 ## Build local branch, install and run tests in the managed venv.
-## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug] [--name <str>] [--verbosity <str>] [--mark <str>] [--stop]
+## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug] [--name <str>] [--verbosity <str>] [--mark <str>] [--stop] [--volumes <str>]
 ## Options:
 ##     host (optional)
 ##          - z/OS managed node to run test cases, no selection defaults to
@@ -672,12 +672,15 @@ ac_sanity(){
 ##          - Only runs tests with the given mark.
 ##     stop (optional)
 ##          - Whether to stop running tests after a failure is found.
+##     volumes (optional)
+##          - String containing volumes that will be used during testing.
+##          - Each volume should be separated by a space.
 ## Example:
 ##  $ ac --ac-test --host ec01150a --python 3.11 --zoau 1.3.1\
 ##  $    --file tests/functional/modules/test_zos_operator_func.py --test test_zos_operator_positive_path --debug
 ##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --debug
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
-##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17
+##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17 --volumes "000000 222222"
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug--verbosity vvv --stop
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_copy_func.py --mark template
 ##  $ ac --ac-test
@@ -693,6 +696,7 @@ ac_test(){
     verbosity=$8
     mark=$9
     stop=${10}
+    volumes=${11}
 
     # Check that a collection is installed in the named venv or default venv.
     ac_version $option_name
@@ -727,12 +731,14 @@ ac_test(){
     skip=tests/functional/modules/test_module_security.py
 
     # Create the config always overwriting existing
-    ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV}
+    ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV} "${volumes}"
 
     # Check configuration was created in venv/config.yml, else error and exit
     if test ! -e  ${VENV}/config.yml; then
         message_error "Unable to find test configration in ${VENV}/config.yml."
     fi
+
+    cat ${VENV}/config.yml
 
     # Populating file with every test file available.
     if [ -z "${file}" ]; then
@@ -2174,10 +2180,11 @@ while true; do
             shift
             ;;
       # Used by:
+      # - ac_test
       # - test_concurrent
       --volumes|--volumes=?*)                   # option
-            volumes=`option_processor $1 $2`
-            option_sanitize $volumes
+            volumes=`option_processor $1 "$2"`
+            option_sanitize "$volumes"
             shift
             ;;
       # Used by:
@@ -2231,7 +2238,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test ${host:=""} ${python:=""} ${zoau:=""} "${file:=""}" ${test:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${mark:=""} ${stop:=""}
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} "${file:=""}" ${test:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${mark:=""} ${stop:=""} "${volumes:=""}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
     test_concurrent "${host:=""}" "${user:=""}" "${python:=""}" "${zoau:=""}" "${pythonpath:=""}"\
     "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\

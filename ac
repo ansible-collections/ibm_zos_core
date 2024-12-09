@@ -641,7 +641,7 @@ ac_sanity(){
 # ------------------------------------------------------------------------------
 #->ac-test:
 ## Build local branch, install and run tests in the managed venv.
-## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug] [--name <str>] [--verbosity <str>] [--mark <str>] [--stop] [--volumes <str>]
+## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug] [--name <str>] [--verbosity <str>] [--mark <str>] [--stop] [--volumes <str>] [--user <str>]
 ## Options:
 ##     host (optional)
 ##          - z/OS managed node to run test cases, no selection defaults to
@@ -667,6 +667,7 @@ ac_sanity(){
 ##     verbosity (optional)
 ##          - Whether to run pytest in verbose mode.
 ##          - Possible values are v, vv, vvv or vvvv.
+##          - Will also print debug information from this script.
 ##     mark (optional)
 ##          - Pytest mark to use to filter tests.
 ##          - Only runs tests with the given mark.
@@ -675,10 +676,15 @@ ac_sanity(){
 ##     volumes (optional)
 ##          - String containing volumes that will be used during testing.
 ##          - Each volume should be separated by a space.
+##     user (optional)
+##          - User that will be used to run the tests.
+##          - This will only change the user that appears in the test config.
+##          - This won't create the user nor copy the SSH keys required to the host.
 ## Example:
 ##  $ ac --ac-test --host ec01150a --python 3.11 --zoau 1.3.1\
 ##  $    --file tests/functional/modules/test_zos_operator_func.py --test test_zos_operator_positive_path --debug
 ##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --debug
+##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --user usrt001
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17 --volumes "000000 222222"
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug--verbosity vvv --stop
@@ -697,6 +703,7 @@ ac_test(){
     mark=$9
     stop=${10}
     volumes=${11}
+    user=${12}
 
     # Check that a collection is installed in the named venv or default venv.
     ac_version $option_name
@@ -731,14 +738,18 @@ ac_test(){
     skip=tests/functional/modules/test_module_security.py
 
     # Create the config always overwriting existing
-    ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV} "${volumes}"
+    ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV} "${volumes}" ${user}
 
     # Check configuration was created in venv/config.yml, else error and exit
     if test ! -e  ${VENV}/config.yml; then
         message_error "Unable to find test configration in ${VENV}/config.yml."
     fi
 
-    cat ${VENV}/config.yml
+    if [ "$verbosity" ]; then
+        echo "### Start config output."
+        cat ${VENV}/config.yml
+        echo "### End config output."
+    fi
 
     # Populating file with every test file available.
     if [ -z "${file}" ]; then
@@ -756,7 +767,12 @@ ac_test(){
     export ANSIBLE_CONFIG=${VENV}/ansible.cfg
 
     pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml ${file} ${mark} --ignore="${skip}""
-    echo "pytest command constructed: ${pytest_cmd}"
+
+    if [ "$verbosity" ]; then
+        echo "### Start pytest preliminary output."
+        echo "pytest command constructed: ${pytest_cmd}"
+        echo "### End pytest preliminary output."
+    fi
 
     . ${VENV_BIN}/activate;${pytest_cmd} >&2 ; echo $? >&1
 
@@ -2142,6 +2158,7 @@ while true; do
             shift
             ;;
       # Used by:
+      # - ac_test
       # - test_concurrent
       --user|--user=?*)                         # option
             user=`option_processor $1 $2`
@@ -2238,7 +2255,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test ${host:=""} ${python:=""} ${zoau:=""} "${file:=""}" ${test:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${mark:=""} ${stop:=""} "${volumes:=""}"
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} "${file:=""}" ${test:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${mark:=""} ${stop:=""} "${volumes:=""}" "${user:=""}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
     test_concurrent "${host:=""}" "${user:=""}" "${python:=""}" "${zoau:=""}" "${pythonpath:=""}"\
     "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\

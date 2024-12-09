@@ -747,6 +747,7 @@ pyz_version=$2
 zoau_version=$3
 managed_venv_path=$4
 volumes=$5
+provided_user=$6
 
 zoau_pyz=`echo $pyz_version | cut -d "." -f1,2`
 
@@ -758,6 +759,10 @@ fi
 ssh_host_credentials "$host_zvm"
 get_python_mount "$pyz_version"
 get_zoau_mount "$zoau_version"
+
+if [ "${provided_user}" ]; then
+    user="${provided_user}"
+fi
 
 CONFIG=${CONFIG}"host: ${host}\\n"
 CONFIG=${CONFIG}"user: ${user}\\n"
@@ -816,7 +821,7 @@ case "$1" in
     get_host_ids_production
     ;;
 --config)
-    write_test_config $2 $3 $4 $5 "$6"
+    write_test_config $2 $3 $4 $5 "$6" $7
     ;;
 --disc)
     discover_python

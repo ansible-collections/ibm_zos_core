@@ -6,8 +6,8 @@
 Releases
 ========
 
-Version 1.12.0-beta.1
-=====================
+Version 1.12.0
+==============
 
 Minor Changes
 -------------
@@ -54,6 +54,11 @@ Bugfixes
 
 - ``zos_fetch`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
 
+- ``zos_find``
+
+   - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types.
+   - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster.
+
 - ``zos_job_output`` - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
 
 - ``zos_job_query``
@@ -65,7 +70,12 @@ Bugfixes
 
 - ``zos_mount`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
 
-- ``zos_mvs_raw`` - module sub-option **base64** for **return_content** did not retrieve DD output as Base64. Now the module returns Base64 encoded contents for the DD.
+- ``zos_mvs_raw``
+
+   - Module sub-option **base64** for **return_content** did not retrieve DD output as Base64. Now the module returns Base64 encoded contents for the DD.
+   - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+   - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+   - If a program failed with a non-zero return code and verbose was false, the module would succeed (false positive). Fix now fails the module for all instances where a program has a non-zero return code.
 
 - ``zos_script`` - module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
 

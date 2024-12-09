@@ -1203,6 +1203,83 @@ test_concurrent(){
 }
 
 # ------------------------------------------------------------------------------
+# Find out the test suites that need to be run and call pytest.
+# ------------------------------------------------------------------------------
+#->ac-test-required:
+## Run the dependency finder and then pytest with the results.
+## Usage: ac --ac-test-required [--host <str>] [--python <float>] [--zoau <float>] [--debug] [--name <str>] [--verbosity <str>] [--stop] [--volumes <str>] [--user <str>] [--branch <str,str>] [--skip <str, str>]
+## Options:
+##     host (optional)
+##          - z/OS managed node to run test cases, no selection defaults to
+##            a host registerd to your the user id (`whoami`).
+##     python (optional)
+##          - IBM enterprise python version, choices are 3.8, 3.9, 3.10, 3.11, 3.12
+##            no selection defauls to 3.8.
+##     zoau (optional)
+##          - ZOAU to use in testing, choices are 1.0.3, 1.1.1, 1.2.0, 1.2.1,
+##            no selection defaults to 1.1.1 .
+##     debug (optional)
+##          - enable debug for pytest (-s), choices are true and false
+##     name (optional)
+##          - The managed venv to use to run the test instance.
+##          - Default, venv with largest value, eg venv-2.17
+##          - A name must be a managed venv, lochost installatiosn are not supported.
+##     verbosity (optional)
+##          - Whether to run pytest in verbose mode.
+##          - Possible values are v, vv, vvv or vvvv.
+##          - Will also print debug information from this script.
+##     stop (optional)
+##          - Whether to stop running tests after a failure is found.
+##     volumes (optional)
+##          - String containing volumes that will be used during testing.
+##          - Each volume should be separated by a space.
+##     user (optional)
+##          - User that will be used to run the tests.
+##          - This will only change the user that appears in the test config.
+##          - This won't create the user nor copy the SSH keys required to the host.
+##     branch (optional):
+##          - The branch to compare to when performing dependency analaysis. The
+##            comparison always uses the currently checked out local branch and
+##            compares that to the 'branch' supplied.
+##          - The default branch is 'dev'
+##     skip (optional):
+##          - Space or comma delimited test suites that should not be included
+##            in the result.
+##          - Supply only the test suite name, the tooling will prepend the
+##            necessay path.
+##          - Default is to skip 'test_module_security.py', this can not be removed but
+##            it can be replaced with another test or tests.
+## Example:
+## $ ac --ac-test-required --host ec01134a --python 3.11 --zoau 1.3.1 --stop --branch dev
+ac_test_required(){
+    host=$1
+    python=$2
+    zoau=$3
+    debug=$4
+    name=$5
+    verbosity=$6
+    stop=$7
+    volumes=$8
+    user=$9
+    branch=${10}
+    # Always skipping the security tests as we don't have a current exploit file on hand.
+    skip="test_module_security.py ${11}"
+
+    identified_tests=`ac_test_dep_finder "${branch}" "${skip}" "true"`
+
+    tests=""
+    for test_file in ${identified_tests}; do
+        tests="${tests} ${test_file}"
+    done
+
+    if [ "${tests}" ]; then
+        ac_test "${host}" "${python}" "${zoau}" "${tests}" "" "${debug}" "${name}" "${verbosity}" "" "${stop}" "${volumes}" "${user}"
+    else
+        echo "No tests were found to be required to be run by the current changes in this branch."
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # Print the configuration used to connect to the managed node for functional tests
 # ------------------------------------------------------------------------------
 #->ac-test-config:
@@ -1901,6 +1978,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--test-concurrent"
             ;;
+      --ac-test-required|--ac-test-required=?*)                   # command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-test-required"
+            ;;
       --test-dep-find|--test-dep-find=?*)       # command
             ensure_managed_venv_exists $1
             option_submitted="--test-dep-find"
@@ -1976,6 +2057,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test_dep_finder
+      # - ac_test_required
       --branch|--branch=?*)                     # option
             branch=`option_processor $1 $2`
             option_sanitize $branch
@@ -1983,6 +2065,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test
+      # - ac_test_required
       # - test_concurrent
       --debug|--debug=?*)                       # option
             debug="true"
@@ -2008,6 +2091,7 @@ while true; do
       # Used by:
       # - ac_test
       # - test_concurrent
+      # - ac_test_required
       # - host_auth
       # - host_mount
       --host|--host=?*)                         # option
@@ -2058,6 +2142,7 @@ while true; do
       # - ac_version
       # - venv_start
       # - venv_stop
+      # - ac_test_required
       --name|--name=?*)                         # option
             name=`option_processor $1 $2`
             option_sanitize $name
@@ -2095,6 +2180,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test
+      # - ac_test_required
       # - test_concurrent
       --python|--python=?*)                     # option
             python=`option_processor $1 $2`
@@ -2123,6 +2209,7 @@ while true; do
             shift
             ;;
       # Used by:
+      # - ac_test_required
       # - test_concurrent
       # - ac_test_dep_finder
       # - ac_test_pytest_finder
@@ -2133,6 +2220,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test
+      # - ac_test_required
       --stop|--stop=?*)                         # option
             stop="true"
             ;;
@@ -2159,6 +2247,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test
+      # - ac_test_required
       # - test_concurrent
       --user|--user=?*)                         # option
             user=`option_processor $1 $2`
@@ -2174,6 +2263,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test
+      # - ac_test_required
       # - test_concurrent
       --verbosity|--verbosity=?*)                   # option
             verbosity=`option_processor $1 $2`
@@ -2198,6 +2288,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test
+      # - ac_test_required
       # - test_concurrent
       --volumes|--volumes=?*)                   # option
             volumes=`option_processor $1 "$2"`
@@ -2206,6 +2297,7 @@ while true; do
             ;;
       # Used by:
       # - ac_test
+      # - ac_test_required
       # - test_concurrent
       --zoau|--zoau=?*)                         # option
             zoau=`option_processor $1 $2`
@@ -2262,6 +2354,8 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; 
     "${itr:="50"}" "${replay:="5"}" "${timeout:="300"}" "${throttle:="True"}" "${workers:="1"}"\
     "${maxjob:="10"}" "${maxnode:="30"}" "${bal:="10"}" "${verbose:="False"}" "${verbosity:="0"}"\
     "${debug:="False"}" "${extra:="cd `pwd`"}" "${returncode:="False"}" "${name:=""}"
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-required" ] ; then
+    ac_test_required ${host:=""} ${python:=""} ${zoau:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${stop:=""} "${volumes:=""}" "${user:=""}" "${branch:="dev"}" "${skip:=""}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then

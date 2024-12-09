@@ -458,8 +458,9 @@ def run_module():
                 )
                 os.remove(tmp_file)
             else:
+                output = get_full_output(file=tmp_file, module=module)
                 result.update(
-                    verbose_output=get_full_output(file=tmp_file, module=module),
+                    verbose_output=output,
                 )
 
     else:

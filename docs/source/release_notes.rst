@@ -74,10 +74,7 @@ Bugfixes
 Availability
 ------------
 
-<<<<<<< Updated upstream
-=======
 * `Ansible Automation Platform`_
->>>>>>> Stashed changes
 * `Galaxy`_
 * `GitHub`_
 
@@ -92,8 +89,6 @@ Known Issues
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
-<<<<<<< Updated upstream
-=======
 - ``zos_find`` - When trying to find a VSAM data set that is allocated with DISP=OLD using age filter the module will not find it.
 
 Version 1.11.1
@@ -127,7 +122,6 @@ Known Issues
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
->>>>>>> Stashed changes
 
 Version 1.11.0
 ==============
@@ -353,8 +347,6 @@ Known Issues
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
 - Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
 
-<<<<<<< Updated upstream
-=======
 Version 1.9.4
 =============
 
@@ -396,7 +388,6 @@ Known Issues
 
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
 
->>>>>>> Stashed changes
 Version 1.9.3
 =============
 

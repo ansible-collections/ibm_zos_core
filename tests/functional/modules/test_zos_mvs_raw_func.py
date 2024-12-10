@@ -101,18 +101,14 @@ def test_disposition_new(ansible_zos_module, verbose):
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert result.get("failed", False) is False
-<<<<<<< HEAD
             if verbose:
                 assert result.get("stderr") is not None
-=======
->>>>>>> c032672d ([Release] v1.12.0 release tasks (#1825))
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
-@pytest.mark.parametrize(
     "disposition",
     ["shr", "mod", "old"],
 )
@@ -2305,11 +2301,8 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
 
 @pytest.mark.parametrize(
         # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
-<<<<<<< HEAD
         # Where a program will fail if rc != 0 only if verbose was True.
-=======
         # Where previously a program would NOT fail when rc != 0 unless verbose was True.
->>>>>>> c032672d ([Release] v1.12.0 release tasks (#1825))
         "verbose",
         [True, False],
 )
@@ -2321,11 +2314,7 @@ def test_authorized_program_run_authorized(ansible_zos_module, verbose):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
-<<<<<<< HEAD
-            verbose=True,
-=======
             verbose=verbose,
->>>>>>> c032672d ([Release] v1.12.0 release tasks (#1825))
             dds=[
                 {
                     "dd_output":{

@@ -108,7 +108,7 @@ def test_disposition_new(ansible_zos_module, verbose):
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
-
+@pytest.mark.parametrize(
     "disposition",
     ["shr", "mod", "old"],
 )

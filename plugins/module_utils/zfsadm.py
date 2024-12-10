@@ -60,7 +60,8 @@ class zfsadm:
 
         return rc, stdout, stderr, cmd_str
 
-    def get_aggregate_size(self):
+    @staticmethod
+    def get_aggregate_size(aggregate_name, module):
         """Execute a command to get the size of the zfs dataset.
 
         Returns
@@ -72,8 +73,8 @@ class zfsadm:
             stderr : str
                 The stderr of the execution of command.
         """
-        cmd = "zfsadm aggrinfo {0}".format(self.aggregate_name)
+        cmd = "zfsadm aggrinfo {0}".format(aggregate_name)
 
-        rc, stdout, stderr = self.module.run_command(cmd)
+        rc, stdout, stderr = module.run_command(cmd)
 
         return rc, stdout, stderr

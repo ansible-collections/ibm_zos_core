@@ -360,7 +360,7 @@ def run_module():
     # Initialize the class with the target
     zfsadm_obj = zfsadm(aggregate_name=target, module=module)
 
-    rc, stdout, stderr = zfsadm_obj.get_aggregate_size()
+    rc, stdout, stderr = zfsadm.get_aggregate_size(zfsadm_obj.aggregate_name, module)
 
     if rc == 0:
         old_size, old_free = get_size_and_free(line=stdout)
@@ -442,7 +442,7 @@ def run_module():
     if rc == 0:
         changed = True
 
-        rc_size, stdout_size, stderr_size = zfsadm_obj.get_aggregate_size()
+        rc_size, stdout_size, stderr_size = zfsadm.get_aggregate_size(zfsadm_obj.aggregate_name, module)
         if rc_size == 0:
             new_size, new_free = get_size_and_free(line=stdout_size)
 

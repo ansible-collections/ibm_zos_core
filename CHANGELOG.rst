@@ -4,13 +4,13 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
-v1.12.0-beta.1
-==============
+v1.12.0
+=======
 
 Release Summary
 ---------------
 
-Release Date: '2024-10-31'
+Release Date: '2024-12-06'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
@@ -42,11 +42,16 @@ Bugfixes
 - zos_data_set - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
 - zos_encode - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
 - zos_fetch - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_find - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types. (https://github.com/ansible-collections/ibm_zos_core/pull/1818).
+- zos_find - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster. (https://github.com/ansible-collections/ibm_zos_core/pull/1818).
 - zos_job_output - RACF user names containing a ``@``, ``$``, or ``#`` raised an invalid argument error. Fix now allows the use of all valid characters for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
 - zos_job_query - Module was not returning values for system and subsystem. Fix now returns these values. (https://github.com/ansible-collections/ibm_zos_core/pull/1761).
 - zos_job_query - RACF user names containing a ``@``, ``$``, or ``#`` raised an invalid argument error. Fix now allows the use of all valid characters for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
 - zos_lineinfile - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
 - zos_mount - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_mvs_raw - If a program failed with a non-zero return code and verbose was false, the module would succeed (false positive). Fix now fails the module for all instances where a program has a non-zero return code. (https://github.com/ansible-collections/ibm_zos_core/pull/1780).
+- zos_mvs_raw - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program. (https://github.com/ansible-collections/ibm_zos_core/pull/1780).
+- zos_mvs_raw - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr. (https://github.com/ansible-collections/ibm_zos_core/pull/1800).
 - zos_mvs_raw - base64 sub-option for return_content under option for retrieving DD output did not return base64. Fix now returns the base64 encoded contents of the DD. (https://github.com/ansible-collections/ibm_zos_core/pull/1691).
 - zos_script - The module would discard command line arguments in a command, except for the first one. Fix now makes sure that all arguments are passed to the remote command that gets executed. (https://github.com/ansible-collections/ibm_zos_core/pull/1698).
 - zos_unarchive - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
@@ -265,7 +270,7 @@ Bugfixes
 Known Issues
 ------------
 
-- Several modules have reported UTF8 decoding errors when interacting with results that contain non-printable UTF8 characters in the response. This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules `zos_job_submit`, `zos_job_output`, `zos_operator_action_query` but are not limited to this list. This will be addressed in `ibm_zos_core` version 1.10.0. Each case is unique, some options to work around the error are below. - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters. - Add `ignore_errors:true` to the playbook task so the task error will not fail the playbook. - If the error is resulting from a batch job, add `ignore_errors:true` to the task and capture the output into a variable and extract the job ID with a regular expression and then use `zos_job_output` to display the DD without the non-printable character such as the DD `JESMSGLG`. (https://github.com/ansible-collections/ibm_zos_core/issues/677) (https://github.com/ansible-collections/ibm_zos_core/issues/776) (https://github.com/ansible-collections/ibm_zos_core/issues/972)
+- Several modules have reported UTF8 decoding errors when interacting with results that contain non-printable UTF8 characters in the response. This occurs when a module receives content that does not correspond to a UTF-8 value. These include modules `zos_job_submit`, `zos_job_output`, `zos_operator_action_query` but are not limited to this list. This will be addressed in `ibm_zos_core` version 1.10.0-beta.1. Each case is unique, some options to work around the error are below. - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters. - Add `ignore_errors:true` to the playbook task so the task error will not fail the playbook. - If the error is resulting from a batch job, add `ignore_errors:true` to the task and capture the output into a variable and extract the job ID with a regular expression and then use `zos_job_output` to display the DD without the non-printable character such as the DD `JESMSGLG`. (https://github.com/ansible-collections/ibm_zos_core/issues/677) (https://github.com/ansible-collections/ibm_zos_core/issues/776) (https://github.com/ansible-collections/ibm_zos_core/issues/972)
 - With later versions of `ansible-core` used with `ibm_zos_core` collection a warning has started to appear "Module "ansible.builtin.command" returned non UTF-8 data in the JSON response" that is currently being reviewed. There are no recommendations at this point. (https://github.com/ansible-collections/ibm_zos_core/issues/983)
 
 New Modules

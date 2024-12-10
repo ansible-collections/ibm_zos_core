@@ -1,0 +1,3 @@
+trivial:
+  - zos_fetch - Migrate calls from cp to python API copy.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1816).

@@ -23,6 +23,7 @@ author:
     - "Xiao Yuan Ma (@bjmaxy)"
     - "Rich Parker (@richp405)"
     - "Demetrios Dimatos (@ddimatos)"
+    - "Ivan Moreno (@rexemin)"
 short_description: Submit JCL
 description:
     - Submit JCL in a data set, USS file, or file on the controller.
@@ -657,7 +658,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
 from timeit import default_timer as timer
-from os import remove
+from os import path
+import shutil
 import traceback
 from time import sleep
 import re
@@ -1202,7 +1204,7 @@ def run_module():
 
         finally:
             if temp_file is not None:
-                remove(temp_file)
+                shutil.rmtree(path.dirname(temp_file))
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'
     result["changed"] = True if is_changed else False

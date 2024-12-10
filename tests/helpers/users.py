@@ -183,20 +183,22 @@ class ManagedUser:
         self._create_ssh_config_and_directory()
 
     @classmethod
-    def from_fixture(cls, pytest_fixture):
-
-        remote_host = pytest_fixture["options"]["inventory"].replace(",", "")
-        model_user = pytest_fixture["options"]["user"]
-        inventory_hosts = pytest_fixture["options"]["inventory_manager"]._inventory.hosts
+    def from_fixture(cls, pytest_module_fixture, pytest_interpreter_fixture):
+        remote_host = pytest_module_fixture["options"]["inventory"].replace(",", "")
+        model_user = pytest_module_fixture["options"]["user"]
+        inventory_hosts = pytest_module_fixture["options"]["inventory_manager"]._inventory.hosts
         inventory_list = list(inventory_hosts.values())[0].vars.get('ansible_python_interpreter').split(";")
-        zoau_path = [v for v in inventory_list if f"ZOAU_HOME=" in v][0].split('=')[1].strip() or None
-        pythonpath = [v for v in inventory_list if f"PYTHONPATH=" in v][0].split('=')[1].strip() or None
+        environment_vars = pytest_interpreter_fixture[0]
+
+        zoau_path = environment_vars.get("ZOAU_HOME")
+        pythonpath = environment_vars.get("PYTHONPATH")
         pyz_path = [v for v in inventory_list if f"bin/python" in v][0].split('/bin')[0].strip() or None
+
         # TODO: To make this dynamic, we need to update AC and then also test with the new fixture because
         # the legacy fixture is using a VOLUMES keyword while raw fixture uses extra_args. Best to move
         # volumes to extra_args. 
         volumes = "000000,222222"
-        hostpattern = pytest_fixture["options"]["host_pattern"]
+        hostpattern = pytest_module_fixture["options"]["host_pattern"]
         return cls(model_user, remote_host, zoau_path, pyz_path, pythonpath, volumes, hostpattern)
 
 

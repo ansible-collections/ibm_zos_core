@@ -232,6 +232,14 @@ template_parameters
     | **default**: False
 
 
+  autoescape
+    Whether to enable autoescape of XML/HTML elements on a template.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: True
+
+
 
 
 

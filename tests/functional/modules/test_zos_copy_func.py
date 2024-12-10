@@ -1368,7 +1368,7 @@ def test_copy_template_file(ansible_zos_module, encoding):
 
         # Adding the template vars to each host.
         template_vars = dict(
-            var="This should be rendered",
+            var="This should be rendered with 'quotes'.",
             if_var=5,
             array=[1, 2, 3]
         )
@@ -1379,6 +1379,11 @@ def test_copy_template_file(ansible_zos_module, encoding):
             src=temp_template,
             dest=dest_path,
             use_template=True,
+            template_parameters={
+                # This should make sure that we don't get stuff like '&#39' when
+                # rendering quotes.
+                "autoescape": False
+            },
             encoding={
                 "from": encoding,
                 "to": "IBM-1047"

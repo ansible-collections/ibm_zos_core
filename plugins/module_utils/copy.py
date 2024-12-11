@@ -120,8 +120,8 @@ def copy_uss_mvs(src, dest, is_binary=False):
         # Returning the exception content instead of raising it
         # since a lot of code that uses this function expects it
         # so they can decide what to do in case of an error.
-        return copy_exception.response.rc,
-            copy_exception.response.stdout_response,
+        return copy_exception.response.rc, \
+            copy_exception.response.stdout_response, \
             copy_exception.response.stderr_response
 
     return 0, "", ""

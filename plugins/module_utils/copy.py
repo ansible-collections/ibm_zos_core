@@ -80,7 +80,7 @@ def _validate_path(path):
     return parsed_args.get("path")
 
 
-def copy_uss_mvs(src, dest, is_binary=False)
+def copy_uss_mvs(src, dest, is_binary=False):
     """Wrapper function for datasets.copy that handles possible
     exceptions that may occur.
 

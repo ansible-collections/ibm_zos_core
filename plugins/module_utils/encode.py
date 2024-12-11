@@ -510,10 +510,10 @@ class EncodeUtils(object):
             if src_type == "PS":
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
-                rc, out, err = copy.copy_ps2uss(src, temp_src)
+                rc, out, err = copy.copy_uss_mvs(src, temp_src)
             if src_type == "PO":
                 temp_src = mkdtemp()
-                rc, out, err = copy.copy_pds2uss(src, temp_src)
+                rc, out, err = copy.copy_uss_mvs(src, temp_src)
             if src_type == "KSDS":
                 reclen, space_u = self.listdsi_data_set(src.upper(), tmphlq=tmphlq)
                 # RDW takes the first 4 bytes in the VB format, hence we need to add an extra buffer to the vsam max recl.
@@ -522,7 +522,7 @@ class EncodeUtils(object):
                 rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps, tmphlq=tmphlq)
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
-                rc, out, err = copy.copy_ps2uss(temp_ps, temp_src)
+                rc, out, err = copy.copy_uss_mvs(temp_ps, temp_src)
             if dest_type == "PS" or dest_type == "KSDS":
                 temp_dest_fo = NamedTemporaryFile()
                 temp_dest = temp_dest_fo.name
@@ -538,17 +538,17 @@ class EncodeUtils(object):
                         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
                         reclen += 4
                         temp_ps = self.temp_data_set(reclen, space_u)
-                        rc, out, err = copy.copy_uss2mvs(temp_dest, temp_ps, "PS")
+                        rc, out, err = copy.copy_uss_mvs(temp_dest, temp_ps)
                         rc, out, err = copy.copy_vsam_ps(temp_ps, dest.upper(), tmphlq=tmphlq)
                         convert_rc = True
                     elif dest_type == "PO":
                         for (dir, subdir, files) in walk(temp_dest):
                             for file in files:
                                 temp_file = path.join(validation.validate_safe_path(dir), validation.validate_safe_path(file))
-                                rc, out, err = copy.copy_uss2mvs(temp_file, dest, "PO")
+                                rc, out, err = copy.copy_uss_mvs(temp_file, dest)
                                 convert_rc = True
                     else:
-                        rc, out, err = copy.copy_uss2mvs(temp_dest, dest, dest_type)
+                        rc, out, err = copy.copy_uss_mvs(temp_dest, dest)
                         convert_rc = True
         except Exception:
             raise

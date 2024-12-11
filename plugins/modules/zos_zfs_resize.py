@@ -113,7 +113,7 @@ old_size:
     returned: always
     type: float
     sample: 3096
-old_free:
+old_free_space:
     description: The reported size, in space_type, of the free space in the data set before the resizing is performed.
     returned: always
     type: float
@@ -123,7 +123,7 @@ new_size:
     returned: success
     type: float
     sample: 4032
-new_free:
+new_free_space:
     description: The reported size, in space_type, of the free space in the data set after the resizing is performed.
     returned: success
     type: float
@@ -175,7 +175,7 @@ def calculate_size_on_k(size, space_type):
         size *= 830
     if space_type == "trk":
         size *= 55
-    return math.ceil(size)
+    return size
 
 
 def get_full_output(file, module):
@@ -284,6 +284,31 @@ def convert_size(size, space_type):
     return size
 
 
+def proper_size_str(size, space_type):
+    """Function to convert size to a proper response for output.
+
+    Parameters
+    ----------
+        size : int
+            Size to grow or shrink the zfs
+        space_type : str
+            Type of space to be use
+
+    Returns
+    -------
+        size : int or float
+            Size on specific space_type notation 2 if is 2.0 or 1.5
+    """
+    if space_type == "k" or space_type == "trk" or space_type == "cyl":
+        return int(size)
+    else:
+        split_size=str(size).split(".")
+        if split_size[1].startswith("0"):
+            return int(size)
+        else:
+            return float("{:.1f}".format(size))
+
+
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
@@ -376,18 +401,18 @@ def run_module():
 
     if space_type != "k":
         size_on_type = convert_size(size=old_size, space_type=space_type)
-        free_on_type = convert_size(size=old_size, space_type=space_type)
+        free_on_type = convert_size(size=old_free, space_type=space_type)
 
     str_old_size = old_size if space_type == "k" else size_on_type
-    str_old_size = float("{:.1f}".format(str_old_size))
+    str_old_size = proper_size_str(str_old_size, space_type)
     str_old_free = old_free if space_type == "k" else free_on_type
-    str_old_free = float("{:.1f}".format(str_old_free))
+    str_old_free = proper_size_str(str_old_free, space_type)
 
     result.update(
         dict(
             mount_target=mount_target,
             old_size=str_old_size,
-            old_free=str_old_free,
+            old_free_space=str_old_free,
         )
     )
 
@@ -401,7 +426,7 @@ def run_module():
                 changed=False,
                 size=size,
                 new_size=str_old_size,
-                new_free=str_old_free,
+                new_free_space=str_old_free,
             )
         )
         module.exit_json(**result)
@@ -482,9 +507,9 @@ def run_module():
         )
 
     str_new_size = new_size if space_type == "k" else size_on_type
-    str_new_size = float("{:.1f}".format(str_new_size))
+    str_new_size = proper_size_str(str_new_size, space_type)
     str_new_free = new_free if space_type == "k" else free_on_type
-    str_new_free = float("{:.1f}".format(str_new_free))
+    str_new_free = proper_size_str(str_new_free, space_type)
 
     result.update(
         dict(
@@ -494,7 +519,7 @@ def run_module():
             stderr=stderr,
             changed=changed,
             new_size=str_new_size,
-            new_free=str_new_free,
+            new_free_space=str_new_free,
         )
     )
 
@@ -538,9 +563,9 @@ class ResizingOperationError(Exception):
             The zfsadm command try to execute on the remote node.
         changed : bool
             If the operation was executed.
-        old_size : list
+        old_size : float or int
             The reported size, of the data set before the resizing is performed.
-        old_free : list
+        old_free : float or int
             The reported size, of the free space in the data set before the resizing is performed.
         """
         self.json_args = dict(
@@ -554,7 +579,7 @@ class ResizingOperationError(Exception):
             stderr=stderr,
             changed=changed,
             old_size=old_size,
-            old_free=old_free,
+            old_free_space=old_free,
         )
         super().__init__(msg)
 

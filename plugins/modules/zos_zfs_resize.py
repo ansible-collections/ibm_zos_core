@@ -435,14 +435,14 @@ def run_module():
         )
         module.exit_json(**result)
 
+    elif space < minimum_size_t_shrink:
+        module.fail_json(msg="Not enough space to shrink", **result)
+
     elif space > old_size:
         operation = "grow"
 
     elif space >= minimum_size_t_shrink and space < old_size:
         operation = "shrink"
-
-    elif space < minimum_size_t_shrink:
-        module.fail_json(msg="Not enough space to shrink", **result)
 
     noai = " -noai " if noai else ""
 
@@ -496,8 +496,9 @@ def run_module():
         if verbose and trace_destination is None:
             os.remove(tmp_file)
 
+        msg = "No enough space on device to grow." if operation == 'grow' else "No space to properly shrink."
         raise ResizingOperationError(
-            msg="Resize: resize command returned non-zero code",
+            msg="Resize: resize command returned non-zero code. {0}".format(msg),
             target=target,
             mount_target=mount_target,
             cmd=cmd,

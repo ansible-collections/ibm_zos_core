@@ -196,7 +196,7 @@ def get_full_output(file, module):
     output = ""
 
     if "/" in file:
-        cmd = "cat '{0}'".format(file)
+        cmd = "cat {0}".format(file)
     else:
         cmd = "dcat '{0}'".format(file)
 
@@ -448,22 +448,26 @@ def run_module():
 
     trace = ""
     tmp_file = ""
-
-    if verbose and trace_destination is None:
-        tmp_fld = os.path.expanduser(module._remote_tmp)
-        temp = tempfile.NamedTemporaryFile(dir=tmp_fld, delete=False)
-        tmp_file = temp.name
-        trace = " -trace '{0}'".format(tmp_file)
+    trace_uss = True
 
     if trace_destination is not None:
         if "/" in trace_destination:
             if not (os.path.exists(trace_destination)):
                 module.fail_json(msg="Destination trace file does not exist", **result)
+            trace_uss = True
         else:
             if not (data_set.DataSet.data_set_exists(trace_destination)):
                 module.fail_json(msg="Destination trace dataset does not exist", **result)
+            trace_uss = False
         tmp_file = trace_destination
-        trace = " -trace '{0}'".format(trace_destination)
+
+    if verbose and trace_destination is None:
+        tmp_fld = os.path.expanduser(module._remote_tmp)
+        temp = tempfile.NamedTemporaryFile(dir=tmp_fld, delete=False)
+        tmp_file = temp.name
+        trace_uss = True
+
+    trace = " -trace '{0}'".format(tmp_file) if trace_uss else " -trace \"//'{0}'\" ".format(trace_destination)
 
     # Execute the function
     rc, stdout, stderr, cmd = zfsadm_obj.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)

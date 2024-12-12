@@ -44,7 +44,7 @@ def set_environment(ansible_zos_module, ds_name, space=1, space_type='m'):
     if space_type == "m":
         bits_wr = 1000000
     else:
-        bits_wr = 1000
+        bits_wr = 10000
 
     hosts.all.command(
                 cmd="head -c {0} /dev/urandom > {1}/test.txt".format(
@@ -74,6 +74,8 @@ def test_grow_operation(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "grown" in result.get('stdout')
+            assert result.get('new_size') >= result.get('old_size')
+            assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= size
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
@@ -92,6 +94,8 @@ def test_shrink_operation(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "shrunk" in result.get('stdout')
+            assert result.get('new_size') <= result.get('old_size')
+            assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= size
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
@@ -115,6 +119,8 @@ def test_grow_n_shrink_operations_size_m(ansible_zos_module):
             assert result.get('rc') == 0
             assert "grown" in result.get('stdout')
             assert result.get('space_type') == space_type.upper()
+            assert result.get('new_size') >= result.get('old_size')
+            assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= grow_size
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -125,6 +131,8 @@ def test_grow_n_shrink_operations_size_m(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "shrunk" in result.get('stdout')
+            assert result.get('new_size') <= result.get('old_size')
+            assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == space_type.upper()
             assert result.get('new_size') <= shrink_size
     finally:
@@ -149,6 +157,8 @@ def test_grow_n_shrink_operations_size_trk(ansible_zos_module):
             assert result.get('rc') == 0
             assert "grown" in result.get('stdout')
             assert result.get('new_size') >= grow_size
+            assert result.get('new_size') >= result.get('old_size')
+            assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == space_type.upper()
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -159,6 +169,8 @@ def test_grow_n_shrink_operations_size_trk(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "shrunk" in result.get('stdout')
+            assert result.get('new_size') <= result.get('old_size')
+            assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= shrink_size
             assert result.get('space_type') == space_type.upper()
     finally:
@@ -182,6 +194,8 @@ def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "grown" in result.get('stdout')
+            assert result.get('new_size') >= result.get('old_size')
+            assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= grow_size
             assert result.get('space_type') == space_type.upper()
 
@@ -193,6 +207,8 @@ def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "shrunk" in result.get('stdout')
+            assert result.get('new_size') <= result.get('old_size')
+            assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= shrink_size
             assert result.get('space_type') == space_type.upper()
     finally:
@@ -217,6 +233,8 @@ def test_grow_n_shrink_operation_verbose(ansible_zos_module):
             assert result.get('rc') == 0
             assert "grown" in result.get('stdout')
             assert result.get('new_size') >= grow_size
+            assert result.get('new_size') >= result.get('old_size')
+            assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "K"
             assert result.get("verbose_output") is not None
 
@@ -230,6 +248,8 @@ def test_grow_n_shrink_operation_verbose(ansible_zos_module):
             assert "shrunk" in result.get('stdout')
             assert result.get('new_size') <= shrink_size
             assert result.get('space_type') == "K"
+            assert result.get('new_size') <= result.get('old_size')
+            assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get("verbose_output") is not None
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
@@ -239,8 +259,8 @@ def test_grow_n_shrink_operations_trace_options(ansible_zos_module, trace_destin
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
-    grow_size = 2000
-    shrink_size = 1800
+    grow_size = 1800
+    shrink_size = 1200
 
     if trace_destination == "uss":
         trace_destination_file = "/" + get_random_file_name(dir="tmp")
@@ -263,12 +283,14 @@ def test_grow_n_shrink_operations_trace_options(ansible_zos_module, trace_destin
             assert result.get('rc') == 0
             assert "grown" in result.get('stdout')
             assert result.get('new_size') >= grow_size
+            assert result.get('new_size') >= result.get('old_size')
+            assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "K"
             assert result.get("verbose_output") is not None
-            cmd = "cat " if trace_destination == "uss" else "dcat "
-            cmd = cmd + "{0}".format(trace_destination_file)
+            cmd = "cat {0}".format(trace_destination_file) if trace_destination == "uss" else "cat \"//'{0}'\" ".format(trace_destination_file)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for cat_res in output_of_trace_file.contacted.values():
+                print(result, cat_res)
                 assert result.get("verbose_output") == cat_res.get("stdout")
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -281,13 +303,15 @@ def test_grow_n_shrink_operations_trace_options(ansible_zos_module, trace_destin
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "shrunk" in result.get('stdout')
+            assert result.get('new_size') <= result.get('old_size')
+            assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= shrink_size
             assert result.get('space_type') == "K"
             assert result.get("verbose_output") is not None
-            cmd = "cat " if trace_destination == "uss" else "dcat "
-            cmd = cmd + "{0}".format(trace_destination_file)
+            cmd = "cat {0}".format(trace_destination_file) if trace_destination == "uss" else "cat \"//'{0}'\" ".format(trace_destination_file)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for cat_res in output_of_trace_file.contacted.values():
+                print(result, cat_res)
                 assert cat_res.get("stdout") == result.get("verbose_output")
 
     finally:

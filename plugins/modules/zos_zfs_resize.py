@@ -467,7 +467,8 @@ def run_module():
         tmp_file = temp.name
         trace_uss = True
 
-    trace = " -trace '{0}'".format(tmp_file) if trace_uss else " -trace \"//'{0}'\" ".format(trace_destination)
+    if verbose or trace_destination is not None:
+        trace = " -trace '{0}'".format(tmp_file) if trace_uss else " -trace \"//'{0}'\" ".format(trace_destination)
 
     # Execute the function
     rc, stdout, stderr, cmd = zfsadm_obj.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)

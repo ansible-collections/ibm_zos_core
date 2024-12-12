@@ -497,6 +497,7 @@ def run_module():
             os.remove(tmp_file)
 
         msg = "No enough space on device to grow." if operation == 'grow' else "No space to properly shrink."
+
         raise ResizingOperationError(
             msg="Resize: resize command returned non-zero code. {0}".format(msg),
             target=target,

@@ -18,9 +18,11 @@ __metaclass__ = type
 import tempfile
 import re
 import os
+import yaml
 from shellescape import quote
 import pytest
 from datetime import datetime
+import subprocess
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -392,6 +394,48 @@ exit 0;
 //STDERR DD SYSOUT=*
 //
 """
+
+PLAYBOOK_ASYNC_TEST = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+
+  tasks:
+    - name: Submit async job.
+      ibm.ibm_zos_core.zos_job_submit:
+        src: {3}
+        location: local
+      async: 45
+      poll: 0
+      register: job_task
+
+    - name: Query async task.
+      async_status:
+        jid: "{{{{ job_task.ansible_job_id }}}}"
+      register: job_result
+      until: job_result.finished
+      retries: 20
+      delay: 5
+"""
+
+INVENTORY_ASYNC_TEST = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
 
 
 @pytest.mark.parametrize(
@@ -1133,3 +1177,65 @@ def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=temp_path, state="absent")
+
+
+def test_job_submit_async(get_config):
+    # Creating temp JCL file used by the playbook.
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w",encoding="utf-8") as f:
+        f.write(JCL_FILE_CONTENTS)
+
+    # Getting all the info required to run the playbook.
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
+
+    playbook = tempfile.NamedTemporaryFile(delete=True)
+    inventory = tempfile.NamedTemporaryFile(delete=True)
+
+    os.system("echo {0} > {1}".format(
+        quote(PLAYBOOK_ASYNC_TEST.format(
+            zoau,
+            cut_python_path,
+            python_version,
+            tmp_file.name
+        )), 
+        playbook.name
+    ))
+
+    os.system("echo {0} > {1}".format(
+        quote(INVENTORY_ASYNC_TEST.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), 
+        inventory.name
+    ))
+
+    command = "ansible-playbook -i {0} {1}".format(
+        inventory.name,
+        playbook.name
+    )
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        shell=True,
+        timeout=120,
+        encoding='utf-8'
+    )
+
+    assert result.returncode == 0
+    assert "ok=2" in result.stdout
+    assert "changed=2" in result.stdout
+    assert result.stderr == ""
+

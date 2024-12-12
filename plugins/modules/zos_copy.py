@@ -3305,6 +3305,13 @@ def run_module(module, arg_def):
     raw_src = src
     raw_dest = dest
 
+    # Validation for copy from a member
+    if src_member:
+        if not (data_set.DataSet.data_set_member_exists(src)):
+            module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
+                data_set.extract_member_name(src)
+            ))
+
     # Implementing the new MVSDataSet class by masking the values of
     # src/raw_src and dest/raw_dest.
     if is_mvs_src:

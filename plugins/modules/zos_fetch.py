@@ -320,6 +320,11 @@ except Exception:
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
 
+try:
+    from zoautil_py import exceptions as zoau_exceptions
+except Exception:
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
+
 
 class FetchHandler:
     def __init__(self, module):
@@ -621,29 +626,37 @@ class FetchHandler:
 
         Raises
         ------
-        fail_json
+        ZOSFetchError
             Error copying partitioned dataset to USS.
         fail_json
             Error converting encoding of the member.
         """
         dir_path = tempfile.mkdtemp(dir=temp_dir)
-        cmd = "cp -B \"//'{0}'\" {1}"
-        if not is_binary:
-            cmd = cmd.replace(" -B", "")
-        rc, out, err = self._run_command(cmd.format(src, dir_path))
-        if rc != 0:
+
+        copy_args = {
+            "options": ""
+        }
+
+        if is_binary:
+            copy_args["options"] = "-B"
+
+        try:
+            datasets.copy(source=src, target=dir_path, **copy_args)
+
+        except zoau_exceptions.ZOAUException as copy_exception:
             rmtree(dir_path)
-            self._fail_json(
+            raise ZOSFetchError(
                 msg=(
                     "Error copying partitioned data set {0} to USS. Make sure it is"
                     " not empty".format(src)
                 ),
-                stdout=out,
-                stderr=err,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
-                rc=rc,
+                rc=copy_exception.response.rc,
+                stdout=copy_exception.response.stdout_response,
+                stderr=copy_exception.response.stderr_response,
+                stdout_lines=copy_exception.response.stdout_response.splitlines(),
+                stderr_lines=copy_exception.response.stderr_response.splitlines(),
             )
+
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
@@ -740,7 +753,7 @@ class FetchHandler:
 
         Raises
         ------
-        fail_json
+        ZOSFetchError
             Unable to copy to USS.
         fail_json
             Error converting encoding of the dataset.
@@ -754,22 +767,27 @@ class FetchHandler:
             fd, file_path = tempfile.mkstemp(dir=temp_dir)
             os.close(fd)
 
-        cmd = "cp -B \"//'{0}'\" {1}"
-        if not is_binary:
-            cmd = cmd.replace(" -B", "")
+        copy_args = {
+            "options": ""
+        }
 
-        rc, out, err = self._run_command(cmd.format(src, file_path))
+        if is_binary:
+            copy_args["options"] = "-B"
 
-        if rc != 0:
+        try:
+            datasets.copy(source=src, target=file_path, **copy_args)
+
+        except zoau_exceptions.ZOAUException as copy_exception:
             os.remove(file_path)
-            self._fail_json(
+            raise ZOSFetchError(
                 msg="Unable to copy {0} to USS".format(src),
-                stdout=str(out),
-                stderr=str(err),
-                rc=rc,
-                stdout_lines=str(out).splitlines(),
-                stderr_lines=str(err).splitlines(),
+                rc=copy_exception.response.rc,
+                stdout=copy_exception.response.stdout_response,
+                stderr=copy_exception.response.stderr_response,
+                stdout_lines=copy_exception.response.stdout_response.splitlines(),
+                stderr_lines=copy_exception.response.stderr_response.splitlines(),
             )
+
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
@@ -1034,6 +1052,36 @@ def run_module():
 
     res_args["ds_type"] = ds_type
     module.exit_json(**res_args)
+
+
+class ZOSFetchError(Exception):
+    def __init__(self, msg, rc="", stdout="", stderr="", stdout_lines="", stderr_lines=""):
+        """Error in a copy operation.
+
+        Parameters
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        rc : int
+            Result code.
+        stdout : str
+            Standart output.
+        stderr : str
+            Standart error.
+        stdout_lines : str
+            Standart output divided in lines.
+        stderr_lines : str
+            Standart error divided in lines.
+        """
+        self.json_args = dict(
+            msg=msg,
+            rc=rc,
+            stdout=stdout,
+            stderr=stderr,
+            stdout_lines=stdout_lines,
+            stderr_lines=stderr_lines,
+        )
+        super().__init__(self.msg)
 
 
 def main():

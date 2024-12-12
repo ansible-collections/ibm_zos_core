@@ -194,8 +194,9 @@ def get_full_output(file, module):
             Verbose output
     """
     output = ""
+
     if "/" in file:
-        cmd = "cat {0}".format(file)
+        cmd = "cat '{0}'".format(file)
     else:
         cmd = "dcat '{0}'".format(file)
 
@@ -381,6 +382,9 @@ def run_module():
 
     # Validation to found target on the system and also get the mount_point
     mount_target = find_mount_target(module=module, target=target, results=result)
+
+    if size <= 0:
+        module.fail_json(msg="Can not resize ZFS Target {0} to 0".format(target), **result)
 
     # Initialize the class with the target
     zfsadm_obj = zfsadm(aggregate_name=target, module=module)

@@ -254,7 +254,7 @@ help(){
 option_processor(){
 
     opt=$1
-    arg=$2
+    arg="$2"
     if [ "$arg" ]; then
        echo "$arg"
     elif [ "$opt" ]; then
@@ -541,13 +541,21 @@ ac_module_doc(){
 # Run ansible-lint on the local GH Branch
 # ------------------------------------------------------------------------------
 #->ac-lint:
-## Run ansible-lint on the local GH branch with the production profile.
-## Usage: ac --ac-lint
+## Run ansible-lint on the local GH branch with the given profile.
+## Usage: ac --ac-lint [--profile <str>]
+## Options:
+##      profile (optional)
+##          - Ansible lint profile to use.
+##          - Defaults to 'production' if not given.
+##          - Possible values are 'min', 'basic', 'shared', 'safety', 'moderate', 'production'.
 ## Example:
 ##  $ ac --ac-lint
+##  $ ac --ac-lint --profile moderate
 ac_ansible_lint(){
+    profile=$1
+
     message "Linting with ansible-lint on branch: '$GH_BRANCH'."
-    . $VENV_BIN/activate && $VENV_BIN/ansible-lint --profile production
+    . $VENV_BIN/activate && $VENV_BIN/ansible-lint --profile $profile
 }
 
 # ------------------------------------------------------------------------------
@@ -633,7 +641,7 @@ ac_sanity(){
 # ------------------------------------------------------------------------------
 #->ac-test:
 ## Build local branch, install and run tests in the managed venv.
-## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug <boolean>] [--name <str>]
+## Usage: ac --ac-test [--host <str>] [--python <float>] [--zoau <float>] [--file <str>] [--debug] [--name <str>] [--verbosity <str>] [--mark <str>] [--stop] [--volumes <str>] [--user <str>]
 ## Options:
 ##     host (optional)
 ##          - z/OS managed node to run test cases, no selection defaults to
@@ -656,13 +664,31 @@ ac_sanity(){
 ##          - The managed venv to use to run the test instance.
 ##          - Default, venv with largest value, eg venv-2.17
 ##          - A name must be a managed venv, lochost installatiosn are not supported.
+##     verbosity (optional)
+##          - Whether to run pytest in verbose mode.
+##          - Possible values are v, vv, vvv or vvvv.
+##          - Will also print debug information from this script.
+##     mark (optional)
+##          - Pytest mark to use to filter tests.
+##          - Only runs tests with the given mark.
+##     stop (optional)
+##          - Whether to stop running tests after a failure is found.
+##     volumes (optional)
+##          - String containing volumes that will be used during testing.
+##          - Each volume should be separated by a space.
+##     user (optional)
+##          - User that will be used to run the tests.
+##          - This will only change the user that appears in the test config.
+##          - This won't create the user nor copy the SSH keys required to the host.
 ## Example:
 ##  $ ac --ac-test --host ec01150a --python 3.11 --zoau 1.3.1\
-##  $    --file tests/functional/modules/test_zos_operator_func.py --test test_zos_operator_positive_path --debug true
-##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --debug true
+##  $    --file tests/functional/modules/test_zos_operator_func.py --test test_zos_operator_positive_path --debug
+##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --debug
+##  $ ac --ac-test --host ec33012a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_operator_func.py --user usrt001
 ##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file invalid/test/returns/rc/of/4/to/stderr 2>>/dev/null
-##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17
-##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
+##  $ ac --ac-test --host ec01130a --python 3.11 --zoau 1.3.1 --file tests/functional/modules/test_zos_tso_command_func.py --name venv-2.17 --volumes "000000 222222"
+##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug--verbosity vvv --stop
+##  $ ac --ac-test --file tests/functional/modules/test_zos_copy_func.py --mark template
 ##  $ ac --ac-test
 
 ac_test(){
@@ -673,6 +699,11 @@ ac_test(){
     test=$5
     debug=$6
     option_name=$7
+    verbosity=$8
+    mark=$9
+    stop=${10}
+    volumes=${11}
+    user=${12}
 
     # Check that a collection is installed in the named venv or default venv.
     ac_version $option_name
@@ -684,35 +715,66 @@ ac_test(){
         VENV_BASENAME=`basename $VENV`
     fi
 
-    # If test is parametized build a pytest string, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
     if [ "$file" ] && [ "$test" ]; then
-        file="${file}::${test}"
+        file="${file} -k ${test}"
+    fi
+
+    if [ "$mark" ]; then
+        mark="-m ${mark}"
     fi
 
     if [ "$debug" ]; then
         debug="-s"
     fi
 
-    skip=$CURR_DIR/tests/functional/modules/test_module_security.py
+    if [ "$verbosity" ]; then
+        verbosity="-${verbosity}"
+    fi
+
+    if [ "$stop" ]; then
+        stop="-x"
+    fi
+
+    skip=tests/functional/modules/test_module_security.py
 
     # Create the config always overwriting existing
-    ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV}
+    ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV} "${volumes}" ${user}
 
-	# Check configuration was created in venv/config.yml, else error and exit
-	if test ! -e  ${VENV}/config.yml; then
-	    message_error "Unable to find test configration in ${VENV}/config.yml."
-	fi
-
-    # TODO: Consider adding the -vvvv like so `$CURR_DIR/${file}  -vvvv --ignore="${skip}"` so that you can access the verbosity feature of pytest.
-    if [ "$file" ]; then
-        . ${VENV_BIN}/activate && export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
-    else
-        for file in `ls tests/functional/modules/*.py`; do
-            if [ "$file" != "$skip" ]; then
-                . ${VENV_BIN}/activate &&  export ANSIBLE_LIBRARY=$VENV/ansible_collections/ibm/ibm_zos_core/plugins/modules;export ANSIBLE_CONFIG=$VENV/ansible.cfg;${VENV_BIN}/pytest $CURR_DIR/${file} --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml ${debug} >&2 ; echo $? >&1
-            fi
-        done
+    # Check configuration was created in venv/config.yml, else error and exit
+    if test ! -e  ${VENV}/config.yml; then
+        message_error "Unable to find test configration in ${VENV}/config.yml."
     fi
+
+    if [ "$verbosity" ]; then
+        echo "### Start config output."
+        cat ${VENV}/config.yml
+        echo "### End config output."
+    fi
+
+    # Populating file with every test file available.
+    if [ -z "${file}" ]; then
+      for test_file in `ls tests/functional/modules/*.py`; do
+          if [ "${test_file}" != "$skip" ]; then
+              file="${file} ${test_file}"
+          fi
+      done
+    fi
+
+    # Define the needed env vars that pytest needs to locate modules and plugins.
+    export ANSIBLE_LIBRARY=${VENV}/ansible_collections/ibm/ibm_zos_core/plugins/modules
+    export ANSIBLE_ACTION_PLUGINS=${VENV}/ansible_collections/ibm/ibm_zos_core/plugins/action
+    export ANSIBLE_MODULE_UTILS=${VENV}/ansible_collections/ibm/ibm_zos_core/plugins/module_utils
+    export ANSIBLE_CONFIG=${VENV}/ansible.cfg
+
+    pytest_cmd="${VENV_BIN}/pytest ${verbosity} ${debug} ${stop} --host-pattern=all --zinventory=${VENV}/config.yml ${file} ${mark} --ignore="${skip}""
+
+    if [ "$verbosity" ]; then
+        echo "### Start pytest preliminary output."
+        echo "pytest command constructed: ${pytest_cmd}"
+        echo "### End pytest preliminary output."
+    fi
+
+    . ${VENV_BIN}/activate;${pytest_cmd} >&2 ; echo $? >&1
 
     # Clean up the collections folder after running the tests, temporary work around.
     rm -rf collections/ansible_collections
@@ -732,7 +794,7 @@ ac_test(){
 ## Usage: ac --test-concurrent [--host <str, str>] [--user <str>] --python <str> [--zoau <str>] [--pythonpath <str>]
 ##                             [--volumes <str, str>] [--file <str, str>] [--skip <str, str>] [--itr <int>] [--replay <int>]
 ##                             [--timeout <int>] [--throttle <bool>] [--workers <int>] [--maxjob <int>] [--maxnode <int>]
-##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug <bool>] [--extra <str>] [--name <str>]
+##                             [--bal <int>] [--verbose <bool>] [--verbosity <int>] [--debug] [--extra <str>] [--name <str>]
 ## Options:
 ##     host (optional):
 ##          - Space or comma delimited managed nodes to use.
@@ -855,10 +917,10 @@ ac_test(){
 ##          - A name must be a managed venv, lochost installatiosn are not supported.
 ## Example:
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0
-##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0 --file test_zos_operator_func.py --debug true
+##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0 --file test_zos_operator_func.py --debug
 ##  $ ac --test-concurrent --host "ec01130a,ec33012a,ec33017a" --python 3.11 --zoau 1.3.0\
 ##  $    --file test_zos_operator_func.py,test_zos_job_submit_func.py\
-##  $    --skip "test_zos_job_submit_func.py::test_job_from_gdg_source[0]" --debug true
+##  $    --skip "test_zos_job_submit_func.py::test_job_from_gdg_source[0]" --debug
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.0 --file test_zos_operator_func.py --returncode True --itr 1
 ##  $ ac --test-concurrent --host ec01130a --python 3.11 --zoau 1.3.1 --file test_zos_data_set_func.py --itr 1 --replay 1
 ## test_case_1
@@ -1141,6 +1203,83 @@ test_concurrent(){
 }
 
 # ------------------------------------------------------------------------------
+# Find out the test suites that need to be run and call pytest.
+# ------------------------------------------------------------------------------
+#->ac-test-required:
+## Run the dependency finder and then pytest with the results.
+## Usage: ac --ac-test-required [--host <str>] [--python <float>] [--zoau <float>] [--debug] [--name <str>] [--verbosity <str>] [--stop] [--volumes <str>] [--user <str>] [--branch <str,str>] [--skip <str, str>]
+## Options:
+##     host (optional)
+##          - z/OS managed node to run test cases, no selection defaults to
+##            a host registerd to your the user id (`whoami`).
+##     python (optional)
+##          - IBM enterprise python version, choices are 3.8, 3.9, 3.10, 3.11, 3.12
+##            no selection defauls to 3.8.
+##     zoau (optional)
+##          - ZOAU to use in testing, choices are 1.0.3, 1.1.1, 1.2.0, 1.2.1,
+##            no selection defaults to 1.1.1 .
+##     debug (optional)
+##          - enable debug for pytest (-s), choices are true and false
+##     name (optional)
+##          - The managed venv to use to run the test instance.
+##          - Default, venv with largest value, eg venv-2.17
+##          - A name must be a managed venv, lochost installatiosn are not supported.
+##     verbosity (optional)
+##          - Whether to run pytest in verbose mode.
+##          - Possible values are v, vv, vvv or vvvv.
+##          - Will also print debug information from this script.
+##     stop (optional)
+##          - Whether to stop running tests after a failure is found.
+##     volumes (optional)
+##          - String containing volumes that will be used during testing.
+##          - Each volume should be separated by a space.
+##     user (optional)
+##          - User that will be used to run the tests.
+##          - This will only change the user that appears in the test config.
+##          - This won't create the user nor copy the SSH keys required to the host.
+##     branch (optional):
+##          - The branch to compare to when performing dependency analaysis. The
+##            comparison always uses the currently checked out local branch and
+##            compares that to the 'branch' supplied.
+##          - The default branch is 'dev'
+##     skip (optional):
+##          - Space or comma delimited test suites that should not be included
+##            in the result.
+##          - Supply only the test suite name, the tooling will prepend the
+##            necessay path.
+##          - Default is to skip 'test_module_security.py', this can not be removed but
+##            it can be replaced with another test or tests.
+## Example:
+## $ ac --ac-test-required --host ec01134a --python 3.11 --zoau 1.3.1 --stop --branch dev
+ac_test_required(){
+    host=$1
+    python=$2
+    zoau=$3
+    debug=$4
+    name=$5
+    verbosity=$6
+    stop=$7
+    volumes=$8
+    user=$9
+    branch=${10}
+    # Always skipping the security tests as we don't have a current exploit file on hand.
+    skip="test_module_security.py ${11}"
+
+    identified_tests=`ac_test_dep_finder "${branch}" "${skip}" "true"`
+
+    tests=""
+    for test_file in ${identified_tests}; do
+        tests="${tests} ${test_file}"
+    done
+
+    if [ "${tests}" ]; then
+        ac_test "${host}" "${python}" "${zoau}" "${tests}" "" "${debug}" "${name}" "${verbosity}" "" "${stop}" "${volumes}" "${user}"
+    else
+        echo "No tests were found to be required to be run by the current changes in this branch."
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # Print the configuration used to connect to the managed node for functional tests
 # ------------------------------------------------------------------------------
 #->ac-test-config:
@@ -1173,7 +1312,7 @@ ac_test_config(){
 # ------------------------------------------------------------------------------
 #->test-dep-find:
 ## Determine which test suites to run given the options selected.
-## Usage: ac --test-dep-find [--branch <str,str>] [--skip <str, str>]
+## Usage: ac --test-dep-find [--branch <str,str>] [--skip <str, str>] [--pretty]
 ## Options:
 ##      branch (optional):
 ##          - The branch to compare to when performing dependency analaysis. The
@@ -1191,7 +1330,7 @@ ac_test_config(){
 ##          - Pretty formatting where each value is a line followed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py" --pretty False
+##  $ ac --test-dep-find --branch main --skip "test_module_security.py,test_zos_apf_func.py" --pretty
 ##  $ ac --test-dep-find --branch dev --skip "test_zos_apf_func.py"
 ##  $ ac --test-dep-find --branch main
 ##  $ ac --test-dep-find
@@ -1240,7 +1379,7 @@ ac_test_dep_finder(){
 # ------------------------------------------------------------------------------
 #->test-pytest-find:
 ## Get a list of parametizd test cases used by pytest
-## Usage: ac --test-pytest-find [--file <str, str>] [--skip <str, str>] [--pretty <bool>]
+## Usage: ac --test-pytest-find [--file <str, str>] [--skip <str, str>] [--pretty]
 ## Options:
 ##     file (optional):
 ##         - Space or comma delimited test suites that should be included
@@ -1264,10 +1403,10 @@ ac_test_dep_finder(){
 ##          - Pretty formatting where each value is a line follwoed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --test-pytest-find --file "test_zos_copy_func.py,test_zos_mvs_raw_unit.py" --skip "test_zos_job_submit_func.py,test_module_security.py" --pretty false
+##  $ ac --test-pytest-find --file "test_zos_copy_func.py,test_zos_mvs_raw_unit.py" --skip "test_zos_job_submit_func.py,test_module_security.py"
 ##  $ ac --test-pytest-find --file "functional/*,unit/*" --skip "test_module_security.py"
 ##  $ ac --test-pytest-find --file "test_zos_copy_func.py"
-##  $ ac --test-pytest-find --pretty true
+##  $ ac --test-pytest-find --pretty
 ##  $ ac --test-pytest-find|wc -l
 ac_test_pytest_finder(){
     file=$1
@@ -1646,7 +1785,7 @@ host_mounts(){
 # ------------------------------------------------------------------------------
 #->host-nodes:
 ## Print all managed nodes hostnames.
-## Usage: ac --host-nodes [--all <bool>] [--pretty <bool>]
+## Usage: ac --host-nodes [--all] [--pretty]
 ## Options:
 ##     all      - Print all managed nodes hostnames.
 ## Options:
@@ -1658,15 +1797,14 @@ host_mounts(){
 ##          - Pretty formatting where each value is a line followed by a line feed,
 ##            otherwise a list[str] format is returned.
 ## Example:
-##  $ ac --host-nodes [--all <bool>] [--pretty <bool>]
 ##  $ ac --host-nodes
-##  $ ac --host-nodes --all false
+##  $ ac --host-nodes --all --pretty
 host_nodes(){
     # Uppercase value for --all
     all=`echo $1 | tr '[:lower:]' '[:upper:]'`
     pretty=`echo $2 | tr '[:lower:]' '[:upper:]'`
 
-    if [ "$all" == "FALSE" ]; then
+    if [ -z "$all" ]; then
         message "Producution managed hosts."
         result=`$VENV/venv.sh --targets-production`
         if [ "$pretty" == "TRUE" ];then
@@ -1787,6 +1925,7 @@ while true; do
         fi
     fi
     case $1 in
+      # Start of main command list.
       -h|-\?|--help)
         if [ "$1" = "-h" ] || [ "$1" = "-?" ]; then
             help
@@ -1839,6 +1978,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--test-concurrent"
             ;;
+      --ac-test-required|--ac-test-required=?*)                   # command
+            ensure_managed_venv_exists $1
+            option_submitted="--ac-test-required"
+            ;;
       --test-dep-find|--test-dep-find=?*)       # command
             ensure_managed_venv_exists $1
             option_submitted="--test-dep-find"
@@ -1890,171 +2033,278 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
+      # End of main command list.
+      # Start of command options.
+      # Used by:
+      # - host_nodes
       --all|--all=?*)                           # option
-            all=`option_processor $1 $2`
-            option_sanitize $all
-            shift
+            all="true"
             ;;
+      # Used by:
+      # - test_concurrent
       --bal|--bal=?*)                           # option
             bal=`option_processor $1 $2`
             option_sanitize $bal
             shift
             ;;
+      # Used by:
+      # - ac_changelog
+      # - ac_module_doc
       --command|--command=?*)                   # option
             command=`option_processor $1 $2`
             option_sanitize $command
             shift
             ;;
+      # Used by:
+      # - ac_test_dep_finder
+      # - ac_test_required
       --branch|--branch=?*)                     # option
             branch=`option_processor $1 $2`
             option_sanitize $branch
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - ac_test_required
+      # - test_concurrent
       --debug|--debug=?*)                       # option
-            debug=`option_processor $1 $2`
-            option_sanitize $debug
-            shift
+            debug="true"
             ;;
+      # Used by:
+      # - test_concurrent
       --extra|--extra=?*)                       # option
             extra=`option_processor $1 $2`
             option_sanitize $extra
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - test_concurrent
+      # - ac_test_pytest_finder
+      # - file_encrypt
+      # - file_decrypt
       --file|--file=?*)                         # option
-            file=`option_processor $1 $2`
-            option_sanitize $file
+            file=`option_processor $1 "$2"`
+            option_sanitize "$file"
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - test_concurrent
+      # - ac_test_required
+      # - host_auth
+      # - host_mount
       --host|--host=?*)                         # option
             host=`option_processor $1 $2`
             option_sanitize $host
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --itr|--itr=?*)                           # option
             itr=`option_processor $1 $2`
             option_sanitize $itr
             shift
             ;;
+      # Used by:
+      # - ac_bandit
       --level|--level=?*)                       # option
             level=`option_processor $1 $2`
             option_sanitize $level
             shift
             ;;
-      --level|--level=?*)                       # option
-            level=`option_processor $1 $2`
-            option_sanitize $level
+      # Used by:
+      # - ac_test
+      --mark|--mark=?*)                         # option
+            mark=`option_processor $1 $2`
+            option_sanitize $mark
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --maxjob|--maxjob=?*)                     # option
             maxjob=`option_processor $1 $2`
             option_sanitize $maxjob
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --maxnode|--maxnode=?*)                   # option
             maxnode=`option_processor $1 $2`
             option_sanitize $maxnode
             shift
             ;;
+      # Used by:
+      # - ac_build
+      # - ac_install
+      # - ac_sanity
+      # - ac_test_config
+      # - ac_version
+      # - venv_start
+      # - venv_stop
+      # - ac_test_required
       --name|--name=?*)                         # option
             name=`option_processor $1 $2`
             option_sanitize $name
             shift
             ;;
+      # Used by:
+      # - file_encrypt
+      # - file_decrypt
       --out-file|--out-file=?*)                 # option
             out_file=`option_processor $1 $2`
             option_sanitize $out_file
             shift
             ;;
+      # Used by:
+      # - file_encrypt
+      # - file_decrypt
+      # - venv_setup
       --password|--password=?*)                 # option
             password=`option_processor $1 $2`
             option_sanitize $password
             shift
             ;;
+      # Used by:
+      # - ac_test_dep_finder
+      # - ac_test_pytest_finder
       --pretty|--pretty=?*)                     # option
-            pretty=`option_processor $1 $2`
-            option_sanitize $pretty
+            pretty="true"
+            ;;
+      # Used by:
+      # - ac_ansible_lint
+      --profile|--profile=?*)                   # option
+            profile=`option_processor $1 $2`
+            option_sanitize $profile
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - ac_test_required
+      # - test_concurrent
       --python|--python=?*)                     # option
             python=`option_processor $1 $2`
             option_sanitize $python
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --pythonpath|--pythonpath=?*)             # option
             pythonpath=`option_processor $1 $2`
             option_sanitize $pythonpath
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --replay|--replay=?*)                         # option
             replay=`option_processor $1 "$2"`
             option_sanitize "$replay"
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --returncode|--returncode=?*)                         # option
             returncode=`option_processor $1 "$2"`
             option_sanitize "$returncode"
             shift
             ;;
+      # Used by:
+      # - ac_test_required
+      # - test_concurrent
+      # - ac_test_dep_finder
+      # - ac_test_pytest_finder
       --skip|--skip=?*)                         # option
             skip=`option_processor $1 "$2"`
             option_sanitize "$skip"
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - ac_test_required
+      --stop|--stop=?*)                         # option
+            stop="true"
+            ;;
+      # Used by:
+      # - ac_test
       --test|--test=?*)                         # option
             test=`option_processor $1 $2`
             option_sanitize $test
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --timeout|--timeout=?*)                         # option
             timeout=`option_processor $1 $2`
             option_sanitize $timeout
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --throttle|--throttle=?*)                         # option
             throttle=`option_processor $1 $2`
             option_sanitize $throttle
             shift
             ;;
-    #  --tests|--tests=?*)                      # option
-    #         tests=`option_processor $1 $2`
-    #         option_sanitize $tests
-    #         shift
-    #         ;;
+      # Used by:
+      # - ac_test
+      # - ac_test_required
+      # - test_concurrent
       --user|--user=?*)                         # option
             user=`option_processor $1 $2`
             option_sanitize $user
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --verbose|--verbose=?*)                   # option
             verbose=`option_processor $1 $2`
             option_sanitize $verbose
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - ac_test_required
+      # - test_concurrent
       --verbosity|--verbosity=?*)                   # option
             verbosity=`option_processor $1 $2`
             option_sanitize $verbosity
             shift
             ;;
+      # Used by:
+      # - ac_install
+      # - ac_sanity
+      # - ac_version
       --version|--version=?*)                   # option
             version=`option_processor $1 $2`
             option_sanitize $version
             shift
             ;;
+      # Used by:
+      # - test_concurrent
       --workers|--workers=?*)                   # option
             workers=`option_processor $1 $2`
             option_sanitize $workers
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - ac_test_required
+      # - test_concurrent
       --volumes|--volumes=?*)                   # option
-            volumes=`option_processor $1 $2`
-            option_sanitize $volumes
+            volumes=`option_processor $1 "$2"`
+            option_sanitize "$volumes"
             shift
             ;;
+      # Used by:
+      # - ac_test
+      # - ac_test_required
+      # - test_concurrent
       --zoau|--zoau=?*)                         # option
             zoau=`option_processor $1 $2`
             option_sanitize $zoau
             shift
             ;;
+      # End of command options.
         --)                                     # End Arg parsing
             #shift
             break
@@ -2093,24 +2343,26 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-module-doc" ] ; th
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
-    ac_ansible_lint
+    ac_ansible_lint "${profile:="production"}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""} ${name:=""}
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} "${file:=""}" ${test:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${mark:=""} ${stop:=""} "${volumes:=""}" "${user:=""}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-concurrent" ] ; then
     test_concurrent "${host:=""}" "${user:=""}" "${python:=""}" "${zoau:=""}" "${pythonpath:=""}"\
     "${volumes:="222222,000000"}" "${file:="functional/*,unit/*"}" "${skip:="test_module_security.py"}"\
     "${itr:="50"}" "${replay:="5"}" "${timeout:="300"}" "${throttle:="True"}" "${workers:="1"}"\
     "${maxjob:="10"}" "${maxnode:="30"}" "${bal:="10"}" "${verbose:="False"}" "${verbosity:="0"}"\
     "${debug:="False"}" "${extra:="cd `pwd`"}" "${returncode:="False"}" "${name:=""}"
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-required" ] ; then
+    ac_test_required ${host:=""} ${python:=""} ${zoau:=""} ${debug:=""} ${name:=""} ${verbosity:=""} ${stop:=""} "${volumes:=""}" "${user:=""}" "${branch:="dev"}" "${skip:=""}"
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-dep-find" ] ; then
-    ac_test_dep_finder "${branch:=""}" "${skip:="test_module_security.py"}" ${pretty:="true"}
+    ac_test_dep_finder "${branch:=""}" "${skip:="test_module_security.py"}" ${pretty:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--test-pytest-find" ] ; then
     ac_test_pytest_finder ${file:="functional/*,unit/*"} "${skip:="test_module_security.py"}"\
-    ${pretty:="true"}
+    ${pretty:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then
     ac_version ${name:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--file-encrypt" ] ; then
@@ -2124,7 +2376,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-mount" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-mounts" ] ; then
     host_mounts
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--host-nodes" ] ; then
-    host_nodes ${all:="true"}
+    host_nodes ${all:=""} ${pretty:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-setup" ] ; then
     venv_setup $password
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then

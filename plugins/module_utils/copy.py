@@ -29,8 +29,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
 
-from shlex import quote
-
 try:
     from zoautil_py import datasets, gdgs, exceptions as zoau_exceptions
 except Exception:
@@ -370,4 +368,3 @@ class USSCmdExecError(Exception):
             "stdout: {2}; stderr: {3}".format(uss_cmd, rc, out, err)
         )
         super().__init__(self.msg)
-

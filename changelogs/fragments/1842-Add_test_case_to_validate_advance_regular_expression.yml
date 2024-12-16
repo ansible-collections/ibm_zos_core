@@ -1,0 +1,3 @@
+trivial:
+  - zos_lineinfile - Add test cases to validate use of advance regular expression.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1842).

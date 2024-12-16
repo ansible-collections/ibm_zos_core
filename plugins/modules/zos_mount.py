@@ -548,8 +548,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as Backup,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
-    copy_ps2uss,
-    copy_uss2mvs,
+    copy_uss_mvs
 )
 
 
@@ -1045,7 +1044,7 @@ def run_module(module, arg_def):
         tmp_file_filename = tmp_file.name
         tmp_file.close()
 
-        copy_ps2uss(data_store, tmp_file_filename, False)
+        copy_uss_mvs(data_store, tmp_file_filename, is_binary=False)
 
         module.run_command(
             "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False, errors='replace'
@@ -1076,7 +1075,7 @@ def run_module(module, arg_def):
             module.run_command(
                 "mrm " + data_store, use_unsafe_shell=False, errors='replace'
             )
-            copy_uss2mvs(tmp_file_filename, data_store, "", True)
+            copy_uss_mvs(tmp_file_filename, data_store, is_binary=True)
 
         if os.path.isfile(tmp_file_filename):
             os.unlink(tmp_file_filename)

@@ -1657,7 +1657,7 @@ class USSCopyHandler(CopyHandler):
         new_src = conv_path or src
         try:
             if self.is_binary:
-                copy.copy_uss2uss_binary(new_src, dest)
+                copy.copy_uss_mvs(new_src, dest, is_binary=True)
             else:
                 opts = dict()
                 opts["options"] = ""
@@ -1931,11 +1931,10 @@ class USSCopyHandler(CopyHandler):
                             stderr=response.stderr_response
                         )
                 else:
-                    copy.copy_pds2uss(
+                    copy.copy_uss_mvs(
                         src,
                         dest,
-                        is_binary=self.is_binary,
-                        asa_text=self.asa_text
+                        is_binary=self.is_binary
                     )
         except CopyOperationError as err:
             raise err

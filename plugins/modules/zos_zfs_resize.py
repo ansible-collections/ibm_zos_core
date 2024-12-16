@@ -468,6 +468,7 @@ def run_module():
         trace_uss = True
 
     if verbose or trace_destination is not None:
+        
         trace = " -trace '{0}'".format(tmp_file) if trace_uss else " -trace \"//'{0}'\" ".format(trace_destination)
 
     # Execute the function

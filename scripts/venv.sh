@@ -746,6 +746,8 @@ host_zvm=$1
 pyz_version=$2
 zoau_version=$3
 managed_venv_path=$4
+volumes=$5
+provided_user=$6
 
 zoau_pyz=`echo $pyz_version | cut -d "." -f1,2`
 
@@ -758,13 +760,17 @@ ssh_host_credentials "$host_zvm"
 get_python_mount "$pyz_version"
 get_zoau_mount "$zoau_version"
 
+if [ "${provided_user}" ]; then
+    user="${provided_user}"
+fi
+
 CONFIG=${CONFIG}"host: ${host}\\n"
 CONFIG=${CONFIG}"user: ${user}\\n"
 CONFIG=${CONFIG}"python_path: ${PYZ_HOME}/bin/python3\\n"
 CONFIG=${CONFIG}"\\n"
 CONFIG=${CONFIG}"environment:\\n"
 CONFIG=${CONFIG}"  _BPXK_AUTOCVT: \"ON\"\\n"
-CONFIG=${CONFIG}"  _CEE_RUNOPTS: \"'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'\"\\n"
+CONFIG=${CONFIG}"  _CEE_RUNOPTS: \"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)\"\\n"
 CONFIG=${CONFIG}"  _TAG_REDIR_IN: txt\\n"
 CONFIG=${CONFIG}"  _TAG_REDIR_OUT: txt\\n"
 CONFIG=${CONFIG}"  LANG: C\\n"
@@ -772,7 +778,13 @@ CONFIG=${CONFIG}"  ZOAU_HOME: ${ZOAU_HOME}\\n"
 CONFIG=${CONFIG}"  LIBPATH: ${ZOAU_HOME}/lib:${PYZ_HOME}/lib:/lib:/usr/lib:.\\n"
 CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib/$zoau_pyz\\n"
 CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\n"
-CONFIG=${CONFIG}"  PYTHONSTDINENCODING: \"cp1047\"\\n"
+
+if [ "${volumes}" ]; then
+    CONFIG=${CONFIG}"VOLUMES:\\n"
+    for volume in ${volumes}; do
+        CONFIG=${CONFIG}"  - '${volume}'\\n"
+    done
+fi
 
 echo -e $CONFIG>$managed_venv_path/config.yml
 }
@@ -809,7 +821,7 @@ case "$1" in
     get_host_ids_production
     ;;
 --config)
-    write_test_config $2 $3 $4 $5
+    write_test_config $2 $3 $4 $5 "$6" $7
     ;;
 --disc)
     discover_python

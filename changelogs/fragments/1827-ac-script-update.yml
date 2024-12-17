@@ -1,0 +1,5 @@
+trivial:
+  - ac - Added new options to command ac-test and ac-lint, as well
+    as new command ac-test-required that automatically runs all tests
+    from modules affected by new changes.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1827)

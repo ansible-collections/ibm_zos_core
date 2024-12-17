@@ -108,7 +108,6 @@ def test_disposition_new(ansible_zos_module, verbose):
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
-
 @pytest.mark.parametrize(
     "disposition",
     ["shr", "mod", "old"],
@@ -2303,6 +2302,7 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
 @pytest.mark.parametrize(
         # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
         # Where a program will fail if rc != 0 only if verbose was True.
+        # Where previously a program would NOT fail when rc != 0 unless verbose was True.
         "verbose",
         [True, False],
 )
@@ -2314,7 +2314,7 @@ def test_authorized_program_run_authorized(ansible_zos_module, verbose):
         results = hosts.all.zos_mvs_raw(
             program_name="idcams",
             auth=True,
-            verbose=True,
+            verbose=verbose,
             dds=[
                 {
                     "dd_output":{

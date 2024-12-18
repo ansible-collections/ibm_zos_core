@@ -16,7 +16,8 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 DOCUMENTATION = r"""
-module: zos_resize
+module: zos_zfs_resize
+version_added: '1.13.0'
 short_description: Resize a zfs data set.
 description:
   - The module M(zos_resize) can resize a zfs aggregate data set.
@@ -40,8 +41,7 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining the size.
-      - Valid units of size are C(k), C(m), C(g), C(cyl), and C(trk).
-      - k for kilobytes, m for megabytes, g for gigabytes, cyl for cylinder and trk for track
+      - Valid units of size are C(k) kilobytes, C(m) megabytes, C(g) gigabytes, C(cyl) cylinder, and C(trk)tracks.
     required: false
     type: str
     choices:
@@ -142,7 +142,7 @@ verbose_output:
 
 import os
 import tempfile
-import math
+from pathlib import Path
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
@@ -303,7 +303,7 @@ def proper_size_str(size, space_type):
     if space_type == "k" or space_type == "trk" or space_type == "cyl":
         return int(size)
     else:
-        split_size=str(size).split(".")
+        split_size = str(size).split(".")
         if split_size[1].startswith("0"):
             return int(size)
         else:
@@ -466,7 +466,9 @@ def run_module():
         tmp_file = trace_destination
 
     if verbose and trace_destination is None:
-        tmp_fld = os.path.expanduser(module._remote_tmp)
+        home_folder = Path.home()
+        tmp_fld = module._remote_tmp.replace("~", str(home_folder))
+        tmp_fld = tmp_fld.replace("//", "/")
         temp = tempfile.NamedTemporaryFile(dir=tmp_fld, delete=False)
         tmp_file = temp.name
         trace_uss = True

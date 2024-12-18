@@ -1,3 +1,3 @@
 bugfixes:
-  - zos_mvs_raw - option tmp_hlq was not being used as HLQ when creating backup data sets. Fix now uses tmp_hlq as HLQ for backup data sets.
+  - zos_mvs_raw - Option ``tmp_hlq`` was not being used as HLQ when creating backup data sets. Fix now uses ``tmp_hlq`` as HLQ for backup data sets.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1847).

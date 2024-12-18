@@ -368,7 +368,7 @@ def run_module():
         dict(
             target=target,
             size=size,
-            space_type=space_type.upper(),
+            space_type=space_type,
             cmd="",
             changed=changed,
             rc=1,
@@ -436,7 +436,7 @@ def run_module():
         module.exit_json(**result)
 
     elif space < minimum_size_t_shrink:
-        module.fail_json(msg="Not enough space to shrink", **result)
+        module.fail_json(msg="Not enough free space in the filesystem to shrink.", **result)
 
     elif space > old_size:
         operation = "grow"

@@ -173,6 +173,12 @@ class ActionModule(ActionBase):
 
                     if use_template:
                         template_parameters = task_args.get("template_parameters", dict())
+
+                        if template_parameters and not template_parameters.get("autoescape", True):
+                            display.warning(
+                                msg="Disabling autoescaping in Jinja may result in security risks, use with caution."
+                            )
+
                         if encoding:
                             template_encoding = encoding.get("from", None)
                         else:
@@ -202,6 +208,12 @@ class ActionModule(ActionBase):
 
                     if use_template:
                         template_parameters = task_args.get("template_parameters", dict())
+
+                        if template_parameters and not template_parameters.get("autoescape", True):
+                            display.warning(
+                                msg="Disabling autoescaping in Jinja may result in security risks, use with caution."
+                            )
+
                         if encoding:
                             template_encoding = encoding.get("from", None)
                         else:

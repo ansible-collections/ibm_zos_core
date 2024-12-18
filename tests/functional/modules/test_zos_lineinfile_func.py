@@ -560,7 +560,7 @@ def test_uss_advanced_regular_expression_absent(ansible_zos_module):
         "state":"absent"
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_CONTENT_ADVANCE_REGULAR_EXPRESSION
+    content = TEST_CONTENT_ADVANCED_REGULAR_EXPRESSION
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path

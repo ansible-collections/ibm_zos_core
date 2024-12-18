@@ -31,6 +31,24 @@ def make_temp_folder(hosts):
     return tempfile_name
 
 def set_environment(ansible_zos_module, ds_name, space=1, space_type='m'):
+    """Create ZFS data set, mount folder and populate space of the zfs
+
+    Parameters
+    ----------
+        ansible_zos_module : object
+            Ansible object to execute commands.
+        ds_name : str
+            ZFS name.
+        space : int
+            space of ZFS data set.
+        space_type : str
+            space type use to create the ZFS.
+
+    Returns
+    -------
+        temp_dir_name : str
+            The folder where the zfs is mount.
+    """
     hosts = ansible_zos_module
 
     hosts.all.zos_data_set(name=ds_name, type="zfs", space_primary=space, space_type=space_type)
@@ -56,9 +74,24 @@ def set_environment(ansible_zos_module, ds_name, space=1, space_type='m'):
     return temp_dir_name
 
 def clean_up_environment(hosts, ds_name, temp_dir_name):
+    """Unmount delete ZFS and delete folder.
+
+    Parameters
+    ----------
+        hosts : object
+            Ansible object to execute commands.
+        ds_name : str
+            ZFS name.
+        temp_dir_name : str
+            Folder where the ZFS is mounted.
+    """
     hosts.all.command(cmd=f"usr/sbin/unmount {temp_dir_name}")
     hosts.all.zos_data_set(name=ds_name, state="absent")
     hosts.all.file(path=temp_dir_name, state="absent")
+
+#########################
+# Positive test cases
+#########################
 
 def test_grow_operation(ansible_zos_module):
     hosts = ansible_zos_module

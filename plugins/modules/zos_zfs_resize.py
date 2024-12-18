@@ -456,8 +456,12 @@ def run_module():
                 module.fail_json(msg="Destination trace file does not exist", **result)
             trace_uss = True
         else:
-            if not (data_set.DataSet.data_set_exists(trace_destination)):
-                module.fail_json(msg="Destination trace dataset does not exist", **result)
+            if data_set.is_member(trace_destination):
+                if not (data_set.DataSet.data_set_member_exists(trace_destination)):
+                    module.fail_json(msg="Destination trace member does not exist", **result)
+            else:
+                if not (data_set.DataSet.data_set_exists(trace_destination)):
+                    module.fail_json(msg="Destination trace dataset does not exist", **result)
             trace_uss = False
         tmp_file = trace_destination
 
@@ -468,7 +472,6 @@ def run_module():
         trace_uss = True
 
     if verbose or trace_destination is not None:
-        
         trace = " -trace '{0}'".format(tmp_file) if trace_uss else " -trace \"//'{0}'\" ".format(trace_destination)
 
     # Execute the function

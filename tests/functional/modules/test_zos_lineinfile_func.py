@@ -61,7 +61,7 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_CONTENT_ADVANCE_REGULAR_EXPRESSION="""if [ -z STEPLIB ] && tty -s;
+TEST_CONTENT_ADVANCED_REGULAR_EXPRESSION="""if [ -z STEPLIB ] && tty -s;
 then
     D160882
     D160882

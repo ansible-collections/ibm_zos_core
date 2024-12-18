@@ -374,7 +374,6 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
                                             trace_destination=trace_destination_ds)
 
         for result in results.contacted.values():
-            print(result)
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -393,7 +392,6 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=200)
         else:
             hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=200)
-            hosts.all.zos_data_set(name=trace_destination_ds_s, state="cataloged", volumes="222222")
             trace_destination_ds_s = trace_destination_ds_s + "(MEM)"
             hosts.all.zos_data_set(name=trace_destination_ds_s, state="present", type="member")
 
@@ -417,6 +415,9 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+        if trace_destination == "pds" or trace_destination == "pdse":
+            trace_destination_ds = trace_destination_ds.split("(")[0]
+            trace_destination_ds_s = trace_destination_ds_s.split("(")[0]
         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
         hosts.all.zos_data_set(name=trace_destination_ds_s, state="absent")
 
@@ -511,7 +512,7 @@ def test_no_space_to_operate(ansible_zos_module):
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-@pytest.mark.parametrize("trace_destination", ["uss", "dataset"])
+@pytest.mark.parametrize("trace_destination", ["uss", "dataset", "member"])
 def test_trace_operation_fail(ansible_zos_module, trace_destination):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
@@ -528,7 +529,7 @@ def test_trace_operation_fail(ansible_zos_module, trace_destination):
             assert result.get('size') == size
             assert result.get('rc') == 1
             assert result.get('changed') is False
-            assert result.get('msg') == "Destination trace {0} does not exist".format("file" if trace_destination == "uss" else "dataset")
+            assert result.get('msg') == "Destination trace {0} does not exist".format("file" if trace_destination == "uss" else "dataset" if trace_destination == "dataset" else "member")
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 

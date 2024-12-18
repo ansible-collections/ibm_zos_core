@@ -2549,7 +2549,7 @@ def build_dd_statements(parms):
                       List of DDStatement objects representing DD statements specified in module parms.
     """
     dd_statements = []
-    tmphlq = parms.get("tmphlq")
+    tmphlq = parms.get("tmp_hlq")
     for dd in parms.get("dds"):
         dd_name, key = get_dd_name_and_key(dd)
         dd = set_extra_attributes_in_dd(dd, tmphlq, key)

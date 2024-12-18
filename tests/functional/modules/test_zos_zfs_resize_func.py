@@ -84,7 +84,7 @@ def test_shrink_operation(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
-    size = 1400
+    size = 1200
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -100,7 +100,7 @@ def test_shrink_operation(ansible_zos_module):
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-def test_grow_n_shrink_operations_size_m(ansible_zos_module):
+def test_grow_n_shrink_operations_space_type_m(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
@@ -118,7 +118,7 @@ def test_grow_n_shrink_operations_size_m(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert "grown" in result.get('stdout')
-            assert result.get('space_type') == space_type.upper()
+            assert result.get('space_type') == space_type
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= grow_size
@@ -133,12 +133,12 @@ def test_grow_n_shrink_operations_size_m(ansible_zos_module):
             assert "shrunk" in result.get('stdout')
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
-            assert result.get('space_type') == space_type.upper()
+            assert result.get('space_type') == space_type
             assert result.get('new_size') <= shrink_size
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-def test_grow_n_shrink_operations_size_trk(ansible_zos_module):
+def test_grow_n_shrink_operations_space_type_trk(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
@@ -159,7 +159,7 @@ def test_grow_n_shrink_operations_size_trk(ansible_zos_module):
             assert result.get('new_size') >= grow_size
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
-            assert result.get('space_type') == space_type.upper()
+            assert result.get('space_type') == space_type
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -172,11 +172,11 @@ def test_grow_n_shrink_operations_size_trk(ansible_zos_module):
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= shrink_size
-            assert result.get('space_type') == space_type.upper()
+            assert result.get('space_type') == space_type
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
+def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
@@ -197,7 +197,7 @@ def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= grow_size
-            assert result.get('space_type') == space_type.upper()
+            assert result.get('space_type') == space_type
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -210,7 +210,7 @@ def test_grow_n_shrink_operations_size_cyl(ansible_zos_module):
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= shrink_size
-            assert result.get('space_type') == space_type.upper()
+            assert result.get('space_type') == space_type
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
@@ -438,7 +438,7 @@ def test_space_type_not_accept(ansible_zos_module, space_type):
         assert result.get('failed') == True
         assert result.get('msg') == "value of space_type must be one of: k, m, g, cyl, trk, got: {0}".format(space_type)
 
-def test_target_do_not_exist(ansible_zos_module):
+def test_target_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
     mount_folder = ""
@@ -485,7 +485,7 @@ def test_no_operation_executed(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
             assert result.get('size') == size
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert result.get('stdout') == "Same size as size of the file {0}".format(ds_name)
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free') >= result.get('old_free')
@@ -507,8 +507,8 @@ def test_no_space_to_operate(ansible_zos_module):
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 1
             assert result.get('size') == size
-            assert result.get('space_type') == "K"
-            assert result.get('msg') == "Not enough space to shrink"
+            assert result.get('space_type') == "k"
+            assert result.get('msg') == "Not enough free space in the filesystem to shrink."
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 

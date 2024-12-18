@@ -336,6 +336,7 @@ def run_module():
     executable = module.params.get('executable')
     creates = module.params.get('creates')
     removes = module.params.get('removes')
+    script_permissions = None
 
     if creates and os.path.exists(creates):
         result = dict(
@@ -358,13 +359,23 @@ def run_module():
             msg='The given chdir {0} does not exist on the system.'.format(chdir)
         )
 
-    # Adding owner execute permissions to the script.
-    # The module will fail if the Ansible user is not the owner!
-    script_permissions = os.lstat(script_path).st_mode
-    os.chmod(
-        script_path,
-        script_permissions | stat.S_IXUSR
-    )
+    # Checking if current user has permission to execute the script.
+    # If not, we'll try to set execution permissions if possible.
+    if not os.access(script_path, os.X_OK):
+        # Adding owner execute permissions to the script.
+        # The module will fail if the Ansible user is not the owner!
+        try:
+            script_permissions = os.lstat(script_path).st_mode
+            os.chmod(
+                script_path,
+                script_permissions | stat.S_IXUSR
+            )
+        except PermissionError:
+            module.fail_json(
+                msg='User running Ansible does not have permission to run script {0}.'.format(
+                    script_path
+                )
+            )
 
     if executable:
         cmd_str = "{0} {1}".format(executable, cmd_str)
@@ -387,8 +398,9 @@ def run_module():
         stderr_lines=stderr.split('\n'),
     )
 
-    # Reverting script's permissions.
-    os.chmod(script_path, script_permissions)
+    # Reverting script's permissions when needed.
+    if script_permissions:
+        os.chmod(script_path, script_permissions)
 
     if script_rc != 0 or stderr:
         result['msg'] = 'The script terminated with an error'

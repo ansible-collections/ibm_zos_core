@@ -102,6 +102,11 @@ class ActionModule(ActionBase):
                 template_parameters = module_args.get("template_parameters", dict())
                 encoding = module_args.get("encoding", dict())
 
+                if template_parameters and not template_parameters.get("autoescape", True):
+                    display.warning(
+                        msg="Disabling autoescaping in Jinja may result in security risks, use with caution."
+                    )
+
                 try:
                     renderer = template.create_template_environment(
                         template_parameters,

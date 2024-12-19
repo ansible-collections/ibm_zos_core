@@ -422,6 +422,7 @@ def run_module():
         )
     )
 
+    # Validate if the target ZFS exist
     if not (data_set.DataSet.data_set_exists(target)):
         module.fail_json(msg="ZFS Target {0} does not exist".format(target), **result)
 
@@ -491,6 +492,7 @@ def run_module():
 
     noai = " -noai " if noai else ""
 
+    # Variables for the verbose output or trace destination
     trace = ""
     tmp_file = ""
     trace_uss = True
@@ -524,6 +526,7 @@ def run_module():
     # Execute the function
     rc, stdout, stderr, cmd = zfsadm_obj.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)
 
+    # Get the output, calculate size and verbose if required
     if rc == 0:
         changed = True
 

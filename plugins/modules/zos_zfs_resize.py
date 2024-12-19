@@ -20,13 +20,13 @@ module: zos_zfs_resize
 version_added: '1.13.0'
 short_description: Resize a zfs data set.
 description:
-  - The module M(zos_resize) can resize a zfs aggregate data set.
+  - The module L(zos_zfs_resize.,/zos_zfs_resize.html) can resize a zfs aggregate data set.
   - The I(target) data set must be a unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
   - The data set must be attached read-write, and contain only one Operating system.
   - I(size) must be provided.
 author:
   - "Rich Parker (@richp405)"
-  - "Marcel Gutierrez (@andre.marcel.gutierrez)"
+  - "Marcel Gutierrez (@andre\t.marcel\t.gutierrez)"
 options:
   target:
     description:
@@ -421,6 +421,9 @@ def run_module():
             stderr="",
         )
     )
+
+    if module.check_mode:
+        module.exit_json(**result)
 
     # Validate if the target ZFS exist
     if not (data_set.DataSet.data_set_exists(target)):

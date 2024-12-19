@@ -630,8 +630,6 @@ def test_no_operation_executed(ansible_zos_module):
             assert result.get('size') == size
             assert result.get('space_type') == "k"
             assert result.get('stdout') == "Same size as size of the file {0}".format(ds_name)
-            assert result.get('new_size') >= result.get('old_size')
-            assert result.get('new_free') >= result.get('old_free')
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 

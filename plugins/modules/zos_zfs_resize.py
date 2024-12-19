@@ -70,9 +70,11 @@ options:
     description:
       - Determines the uss path or dataset to insert the full trace of operation.
       - Expected file created
-      - Required verbose=true
     required: false
     type: str
+
+notes:
+  - When using data set for trace_destination option required record_length equal or over 200 to avoid lost of information.
 """
 
 EXAMPLES = r"""
@@ -80,6 +82,49 @@ EXAMPLES = r"""
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
+
+- name: Resize an aggregate data set to 20 Tracks.
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    space_type: trk
+    size: 20
+
+- name: Resize an aggregate data set to 4 Megabytes.
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    space_type: m
+    size: 4
+
+- name: Resize an aggregate data set to 1000 Kilobytes and no auto increment if is shrinking.
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    size: 1000
+    no_auto_increment: True
+
+- name: Resize an aggregate data set and get verbose output.
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    size: 2500
+    verbose: True
+
+- name: Resize an aggregate data set and get the full trace on an uss file.
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    size: 2500
+    trace_destination: /tmp/helper.txt
+
+- name: Resize an aggregate data set and get the full trace on a member of pds.
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    size: 2500
+    trace_destination: "TEMP.HELPER.STORAGE(RESIZE)"
+
+- name: Resize an aggregate data set and get the full trace on an uss file and verbose output.
+  zos_zfs_resize:
+    target: TEST.ZFS.DATA
+    size: 2500
+    verbose: True
+    trace_destination: /tmp/helper.txt
 """
 
 RETURN = r"""
@@ -132,7 +177,7 @@ space_type:
     description: The reported space_type that the size and free variables are reported.
     returned: always
     type: str
-    sample: K
+    sample: k
 verbose_output:
     description: If C(verbose=true) the full traceback of operation will show on this variable. If C(trace) will return the data set or path name.
     returned: C(verbose=true) and success

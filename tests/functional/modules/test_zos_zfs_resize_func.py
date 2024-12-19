@@ -268,7 +268,7 @@ def test_grow_n_shrink_operation_verbose(ansible_zos_module):
             assert result.get('new_size') >= grow_size
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert result.get("verbose_output") is not None
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -280,7 +280,7 @@ def test_grow_n_shrink_operation_verbose(ansible_zos_module):
             assert result.get('rc') == 0
             assert "shrunk" in result.get('stdout')
             assert result.get('new_size') <= shrink_size
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get("verbose_output") is not None
@@ -307,7 +307,7 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
             assert result.get('new_size') >= grow_size
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert result.get("verbose_output") is not None
             assert "Printing contents of table at address" in result.get("stdout")
 
@@ -322,7 +322,7 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
             assert result.get('new_size') <= grow_size
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert result.get("verbose_output") is not None
             assert "print of in-memory trace table has completed" in result.get('stdout')
 
@@ -353,7 +353,7 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
             assert result.get('new_size') >= grow_size
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
             cmd = "cat {0}".format(trace_destination_file)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
@@ -372,7 +372,7 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
             assert result.get('new_size') <= grow_size
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
             cmd = "cat {0}".format(trace_destination_file_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
@@ -414,7 +414,7 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_size') >= grow_size
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
             cmd = "cat \"//'{0}'\" ".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
@@ -439,7 +439,7 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_size') <= grow_size
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
-            assert result.get('space_type') == "K"
+            assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
             cmd = "cat \"//'{0}'\" ".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)

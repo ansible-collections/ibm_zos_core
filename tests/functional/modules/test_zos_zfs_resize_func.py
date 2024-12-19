@@ -15,12 +15,122 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
+import os
+from shellescape import quote
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
+
+NO_AUTO_INCREMENT= """hosts : zvm
+  collections :
+    - ibm.ibm_zos_core
+  gather_facts: False
+  vars:
+    ZOAU: "{0}"
+    PYZ: "{1}"
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+  tasks:
+    - name: Create ZFS.
+      block:
+        - name: Create data set to ZFS
+          zos_data_set:
+            name: {3}
+            type: zfs
+            space_primary: 1
+            space_type: m
+            replace: true
+
+        - name: Create mount dir on z/OS USS.
+          file:
+            path: {4}
+            state: directory
+
+        - name: Mount ZFS data set.
+          command: /usr/sbin/mount -t zfs -f {3} {4}
+
+        - name: Create folder.
+          shell: mkdir {4}/folder
+
+        - name: Create a folder.
+          shell: touch {4}/folder/test.txt
+        - name: Write bytes on file.
+          shell: head -c 150000 /dev/urandom > {4}/folder/test.txt
+
+        - name: Create a folder.
+          shell: touch {4}/folder/test1.txt
+        - name: Write bytes on file.
+          shell: head -c 100000 /dev/urandom > {4}/folder/test1.txt
+
+        - name: Create a folder.
+          shell: touch {4}/folder/test3.txt
+        - name: Write bytes on file.
+          shell: head -c 1000000 /dev/urandom > {4}/folder/test3.txt
+
+        - name: Create a folder.
+          shell: touch {4}/folder/test4.txt
+        - name: Write bytes on file.
+          shell: head -c 100000 /dev/urandom > {4}/folder/test4.txt
+
+        - name: Create a folder.
+          shell: touch {4}/folder/test5.txt
+        - name: Write bytes on file.
+          shell: head -c 100000 /dev/urandom > {4}/folder/test5.txt
+
+        - name: Create a folder.
+          shell: touch {4}/folder/test7.txt
+        - name: Write bytes on file.
+          shell: head -c 100000 /dev/urandom > {4}/folder/test7.txt
+
+        - name: Remove a folder.
+          shell: rm  {4}/folder/test3.txt
+
+        - name:  Shrink ZFS aggregate in k and auto_increment.
+          zos_zfs_resize:
+            target: {3}
+            size: 900
+            no_auto_increment: True
+          poll: 0
+          register: shrink_output
+
+        - name: Create a folder.
+          shell: touch {4}/folder/test6.txt
+        - name: Write bytes on file.
+          shell: head -c 100000 /dev/urandom > {4}/folder/test6.txt
+          poll: 0
+
+      always:
+        - name: Unmount ZFS data set.
+          command: "/usr/sbin/unmount {4}"
+
+        - name: Delete ZFS data set.
+          zos_data_set:
+            name: {3}
+            state: absent
+
+        - name: Unmount ZFS data set.
+          command: rm {4}"
+"""
+
+INVENTORY = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: /allpython/3.11/usr/lpp/IBM/cyp/v3r11/pyz/bin/python3"""
 
 def make_temp_folder(hosts):
     """ Create temporary file on z/OS system and return the path """
@@ -582,3 +692,46 @@ def test_fail_operation(ansible_zos_module):
             assert result.get('rc') == 1
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+
+#############################
+# No auto increment playbook
+#############################
+
+def test_no_auto_increment(get_config):
+    ds_name = get_tmp_ds_name()
+    mount_point = "/" + get_random_file_name(dir="tmp")
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
+
+    try:
+        playbook = "playbook.yml"
+        inventory = "inventory.yml"
+        os.system("echo {0} > {1}".format(quote(NO_AUTO_INCREMENT.format(
+            zoau,
+            cut_python_path,
+            python_version,
+            ds_name,
+            mount_point
+        )), playbook))
+        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+            hosts,
+            ssh_key,
+            user,
+        )), inventory))
+        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
+            inventory,
+            playbook
+        )
+        stdout = os.system(command)
+        assert stdout == 1
+    finally:
+        os.remove("inventory.yml")
+        os.remove("playbook.yml")

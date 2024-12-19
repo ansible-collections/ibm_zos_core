@@ -1657,7 +1657,7 @@ class USSCopyHandler(CopyHandler):
         new_src = conv_path or src
         try:
             if self.is_binary:
-                copy.copy_uss2uss_binary(new_src, dest)
+                copy.copy_uss_mvs(new_src, dest, is_binary=True)
             else:
                 opts = dict()
                 opts["options"] = ""
@@ -1931,11 +1931,10 @@ class USSCopyHandler(CopyHandler):
                             stderr=response.stderr_response
                         )
                 else:
-                    copy.copy_pds2uss(
+                    copy.copy_uss_mvs(
                         src,
                         dest,
-                        is_binary=self.is_binary,
-                        asa_text=self.asa_text
+                        is_binary=self.is_binary
                     )
         except CopyOperationError as err:
             raise err
@@ -3304,6 +3303,13 @@ def run_module(module, arg_def):
     src_member = is_member(src)
     raw_src = src
     raw_dest = dest
+
+    # Validation for copy from a member
+    if src_member:
+        if not (data_set.DataSet.data_set_member_exists(src)):
+            module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
+                data_set.extract_member_name(src)
+            ))
 
     # Implementing the new MVSDataSet class by masking the values of
     # src/raw_src and dest/raw_dest.

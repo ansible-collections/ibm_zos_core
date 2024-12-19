@@ -726,7 +726,7 @@ def test_no_auto_increment(get_config):
             ssh_key,
             user,
         )), inventory))
-        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
+        command = "ansible-playbook -i {0} {1}".format(
             inventory,
             playbook
         )

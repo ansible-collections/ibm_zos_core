@@ -35,7 +35,7 @@ options:
     type: str
   size:
     description:
-      - The approximate size of the data set after the resizing is performed.
+      - The desired size of the data set after the resizing is performed.
     required: True
     type: int
   space_type:
@@ -54,21 +54,21 @@ options:
   no_auto_increment:
     description:
       - Option to not allow auto increase on shrinking process.
-      - When set to C(true), If during the shrinking process of a zfs aggregate more space is needed
+      - When set to C(true), if during the shrinking process of a zfs aggregate more space is needed
         the new total size is not to be increased and the module will fail.
     required: false
     type: bool
     default: false
   verbose:
     description:
-      - Determines if verbose output should be returned from the underlying utility used by this module.
+      - Return diagnostic messages that describes the module's execution.
       - When I(verbose=true) verbose output is returned on module failure.
     required: false
     type: bool
     default: false
   trace_destination:
     description:
-      - Determines the uss path or dataset to insert the full trace of operation.
+      - Determines the uss path or dataset to dump the full trace of operation.
       - Expected file created
     required: false
     type: str

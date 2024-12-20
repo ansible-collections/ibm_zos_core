@@ -36,7 +36,7 @@ class zfsadm:
             operation : str
                 Whether the operation to execute is grow or shrink
             size : int
-                Size to be assign to the zfs
+                Size to be assigned to the zfs
             noai : str
                 Command str if there will be activate no auto increase option
             verbose : str
@@ -47,11 +47,11 @@ class zfsadm:
             rc : int
                 The rc of the execution of command.
             stdout : str
-                The stout of the execution of command.
+                The stdout of the execution of command.
             stderr : str
                 The stderr of the execution of command.
             cmd_str : str
-                The full command that was execute.
+                The full command that was executed.
         """
         cmd = "-size {0}{1}{2}".format(size, noai, verbose)
         cmd_str = "zfsadm {0} -aggregate {1} {2}".format(operation, self.aggregate_name, cmd)

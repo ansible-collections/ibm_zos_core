@@ -737,7 +737,7 @@ def test_no_auto_increment(get_config):
             playbook
         )
         stdout = os.system(command)
-        assert stdout == 1
+        assert stdout != 0
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")

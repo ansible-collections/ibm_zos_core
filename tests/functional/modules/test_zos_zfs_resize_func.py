@@ -660,6 +660,8 @@ def test_trace_operation_fail(ansible_zos_module, trace_destination):
     mount_folder = ""
     trace_destination_file= "/" + get_random_file_name(dir="tmp") if trace_destination == "uss" else get_tmp_ds_name()
     size = 2500
+    if trace_destination == "member":
+        trace_destination_file = trace_destination_file + "(MEM)"
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
         results = hosts.all.zos_zfs_resize(target=ds_name,

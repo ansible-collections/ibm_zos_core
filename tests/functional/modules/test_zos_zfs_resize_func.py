@@ -25,7 +25,7 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
 
-NO_AUTO_INCREMENT= """hosts : zvm
+NO_AUTO_INCREMENT= """- hosts : zvm
   collections :
     - ibm.ibm_zos_core
   gather_facts: False
@@ -122,7 +122,7 @@ NO_AUTO_INCREMENT= """hosts : zvm
             state: absent
 
         - name: Unmount ZFS data set.
-          command: rm {4}"
+          command: rm {4}
 """
 
 INVENTORY = """all:
@@ -737,7 +737,7 @@ def test_no_auto_increment(get_config):
             playbook
         )
         stdout = os.system(command)
-        assert stdout != 0
+        assert stdout == 1
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")

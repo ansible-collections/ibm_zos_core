@@ -693,7 +693,7 @@ def test_fail_operation(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("failed") == True
             assert result.get('changed') == False
-            assert "Resize: resize command returned non-zero code" in result.get("module_stdout")
+            assert "resize command returned non-zero code" in result.get("module_stdout")
             assert result.get('rc') == 1
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)

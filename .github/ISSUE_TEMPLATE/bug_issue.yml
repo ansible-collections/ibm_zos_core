@@ -139,6 +139,7 @@ body:
         - zos_tso_command
         - zos_unarchive
         - zos_volume_init
+        - zos_zfs_resize
     validations:
       required: false
   - type: textarea

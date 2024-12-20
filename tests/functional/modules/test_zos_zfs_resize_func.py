@@ -670,7 +670,12 @@ def test_trace_operation_fail(ansible_zos_module, trace_destination):
             assert result.get('size') == size
             assert result.get('rc') == 1
             assert result.get('changed') is False
-            assert result.get('msg') == "Destination trace {0} does not exist".format("file" if trace_destination == "uss" else "dataset" if trace_destination == "dataset" else "member")
+            if trace_destination == "uss":
+                assert result.get('msg') == "Destination trace {0} does not exist".format("file")
+            elif trace_destination == "dataset":
+                assert result.get('msg') == "Destination trace {0} does not exist".format("dataset")
+            else:
+                assert result.get('msg') == "Destination trace {0} does not exist".format("member")
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 

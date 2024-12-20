@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 import os
+import yaml
 from shellescape import quote
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name

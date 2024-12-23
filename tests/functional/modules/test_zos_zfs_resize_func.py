@@ -114,7 +114,7 @@ NO_AUTO_INCREMENT= """- hosts : zvm
 
       always:
         - name: Unmount ZFS data set.
-          command: "/usr/sbin/unmount {4}"
+          command: /usr/sbin/unmount {4}
 
         - name: Delete ZFS data set.
           zos_data_set:
@@ -122,7 +122,7 @@ NO_AUTO_INCREMENT= """- hosts : zvm
             state: absent
 
         - name: Unmount ZFS data set.
-          command: rm {4}
+          command: rm -r {4}
 """
 
 INVENTORY = """all:
@@ -737,7 +737,7 @@ def test_no_auto_increment(get_config):
             playbook
         )
         stdout = os.system(command)
-        assert stdout == 1
+        assert stdout != 0
     finally:
         os.remove("inventory.yml")
         os.remove("playbook.yml")

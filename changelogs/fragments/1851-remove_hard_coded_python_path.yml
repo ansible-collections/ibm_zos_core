@@ -1,0 +1,3 @@
+trivial:
+  - test_zos_operator_func.py - Remove hardcoded python path.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1851).

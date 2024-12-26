@@ -358,46 +358,6 @@ def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-
-def test_grow_n_shrink_operation_verbose(ansible_zos_module):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    grow_size = 2000
-    shrink_size = 1800
-    try:
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=grow_size,
-                                            verbose=True)
-        for result in results.contacted.values():
-            assert result.get('target') == ds_name
-            assert result.get('mount_target') == "/SYSTEM" + mount_folder
-            assert result.get('rc') == 0
-            assert "grown" in result.get('stdout')
-            assert result.get('new_size') >= grow_size
-            assert result.get('new_size') >= result.get('old_size')
-            assert result.get('new_free_space') >= result.get('old_free_space')
-            assert result.get('space_type') == "k"
-            assert result.get("verbose_output") is not None
-
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=shrink_size,
-                                            verbose=True)
-        for result in results.contacted.values():
-            assert result.get('target') == ds_name
-            assert result.get('mount_target') == "/SYSTEM" + mount_folder
-            assert result.get('rc') == 0
-            assert "shrunk" in result.get('stdout')
-            assert result.get('new_size') <= shrink_size
-            assert result.get('space_type') == "k"
-            assert result.get('new_size') <= result.get('old_size')
-            assert result.get('new_free_space') <= result.get('old_free_space')
-            assert result.get("verbose_output") is not None
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
-
 def test_grow_n_shrink_operations_verbose(ansible_zos_module):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()

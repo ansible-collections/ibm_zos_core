@@ -69,7 +69,7 @@ options:
   trace_destination:
     description:
       - Determines the uss path or dataset to dump the full trace of operation.
-      - Expected file created
+      - Expected file to exist on the system.
     required: false
     type: str
 

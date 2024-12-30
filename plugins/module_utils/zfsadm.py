@@ -67,11 +67,11 @@ class zfsadm:
         Returns
         -------
             rc : int
-                The rc of the execution of command.
+                The rc of the executed command.
             stdout : str
-                The stdout of the execution of command
+                The stdout of the executed command
             stderr : str
-                The stderr of the execution of command.
+                The stderr of the executed command.
         """
         cmd = "zfsadm aggrinfo {0}".format(aggregate_name)
 

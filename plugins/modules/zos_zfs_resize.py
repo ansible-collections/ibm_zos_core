@@ -74,7 +74,8 @@ options:
     type: str
 
 notes:
-  - When using a data set for C(trace_destination), a record length of at least 200 is required to avoid losing information.
+  - When using data set for trace_destination option required record_length equal or over 200 to avoid lost of information.
+  - L(zfsadm documentation,https://www.ibm.com/docs/en/zos/3.1.0?topic=commands-zfsadm).
 """
 
 EXAMPLES = r"""

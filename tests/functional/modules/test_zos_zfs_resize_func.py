@@ -134,7 +134,7 @@ INVENTORY = """all:
       ansible_python_interpreter: {3}/bin/python{4}"""
 
 def make_temp_folder(hosts):
-    """ Create temporary file on z/OS system and return the path """
+    """Create a temporary file on a z/OS system and return its path."""
     tempfile_name = ""
     results = hosts.all.tempfile(state="directory")
     for result in results.contacted.values():
@@ -142,7 +142,7 @@ def make_temp_folder(hosts):
     return tempfile_name
 
 def set_environment(ansible_zos_module, ds_name, space=1, space_type='m'):
-    """Create ZFS data set, mount folder and populate space of the zfs
+    """Create a ZFS data set, mount it to a temp folder and fill it with test data.
 
     Parameters
     ----------
@@ -153,12 +153,12 @@ def set_environment(ansible_zos_module, ds_name, space=1, space_type='m'):
         space : int
             space of ZFS data set.
         space_type : str
-            space type use to create the ZFS.
+            space type used to create the ZFS.
 
     Returns
     -------
         temp_dir_name : str
-            The folder where the zfs is mount.
+            The folder where the zfs is mounted.
     """
     hosts = ansible_zos_module
 
@@ -185,7 +185,7 @@ def set_environment(ansible_zos_module, ds_name, space=1, space_type='m'):
     return temp_dir_name
 
 def clean_up_environment(hosts, ds_name, temp_dir_name):
-    """Unmount delete ZFS and delete folder.
+    """Unmount a ZFS dataset, delete it and delete the folder on which it was mounted.
 
     Parameters
     ----------

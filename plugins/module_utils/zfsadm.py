@@ -38,18 +38,18 @@ class zfsadm:
             size : int
                 Size to be assigned to the zfs
             noai : str
-                Command str if there will be activate no auto increase option
+                Value for the no auto increase (noai) option when shrinking a dataset
             verbose : str
-                Command str with the file to get traceback
+                Value for zfsadm's trace option specifying the output file for the command
 
         Returns
         -------
             rc : int
-                The rc of the execution of command.
+                The RC of the command executed.
             stdout : str
-                The stdout of the execution of command.
+                The stdout of the executed command.
             stderr : str
-                The stderr of the execution of command.
+                The stderr of the executed command.
             cmd_str : str
                 The full command that was executed.
         """
@@ -62,7 +62,7 @@ class zfsadm:
 
     @staticmethod
     def get_aggregate_size(aggregate_name, module):
-        """Execute a command to get the size of the zfs dataset.
+        """Execute a command to get the size of a zfs dataset.
 
         Returns
         -------

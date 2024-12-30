@@ -20,9 +20,9 @@ module: zos_zfs_resize
 version_added: '1.13.0'
 short_description: Resize a zfs data set.
 description:
-  - The module L(zos_zfs_resize.,/zos_zfs_resize.html) can resize a zfs aggregate data set.
-  - The I(target) data set must be a unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
-  - The data set must be attached read-write, and contain only one Operating system.
+  - The module L(zos_zfs_resize.,/zos_zfs_resize.html) can resize a zFS aggregate data set.
+  - The I(target) data set must be a unique and a Fully Qualified Name (FQN) of a 1-OS zFS aggregate data set.
+  - The data set must be attached as read-write, and contain only one operating system.
   - I(size) must be provided.
 author:
   - "Rich Parker (@richp405)"
@@ -30,7 +30,7 @@ author:
 options:
   target:
     description:
-      - The Fully Qualified Name of zfs data set that is to be resized.
+      - The Fully Qualified Name of the zFS data set that will be resized.
     required: true
     type: str
   size:
@@ -41,7 +41,7 @@ options:
   space_type:
     description:
       - The unit of measurement to use when defining the size.
-      - Valid units of size are C(k) kilobytes, C(m) megabytes, C(g) gigabytes, C(cyl) cylinder, and C(trk)tracks.
+      - Valid units are C(k) (kilobytes), C(m) (megabytes), C(g) (gigabytes), C(cyl) (cylinders), and C(trk) (tracks).
     required: false
     type: str
     choices:
@@ -53,28 +53,28 @@ options:
     default: k
   no_auto_increment:
     description:
-      - Option to not allow auto increase on shrinking process.
-      - When set to C(true), if during the shrinking process of a zfs aggregate more space is needed
-        the new total size is not to be increased and the module will fail.
+      - Option to not allow auto increase of a data set when performing a shrink operation.
+      - When set to C(true), if during the shrinking process of a zfs aggregate more space is needed,
+        the new total size will not be increased and the module will fail.
     required: false
     type: bool
     default: false
   verbose:
     description:
-      - Return diagnostic messages that describes the module's execution.
-      - When I(verbose=true) verbose output is returned on module failure.
+      - Return diagnostic messages that describe the module's execution.
+      - When I(verbose=true), verbose output is returned on module failure.
     required: false
     type: bool
     default: false
   trace_destination:
     description:
-      - Determines the uss path or dataset to dump the full trace of operation.
+      - File path or data set name where the full trace of the module's execution will be dumped into.
       - Expected file to exist on the system.
     required: false
     type: str
 
 notes:
-  - When using data set for trace_destination option required record_length equal or over 200 to avoid lost of information.
+  - When using a data set for C(trace_destination), a record length of at least 200 is required to avoid losing information.
 """
 
 EXAMPLES = r"""
@@ -95,7 +95,7 @@ EXAMPLES = r"""
     space_type: m
     size: 4
 
-- name: Resize an aggregate data set to 1000 Kilobytes and no auto increment if is shrinking.
+- name: Resize an aggregate data set to 1000 Kilobytes and set no auto increment if it's shrinking.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 1000
@@ -107,19 +107,19 @@ EXAMPLES = r"""
     size: 2500
     verbose: True
 
-- name: Resize an aggregate data set and get the full trace on an uss file.
+- name: Resize an aggregate data set and get the full trace on a file.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
     trace_destination: /tmp/helper.txt
 
-- name: Resize an aggregate data set and get the full trace on a member of pds.
+- name: Resize an aggregate data set and get the full trace on a member of a PDS.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
     trace_destination: "TEMP.HELPER.STORAGE(RESIZE)"
 
-- name: Resize an aggregate data set and get the full trace on an uss file and verbose output.
+- name: Resize an aggregate data set and get the full trace on a file with verbose output.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
@@ -134,17 +134,17 @@ cmd:
     type: str
     sample: zfsadm grow -aggregate SOMEUSER.VVV.ZFS -size 4096
 target:
-    description: The Fully Qualified Name of the resized zfs data set.
+    description: The Fully Qualified Name of the resized zFS data set.
     returned: always
     type: str
     sample: SOMEUSER.VVV.ZFS
 mount_target:
-    description: The original share/mount.
+    description: The original share/mount of the data set.
     returned: always
     type: str
     sample: /tmp/zfs_agg
 size:
-    description: The approximate size, of the data set after the resizing is performed.
+    description: The approximate size of the data set after the resizing is performed.
     returned: always
     type: int
     sample: 4024
@@ -154,35 +154,35 @@ rc:
     type: int
     sample: 0
 old_size:
-    description: The reported size, in space_type, of the data set before the resizing is performed.
+    description: The reported size, in space_type, of the data set before the resizing was performed.
     returned: always
     type: float
     sample: 3096
 old_free_space:
-    description: The reported size, in space_type, of the free space in the data set before the resizing is performed.
+    description: The reported size, in space_type, of the free space in the data set before the resizing was performed.
     returned: always
     type: float
     sample: 108
 new_size:
-    description: The reported size, in space_type, of the data set after the resizing is performed.
+    description: The reported size, in space_type, of the data set after the resizing was performed.
     returned: success
     type: float
     sample: 4032
 new_free_space:
-    description: The reported size, in space_type, of the free space in the data set after the resizing is performed.
+    description: The reported size, in space_type, of the free space in the data set after the resizing was performed.
     returned: success
     type: float
     sample: 48
 space_type:
-    description: The reported space_type that the size and free variables are reported.
+    description: The measurement unit of space used to report all size values.
     returned: always
     type: str
     sample: k
 verbose_output:
-    description: If C(verbose=true) the full traceback of operation will show on this variable. If C(trace) will return the data set or path name.
+    description: If C(verbose=true), the operation's full traceback will show on this variable. If C(trace) will return the data set or path name.
     returned: C(verbose=true) and success
     type: str
-    sample: 6FB2F8 print_trace_table printing contents of table Main Trace Table
+    sample: 6FB2F8 print_trace_table printing contents of table Main Trace Table...
 """
 
 import os

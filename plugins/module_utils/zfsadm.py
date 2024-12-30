@@ -29,7 +29,7 @@ class zfsadm:
         self.module = module
 
     def execute_resizing(self, operation, size, noai, verbose):
-        """Execute grow or shrink operation over a zfs dataset.
+        """Execute a grow or shrink operation on a zfs dataset.
 
         Parameters
         ----------

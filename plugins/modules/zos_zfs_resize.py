@@ -494,6 +494,7 @@ def run_module():
         operation = "shrink"
 
     noai = " -noai " if noai else ""
+    noai = "" if operation == "grow" else noai
 
     # Variables for the verbose output or trace destination
     trace = ""

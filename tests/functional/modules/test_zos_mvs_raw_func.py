@@ -224,7 +224,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
         # Important: Execute the test case with the managed users execution utility.
         managed_user.execute_managed_user_test(
             managed_user_test_case = managed_user_test_case_name, debug = True,
-            verbose = False, managed_user_type=ManagedUserType.ZOS_LIMITED_HLQ)
+            verbose = True, managed_user_type=ManagedUserType.ZOS_LIMITED_HLQ)
 
     finally:
         # Delete the managed user on the remote host to avoid proliferation of users.

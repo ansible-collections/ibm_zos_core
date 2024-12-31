@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -211,7 +211,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 
-def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansible_zos_module):
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansible_zos_module, z_python_interpreter):
     """
     This tests the error message when a user cannot create data sets with a given HLQ.
     """
@@ -219,7 +219,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
     managed_user_test_case_name = "managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option"
     try:
         # Initialize the Managed user API from the pytest fixture.
-        managed_user = ManagedUser.from_fixture(ansible_zos_module)
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
 
         # Important: Execute the test case with the managed users execution utility.
         managed_user.execute_managed_user_test(

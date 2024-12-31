@@ -20,6 +20,8 @@ import tempfile
 import pytest
 __metaclass__ = type
 
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
+
 
 # Using || to concatenate strings without extra spaces.
 REXX_SCRIPT_ARGS = """/* REXX */
@@ -411,3 +413,53 @@ def test_python_script_with_stderr(ansible_zos_module):
     finally:
         if os.path.exists(script_path):
             os.remove(script_path)
+
+
+def managed_user_create_script(ansible_zos_module):
+    """Creates a file using the user set up in ansible_zos_module."""
+    hosts = ansible_zos_module
+    msg = "Success"
+    rexx_script = create_script_content(msg, 'rexx')
+    local_script = create_local_file(rexx_script, 'rexx')
+
+    # Using zos_copy instead of doing an echo with shell to avoid trouble
+    # with how single quotes are handled.
+    script_path = '/tmp/zos_script_test_script'
+    copy_result = hosts.all.zos_copy(
+        src=local_script,
+        dest=script_path,
+        mode='600'
+    )
+    for result in copy_result.contacted.values():
+        assert result.get('changed') is True
+
+
+def test_super_user_run_script_from_another_user(ansible_zos_module, z_python_interpreter):
+    hosts = ansible_zos_module
+    script_path = '/tmp/zos_script_test_script'
+    try:
+        managed_user = ManagedUser.from_fixture(
+            ansible_zos_module,
+            z_python_interpreter
+        )
+        managed_user.execute_managed_user_test(
+            "managed_user_create_script",
+            debug=True,
+            verbose=True,
+            managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
+        )
+
+        zos_script_result = hosts.all.zos_script(
+            cmd=script_path,
+            remote_src=True
+        )
+
+        for result in zos_script_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('rc') == 0
+            assert result.get('stdout', '').strip() == msg
+            assert result.get('stderr', '') == ''
+    finally:
+        hosts.all.file(path=script_path, state="absent")
+        managed_user.delete_managed_user()

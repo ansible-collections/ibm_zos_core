@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2024
+# Copyright (c) IBM Corporation 2024, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -464,6 +464,7 @@ class ManagedUser:
         command.write(f"tsocmd DELGROUP {self._managed_user_group};")
         command.write(f"echo DELGROUP '{self._managed_user_group}' RC=$?;")
         if self._managed_group is not None:
+            command.write(f"export TSOPROFILE=\"noprefix\";tsocmd DELDSD {self._managed_group}.*;")
             command.write(f"tsocmd DELGROUP {self._managed_group};")
             command.write(f"echo DELMANAGEDGROUP '{self._managed_group}' RC=$?;")
         # Access additional module user attributes for use in a new user.
@@ -881,13 +882,11 @@ class ManagedUser:
         restricted_hlq="NOPERMIT.*"
         saf_class = "DATASET"
         command = StringIO()
-        command.write(f"echo delete GROUP '{group}';")
-        command.write(f"tsocmd DELGROUP \\({group}\\);")
         command.write(f"echo create GROUP '{group}';")
         command.write(f"tsocmd ADDGROUP \\({group}\\) OMVS\\(AUTOGID\\);")
         command.write(f"echo ADDGROUP RC=$?;")
         command.write(f"export TSOPROFILE=\"noprefix\";")
-        command.write(f"tsocmd ADDSD 'NOPERMIT.*' UACC\\(NONE\\);")
+        command.write(f"tsocmd ADDSD \"NOPERMIT.*\" UACC\\(NONE\\);")
         command.write(f"tsocmd PERMIT \'{restricted_hlq}\' CLASS\\({saf_class}\\) ID\\({self._managed_racf_user}\\) ACCESS\\(NONE\\);")
         command.write(f"echo PERMIT RC=$?;")
         command.write(f"tsocmd SETROPTS GENERIC\\(DATASET\\) REFRESH;")

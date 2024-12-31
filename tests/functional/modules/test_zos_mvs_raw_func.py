@@ -202,7 +202,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             for backup in result.get("backups"):
-                backup.get("backup_name")[:6] == tmphlq
+                assert backup.get("backup_name")[:6] == tmphlq
         for result in results.contacted.values():
             assert result.get("changed", False) is True
     finally:

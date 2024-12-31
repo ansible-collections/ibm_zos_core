@@ -470,7 +470,6 @@ class ManagedUser:
         # Access additional module user attributes for use in a new user.
         cmd=f"{command.getvalue()}"
         results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
-        print(results_stdout_lines)
 
         deluser_rc = [v for v in results_stdout_lines if f"DELUSER {escaped_user} RC=" in v][0].split('=')[1].strip() or None
         if not deluser_rc or int(deluser_rc[0]) > 0:
@@ -898,11 +897,11 @@ class ManagedUser:
         print(results_stdout_lines)
         try:
             # Evaluate the results
-            # addgroup_rc = [v for v in results_stdout_lines if f"ADDGROUP RC=" in v][0].split('=')[1].strip() or None
-            # if not addgroup_rc or int(addgroup_rc[0]) > 4:
-            #     err_details = f"addgroup {group}"
-            #     err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
-            #     raise Exception(err_msg)
+            addgroup_rc = [v for v in results_stdout_lines if f"ADDGROUP RC=" in v][0].split('=')[1].strip() or None
+            if not addgroup_rc or int(addgroup_rc[0]) > 4:
+                err_details = f"addgroup {group}"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
 
             permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
             if not permit_rc or int(permit_rc[0]) > 4:

@@ -260,11 +260,8 @@ def managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option(a
         )
         for result in results.contacted.values():
             print(result)
-            # TODO know which error codes are used.
             assert result.get("ret_code", {}).get("code", -1) == 8
             assert len(result.get("dd_names", [])) == 0
-            # for backup in result.get("backups"):
-            #    backup.get("backup_name")[:6] == tmphlq
             assert result.get("changed", False) is False
             assert result.get("failed", False) is True
     finally:

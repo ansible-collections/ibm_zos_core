@@ -26,7 +26,7 @@ description:
   - I(size) must be provided.
 author:
   - "Rich Parker (@richp405)"
-  - "Marcel Gutierrez (@andre\.marcel\.gutierrez)"
+  - "Marcel Gutierrez (@andre.marcel.gutierrez)"
 options:
   target:
     description:

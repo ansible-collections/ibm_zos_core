@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,6 +17,7 @@ __metaclass__ = type
 
 import pytest
 
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
@@ -204,6 +205,65 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
                 assert backup.get("backup_name")[:6] == tmphlq
         for result in results.contacted.values():
             assert result.get("changed", False) is True
+    finally:
+        results = hosts.all.zos_data_set(name=default_data_set, state="absent")
+        if idcams_dataset:
+            hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+
+
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansible_zos_module, z_python_interpreter):
+    """
+    This tests the error message when a user cannot create data sets with a given HLQ.
+    """
+    managed_user = None
+    managed_user_test_case_name = "managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option"
+    try:
+        # Initialize the Managed user API from the pytest fixture.
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Important: Execute the test case with the managed users execution utility.
+        managed_user.execute_managed_user_test(
+            managed_user_test_case = managed_user_test_case_name, debug = True,
+            verbose = True, managed_user_type=ManagedUserType.ZOS_LIMITED_HLQ)
+
+    finally:
+        # Delete the managed user on the remote host to avoid proliferation of users.
+        managed_user.delete_managed_user()
+
+def managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
+    idcams_dataset = None
+    try:
+        hosts = ansible_zos_module
+        # IMPORTANT: Do not replace this HLQ unless it changes in the users utility, since this is the HLQ that
+        # the restricted hlq user don't have access to.
+        tmphlq = "NOPERMIT"
+        volumes = Volume_Handler(volumes_on_systems)
+        default_volume = volumes.get_available_vol()
+        default_data_set = get_tmp_ds_name()[:25]
+        hosts.all.zos_data_set(
+            name=default_data_set, type="seq", state="present", replace=True
+        )
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
+
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            tmp_hlq=tmphlq,
+            dds=[
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":idcams_listcat_dataset_cmd
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert len(result.get("dd_names", [])) == 0
+            assert result.get("changed", False) is False
+            assert result.get("failed", False) is True
     finally:
         results = hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:

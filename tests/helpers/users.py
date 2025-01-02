@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2024
+# Copyright (c) IBM Corporation 2024, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -76,13 +76,6 @@ class ManagedUserType (Enum):
     """
     A z/OS managed user with restricted access to High Level
     Qualifiers (HLQ): (RESTRICT, NOPERMIT, ....).
-    """
-
-    # TODO: Implement this, use the recommended tmp HLQ
-    ZOS_LIMITED_TMP_HLQ=("zos_limited_tmp_hlq")
-    """
-    A z/OS managed user with restricted access to temporary
-    High Level Qualifiers (HLQ): (TSTRICT, TNOPERM, ....).
     """
 
     def __str__(self) -> str:
@@ -178,6 +171,7 @@ class ManagedUser:
         self._hostpattern = "all" # can also get it from options host_pattern
         self._managed_racf_user = None
         self._managed_user_group = None
+        self._managed_group = None
         self._ssh_config_file_size = 0
         self._ssh_directory_present = True
         self._create_ssh_config_and_directory()
@@ -469,7 +463,10 @@ class ManagedUser:
         command.write(f"echo DELUSER '{escaped_user}' RC=$?;")
         command.write(f"tsocmd DELGROUP {self._managed_user_group};")
         command.write(f"echo DELGROUP '{self._managed_user_group}' RC=$?;")
-
+        if self._managed_group is not None:
+            command.write(f"export TSOPROFILE=\"noprefix\";tsocmd DELDSD {self._managed_group}.*;")
+            command.write(f"tsocmd DELGROUP {self._managed_group};")
+            command.write(f"echo DELMANAGEDGROUP '{self._managed_group}' RC=$?;")
         # Access additional module user attributes for use in a new user.
         cmd=f"{command.getvalue()}"
         results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
@@ -482,6 +479,9 @@ class ManagedUser:
         if not delgroup_rc or int(delgroup_rc[0]) > 0:
             raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
+        delmanagedgroup_rc = [v for v in results_stdout_lines if f"DELMANAGEDGROUP {self._managed_group} RC=" in v][0].split('=')[1].strip() or None
+        if not delgroup_rc or int(delgroup_rc[0]) > 0:
+            raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
     def _get_random_passwd(self) -> str:
         """
@@ -854,12 +854,10 @@ class ManagedUser:
         except Exception as err:
             raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {self._managed_racf_user}, exception [{err}]")
 
-    # TODO: Implement this method in the future
     def _create_user_zos_limited_hlq(self) -> None:
         """
         Update a managed user id for the remote node with restricted access to
         High LevelQualifiers:
-        - RESTRICT
         - NOPERMIT
         Any attempt for this user to access the HLQ will be rejected.
 
@@ -879,35 +877,49 @@ class ManagedUser:
             If any of the remote commands return codes are out of range an exception
             and the stdout and stderr is returned.
         """
-        print("Needs to be implemented")
+        group="NOPERMIT"
+        restricted_hlq="NOPERMIT.*"
+        saf_class = "DATASET"
+        command = StringIO()
+        command.write(f"echo create GROUP '{group}';")
+        command.write(f"tsocmd ADDGROUP \\({group}\\) OMVS\\(AUTOGID\\);")
+        command.write(f"echo ADDGROUP RC=$?;")
+        command.write(f"export TSOPROFILE=\"noprefix\";")
+        command.write(f"tsocmd ADDSD \"NOPERMIT.*\" UACC\\(NONE\\);")
+        command.write(f"tsocmd PERMIT \'{restricted_hlq}\' CLASS\\({saf_class}\\) ID\\({self._managed_racf_user}\\) ACCESS\\(NONE\\);")
+        command.write(f"echo PERMIT RC=$?;")
+        command.write(f"tsocmd SETROPTS GENERIC\\(DATASET\\) REFRESH;")
+        command.write(f"echo SETROPTS RC=$?;")
 
+        cmd=f"{command.getvalue()}"
+        results_stdout_lines = self._connect(self._remote_host, self._model_user,cmd)
+        print(cmd)
+        print(results_stdout_lines)
+        try:
+            # Evaluate the results
+            addgroup_rc = [v for v in results_stdout_lines if f"ADDGROUP RC=" in v][0].split('=')[1].strip() or None
+            if not addgroup_rc or int(addgroup_rc[0]) > 4:
+                err_details = f"addgroup {group}"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
 
-    # TODO: Implement this method in the future
-    def _create_user_zos_limited_tmp_hlq(self) -> None:
-        """
-        Update a managed user id for the remote node with restricted access to
-        temporary data set High LevelQualifiers:
-        - TSTRICT
-        - TNOPERM
-        Any attempt for this user to access the HLQ will be rejected.
+            permit_rc = [v for v in results_stdout_lines if f"PERMIT RC=" in v][0].split('=')[1].strip() or None
+            if not permit_rc or int(permit_rc[0]) > 4:
+                err_details = f"permit {restricted_hlq} class {saf_class}"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
 
-        Parameters
-        ----------
-        managed_racf_user (str)
-            The managed user created that will we updated according tho the ManagedUseeType selected.
-
-        See Also
-        --------
-            :py:class:`ManagedUserType`
-            :py:func:`_create_managed_user`
-
-        Raises
-        ------
-        Exception
-            If any of the remote commands return codes are out of range an exception
-            and the stdout and stderr is returned.
-        """
-        print("Needs to be implemented")
+            setropts_rc = [v for v in results_stdout_lines if f"SETROPTS RC=" in v][0].split('=')[1].strip() or None
+            if not setropts_rc or int(setropts_rc[0]) > 4:
+                err_details = f"setropts raclist {saf_class} refresh"
+                err_msg = f"Unable to {err_details} for managed user [{self._managed_racf_user}, review output {results_stdout_lines}."
+                raise Exception(err_msg)
+        except IndexError as err:
+            err_msg = f"Unable access the results, this is required to reduce permissions for user [{self._managed_racf_user}]."
+            raise Exception(f"{err_msg}, exception [{err}].")
+        except Exception as err:
+            raise Exception(f"The model user {self._model_user} is unable to reduce permissions RACF user {self._managed_racf_user}, exception [{err}]")
+        self._managed_group = group
 
     def _noop(self) -> None:
         """
@@ -925,7 +937,6 @@ class ManagedUser:
     operations = {
         ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD.name: _create_user_zoau_limited_access_opercmd,
         ManagedUserType.ZOS_LIMITED_HLQ.name: _create_user_zos_limited_hlq,
-        ManagedUserType.ZOS_LIMITED_TMP_HLQ.name: _create_user_zos_limited_tmp_hlq,
         ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN.name: _noop,
         ManagedUserType.ZOS_BEGIN_WITH_POUND.name: _noop,
         ManagedUserType.ZOS_RANDOM_SYMBOLS.name: _noop

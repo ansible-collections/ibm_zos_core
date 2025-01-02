@@ -436,17 +436,19 @@ def managed_user_create_script(ansible_zos_module):
 
 def test_super_user_run_script_from_another_user(ansible_zos_module, z_python_interpreter):
     hosts = ansible_zos_module
+    managed_user = None
     script_path = '/tmp/zos_script_test_script'
+
     try:
         managed_user = ManagedUser.from_fixture(
-            ansible_zos_module,
+            hosts,
             z_python_interpreter
         )
         managed_user.execute_managed_user_test(
-            "managed_user_create_script",
+            managed_user_test_case="managed_user_create_script",
             debug=True,
             verbose=True,
-            managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD
+            managed_user_type=ManagedUserType.ZOS_LIMITED_HLQ
         )
 
         zos_script_result = hosts.all.zos_script(

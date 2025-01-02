@@ -61,6 +61,20 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
+TEST_CONTENT_ADVANCED_REGULAR_EXPRESSION="""if [ -z STEPLIB ] && tty -s;
+then
+    D160882
+    D160882
+    ED160882
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
 EXPECTED_REPLACE="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -534,6 +548,28 @@ def test_uss_line_absent(ansible_zos_module):
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+
+@pytest.mark.uss
+def test_uss_advanced_regular_expression_absent(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"[A-Za-z][0-9]{6}",
+        "state":"absent"
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT_ADVANCED_REGULAR_EXPRESSION
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_CONTENT
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 

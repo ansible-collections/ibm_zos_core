@@ -536,7 +536,8 @@ def run_module():
             trace_uss = True
         else:
             if data_set.is_member(trace_destination):
-                trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
+                if not data_set.DataSet.data_set_exists(data_set.extract_dsname(trace_destination)):
+                    trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=False)

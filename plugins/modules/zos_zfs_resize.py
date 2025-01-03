@@ -486,7 +486,7 @@ def run_module():
         module.exit_json(**result)
 
     elif space < minimum_size_t_shrink:
-        module.fail_json(msg="Not enough free space in the filesystem to shrink.", **result)
+        module.fail_json(msg="Not enough free space in the ZFS to shrink.", **result)
 
     elif space > old_size:
         operation = "grow"

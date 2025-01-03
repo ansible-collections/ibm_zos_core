@@ -64,7 +64,7 @@ options:
       - Return diagnostic messages that describe the module's execution.
       - When I(verbose=true), verbose output is returned on module failure.
       - Verbose includes the stdout of the command execution which is very large, to avoid dumping this
-        in the logs you can provide a trace_destination instead.
+        into the logs you can provide a trace_destination instead.
     required: false
     type: bool
     default: false

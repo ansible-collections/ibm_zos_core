@@ -703,7 +703,7 @@ def test_no_operation_executed(ansible_zos_module):
             assert result.get('rc') == 0
             assert result.get('size') == size
             assert result.get('space_type') == "k"
-            assert result.get('stdout') == "Size provided is the current size of the {0}".format(ds_name)
+            assert result.get('stdout') == "Size provided is the current size of the ZFS {0}".format(ds_name)
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 

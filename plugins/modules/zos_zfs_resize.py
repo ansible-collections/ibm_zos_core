@@ -539,7 +539,7 @@ def run_module():
                 trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
-                    trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
+                    trace_destination_created = create_trace_dataset(name=trace_destination, member=False)
             trace_uss = False
         tmp_file = trace_destination
 

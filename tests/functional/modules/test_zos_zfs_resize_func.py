@@ -723,7 +723,7 @@ def test_no_space_to_operate(ansible_zos_module):
             assert result.get('rc') == 1
             assert result.get('size') == size
             assert result.get('space_type') == "k"
-            assert result.get('msg') == "Not enough free space in the ZFS to shrink.."
+            assert result.get('msg') == "Not enough free space in the ZFS to shrink."
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 

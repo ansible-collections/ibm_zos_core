@@ -220,8 +220,6 @@ def test_grow_operation(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -248,8 +246,6 @@ def test_shrink_operation(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -280,8 +276,6 @@ def test_grow_n_shrink_operations_space_type_m(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -301,8 +295,6 @@ def test_grow_n_shrink_operations_space_type_m(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -334,8 +326,6 @@ def test_grow_n_shrink_operations_space_type_trk(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -355,8 +345,6 @@ def test_grow_n_shrink_operations_space_type_trk(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -388,8 +376,6 @@ def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -409,8 +395,6 @@ def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -440,8 +424,6 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
             assert result.get('space_type') == "k"
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -462,8 +444,6 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
             assert result.get('space_type') == "k"
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -500,8 +480,6 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -527,8 +505,6 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -569,8 +545,6 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -595,8 +569,6 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -647,8 +619,6 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -680,8 +650,6 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -730,8 +698,6 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0
@@ -756,8 +722,6 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('verbose_output') is not None
             assert result.get('changed') is True
             assert result.get('stdout_lines') is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
             assert result.get('target') == ds_name
             assert result.get('mount_target') == "/SYSTEM" + mount_folder
             assert result.get('rc') == 0

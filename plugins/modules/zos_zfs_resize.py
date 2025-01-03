@@ -475,7 +475,7 @@ def run_module():
             dict(
                 cmd="",
                 rc=0,
-                stdout="Same size as size of the file {0}".format(target),
+                stdout="Size provided is the current size of the ZFS {0}".format(target),
                 stderr="",
                 changed=False,
                 size=size,

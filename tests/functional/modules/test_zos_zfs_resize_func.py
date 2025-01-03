@@ -628,9 +628,9 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
     trace_destination_ds_s= get_tmp_ds_name()
     try:
         if trace_destination == "seq":
-            hosts.all.zos_data_set(name=trace_destination_ds, type=trace_destination, record_length=200)
+            hosts.all.zos_data_set(name=trace_destination_ds, type=trace_destination, record_length=400)
         else:
-            hosts.all.zos_data_set(name=trace_destination_ds, type=trace_destination, record_length=200)
+            hosts.all.zos_data_set(name=trace_destination_ds, type=trace_destination, record_length=400)
             trace_destination_ds = trace_destination_ds + "(MEM)"
             hosts.all.zos_data_set(name=trace_destination_ds, state="present", type="member")
 
@@ -664,9 +664,9 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
                 assert out.get("stdout") is not None
 
         if trace_destination == "seq":
-            hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=200)
+            hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=400)
         else:
-            hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=200)
+            hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=400)
             trace_destination_ds_s = trace_destination_ds_s + "(MEM)"
             hosts.all.zos_data_set(name=trace_destination_ds_s, state="present", type="member")
 

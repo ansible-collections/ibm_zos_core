@@ -78,7 +78,6 @@ notes:
   - When using data set for trace_destination option required record_length equal or over 200 to avoid lost of information.
   - Some record_length for datasets and datasets could generate lost of information and false negative with the message in
     stderr Could not open trace output dataset.
-  - To ensure full trace back file is complete use USS file.
   - L(zfsadm documentation,https://www.ibm.com/docs/en/zos/3.1.0?topic=commands-zfsadm).
 """
 
@@ -187,7 +186,7 @@ stdout:
     description: The STDOUT from command.
     returned: always
     type: str
-    sample: TEST.ZFS.DATA.USER (R/W COMP): 1719 K free out of total 2880.
+    sample: IOEZ00173I Aggregate TEST.ZFS.DATA.USER successfully grown.
 stderr:
     description: The STDERR from the command, may be empty.
     returned: always
@@ -197,12 +196,12 @@ stdout_lines:
     description: List of strings containing individual lines from STDOUT.
     returned: always
     type: list
-    sample: ["IOEZ00173I Aggregate TEST.ZFS.DATA.USER successfully grown"]
+    sample: ["IOEZ00173I Aggregate TEST.ZFS.DATA.USER successfully grown."]
 stderr_lines:
     description: List of strings containing individual lines from STDERR.
     returned: always
     type: list
-    sample: ["IOEZ00181E Could not open trace output dataset"]
+    sample: ["IOEZ00181E Could not open trace output dataset."]
 verbose_output:
     description: If C(verbose=true), the operation's full traceback will show on this variable. If C(trace) will return the data set or path name.
     returned: C(verbose=true)
@@ -566,9 +565,9 @@ def run_module():
         tmp_file = trace_destination
 
     if not trace_destination_created:
-        stderr_trace="\nUnable to create trace_destination {0}.".format(trace_destination),
+        stderr_trace = "\nUnable to create trace_destination {0}.".format(trace_destination)
     else:
-        stderr_trace=""
+        stderr_trace = ""
 
     if verbose and trace_destination is None:
         home_folder = Path.home()

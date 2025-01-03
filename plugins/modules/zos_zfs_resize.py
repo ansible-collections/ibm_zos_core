@@ -71,7 +71,6 @@ options:
   trace_destination:
     description:
       - File path or data set name where the full trace of the module's execution will be dumped into.
-      - Expected file to exist on the system.
     required: false
     type: str
 
@@ -360,6 +359,31 @@ def proper_size_str(size, space_type):
             return float("{:.1f}".format(size))
 
 
+def create_trace_dataset(name, member=False):
+    """Function to create data sets for traceback if is not created.
+
+    Parameters
+    ----------
+        name : str
+            Full size of the dataset
+        member : bool
+            If the dataset include a member to create
+
+    Returns
+    -------
+        rc : bool
+            Indicates if datasets were made.
+    """
+    if member:
+        dataset_name = data_set.extract_dsname(name)
+        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDS", record_length=200)
+        rc = data_set.DataSet.ensure_member_present(name)
+    else:
+        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="SEQ", record_length=200)
+
+    return rc
+
+
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
@@ -505,21 +529,24 @@ def run_module():
     trace = ""
     tmp_file = ""
     trace_uss = True
+    trace_destination_created = True
 
     if trace_destination is not None:
         if "/" in trace_destination:
-            if not (os.path.exists(trace_destination)):
-                module.fail_json(msg="Destination trace file does not exist", **result)
             trace_uss = True
         else:
             if data_set.is_member(trace_destination):
-                if not (data_set.DataSet.data_set_member_exists(trace_destination)):
-                    module.fail_json(msg="Destination trace member does not exist", **result)
+                trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
-                    module.fail_json(msg="Destination trace dataset does not exist", **result)
+                    trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
             trace_uss = False
         tmp_file = trace_destination
+
+    if not trace_destination_created:
+        result.update(
+            verbose_output="Trace_destination {0} does not exist on the system or unable to created it.".format(trace_destination),
+        )
 
     if verbose and trace_destination is None:
         home_folder = Path.home()

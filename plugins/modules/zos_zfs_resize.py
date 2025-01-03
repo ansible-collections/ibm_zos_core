@@ -396,10 +396,10 @@ def create_trace_dataset(name, member=False):
     """
     if member:
         dataset_name = data_set.extract_dsname(name)
-        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDS", record_length=200)
+        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDS", record_length=400)
         rc = data_set.DataSet.ensure_member_present(name)
     else:
-        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="SEQ", record_length=200)
+        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="SEQ", record_length=400)
 
     return rc
 

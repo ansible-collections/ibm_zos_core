@@ -78,6 +78,7 @@ notes:
   - When using data set for trace_destination option required record_length equal or over 200 to avoid lost of information.
   - Some record_length for datasets and datasets could generate lost of information and false negative with the message in
     stderr Could not open trace output dataset.
+  - To ensure full trace back file is complete use USS file.
   - L(zfsadm documentation,https://www.ibm.com/docs/en/zos/3.1.0?topic=commands-zfsadm).
 """
 
@@ -182,9 +183,29 @@ space_type:
     returned: always
     type: str
     sample: k
+stdout:
+    description: The STDOUT from command.
+    returned: always
+    type: str
+    sample: TEST.ZFS.DATA.USER (R/W COMP): 1719 K free out of total 2880.
+stderr:
+    description: The STDERR from the command, may be empty.
+    returned: always
+    type: str
+    sample: IOEZ00181E Could not open trace output dataset.
+stdout_lines:
+    description: List of strings containing individual lines from STDOUT.
+    returned: always
+    type: list
+    sample: ["IOEZ00173I Aggregate TEST.ZFS.DATA.USER successfully grown"]
+stderr_lines:
+    description: List of strings containing individual lines from STDERR.
+    returned: always
+    type: list
+    sample: ["IOEZ00181E Could not open trace output dataset"]
 verbose_output:
     description: If C(verbose=true), the operation's full traceback will show on this variable. If C(trace) will return the data set or path name.
-    returned: C(verbose=true) and success
+    returned: C(verbose=true)
     type: str
     sample: 6FB2F8 print_trace_table printing contents of table Main Trace Table...
 """
@@ -545,9 +566,9 @@ def run_module():
         tmp_file = trace_destination
 
     if not trace_destination_created:
-        result.update(
-            verbose_output="Trace_destination {0} does not exist on the system or unable to created it.".format(trace_destination),
-        )
+        stderr_trace="\nUnable to create trace_destination {0}.".format(trace_destination),
+    else:
+        stderr_trace=""
 
     if verbose and trace_destination is None:
         home_folder = Path.home()
@@ -602,7 +623,7 @@ def run_module():
             rc=rc,
             size=size,
             stdout=stdout,
-            stderr=stderr,
+            stderr=stderr + stderr_trace,
             changed=False,
             old_size=str_old_size,
             old_free=str_old_free,
@@ -618,7 +639,7 @@ def run_module():
             cmd=cmd,
             rc=rc,
             stdout=stdout,
-            stderr=stderr,
+            stderr=stderr + stderr_trace,
             changed=changed,
             new_size=str_new_size,
             new_free_space=str_new_free,

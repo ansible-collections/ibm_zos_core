@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2024
+# Copyright (c) IBM Corporation 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -63,6 +63,8 @@ options:
     description:
       - Return diagnostic messages that describe the module's execution.
       - When I(verbose=true), verbose output is returned on module failure.
+      - Verbose includes the stdout of the command execution which is very large, to avoid dumping this
+        in the logs you can provide a trace_destination instead.
     required: false
     type: bool
     default: false

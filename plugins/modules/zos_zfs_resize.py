@@ -204,7 +204,7 @@ stderr_lines:
     sample: ["IOEZ00181E Could not open trace output dataset."]
 verbose_output:
     description: If C(verbose=true), the operation's full traceback will show on this variable. If C(trace) will return the data set or path name.
-    returned: C(verbose=true)
+    returned: always
     type: str
     sample: 6FB2F8 print_trace_table printing contents of table Main Trace Table...
 """
@@ -468,6 +468,7 @@ def run_module():
             rc=1,
             stdout="",
             stderr="",
+            verbose_output="",
         )
     )
 
@@ -626,6 +627,7 @@ def run_module():
             changed=False,
             old_size=str_old_size,
             old_free=str_old_free,
+            verbose_output="",
         )
 
     str_new_size = new_size if space_type == "k" else size_on_type
@@ -662,6 +664,7 @@ class ResizingOperationError(Exception):
             changed=False,
             old_size="",
             old_free="",
+            verbose_output="",
     ):
         """Error in a copy operation.
 
@@ -702,6 +705,7 @@ class ResizingOperationError(Exception):
             changed=changed,
             old_size=old_size,
             old_free_space=old_free,
+            verbose_output=verbose_output,
         )
         super().__init__(msg)
 

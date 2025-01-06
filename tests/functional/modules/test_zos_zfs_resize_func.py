@@ -227,6 +227,8 @@ def test_grow_operation(ansible_zos_module):
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= size
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
@@ -253,6 +255,8 @@ def test_shrink_operation(ansible_zos_module):
             assert result.get('new_size') <= result.get('old_size')
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= size
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
@@ -284,6 +288,8 @@ def test_grow_n_shrink_operations_space_type_m(ansible_zos_module):
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= grow_size
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -303,6 +309,8 @@ def test_grow_n_shrink_operations_space_type_m(ansible_zos_module):
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == space_type
             assert result.get('new_size') <= shrink_size
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
@@ -334,6 +342,8 @@ def test_grow_n_shrink_operations_space_type_trk(ansible_zos_module):
             assert result.get('new_size') >= result.get('old_size')
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == space_type
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -353,6 +363,8 @@ def test_grow_n_shrink_operations_space_type_trk(ansible_zos_module):
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= shrink_size
             assert result.get('space_type') == space_type
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
@@ -384,6 +396,8 @@ def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('new_size') >= grow_size
             assert result.get('space_type') == space_type
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -403,6 +417,8 @@ def test_grow_n_shrink_operations_space_type_cyl(ansible_zos_module):
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('new_size') <= shrink_size
             assert result.get('space_type') == space_type
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
@@ -434,6 +450,8 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
             assert result.get('space_type') == "k"
             assert result.get("verbose_output") is not None
             assert "Printing contents of table at address" in result.get("stdout")
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -454,6 +472,8 @@ def test_grow_n_shrink_operations_verbose(ansible_zos_module):
             assert result.get('space_type') == "k"
             assert result.get("verbose_output") is not None
             assert "print of in-memory trace table has completed" in result.get('stdout')
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
@@ -493,6 +513,8 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         hosts.all.shell(cmd="touch {0}".format(trace_destination_file_s))
         results = hosts.all.zos_zfs_resize(target=ds_name,
@@ -518,6 +540,8 @@ def test_grow_n_shrink_operations_trace_uss(ansible_zos_module):
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
     finally:
         hosts.all.shell(cmd="rm {0}".format(trace_destination_file))
@@ -558,6 +582,8 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -582,6 +608,8 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
     finally:
         hosts.all.shell(cmd="rm {0}".format(trace_destination_file))
@@ -632,6 +660,12 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            if trace_destination == "seq":
+                assert result.get('stderr') is not None
+                assert result.get('stderr_lines') is not None
+            else:
+                assert result.get('stderr') == ""
+                assert result.get('stderr_lines') == []
 
         if trace_destination == "seq":
             hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=400)
@@ -663,6 +697,12 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            if trace_destination == "seq":
+                assert result.get('stderr') is not None
+                assert result.get('stderr_lines') is not None
+            else:
+                assert result.get('stderr') == ""
+                assert result.get('stderr_lines') == []
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
@@ -711,6 +751,12 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            if trace_destination == "seq":
+                assert result.get('stderr') is not None
+                assert result.get('stderr_lines') is not None
+            else:
+                assert result.get('stderr') == ""
+                assert result.get('stderr_lines') == []
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -735,6 +781,12 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
+            if trace_destination == "seq":
+                assert result.get('stderr') is not None
+                assert result.get('stderr_lines') is not None
+            else:
+                assert result.get('stderr') == ""
+                assert result.get('stderr_lines') == []
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)

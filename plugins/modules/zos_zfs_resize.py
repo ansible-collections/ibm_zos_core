@@ -76,8 +76,8 @@ options:
 
 notes:
   - When using data set for trace_destination option required record_length equal or over 200 to avoid lost of information.
-  - Some record_length for datasets and datasets could generate lost of information and false negative with the message in
-    stderr Could not open trace output dataset.
+  - When using a sequential data set for trace_destination will throw a false negative with a stderr. The full traceback will
+    be stored on the sequential data set. To avoid this use pds or pdse datasets.
   - L(zfsadm documentation,https://www.ibm.com/docs/en/zos/3.1.0?topic=commands-zfsadm).
 """
 

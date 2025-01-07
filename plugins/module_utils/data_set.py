@@ -1990,6 +1990,26 @@ class DataSetUtils(object):
                 ).replace("-", "")
         return result
 
+    @staticmethod
+    def gather_data_set_info_in_use(data_set_name):
+        """Retrieves information about the input data set using LISTDS and
+        LISTCAT commands.
+
+        Returns:
+            bool -- Boolean value if the dataset is in use
+        """
+        result = dict()
+        listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
+            "  LISTDS '{0}'".format(data_set_name),
+            authorized=True
+        )
+
+        if listds_rc == 0:
+            return False
+        else:
+            if re.findall(r"ALREADY IN USE", listds_out):
+                return True
+
 
 class MVSDataSet():
     """

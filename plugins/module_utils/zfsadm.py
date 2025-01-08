@@ -53,8 +53,9 @@ class zfsadm:
             cmd_str : str
                 The full command that was executed.
         """
-        if operation != "grow" or operation != "shrink":
-            self.module.fail_json(msg=f"There is no operation {operation}")
+        if operation != "grow":
+            if operation != "shrink":
+                self.module.fail_json(msg=f"There is no operator {operation}")
 
         cmd = f"-size {size}{noai}{verbose}"
         cmd_str = f"zfsadm {operation} -aggregate {self.aggregate_name} {cmd}"

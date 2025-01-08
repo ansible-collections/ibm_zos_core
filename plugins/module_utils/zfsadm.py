@@ -53,8 +53,11 @@ class zfsadm:
             cmd_str : str
                 The full command that was executed.
         """
-        cmd = "-size {0}{1}{2}".format(size, noai, verbose)
-        cmd_str = "zfsadm {0} -aggregate {1} {2}".format(operation, self.aggregate_name, cmd)
+        if operation != "grow" or operation != "shrink":
+            self.module.fail_json(msg=f"There is no operation {operation}")
+
+        cmd = f"-size {size}{noai}{verbose}"
+        cmd_str = f"zfsadm {operation} -aggregate {self.aggregate_name} {cmd}"
 
         rc, stdout, stderr = self.module.run_command(cmd_str)
 
@@ -73,7 +76,7 @@ class zfsadm:
             stderr : str
                 The stderr of the executed command.
         """
-        cmd = "zfsadm aggrinfo {0}".format(aggregate_name)
+        cmd = f"zfsadm aggrinfo {aggregate_name}"
 
         rc, stdout, stderr = module.run_command(cmd)
 

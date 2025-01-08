@@ -825,7 +825,7 @@ def test_target_does_not_exist(ansible_zos_module):
         assert result.get('size') == size
         assert result.get('rc') == 1
         assert result.get('changed') is False
-        assert result.get('msg') == "ZFS Target {0} does not exist".format(ds_name)
+        assert result.get('msg') == "zFS Target {0} does not exist".format(ds_name)
 
 def test_mount_point_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
@@ -861,7 +861,7 @@ def test_no_operation_executed(ansible_zos_module):
             assert result.get('rc') == 0
             assert result.get('size') == size
             assert result.get('space_type') == "k"
-            assert result.get('stdout') == "Size provided is the current size of the ZFS {0}".format(ds_name)
+            assert result.get('stdout') == "Size provided is the current size of the zFS {0}".format(ds_name)
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
@@ -881,7 +881,7 @@ def test_no_space_to_operate(ansible_zos_module):
             assert result.get('rc') == 1
             assert result.get('size') == size
             assert result.get('space_type') == "k"
-            assert result.get('msg') == "Not enough free space in the ZFS to shrink."
+            assert result.get('msg') == "There is not enough available space in the zFS aggregate to perform a shrink operation."
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 

@@ -21,8 +21,8 @@ version_added: '1.13.0'
 short_description: Resize a zfs data set.
 description:
   - The module L(zos_zfs_resize.,/zos_zfs_resize.html) can resize a zFS aggregate data set.
-  - The I(target) data set must be a unique and a Fully Qualified Name (FQN) of a 1-OS zFS aggregate data set.
-  - The data set must be attached as read-write, and contain only one operating system.
+  - The I(target) data set must be a unique and a Fully Qualified Name (FQN) of a z/OS zFS aggregate data set.
+  - The data set must be attached as read-write.
   - I(size) must be provided.
 author:
   - "Rich Parker (@richp405)"
@@ -36,7 +36,7 @@ options:
   size:
     description:
       - The desired size of the data set after the resizing is performed.
-    required: True
+    required: true
     type: int
   space_type:
     description:
@@ -53,82 +53,87 @@ options:
     default: k
   no_auto_increment:
     description:
-      - Option to not allow auto increase of a data set when performing a shrink operation.
-      - When set to C(true), if during the shrinking process of a zfs aggregate more space is needed,
-        the new total size will not be increased and the module will fail.
+      - Option controls whether the data set size will be automatically increased when performing a shrink operation.
+      - When set to C(true), during the shrinking of the zFS aggregate, if more space be needed the total size will
+        not be increased and the module will fail.
     required: false
     type: bool
     default: false
   verbose:
     description:
       - Return diagnostic messages that describe the module's execution.
-      - When I(verbose=true), verbose output is returned on module failure.
-      - Verbose includes the stdout of the command execution which is very large, to avoid dumping this
-        into the logs you can provide a trace_destination instead.
+      - Verbose includes standard out (stdout) of the module's execution which can be excessive, to avoid writing
+        this to stdout, optionally you can set the C(trace_destination) instead.
     required: false
     type: bool
     default: false
   trace_destination:
     description:
-      - File path or data set name where the full trace of the module's execution will be dumped into.
+      - Specify a unique USS file name or data set name for C(trace_destination).
+      - If the destination C(trace_destination) is a USS file or path, the C(trace_destination) must
+        be an absolute path name.
+      - Support MVS data set type SEQ, PDS, PDS/E(MEMBER)
+      - If the destination is an MVS data set name, the C(trace_destination) provided must meet data set naming
+        conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods.
     required: false
     type: str
 
 notes:
-  - When using data set for trace_destination option required record_length equal or over 200 to avoid lost of information.
-  - When using a sequential data set for trace_destination will throw a false negative with a stderr. The full traceback will
-    be stored on the sequential data set. To avoid this use PDS or PDSE datasets.
-  - L(zfsadm documentation,https://www.ibm.com/docs/en/zos/3.1.0?topic=commands-zfsadm).
+  - When using a SEQ data set for trace_destination will throw a false negative with a stderr. The full traceback will
+    be stored on the sequential data set. To avoid this use PDS.
+  - If needed, allocate the zFS trace output data set as a PDSE with RECFM=VB, LRECL=133 with a primary allocation of at least
+    50 cylinders and a secondary allocation of 30 cylinders.
+  - L(zfsadm documentation,https://www.ibm.com/docs/en/zos/latest?topic=commands-zfsadm).
 """
 
 EXAMPLES = r"""
-- name: Resize an aggregate data set to 2500 Kilobytes.
+- name: Resize an aggregate data set to 2500 kilobytes.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
 
-- name: Resize an aggregate data set to 20 Tracks.
+- name: Resize an aggregate data set to 20 tracks.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     space_type: trk
     size: 20
 
-- name: Resize an aggregate data set to 4 Megabytes.
+- name: Resize an aggregate data set to 4 megabytes.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     space_type: m
     size: 4
 
-- name: Resize an aggregate data set to 1000 Kilobytes and set no auto increment if it's shrinking.
+- name: Resize an aggregate data set to 1000 kilobytes and set no auto increment if it's shrinking.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 1000
-    no_auto_increment: True
+    no_auto_increment: true
 
 - name: Resize an aggregate data set and get verbose output.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
-    verbose: True
+    verbose: true
 
 - name: Resize an aggregate data set and get the full trace on a file.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
-    trace_destination: /tmp/helper.txt
+    trace_destination: /tmp/trace.txt
 
-- name: Resize an aggregate data set and get the full trace on a member of a PDS.
+- name: Resize an aggregate data set and capture the trace into a PDS member.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
     trace_destination: "TEMP.HELPER.STORAGE(RESIZE)"
 
-- name: Resize an aggregate data set and get the full trace on a file with verbose output.
+- name: Resize an aggregate data set and capture the trace into a file with verbose output.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 2500
-    verbose: True
-    trace_destination: /tmp/helper.txt
+    verbose: true
+    trace_destination: /tmp/trace.txt
 """
 
 RETURN = r"""
@@ -148,7 +153,7 @@ mount_target:
     type: str
     sample: /tmp/zfs_agg
 size:
-    description: The approximate size of the data set after the resizing is performed.
+    description: The size expecting of the data set after the resizing is performed on C(space_type) given.
     returned: always
     type: int
     sample: 4024
@@ -158,52 +163,52 @@ rc:
     type: int
     sample: 0
 old_size:
-    description: The reported size, in space_type, of the data set before the resizing was performed.
+    description: The original data set size according to C(space_type) before resizing was performed.
     returned: always
     type: float
     sample: 3096
 old_free_space:
-    description: The reported size, in space_type, of the free space in the data set before the resizing was performed.
+    description: The original data sets free space according to C(space_type) before resizing was performed.
     returned: always
     type: float
-    sample: 108
+    sample: 2.1
 new_size:
-    description: The reported size, in space_type, of the data set after the resizing was performed.
+    description: The data set size according to C(space_type) after resizing was performed.
     returned: success
     type: float
     sample: 4032
 new_free_space:
-    description: The reported size, in space_type, of the free space in the data set after the resizing was performed.
+    description: The data sets free space according to C(space_type) after resizing was performed.
     returned: success
     type: float
-    sample: 48
+    sample: 1.5
 space_type:
     description: The measurement unit of space used to report all size values.
     returned: always
     type: str
     sample: k
 stdout:
-    description: The STDOUT from command.
+    description: The modules standard out (stdout) that is returned.
     returned: always
     type: str
     sample: IOEZ00173I Aggregate TEST.ZFS.DATA.USER successfully grown.
 stderr:
-    description: The STDERR from the command, may be empty.
+    description: The modules standard error (stderr) that is returned. it may have no return value.
     returned: always
     type: str
     sample: IOEZ00181E Could not open trace output dataset.
 stdout_lines:
-    description: List of strings containing individual lines from STDOUT.
+    description: List of strings containing individual lines from standard out (stdout).
     returned: always
     type: list
     sample: ["IOEZ00173I Aggregate TEST.ZFS.DATA.USER successfully grown."]
 stderr_lines:
-    description: List of strings containing individual lines from STDERR.
+    description: List of strings containing individual lines from standard error (stderr).
     returned: always
     type: list
     sample: ["IOEZ00181E Could not open trace output dataset."]
 verbose_output:
-    description: If C(verbose=true), the operation's full traceback will show on this variable. If C(trace) will return the data set or path name.
+    description: If C(verbose=true), the operation's full traceback will show for this property.
     returned: always
     type: str
     sample: 6FB2F8 print_trace_table printing contents of table Main Trace Table...
@@ -265,9 +270,9 @@ def get_full_output(file, module):
     output = ""
 
     if "/" in file:
-        cmd = "cat {0}".format(file)
+        cmd = f"cat {file}"
     else:
-        cmd = "dcat '{0}'".format(file)
+        cmd = f"dcat '{file}'"
 
     rc, output, stderr = module.run_command(cmd)
 
@@ -324,7 +329,7 @@ def find_mount_target(module, target, results):
                     found = True
                     break
         if found is False:
-            module.fail_json(msg="No mount points were found in the following output: {0}".format(stdout), **results)
+            module.fail_json(msg=f"No mount points were found in the following output: {stdout}", **results)
     return mount_point
 
 
@@ -396,10 +401,10 @@ def create_trace_dataset(name, member=False):
     """
     if member:
         dataset_name = data_set.extract_dsname(name)
-        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDS", record_length=400)
+        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=400)
         rc = data_set.DataSet.ensure_member_present(name)
     else:
-        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="SEQ", record_length=400)
+        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=400)
 
     return rc
 
@@ -475,15 +480,15 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    # Validate if the target ZFS exist
+    # Validate if the target zFS exist
     if not (data_set.DataSet.data_set_exists(target)):
-        module.fail_json(msg="ZFS Target {0} does not exist".format(target), **result)
+        module.fail_json(msg=f"zFS Target {target} does not exist", **result)
 
     # Validation to found target on the system and also get the mount_point
     mount_target = find_mount_target(module=module, target=target, results=result)
 
     if size <= 0:
-        module.fail_json(msg="Can not resize ZFS Target {0} to 0".format(target), **result)
+        module.fail_json(msg=f"Can not resize zFS aggregate Target {target} to 0", **result)
 
     # Initialize the class with the target
     zfsadm_obj = zfsadm(aggregate_name=target, module=module)
@@ -524,7 +529,7 @@ def run_module():
             dict(
                 cmd="",
                 rc=0,
-                stdout="Size provided is the current size of the ZFS {0}".format(target),
+                stdout=f"Size provided is the current size of the zFS {target}",
                 stderr="",
                 changed=False,
                 size=size,
@@ -535,7 +540,7 @@ def run_module():
         module.exit_json(**result)
 
     elif space < minimum_size_t_shrink:
-        module.fail_json(msg="Not enough free space in the ZFS to shrink.", **result)
+        module.fail_json(msg="There is not enough available space in the zFS aggregate to perform a shrink operation.", **result)
 
     elif space > old_size:
         operation = "grow"
@@ -566,7 +571,7 @@ def run_module():
         tmp_file = trace_destination
 
     if not trace_destination_created:
-        stderr_trace = "\nUnable to create trace_destination {0}.".format(trace_destination)
+        stderr_trace = f"\nUnable to create trace_destination {trace_destination}."
     else:
         stderr_trace = ""
 
@@ -579,7 +584,7 @@ def run_module():
         trace_uss = True
 
     if verbose or trace_destination is not None:
-        trace = " -trace '{0}'".format(tmp_file) if trace_uss else " -trace \"//'{0}'\" ".format(trace_destination)
+        trace = f" -trace '{tmp_file}'" if trace_uss else f" -trace \"//'{trace_destination}'\" "
 
     # Execute the function
     rc, stdout, stderr, cmd = zfsadm_obj.execute_resizing(operation=operation, size=space, noai=noai, verbose=trace)
@@ -616,7 +621,7 @@ def run_module():
         msg = "No enough space on device to grow." if operation == 'grow' else "No space to properly shrink."
 
         raise ResizingOperationError(
-            msg="Resize: resize command returned non-zero code. {0}".format(msg),
+            msg=f"Resize: resize command returned non-zero code. {msg}",
             target=target,
             mount_target=mount_target,
             cmd=cmd,

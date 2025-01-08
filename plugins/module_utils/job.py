@@ -444,8 +444,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     else:
                         dd["procstep"] = None
 
-                    if "record_length" in single_dd:
-                        dd["byte_count"] = single_dd["record_length"]
+                    # Correction for bug #1508: byte_count is a new value, not record length.
+                    if "bytes" in single_dd:
+                        dd["byte_count"] = single_dd["bytes"]
                     else:
                         dd["byte_count"] = 0
 

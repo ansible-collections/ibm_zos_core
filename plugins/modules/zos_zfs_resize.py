@@ -51,7 +51,7 @@ options:
       - cyl
       - trk
     default: k
-  no_auto_increment:
+  no_auto_increase:
     description:
       - Option controls whether the data set size will be automatically increased when performing a shrink operation.
       - When set to C(true), during the shrinking of the zFS aggregate, if more space be needed the total size will
@@ -106,7 +106,7 @@ EXAMPLES = r"""
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 1000
-    no_auto_increment: true
+    no_auto_increase: true
 
 - name: Resize an aggregate data set and get verbose output.
   zos_zfs_resize:
@@ -411,7 +411,7 @@ def create_trace_dataset(name, member=False):
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            target=dict(type="str", required=True),
+            target=dict(type="str", required=True, aliases=['src']),
             size=dict(type="int", required=True),
             space_type=dict(
                 type="str",
@@ -419,14 +419,14 @@ def run_module():
                 choices=["k", "m", "g", "cyl", "trk"],
                 default="k",
             ),
-            no_auto_increment=dict(type="bool", required=False, default=False),
+            no_auto_increase=dict(type="bool", required=False, default=False),
             verbose=dict(type="bool", required=False, default=False),
             trace_destination=dict(type="str", required=False),
         ),
         supports_check_mode=False
     )
     args_def = dict(
-        target=dict(type="data_set", required=True),
+        target=dict(type="data_set", required=True, aliases=['src']),
         size=dict(type="int", required=True),
         space_type=dict(
             type="str",
@@ -434,7 +434,7 @@ def run_module():
             choices=["k", "m", "g", "cyl", "trk"],
             default="k",
         ),
-        no_auto_increment=dict(type="bool", required=False, default=False),
+        no_auto_increase=dict(type="bool", required=False, default=False),
         verbose=dict(type="bool", required=False, default=False),
         trace_destination=dict(type="data_set_or_path", required=False),
     )
@@ -453,7 +453,7 @@ def run_module():
     target = module.params.get("target")
     size = module.params.get("size")
     space_type = module.params.get("space_type")
-    noai = module.params.get("no_auto_increment")
+    noai = module.params.get("no_auto_increase")
     verbose = module.params.get("verbose")
     trace_destination = module.params.get("trace_destination")
 

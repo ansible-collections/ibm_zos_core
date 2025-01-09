@@ -102,7 +102,7 @@ NO_AUTO_INCREMENT= """- hosts : zvm
           zos_zfs_resize:
             target: {3}
             size: 900
-            no_auto_increment: {5}
+            no_auto_increase: {5}
           poll: 0
           register: shrink_output
 
@@ -889,7 +889,7 @@ def test_fail_operation(ansible_zos_module):
 # No auto increment playbook
 #############################
 
-def test_no_auto_increment(get_config):
+def test_no_auto_increase(get_config):
     ds_name = get_tmp_ds_name()
     mount_point = "/" + get_random_file_name(dir="tmp")
     path = get_config
@@ -931,7 +931,7 @@ def test_no_auto_increment(get_config):
         os.remove("inventory.yml")
         os.remove("playbook.yml")
 
-def test_no_auto_increment_accept(get_config):
+def test_no_auto_increase_accept(get_config):
     ds_name = get_tmp_ds_name()
     mount_point = "/" + get_random_file_name(dir="tmp")
     path = get_config

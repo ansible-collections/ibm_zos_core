@@ -79,8 +79,6 @@ options:
     type: str
 
 notes:
-  - When using a SEQ data set for trace_destination will throw a false negative with a stderr. The full traceback will
-    be stored on the sequential data set. To avoid this use PDS.
   - If needed, allocate the zFS trace output data set as a PDSE with RECFM=VB, LRECL=133 with a primary allocation of at least
     50 cylinders and a secondary allocation of 30 cylinders.
   - L(zfsadm documentation,https://www.ibm.com/docs/en/zos/latest?topic=commands-zfsadm).

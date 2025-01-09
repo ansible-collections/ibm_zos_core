@@ -660,12 +660,8 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
-            if trace_destination == "seq":
-                assert result.get('stderr') is not None
-                assert result.get('stderr_lines') is not None
-            else:
-                assert result.get('stderr') == ""
-                assert result.get('stderr_lines') == []
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         if trace_destination == "seq":
             hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=400)
@@ -697,12 +693,8 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
-            if trace_destination == "seq":
-                assert result.get('stderr') is not None
-                assert result.get('stderr_lines') is not None
-            else:
-                assert result.get('stderr') == ""
-                assert result.get('stderr_lines') == []
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
@@ -712,7 +704,7 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
         hosts.all.zos_data_set(name=trace_destination_ds_s, state="absent")
 
-@pytest.mark.parametrize("trace_destination", ["seq", "member"])
+@pytest.mark.parametrize("trace_destination", ["pds", "member"])
 def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace_destination):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
@@ -721,9 +713,9 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
     shrink_size = 1200
 
     trace_destination_ds = get_tmp_ds_name()
-    trace_destination_ds = trace_destination_ds if trace_destination == "seq" else trace_destination_ds + "(MEM)"
+    trace_destination_ds = trace_destination_ds if trace_destination == "pds" else trace_destination_ds + "(MEM)"
     trace_destination_ds_s= get_tmp_ds_name()
-    trace_destination_ds_s = trace_destination_ds_s if trace_destination == "seq" else trace_destination_ds_s + "(MEM)"
+    trace_destination_ds_s = trace_destination_ds_s if trace_destination == "pds" else trace_destination_ds_s + "(MEM)"
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
@@ -751,12 +743,8 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
-            if trace_destination == "seq":
-                assert result.get('stderr') is not None
-                assert result.get('stderr_lines') is not None
-            else:
-                assert result.get('stderr') == ""
-                assert result.get('stderr_lines') == []
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -781,12 +769,8 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
-            if trace_destination == "seq":
-                assert result.get('stderr') is not None
-                assert result.get('stderr_lines') is not None
-            else:
-                assert result.get('stderr') == ""
-                assert result.get('stderr_lines') == []
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)

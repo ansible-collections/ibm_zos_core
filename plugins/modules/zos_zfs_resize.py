@@ -153,7 +153,8 @@ mount_target:
     type: str
     sample: /tmp/zfs_agg
 size:
-    description: The size expecting of the data set after the resizing is performed on C(space_type) given.
+    description: The desired size from option C(size) according to C(space_type).
+      The resulting size can vary slightly, the actual space utilization is returned in C(new_size).
     returned: always
     type: int
     sample: 4024
@@ -556,6 +557,7 @@ def run_module():
     tmp_file = ""
     trace_uss = True
     trace_destination_created = True
+    trace_type = ""
 
     if trace_destination is not None:
         if "/" in trace_destination:
@@ -567,6 +569,8 @@ def run_module():
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=False)
+                else:
+                    trace_type = data_set.DataSet.data_set_type(trace_destination)
             trace_uss = False
         tmp_file = trace_destination
 
@@ -592,6 +596,9 @@ def run_module():
     # Get the output, calculate size and verbose if required
     if rc == 0:
         changed = True
+
+        if "IOEZ00181E Could not open trace output dataset" in stderr and trace_type == "PS":
+            stderr = ""
 
         rc_size, stdout_size, stderr_size = zfsadm.get_aggregate_size(zfsadm_obj.aggregate_name, module)
         if rc_size == 0:

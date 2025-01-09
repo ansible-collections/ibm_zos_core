@@ -96,10 +96,6 @@ def ansible_zos_module(request, z_python_interpreter):
     """ Initialize pytest-ansible plugin with values from
     our YAML config and inject interpreter path into inventory. """
     env_vars, interpreter, inventory, python_path = z_python_interpreter
-    # Cleaning up _CEE_RUNOPTS when it comes from the users.py helper.
-    if '_CEE_RUNOPTS' in env_vars and "'" in env_vars['_CEE_RUNOPTS']: 
-        env_vars['_CEE_RUNOPTS'] = env_vars['_CEE_RUNOPTS'].replace("'", "")
-    print(f"INVENTORY_ENV_VARS: {env_vars}")
 
     # next two lines perform similar action to ansible_adhoc fixture
     plugin = request.config.pluginmanager.getplugin("ansible")

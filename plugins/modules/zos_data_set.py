@@ -1893,6 +1893,7 @@ def run_module():
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
                 ) or result.get("changed", False)
+            result["message"] = "Operation succeed." if result["changed"] else "Operation failed."
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
     else:

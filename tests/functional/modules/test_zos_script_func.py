@@ -454,7 +454,7 @@ def test_user_run_script_from_another_user(ansible_zos_module, z_python_interpre
             dest=script_path,
             # Permissions allow for any user to execute, trying to mimick
             # the use case that originated the issue.
-            mode='601'
+            mode='605'
         )
         for result in copy_result.contacted.values():
             assert result.get('changed') is True

@@ -468,7 +468,9 @@ def test_user_run_script_from_another_user(ansible_zos_module, z_python_interpre
             managed_user_test_case="managed_user_run_script",
             debug=True,
             verbose=True,
-            managed_user_type=ManagedUserType.ZOS_BEGIN_WITH_AT_SIGN
+            # Creating a user with a limited HLQ since it also puts
+            # it in a new group, distinct from omvsadm's.
+            managed_user_type=ManagedUserType.ZOS_LIMITED_HLQ
         )
     finally:
         hosts.all.file(path=script_path, state="absent")

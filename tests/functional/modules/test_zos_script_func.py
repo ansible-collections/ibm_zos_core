@@ -420,6 +420,7 @@ def managed_user_run_script(ansible_zos_module):
     for other users."""
     hosts = ansible_zos_module
     script_path = '/tmp/zos_script_test_script'
+    msg = "Success"
 
     zos_script_result = hosts.all.zos_script(
         cmd=script_path,

@@ -560,6 +560,7 @@ def run_module():
 
     if trace_destination is not None:
         if "/" in trace_destination:
+            trace_destination = better_arg_parser.BetterArgHandler.fix_local_path(trace_destination)
             trace_uss = True
         else:
             if data_set.is_member(trace_destination):

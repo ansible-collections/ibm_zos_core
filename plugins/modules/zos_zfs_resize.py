@@ -103,7 +103,7 @@ EXAMPLES = r"""
     space_type: m
     size: 4
 
-- name: Resize an aggregate data set to 1000 kilobytes and set no auto increment if it's shrinking.
+- name: Resize an aggregate data set to 1000 kilobytes and set no auto increase if it's shrinking.
   zos_zfs_resize:
     target: TEST.ZFS.DATA
     size: 1000

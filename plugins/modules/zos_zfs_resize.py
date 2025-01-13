@@ -559,10 +559,7 @@ def run_module():
     trace_type = ""
 
     if trace_destination is not None:
-        if "/" in trace_destination:
-            trace_destination = better_arg_parser.BetterArgHandler.fix_local_path(trace_destination)
-            trace_uss = True
-        else:
+        if data_set.is_data_set(data_set.extract_dsname(trace_destination)):
             if data_set.is_member(trace_destination):
                 if not data_set.DataSet.data_set_exists(data_set.extract_dsname(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
@@ -572,6 +569,9 @@ def run_module():
                 else:
                     trace_type = data_set.DataSet.data_set_type(trace_destination)
             trace_uss = False
+        else:
+            trace_destination = better_arg_parser.BetterArgHandler.fix_local_path(trace_destination)
+            trace_uss = True
         tmp_file = trace_destination
 
     if not trace_destination_created:

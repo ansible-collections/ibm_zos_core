@@ -3893,6 +3893,7 @@ def main():
                         choices=['\n', '\r', '\r\n']
                     ),
                     auto_reload=dict(type='bool', default=False),
+                    autoescape=dict(type='bool', default=True),
                 )
             ),
             force=dict(type='bool', default=False),
@@ -3966,6 +3967,7 @@ def main():
                 keep_trailing_newline=dict(arg_type='bool', required=False),
                 newline_sequence=dict(arg_type='str', required=False),
                 auto_reload=dict(arg_type='bool', required=False),
+                autoescape=dict(arg_type='bool', required=False),
             )
         ),
     )

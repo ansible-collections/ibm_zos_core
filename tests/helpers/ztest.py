@@ -115,7 +115,7 @@ class ZTestHelper(object):
 
         environment_vars = dict()
         environment_vars.update({'_BPXK_AUTOCVT': 'ON'})
-        environment_vars.update({'_CEE_RUNOPTS': '\'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)\''})
+        environment_vars.update({'_CEE_RUNOPTS': 'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'})
         environment_vars.update({'_TAG_REDIR_IN': 'txt'})
         environment_vars.update({'_TAG_REDIR_OUT': 'txt'})
         environment_vars.update({'LANG': 'C'})

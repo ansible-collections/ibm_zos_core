@@ -107,8 +107,8 @@ notes:
   - All local scripts copied to a remote z/OS system  will be removed from the
     managed node before the module finishes executing.
   - Execution permissions for the group assigned to the script will be
-    added to remote scripts. The original permissions for remote scripts will
-    be restored by the module before the task ends.
+    added to remote scripts if they are missing. The original permissions
+    for remote scripts will be restored by the module before the task ends.
   - The module will only add execution permissions for the file owner.
   - If executing REXX scripts, make sure to include a newline character on
     each line of the file. Otherwise, the interpreter may fail and return
@@ -284,6 +284,7 @@ def run_module():
                         choices=['\n', '\r', '\r\n']
                     ),
                     auto_reload=dict(type='bool', default=False),
+                    autoescape=dict(type='bool', default=True),
                 )
             ),
         ),
@@ -315,6 +316,7 @@ def run_module():
                 keep_trailing_newline=dict(arg_type='bool', required=False),
                 newline_sequence=dict(arg_type='str', required=False),
                 auto_reload=dict(arg_type='bool', required=False),
+                autoescape=dict(arg_type='bool', required=False),
             )
         ),
     )
@@ -336,6 +338,7 @@ def run_module():
     executable = module.params.get('executable')
     creates = module.params.get('creates')
     removes = module.params.get('removes')
+    script_permissions = None
 
     if creates and os.path.exists(creates):
         result = dict(
@@ -358,13 +361,23 @@ def run_module():
             msg='The given chdir {0} does not exist on the system.'.format(chdir)
         )
 
-    # Adding owner execute permissions to the script.
-    # The module will fail if the Ansible user is not the owner!
-    script_permissions = os.lstat(script_path).st_mode
-    os.chmod(
-        script_path,
-        script_permissions | stat.S_IXUSR
-    )
+    # Checking if current user has permission to execute the script.
+    # If not, we'll try to set execution permissions if possible.
+    if not os.access(script_path, os.X_OK):
+        # Adding owner execute permissions to the script.
+        # The module will fail if the Ansible user is not the owner!
+        try:
+            script_permissions = os.lstat(script_path).st_mode
+            os.chmod(
+                script_path,
+                script_permissions | stat.S_IXUSR
+            )
+        except PermissionError:
+            module.fail_json(
+                msg='User running Ansible does not have permission to run script {0}.'.format(
+                    script_path
+                )
+            )
 
     if executable:
         cmd_str = "{0} {1}".format(executable, cmd_str)
@@ -387,8 +400,9 @@ def run_module():
         stderr_lines=stderr.split('\n'),
     )
 
-    # Reverting script's permissions.
-    os.chmod(script_path, script_permissions)
+    # Reverting script's permissions when needed.
+    if script_permissions:
+        os.chmod(script_path, script_permissions)
 
     if script_rc != 0 or stderr:
         result['msg'] = 'The script terminated with an error'

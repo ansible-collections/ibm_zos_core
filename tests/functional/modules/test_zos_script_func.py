@@ -321,6 +321,7 @@ def test_rexx_script_removes_option(ansible_zos_module):
             os.remove(script_path)
 
 
+@pytest.mark.template
 def test_script_template_with_default_markers(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -330,7 +331,7 @@ def test_script_template_with_default_markers(ansible_zos_module):
 
         # Updating the vars available to the tasks.
         template_vars = {
-            "playbook_msg":'Success'
+            "playbook_msg":'<Success>'
         }
         # pylint: disable-next=protected-access
         for host in hosts['options']['inventory_manager']._inventory.hosts.values():
@@ -338,7 +339,10 @@ def test_script_template_with_default_markers(ansible_zos_module):
 
         zos_script_result = hosts.all.zos_script(
             cmd=script_path,
-            use_template=True
+            use_template=True,
+            template_parameters={
+                "autoescape": False
+            }
         )
 
         for result in zos_script_result.contacted.values():
@@ -352,6 +356,7 @@ def test_script_template_with_default_markers(ansible_zos_module):
             os.remove(script_path)
 
 
+@pytest.mark.template
 def test_script_template_with_custom_markers(ansible_zos_module):
     hosts = ansible_zos_module
 

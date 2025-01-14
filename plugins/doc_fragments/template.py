@@ -117,4 +117,9 @@ options:
             has started.
         type: bool
         default: false
+      autoescape:
+        description:
+          - Whether to enable autoescape of XML/HTML elements on a template.
+        type: bool
+        default: true
 '''

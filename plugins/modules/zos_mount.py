@@ -538,6 +538,7 @@ rc:
 import os
 import re
 import tempfile
+import traceback
 
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
@@ -550,6 +551,14 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_uss_mvs
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    ZOAUImportError,
+)
+
+try:
+    from zoautil_py import datasets
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 # This is a duplicate of backupOper found in zos_apf.py of this collection
@@ -608,82 +617,6 @@ def mt_backupOper(module, src, backup, tmphlq=None):
         module.fail_json(msg="creating backup has failed")
 
     return backup_name
-
-
-def swap_text(original, adding, removing):
-    """swap_text returns original after removing blocks matching removing,
-    and adding the adding param.
-    original now should be a list of lines without newlines.
-    return is the consolidated file value.
-
-    Parameters
-    ----------
-    original : str
-        Text to modify.
-    adding : str
-        Lines to add.
-    removing : str
-        Lines to delete if matched.
-
-    Returns
-    -------
-    str
-        The consolidated file value.
-    """
-    content_lines = original
-
-    remove_starting_at_index = None
-    remove_ending_at_index = None
-
-    ms = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + removing.upper() + r"'\s*\)")
-    removable = dict()
-
-    for index, line in enumerate(content_lines):
-        if remove_starting_at_index is None:
-            if ms.match(line) is not None:
-                remove_starting_at_index = index
-                # Check for comments above the match line
-                if index > 0:
-                    for tmpindex in range(index - 1, 0, -1):
-                        tmpline = content_lines[tmpindex]
-                        if len(tmpline) > 0:
-                            # Added the second test to handle adjacent entries
-                            if tmpline[0:2] != "/*" or tmpline[0:6] == "/* BEG":
-                                remove_starting_at_index = tmpindex
-                                break
-                        else:
-                            remove_starting_at_index = tmpindex
-                            break
-                remove_ending_at_index = index
-                continue
-        if remove_starting_at_index is not None:
-            remove_ending_at_index = index
-            doit = False
-            if len(line) > 0:
-                if line[0] != " " and line[0] != "\t" and line[0:2] != "/*":
-                    doit = True
-                elif line[0:6] == "/* END":
-                    doit = True
-            else:
-                doit = True
-            if doit:
-                removable[remove_starting_at_index] = remove_ending_at_index
-                remove_starting_at_index = None
-                remove_ending_at_index = None
-
-    if remove_starting_at_index is not None:
-        if remove_ending_at_index is not None:
-            if remove_starting_at_index != remove_ending_at_index:
-                removable[remove_starting_at_index] = remove_ending_at_index
-
-    for startidx in reversed(removable.keys()):
-        endidx = removable[startidx]
-        del content_lines[startidx: endidx + 1]
-
-    if len(adding) > 0:
-        content_lines.extend(adding.split("\n"))
-
-    return "\n".join(content_lines)
 
 
 # #############################################################################
@@ -863,10 +796,7 @@ def run_module(module, arg_def):
     # ##########################################
     # Assemble the mount command
 
-    d = datetime.today()
-    dtstr = d.strftime("%Y%m%d-%H%M%S")
-    parmtext = "/* BEGIN ANSIBLE MANAGED BLOCK " + dtstr + " */\n"
-    parmtail = "\n" + parmtext.replace("BEGIN", "END")
+    parmtext = ""
 
     if comment is not None:
         extra = ""
@@ -975,7 +905,7 @@ def run_module(module, arg_def):
                     if len(automove_list) > 1:
                         fullcmd = fullcmd + "(" + automove_list + ")"
                         parmtext = parmtext + "(" + automove_list + ")"
-        parmtext = parmtext + parmtail
+
     else:
         parmtext = ""
 
@@ -1040,45 +970,16 @@ def run_module(module, arg_def):
                 stderr=str(res_args),
             )
 
-        tmp_file = tempfile.NamedTemporaryFile(delete=True)
-        tmp_file_filename = tmp_file.name
-        tmp_file.close()
+        marker = '/* {mark} ANSIBLE MANAGED BLOCK'
+        marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
+        datasets.blockinfile(dataset=data_store, state=False, marker=marker)
 
-        copy_uss_mvs(data_store, tmp_file_filename, is_binary=False)
+        d = datetime.today()
+        dtstr = d.strftime("%Y%m%d-%H%M%S")
+        marker = '/* {mark} ANSIBLE MANAGED BLOCK' + dtstr + "*/"
+        marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
 
-        module.run_command(
-            "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False, errors='replace'
-        )
-
-        with open(tmp_file_filename, "r") as fh:
-            content = fh.read().splitlines()
-
-        cont = list()
-
-        if stdout is None:
-            stdout = " "
-
-        # removing null entries
-        for line in content:
-            if line is not None:
-                if len(line) > 0:
-                    if (line[0:1] is not None) and (line[0:1] != "\u0000"):
-                        cont.append(line)
-
-        stdout += "\n"
-        newtext = swap_text(cont, parmtext, src)
-        if newtext != cont or cont != content:
-            fh = open(tmp_file_filename, "w")
-            fh.write(newtext)
-            fh.close()
-            # pre-clear to prevent caching behavior on the copy-back
-            module.run_command(
-                "mrm " + data_store, use_unsafe_shell=False, errors='replace'
-            )
-            copy_uss_mvs(tmp_file_filename, data_store, is_binary=True)
-
-        if os.path.isfile(tmp_file_filename):
-            os.unlink(tmp_file_filename)
+        datasets.blockinfile(dataset=data_store, state=True, block=parmtext, marker=marker, insert_after="EOF")
 
     if rc == 0:
         if stdout is None:

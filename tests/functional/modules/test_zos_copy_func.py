@@ -2124,6 +2124,7 @@ def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, 
             force_lock=f_lock,
         )
         for result in results.contacted.values():
+            print(result)
             if f_lock:
                 assert result.get("changed") == True
                 assert result.get("msg") is None

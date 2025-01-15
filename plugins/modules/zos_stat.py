@@ -82,7 +82,7 @@ def run_module():
                 'type': 'str',
                 'required': True
             },
-            'volume': {
+            'volumes': {
                 'type': 'list',
                 'required': False,
                 'elements': 'str',
@@ -96,7 +96,7 @@ def run_module():
         },
         required_if=[
             # Forcing a volume list when querying data sets.
-            ('type', 'data_set', ('volume'))
+            ('type', 'data_set', ('volumes',))
         ],
         supports_check_mode=True,
     )
@@ -106,9 +106,9 @@ def run_module():
             'arg_type': 'data_set_or_path',
             'required': True
         },
-        'volume': {
+        'volumes': {
             'arg_type': 'list',
-            'required': True
+            'required': False
         },
         'type': {
             'arg_type': 'str',
@@ -126,7 +126,7 @@ def run_module():
             stderr=str(err)
         )
 
-    result = {}
+    result = {'changed': True}
     module.exit_json(**result)
 
 

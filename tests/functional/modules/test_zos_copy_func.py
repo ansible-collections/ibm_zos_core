@@ -2015,6 +2015,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
             force_lock=f_lock,
         )
         for result in results.contacted.values():
+            print(result)
             if f_lock: #and apf_auth_user:
                 assert result.get("changed") == True
                 assert result.get("msg") is None

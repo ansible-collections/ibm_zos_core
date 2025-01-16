@@ -647,7 +647,7 @@ def get_str_to_keep(dataset, src):
         line_counter+=1
 
     begin_block_code=line_counter
-    for index, line in enumerate(reversed(content[:line_counter])):
+    for line in reversed(content[:line_counter]):
         if "/* BEGIN ANSIBLE MANAGED" in line:
             begin_block_code-=1
             break
@@ -663,7 +663,9 @@ def get_str_to_keep(dataset, src):
     head_content = content[:begin_block_code]
     tail_content = content[end_block_code+1:]
 
-    return head_content, tail_content
+    head_content.extend(tail_content)
+
+    return head_content
 
 
 # #############################################################################
@@ -1020,12 +1022,9 @@ def run_module(module, arg_def):
         bk_ds = datasets.tmp_name(high_level_qualifier=tmphlq)
         datasets.create(name=bk_ds, dataset_type="SEQ")
 
-        new_str_pt1, new_str_pt2 = get_str_to_keep(dataset=data_store, src=src)
+        new_str = get_str_to_keep(dataset=data_store, src=src)
 
-        for line in new_str_pt1:
-            datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
-
-        for line in new_str_pt2:
+        for line in new_str:
             datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
 
         datasets.delete(dataset=data_store)

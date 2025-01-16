@@ -63,15 +63,15 @@ def create_sourcefile(hosts, volume):
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
-    basefile = starter + ".TTT.MNT.ZFS"
-    thisfile = starter + ".TTT.MNT.ZFS"
+    basefile = starter + ".A@$#TO.MNT.ZFS"
+    thisfile = DataSet.escape_data_set_name(basefile)
     print(
         "\ncsf: starter={0} thisfile={1} is type {2}".format(
             starter, thisfile, str(type(thisfile))
         )
     )
 
-    hosts.all.shell(
+    mount_result = hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
         + " -volumes {0} -cylinders 200 1".format(volume),
@@ -79,7 +79,7 @@ def create_sourcefile(hosts, volume):
         stdin="",
     )
 
-    hosts.all.shell(
+    mount_result = hosts.all.shell(
         cmd="zfsadm format -aggregate " + thisfile,
         executable=SHELL_EXECUTABLE,
         stdin="",
@@ -98,7 +98,6 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             src=srcfn, path="/pythonx", fs_type="zfs", state="mounted"
         )
         for result in mount_result.values():
-            print(result)
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
             assert result.get("changed") is True

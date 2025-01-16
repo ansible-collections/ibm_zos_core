@@ -619,6 +619,53 @@ def mt_backupOper(module, src, backup, tmphlq=None):
     return backup_name
 
 
+def get_str_to_keep(dataset, src):
+    """Get the content of previous statements by the module to remove it.
+
+    Parameters
+    ----------
+    dataset : str
+        Dataset for persistant.
+    src : str
+        Name of zfs dataset.
+
+    Returns
+    -------
+    list
+        head_content.
+    list
+        tail_content.
+    """
+    content = datasets.read(dataset=dataset).split("\n")
+    line_counter = 0
+    pattern = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + src.upper() + r"'\s*\)")
+
+    for line in content:
+        if pattern.match(line) is not None:
+            line_counter+=1
+            break
+        line_counter+=1
+
+    begin_block_code=line_counter
+    for index, line in enumerate(reversed(content[:line_counter])):
+        if "/* BEGIN ANSIBLE MANAGED" in line:
+            begin_block_code-=1
+            break
+        begin_block_code-=1
+
+    end_block_code=line_counter
+    for line in content[line_counter:]:
+        if "/* END ANSIBLE MANAGED" in line:
+            end_block_code+=1
+            break
+        end_block_code+=1
+
+    head_content = content[:begin_block_code]
+    tail_content = content[end_block_code+1:]
+
+    return head_content, tail_content
+
+
 # #############################################################################
 # ############## run_module: code for zos_mount module ########################
 # #############################################################################
@@ -970,13 +1017,24 @@ def run_module(module, arg_def):
                 stderr=str(res_args),
             )
 
-        marker = '/* {mark} ANSIBLE MANAGED BLOCK'
-        marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
-        datasets.blockinfile(dataset=data_store, state=False, marker=marker)
+        bk_ds = datasets.tmp_name(high_level_qualifier=tmphlq)
+        datasets.create(name=bk_ds, dataset_type="SEQ")
+
+        new_str_pt1, new_str_pt2 = get_str_to_keep(dataset=data_store, src=src)
+
+        for line in new_str_pt1:
+            datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+
+        for line in new_str_pt2:
+            datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+
+        datasets.delete(dataset=data_store)
+        datasets.copy(source=bk_ds, target=data_store)
+        datasets.delete(dataset=bk_ds)
 
         d = datetime.today()
         dtstr = d.strftime("%Y%m%d-%H%M%S")
-        marker = '/* {mark} ANSIBLE MANAGED BLOCK' + dtstr + "*/"
+        marker = '/* {mark} ANSIBLE MANAGED BLOCK ' + dtstr + " */"
         marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
 
         datasets.blockinfile(dataset=data_store, state=True, block=parmtext, marker=marker, insert_after="EOF")

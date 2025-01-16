@@ -98,6 +98,7 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             src=srcfn, path="/pythonx", fs_type="zfs", state="mounted"
         )
         for result in mount_result.values():
+            print(result)
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
             assert result.get("changed") is True

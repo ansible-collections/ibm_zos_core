@@ -1,0 +1,3 @@
+bugfixes:
+  - zos_mount - Module fail when using persistent option. Fix now uses allow use of persistent option.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1871).

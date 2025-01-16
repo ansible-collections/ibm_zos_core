@@ -63,15 +63,15 @@ def create_sourcefile(hosts, volume):
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
-    basefile = starter + ".A@$#TO.MNT.ZFS"
-    thisfile = DataSet.escape_data_set_name(basefile)
+    basefile = starter + ".TTT.MNT.ZFS"
+    thisfile = starter + ".TTT.MNT.ZFS"
     print(
         "\ncsf: starter={0} thisfile={1} is type {2}".format(
             starter, thisfile, str(type(thisfile))
         )
     )
 
-    mount_result = hosts.all.shell(
+    hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
         + " -volumes {0} -cylinders 200 1".format(volume),
@@ -79,7 +79,7 @@ def create_sourcefile(hosts, volume):
         stdin="",
     )
 
-    mount_result = hosts.all.shell(
+    hosts.all.shell(
         cmd="zfsadm format -aggregate " + thisfile,
         executable=SHELL_EXECUTABLE,
         stdin="",

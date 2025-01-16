@@ -3161,14 +3161,17 @@ def data_set_locked(dataset_name):
     """
     Checks if a data set is in use and therefore locked (DISP=SHR), which
     is often caused by a long running task. Returns a boolean value to indicate the data set status.
+
     Parameters
     ----------
     dataset_name (str):
         The data set name used to check if there is a lock.
+
     Returns
     -------
     bool
         True if the data set is locked, or False if the data set is not locked.
+
     Raises
     ------
     CopyOperationError

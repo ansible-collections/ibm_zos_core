@@ -382,6 +382,7 @@ class FetchHandler:
         max_recl = 80
         # Bytes per cylinder for a 3390 DASD
         bytes_per_cyl = 849960
+        rec_total = 80
 
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
         cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"

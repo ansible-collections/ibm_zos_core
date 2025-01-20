@@ -1994,6 +1994,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
             hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
         # copy text_in source
         hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
+        hosts.all.shell(cmd="decho \"content to avoid identical error\" \"{0}\"".format(dest_data_set))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)

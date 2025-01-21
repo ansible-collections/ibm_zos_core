@@ -1,0 +1,3 @@
+trivial:
+  - zos_fetch - Fixed sanity error sing variable 'rec_total' before assignment.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1866).

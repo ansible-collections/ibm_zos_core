@@ -1,0 +1,3 @@
+trivial:
+  - users.py - Added a code block into an if statement to prevent failing if the test didn't create another managed group.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1873).

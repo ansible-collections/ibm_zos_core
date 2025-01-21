@@ -1023,7 +1023,7 @@ def run_module(module, arg_def):
         try:
             for line in new_str:
                 datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
-        except:
+        except Exception:
             datasets.delete(dataset=bk_ds)
             module.fail_json(
                 msg="Unable to write on persistent data set {0}.".format(data_store),

@@ -537,7 +537,6 @@ rc:
 
 import os
 import re
-import tempfile
 import traceback
 
 from datetime import datetime
@@ -547,9 +546,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
-    copy_uss_mvs
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -642,26 +638,26 @@ def get_str_to_keep(dataset, src):
 
     for line in content:
         if pattern.match(line) is not None:
-            line_counter+=1
+            line_counter += 1
             break
-        line_counter+=1
+        line_counter += 1
 
-    begin_block_code=line_counter
+    begin_block_code = line_counter
     for line in reversed(content[:line_counter]):
         if "/* BEGIN ANSIBLE MANAGED" in line:
-            begin_block_code-=1
+            begin_block_code -= 1
             break
-        begin_block_code-=1
+        begin_block_code -= 1
 
-    end_block_code=line_counter
+    end_block_code = line_counter
     for line in content[line_counter:]:
         if "/* END ANSIBLE MANAGED" in line:
-            end_block_code+=1
+            end_block_code += 1
             break
-        end_block_code+=1
+        end_block_code += 1
 
     head_content = content[:begin_block_code]
-    tail_content = content[end_block_code+1:]
+    tail_content = content[end_block_code + 1:]
 
     head_content.extend(tail_content)
 

@@ -1020,6 +1020,8 @@ def run_module(module, arg_def):
 
         new_str = get_str_to_keep(dataset=data_store, src=src)
 
+        rc_write = 0
+
         for line in new_str:
             rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
             if rc_write != 0:

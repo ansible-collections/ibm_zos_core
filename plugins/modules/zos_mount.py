@@ -1020,18 +1020,19 @@ def run_module(module, arg_def):
 
         new_str = get_str_to_keep(dataset=data_store, src=src)
 
-        rc_write = 0
-
-        for line in new_str:
-            rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
-            if rc_write != 0:
-                datasets.delete(dataset=bk_ds)
-                break
-
-        if rc_write == 0:
-            datasets.delete(dataset=data_store)
-            datasets.copy(source=bk_ds, target=data_store)
+        try:
+            for line in new_str:
+                datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+        except:
             datasets.delete(dataset=bk_ds)
+            module.fail_json(
+                msg="Unable to write on persistent data set {0}.".format(data_store),
+                stderr=str(res_args),
+            )
+
+        datasets.delete(dataset=data_store)
+        datasets.copy(source=bk_ds, target=data_store)
+        datasets.delete(dataset=bk_ds)
 
         if will_mount:
             d = datetime.today()

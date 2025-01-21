@@ -332,11 +332,11 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             is_binary=True,
             remote_src=True,
         )
-        hosts.all.shell(
-            cmd="chtag -t -c ISO8859-1 " + test_tmp_file_filename,
-            executable=SHELL_EXECUTABLE,
-            stdin="",
-        )
+        #hosts.all.shell(
+        #    cmd="chtag -t -c ISO8859-1 " + test_tmp_file_filename,
+        #    executable=SHELL_EXECUTABLE,
+        #    stdin="",
+        #)
         results = hosts.all.shell(
             cmd="cat " + test_tmp_file_filename, executable=SHELL_EXECUTABLE, stdin=""
         )

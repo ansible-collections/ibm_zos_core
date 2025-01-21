@@ -1988,7 +1988,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         dest_data_set = data_set_2
     try:
         hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
-        hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, record_type="v",replace=True)
+        hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
         if ds_type == "pds" or ds_type == "pdse":
             hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
             hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)

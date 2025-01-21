@@ -1021,11 +1021,15 @@ def run_module(module, arg_def):
         new_str = get_str_to_keep(dataset=data_store, src=src)
 
         for line in new_str:
-            datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+            rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+            if rc_write != 0:
+                datasets.delete(dataset=bk_ds)
+                break
 
-        datasets.delete(dataset=data_store)
-        datasets.copy(source=bk_ds, target=data_store)
-        datasets.delete(dataset=bk_ds)
+        if rc_write == 0:
+            datasets.delete(dataset=data_store)
+            datasets.copy(source=bk_ds, target=data_store)
+            datasets.delete(dataset=bk_ds)
 
         if will_mount:
             d = datetime.today()

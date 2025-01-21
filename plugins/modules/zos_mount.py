@@ -1031,10 +1031,11 @@ def run_module(module, arg_def):
         datasets.copy(source=bk_ds, target=data_store)
         datasets.delete(dataset=bk_ds)
 
-        d = datetime.today()
-        dtstr = d.strftime("%Y%m%d-%H%M%S")
-        marker = '/* {mark} ANSIBLE MANAGED BLOCK ' + dtstr + " */"
-        marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
+        if will_mount:
+            d = datetime.today()
+            dtstr = d.strftime("%Y%m%d-%H%M%S")
+            marker = '/* {mark} ANSIBLE MANAGED BLOCK ' + dtstr + " */"
+            marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
 
         datasets.blockinfile(dataset=data_store, state=True, block=parmtext, marker=marker, insert_after="EOF")
 

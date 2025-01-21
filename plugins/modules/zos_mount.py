@@ -1037,7 +1037,7 @@ def run_module(module, arg_def):
             marker = '/* {mark} ANSIBLE MANAGED BLOCK ' + dtstr + " */"
             marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
 
-        datasets.blockinfile(dataset=data_store, state=True, block=parmtext, marker=marker, insert_after="EOF")
+            datasets.blockinfile(dataset=data_store, state=True, block=parmtext, marker=marker, insert_after="EOF")
 
     if rc == 0:
         if stdout is None:

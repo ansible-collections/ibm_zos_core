@@ -312,7 +312,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
             assert result.get("changed") is True
 
         result_cat = hosts.all.shell(
-            cmd="dcat '{0}'".format(dest),
+            cmd="dcat '{0}'".format(dest_path),
         )
 
         for result in result_cat.contacted.values():

@@ -479,9 +479,10 @@ class ManagedUser:
         if not delgroup_rc or int(delgroup_rc[0]) > 0:
             raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
-        delmanagedgroup_rc = [v for v in results_stdout_lines if f"DELMANAGEDGROUP {self._managed_group} RC=" in v][0].split('=')[1].strip() or None
-        if not delmanagedgroup_rc or int(delmanagedgroup_rc[0]) > 0:
-            raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
+        if self._managed_group is not None:
+            delmanagedgroup_rc = [v for v in results_stdout_lines if f"DELMANAGEDGROUP {self._managed_group} RC=" in v][0].split('=')[1].strip() or None
+            if not delmanagedgroup_rc or int(delmanagedgroup_rc[0]) > 0:
+                raise Exception(f"Unable to delete user {escaped_user}, please review the command output {results_stdout_lines}.")
 
     def _get_random_passwd(self) -> str:
         """

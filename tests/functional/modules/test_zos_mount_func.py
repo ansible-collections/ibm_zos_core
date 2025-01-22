@@ -31,6 +31,15 @@ MOUNT FILESYSTEM('IMSTESTU.ZZZ.KID.GA.ZFS')
       AUTOMOVE
 """
 
+SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
+    MOUNTPOINT('/tmp/zfs_aggr1')
+    TYPE('ZFS')
+    SECURITY
+    æ
+    automove
+    'AB\xfc'
+"""
+
 SHELL_EXECUTABLE = "/bin/sh"
 
 
@@ -255,6 +264,75 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             record_length=80,
         )
 
+def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
+
+    tmp_file_filename = "/tmp/testfile.txt"
+
+    hosts.all.zos_copy(
+        content=SRC_INVALID_UTF8.encode('cp1252'),
+        dest=tmp_file_filename,
+        is_binary=True,
+    )
+
+    dest = get_tmp_ds_name()
+    dest_path = dest + "(AUTO1)"
+
+    hosts.all.zos_data_set(
+        name=dest,
+        type="pdse",
+        space_primary=5,
+        space_type="m",
+        record_format="fba",
+        record_length=80,
+    )
+
+    hosts.all.zos_copy(
+        src=tmp_file_filename,
+        dest=dest_path,
+        is_binary=True,
+        remote_src=True,
+    )
+
+    try:
+        mount_result = hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="mounted",
+            persistent=dict(data_store=dest_path),
+        )
+
+        for result in mount_result.values():
+            assert result.get("rc") == 0
+            assert result.get("changed") is True
+
+    finally:
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="absent",
+        )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+        hosts.all.file(path=tmp_file_filename, state="absent")
+        hosts.all.file(path="/pythonx/", state="absent")
+        hosts.all.zos_data_set(
+            name=dest,
+            state="absent",
+            type="pdse",
+            space_primary=5,
+            space_type="m",
+            record_format="fba",
+            record_length=80,
+        )
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module

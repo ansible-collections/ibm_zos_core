@@ -557,6 +557,7 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             assert len(result.get("jobs")) == 0
             assert result.get("job_name") is None
             assert result.get("duration") is None
+            assert result.get("execution_time") is None
             assert result.get("ddnames") is not None
             assert result.get("ddnames").get("ddname") is None
             assert result.get("ddnames").get("record_count") is None
@@ -688,6 +689,7 @@ def test_job_submit_pds_5_sec_job_wait_15(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get('changed') is True
             assert result.get('duration') <= wait_time_s
+            assert result.get('execution_time') is not None
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")
@@ -722,6 +724,7 @@ def test_job_submit_pds_30_sec_job_wait_60(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get('changed') is True
             assert result.get('duration') <= wait_time_s
+            assert result.get('execution_time') is not None
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")
@@ -757,6 +760,7 @@ def test_job_submit_pds_30_sec_job_wait_10_negative(ansible_zos_module):
             assert result.get('duration') >= wait_time_s
             # expecting at least "long running job that exceeded its maximum wait"
             assert re.search(r'exceeded', repr(result.get("msg")))
+            assert result.get('execution_time') is not None
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")

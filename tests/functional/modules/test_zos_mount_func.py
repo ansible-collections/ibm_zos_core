@@ -279,7 +279,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
     )
 
     hosts.all.shell(
-        cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
+        cmd="chtag -t -c Cp1252 " + tmp_file_filename,
         executable=SHELL_EXECUTABLE,
         stdin="",
     )

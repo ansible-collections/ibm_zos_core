@@ -287,13 +287,8 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
     dest = get_tmp_ds_name()
     dest_path = dest + "(AUTO1)"
 
-    hosts.all.zos_data_set(
-        name=dest,
-        type="pdse",
-        space_primary=5,
-        space_type="m",
-        record_format="fba",
-        record_length=80,
+    hosts.all.shell(
+        cmd="dtouch -tpdse {0}".format(dest)
     )
 
     hosts.all.zos_copy(
@@ -317,6 +312,15 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
             assert result.get("rc") == 0
             assert result.get("changed") is True
 
+        result_cat = hosts.all.shell(
+            cmd="dcat '{0}'".format(dest),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
+        for result in result_cat.values():
+            print(result)
+            assert srcfn in result.get("stdout")
     finally:
         hosts.all.zos_mount(
             src=srcfn,
@@ -331,14 +335,10 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
         )
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
-        hosts.all.zos_data_set(
-            name=dest,
-            state="absent",
-            type="pdse",
-            space_primary=5,
-            space_type="m",
-            record_format="fba",
-            record_length=80,
+        hosts.all.shell(
+            cmd="drm " + dest,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
         )
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_systems):

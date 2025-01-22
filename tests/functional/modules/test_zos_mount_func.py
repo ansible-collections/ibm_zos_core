@@ -319,8 +319,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
         )
 
         for result in result_cat.values():
-            print(result)
-            assert srcfn in result.get("stdout")
+            assert DataSet.escape_data_set_name(srcfn) in result.get("stdout")
     finally:
         hosts.all.zos_mount(
             src=srcfn,

@@ -314,8 +314,6 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
 
         result_cat = hosts.all.shell(
             cmd="dcat '{0}'".format(dest),
-            executable=SHELL_EXECUTABLE,
-            stdin="",
         )
 
         for result in result_cat.contacted.values():

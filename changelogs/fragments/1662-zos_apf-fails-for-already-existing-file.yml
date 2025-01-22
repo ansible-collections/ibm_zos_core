@@ -1,0 +1,2 @@
+bugfixes:
+  - zos_apf - if dataset present in the apf list it will not fail the command on addition or deletion to the list

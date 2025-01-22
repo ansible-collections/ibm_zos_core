@@ -273,9 +273,15 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
     tmp_file_filename = "/tmp/testfile.txt"
 
     hosts.all.zos_copy(
-        content=u'æ'.encode('cp1252'),
+        content=SRC_INVALID_UTF8,
         dest=tmp_file_filename,
         is_binary=True,
+    )
+
+    hosts.all.shell(
+        cmd="iconv -f utf-8 -t cp1252 " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin="",
     )
 
     dest = get_tmp_ds_name()

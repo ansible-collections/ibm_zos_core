@@ -313,6 +313,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_o
         )
 
         for result in mount_result.values():
+            print(result)
             assert result.get("rc") == 0
             assert result.get("changed") is True
 

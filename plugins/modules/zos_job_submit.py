@@ -180,7 +180,7 @@ jobs:
       type: int
       sample: 0
     execution_time:
-      description: The time the JCL executed for.
+      description: Total duration time of the job execution, if it has finished.
       type: str
       sample: 00:00:10
     ddnames:

@@ -51,6 +51,20 @@ options:
       - data_set
       - file
       - aggregate
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary data
+        sets.
+      - The default HLQ is the Ansible user used to execute the module and
+        if that is not available, then the environment variable value
+        C(TMPHLQ) is used.
+    type: str
+    required: false
+
+notes:
+  - When querying data sets, the module will create a temporary data set
+    that requires around 4 kilobytes of available space on the remote host.
+    This data set will be removed before the module finishes execution.
 
 seealso:
   - module: ansible.builtin.stat

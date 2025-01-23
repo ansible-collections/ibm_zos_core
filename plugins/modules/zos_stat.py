@@ -103,7 +103,41 @@ except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
-LISTDSI_SCRIPT = """/* REXX */
+class FactsHandler():
+    """Base class for every other handler that will query resources on
+    a z/OS system.
+    """
+
+    def __init__(self, name: str, module: AnsibleModule):
+        """For now, the only attribute the different classes will share it's
+        the name of the resource they are trying to query. They will also all
+        require access to an AnsibleModule object to run shell commands.
+        """
+        self.name = name
+        self.module = module
+
+    @abc.abstractmethod
+    def exists(self):
+        pass
+
+    @abc.abstractmethod
+    def query(self):
+        pass
+
+    @abc.abstractmethod
+    def get_extra_data(self):
+        """Extra data will be treated as any information that should be returned
+        to the user as part of the 'notes' section of the final JSON object.
+        """
+        pass
+
+
+class DataSetHandler(FactsHandler):
+    """Class that can query facts from a sequential, partitioned (PDS), partitioned
+    extended (PDSE), VSAM or generation data sets.
+    """
+
+    LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
 * © Copyright IBM Corporation 2025
 ***********************************************************/
@@ -188,41 +222,6 @@ else
 
 return 0"""
 
-
-class FactsHandler():
-    """Base class for every other handler that will query resources on
-    a z/OS system.
-    """
-
-    def __init__(self, name: str, module: AnsibleModule):
-        """For now, the only attribute the different classes will share it's
-        the name of the resource they are trying to query. They will also all
-        require access to an AnsibleModule object to run shell commands.
-        """
-        self.name = name
-        self.module = module
-
-    @abc.abstractmethod
-    def exists(self):
-        pass
-
-    @abc.abstractmethod
-    def query(self):
-        pass
-
-    @abc.abstractmethod
-    def get_extra_data(self):
-        """Extra data will be treated as any information that should be returned
-        to the user as part of the 'notes' section of the final JSON object.
-        """
-        pass
-
-
-class DataSetHandler(FactsHandler):
-    """Class that can query facts from a sequential, partitioned (PDS), partitioned
-    extended (PDSE), VSAM or generation data sets.
-    """
-
     def __init__(self, name: str, volume: str, module: AnsibleModule, tmp_hlq: str):
         """Create a new handler that will contain the args given and look up
         the type of data set we'll query.
@@ -241,53 +240,63 @@ class DataSetHandler(FactsHandler):
     def query(self):
         data = {}
 
-        # TODO: get the absolute name for a GDG before using LISTDSI.
-        if self.data_set_type == 'GDG':
-            pass
-        # TODO: Probably need to change it to use DataSet's enum.
-        elif self.data_set_type == 'VSAM':
-            pass
+        if self.data_set_type in DataSet.MVS_VSAM:
+            data = self._query_vsam()
         else:
-            # First creating a temp data set to hold the LISTDSI script.
-            # All options are meant to allocate just enough space for it.
-            temp_script_location = DataSet.create_temp(
-                hlq=self.tmp_hlq,
-                type='SEQ',
-                record_format='FB',
-                space_primary=4,
-                space_secondary=0,
-                space_type='K',
-                record_length=60
-            )
+            if self.data_set_type == 'GDS':
+                # TODO: get the absolute name for a GDS before using LISTDSI.
+                pass
 
-            try:
-                datasets.write(temp_script_location, LISTDSI_SCRIPT)
-            except zoau_exceptions.DatasetWriteException as exc:
-                return {
-                    'msg': 'decho failed',
-                    'rc': exc.rc,
-                    'stdout': exc.stdout_response,
-                    'stderr': exc.stderr_response,
-                    'temp': temp_script_location
-                }
-
-            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name}' exec" """
-            rc, stdout, stderr = self.module.run_command(tso_cmd)
-            if rc != 0:
-                raise QueryException('Error while running query script.')
-            data = json.loads(stdout)
-
-            try:
-                datasets.delete(temp_script_location)
-            except zoau_exceptions.ZOAUException as exc:
-                return {
-                    'msg': 'removal failed',
-                    'rc': exc.rc,
-                    'stdout': exc.stdout_response,
-                    'stderr': exc.stderr_response
-                }
+            data = self._query_non_vsam()
 
         return data
+
+    def _query_non_vsam(self):
+        """Uses LISTDSI to query facts about a data set."""
+        # First creating a temp data set to hold the LISTDSI script.
+        # All options are meant to allocate just enough space for it.
+        temp_script_location = DataSet.create_temp(
+            hlq=self.tmp_hlq,
+            type='SEQ',
+            record_format='FB',
+            space_primary=4,
+            space_secondary=0,
+            space_type='K',
+            record_length=60
+        )
+
+        try:
+            datasets.write(temp_script_location, self.LISTDSI_SCRIPT)
+        except zoau_exceptions.DatasetWriteException as exc:
+            return {
+                'msg': 'decho failed',
+                'rc': exc.rc,
+                'stdout': exc.stdout_response,
+                'stderr': exc.stderr_response,
+                'temp': temp_script_location
+            }
+
+        tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name}' exec" """
+        rc, stdout, stderr = self.module.run_command(tso_cmd)
+        if rc != 0:
+            raise QueryException('Error while running query script.')
+        data = json.loads(stdout)
+
+        try:
+            datasets.delete(temp_script_location)
+        except zoau_exceptions.ZOAUException as exc:
+            return {
+                'msg': 'removal failed',
+                'rc': exc.rc,
+                'stdout': exc.stdout_response,
+                'stderr': exc.stderr_response
+            }
+
+        return data
+
+    def _query_vsam(self):
+        """Uses LISTCAT to query facts about a VSAM."""
+        pass
 
 
 class QueryException(Exception):

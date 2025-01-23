@@ -223,12 +223,13 @@ class DataSetHandler(FactsHandler):
     extended (PDSE), VSAM or generation data sets.
     """
 
-    def __init__(self, name: str, volume: str, module: AnsibleModule):
+    def __init__(self, name: str, volume: str, module: AnsibleModule, tmp_hlq: str):
         """Create a new handler that will contain the args given and look up
         the type of data set we'll query.
         """
         super(DataSetHandler, self).__init__(name, module)
         self.volume = volume
+        self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
         self.data_set_type = DataSet.data_set_type(name, volume=volume)
         # Since data_set_type returns None for a non-existent data set,
         # we'll set this value now and avoid another call to the util.
@@ -250,7 +251,7 @@ class DataSetHandler(FactsHandler):
             # First creating a temp data set to hold the LISTDSI script.
             # All options are meant to allocate just enough space for it.
             temp_script_location = DataSet.create_temp(
-                hlq='', # TODO: add temp_hlq.
+                hlq=self.tmp_hlq,
                 type='SEQ',
                 record_format='FB',
                 space_primary=4,
@@ -297,12 +298,17 @@ class QueryException(Exception):
         self.msg = msg
         super().__init__(self.msg)
 
-def get_facts_handler(name: str, resource_type: str, module: AnsibleModule, volume: str = None):
+def get_facts_handler(
+        name: str,
+        resource_type: str,
+        module: AnsibleModule,
+        volume: str = None,
+        tmp_hlq: str = None):
     """Returns the correct handler needed depending on the type of resource
     we will query.
     """
     if resource_type == 'data_set':
-        return DataSetHandler(name, volume, module)
+        return DataSetHandler(name, volume, module, tmp_hlq)
     elif resource_type == 'file':
         pass
     elif resource_type == 'aggregate':
@@ -320,13 +326,17 @@ def run_module():
             },
             'volume': {
                 'type': 'str',
-                'required': False,
+                'required': False
             },
             'type': {
                 'type': 'str',
                 'required': False,
                 'default': 'data_set',
                 'choices': ['data_set', 'file', 'aggregate']
+            },
+            'tmp_hlq': {
+                'type': 'str',
+                'required': False
             }
         },
         required_if=[
@@ -348,6 +358,10 @@ def run_module():
         'type': {
             'arg_type': 'str',
             'required': False
+        },
+        'tmp_hlq': {
+            'arg_type': 'str',
+            'required': False
         }
     }
 
@@ -364,8 +378,9 @@ def run_module():
     name = module.params.get('name')
     volume = module.params.get('volume')
     resource_type = module.params.get('type')
+    tmp_hlq = module.params.get('tmp_hlq')
 
-    facts_handler = get_facts_handler(name, resource_type, module, volume)
+    facts_handler = get_facts_handler(name, resource_type, module, volume, tmp_hlq)
     result = {}
 
     if not facts_handler.exists():

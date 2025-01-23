@@ -65,6 +65,8 @@ EXAMPLES = r"""
 RETURN = r"""
 """
 
+import abc
+import json
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -76,12 +78,109 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     GenerationDataGroup
 )
 
+try:
+    from zoautil_py import datasets
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
+
+try:
+    from zoautil_py import exceptions as zoau_exceptions
+except ImportError:
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
+
+
+LISTDSI_SCRIPT = """/* REXX */
+/***********************************************************
+* © Copyright IBM Corporation 2025
+***********************************************************/
+parse arg data_set_name
+data_set_name = "'" || data_set_name || "'"
+data_set_info = LISTDSI(DATA_SET_NAME)
+
+/* Returning an error in JSON format for the module. */
+if SYSREASON > 0 then
+  do
+    say '{'
+    say '"error":true,'
+    say '"reason_code":' || SYSREASON || ','
+    say '"lvl1":"' || SYSMSGLVL1 || '",'
+    say '"lvl2":"' || SYSMSGLVL2 || '"'
+    say '}'
+    return 1
+  end
+
+if data_set_info == 0 then
+  do
+    say '{'
+    /* General information */
+    say '"dsorg":"' || SYSDSORG || '",'
+    say '"type":"' || SYSDSSMS || '",'
+    say '"record_format":"' || SYSRECFM || '",'
+    say '"record_length":"' || SYSLRECL || '",'
+    say '"block_size":"' || SYSBLKSIZE || '",'
+    say '"key_length":"' || SYSKEYLEN || '",'
+    say '"created":"' || SYSCREATE || '",'
+    say '"last_referenced":"' || SYSREFDATE || '",'
+    say '"expires":"' || SYSEXDATE || '",'
+    say '"updated":"' || SYSUPDATED || '",'
+    say '"creation_time":"' || SYSCREATETIME || '",'
+    say '"creation_step":"' || SYSCREATESTEP || '",'
+    say '"creation_job":"' || SYSCREATEJOB || '",'
+    say '"sms_data_class":"' || SYSDATACLASS || '",'
+    say '"sms_storage_class":"' || SYSSTORCLASS || '",'
+    say '"sms_management_class":"' || SYSMGMTCLASS || '",'
+    say '"has_eattr":"' || SYSEADSCB || '",'
+    say '"eattr_bits":"' || SYSEATTR || '",'
+    /* Allocation information */
+    say '"num_volumes":"' || SYSNUMVOLS || '",'
+    say '"volumes":"' || SYSVOLUMES || '",'
+    say '"device_type":"' || SYSUNIT || '",'
+    say '"space_units":"' || SYSUNITS || '",'
+    say '"allocation":"' || SYSALLOC || '",'
+    say '"allocation_used":"' || SYSUSED || '",'
+    say '"primary_allocation":"' || SYSPRIMARY || '",'
+    say '"secondary_allocation":"' || SYSSECONDS || '",'
+    say '"extends_allocated":"' || SYSEXTENTS || '",'
+    say '"extends_used":"' || SYSUSEDEXTENTS || '",'
+    say '"tracks":"' || SYSTRKSCYL || '",'
+    say '"blocks":"' || SYSBLKSTRK || '",'
+    /* Security information */
+    say '"password":"' || SYSPASSWORD || '",'
+    say '"racf":"' || SYSRACFA || '",'
+    say '"is_encrypted":"' || SYSENCRYPT || '",'
+    say '"encryption_key_label":"' || SYSKEYLABEL || '",'
+    /* PDS attributes */
+    say '"dir_blocks_allocated":"' || SYSADIRBLK || '",'
+    say '"dir_blocks_used":"' || SYSUDIRBLK || '",'
+    say '"members":"' || SYSMEMBERS || '",'
+    say '"allocation_pages_used":"' || SYSUSEDPAGES || '",'
+    /* PDSE attributes */
+    say '"pdse_alloc_pages":"' || SYSALLOCPAGES || '",'
+    say '"pdse_percentage_used":"' || SYSUSEDPERCENT || '",'
+    say '"pdse_version":"' || SYSDSVERSION || '",'
+    say '"max_pdse_generation":"' || SYSMAXGENS || '",'
+    /* Sequential attributes */
+    say '"seq_type":"' || SYSSEQDSNTYPE || '"'
+    say '}'
+  end
+else
+  do
+    say '{'
+    say '"error":true'
+    say '"msg":"Data set was not found"'
+    say '}'
+    return 1
+  end
+
+return 0"""
+
+
 class FactsHandler():
     """Base class for every other handler that will query resources on
     a z/OS system.
     """
 
-    def __init__(name: str, module: AnsibleModule):
+    def __init__(self, name: str, module: AnsibleModule):
         """For now, the only attribute the different classes will share it's
         the name of the resource they are trying to query. They will also all
         require access to an AnsibleModule object to run shell commands.
@@ -90,15 +189,15 @@ class FactsHandler():
         self.module = module
 
     @abc.abstractmethod
-    def exists():
+    def exists(self):
         pass
 
     @abc.abstractmethod
-    def query():
+    def query(self):
         pass
 
     @abc.abstractmethod
-    def get_extra_data():
+    def get_extra_data(self):
         """Extra data will be treated as any information that should be returned
         to the user as part of the 'notes' section of the final JSON object.
         """
@@ -110,7 +209,7 @@ class DataSetHandler(FactsHandler):
     extended (PDSE), VSAM or generation data sets.
     """
 
-    def __init__(name: str, volume: str, module: AnsibleModule):
+    def __init__(self, name: str, volume: str, module: AnsibleModule):
         """Create a new handler that will contain the args given and look up
         the type of data set we'll query.
         """
@@ -119,21 +218,68 @@ class DataSetHandler(FactsHandler):
         self.data_set_type = DataSet.data_set_type(name, volume=volume)
         # Since data_set_type returns None for a non-existent data set,
         # we'll set this value now and avoid another call to the util.
-        self.exists = True if self.data_set_type else False
+        self.data_set_exists = True if self.data_set_type else False
 
-    def exists():
-        return self.exists
+    def exists(self):
+        return self.data_set_exists
 
-    def query():
-        # Query facts.
-        # Format return value.
+    def query(self):
+        data = {}
+
+        # TODO: get the absolute name for a GDG before using LISTDSI.
+        if self.data_set_type == 'GDG':
+            pass
+        # TODO: Probably need to change it to use DataSet's enum.
+        elif self.data_set_type == 'VSAM':
+            pass
+        else:
+            # First creating a temp data set to hold the LISTDSI script.
+            # All options are meant to allocate just enough space for it.
+            temp_script_location = DataSet.create_temp(
+                hlq='', # TODO: add temp_hlq.
+                type='SEQ',
+                record_format='FB',
+                space_primary=4,
+                space_secondary=0,
+                space_type='K',
+                record_length=60
+            )
+
+            try:
+                datasets.write(temp_script_location, LISTDSI_SCRIPT)
+            except zoau_exceptions.DatasetWriteException as exc:
+                return {
+                    'msg': 'decho failed',
+                    'rc': exc.rc,
+                    'stdout': exc.stdout_response,
+                    'stderr': exc.stderr_response,
+                    'temp': temp_script_location
+                }
+
+            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name}' exec" """
+            rc, stdout, stderr = self.module.run_command(tso_cmd)
+            if rc != 0:
+                raise QueryException('Error while running query script.')
+            data = json.loads(stdout)
+
+            try:
+                datasets.delete(temp_script_location)
+            except zoau_exceptions.ZOAUException as exc:
+                return {
+                    'msg': 'removal failed',
+                    'rc': exc.rc,
+                    'stdout': exc.stdout_response,
+                    'stderr': exc.stderr_response
+                }
+
+        return data
 
 
 class QueryException(Exception):
     """Exception class to encapsulate any error the handlers raise while
     trying to query a resource.
     """
-    def __init__(self, msg):
+    def __init__(self, msg, rc=None, stdout=None, stderr=None):
         self.msg = msg
         super().__init__(self.msg)
 
@@ -170,7 +316,7 @@ def run_module():
             }
         },
         required_if=[
-            # Forcing a volume list when querying data sets.
+            # Forcing a volume when querying data sets.
             ('type', 'data_set', ('volume',))
         ],
         supports_check_mode=True,

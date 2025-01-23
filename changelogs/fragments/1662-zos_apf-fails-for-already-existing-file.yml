@@ -1,2 +1,3 @@
 bugfixes:
   - zos_apf - if dataset present in the apf list it will not fail the command on addition or deletion to the list
+  (https://github.com/ansible-collections/ibm_zos_core/pull/1893)

@@ -133,7 +133,8 @@ jobs:
       type: str
       sample: "14:15:00"
     execution_time:
-      description: Total duration time of the job execution, if it has finished. If the job is still running, it represents the time elapsed from the job execution start and current time.
+      description: Total duration time of the job execution, if it has finished. If the job is still running,
+      it represents the time elapsed from the job execution start and current time.
       type: str
       sample: 00:00:10
     ddnames:

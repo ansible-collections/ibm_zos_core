@@ -89,7 +89,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
     MVSDataSet,
-    GenerationDataGroup
+    GenerationDataGroup,
+    DatasetCreateError
 )
 
 try:
@@ -233,6 +234,8 @@ return 0"""
         # Since data_set_type returns None for a non-existent data set,
         # we'll set this value now and avoid another call to the util.
         self.data_set_exists = True if self.data_set_type else False
+        # TODO: add name resolution for GDSs.
+        self.is_gds = False
 
     def exists(self):
         return self.data_set_exists
@@ -243,9 +246,8 @@ return 0"""
         if self.data_set_type in DataSet.MVS_VSAM:
             data = self._query_vsam()
         else:
-            if self.data_set_type == 'GDS':
-                # TODO: get the absolute name for a GDS before using LISTDSI.
-                pass
+            if self.is_gds:
+                data['absolute_name'] = self.name
 
             data = self._query_non_vsam()
 
@@ -255,42 +257,44 @@ return 0"""
         """Uses LISTDSI to query facts about a data set."""
         # First creating a temp data set to hold the LISTDSI script.
         # All options are meant to allocate just enough space for it.
-        temp_script_location = DataSet.create_temp(
-            hlq=self.tmp_hlq,
-            type='SEQ',
-            record_format='FB',
-            space_primary=4,
-            space_secondary=0,
-            space_type='K',
-            record_length=60
-        )
+        data = {}
 
         try:
+            temp_script_location = DataSet.create_temp(
+                hlq=self.tmp_hlq,
+                type='SEQ',
+                record_format='FB',
+                space_primary=4,
+                space_secondary=0,
+                space_type='K',
+                record_length=60
+            )
+
             datasets.write(temp_script_location, self.LISTDSI_SCRIPT)
-        except zoau_exceptions.DatasetWriteException as exc:
-            return {
-                'msg': 'decho failed',
-                'rc': exc.rc,
-                'stdout': exc.stdout_response,
-                'stderr': exc.stderr_response,
-                'temp': temp_script_location
-            }
+            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name}' exec" """
+            rc, stdout, stderr = self.module.run_command(tso_cmd)
 
-        tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name}' exec" """
-        rc, stdout, stderr = self.module.run_command(tso_cmd)
-        if rc != 0:
-            raise QueryException('Error while running query script.')
-        data = json.loads(stdout)
+            if rc != 0:
+                raise QueryException(
+                    f'An error ocurred while querying information for {self.name}.',
+                    rc=rc,
+                    stdout=stdout,
+                    stderr=stderr
+                )
 
-        try:
+            data = json.loads(stdout)
+
+        except DatasetCreateError as err:
+            raise QueryException(err.msg)
+        except zoau_exceptions.DatasetWriteException as err:
+            raise QueryException(
+                'An error ocurred while creating the temporary query script.',
+                rc=err.rc,
+                stdout=err.stdout_response,
+                stderr=err.stderr_response
+            )
+        finally:
             datasets.delete(temp_script_location)
-        except zoau_exceptions.ZOAUException as exc:
-            return {
-                'msg': 'removal failed',
-                'rc': exc.rc,
-                'stdout': exc.stdout_response,
-                'stderr': exc.stderr_response
-            }
 
         return data
 
@@ -303,16 +307,28 @@ class QueryException(Exception):
     """Exception class to encapsulate any error the handlers raise while
     trying to query a resource.
     """
-    def __init__(self, msg, rc=None, stdout=None, stderr=None):
-        self.msg = msg
-        super().__init__(self.msg)
+    def __init__(
+        self,
+        msg,
+        rc=None,
+        stdout=None,
+        stderr=None
+    ):
+        self.json_args = {
+            'msg': msg,
+            'rc': rc,
+            'stdout': stdout,
+            'stderr': stderr
+        }
+        super().__init__(msg)
 
 def get_facts_handler(
-        name: str,
-        resource_type: str,
-        module: AnsibleModule,
-        volume: str = None,
-        tmp_hlq: str = None):
+    name: str,
+    resource_type: str,
+    module: AnsibleModule,
+    volume: str = None,
+    tmp_hlq: str = None
+):
     """Returns the correct handler needed depending on the type of resource
     we will query.
     """
@@ -399,8 +415,13 @@ def run_module():
     try:
         data = facts_handler.query()
         notes = facts_handler.get_extra_data()
-    except QueryException as exc:
-        result['msg'] = exc.msg
+    except QueryException as err:
+        module.fail_json(**err.json_args)
+    except zoau_exceptions.ZOAUException as err:
+        result['msg'] = 'An error ocurred during removal of a temp data set.'
+        result['rc'] = err.rc
+        result['stdout'] = err.stdout_response
+        result['stderr'] = err.stderr_response
         module.fail_json(**result)
 
     result['stat'] = data

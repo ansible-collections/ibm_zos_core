@@ -480,3 +480,20 @@ def test_user_run_script_from_another_user(ansible_zos_module, z_python_interpre
     finally:
         hosts.all.file(path=script_path, state="absent")
         managed_user.delete_managed_user()
+
+def test_remote_script_doest_not_exist(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    script_path = '/tmp/zos_script_test_script'
+
+    msg = 'File {0} does not exists on the system, skipping script'.format(script_path)
+
+    zos_script_result = hosts.all.zos_script(
+        cmd=script_path,
+        remote_src=True
+    )
+
+    for result in zos_script_result.contacted.values():
+        assert result.get('changed') is False
+        assert result.get('failed') is True
+        assert msg in result.get('msg')

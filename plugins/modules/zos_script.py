@@ -338,6 +338,7 @@ def run_module():
     executable = module.params.get('executable')
     creates = module.params.get('creates')
     removes = module.params.get('removes')
+    remote_src = module.params.get('remote_src')
     script_permissions = None
 
     if creates and os.path.exists(creates):
@@ -360,6 +361,14 @@ def run_module():
         module.fail_json(
             msg='The given chdir {0} does not exist on the system.'.format(chdir)
         )
+
+    if remote_src and not os.path.exists(cmd_str):
+        result = dict(
+            changed=False,
+            skipped=True,
+            msg='File {0} does not exists on the system, skipping script'.format(cmd_str)
+        )
+        module.fail_json(**result)
 
     # Checking if current user has permission to execute the script.
     # If not, we'll try to set execution permissions if possible.

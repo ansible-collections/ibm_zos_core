@@ -232,7 +232,8 @@ def copy_asa_uss2mvs(src, dest, tmphlq=None):
     """
 
     module = AnsibleModuleHelper(argument_spec={})
-    oget_cmd = f"tsocmd \" OGET '{src}' '{dest}' \""
+    new_dest = dest.replace("\\$", "$")
+    oget_cmd = f"tsocmd \" OGET '{src}' '{new_dest}' \""
     rc, out, err = module.run_command(oget_cmd)
 
     return TSOCmdResponse(rc, out, err)

@@ -1654,8 +1654,8 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
 
     try:
         dest = get_tmp_ds_name()
-        hosts.all.zos_data_set(name=dest, state="absent")
-        full_dest = "{0}(TEST)".format(dest)
+        full_dest = "{0}(TE$T)".format(dest)
+        full_dest = "OMVSADM.TEST.PDS(TEST)"
 
         copy_result = hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
@@ -1665,16 +1665,18 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest),
+            cmd="dcat '{1}'".format(dest, full_dest),
             executable=SHELL_EXECUTABLE,
         )
 
         for cp_res in copy_result.contacted.values():
+            print(cp_res)
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == full_dest
             assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
+            print(v_cp)
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
     finally:

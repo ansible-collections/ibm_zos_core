@@ -138,6 +138,13 @@ class DataSetHandler(FactsHandler):
     extended (PDSE), VSAM or generation data sets.
     """
 
+    # TODO: missing: block_count, owner, last_updated, creation_program
+    # TODO: get a better creation time
+    # TODO: add gdgs and gdss
+    # TODO: test with multi-volume data sets
+    # TODO: parse 'NO' and 'YES' values to booleans
+    # TODO: parse numerical values
+
     LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
 * © Copyright IBM Corporation 2025
@@ -167,45 +174,46 @@ if data_set_info == 0 then
     say '"record_format":"' || SYSRECFM || '",'
     say '"record_length":"' || SYSLRECL || '",'
     say '"block_size":"' || SYSBLKSIZE || '",'
-    say '"key_length":"' || SYSKEYLEN || '",'
-    say '"created":"' || SYSCREATE || '",'
-    say '"last_referenced":"' || SYSREFDATE || '",'
-    say '"expires":"' || SYSEXDATE || '",'
-    say '"updated":"' || SYSUPDATED || '",'
+    say '"has_extended_attrs":"' || SYSEADSCB || '",'
+    say '"extended_attrs_bits":"' || SYSEATTR || '",'
+    say '"creation_date":"' || SYSCREATE || '",'
     say '"creation_time":"' || SYSCREATETIME || '",'
+    say '"expiration_date":"' || SYSEXDATE || '",'
+    say '"last_reference":"' || SYSREFDATE || '",'
+    say '"updated_since_backup":"' || SYSUPDATED || '",'
+    say '"jcl_attrs":{'
     say '"creation_step":"' || SYSCREATESTEP || '",'
-    say '"creation_job":"' || SYSCREATEJOB || '",'
-    say '"sms_data_class":"' || SYSDATACLASS || '",'
-    say '"sms_storage_class":"' || SYSSTORCLASS || '",'
-    say '"sms_management_class":"' || SYSMGMTCLASS || '",'
-    say '"has_eattr":"' || SYSEADSCB || '",'
-    say '"eattr_bits":"' || SYSEATTR || '",'
+    say '"creation_job":"' || SYSCREATEJOB || '"'
+    say '},'
     /* Allocation information */
+    say '"volser":"' || SYSVOLUME || '",'
     say '"num_volumes":"' || SYSNUMVOLS || '",'
     say '"volumes":"' || SYSVOLUMES || '",'
     say '"device_type":"' || SYSUNIT || '",'
     say '"space_units":"' || SYSUNITS || '",'
-    say '"allocation":"' || SYSALLOC || '",'
+    say '"primary_space":"' || SYSPRIMARY || '",'
+    say '"secondary_space":"' || SYSSECONDS || '",'
+    say '"allocation_available":"' || SYSALLOC || '",'
     say '"allocation_used":"' || SYSUSED || '",'
-    say '"primary_allocation":"' || SYSPRIMARY || '",'
-    say '"secondary_allocation":"' || SYSSECONDS || '",'
-    say '"extends_allocated":"' || SYSEXTENTS || '",'
-    say '"extends_used":"' || SYSUSEDEXTENTS || '",'
-    say '"tracks":"' || SYSTRKSCYL || '",'
-    say '"blocks":"' || SYSBLKSTRK || '",'
+    say '"extents_allocated":"' || SYSEXTENTS || '",'
+    say '"extents_used":"' || SYSUSEDEXTENTS || '",'
+    say '"blocks_per_track":"' || SYSBLKSTRK || '",'
+    say '"tracks_per_cylinder":"' || SYSTRKSCYL || '",'
+    say '"sms_mgmt_class":"' || SYSMGMTCLASS || '",'
+    say '"sms_storage_class":"' || SYSSTORCLASS || '",'
+    say '"sms_data_class":"' || SYSDATACLASS || '",'
     /* Security information */
+    say '"encrypted":"' || SYSENCRYPT || '",'
     say '"password":"' || SYSPASSWORD || '",'
     say '"racf":"' || SYSRACFA || '",'
-    say '"is_encrypted":"' || SYSENCRYPT || '",'
-    say '"encryption_key_label":"' || SYSKEYLABEL || '",'
-    /* PDS attributes */
+    say '"key_label":"' || SYSKEYLABEL || '",'
+    /* PDS/E attributes */
     say '"dir_blocks_allocated":"' || SYSADIRBLK || '",'
     say '"dir_blocks_used":"' || SYSUDIRBLK || '",'
     say '"members":"' || SYSMEMBERS || '",'
-    say '"allocation_pages_used":"' || SYSUSEDPAGES || '",'
-    /* PDSE attributes */
-    say '"pdse_alloc_pages":"' || SYSALLOCPAGES || '",'
-    say '"pdse_percentage_used":"' || SYSUSEDPERCENT || '",'
+    say '"pages_allocated":"' || SYSALLOCPAGES || '",'
+    say '"pages_used":"' || SYSUSEDPAGES || '",'
+    say '"perc_pages_used":"' || SYSUSEDPERCENT || '",'
     say '"pdse_version":"' || SYSDSVERSION || '",'
     say '"max_pdse_generation":"' || SYSMAXGENS || '",'
     /* Sequential attributes */
@@ -241,25 +249,28 @@ return 0"""
         return self.data_set_exists
 
     def query(self):
-        data = {}
+        data = {
+            'resource_type': 'data_set',
+            'name': self.name
+        }
 
         if self.data_set_type in DataSet.MVS_VSAM:
-            data = self._query_vsam()
+            data['attributes'] = self._query_vsam()
         else:
-            if self.is_gds:
-                data['absolute_name'] = self.name
+            data['attributes'] = self._query_non_vsam()
 
-            data = self._query_non_vsam()
+            # if self.is_gds:
+            #     data['absolute_name'] = self.absolute_name
 
         return data
 
     def _query_non_vsam(self):
         """Uses LISTDSI to query facts about a data set."""
-        # First creating a temp data set to hold the LISTDSI script.
-        # All options are meant to allocate just enough space for it.
-        data = {}
+        attributes = {}
 
         try:
+            # First creating a temp data set to hold the LISTDSI script.
+            # All options are meant to allocate just enough space for it.
             temp_script_location = DataSet.create_temp(
                 hlq=self.tmp_hlq,
                 type='SEQ',
@@ -282,7 +293,7 @@ return 0"""
                     stderr=stderr
                 )
 
-            data = json.loads(stdout)
+            attributes = json.loads(stdout)
 
         except DatasetCreateError as err:
             raise QueryException(err.msg)
@@ -296,7 +307,7 @@ return 0"""
         finally:
             datasets.delete(temp_script_location)
 
-        return data
+        return attributes
 
     def _query_vsam(self):
         """Uses LISTCAT to query facts about a VSAM."""
@@ -422,6 +433,9 @@ def run_module():
         result['rc'] = err.rc
         result['stdout'] = err.stdout_response
         result['stderr'] = err.stderr_response
+        module.fail_json(**result)
+    except Exception as err:
+        result['msg'] = f'An unexpected error ocurred while querying a resource: {err.msg}'
         module.fail_json(**result)
 
     result['stat'] = data

@@ -264,7 +264,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             record_length=80,
         )
 
-def test_basic_mount_with_bpx_no_utf_8_characters_(ansible_zos_module, volumes_on_systems):
+def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()

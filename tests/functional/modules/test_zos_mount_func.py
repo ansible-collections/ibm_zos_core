@@ -32,12 +32,11 @@ MOUNT FILESYSTEM('IMSTESTU.ZZZ.KID.GA.ZFS')
 """
 
 SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
+    MOUNTPOINT('/tmp/src/somedirectory') 0xC1
     MOUNTPOINT('/tmp/zfs_aggr1')
     TYPE('ZFS')
     SECURITY
-    æ
-    automove
-    'AB\xfc'
+    0x15 0x0D 0x25 0x0E 0x0F 0xF8 0xC1
 """
 
 SHELL_EXECUTABLE = "/bin/sh"
@@ -272,15 +271,11 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
 
     tmp_file_filename = "/tmp/testfile.txt"
 
-    hosts.all.zos_copy(
-        content=SRC_INVALID_UTF8,
-        dest=tmp_file_filename,
-        is_binary=True,
+    hosts.all.shell(
+         cmd="touch {0}".format(tmp_file_filename)
     )
 
-    f = open(tmp_file_filename, "w", encoding='utf8')
-    f.write("çıkardınız")
-    f.close()
+    hosts.all.zos_blockinfile(path=tmp_file_filename, insertafter="EOF", block=SRC_INVALID_UTF8)
 
     dest = get_tmp_ds_name()
     dest_path = dest + "(AUTO1)"

@@ -35,7 +35,6 @@ SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
     MOUNTPOINT('/tmp/src/somedirectory') 0xC1
     MOUNTPOINT('/tmp/zfs_aggr1')
     TYPE('ZFS')
-    0x0D 0x25
     SECURITY
 """
 

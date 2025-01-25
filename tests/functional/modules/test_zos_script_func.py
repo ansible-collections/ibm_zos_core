@@ -21,8 +21,6 @@ import pytest
 __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
-
-
 # Using || to concatenate strings without extra spaces.
 REXX_SCRIPT_ARGS = """/* REXX */
 parse arg 'FIRST=' A ' SECOND=' B
@@ -481,10 +479,11 @@ def test_user_run_script_from_another_user(ansible_zos_module, z_python_interpre
         hosts.all.file(path=script_path, state="absent")
         managed_user.delete_managed_user()
 
+
 def test_remote_script_doest_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
 
-    script_path = '/tmp/zos_script_test_script'
+    script_path = '/tmp/zos_script_test'
 
     msg = 'File {0} does not exists on the system, skipping script'.format(script_path)
 
@@ -497,3 +496,68 @@ def test_remote_script_doest_not_exist(ansible_zos_module):
         assert result.get('changed') is False
         assert result.get('failed') is True
         assert msg in result.get('msg')
+
+
+def test_remote_script_with_args_doest_not_exist(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    script_path = '/tmp/zos_script_test'
+    first_arg = 'one'
+    second_arg = 'two'
+    args = f'FIRST={first_arg} SECOND={second_arg}'
+    cmd = f"{script_path} '{args}'"
+
+    msg = 'File {0} does not exists on the system, skipping script'.format(script_path)
+
+    zos_script_result = hosts.all.zos_script(
+        cmd=cmd,
+        remote_src=True
+    )
+
+    for result in zos_script_result.contacted.values():
+        assert result.get('changed') is False
+        assert result.get('failed') is True
+        assert msg in result.get('msg')
+
+
+def test_rexx_script_with_args_remote_src(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        rexx_script = REXX_SCRIPT_ARGS
+        local_script = create_local_file(rexx_script, 'rexx')
+
+        script_path = '/tmp/zos_script_test_script'
+        copy_result = hosts.all.zos_copy(
+            src=local_script,
+            dest=script_path,
+            force=True
+        )
+        for result in copy_result.contacted.values():
+            assert result.get('changed') is True
+
+        first_arg = 'one'
+        second_arg = 'two'
+        args = f'FIRST={first_arg} SECOND={second_arg}'
+        cmd = f"{script_path} '{args}'"
+
+        zos_script_result = hosts.all.zos_script(
+            cmd=cmd,
+            remote_src=True
+        )
+
+        for result in zos_script_result.contacted.values():
+            print(result)
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('rc') == 0
+            assert first_arg in result.get('stdout', '')
+            assert second_arg in result.get('stdout', '')
+            assert args in result.get('invocation').get('module_args').get('cmd')
+            assert args in result.get('remote_cmd')
+            assert result.get('stderr', '') == ''
+    finally:
+        if os.path.exists(script_path):
+            os.remove(script_path)
+        if os.path.exists(local_script):
+            os.remove(local_script)

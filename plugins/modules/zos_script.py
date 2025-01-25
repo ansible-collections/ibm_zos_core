@@ -362,11 +362,11 @@ def run_module():
             msg='The given chdir {0} does not exist on the system.'.format(chdir)
         )
 
-    if remote_src and not os.path.exists(cmd_str):
+    if remote_src and not os.path.exists(script_path):
         result = dict(
             changed=False,
             skipped=True,
-            msg='File {0} does not exists on the system, skipping script'.format(cmd_str)
+            msg='File {0} does not exists on the system, skipping script'.format(script_path)
         )
         module.fail_json(**result)
 

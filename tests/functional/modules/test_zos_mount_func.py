@@ -35,8 +35,8 @@ SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
     MOUNTPOINT('/tmp/src/somedirectory') 0xC1
     MOUNTPOINT('/tmp/zfs_aggr1')
     TYPE('ZFS')
+    0x0D 0x25
     SECURITY
-    0x15 0x0D 0x25 0x0E 0x0F 0xF8 0xC1
 """
 
 SHELL_EXECUTABLE = "/bin/sh"

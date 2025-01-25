@@ -278,11 +278,9 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
         is_binary=True,
     )
 
-    hosts.all.shell(
-        cmd="iconv -f utf-8 -t cp1252 " + tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin="",
-    )
+    f = open(tmp_file_filename, "w", encoding='utf8')
+    f.write("çıkardınız")
+    f.close()
 
     dest = get_tmp_ds_name()
     dest_path = dest + "(AUTO1)"
@@ -308,6 +306,7 @@ def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on
         )
 
         for result in mount_result.values():
+            print(result)
             assert result.get("rc") == 0
             assert result.get("changed") is True
 

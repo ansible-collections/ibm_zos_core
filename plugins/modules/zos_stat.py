@@ -139,11 +139,23 @@ class DataSetHandler(FactsHandler):
     """
 
     # TODO: missing: block_count, owner, last_updated, creation_program
-    # TODO: get a better creation time
+    # TODO: handle datetimes:
+    #  - creation time (original format is year/day)
+    #  - expiration time (original format is year/day)
+    #  - last reference time (original format is year/day)
     # TODO: add gdgs and gdss
+    # TODO: use DIRECTORY when dealing with PDS/E
     # TODO: test with multi-volume data sets
-    # TODO: parse 'NO' and 'YES' values to booleans
-    # TODO: parse numerical values
+    # TODO: SYSADIRBLK may return "NO_LIM", handle that
+    # TODO: vars that return 'N/A' with PDSEs
+    #  - SYSUSED
+    #  - SYSUSEDEXTENTS
+    #  - SYSBLKSTRK
+    #  - SYSUDIRBLK
+    # vars with possible 'unknown' values:
+    #  - SYSDSORG (???)
+    #  - SYSRECFM (??????)
+    #  - SYSUNITS (????????)
 
     LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
@@ -262,6 +274,7 @@ return 0"""
             # if self.is_gds:
             #     data['absolute_name'] = self.absolute_name
 
+        data['attributes'] = self._parse_attributes(data['attributes'])
         return data
 
     def _query_non_vsam(self):
@@ -312,6 +325,58 @@ return 0"""
     def _query_vsam(self):
         """Uses LISTCAT to query facts about a VSAM."""
         pass
+
+    def _parse_attributes(self, attrs: dict):
+        """Since all attributes returned by running commands return strings,
+        this method ensures numerical and boolean values are returned as such.
+        It also makes sure datetimes are better formatted and replaces '?'
+        with more user-friendly values."""
+        attrs = {
+            key: attrs[key] if attrs[key] != "" else None
+            for key in attrs
+        }
+
+        # Numerical values.
+        num_attrs = [
+            'record_length',
+            'block_size',
+            'num_volumes',
+            'primary_space',
+            'secondary_space',
+            'allocation_available',
+            'allocation_used',
+            'extents_allocated',
+            'extents_used',
+            'blocks_per_track',
+            'tracks_per_cylinder',
+            'dir_blocks_allocated',
+            'dir_blocks_used',
+            'members',
+            'pages_allocated',
+            'pages_used',
+            'perc_pages_used',
+            'pdse_version',
+            'max_pdse_generation'
+        ]
+        attrs = self._parse_values(attrs, num_attrs, int)
+
+        # Boolean values.
+        bool_attrs = ['has_extended_attrs', 'updated_since_backup', 'encrypted']
+        attrs = self._replace_values(attrs, bool_attrs, True, False, 'YES')
+
+        return attrs
+
+    def _parse_values(self, attrs, keys, true_function):
+        for key in keys:
+            attrs[key] = true_function(attrs[key]) if attrs[key] else None
+
+        return attrs
+
+    def _replace_values(self, attrs, keys, true_value, false_value, condition):
+        for key in keys:
+            attrs[key] = true_value if attrs[key] == condition else false_value
+
+        return attrs
 
 
 class QueryException(Exception):

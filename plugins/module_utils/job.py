@@ -320,7 +320,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
     final_entries = []
 
-    with open("/tmp/log.txt", "wa") as fh:
+    with open("/tmp/log.txt", "a") as fh:
         basic = "\r\nTRACEIN 332: id {}, owner {}, job name{} temp {}\r\n"
         fmt = basic.format(job_id, owner, job_name, job_id_temp )
         fh.write( fmt )

@@ -160,6 +160,18 @@ Hello, world!
 /*
 //SYSUT2   DD SYSOUT=*
 //
+""",
+    "Autoescape": """//{{ pgm_name }}    JOB (T043JM,JM00,1,0,0,0),{{ parameter }},CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+{# This comment should not be part of the JCL #}
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD {{ input_dataset }}
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+{{ message  }}
+/*
+//SYSUT2   DD SYSOUT=*
+//
 """
 }
 
@@ -844,6 +856,13 @@ def test_job_submit_max_rc(ansible_zos_module, args):
         "options":{
             "keep_trailing_newline":False
         }
+    },
+    {
+        "template":"Autoescape",
+        "options":{
+            "keep_trailing_newline":False,
+            "autoescape":False
+        }
     }
 ])
 def test_job_submit_jinja_template(ansible_zos_module, args):
@@ -858,6 +877,7 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
             "pgm_name":"HELLO",
             "input_dataset":"DUMMY",
             "message":"Hello, world",
+            "parameter":"'HELLO WORLD - &JRM'",
             "steps":[
                 {
                     "step_name":"IN",

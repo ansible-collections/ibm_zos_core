@@ -320,6 +320,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
     final_entries = []
 
+    with open("/tmp/log.txt", "wa") as fh:
+        basic = "\r\nTRACEIN 332: id {}, owner {}, job name{} temp {}\r\n"
+        fmt = basic.format(job_id, owner, job_name, job_id_temp )
+        fh.write( fmt )
+
+
+
     # In 1.3.0, include_extended has to be set to true so we get the program name for a job.
     entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
 
@@ -328,6 +335,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
         duration = round(current_time - start_time)
         sleep(1)
         entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+
+    # print( "\r\nTRACEIN 332: id {job_id}, owner {owner}, job name{job_name} temp {job_id_temp}\y\n")
 
     if entries:
         for entry in entries:

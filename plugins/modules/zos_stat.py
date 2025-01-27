@@ -65,6 +65,10 @@ notes:
   - When querying data sets, the module will create a temporary data set
     that requires around 4 kilobytes of available space on the remote host.
     This data set will be removed before the module finishes execution.
+  - Sometimes, the system could be unable to properly determine the
+    organization or record format of the data set or the space units used
+    to represent its allocation. When this happens, the values for these
+    fields will be null.
 
 seealso:
   - module: ansible.builtin.stat
@@ -81,6 +85,7 @@ RETURN = r"""
 
 import abc
 import json
+from datetime import datetime
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -139,10 +144,6 @@ class DataSetHandler(FactsHandler):
     """
 
     # TODO: missing: block_count, owner, last_updated, creation_program
-    # TODO: handle datetimes:
-    #  - creation time (original format is year/day)
-    #  - expiration time (original format is year/day)
-    #  - last reference time (original format is year/day)
     # TODO: add gdgs and gdss
     # TODO: use DIRECTORY when dealing with PDS/E
     # TODO: test with multi-volume data sets
@@ -152,10 +153,6 @@ class DataSetHandler(FactsHandler):
     #  - SYSUSEDEXTENTS
     #  - SYSBLKSTRK
     #  - SYSUDIRBLK
-    # vars with possible 'unknown' values:
-    #  - SYSDSORG (???)
-    #  - SYSRECFM (??????)
-    #  - SYSUNITS (????????)
 
     LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
@@ -284,6 +281,7 @@ return 0"""
         try:
             # First creating a temp data set to hold the LISTDSI script.
             # All options are meant to allocate just enough space for it.
+            # TODO: review whether the record length is still correct.
             temp_script_location = DataSet.create_temp(
                 hlq=self.tmp_hlq,
                 type='SEQ',
@@ -332,9 +330,14 @@ return 0"""
         It also makes sure datetimes are better formatted and replaces '?'
         with more user-friendly values."""
         attrs = {
-            key: attrs[key] if attrs[key] != "" else None
+            key: attrs[key] if attrs[key] != '' or '?' in attrs[key] else None
             for key in attrs
         }
+
+        if attrs['jcl_attrs']['creation_job'] == '':
+            attrs['jcl_attrs']['creation_job'] = None
+        if attrs['jcl_attrs']['creation_step'] == '':
+            attrs['jcl_attrs']['creation_step'] = None
 
         # Numerical values.
         num_attrs = [
@@ -364,17 +367,35 @@ return 0"""
         bool_attrs = ['has_extended_attrs', 'updated_since_backup', 'encrypted']
         attrs = self._replace_values(attrs, bool_attrs, True, False, 'YES')
 
+        # Datetime values.
+        datetime_attrs = ['creation_date', 'expiration_date', 'last_reference']
+        attrs = self._parse_datetimes(attrs, datetime_attrs)
+
         return attrs
 
     def _parse_values(self, attrs, keys, true_function):
         for key in keys:
-            attrs[key] = true_function(attrs[key]) if attrs[key] else None
+            try:
+                attrs[key] = true_function(attrs[key]) if attrs[key] else None
+            except ValueError:
+                pass
 
         return attrs
 
     def _replace_values(self, attrs, keys, true_value, false_value, condition):
         for key in keys:
             attrs[key] = true_value if attrs[key] == condition else false_value
+
+        return attrs
+
+    def _parse_datetimes(self, attrs, keys):
+        for key in keys:
+            try:
+                attrs[key] = datetime.strptime(attrs[key], '%Y/%j').strftime('%Y-%m-%d')
+            except ValueError:
+                # z/OS returns 0 when a date is not set.
+                if attrs[key] == "0":
+                    attrs[key] = None
 
         return attrs
 

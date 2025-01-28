@@ -145,32 +145,24 @@ class DataSetHandler(FactsHandler):
 
     # TODO: missing: block_count, owner, last_updated, creation_program
     # TODO: add gdgs and gdss
-    # TODO: use DIRECTORY when dealing with PDS/E
     # TODO: test with multi-volume data sets
-    # TODO: SYSADIRBLK may return "NO_LIM", handle that
-    # TODO: vars that return 'N/A' with PDSEs
-    #  - SYSUSED
-    #  - SYSUSEDEXTENTS
-    #  - SYSBLKSTRK
-    #  - SYSUDIRBLK
+    # TODO: add option for sms-managed data sets
+    #  multivol, smsinfo
+    # TODO: add notes about how DIRECTORY and SMSINFO could affect last ref
 
     LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
 * © Copyright IBM Corporation 2025
 ***********************************************************/
-parse arg data_set_name
-data_set_name = "'" || data_set_name || "'"
-data_set_info = LISTDSI(DATA_SET_NAME)
+arg data_set_name volume extra_args
+listdsi_args = "'" || data_set_name || "'"
+listdsi_args = listdsi_args "VOLUME(" || volume || ")"
+listdsi_args = listdsi_args extra_args
+data_set_info = LISTDSI(LISTDSI_ARGS)
 
-/* Returning an error in JSON format for the module. */
 if SYSREASON > 0 then
   do
-    say '{'
-    say '"error":true,'
-    say '"reason_code":' || SYSREASON || ','
-    say '"lvl1":"' || SYSMSGLVL1 || '",'
-    say '"lvl2":"' || SYSMSGLVL2 || '"'
-    say '}'
+    say SYSREASON SYSMSGLVL1 SYSMSGLVL2
     return 1
   end
 
@@ -279,6 +271,10 @@ return 0"""
         attributes = {}
 
         try:
+            extra_args = ""
+            if self.data_set_type in DataSet.MVS_PARTITIONED:
+                extra_args = "DIRECTORY"
+
             # First creating a temp data set to hold the LISTDSI script.
             # All options are meant to allocate just enough space for it.
             # TODO: review whether the record length is still correct.
@@ -293,7 +289,7 @@ return 0"""
             )
 
             datasets.write(temp_script_location, self.LISTDSI_SCRIPT)
-            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name}' exec" """
+            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name} {self.volume} {extra_args}' exec" """
             rc, stdout, stderr = self.module.run_command(tso_cmd)
 
             if rc != 0:
@@ -330,7 +326,7 @@ return 0"""
         It also makes sure datetimes are better formatted and replaces '?'
         with more user-friendly values."""
         attrs = {
-            key: attrs[key] if attrs[key] != '' or '?' in attrs[key] else None
+            key: attrs[key] if self._is_value_valid(attrs[key]) else None
             for key in attrs
         }
 
@@ -372,6 +368,9 @@ return 0"""
         attrs = self._parse_datetimes(attrs, datetime_attrs)
 
         return attrs
+
+    def _is_value_valid(self, value):
+        return value != '' and '?' not in value and value != 'N/A' and value != 'NO_LIM'
 
     def _parse_values(self, attrs, keys, true_function):
         for key in keys:
@@ -521,7 +520,7 @@ def run_module():
         result['stderr'] = err.stderr_response
         module.fail_json(**result)
     except Exception as err:
-        result['msg'] = f'An unexpected error ocurred while querying a resource: {err.msg}'
+        result['msg'] = f'An unexpected error ocurred while querying a resource: {str(err)}.'
         module.fail_json(**result)
 
     result['stat'] = data

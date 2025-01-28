@@ -51,6 +51,17 @@ options:
       - data_set
       - file
       - aggregate
+  sms_managed:
+    description:
+        - Whether the data set is managed by the Storage Management Subsystem.
+        - It will cause the module to retrieve additional information, may
+          take longer to query all attributes of a data set.
+        - If the data set is a PDSE and the Ansible user has RACF READ authority
+          on it, retrieving SMS information will update the last referenced
+          date of the data set.
+    type: bool
+    required: false
+    default: true
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary data
@@ -69,6 +80,9 @@ notes:
     organization or record format of the data set or the space units used
     to represent its allocation. When this happens, the values for these
     fields will be null.
+  - When querying a partitioned data set (PDS), if the Ansible user has
+    RACF READ authority on it, the last referenced date will be updated by
+    the query operation.
 
 seealso:
   - module: ansible.builtin.stat
@@ -121,6 +135,7 @@ class FactsHandler():
         """
         self.name = name
         self.module = module
+        self.extra_data = ''
 
     @abc.abstractmethod
     def exists(self):
@@ -130,12 +145,11 @@ class FactsHandler():
     def query(self):
         pass
 
-    @abc.abstractmethod
     def get_extra_data(self):
         """Extra data will be treated as any information that should be returned
         to the user as part of the 'notes' section of the final JSON object.
         """
-        pass
+        return self.extra_data
 
 
 class DataSetHandler(FactsHandler):
@@ -145,9 +159,8 @@ class DataSetHandler(FactsHandler):
 
     # TODO: missing: block_count, owner, last_updated, creation_program
     # TODO: add gdgs and gdss
-    # TODO: add option for sms-managed data sets
+    # TODO: add vsams
     # TODO: handle multivol
-    # TODO: add notes about how DIRECTORY and SMSINFO could affect last ref
 
     LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
@@ -231,13 +244,21 @@ else
 
 return 0"""
 
-    def __init__(self, name: str, volume: str, module: AnsibleModule, tmp_hlq: str):
+    def __init__(
+        self,
+        name: str,
+        volume: str,
+        module: AnsibleModule,
+        tmp_hlq: str = None,
+        sms_managed: bool = False
+    ):
         """Create a new handler that will contain the args given and look up
         the type of data set we'll query.
         """
         super(DataSetHandler, self).__init__(name, module)
         self.volume = volume
         self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
+        self.sms_managed = sms_managed
         self.data_set_type = DataSet.data_set_type(name, volume=volume, tmphlq=self.tmp_hlq)
         # Since data_set_type returns None for a non-existent data set,
         # we'll set this value now and avoid another call to the util.
@@ -270,13 +291,8 @@ return 0"""
         attributes = {}
 
         try:
-            extra_args = ""
-            if self.data_set_type in DataSet.MVS_PARTITIONED:
-                extra_args = "DIRECTORY"
-
             # First creating a temp data set to hold the LISTDSI script.
             # All options are meant to allocate just enough space for it.
-            # TODO: review whether the record length is still correct.
             temp_script_location = DataSet.create_temp(
                 hlq=self.tmp_hlq,
                 type='SEQ',
@@ -288,16 +304,7 @@ return 0"""
             )
 
             datasets.write(temp_script_location, self.LISTDSI_SCRIPT)
-            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name} {self.volume} {extra_args}' exec" """
-            rc, stdout, stderr = self.module.run_command(tso_cmd)
-
-            if rc != 0:
-                raise QueryException(
-                    f'An error ocurred while querying information for {self.name}.',
-                    rc=rc,
-                    stdout=stdout,
-                    stderr=stderr
-                )
+            rc, stdout, stderr = self._run_listdsi_command(temp_script_location)
 
             attributes = json.loads(stdout)
 
@@ -318,6 +325,34 @@ return 0"""
     def _query_vsam(self):
         """Uses LISTCAT to query facts about a VSAM."""
         pass
+
+    def _run_listdsi_command(self, temp_script_location):
+        extra_args = ''
+        if self.data_set_type in DataSet.MVS_PARTITIONED:
+            extra_args = 'DIRECTORY'
+        if self.sms_managed:
+            extra_args = f'{extra_args} SMSINFO'
+
+        tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name} {self.volume} {extra_args}' exec" """
+        rc, stdout, stderr = self.module.run_command(tso_cmd)
+
+        # Retrying the query without asking for SMS information.
+        # The error code is specifically the code for when a data set is not
+        # SMS-managed.
+        if rc != 0 and 'IKJ58430I' in stdout:
+            tso_cmd = tso_cmd.replace('SMSINFO', '')
+            rc, stdout, stderr = self.module.run_command(tso_cmd)
+            self.extra_data  = f'{self.extra_data}The data set is not managed by SMS.\n'
+
+        if rc != 0:
+            raise QueryException(
+                f'An error ocurred while querying information for {self.name}.',
+                rc=rc,
+                stdout=stdout,
+                stderr=stderr
+            )
+
+        return rc, stdout, stderr
 
     def _parse_attributes(self, attrs: dict):
         """Since all attributes returned by running commands return strings,
@@ -422,13 +457,14 @@ def get_facts_handler(
     resource_type: str,
     module: AnsibleModule,
     volume: str = None,
-    tmp_hlq: str = None
+    tmp_hlq: str = None,
+    sms_managed: bool = False
 ):
     """Returns the correct handler needed depending on the type of resource
     we will query.
     """
     if resource_type == 'data_set':
-        return DataSetHandler(name, volume, module, tmp_hlq)
+        return DataSetHandler(name, volume, module, tmp_hlq, sms_managed)
     elif resource_type == 'file':
         pass
     elif resource_type == 'aggregate':
@@ -453,6 +489,11 @@ def run_module():
                 'required': False,
                 'default': 'data_set',
                 'choices': ['data_set', 'file', 'aggregate']
+            },
+            'sms_managed': {
+                'type': 'bool',
+                'required': False,
+                'default': False
             },
             'tmp_hlq': {
                 'type': 'str',
@@ -479,6 +520,10 @@ def run_module():
             'arg_type': 'str',
             'required': False
         },
+        'sms_managed': {
+            'arg_type': 'bool',
+            'required': False
+        },
         'tmp_hlq': {
             'arg_type': 'str',
             'required': False
@@ -499,8 +544,16 @@ def run_module():
     volume = module.params.get('volume')
     resource_type = module.params.get('type')
     tmp_hlq = module.params.get('tmp_hlq')
+    sms_managed = module.params.get('sms_managed')
 
-    facts_handler = get_facts_handler(name, resource_type, module, volume, tmp_hlq)
+    facts_handler = get_facts_handler(
+        name,
+        resource_type,
+        module,
+        volume,
+        tmp_hlq,
+        sms_managed
+    )
     result = {}
 
     if not facts_handler.exists():

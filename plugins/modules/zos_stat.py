@@ -145,9 +145,8 @@ class DataSetHandler(FactsHandler):
 
     # TODO: missing: block_count, owner, last_updated, creation_program
     # TODO: add gdgs and gdss
-    # TODO: test with multi-volume data sets
     # TODO: add option for sms-managed data sets
-    #  multivol, smsinfo
+    # TODO: handle multivol
     # TODO: add notes about how DIRECTORY and SMSINFO could affect last ref
 
     LISTDSI_SCRIPT = """/* REXX */
@@ -239,7 +238,7 @@ return 0"""
         super(DataSetHandler, self).__init__(name, module)
         self.volume = volume
         self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
-        self.data_set_type = DataSet.data_set_type(name, volume=volume)
+        self.data_set_type = DataSet.data_set_type(name, volume=volume, tmphlq=self.tmp_hlq)
         # Since data_set_type returns None for a non-existent data set,
         # we'll set this value now and avoid another call to the util.
         self.data_set_exists = True if self.data_set_type else False

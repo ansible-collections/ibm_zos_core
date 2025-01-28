@@ -411,39 +411,46 @@ def create_trace_dataset(name, member=False):
     """
     if member:
         dataset_name = data_set.extract_dsname(name)
-        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=200, record_format="VB")
+        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=200, record_format="VB",
+                                        space_type="K", space_primary="42000", space_secondary="25000")
         rc = data_set.DataSet.ensure_member_present(name)
     else:
-        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB")
+        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
+                                            space_type="K", space_primary="42000", space_secondary="25000")
 
     return rc
 
 
 def validate_information_dataset(dataset):
+    """Function to validates the proper characteristics of the dataset to use on trace output.
+
+    Args:
+        dataset (str): dataset name
+
+    Returns:
+        bool: if the dataset is valid or not
+        str: specification of the problem
+    """
     dataset = data_set.extract_dsname(dataset)
 
     trace_ds = data_set.DataSetUtils(data_set=dataset)
     trace_information = trace_ds._gather_data_set_info()
 
-    if trace_information["dsorg"] is "PS":
+    if trace_information["dsorg"] != "PO":
         return False, "data set type is PS required PO."
 
     if trace_information["lrecl"] < 80:
         return False, "logical record lenght is not enought."
 
-    ds_attributes = datasets.list_datasets(dataset)[0]
-    size = int(ds_attributes.total_space)
-    space_primary = int(math.ceil(convert_size(size=size, space_type="cyl")))
-    space_secondary = int(math.ceil(convert_size(size=size, space_type="cyl") * 0.10))
-
-    if space_primary < 50:
-        return False, "not enought primary space is below 50 cyl."
-
-    if space_secondary < 30:
-        return False, "not enought secondary space is below 30 cyl."
-
     if trace_information["recfm"] != "VB":
         return False, f"record format is {trace_information['recfm']} required vb."
+
+    ds_attributes = datasets.list_datasets(dataset)[0]
+    size = int(ds_attributes.total_space)
+    space_primary = int(size)
+
+    if space_primary < 42498000:
+        return False, "not enought primary space is below 50 cyl."
 
     return True, ""
 

@@ -400,7 +400,7 @@ def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, pe
     str
         APF command.
     """
-    operation = "-i -A" if opt == "add" else "-i -D"
+    operation = "-i -A" if opt == "add" else "-D"
     operation_args = library
 
     if volume:
@@ -448,7 +448,7 @@ def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
     command = "apfadm"
 
     for item in batch:
-        operation = "-i -A" if item["opt"] == "add" else "-i -D"
+        operation = "-i -A" if item["opt"] == "add" else "-D"
         operation_args = item["dsname"]
 
         volume = item.get("volume")

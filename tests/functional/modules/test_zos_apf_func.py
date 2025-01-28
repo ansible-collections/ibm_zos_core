@@ -438,10 +438,11 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
             assert result.get("rc") == 0
+        # Second call to zos_apf, same as first but with different expectations
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
-            # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 16 or result.get("rc") == 8
+            # RC 0 should be allowed for ZOAU >= 1.3.4, but earlier versions should expect rc == 8 or 16
+            assert result.get("rc") == 0 or result.get("rc") == 8 or result.get("rc") == 16
         test_info['state'] = 'absent'
         hosts.all.zos_apf(**test_info)
     finally:

@@ -34,7 +34,6 @@ try:
 except ImportError:
     exceptions = ZOAUImportError(traceback.format_exc())
 
-
 try:
     # For files that import individual functions from a ZOAU module,
     # we'll replace the imports to instead get the module.
@@ -330,7 +329,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+        # entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+        entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, job_name=job_name, include_extended=True)
 
     if entries:
         for entry in entries:

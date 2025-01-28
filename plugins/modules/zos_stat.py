@@ -128,10 +128,13 @@ class FactsHandler():
     a z/OS system.
     """
 
-    def __init__(self, name: str, module: AnsibleModule):
-        """For now, the only attribute the different classes will share it's
-        the name of the resource they are trying to query. They will also all
-        require access to an AnsibleModule object to run shell commands.
+    def __init__(self, name, module):
+        """Setting up the three common attributes for each handler (resource name,
+        module and extra_data.
+
+        Arguments:
+            name (str) -- Resource name.
+            module (AnsibleModule) -- Ansible object with the task's context.
         """
         self.name = name
         self.module = module
@@ -148,6 +151,9 @@ class FactsHandler():
     def get_extra_data(self):
         """Extra data will be treated as any information that should be returned
         to the user as part of the 'notes' section of the final JSON object.
+
+        Returns:
+            str -- Any extra data found while querying.
         """
         return self.extra_data
 
@@ -244,16 +250,15 @@ else
 
 return 0"""
 
-    def __init__(
-        self,
-        name: str,
-        volume: str,
-        module: AnsibleModule,
-        tmp_hlq: str = None,
-        sms_managed: bool = False
-    ):
-        """Create a new handler that will contain the args given and look up
-        the type of data set we'll query.
+    def __init__(self, name, volume, module, tmp_hlq, sms_managed):
+        """Create a new handler that will handle the query of an MVS data set.
+
+        Arguments:
+            name (str) -- Name of the data set.
+            volume (str) -- Volume where the data set is allocated.
+            module (AnsibleModule) -- Ansible object with the task's context.
+            tmp_hlq (str) -- Temporary HLQ to be used in some operations.
+            sms_managed (bool) -- Whether the data set is managed by SMS.
         """
         super(DataSetHandler, self).__init__(name, module)
         self.volume = volume
@@ -267,9 +272,17 @@ return 0"""
         self.is_gds = False
 
     def exists(self):
+        """Returns whether the given data set was found on the system.
+        """
         return self.data_set_exists
 
     def query(self):
+        """Query a non-VSAM or VSAM data set and parse the output taken from
+        the query commands.
+
+        Returns:
+            dict -- Attributes queried for a data set.
+        """
         data = {
             'resource_type': 'data_set',
             'name': self.name
@@ -287,7 +300,16 @@ return 0"""
         return data
 
     def _query_non_vsam(self):
-        """Uses LISTDSI to query facts about a data set."""
+        """Uses LISTDSI to query facts about a data set, while also handling
+        specific arguments needed depending on data set type.
+
+        Returns:
+            dict -- Data set attributes.
+
+        Raises:
+            QueryException: When the script's data set's allocation fails.
+            QueryException: When ZOAU fails to write the script to its data set.
+        """
         attributes = {}
 
         try:
@@ -327,7 +349,22 @@ return 0"""
         pass
 
     def _run_listdsi_command(self, temp_script_location):
+        """Runs the LISTDSI script defined in this class and checks for errors
+        when requesting SMS information that doesn't exist.
+
+        Arguments:
+            temp_script_location (str) -- Name of the script's temporary data set.
+
+        Returns:
+            tuple -- Tuple containing the RC, standard out and standard err of the
+                     query script.
+
+        Raises:
+            QueryException: When the script fails for any reason other than requesting
+                            SMS information from a data set not managed by SMS.
+        """
         extra_args = ''
+        # Asking for PDS/PDSE-specific attributes.
         if self.data_set_type in DataSet.MVS_PARTITIONED:
             extra_args = 'DIRECTORY'
         if self.sms_managed:
@@ -337,7 +374,7 @@ return 0"""
         rc, stdout, stderr = self.module.run_command(tso_cmd)
 
         # Retrying the query without asking for SMS information.
-        # The error code is specifically the code for when a data set is not
+        # This error code is specifically the code for when a data set is not
         # SMS-managed.
         if rc != 0 and 'IKJ58430I' in stdout:
             tso_cmd = tso_cmd.replace('SMSINFO', '')
@@ -354,11 +391,18 @@ return 0"""
 
         return rc, stdout, stderr
 
-    def _parse_attributes(self, attrs: dict):
+    def _parse_attributes(self, attrs):
         """Since all attributes returned by running commands return strings,
         this method ensures numerical and boolean values are returned as such.
-        It also makes sure datetimes are better formatted and replaces '?'
-        with more user-friendly values."""
+        It also makes sure datetimes are better formatted and replaces '?', 'N/A',
+        'NO_LIM', with more user-friendly values.
+
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI call.
+
+        Returns:
+            dict -- Attributes' dictionary with parsed values.
+        """
         attrs = {
             key: attrs[key] if self._is_value_valid(attrs[key]) else None
             for key in attrs
@@ -404,29 +448,70 @@ return 0"""
         return attrs
 
     def _is_value_valid(self, value):
+        """Returns whether the value should be replaced for None.
+
+        Arguments:
+            value (str) -- Raw value of an attribute for a data set.
+
+        Returns:
+            bool -- Whether the value should stay as is or be replace with None.
+        """
+        # Getting rid of values that basically say the value doesn't matter in
+        # context or is unknown.
         return value != '' and '?' not in value and value != 'N/A' and value != 'NO_LIM'
 
     def _parse_values(self, attrs, keys, true_function):
+        """Tries to parse attributes with a given function.
+
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
+            keys (list) -- List of keys from attrs to parse.
+            true_function (function) -- Parsing function to use (like 'int').
+
+        Returns:
+            dict -- Updated attributes with parsed values.
+        """
         for key in keys:
             try:
                 attrs[key] = true_function(attrs[key]) if attrs[key] else None
+            # If we fail to parse something, we just leave it be to avoid
+            # losing information.
             except ValueError:
                 pass
 
         return attrs
 
     def _replace_values(self, attrs, keys, true_value, false_value, condition):
+        """Replace strings for the given values depending on the result of a
+        condition.
+
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
+            keys (list) -- List of keys from attrs to test and replace.
+            true_value (any) -- Value to use when condition is true (like True).
+            false_value (any) -- Value to use when condition is false (like False).
+            condition (any) -- Value to compare each attribute against.
+
+        Returns:
+            dict -- Updated attributes with replaced values.
+        """
         for key in keys:
             attrs[key] = true_value if attrs[key] == condition else false_value
 
         return attrs
 
     def _parse_datetimes(self, attrs, keys):
+        """Converts ordinal dates (YYYY/DDD) to more common ones (YYYY-MM-DD).
+        
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
+            keys (list) -- List of keys from attrs to convert.
+        """
         for key in keys:
             try:
                 attrs[key] = datetime.strptime(attrs[key], '%Y/%j').strftime('%Y-%m-%d')
             except ValueError:
-                # z/OS returns 0 when a date is not set.
+                # z/OS returns 0 when a date is not set, so we set it to None.
                 if attrs[key] == "0":
                     attrs[key] = None
 
@@ -437,13 +522,17 @@ class QueryException(Exception):
     """Exception class to encapsulate any error the handlers raise while
     trying to query a resource.
     """
-    def __init__(
-        self,
-        msg,
-        rc=None,
-        stdout=None,
-        stderr=None
-    ):
+    def __init__(self, msg, rc=None, stdout=None, stderr=None):
+        """Initialized a new QueryException with relevant context for a failure
+        JSON.
+
+        Arguments:
+            msg (str) -- Message describing the failure.
+            rc (int, optional) -- RC from the command that failed (when available).
+            stdout (int, optional) -- Standard out from the command that failed (when available).
+            stderr (int, optional) -- Standar err from the command that failed (when available).
+        """
+        # This will be used to from the returned JSON by Ansible.
         self.json_args = {
             'msg': msg,
             'rc': rc,
@@ -452,16 +541,28 @@ class QueryException(Exception):
         }
         super().__init__(msg)
 
+
 def get_facts_handler(
-    name: str,
-    resource_type: str,
-    module: AnsibleModule,
-    volume: str = None,
-    tmp_hlq: str = None,
-    sms_managed: bool = False
+    name,
+    resource_type,
+    module,
+    volume = None,
+    tmp_hlq = None,
+    sms_managed = False
 ):
     """Returns the correct handler needed depending on the type of resource
     we will query.
+
+    Arguments:
+        name (str) -- Name of the resource.
+        resource_type (str) -- One of 'data_set', 'aggregate' or 'file'.
+        module (AnsibleModule) -- Ansible object with the task's context.
+        volume (str, optional) -- Volume where a data set is allocated.
+        tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
+        sms_managed (bool, optional) -- Whether a data set is managed by SMS.
+
+    Returns:
+        DataSetHandler: Handler for data sets.
     """
     if resource_type == 'data_set':
         return DataSetHandler(name, volume, module, tmp_hlq, sms_managed)

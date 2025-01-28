@@ -216,14 +216,24 @@ verbose_output:
 
 import os
 import tempfile
+import traceback
+import math
 from pathlib import Path
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import  (
+    ZOAUImportError
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zfsadm import zfsadm
+
+try:
+    from zoautil_py import datasets
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 def calculate_size_on_k(size, space_type):
@@ -401,12 +411,41 @@ def create_trace_dataset(name, member=False):
     """
     if member:
         dataset_name = data_set.extract_dsname(name)
-        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=400)
+        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=200, record_format="VB")
         rc = data_set.DataSet.ensure_member_present(name)
     else:
-        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=400)
+        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB")
 
     return rc
+
+
+def validate_information_dataset(dataset):
+    dataset = data_set.extract_dsname(dataset)
+
+    trace_ds = data_set.DataSetUtils(data_set=dataset)
+    trace_information = trace_ds._gather_data_set_info()
+
+    if trace_information["dsorg"] is "PS":
+        return False, "data set type is PS required PO."
+
+    if trace_information["lrecl"] < 80:
+        return False, "logical record lenght is not enought."
+
+    ds_attributes = datasets.list_datasets(dataset)[0]
+    size = int(ds_attributes.total_space)
+    space_primary = int(math.ceil(convert_size(size=size, space_type="cyl")))
+    space_secondary = int(math.ceil(convert_size(size=size, space_type="cyl") * 0.10))
+
+    if space_primary < 50:
+        return False, "not enought primary space is below 50 cyl."
+
+    if space_secondary < 30:
+        return False, "not enought secondary space is below 30 cyl."
+
+    if trace_information["recfm"] != "VB":
+        return False, f"record format is {trace_information['recfm']} required vb."
+
+    return True, ""
 
 
 def run_module():
@@ -556,23 +595,32 @@ def run_module():
     tmp_file = ""
     trace_uss = True
     trace_destination_created = True
-    trace_type = ""
+    is_valid = True
+    msg_trace = ""
 
     if trace_destination is not None:
         if data_set.is_data_set(data_set.extract_dsname(trace_destination)):
             if data_set.is_member(trace_destination):
                 if not data_set.DataSet.data_set_exists(data_set.extract_dsname(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
+                else:
+                    is_valid, msg_trace = validate_information_dataset(dataset=trace_destination)
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=False)
                 else:
-                    trace_type = data_set.DataSet.data_set_type(trace_destination)
+                    is_valid, msg_trace = validate_information_dataset(dataset=trace_destination)
             trace_uss = False
         else:
             trace_destination = better_arg_parser.BetterArgHandler.fix_local_path(trace_destination)
             trace_uss = True
         tmp_file = trace_destination
+
+    if not is_valid:
+        module.fail_json(
+            msg=f"Trace destination {trace_destination} do not meet minimal criteria to be use. The problem is {msg_trace}",
+            **result
+        )
 
     if not trace_destination_created:
         stderr_trace = f"\nUnable to create trace_destination {trace_destination}."

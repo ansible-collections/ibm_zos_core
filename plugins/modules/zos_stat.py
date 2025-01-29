@@ -59,6 +59,9 @@ options:
         - If the data set is a PDSE and the Ansible user has RACF READ authority
           on it, retrieving SMS information will update the last referenced
           date of the data set.
+        - If the system finds the data set is not actually managed by SMS, the
+          rest of the attributes will still be queried and this will be noted
+          in the output from the task.
     type: bool
     required: false
     default: true
@@ -90,8 +93,25 @@ seealso:
 """
 
 EXAMPLES = r"""
-- name:
+- name: Get the attributes of a sequential data set on volume '000000'.
   zos_stat:
+    name: USER.SEQ.DATA
+    type: data_set
+    volume: "000000"
+
+- name: Get the attributes of a PDSE managed by SMS.
+  zos_stat:
+    name: USER.PDSE.DATA
+    type: data_set
+    volume: "000000"
+    sms_managed: true
+
+- name: Get the attributes of a sequential data set with a non-default temporary HLQ.
+  zos_stat:
+    name: USER.SEQ.DATA
+    type: data_set
+    volume: "000000"
+    tmp_hlq: "RESTRICT"
 """
 
 # TODO: get samples for creation_job and creation_step.

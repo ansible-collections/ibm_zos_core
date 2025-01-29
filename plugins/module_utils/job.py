@@ -319,18 +319,17 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
     final_entries = []
 
-    # In 1.3.0, include_extended has to be set to true so we get the program name for a job.
-    # entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+    # In ZOAU>= 1.3.0, include_extended has to be set to true so we get the program name for a job.
+    # Observation shows the job_name parameter is not being used, so we will drop that
 
     # expanding > 1.3.0 of zoau, to include all params
-    entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, job_name=job_name, include_extended=True)
+    entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        # entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
-        entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, job_name=job_name, include_extended=True)
+        entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
 
     if entries:
         for entry in entries:

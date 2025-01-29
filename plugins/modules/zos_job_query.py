@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -38,6 +38,8 @@ options:
        - A job name can be up to 8 characters long.
        - The I(job_name) can contain include multiple wildcards.
        - The asterisk (`*`) wildcard will match zero or more specified characters.
+       - Note that using this value will query the system for '*' and then return just matching values
+       - This may lead to security issues if there are read-access limitations on some users or jobs
     type: str
     required: False
     default: "*"

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -441,8 +441,8 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         # Second call to zos_apf, same as first but with different expectations
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
-            # RC 0 should be allowed for ZOAU >= 1.3.4, but earlier versions should expect rc == 8 or 16
-            assert result.get("rc") == 0 or result.get("rc") == 8 or result.get("rc") == 16
+            # RC 0 should be allowed for ZOAU >= 1.3.4, in the zoau version less that 1.3.4 it will not recognize the -i in apfadm so will give error if this  code is executed for versions below 1.3.4
+            assert result.get("rc") == 0
         test_info['state'] = 'absent'
         hosts.all.zos_apf(**test_info)
     finally:
@@ -480,8 +480,8 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
-            # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 16 or result.get("rc") == 8
+            # RC 0 should be allowed for ZOAU >= 1.3.4, in the zoau version less that 1.3.4 it will not recognize the -i in apfadm so will give error if this  code is executed for versions below 1.3.4
+            assert result.get("rc") == 0 
     finally:
         clean_test_env(hosts, test_info)
 

@@ -219,7 +219,7 @@ import tempfile
 import traceback
 from pathlib import Path
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import  (
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (

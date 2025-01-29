@@ -217,7 +217,6 @@ verbose_output:
 import os
 import tempfile
 import traceback
-import math
 from pathlib import Path
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import  (
@@ -416,7 +415,7 @@ def create_trace_dataset(name, member=False):
         rc = data_set.DataSet.ensure_member_present(name)
     else:
         rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
-                                            space_type="K", space_primary="42000", space_secondary="25000")
+                                             space_type="K", space_primary="42000", space_secondary="25000")
 
     return rc
 
@@ -651,9 +650,6 @@ def run_module():
     # Get the output, calculate size and verbose if required
     if rc == 0:
         changed = True
-
-        if "IOEZ00181E Could not open trace output dataset" in stderr and trace_type == "PS":
-            stderr = ""
 
         rc_size, stdout_size, stderr_size = zfsadm.get_aggregate_size(zfsadm_obj.aggregate_name, module)
         if rc_size == 0:

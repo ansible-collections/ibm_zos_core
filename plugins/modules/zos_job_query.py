@@ -237,6 +237,12 @@ jobs:
         Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
       type: str
       sample: "IEBGENER"
+    execution_time:
+      description:
+        Total duration time of the job execution, if it has finished. If the job is still running,
+        it represents the time elapsed from the job execution start and current time.
+      type: str
+      sample: 00:00:10
 
   sample:
     [
@@ -253,6 +259,7 @@ jobs:
             "creation_date": "2023-05-03",
             "creation_time": "12:13:00",
             "queue_position": 3,
+            "execution_time": "00:00:02"
         },
         {
             "job_name": "LINKCBL",
@@ -267,6 +274,7 @@ jobs:
             "creation_date": "2023-05-03",
             "creation_time": "12:14:00",
             "queue_position": 0,
+            "execution_time": "00:00:03"
         },
     ]
 message:
@@ -443,6 +451,7 @@ def parsing_jobs(jobs_raw):
             "asid": job.get("asid"),
             "creation_date": job.get("creation_date"),
             "creation_time": job.get("creation_time"),
+            "execution_time": job.get("execution_time"),
             "queue_position": job.get("queue_position"),
             "program_name": job.get("program_name"),
         }

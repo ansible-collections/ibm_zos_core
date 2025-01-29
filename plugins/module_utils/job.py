@@ -374,6 +374,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
             job["duration"] = duration
+            job["execution_time"] = entry.execution_time
 
             if dd_scan:
                 # If true, it means the job is not ready for DD queries and the duration and

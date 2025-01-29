@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -366,7 +366,7 @@ def run_module():
         result = dict(
             changed=False,
             skipped=True,
-            msg='File {0} does not exists on the system, skipping script'.format(script_path)
+            msg='File {0} does not exist on the system, skipping script'.format(script_path)
         )
         module.fail_json(**result)
 

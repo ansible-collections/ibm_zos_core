@@ -480,12 +480,12 @@ def test_user_run_script_from_another_user(ansible_zos_module, z_python_interpre
         managed_user.delete_managed_user()
 
 
-def test_remote_script_doest_not_exist(ansible_zos_module):
+def test_remote_script_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
 
     script_path = '/tmp/zos_script_test'
 
-    msg = 'File {0} does not exists on the system, skipping script'.format(script_path)
+    msg = 'File {0} does not exist on the system, skipping script'.format(script_path)
 
     zos_script_result = hosts.all.zos_script(
         cmd=script_path,
@@ -498,7 +498,7 @@ def test_remote_script_doest_not_exist(ansible_zos_module):
         assert msg in result.get('msg')
 
 
-def test_remote_script_with_args_doest_not_exist(ansible_zos_module):
+def test_remote_script_with_args_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module
 
     script_path = '/tmp/zos_script_test'
@@ -507,7 +507,7 @@ def test_remote_script_with_args_doest_not_exist(ansible_zos_module):
     args = f'FIRST={first_arg} SECOND={second_arg}'
     cmd = f"{script_path} '{args}'"
 
-    msg = 'File {0} does not exists on the system, skipping script'.format(script_path)
+    msg = 'File {0} does not exist on the system, skipping script'.format(script_path)
 
     zos_script_result = hosts.all.zos_script(
         cmd=cmd,
@@ -547,7 +547,6 @@ def test_rexx_script_with_args_remote_src(ansible_zos_module):
         )
 
         for result in zos_script_result.contacted.values():
-            print(result)
             assert result.get('changed') is True
             assert result.get('failed', False) is False
             assert result.get('rc') == 0

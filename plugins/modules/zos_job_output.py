@@ -132,6 +132,12 @@ jobs:
         Time, local to the target system, when the job was created.
       type: str
       sample: "14:15:00"
+    execution_time:
+      description:
+        Total duration time of the job execution, if it has finished. If the job is still running,
+        it represents the time elapsed from the job execution start and current time.
+      type: str
+      sample: 00:00:10
     ddnames:
       description:
          Data definition names.
@@ -390,6 +396,7 @@ jobs:
           }
         ],
         "duration": 0,
+        "execution_time": "00:00:03",
         "job_class": "R",
         "job_id": "JOB00134",
         "job_name": "HELLO",

@@ -115,8 +115,6 @@ EXAMPLES = r"""
 """
 
 # TODO: get samples for creation_job and creation_step.
-# TODO: get samples for sms_data_class, sms_storage_class, sms_mgmt_class.
-# TODO: get samples for key_label.
 # TODO: check whether 'success' is the correct value for returned.
 RETURN = r"""
 stat:
@@ -303,7 +301,7 @@ stat:
               is set to true.
           returned: success
           type: str
-          sample:
+          sample: STANDARD
         sms_mgmt_class:
           description:
             - The SMS management class name.
@@ -311,7 +309,7 @@ stat:
               is set to true.
           returned: success
           type: str
-          sample:
+          sample: VSAM
         sms_storage_class:
           description:
             - The SMS storage class name.
@@ -319,7 +317,7 @@ stat:
               is set to true.
           returned: success
           type: str
-          sample:
+          sample: FAST
         encrypted:
           description: Whether the data set is encrypted.
           returned: success
@@ -343,7 +341,7 @@ stat:
           description: The encryption key label for an encrypted data set.
           returned: success
           type: str
-          sample:
+          sample: KEYDSN
         dir_blocks_allocated:
           description:
             - Number of directory blocks allocated for a PDS.
@@ -471,7 +469,7 @@ class DataSetHandler(FactsHandler):
     """
 
     # TODO: missing: block_count, owner, last_updated, creation_program
-    # TODO: add gdgs and gdss
+    # TODO: add gdgs (using LISTCAT) and gdss
     # TODO: add vsams
     # TODO: handle multivol
 

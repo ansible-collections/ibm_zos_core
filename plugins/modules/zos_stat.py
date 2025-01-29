@@ -94,7 +94,294 @@ EXAMPLES = r"""
   zos_stat:
 """
 
+# TODO: get samples for creation_job and creation_step.
+# TODO: get samples for sms_data_class, sms_storage_class, sms_mgmt_class.
+# TODO: get samples for key_label.
+# TODO: check whether 'success' is the correct value for returned.
 RETURN = r"""
+stat:
+  description: Dictionary containing information about the resource.
+  returned: success
+  type: dict
+  contains:
+    name:
+      description: Name of the resource queried.
+      returned: success
+      type: str
+      sample: USER.SEQ.DATA.SET
+    resource_type:
+      description: One of 'data_set', 'file' or 'aggregate'.
+      returned: success
+      type: str
+      sample: data_set
+    attributes:
+      description: Dictionary containing all the stat data.
+      returned: success
+      type: dict
+      contains:
+        dsorg:
+          description: Data set organization.
+          returned: success
+          type: str
+          sample: PS
+        type:
+          description: Type of the data set.
+          returned: success
+          type: str
+          sample: LIBRARY
+        record_format:
+          description: Record format of a data set.
+          returned: success
+          type: str
+          sample: VB
+        record_length:
+          description: Record length of a data set.
+          returned: success
+          type: int
+          sample: 80
+        block_size:
+          description: Block size of a data set.
+          returned: success
+          type: int
+          sample: 27920
+        has_extended_attrs:
+          description: Whether a data set has extended attributes set.
+          returned: success
+          type: bool
+          sample: true
+        extended_attrs_bits:
+          description: Current values of the EATTR bits for a data set.
+          returned: success
+          type: str
+          sample: OPT
+        creation_date:
+          description: Date a data set was created.
+          returned: success
+          type: str
+          sample: "2025-01-27"
+        creation_time:
+          description:
+            - Time at which a data set was created.
+            - Only available when a data set has extended attributes.
+          returned: success
+          type: str
+          sample: "11:25:52"
+        expiration_date:
+          description: Expiration date of a data set.
+          returned: success
+          type: str
+          sample: "2030-12-31"
+        last_reference:
+          description: Date where the data set was last referenced.
+          returned: success
+          type: str
+          sample: "2025-01-28"
+        updated_since_backup:
+          description: Whether the data set has been updated since its last backup.
+          returned: success
+          type: bool
+          sample: false
+        jcl_attrs:
+          description:
+            - Dictionary containing the names of the JCL job and step that
+              created a data set.
+            - Only available for data sets with extended attributes.
+          returned: success
+          type: dict
+          contains:
+            creation_job:
+              description: JCL job that created the data set.
+              returned: success
+              type: str
+              sample:
+            creation_step:
+              description: JCL job step that created the data set.
+              returned: success
+              type: str
+              sample:
+        volser:
+          description: Name of the volume containing the data set.
+          returned: success
+          type: str
+          sample: "000000"
+        num_volumes:
+          description: Number of volumes where the data set resides.
+          returned: success
+          type: int
+          sample: 1
+        volumes:
+          description: Names of the volumes where the data set resides.
+          returned: success
+          type: list
+          elements: str
+          sample: ["000000", "SCR03"]
+        device_type:
+          description: Generic device type where the data set resides.
+          returned: success
+          type: str
+          sample: "3390"
+        space_units:
+          description: Units used to describe sizes for the data set.
+          returned: success
+          type: str
+          sample: TRACK
+        primary_space:
+          description:
+            - Primary allocation.
+            - Uses the space units defined in space_units.
+          returned: success
+          type: int
+          sample: 93
+        secondary_space:
+          description:
+            - Secondary allocation.
+            - Uses the space units defined in space_units.
+          returned: success
+          type: int
+          sample: 56
+        allocation_available:
+          description:
+            - Total allocation of the data set.
+            - Uses the space units defined in space_units.
+          returned: success
+          type: int
+          sample: 93
+        allocation_used:
+          description:
+            - Total allocation used by the data set.
+            - Uses the space units defined in space_units.
+          returned: success
+          type: int
+          sample: 0
+        extents_allocated:
+          description: Number of extents allocated for the data set.
+          returned: success
+          type: int
+          sample: 1
+        extents_used:
+          description:
+            - Number of extents used by the data set.
+            - For PDSEs, this value will be null. See instead pages_used and
+              perc_pages_used.
+          returned: success
+          type: int
+          sample: 1
+        blocks_per_track:
+          description: Blocks per track for the unit contained in space_units.
+          returned: success
+          type: int
+          sample: 2
+        tracks_per_cylinder:
+          description: Tracks per cylinder for the unit contained in space_units.
+          returned: success
+          type: int
+          sample: 15
+        sms_data_class:
+          description:
+            - The SMS data class name.
+            - Only returned when the data set is managed by SMS and sms_managed
+              is set to true.
+          returned: success
+          type: str
+          sample:
+        sms_mgmt_class:
+          description:
+            - The SMS management class name.
+            - Only returned when the data set is managed by SMS and sms_managed
+              is set to true.
+          returned: success
+          type: str
+          sample:
+        sms_storage_class:
+          description:
+            - The SMS storage class name.
+            - Only returned when the data set is managed by SMS and sms_managed
+              is set to true.
+          returned: success
+          type: str
+          sample:
+        encrypted:
+          description: Whether the data set is encrypted.
+          returned: success
+          type: bool
+          sample: false
+        password:
+          description:
+            - Whether the data set has a password set to read/write.
+            - Value can be either one of 'NONE', 'READ' or 'WRITE'.
+          returned: success
+          type: str
+          sample: NONE
+        racf:
+          description:
+            - Whether there is RACF protection set on the data set.
+            - Value can be either one of 'NONE', 'GENERIC' or 'DISCRETE'.
+          returned: success
+          type: str
+          sample: NONE
+        key_label:
+          description: The encryption key label for an encrypted data set.
+          returned: success
+          type: str
+          sample:
+        dir_blocks_allocated:
+          description:
+            - Number of directory blocks allocated for a PDS.
+            - For PDSEs, this value will be null. See instead pages_used
+              and perc_pages_used.
+          returned: success
+          type: int
+          sample: 5
+        dir_blocks_used:
+          description:
+            - Number of directory blocks used by a PDS.
+            - For PDSEs, this value will be null. See instead pages_used
+              and perc_pages_used.
+          returned: success
+          type: int
+          sample: 2
+        members:
+          description: Number of members inside a partitioned data set.
+          returned: success
+          type: int
+          sample: 3
+        pages_allocated:
+          description: Number of pages allocated to a PDSE.
+          returned: success
+          type: int
+          sample: 1116
+        pages_used:
+          description:
+            - Number of pages used by a PDSE. The pages are 4K in size.
+          returned: success
+          type: int
+          sample: 5
+        perc_pages_used:
+          description:
+            - Percentage of pages used by a PDSE.
+            - Gets rounded down to the nearest integer value.
+          returned: success
+          type: int
+          sample: 10
+        pdse_version:
+          description: PDSE data set version.
+          returned: success
+          type: int
+          sample: 1
+        max_pdse_generation:
+          description:
+            - Maximum number of generations of a member that can be
+              maintained in a PDSE.
+          returned: success
+          type: int
+          sample: 0
+        seq_type:
+          description:
+            - Type of sequential data set (when it applies).
+            - Value can be either one of 'BASIC', 'LARGE' or 'EXTENDED'.
+          returned: success
+          type: str
+          sample: BASIC
 """
 
 import abc

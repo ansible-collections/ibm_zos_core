@@ -76,7 +76,7 @@ options:
       - Support MVS data set type PDS, PDS/E(MEMBER)
       - If the destination is an MVS data set name, the C(trace_destination) provided must meet data set naming
         conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods
-      - Recommended characteristics for MVS data set are record length in 200, record format as vb and space primary
+      - Recommended characteristics for MVS data set are record length of 200, record format as vb and space primary
         42000 kilobytes.
     required: false
     type: str
@@ -450,8 +450,7 @@ def validate_dataset_info(dataset):
         return False, f"record format is {trace_information['recfm'].lower()} required vb."
 
     ds_attributes = datasets.list_datasets(dataset)[0]
-    size = int(ds_attributes.total_space)
-    space_primary = int(size)
+    space_primary = int(ds_attributes.total_space)
 
     if space_primary < 42498000:
         return False, "not enought primary space is below 50 cyl. Recommended space 42000 k."
@@ -606,7 +605,7 @@ def run_module():
     tmp_file = ""
     trace_uss = True
     trace_destination_created = True
-    is_valid = True
+    is_valid_trace_destination = True
     msg_trace = ""
 
     if trace_destination is not None:
@@ -615,19 +614,19 @@ def run_module():
                 if not data_set.DataSet.data_set_exists(data_set.extract_dsname(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
                 else:
-                    is_valid, msg_trace = validate_dataset_info(dataset=trace_destination)
+                    is_valid_trace_destination, msg_trace = validate_dataset_info(dataset=trace_destination)
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=False)
                 else:
-                    is_valid, msg_trace = validate_dataset_info(dataset=trace_destination)
+                    is_valid_trace_destination, msg_trace = validate_dataset_info(dataset=trace_destination)
             trace_uss = False
         else:
             trace_destination = better_arg_parser.BetterArgHandler.fix_local_path(trace_destination)
             trace_uss = True
         tmp_file = trace_destination
 
-    if not is_valid:
+    if not is_valid_trace_destination:
         module.fail_json(
             msg=f"Trace destination {trace_destination} does not meet minimal criteria to be used. The problem is {msg_trace}",
             **result

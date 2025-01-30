@@ -123,7 +123,9 @@ stat:
   type: dict
   contains:
     name:
-      description: Name of the resource queried.
+      description:
+        - Name of the resource queried.
+        - For Generation Data Sets (GDSs), this will be the absolute name.
       returned: success
       type: str
       sample: USER.SEQ.DATA.SET
@@ -414,7 +416,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
     MVSDataSet,
     GenerationDataGroup,
-    DatasetCreateError
+    DatasetCreateError,
+    GDSNameResolveError
 )
 
 try:
@@ -569,12 +572,22 @@ return 0"""
         self.volume = volume
         self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
         self.sms_managed = sms_managed
-        self.data_set_type = DataSet.data_set_type(name, volume=volume, tmphlq=self.tmp_hlq)
-        # Since data_set_type returns None for a non-existent data set,
-        # we'll set this value now and avoid another call to the util.
-        self.data_set_exists = True if self.data_set_type else False
-        # TODO: add name resolution for GDSs.
-        self.is_gds = False
+        self.data_set_exists = False
+        self.data_set_type = None
+
+        try:
+            if DataSet.is_gds_relative_name(self.name):
+                # Replacing the relative name because _is_in_vtoc, data_set_type and
+                # LISTDSI need the absolute name to locate the data set.
+                self.name = DataSet.resolve_gds_absolute_name(self.name)
+        except (GDSNameResolveError, Exception):
+            # Don't need to do anything in this case since we already set data_set_exists
+            # and data_set_type to their negative values.
+            pass
+
+        if DataSet._is_in_vtoc(self.name, self.volume, tmphlq=self.tmp_hlq):
+                self.data_set_type = DataSet.data_set_type(self.name, volume=self.volume, tmphlq=self.tmp_hlq)
+                self.data_set_exists = True
 
     def exists(self):
         """Returns whether the given data set was found on the system.
@@ -597,9 +610,6 @@ return 0"""
             data['attributes'] = self._query_vsam()
         else:
             data['attributes'] = self._query_non_vsam()
-
-            # if self.is_gds:
-            #     data['absolute_name'] = self.absolute_name
 
         data['attributes'] = self._parse_attributes(data['attributes'])
         return data

@@ -441,8 +441,10 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         # Second call to zos_apf, same as first but with different expectations
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
-            # RC 0 should be allowed for ZOAU >= 1.3.4, in the zoau version less that 1.3.4 it will not recognize the -i in apfadm so will give error if this  code is executed for versions below 1.3.4
-            assert result.get("rc") == 0
+            # RC 0 should be allowed for ZOAU >= 1.3.4, 
+            # in zoau < 1.3.4 -i is not recognized  in apfadm 
+            # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
+            assert result.get("rc") == 0 or result.get("rc") == 16 or result.get("rc") == 8
         test_info['state'] = 'absent'
         hosts.all.zos_apf(**test_info)
     finally:
@@ -480,8 +482,10 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
-            # RC 0 should be allowed for ZOAU >= 1.3.4, in the zoau version less that 1.3.4 it will not recognize the -i in apfadm so will give error if this  code is executed for versions below 1.3.4
-            assert result.get("rc") == 0 
+            # RC 0 should be allowed for ZOAU >= 1.3.4, 
+            # in zoau < 1.3.4 -i is not recognized  in apfadm 
+            # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
+            assert result.get("rc") == 0 or result.get("rc") == 16 or result.get("rc") == 8
     finally:
         clean_test_env(hosts, test_info)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -298,7 +298,8 @@ import json
 from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, backup as Backup)
+    better_arg_parser, zoau_version_checker, data_set, backup as Backup)
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
@@ -400,7 +401,14 @@ def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, pe
     str
         APF command.
     """
-    operation = "-i -A" if opt == "add" else "-i -D"
+    # -i is  available in ZOAU version 1.3.4
+    # before that all versions will not be able to use -i 
+    if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+      operation = "-i -A" if opt == "add" else "-i -D"
+
+    else:
+        operation = "-A" if opt == "add" else "-D"
+        
     operation_args = library
 
     if volume:
@@ -448,7 +456,12 @@ def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
     command = "apfadm"
 
     for item in batch:
-        operation = "-i -A" if item["opt"] == "add" else "-i -D"
+        if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+          operation = "-i -A" if item["opt"] == "add" else "-i -D"
+
+        else:
+            operation = "-A" if item["opt"] == "add" else "-D"
+
         operation_args = item["dsname"]
 
         volume = item.get("volume")
@@ -691,8 +704,13 @@ def main():
     result['rc'] = operRc
     result['stdout'] = operOut
 
+   # if operation != 'list' and operRc == 0:
     if operation != 'list' and operRc == 0:
-        result['changed'] = True
+        #result['changed'] = True
+        if operErr.strip():  # If stderr is not empty
+          result['changed'] = False
+        else:
+          result['changed'] = True
 
     if operation == 'list':
         try:

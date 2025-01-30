@@ -402,13 +402,13 @@ def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, pe
         APF command.
     """
     # -i is  available in ZOAU version 1.3.4
-    # before that all versions will not be able to use -i 
+    # before that all versions will not be able to use -i
     if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
-      operation = "-i -A" if opt == "add" else "-i -D"
+        operation = "-i -A" if opt == "add" else "-i -D"
 
     else:
         operation = "-A" if opt == "add" else "-D"
-        
+
     operation_args = library
 
     if volume:
@@ -457,7 +457,7 @@ def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
 
     for item in batch:
         if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
-          operation = "-i -A" if item["opt"] == "add" else "-i -D"
+            operation = "-i -A" if item["opt"] == "add" else "-i -D"
 
         else:
             operation = "-A" if item["opt"] == "add" else "-D"
@@ -704,13 +704,11 @@ def main():
     result['rc'] = operRc
     result['stdout'] = operOut
 
-   # if operation != 'list' and operRc == 0:
     if operation != 'list' and operRc == 0:
-        #result['changed'] = True
-        if operErr.strip():  # If stderr is not empty
-          result['changed'] = False
+        if operErr.strip():
+            result['changed'] = False
         else:
-          result['changed'] = True
+            result['changed'] = True
 
     if operation == 'list':
         try:

@@ -847,7 +847,7 @@ def test_trace_destination_bad_data_set_type(ansible_zos_module):
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
-            assert f"Trace destination {trace_destination_ds} do not meet minimal criteria" in result.get("msg")
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -876,7 +876,7 @@ def test_trace_destination_bad_record_length(ansible_zos_module):
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
-            assert f"Trace destination {trace_destination_ds} do not meet minimal criteria" in result.get("msg")
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -905,7 +905,7 @@ def test_trace_destination_bad_record_format(ansible_zos_module, ):
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
-            assert f"Trace destination {trace_destination_ds} do not meet minimal criteria" in result.get("msg")
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
@@ -935,7 +935,7 @@ def test_trace_destination_bad_space(ansible_zos_module):
             assert result.get("failed") == True
             assert result.get('changed') == False
             assert result.get('rc') == 1
-            assert f"Trace destination {trace_destination_ds} do not meet minimal criteria" in result.get("msg")
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 

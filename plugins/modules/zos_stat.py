@@ -32,7 +32,8 @@ options:
     description:
         - Name of a data set or aggregate, or a file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
-          extended (PDSE), VSAMs or generation data sets (GDGs).
+          extended (PDSE), VSAMs, generation data groups (GDG) or
+          generation data sets (GDS).
     type: str
     required: true
   volume:
@@ -112,6 +113,12 @@ EXAMPLES = r"""
     type: data_set
     volume: "000000"
     tmp_hlq: "RESTRICT"
+
+- name: Get the attributes of a generation data set.
+  zos_stat:
+    name: "USER.GDG.DATA(-1)"
+    type: data_set
+    volume: "000000"
 """
 
 # TODO: get samples for creation_job and creation_step.
@@ -472,7 +479,7 @@ class DataSetHandler(FactsHandler):
     """
 
     # TODO: missing: block_count, owner, last_updated, creation_program
-    # TODO: add gdgs (using LISTCAT) and gdss
+    # TODO: add gdgs (using LISTCAT)
     # TODO: add vsams
     # TODO: handle multivol
 

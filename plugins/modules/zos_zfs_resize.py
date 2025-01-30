@@ -73,9 +73,11 @@ options:
       - Specify a unique USS file name or data set name for C(trace_destination).
       - If the destination C(trace_destination) is a USS file or path, the C(trace_destination) must
         be an absolute path name.
-      - Support MVS data set type SEQ, PDS, PDS/E(MEMBER)
+      - Support MVS data set type PDS, PDS/E(MEMBER)
       - If the destination is an MVS data set name, the C(trace_destination) provided must meet data set naming
-        conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods.
+        conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods
+      - Recommended characteristics for MVS data set are record length in 200, record format as vb and space primary
+        42000 kilobytes.
     required: false
     type: str
 
@@ -420,15 +422,18 @@ def create_trace_dataset(name, member=False):
     return rc
 
 
-def validate_information_dataset(dataset):
+def validate_dataset_info(dataset):
     """Function to validates the proper characteristics of the dataset to use on trace output.
 
     Args:
-        dataset (str): dataset name
+        dataset : str
+            dataset name
 
     Returns:
-        bool: if the dataset is valid or not
-        str: specification of the problem
+        bool :
+            if the dataset is valid or not
+        str :
+            specification of the problem
     """
     dataset = data_set.extract_dsname(dataset)
 
@@ -436,20 +441,20 @@ def validate_information_dataset(dataset):
     trace_information = trace_ds._gather_data_set_info()
 
     if trace_information["dsorg"] != "PO":
-        return False, "data set type is PS required PO."
+        return False, "data set type required for trace_destination is PDS or PDSE."
 
     if trace_information["lrecl"] < 80:
-        return False, "logical record lenght is not enought."
+        return False, "record length is not enough. Recommended length is 200."
 
     if trace_information["recfm"] != "VB":
-        return False, f"record format is {trace_information['recfm']} required vb."
+        return False, f"record format is {trace_information['recfm'].lower()} required vb."
 
     ds_attributes = datasets.list_datasets(dataset)[0]
     size = int(ds_attributes.total_space)
     space_primary = int(size)
 
     if space_primary < 42498000:
-        return False, "not enought primary space is below 50 cyl."
+        return False, "not enought primary space is below 50 cyl. Recommended space 42000 k."
 
     return True, ""
 
@@ -610,12 +615,12 @@ def run_module():
                 if not data_set.DataSet.data_set_exists(data_set.extract_dsname(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
                 else:
-                    is_valid, msg_trace = validate_information_dataset(dataset=trace_destination)
+                    is_valid, msg_trace = validate_dataset_info(dataset=trace_destination)
             else:
                 if not (data_set.DataSet.data_set_exists(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=False)
                 else:
-                    is_valid, msg_trace = validate_information_dataset(dataset=trace_destination)
+                    is_valid, msg_trace = validate_dataset_info(dataset=trace_destination)
             trace_uss = False
         else:
             trace_destination = better_arg_parser.BetterArgHandler.fix_local_path(trace_destination)
@@ -624,7 +629,7 @@ def run_module():
 
     if not is_valid:
         module.fail_json(
-            msg=f"Trace destination {trace_destination} do not meet minimal criteria to be use. The problem is {msg_trace}",
+            msg=f"Trace destination {trace_destination} does not meet minimal criteria to be used. The problem is {msg_trace}",
             **result
         )
 

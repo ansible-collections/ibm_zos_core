@@ -12,6 +12,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+import re
 import pytest
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
@@ -404,7 +405,17 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
 #
 # Negative tests
 #
-
+def get_zoa_version(ansible_zos_module):
+    cmd_str = "zoaversion"
+    version_results = ansible_zos_module.all.shell(cmd=cmd_str)
+    zoa_version = None        
+    for result in version_results.contacted.values():
+        output = result.get("stdout")
+        if output:
+            match = re.search(r'v(\d+\.\d+\.\d+\.\d+)', output)
+            if match:
+                zoa_version = match.group(1)
+    return zoa_version
 
 def test_add_already_present(ansible_zos_module, volumes_with_vvds):
     try:
@@ -444,7 +455,14 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
             # RC 0 should be allowed for ZOAU >= 1.3.4, 
             # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 0 or result.get("rc") == 16 or result.get("rc") == 8
+            zoa_version = get_zoa_version(hosts)
+            rc = result.get("rc")            
+            if zoa_version >= "1.3.4.0":
+                assert rc == 0
+            elif zoa_version >= "1.2.0.0":
+                assert rc == 8
+            else:
+                assert rc == 16 
         test_info['state'] = 'absent'
         hosts.all.zos_apf(**test_info)
     finally:
@@ -485,7 +503,14 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
             # RC 0 should be allowed for ZOAU >= 1.3.4, 
             # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 0 or result.get("rc") == 16 or result.get("rc") == 8
+            zoa_version = get_zoa_version(hosts)
+            rc = result.get("rc")            
+            if zoa_version >= "1.3.4.0":
+                assert rc == 0
+            elif zoa_version >= "1.2.0.0":
+                assert rc == 8
+            else:
+                assert rc == 16
     finally:
         clean_test_env(hosts, test_info)
 

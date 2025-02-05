@@ -24,7 +24,7 @@ import subprocess
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
-from ibm_zos_core.tests.helpers.utils import get_random_file_name, escape_special_chars
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
 __metaclass__ = type
 
 

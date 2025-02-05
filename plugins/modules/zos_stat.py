@@ -336,13 +336,17 @@ stat:
           description:
             - Whether the data set has a password set to read/write.
             - Value can be either one of 'NONE', 'READ' or 'WRITE'.
+            - For VSAMs, the value can also be 'SUPP', when the module
+              is unable to query its security attributes.
           returned: success
           type: str
           sample: NONE
         racf:
           description:
             - Whether there is RACF protection set on the data set.
-            - Value can be either one of 'NONE', 'GENERIC' or 'DISCRETE'.
+            - Value can be either one of 'NONE', 'GENERIC' or 'DISCRETE'
+              for non-VSAM data sets.
+            - For VSAMs, the value can be either 'YES' or 'NO'.
           returned: success
           type: str
           sample: NONE
@@ -409,10 +413,85 @@ stat:
           returned: success
           type: str
           sample: BASIC
+        data:
+          description:
+            - Dictionary containing attributes for the DATA part of a VSAM. 
+            - For the rest of the attributes of this data set, query it
+              directly with this module.
+          returned: success
+          type: dict
+          contains:
+            key_length:
+              description: Key length for data records, in bytes.
+              returned: success
+              type: int
+            key_offset:
+              description: Key offset for data records.
+              returned: success
+              type: int
+            max_record_length:
+              description: Maximum length of data records, in bytes.
+              returned: success
+              type: int
+            avg_record_length:
+              description: Average length of data records, in bytes.
+              returned: success
+              type: int
+            bufspace:
+              description:
+                - Minimum buffer space in bytes to be provided by a
+                  processing program.
+              returned: success
+              type: int
+            total_records:
+              description: Total number of records.
+              returned: success
+              type: int
+            spanned:
+              description:
+                - Whether the data set allows records to be spanned
+                  across control intervals.
+              returned: success
+              type: bool
+        index:
+          description:
+            - Dictionary containing attributes for the INDEX part of a VSAM. 
+            - For the rest of the attributes of this data set, query it
+              directly with this module.
+          returned: success
+          type: dict
+          contains:
+            key_length:
+              description: Key length for index records, in bytes.
+              returned: success
+              type: int
+            key_offset:
+              description: Key offset for index records.
+              returned: success
+              type: int
+            max_record_length:
+              description: Maximum length of index records, in bytes.
+              returned: success
+              type: int
+            avg_record_length:
+              description: Average length of index records, in bytes.
+              returned: success
+              type: int
+            bufspace:
+              description:
+                - Minimum buffer space in bytes to be provided by a
+                  processing program.
+              returned: success
+              type: int
+            total_records:
+              description: Total number of records.
+              returned: success
+              type: int
 """
 
 import abc
 import json
+import re
 from datetime import datetime
 
 from ansible.module_utils.basic import AnsibleModule
@@ -478,9 +557,7 @@ class DataSetHandler(FactsHandler):
     extended (PDSE), VSAM or generation data sets.
     """
 
-    # TODO: missing: block_count, owner, last_updated, creation_program
     # TODO: add gdgs (using LISTCAT)
-    # TODO: add vsams
     # TODO: handle multivol
 
     LISTDSI_SCRIPT = """/* REXX */
@@ -666,10 +743,6 @@ return 0"""
 
         return attributes
 
-    def _query_vsam(self):
-        """Uses LISTCAT to query facts about a VSAM."""
-        pass
-
     def _run_listdsi_command(self, temp_script_location):
         """Runs the LISTDSI script defined in this class and checks for errors
         when requesting SMS information that doesn't exist.
@@ -713,6 +786,145 @@ return 0"""
 
         return rc, stdout, stderr
 
+    def _query_vsam(self):
+        """Uses LISTCAT to query facts about a VSAM."""
+        listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
+        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
+
+        rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
+
+        if rc > 0:
+            raise QueryException(
+                'An error ocurred while querying a VSAM data set.',
+                rc=rc,
+                stdout=stdout,
+                stderr=stderr
+            )
+
+        listcat_lines = stdout.split('\n')
+        gen_info_limit = data_info_limit = 0
+
+        for index in range(len(listcat_lines)):
+            if gen_info_limit == 0:
+                if 'DATA -' in listcat_lines[index]:
+                    gen_info_limit = index
+            else:
+                if data_info_limit == 0 and 'INDEX -' in listcat_lines[index]:
+                    data_info_limit = index
+                    break
+
+        vsam_general_info = ' '.join(listcat_lines[0:gen_info_limit])
+        data_info = ' '.join(listcat_lines[gen_info_limit:data_info_limit])
+        index_info = ' '.join(listcat_lines[data_info_limit:])
+        attributes = {
+            'volser': self.volume,
+            'dsorg': 'VSAM',
+            'type': self.data_set_type,
+            'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
+        }
+        attributes['device_type'] = self._translate_dev_type(attributes['device_type'])
+
+        general_info_regex_searches = [
+            # TODO: check if \( is always needed where used
+            ('extended_attrs_bits', '(EATTR-+\()([0-9a-zA-Z]+)'),
+            ('creation_date', '(CREATION-+)(\d{4}\.\d{3})'),
+            ('expiration_date', '(EXPIRATION-+)(\d{4}\.\d{3})'),
+            ('sms_mgmt_class', '(MANAGEMENTCLASS-+)([0-9a-zA-Z]+)'),
+            ('sms_storage_class', '(STORAGECLASS-+)([0-9a-zA-Z]+)'),
+            ('sms_data_class', '(DATACLASS-+)([0-9a-zA-Z]+)'),
+            ('encrypted', '(DATA SET ENCRYPTION-+\()([a-zA-Z]{2,3})'),
+            ('key_label', '(DATA SET KEY LABEL-+)([a-zA-Z]+)'),
+            ('password', '(PROTECTION-PSWD-+\()([a-zA-Z]+)'),
+            ('racf', '(RACF-+\()([a-zA-Z]{2,3})')
+        ]
+
+        attributes.update(self._find_attributes_from_liscat(vsam_general_info, general_info_regex_searches))
+        if 'extended_attrs_bits' in attributes:
+            attributes['has_extended_attrs'] = 'YES' if attributes['extended_attrs_bits'] != 'NULL' else 'NO'
+            if attributes['extended_attrs_bits'] == 'NULL':
+                attributes['extended_attrs_bits'] = None
+
+        if attributes['password'] == 'NULL':
+            attributes['password'] = 'NONE'
+        elif attributes['password'] == 'SUPP':
+            self.extra_data = f'{self.extra_data}\nUnable to get security attributes.'
+
+
+        if 'ASSOCIATIONS' in vsam_general_info:
+            attributes['data'] = {
+                'name': re.search('(DATA-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
+                'spanned': True if re.search('\bSPANNED\b', data_info) else False
+            }
+            attributes['index'] = {
+                'name': re.search('(INDEX-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2)
+            }
+
+            assoc_regex_searches = [
+                ('key_length', '(KEYLEN-+)(\d+)'),
+                ('key_offset', '(RKP-+)(\d+)'),
+                ('max_record_length', '(AVGLRECL-+)(\d+)'),
+                ('avg_record_length', '(MAXLRECL-+)(\d+)'),
+                ('bufspace', '(BUFSPACE-+)(\d+)'),
+                ('total_records', '(REC-TOTAL-+)(\d+)')
+            ]
+
+            attributes['data'].update(self._find_attributes_from_liscat(data_info, assoc_regex_searches))
+            attributes['index'].update(self._find_attributes_from_liscat(index_info, assoc_regex_searches))
+
+        return attributes
+
+    def _translate_dev_type(self, dev_type):
+        """Looks up the device type code from LISTCAT's output and returns
+        its generic name.
+
+        Arguments
+        ---------
+            dev_type (str) -- Device type code returned by LISTCAT.
+
+        Returns
+        -------
+            str -- Generic name for the device type.
+        """
+        translation_table = {
+            '3010200E': '3380',
+            '3010200F': '3390',
+            '30102004': '9345',
+            '30C08003': '3400-2',
+            '32008003': '3400-5',
+            '32108003': '3400-6',
+            '33008003': '3400-9',
+            '34008003': '3400-3',
+            '78008080': '3480',
+            '78048080': '3480X',
+            '78048081': '3490',
+            '78048083': '3590-1',
+        }
+
+        return translation_table[dev_type]
+
+    def _find_attributes_from_liscat(self, output, regex_list):
+        """Looks up attributes in the output of LISTCAT.
+
+        Arguments
+        ---------
+            output (str) -- Output taken from LISTCAT.
+            regex_list (list) -- List of strings containing all the REGEX used for lookup.
+
+        Returns
+        -------
+            dict -- Dictionary containing all the attributes found.
+        """
+        attributes = {}
+
+        for (key, search) in regex_list:
+            search_result = re.search(search, output)
+            if search_result:
+                attributes[key] = search_result.group(2)
+            else:
+                attributes[key] = ''
+
+        return attributes
+
     def _parse_attributes(self, attrs):
         """Since all attributes returned by running commands return strings,
         this method ensures numerical and boolean values are returned as such.
@@ -730,9 +942,9 @@ return 0"""
             for key in attrs
         }
 
-        if attrs['jcl_attrs']['creation_job'] == '':
+        if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_job'] == '':
             attrs['jcl_attrs']['creation_job'] = None
-        if attrs['jcl_attrs']['creation_step'] == '':
+        if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_step'] == '':
             attrs['jcl_attrs']['creation_step'] = None
 
         # Numerical values.
@@ -759,6 +971,19 @@ return 0"""
         ]
         attrs = self._parse_values(attrs, num_attrs, int)
 
+        vsam_num_attrs = [
+            'avg_record_length',
+            'max_record_length',
+            'bufspace',
+            'key_length',
+            'key_offset',
+            'total_records'
+        ]
+        if 'data' in attrs:
+            attrs['data'] = self._parse_values(attrs['data'], vsam_num_attrs, int)
+        if 'index' in attrs:
+            attrs['index'] = self._parse_values(attrs['index'], vsam_num_attrs, int)
+
         # Boolean values.
         bool_attrs = ['has_extended_attrs', 'updated_since_backup', 'encrypted']
         attrs = self._replace_values(attrs, bool_attrs, True, False, 'YES')
@@ -780,7 +1005,7 @@ return 0"""
         """
         # Getting rid of values that basically say the value doesn't matter in
         # context or is unknown.
-        return value != '' and '?' not in value and value != 'N/A' and value != 'NO_LIM'
+        return value is not None and value != '' and '?' not in value and value != 'N/A' and value != 'NO_LIM'
 
     def _parse_values(self, attrs, keys, true_function):
         """Tries to parse attributes with a given function.
@@ -795,7 +1020,8 @@ return 0"""
         """
         for key in keys:
             try:
-                attrs[key] = true_function(attrs[key]) if attrs[key] else None
+                if key in attrs:
+                    attrs[key] = true_function(attrs[key]) if attrs[key] else None
             # If we fail to parse something, we just leave it be to avoid
             # losing information.
             except ValueError:
@@ -818,7 +1044,8 @@ return 0"""
             dict -- Updated attributes with replaced values.
         """
         for key in keys:
-            attrs[key] = true_value if attrs[key] == condition else false_value
+            if key in attrs:
+                attrs[key] = true_value if attrs[key] == condition else false_value
 
         return attrs
 
@@ -831,10 +1058,12 @@ return 0"""
         """
         for key in keys:
             try:
-                attrs[key] = datetime.strptime(attrs[key], '%Y/%j').strftime('%Y-%m-%d')
+                if key in attrs:
+                    attrs[key] = attrs[key].replace('.', '/')
+                    attrs[key] = datetime.strptime(attrs[key], '%Y/%j').strftime('%Y-%m-%d')
             except ValueError:
-                # z/OS returns 0 when a date is not set, so we set it to None.
-                if attrs[key] == "0":
+                # z/OS returns 0 or 0000/000 when a date is not set, so we set it to None.
+                if attrs[key] == "0" or "0000/000" in attrs[key]:
                     attrs[key] = None
 
         return attrs

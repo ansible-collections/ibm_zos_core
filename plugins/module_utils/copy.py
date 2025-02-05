@@ -403,7 +403,8 @@ def copy_asa_uss2mvs(src, dest, tmphlq=None):
     """
 
     module = AnsibleModuleHelper(argument_spec={})
-    oget_cmd = f"tsocmd \" OGET '{src}' '{dest}' \""
+    new_dest = dest.replace('\\', '')
+    oget_cmd = f"tsocmd \" OGET '{src}' '{new_dest}' \""
     rc, out, err = module.run_command(oget_cmd)
 
     return TSOCmdResponse(rc, out, err)
@@ -433,7 +434,7 @@ def copy_asa_mvs2uss(src, dest, tmphlq=None):
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
 
-    oput_cmd = "OPUT '{0}' '{1}'".format(src, dest)
+    oput_cmd = "OPUT '{0}' '{1}'".format(src, dest.replace('\\', ''))
     rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
 
     return TSOCmdResponse(rc, out, err)

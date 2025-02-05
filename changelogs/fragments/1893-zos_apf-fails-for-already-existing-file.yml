@@ -1,4 +1,4 @@
 bugfixes:
-  - zos_apf - When trying to add a library into the APF list that was already added the module would fail.
-    Fix now will not fail the module, and will inform the user that the library is alread on the APF list.
+  - zos_apf - When trying to add a library into the APF list that was already added, the module would fail.
+    Fix now will not fail the module, and will inform the user that the library is already on the APF list.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1893)

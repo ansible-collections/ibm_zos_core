@@ -605,11 +605,7 @@ jobs
   content_type
     Type of address space used by the job, can be one of the following types.
 
-<<<<<<< HEAD
     APPC for an APPC Initiator.
-=======
-    APPC for a APPC Initiator.
->>>>>>> c032672db92f88c9281d30bee9a905ef38255efb
 
     JGRP for a JOBGROUP.
 
@@ -619,11 +615,7 @@ jobs
 
     TSU for a Time sharing user.
 
-<<<<<<< HEAD
     \? for an unknown or pending job.
-=======
-    \? for an unknown or pending.
->>>>>>> c032672db92f88c9281d30bee9a905ef38255efb
 
     | **type**: str
     | **sample**: STC
@@ -748,13 +740,10 @@ jobs
 
       Job status `?` indicates status can not be determined.
 
-<<<<<<< HEAD
       Job status `TYPRUN=SCAN` indicates that the job had the TYPRUN parameter with SCAN option.
 
       Job status `NOEXEC` indicates that the job had the TYPRUN parameter with COPY option.
 
-=======
->>>>>>> c032672db92f88c9281d30bee9a905ef38255efb
       Jobs where status can not be determined will result in None (NULL).
 
       | **type**: str

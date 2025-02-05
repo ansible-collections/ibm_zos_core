@@ -1,4 +1,4 @@
 bugfixes:
-  - zos_copy: Previously if the dataset name includes special characters such as $ fail when force_lock is false
+  - zos_copy - Previously if the dataset name includes special characters such as $ fail when force_lock is false
       in the validation. Change now allow the use of special characters.
       (https://github.com/ansible-collections/ibm_zos_core/pull/1907)

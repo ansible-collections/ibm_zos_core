@@ -215,54 +215,6 @@ class ActionModule(ActionBase):
             return result
 
         # ********************************************************** #
-        #                Execute module on remote host               #
-        # ********************************************************** #
-        new_module_args = self._task.args.copy()
-        encoding_to = None
-        if encoding:
-            encoding_to = encoding.get("to", None)
-        if encoding is None or encoding_to is None:
-            new_module_args.update(
-                dict(encoding=dict(to=encode.Defaults.get_default_system_charset()))
-            )
-        remote_path = None
-
-        try:
-            fetch_res = self._execute_module(
-                module_name="ibm.ibm_zos_core.zos_fetch",
-                module_args=new_module_args,
-                task_vars=task_vars
-            )
-            ds_type = fetch_res.get("ds_type")
-            src = fetch_res.get("file")
-            remote_path = fetch_res.get("remote_path")
-
-            if fetch_res.get("msg"):
-                result["msg"] = fetch_res.get("msg")
-                result["stdout"] = fetch_res.get("stdout") or fetch_res.get(
-                    "module_stdout"
-                )
-                result["stderr"] = fetch_res.get("stderr") or fetch_res.get(
-                    "module_stderr"
-                )
-                result["stdout_lines"] = fetch_res.get("stdout_lines")
-                result["stderr_lines"] = fetch_res.get("stderr_lines")
-                result["rc"] = fetch_res.get("rc")
-                result["failed"] = True
-                return result
-
-            elif fetch_res.get("note"):
-                result["note"] = fetch_res.get("note")
-                return result
-
-        except Exception as err:
-            result["msg"] = "Failure during module execution"
-            result["stderr"] = str(err)
-            result["stderr_lines"] = str(err).splitlines()
-            result["failed"] = True
-            return result
-
-        # ********************************************************** #
         #  Determine destination path:                               #
         #  1. If the 'flat' parameter is 'false', then hostname      #
         #     will be appended to dest.                              #

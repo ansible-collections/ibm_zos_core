@@ -1617,7 +1617,8 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         copy_result = hosts.all.zos_copy(
@@ -1628,7 +1629,7 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd="cat \"//'{0}'\"".format(dest.replace('$', '\$')),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1689,7 +1690,8 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1697,7 +1699,8 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1714,7 +1717,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd="cat \"//'{0}'\"".format(dest.replace('$', '\$')),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1738,7 +1741,8 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1746,8 +1750,9 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
-        full_dest = "{0}(MEMBER)".format(dest)
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
+        full_dest = "{0}(MEMB$#@)".format(dest)
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1764,7 +1769,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest),
+            cmd="cat \"//'{0}'\"".format(full_dest.replace('$', '\$')),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1788,8 +1793,9 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
-        full_src = "{0}(MEMBER)".format(src)
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
+        full_src = "{0}(MEM$#@)".format(src)
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1797,7 +1803,8 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1814,7 +1821,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd="cat \"//'{0}'\"".format(dest.replace('$', '\$')),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1838,7 +1845,8 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         full_src = "{0}(MEMBER)".format(src)
         hosts.all.zos_data_set(
             name=src,
@@ -1847,8 +1855,9 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
-        full_dest = "{0}(MEMBER)".format(dest)
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
+        full_dest = "{0}(MEM$#@)".format(dest)
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1865,7 +1874,7 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest),
+            cmd="cat \"//'{0}'\"".format(full_dest.replace('$', '\$')),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1889,7 +1898,8 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1906,6 +1916,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         )
 
         dest = get_random_file_name(dir=TMP_DIRECTORY)
+        dest = f"{dest}$#@"
 
         copy_result = hosts.all.zos_copy(
             src=src,
@@ -1915,7 +1926,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest),
+            cmd="cat '{0}'".format(dest),
             executable=SHELL_EXECUTABLE,
         )
 

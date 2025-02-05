@@ -1,3 +1,0 @@
-bugfixes:
-  - zos_job_query - Module was not returning values for system and subsystem. Fix now returns these values.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1759).

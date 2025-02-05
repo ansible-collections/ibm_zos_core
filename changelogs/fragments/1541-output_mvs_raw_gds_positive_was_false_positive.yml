@@ -1,3 +1,0 @@
-minor_changes:
-  - zos_mvs_raw - Added support for GDG and GDS relative positive name notation to use a data set.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1541).

@@ -120,9 +120,6 @@ SHELL_EXECUTABLE = "/bin/sh"
 COBOL_PRINT_STR = "HELLO WORLD ONE"
 COBOL_PRINT_STR2 = "HELLO WORLD TWO"
 
-COBOL_PRINT_STR = "HELLO WORLD ONE"
-COBOL_PRINT_STR2 = "HELLO WORLD TWO"
-
 COBOL_SRC = """
        IDENTIFICATION DIVISION.\n
        PROGRAM-ID. HELLOWRD.\n
@@ -1371,7 +1368,7 @@ def test_copy_template_file(ansible_zos_module, encoding):
 
         # Adding the template vars to each host.
         template_vars = dict(
-            var="This should be rendered",
+            var="This should be rendered with 'quotes'.",
             if_var=5,
             array=[1, 2, 3]
         )
@@ -1382,6 +1379,11 @@ def test_copy_template_file(ansible_zos_module, encoding):
             src=temp_template,
             dest=dest_path,
             use_template=True,
+            template_parameters={
+                # This should make sure that we don't get stuff like '&#39' when
+                # rendering quotes.
+                "autoescape": False
+            },
             encoding={
                 "from": encoding,
                 "to": "IBM-1047"
@@ -2049,16 +2051,16 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
-def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
+def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module, z_python_interpreter):
     """
-    This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'. 
+    This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'.
     This this a wrapper for the actual test case `managed_user_copy_dest_lock_test_with_no_opercmd_access`.
     """
     managed_user = None
     managed_user_test_case_name = "managed_user_copy_dest_lock_test_with_no_opercmd_access"
     try:
         # Initialize the Managed user API from the pytest fixture.
-        managed_user = ManagedUser.from_fixture(ansible_zos_module)
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
 
         # Important: Execute the test case with the managed users execution utility.
         managed_user.execute_managed_user_test(

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,6 +17,7 @@ __metaclass__ = type
 
 import pytest
 
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
@@ -61,7 +62,7 @@ def test_failing_name_format(ansible_zos_module):
 
 @pytest.mark.parametrize(
         # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
-        # Where previously a program would NOT fail when rc != 0 unless verbose was True.
+        # Where a program will fail if rc != 0 only if verbose was True.
         "verbose",
         [True, False],
 )
@@ -101,11 +102,12 @@ def test_disposition_new(ansible_zos_module, verbose):
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             assert result.get("failed", False) is False
+            if verbose:
+                assert result.get("stderr") is not None
     finally:
         hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
-
 
 @pytest.mark.parametrize(
     "disposition",
@@ -200,9 +202,68 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module, 
             assert result.get("ret_code", {}).get("code", -1) == 0
             assert len(result.get("dd_names", [])) > 0
             for backup in result.get("backups"):
-                backup.get("backup_name")[:6] == tmphlq
+                assert backup.get("backup_name")[:6] == tmphlq
         for result in results.contacted.values():
             assert result.get("changed", False) is True
+    finally:
+        results = hosts.all.zos_data_set(name=default_data_set, state="absent")
+        if idcams_dataset:
+            hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+
+
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansible_zos_module, z_python_interpreter):
+    """
+    This tests the error message when a user cannot create data sets with a given HLQ.
+    """
+    managed_user = None
+    managed_user_test_case_name = "managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option"
+    try:
+        # Initialize the Managed user API from the pytest fixture.
+        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+
+        # Important: Execute the test case with the managed users execution utility.
+        managed_user.execute_managed_user_test(
+            managed_user_test_case = managed_user_test_case_name, debug = True,
+            verbose = True, managed_user_type=ManagedUserType.ZOS_LIMITED_HLQ)
+
+    finally:
+        # Delete the managed user on the remote host to avoid proliferation of users.
+        managed_user.delete_managed_user()
+
+def managed_user_list_cat_for_existing_data_set_with_restricted_tmp_hlq_option(ansible_zos_module, volumes_on_systems):
+    idcams_dataset = None
+    try:
+        hosts = ansible_zos_module
+        # IMPORTANT: Do not replace this HLQ unless it changes in the users utility, since this is the HLQ that
+        # the restricted hlq user don't have access to.
+        tmphlq = "NOPERMIT"
+        volumes = Volume_Handler(volumes_on_systems)
+        default_volume = volumes.get_available_vol()
+        default_data_set = get_tmp_ds_name()[:25]
+        hosts.all.zos_data_set(
+            name=default_data_set, type="seq", state="present", replace=True
+        )
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
+
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            tmp_hlq=tmphlq,
+            dds=[
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "content":idcams_listcat_dataset_cmd
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert len(result.get("dd_names", [])) == 0
+            assert result.get("changed", False) is False
+            assert result.get("failed", False) is True
     finally:
         results = hosts.all.zos_data_set(name=default_data_set, state="absent")
         if idcams_dataset:
@@ -362,7 +423,7 @@ def test_normal_dispositions_data_set(
         ("cyl", 3, 1, 2549880),
         ("b", 3, 1, 56664),
         ("k", 3, 1, 56664),
-        ("m", 3, 1, 3003192),
+        ("m", 3, 1, 3173184),
     ],
 )
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):
@@ -975,6 +1036,37 @@ def test_data_set_name_special_characters(ansible_zos_module):
         hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
         if idcams_dataset:
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+
+@pytest.mark.parametrize("max_rc", [4, 8])
+def test_new_disposition_for_data_set_members_max_rc(ansible_zos_module, max_rc):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_mvs_raw(
+        program_name="idcams",
+        auth=True,
+        max_rc=max_rc,
+        dds=[
+            {
+                "dd_output":{
+                    "dd_name":"sysprint",
+                    "return_content":{
+                        "type":"text"
+                    }
+                }
+            },
+            {
+                "dd_input":{
+                    "dd_name":"sysin",
+                    "content":" DELETE THIS.DATASET.DOES.NOT.EXIST"
+                }
+            },
+        ],
+    )
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("ret_code", {}).get("code", -1) == 8
+        if max_rc != 8:
+            assert result.get("msg") is not None
+            assert result.get("failed") is True
 
 # ---------------------------------------------------------------------------- #
 #                                 Input DD Tests                                #
@@ -2269,6 +2361,7 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
 
 @pytest.mark.parametrize(
         # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
         # Where previously a program would NOT fail when rc != 0 unless verbose was True.
         "verbose",
         [True, False],

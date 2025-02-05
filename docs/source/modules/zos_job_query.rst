@@ -186,7 +186,7 @@ jobs
   content_type
     Type of address space used by the job, can be one of the following types.
 
-    APPC for a APPC Initiator.
+    APPC for an APPC Initiator.
 
     JGRP for a JOBGROUP.
 
@@ -196,7 +196,7 @@ jobs
 
     TSU for a Time sharing user.
 
-    \? for an unknown or pending.
+    \? for an unknown or pending job.
 
     | **type**: str
     | **sample**: STC

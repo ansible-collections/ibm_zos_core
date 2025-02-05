@@ -18,9 +18,11 @@ __metaclass__ = type
 import tempfile
 import re
 import os
+import yaml
 from shellescape import quote
 import pytest
 from datetime import datetime
+import subprocess
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -155,6 +157,18 @@ JCL_TEMPLATES = {
 //SYS{{ item.step_name }}    DD {{ item.dd }}
 {% endfor %}
 Hello, world!
+/*
+//SYSUT2   DD SYSOUT=*
+//
+""",
+    "Autoescape": """//{{ pgm_name }}    JOB (T043JM,JM00,1,0,0,0),{{ parameter }},CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+{# This comment should not be part of the JCL #}
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD {{ input_dataset }}
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+{{ message  }}
 /*
 //SYSUT2   DD SYSOUT=*
 //
@@ -381,6 +395,48 @@ exit 0;
 //
 """
 
+PLAYBOOK_ASYNC_TEST = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+
+  tasks:
+    - name: Submit async job.
+      ibm.ibm_zos_core.zos_job_submit:
+        src: {3}
+        location: local
+      async: 45
+      poll: 0
+      register: job_task
+
+    - name: Query async task.
+      async_status:
+        jid: "{{{{ job_task.ansible_job_id }}}}"
+      register: job_result
+      until: job_result.finished
+      retries: 20
+      delay: 5
+"""
+
+INVENTORY_ASYNC_TEST = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
+
 
 @pytest.mark.parametrize(
     "location", [
@@ -447,12 +503,6 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
             name=data_set_name_special_chars, state="present", type="pds", replace=True
         )
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), temp_path)
-        )
-        hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
-        )
-        hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
                 temp_path, data_set_name_special_chars.replace('$', '\$')
             )
@@ -486,6 +536,47 @@ def test_job_submit_uss(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("jobs")[0].get("content_type") == "JOB"
             assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=temp_path, state="absent")
+
+
+def test_job_submit_and_forget_uss(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        temp_path = get_random_file_name(dir=TMP_DIRECTORY)
+        hosts.all.file(path=temp_path, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), temp_path)
+        )
+        results = hosts.all.zos_job_submit(
+            src=f"{temp_path}/SAMPLE", location="uss", volume=None, wait_time_s=0,
+        )
+        for result in results.contacted.values():
+            assert result.get("job_id") is not None
+            assert result.get("changed") is True
+            assert len(result.get("jobs")) == 0
+            assert result.get("job_name") is None
+            assert result.get("duration") is None
+            assert result.get("ddnames") is not None
+            assert result.get("ddnames").get("ddname") is None
+            assert result.get("ddnames").get("record_count") is None
+            assert result.get("ddnames").get("id") is None
+            assert result.get("ddnames").get("stepname") is None
+            assert result.get("ddnames").get("procstep") is None
+            assert result.get("ddnames").get("byte_count") is None
+            assert len(result.get("ddnames").get("content")) == 0
+            assert result.get("ret_code") is not None
+            assert result.get("ret_code").get("msg") is None
+            assert result.get("ret_code").get("msg_code") is None
+            assert result.get("ret_code").get("code") is None
+            assert len(result.get("ret_code").get("steps")) == 0
+            assert result.get("job_class") is None
+            assert result.get("svc_class") is None
+            assert result.get("priority") is None
+            assert result.get("asid") is None
+            assert result.get("creation_time") is None
+            assert result.get("queue_position") is None
+            assert result.get("program_name") is None
     finally:
         hosts.all.file(path=temp_path, state="absent")
 
@@ -766,6 +857,13 @@ def test_job_submit_max_rc(ansible_zos_module, args):
         "options":{
             "keep_trailing_newline":False
         }
+    },
+    {
+        "template":"Autoescape",
+        "options":{
+            "keep_trailing_newline":False,
+            "autoescape":False
+        }
     }
 ])
 def test_job_submit_jinja_template(ansible_zos_module, args):
@@ -780,6 +878,7 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
             "pgm_name":"HELLO",
             "input_dataset":"DUMMY",
             "message":"Hello, world",
+            "parameter":"'HELLO WORLD - &JRM'",
             "steps":[
                 {
                     "step_name":"IN",
@@ -905,15 +1004,22 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
                                             "to": "IBM-1047"
                                         },)
     for result in results.contacted.values():
-        assert result.get("changed") is False
+        # With ZOAU 1.3.3 changes now code and return msg_code are 0 and 0000 respectively.
+        # assert result.get("changed") is False
+        # When running a job with TYPRUN=COPY, a copy of the JCL will be kept in the JES spool, so
+        # effectively, the system is changed even though the job didn't run.
+        assert result.get("changed") is True
         assert result.get("jobs")[0].get("job_id") is not None
         assert re.search(
-            r'please review the job log',
+            r'The job was run with TYPRUN=COPY.',
             repr(result.get("jobs")[0].get("ret_code").get("msg_txt"))
         )
-        assert result.get("jobs")[0].get("ret_code").get("code") is None
-        assert result.get("jobs")[0].get("ret_code").get("msg") is None
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
+        assert result.get("jobs")[0].get("ret_code").get("code") == 0
+        assert result.get("jobs")[0].get("ret_code").get("msg") == 'TYPRUN=COPY'
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") == '0000'
+        # assert result.get("jobs")[0].get("ret_code").get("code") is None
+        # assert result.get("jobs")[0].get("ret_code").get("msg") is None
+        # assert result.get("jobs")[0].get("ret_code").get("msg_code") is None
 
 
 def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
@@ -1072,3 +1178,65 @@ def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=temp_path, state="absent")
+
+
+def test_job_submit_async(get_config):
+    # Creating temp JCL file used by the playbook.
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w",encoding="utf-8") as f:
+        f.write(JCL_FILE_CONTENTS)
+
+    # Getting all the info required to run the playbook.
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
+
+    playbook = tempfile.NamedTemporaryFile(delete=True)
+    inventory = tempfile.NamedTemporaryFile(delete=True)
+
+    os.system("echo {0} > {1}".format(
+        quote(PLAYBOOK_ASYNC_TEST.format(
+            zoau,
+            cut_python_path,
+            python_version,
+            tmp_file.name
+        )), 
+        playbook.name
+    ))
+
+    os.system("echo {0} > {1}".format(
+        quote(INVENTORY_ASYNC_TEST.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), 
+        inventory.name
+    ))
+
+    command = "ansible-playbook -i {0} {1}".format(
+        inventory.name,
+        playbook.name
+    )
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        shell=True,
+        timeout=120,
+        encoding='utf-8'
+    )
+
+    assert result.returncode == 0
+    assert "ok=2" in result.stdout
+    assert "changed=2" in result.stdout
+    assert result.stderr == ""
+

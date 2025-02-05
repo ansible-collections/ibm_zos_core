@@ -1,10 +1,75 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2024                                    .
+.. © Copyright IBM Corporation 2020, 2025                                    .
 .. ...........................................................................
 
 ========
 Releases
 ========
+
+v1.13.0-beta.1
+==============
+
+Minor Changes
+-------------
+
+- ``import_handler`` - When importing a non supported ZOAU version like 1.2.x the module would throw a non user friendly error message. Error message is now explicit about ZOAU not being properly configured for Ansible.
+- ``zos_copy``
+
+   - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+   - Adds error message when a PDS/E source member does not exist or is not cataloged.
+
+- ``zos_job_submit``
+
+   - Add deploy and forget capability. Now when wait_time_s is 0, the module will submit the job and will not wait to get the job details or content, returning only the job id.
+   - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+   - Added support to run zos_job_submit tasks in async mode inside playbooks.
+
+- ``zos_mvs_raw`` - Added ``max_rc`` option. Now when the user sets ``max_rc``, the module tolerates the failure if the return code is smaller than the ``max_rc`` specified, however, return value ``changed`` will be False if the program return code is not 0.
+- ``zos_script`` - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+
+Bugfixes
+--------
+
+- ``zos_copy`` - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message.
+- ``zos_fetch`` - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file). Change now allows the user to use different types of relative paths as a parameter.
+- ``zos_find``
+
+   - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types.
+   - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster.
+
+- ``zos_job_query`` - Module was not returning values for system and subsystem. Fix now returns these values.
+- ``zos_mvs_raw``
+
+   - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail. Fix now has a consistent behavior and fails in both cases.
+   - Module would not populate stderr return value. Fix now populates stderr in return values.
+   - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+   - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+   - Option ``tmp_hlq`` was not being used as HLQ when creating backup data sets. Fix now uses ``tmp_hlq`` as HLQ for backup data sets.
+
+- ``zos_script`` - When the user trying to run a remote script had execute permissions but wasn't owner of the file, the module would fail while trying to change permissions on it. Fix now ensures the module first checks if the user can execute the script and only try to change permissions when necessary.
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_zfs_resize - Resize a zfs data set.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+control node and z/OS managed node dependencies.
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
 
 Version 1.12.0
 ==============
@@ -84,7 +149,7 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -117,7 +182,7 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -368,7 +433,7 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 

@@ -368,13 +368,6 @@ def run_operator_command(params):
     if use_wait_arg:
         kwargs.update({"wait": True})
 
-    use_wait_arg = False
-    if zoau_version_checker.is_zoau_version_higher_than("1.2.4"):
-        use_wait_arg = True
-
-    if use_wait_arg:
-        kwargs.update({"wait": True})
-
     args = []
     rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout_s=wait_s, preserve=preserve, *args, **kwargs)
 

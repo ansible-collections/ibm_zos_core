@@ -63,6 +63,8 @@ wait_time_s
 
   *wait_time_s* is measured in seconds and must be a value greater than 0 and less than 86400.
 
+  The module can submit and forget jobs by setting *wait_time_s* to 0. This way the module will not try to retrieve the job details other than job id. Job details and contents can be retrieved later by using `zos_job_query <./zos_job_query.html>`_ or `zos_job_output <./zos_job_output.html>`_ if needed.
+
   | **required**: False
   | **type**: int
   | **default**: 10
@@ -258,6 +260,14 @@ template_parameters
     | **required**: False
     | **type**: bool
     | **default**: False
+
+
+  autoescape
+    Whether to enable autoescape of XML/HTML elements on a template.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: True
 
 
 
@@ -595,7 +605,7 @@ jobs
   content_type
     Type of address space used by the job, can be one of the following types.
 
-    APPC for a APPC Initiator.
+    APPC for an APPC Initiator.
 
     JGRP for a JOBGROUP.
 
@@ -605,7 +615,7 @@ jobs
 
     TSU for a Time sharing user.
 
-    \? for an unknown or pending.
+    \? for an unknown or pending job.
 
     | **type**: str
     | **sample**: STC
@@ -729,6 +739,10 @@ jobs
       Job status `SYS` indicates a system failure.
 
       Job status `?` indicates status can not be determined.
+
+      Job status `TYPRUN=SCAN` indicates that the job had the TYPRUN parameter with SCAN option.
+
+      Job status `NOEXEC` indicates that the job had the TYPRUN parameter with COPY option.
 
       Jobs where status can not be determined will result in None (NULL).
 

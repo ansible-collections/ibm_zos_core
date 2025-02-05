@@ -790,7 +790,7 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
 def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
     z_int = z_python_interpreter
     hosts = ansible_zos_module
-    remote_host = z_int[1].get("inventory").strip(",")
+    remote_host = z_int[2].get("inventory").strip(",")
     dest_path = f"/tmp/{remote_host}/etc/ssh/ssh_config"
     params = {
         "src":"/etc/ssh/ssh_config",
@@ -941,3 +941,47 @@ def test_fetch_gdg(ansible_zos_module):
 
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
+
+
+@pytest.mark.parametrize("relative_path", ["tmp/", ".", "../tmp/", "~/tmp/"])
+def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_module, relative_path):
+    hosts = ansible_zos_module
+    current_working_directory = os.getcwd()
+    src = "/etc/profile"
+
+    # If the test suite is running on root to avoid an issue we check the current directory
+    # Also, user can run the tests from ibm_zos_core or tests folder, so this will give us the absolute path of our working dir.
+    if relative_path == "../tmp/":
+        aux = os.path.basename(os.path.normpath(current_working_directory))
+        relative_path = "../" + aux + "/tmp/"
+
+    params = {
+        "src": src,
+        "dest": relative_path,
+        "flat":True
+    }
+
+    # Case to create the dest path to verify allow running on any path.
+    # There are some relative paths for which we need to change our cwd to be able to validate that
+    # the path returned by the module is correct.
+    if relative_path == "~/tmp/":
+        dest = os.path.expanduser("~")
+        dest = dest + "/tmp"
+    elif relative_path == ".":
+        dest = current_working_directory + "/profile"
+    else:
+        dest = current_working_directory + "/tmp"
+
+    try:
+        results = hosts.all.zos_fetch(**params)
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "USS"
+            assert result.get("module_stderr") is None
+            assert dest == result.get("dest")
+            dest = result.get("dest")
+
+    finally:
+        if os.path.exists(dest):
+            os.remove(dest)

@@ -39,7 +39,6 @@ class MissingZOAUImport(object):
                     "Ensure environment variables are properly configured in Ansible for use with ZOAU."
                 )
             )
-
         return method
 
 
@@ -81,30 +80,25 @@ class ZOAUImportError(object):
         and instead return a method that will alert the user that there was
         an error while importing ZOAU.
         """
-        def method(*args, **kwargs):
-            """Raises ImportError as a result of a failed ZOAU import.
+        """Raises ImportError as a result of a failed ZOAU import.
 
-            Parameters
-            ----------
-            *args : dict
-                Arguments ordered in a dictionary.
-            **kwargs : dict
-                Arguments ordered in a dictionary.
+        Parameters
+        ----------
+        name : str
+            Value of object not properly imported.
 
-            Raises
-            ------
-            ImportError
-                Unable to import a module or library.
-            """
-            raise ImportError(
-                (
-                    "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
-                    "Ensure environment variables are properly configured in Ansible for use with ZOAU. "
-                    "Complete traceback: {0}".format(self.traceback)
-                )
+        Raises
+        ------
+        ImportError
+            Unable to import a module or library.
+        """
+        raise ImportError(
+            (
+                "ZOAU is not properly configured for Ansible. Unable to import zoautil_py. "
+                "Ensure environment variables are properly configured in Ansible for use with ZOAU. "
+                "Complete traceback: {0}".format(self.traceback)
             )
-
-        return method
+        )
 
 
 class MissingImport(object):
@@ -124,21 +118,16 @@ class MissingImport(object):
         self.import_name = import_name
 
     def __getattr__(self, name):
-        def method(*args, **kwargs):
-            """Raises ImportError as a result of trying to import a missing module.
+        """Raises ImportError as a result of trying to import a missing module.
 
-            Parameter
-            ---------
-            *args : dict
-                Arguments ordered in a dictionary.
-            **kwargs : dict
-                Arguments ordered in a dictionary.
+        Parameter
+        ---------
+        name : str
+            Value of object not properly imported.
 
-            Raises
-            ------
-            ImportError
-                Unable to import a module or library.
-            """
-            raise ImportError("Import {0} was not available.".format(self.import_name))
-
-        return method
+        Raises
+        ------
+        ImportError
+            Unable to import a module or library.
+        """
+        raise ImportError("Import {0} was not available.".format(self.import_name))

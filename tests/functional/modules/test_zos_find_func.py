@@ -448,8 +448,8 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
 
 def test_find_vsam_pattern_disp_old(ansible_zos_module, volumes_on_systems):
     """
-    Creates a VSAM cluster and runs a JCL to lock the data set with DISP=OLD. 
-    Then make sure that we can query the VSAM. Currently, if using age + cluster 
+    Creates a VSAM cluster and runs a JCL to lock the data set with DISP=OLD.
+    Then make sure that we can query the VSAM. Currently, if using age + cluster
     resource_type the module will not find the vsam.
     """
     hosts = ansible_zos_module

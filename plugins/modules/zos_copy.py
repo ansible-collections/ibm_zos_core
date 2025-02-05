@@ -187,7 +187,7 @@ options:
     description:
       - By default, when C(dest) is a MVS data set and is being used by another
         process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
-        to bypass this check and continue with copy.
+        to bypass DISP=SHR and continue with the copy operation.
       - If set to C(true) and destination is a MVS data set opened by another
         process then zos_copy will try to copy using DISP=SHR.
       - Using C(force_lock) uses operations that are subject to race conditions
@@ -1657,7 +1657,7 @@ class USSCopyHandler(CopyHandler):
         new_src = conv_path or src
         try:
             if self.is_binary:
-                copy.copy_uss2uss_binary(new_src, dest)
+                copy.copy_uss_mvs(new_src, dest, is_binary=True)
             else:
                 opts = dict()
                 opts["options"] = ""
@@ -1931,11 +1931,10 @@ class USSCopyHandler(CopyHandler):
                             stderr=response.stderr_response
                         )
                 else:
-                    copy.copy_pds2uss(
+                    copy.copy_uss_mvs(
                         src,
                         dest,
-                        is_binary=self.is_binary,
-                        asa_text=self.asa_text
+                        is_binary=self.is_binary
                     )
         except CopyOperationError as err:
             raise err
@@ -3305,6 +3304,13 @@ def run_module(module, arg_def):
     raw_src = src
     raw_dest = dest
 
+    # Validation for copy from a member
+    if src_member:
+        if not (data_set.DataSet.data_set_member_exists(src)):
+            module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
+                data_set.extract_member_name(src)
+            ))
+
     # Implementing the new MVSDataSet class by masking the values of
     # src/raw_src and dest/raw_dest.
     if is_mvs_src:
@@ -3446,13 +3452,6 @@ def run_module(module, arg_def):
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
-
-            # When dealing with a new generation, we'll override its type to None
-            # so it will be the same type as the source (or whatever dest_data_set has)
-            # a couple lines down.
-            if is_dest_gds and not is_dest_gds_active:
-                dest_exists = False
-                dest_ds_type = None
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)
@@ -3942,6 +3941,7 @@ def main():
                         choices=['\n', '\r', '\r\n']
                     ),
                     auto_reload=dict(type='bool', default=False),
+                    autoescape=dict(type='bool', default=True),
                 )
             ),
             force=dict(type='bool', default=False),
@@ -4015,6 +4015,7 @@ def main():
                 keep_trailing_newline=dict(arg_type='bool', required=False),
                 newline_sequence=dict(arg_type='str', required=False),
                 auto_reload=dict(arg_type='bool', required=False),
+                autoescape=dict(arg_type='bool', required=False),
             )
         ),
     )

@@ -175,6 +175,37 @@ write_ansible_cfg(){
     unset ansible_cfg
 }
 
+# Customized galaxy-importer.cfg for each managed venv, ./ac will know how to source this so its used during execution.
+write_galaxy_cfg(){
+    galaxy_cfg=${galaxy_cfg}"[galaxy-importer]\\n"
+    galaxy_cfg=${galaxy_cfg}"LOG_LEVEL_MAIN = INFO\\n"
+    galaxy_cfg=${galaxy_cfg}"RUN_ANSIBLE_TEST = False\\n"
+    galaxy_cfg=${galaxy_cfg}"ANSIBLE_LOCAL_TMP = '~/.ansible/tmp'\\n"
+    galaxy_cfg=${galaxy_cfg}"RUN_FLAKE8 = True\\n\\n"
+
+    galaxy_cfg=${galaxy_cfg}"[flake8]\\n"
+    galaxy_cfg=${galaxy_cfg}"exclude =\\n"
+    galaxy_cfg=${galaxy_cfg}"    ./galaxy_importer.egg-info/*,\\n"
+    galaxy_cfg=${galaxy_cfg}"    ./build/*,\\n"
+    galaxy_cfg=${galaxy_cfg}"    ./dist/*\\n"
+    galaxy_cfg=${galaxy_cfg}"    ./.git/*\\n"
+    galaxy_cfg=${galaxy_cfg}"    ./.env/*,\\n"
+    galaxy_cfg=${galaxy_cfg}"    ./.venv/*,\\n"
+    galaxy_cfg=${galaxy_cfg}"    ./.pytest_cache/*,\\n\\n"
+
+    galaxy_cfg=${galaxy_cfg}"ignore = E402,W503,W504\\n\\n"
+
+    galaxy_cfg=${galaxy_cfg}"# Flake8 codes\\n"
+    galaxy_cfg=${galaxy_cfg}"# --------------------\\n"
+    galaxy_cfg=${galaxy_cfg}"# W503: This enforces operators before line breaks which is not pep8 or black compatible.\\n"
+    galaxy_cfg=${galaxy_cfg}"# W504: This enforces operators after line breaks which is not pep8 or black compatible.\\n"
+    galaxy_cfg=${galaxy_cfg}"# E402: This enforces module level imports at the top of the file.\\n\\n"
+
+    echo -e "${galaxy_cfg}">"${VENV_HOME_MANAGED}"/"${venv_name}"/galaxy-importer.cfg
+    unset galaxy_cfg
+
+}
+
 # Lest normalize the version from 3.10.2 to 3010002000
 # Do we we need that 4th octet?
 normalize_version() {
@@ -321,6 +352,7 @@ write_requirements(){
             cp ce.py "${VENV_HOME_MANAGED}"/"${venv_name}"/
             cp -R modules "${VENV_HOME_MANAGED}"/"${venv_name}"/
             write_ansible_cfg
+            write_galaxy_cfg
 
             # Decrypt file
             if [ "$option_pass" ]; then
@@ -714,6 +746,8 @@ host_zvm=$1
 pyz_version=$2
 zoau_version=$3
 managed_venv_path=$4
+volumes=$5
+provided_user=$6
 
 zoau_pyz=`echo $pyz_version | cut -d "." -f1,2`
 
@@ -726,13 +760,17 @@ ssh_host_credentials "$host_zvm"
 get_python_mount "$pyz_version"
 get_zoau_mount "$zoau_version"
 
+if [ "${provided_user}" ]; then
+    user="${provided_user}"
+fi
+
 CONFIG=${CONFIG}"host: ${host}\\n"
 CONFIG=${CONFIG}"user: ${user}\\n"
 CONFIG=${CONFIG}"python_path: ${PYZ_HOME}/bin/python3\\n"
 CONFIG=${CONFIG}"\\n"
 CONFIG=${CONFIG}"environment:\\n"
 CONFIG=${CONFIG}"  _BPXK_AUTOCVT: \"ON\"\\n"
-CONFIG=${CONFIG}"  _CEE_RUNOPTS: \"'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'\"\\n"
+CONFIG=${CONFIG}"  _CEE_RUNOPTS: \"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)\"\\n"
 CONFIG=${CONFIG}"  _TAG_REDIR_IN: txt\\n"
 CONFIG=${CONFIG}"  _TAG_REDIR_OUT: txt\\n"
 CONFIG=${CONFIG}"  LANG: C\\n"
@@ -740,7 +778,13 @@ CONFIG=${CONFIG}"  ZOAU_HOME: ${ZOAU_HOME}\\n"
 CONFIG=${CONFIG}"  LIBPATH: ${ZOAU_HOME}/lib:${PYZ_HOME}/lib:/lib:/usr/lib:.\\n"
 CONFIG=${CONFIG}"  PYTHONPATH: ${ZOAU_HOME}/lib/$zoau_pyz\\n"
 CONFIG=${CONFIG}"  PATH: ${ZOAU_HOME}/bin:${PYZ_HOME}/bin:/bin:/usr/sbin:/var/bin\\n"
-CONFIG=${CONFIG}"  PYTHONSTDINENCODING: \"cp1047\"\\n"
+
+if [ "${volumes}" ]; then
+    CONFIG=${CONFIG}"VOLUMES:\\n"
+    for volume in ${volumes}; do
+        CONFIG=${CONFIG}"  - '${volume}'\\n"
+    done
+fi
 
 echo -e $CONFIG>$managed_venv_path/config.yml
 }
@@ -777,7 +821,7 @@ case "$1" in
     get_host_ids_production
     ;;
 --config)
-    write_test_config $2 $3 $4 $5
+    write_test_config $2 $3 $4 $5 "$6" $7
     ;;
 --disc)
     discover_python

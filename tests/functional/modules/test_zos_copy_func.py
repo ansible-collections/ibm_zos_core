@@ -1664,7 +1664,8 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
 
         # We need to escape the data set name because we are using cat, using dcat will
         # bring the trailing empty spaces according to the data set record length.
-        dest_escaped = escape_special_chars(full_dest)
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\$')
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
@@ -1676,7 +1677,6 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
             assert cp_res.get("dest") == full_dest
             assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
-            print(v_cp)
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
     finally:

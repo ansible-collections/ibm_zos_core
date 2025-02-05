@@ -41,3 +41,24 @@ def get_random_file_name(prefix="", suffix="", dir=""):
         dir += '/'
 
     return dir + prefix + datetime.now().strftime("%S%f") + suffix
+
+def escape_special_chars(string):
+    """Escapes special characters ($, @, #) inside a data set name.
+
+    Parameters
+    ----------
+        string : str
+            String to escape.
+
+    Returns
+    -------
+        str
+            Escaped string.
+    """
+    special_chars = ['$', '@', '#', '-']
+    escaped_string = string.replace('\\', '')
+
+    for char in special_chars:
+        escaped_string = escaped_string.replace(char, f"\\\{char}")
+
+    return escaped_string

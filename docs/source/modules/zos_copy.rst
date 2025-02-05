@@ -677,7 +677,6 @@ template_parameters
     | **default**: False
 
 
-<<<<<<< HEAD
   autoescape
     Whether to enable autoescape of XML/HTML elements on a template.
 
@@ -686,8 +685,6 @@ template_parameters
     | **default**: True
 
 
-=======
->>>>>>> c032672db92f88c9281d30bee9a905ef38255efb
 
 
 

@@ -872,42 +872,74 @@ New Modules
 Minor Changes
 -------------
 
-- ``zos_blockinfile`` - Adds an enhancement to allow double quotes within a block.
-- ``zos_copy``
+- ``zos_backup_restore`` - default behavior for module option **hlq** changed. When option **operation** is set to **restore** and the **hlq** is not provided, the original high level qualifiers in a backup will be used for a restore.
 
-      - Updates the behavior of the `mode` option so that permissions are applied to existing directories and contents.
-      - Adds an enhancement to option `restore_backup` to track modified members in a data set in the event of an error, restoring them to their previous state without reallocating the data set.
-- ``zos_data_set`` - Adds a new option named *force* to enable deletion of a data member in a PDSE that is simultaneously in use by others.
-- ``zos_job_query`` - Enables embedded positional wild card placement throughout *job_name* and *job_id* parameters.
-- ``zos_lineinfile`` - Adds a new option named *force* to enable modification of a data member in a data set that is simultaneously in use by others.
-- ``zos_tso_command`` - Adds a new option named *max_rc* to enable non-zero return codes lower than the specified maximum return as succeeded.
-- ``module_utils``
+- ``zos_job_output`` - has added the address space type for a job returned as **content_type** in the module response.
 
-      - job - Adds support for positional wild card placement for `job_name`` and `job_id`.
-      - Adds support for import *common.text.converters* over the deprecated *_text* import.
+- ``zos_job_query`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_job_submit`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_mvs_raw`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+- ``zos_operator`` - has added the option **case_sensitive**, allowing the module to control the commands case.
+
+- ``zos_script`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+- ``zos_tso_command`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
 
 Bugfixes
 --------
 
+- ``zos_apf`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_archive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_backup_restore`` - when a recoverable error was encountered and **recover = True**, the module would fail. The change now allows the module to recover.
+
+- ``zos_blockinfile``
+
+   - when the modules **marker_begin** and **marker_end** were set to the same value, the module would not delete the block. Now the module requires the **marker_begin** and **marker_end** to have different values.
+   - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option..
+
 - ``zos_copy``
 
-      - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset.
-      - Fixes a bug where the module would change the mode for a directory when copying in the contents of another directory.
-      - Fixes a bug where the incorrect encoding would be used during normalization, particularly when processing newlines in files.
-      - Fixes a bug where binary files were not excluded when normalizing data to remove newlines.
-      - Fixes a bug where a *_play_context.verbosity* deprecation warning would appear.
-- ``zos_fetch`` - Fixes a bug where a *_play_context.verbosity* deprecation warning would appear.
-- ``zos_encode`` - Fixes a bug where converted files were not tagged with the new code set afterwards.
-- ``zos_find`` - Fixes a bug where the module would stop searching and exit after the first value in a list was not found.
-- ``zos_lineinfile``
+   - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+   - module would fail if the user did not have Universal Access Authority for SAF Profile **MVS.MCSOPER.ZOAU** and SAF Class **OPERCMDS**. Now the module handles the exception and returns an informative message.
+   - module would ignore the value set for **remote_tmp** in the Ansible configuration file. Now the module uses the value of **remote_tmp** or the default value **~/.ansible/tmp** if none is given.
 
-      - Removes use of Python f-string to ensure support for Python 2.7 on the controller.
-      - Fixes a bug where an incorrect error message would be raised when a USS source was not found.
-- ``module_utils``
+- ``zos_data_set`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
 
-      - data_set - Fixes an failure caused by cataloging a VSAM data set when the data set is not cataloged.
-- ``zos_data_set`` - Fixes a bug that will leave VSAM data set cluster components behind when instructed to delete the data set (`present=absent`).
-- ``zos_gather_facts`` - Fixes a bug that prevented the module from executing with newer versions of ZOAU.
+- ``zos_encode`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_fetch`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_find``
+
+   - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types.
+   - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster.
+
+- ``zos_job_output`` - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
+
+- ``zos_job_query``
+
+   - module did not return values for properties **system** and **subsystem**. Now the module returns these values.
+   - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
+
+- ``zos_lineinfile`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_mount`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_mvs_raw``
+
+   - Module sub-option **base64** for **return_content** did not retrieve DD output as Base64. Now the module returns Base64 encoded contents for the DD.
+   - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+   - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+   - If a program failed with a non-zero return code and verbose was false, the module would succeed (false positive). Fix now fails the module for all instances where a program has a non-zero return code.
+
+- ``zos_script`` - module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
+
+- ``zos_unarchive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
 
 Availability
 ------------
@@ -922,109 +954,143 @@ Requirements
 The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
 controller and z/OS managed node dependencies.
 
-Version 1.5.0
-=============
+Version 1.11.1
+==============
 
-New Modules
------------
+Bugfixes
+--------
 
-- ``zos_gather_facts`` - can retrieve variables from target z/OS systems that are then available to playbooks through the ansible_facts dictionary and managed using filters.
+- ``zos_mvs_raw``
 
-Major Changes
--------------
+   - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail(false positive). Fix now has a consistent behavior and fails in both cases.
+   - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+   - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
 
-- ``ibm_zos_core`` - Updates the entire collection in that the collection no longer depends on the managed node having installed System Display and Search Facility (SDSF). Remove SDSF dependency from ibm_zos_core collection.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+control node and z/OS managed node dependencies.
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
+
+Version 1.11.0
+==============
 
 Minor Changes
 -------------
 
-- ``zos_apf`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_apf`` - Added support for data set names (libraries) with special characters ($, /#, /- and @).
+- ``zos_archive``
+
+   - Added support for GDG and GDS relative name notation to archive data sets.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_backup_restore``
+
+   - Added support for GDS relative name notation to include or exclude data sets when operation is backup.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
 - ``zos_blockinfile``
 
-      - fixes a bug when using double quotes in the block text of the module. When double quotes appeared in block text, the module would error differently depending on the usage of option insertafter. Examples of this error have return code 1 or 16 along with message "ZOAU dmod return content is NOT in json format" and a varying stderr.
-      - updates the module with a new option named force. This allows for a user to specify that the data set can be shared with others during an update which results in the data set you are updating to be simultaneously updated by others.
-      - updates the module with a new option named indentation. This allows for a user to specify a number of spaces to prepend to the content before being inserted into the destination.
-      - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-- ``zos_copy`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-- ``zos_data_set`` - Ensures that temporary datasets created by zos_data_set use the tmp_hlq specified. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-- ``zos_encode`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-- ``zos_fetch`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-- ``zos_job_output`` - was updated to leverage the latest changes that removes the REXX code by calling the module utility jobs.
-- ``zos_job_query``
+   - Added support for GDG and GDS relative name notation to specify a data set. And backup in new generations.
+   - Added support for data set names with special characters ($, /#, /- and @).
 
-      - was updated to leverage the latest changes that removes the REXX code by calling the module utility jobs.
-      - was updated to use the jobs module utility.
+- ``zos_copy``
+
+   - Added support for copying from and to generation data sets (GDS) and generation data groups (GDG) including using a GDS for backup.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_data_set``
+
+   - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_encode``
+
+   - Added support for converting the encodings of generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_fetch``
+
+   - Added support for fetching generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_find``
+
+   - Added support for finding generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
 - ``zos_job_submit``
 
-      - architecture changed such that the entire modules execution time now is captured in the duration time which includes job submission and log collection. If a job does not return by the default 10 sec 'wait_time_s' value, it can be increased up to 86400 seconds.
-      - behavior changed when a volume is defined in the module options such that it will catalog the data set if it is not cataloged and submit the job. In the past, the function did not catalog the data set and instead performed I/O operations and then submitted the job. This behavior aligns to other module behaviors and reduces the possibility to encounter a permissions issue.
-- ``zos_lineinfile`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-- ``zos_mount`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+   - Added support for running JCL stored in generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_lineinfile``
+
+   - Added support for GDG and GDS relative name notation to specify the target data set and to backup into new generations.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_mount`` - Added support for data set names with special characters ($, /#, /- and @).
 - ``zos_mvs_raw``
 
-      - Ensures that temporary datasets created by DD Statements use the tmp_hlq specified. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-      - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
-      - updated module documentation on how to use a multi-line string when using the content field option as well as an example.
-- ``zos_operator``
+   - Added support for GDG and GDS relative name notation to specify data set names.
+   - Added support for data set names with special characters ($, /#, /- and @).
 
-      - added in the response the cmd result.
-      - added in the response the elapsed time.
-      - added in the response the wait_time_s set.
-      - deprecated the wait option, not needed with wait_time_s minor_changes.
-      - was updated to remove the usage of REXX and replaced with ZOAU python APIs. This reduces code replication and it removes the need for REXX interpretation which increases performance.
+- ``zos_script`` - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+- ``zos_tso_command``
 
+   - Added support for using GDG and GDS relative name notation in running TSO commands.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_unarchive``
+
+   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+   - Added support for data set names with special characters ($, /#, /- and @).
 
 Bugfixes
 --------
 
 - ``zos_copy``
 
-      - fixes a bug such that the module fails when copying files from a directory needing also to be encoded. The failure would also delete the `src` which was not desirable behavior. Fixes deletion of src on encoding error.
-      - module was updated to correct a bug in the case when the destination (dest) is a PDSE and the source (src) is a Unix Systems File (USS). The module would fail in determining if the PDSE actually existed and try to create it when it already existed resulting in an error that would prevent the module from correctly executing.
-      - fixes a bug where the computed record length for a new destination dataset would include newline characters.
-      - fixes a bug where if a destination has accented characters in its content, the module would fail when trying to determine if it is empty.
-      - fixes a bug where copying a member from a loadlib to another loadlib fails.
-      - fixed wrongful creation of destination backups when module option `force` is true, creating emergency backups meant to restore the system to its initial state in case of a module failure only when force is false.
-      - copy failed from a loadlib member to another loadlib member. Fix now looks for an error in stdout while copying to perform a fallback copy for executables.
-      - fixes a bug where the module would change the mode for a directory when copying into it the contents of another.
-      - fixes a bug where source files not encoded in IBM-1047 would trigger an encoding error while computing the record length for a new destination dataset.
-      - fixes a bug where the code for fixing an issue with newlines in files would use the wrong encoding for normalization.
-- ``zos_data_set``
+   - Fixes the issue that prevents the module from automatically computing member names when copying a file into a PDS/E. The module now computes the member name when copying into a PDS/E.
+   - Fixes an issue that would perform an unnecessary check if a destination data set is locked for data sets the module created. The module only performs this check for destinations that are present.
 
-      - Fixes a bug such that the module will delete a catalogued data set over an uncatalogued data set even though the volume is provided for the uncataloged data set. This is unexpected behavior and does not align to documentation; correct behavior is that when a volume is provided that is the first place the module should look for the data set, whether or not it is cataloged.
-      - fixes a bug where the default record format FB was actually never enforced and when enforced it would cause VSAM creation to fail with a Dynalloc failure. This also cleans up some of the options that are set by default when they have no bearing for batch.
-- ``zos_fetch`` - Updates the modules behavior when fetching VSAM data sets such that the maximum record length is now determined when creating a temporary data set to copy the VSAM data into and a variable-length (VB) data set is used.
-- ``zos_job_output`` - fixes a bug that returned all ddname's when a specific ddnamae was provided. Now a specific ddname can be returned and all others ignored.
-- ``zos_job_query`` - was updated to correct a boolean condition that always evaluated to "CANCELLED".
-- ``zos_job_submit``
-
-      - fixes the issue when `wait_time_s` was set to 0 that would result in a `type` error and the response would be a stack trace.
-      - fixes the issue when a job encounters a security exception, no job log would would result in the response.
-      - fixes the issue when a job is configured for a syntax check using TYPRUN=SCAN that it would wait the full duration set by `wait_time_s` to return a response.
-      - fixes the issue when a job is configured for a syntax check using TYPRUN=SCAN that no job log would result in the response.
-      - fixes the issue when a job is purged by the system that the response would result in a stack trace.
-      - fixes the issue when invalid JCL syntax is submitted such that the response would result in a stack trace.
-      - fixes the issue when resources (data sets) identified in JCL did not exist such that a response would result in a stack trace.
-      - fixes the issue where the response did not include the job log when a non-zero return code would occur.
-- ``zos_mount`` - fixed option `tag_ccsid` to correctly allow for type int.
-- ``zos_mvs_raw`` - module was updated to correct a bug when no DD statements were provided. The module when no option was provided for `dds` would error, a default was provided to correct this behavior.
-- ``zos_operator``
-
-      - fixed case sensitive error checks, invalid, error & unidentifiable.
-      - fixed such that specifying wait_time_s would throw an error.
-      - fixed the wait_time_s to default to 1 second.
-      - was updated to correct missing verbosity content when the option verbose was set to True. zos_operator - was updated to correct the trailing lines that would appear in the result content.
-      - fixed incorrect example descriptions and updated the doc to highlight the deprecated option `wait`.
-
-Deprecated Features
--------------------
-
-- ``zos_encode`` - deprecates the module options `from_encoding` and `to_encoding` to use suboptions `from` and `to` in order to remain consistent with all other modules.
-- ``zos_job_submit`` - Response 'message' property has been deprecated, all responses are now in response property 'msg'.
-- ``zos_job_submit`` - The 'wait' option has been deprecated because using option 'wait_time_s' implies the job is going to wait.
+- ``zos_data_set`` - When checking if a data set is cataloged, module failed to account for exceptions which occurred during the LISTCAT. The module now raises an MVSCmdExecError if the return code from LISTCAT exceeds the determined threshold.
+- ``zos_job_submit`` - Was not propagating any error types including UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered. The module now shares the error type (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) in the error message.
+- ``zos_mvs_raw`` - The first character of each line in dd_output was missing. The module now includes the first character of each line.
 
 Availability
 ------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Requirements
+------------
+
+The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
+control node and z/OS managed node dependencies.
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
 
 * `Ansible Automation Platform`_
 * `Galaxy`_

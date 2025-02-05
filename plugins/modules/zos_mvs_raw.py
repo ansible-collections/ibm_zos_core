@@ -2282,6 +2282,8 @@ def dd_content(contents, dependencies):
         return "\n".join(contents)
     return contents
 
+def modify_contents(contents):
+    """Return the content of dd_input to a valid form for a JCL program.
 
 def modify_contents(contents):
     """Return the content of dd_input to a valid form for a JCL program.

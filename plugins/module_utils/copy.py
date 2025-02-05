@@ -343,6 +343,140 @@ class TSOCmdResponse():
         self.stderr_response = stderr
 
 
+def copy_asa_uss2mvs(src, dest, tmphlq=None):
+    """Copy a file from USS to an ASA sequential data set or PDS/E member.
+
+    Parameters
+    ----------
+    src : str
+        Path of the USS file.
+    dest : str
+        The MVS destination data set or member.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
+
+    Returns
+    -------
+    bool
+        The return code after the copy command executed successfully.
+    str
+        The stdout after the copy command executed successfully.
+    str
+        The stderr after the copy command executed successfully.
+    """
+
+    module = AnsibleModuleHelper(argument_spec={})
+    oget_cmd = f"tsocmd \" OGET '{src}' '{dest}' \""
+    rc, out, err = module.run_command(oget_cmd)
+
+    return TSOCmdResponse(rc, out, err)
+
+
+def copy_asa_mvs2uss(src, dest, tmphlq=None):
+    """Copy an ASA sequential data set or member to USS.
+
+    Parameters
+    ----------
+    src : str
+        The MVS data set to be copied.
+    dest : str
+        Destination path in USS.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
+
+    Returns
+    -------
+    bool
+        The return code after the copy command executed successfully.
+    str
+        The stdout after the copy command executed successfully.
+    str
+        The stderr after the copy command executed successfully.
+    """
+    src = _validate_data_set_name(src)
+    dest = _validate_path(dest)
+
+    oput_cmd = "OPUT '{0}' '{1}'".format(src, dest)
+    rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
+
+    return TSOCmdResponse(rc, out, err)
+
+
+def copy_asa_pds2uss(src, dest, tmphlq=None):
+    """Copy all members from an ASA PDS/E to USS.
+
+    Parameters
+    ----------
+    src : str
+        The MVS data set to be copied.
+    dest : str
+        Destination path in USS (must be a directory).
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
+
+    Returns
+    -------
+    bool
+        The return code after the copy command executed successfully.
+    str
+        The stdout after the copy command executed successfully.
+    str
+        The stderr after the copy command executed successfully.
+    """
+    from os import path
+    import traceback
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+        ZOAUImportError,
+    )
+
+    try:
+        from zoautil_py import datasets
+    except Exception:
+        datasets = ZOAUImportError(traceback.format_exc())
+
+    src = _validate_data_set_name(src)
+    dest = _validate_path(dest)
+
+    for member in datasets.list_members(src):
+        src_member = '{0}({1})'.format(src, member)
+        dest_path = path.join(dest, member)
+
+        oput_cmd = "OPUT '{0}' '{1}'".format(src_member, dest_path)
+        rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
+
+        if rc != 0:
+            return TSOCmdResponse(rc, out, err)
+
+    return TSOCmdResponse(0, '', '')
+
+
+class TSOCmdResponse():
+    def __init__(self, rc, stdout, stderr):
+        """Builds TSO cmd response.
+
+        Parameters
+        ----------
+        rc : int
+            Return code.
+        stdout : str
+            Standard output.
+        stderr : str
+            Standard error.
+
+        Attributes
+        ----------
+        rc : int
+            Return code.
+        stdout : str
+            Standard output.
+        stderr : str
+            Standard error.
+        """
+        self.rc = rc
+        self.stdout_response = stdout
+        self.stderr_response = stderr
+
+
 class USSCmdExecError(Exception):
     def __init__(self, uss_cmd, rc, out, err):
         """Error during USS cmd execution.

@@ -589,6 +589,7 @@ def test_job_submit_local(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="local", wait_time_s=10)
 
     for result in results.contacted.values():
+        print(result)
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
         assert result.get("changed") is True

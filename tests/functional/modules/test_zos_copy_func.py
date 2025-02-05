@@ -2053,7 +2053,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
 
 def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module, z_python_interpreter):
     """
-    This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'. 
+    This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'.
     This this a wrapper for the actual test case `managed_user_copy_dest_lock_test_with_no_opercmd_access`.
     """
     managed_user = None
@@ -2611,6 +2611,7 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
     finally:
+        hosts.all.shell(cmd='rm -r /tmp/c')
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
@@ -4596,7 +4597,6 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
                 {"name": src_ds, "state": "absent"}
             ]
         )
-
 
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])

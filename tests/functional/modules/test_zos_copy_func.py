@@ -1628,8 +1628,12 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest.replace('$', '\$')),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1716,8 +1720,12 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest.replace('$', '\$')),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1768,8 +1776,12 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest.replace('$', '\$')),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1820,8 +1832,12 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest.replace('$', '\$')),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1873,8 +1889,12 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest.replace('$', '\$')),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 

@@ -553,10 +553,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import datasets, RecordIO
+    from zoautil_py import datasets, zoau_io
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
-    RecordIO = ZOAUImportError(traceback.format_exc())
+    zoau_io = ZOAUImportError(traceback.format_exc())
 
 
 # This is a duplicate of backupOper found in zos_apf.py of this collection
@@ -634,7 +634,7 @@ def get_str_to_keep(dataset, src):
     list
         tail_content.
     """
-    with RecordIO(file=dataset, mode='r') as dataset_read:
+    with zoau_io.RecordIO(file=dataset, mode='r') as dataset_read:
         dataset_content = dataset_read.readrecords()
 
     line_counter = 0

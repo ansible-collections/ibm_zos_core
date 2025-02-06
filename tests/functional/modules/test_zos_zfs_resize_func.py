@@ -670,7 +670,6 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
                                             trace_destination=trace_destination_ds_s)
-
         for result in results.contacted.values():
             assert result.get('cmd') is not None
             assert result.get('size') == shrink_size

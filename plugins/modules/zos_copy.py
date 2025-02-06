@@ -187,7 +187,7 @@ options:
     description:
       - By default, when C(dest) is a MVS data set and is being used by another
         process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
-        to bypass this check and continue with copy.
+        to bypass DISP=SHR and continue with the copy operation.
       - If set to C(true) and destination is a MVS data set opened by another
         process then zos_copy will try to copy using DISP=SHR.
       - Using C(force_lock) uses operations that are subject to race conditions

@@ -3184,6 +3184,7 @@ def data_set_locked(dataset_name):
     # in the result with a length greater than 4.
     result = dict()
     result["stdout"] = []
+    dataset_name = data_set.DataSet.escape_data_set_name(name=dataset_name)
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
 
     try:
@@ -3547,7 +3548,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set_locked(dest_name)
+            is_dest_lock = data_set_locked(dataset_name=dest_name)
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(

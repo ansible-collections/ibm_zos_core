@@ -1976,7 +1976,8 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
     hosts = ansible_zos_module
     data_set_1 = get_tmp_ds_name()
-    data_set_2 = get_tmp_ds_name()
+    data_set_2 = get_tmp_ds_name(llq_size=4)
+    data_set_2 = f"{data_set_2}$#@"
     member_1 = "MEM1"
     if ds_type == "pds" or ds_type == "pdse":
         src_data_set = data_set_1 + "({0})".format(member_1)
@@ -2019,13 +2020,13 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
                 assert result.get("msg") is None
                 # verify that the content is the same
                 verify_copy = hosts.all.shell(
-                    cmd="dcat \"{0}\"".format(dest_data_set),
+                    cmd="dcat \'{0}\'".format(dest_data_set),
                     executable=SHELL_EXECUTABLE,
                 )
                 for vp_result in verify_copy.contacted.values():
                     print(vp_result)
                     verify_copy_2 = hosts.all.shell(
-                        cmd="dcat \"{0}\"".format(src_data_set),
+                        cmd="dcat \'{0}\'".format(src_data_set),
                         executable=SHELL_EXECUTABLE,
                     )
                     for vp_result_2 in verify_copy_2.contacted.values():

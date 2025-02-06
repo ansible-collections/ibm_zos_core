@@ -538,6 +538,7 @@ rc:
 import os
 import re
 import traceback
+import codecs
 
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
@@ -552,9 +553,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, RecordIO
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
+    RecordIO = ZOAUImportError(traceback.format_exc())
 
 
 # This is a duplicate of backupOper found in zos_apf.py of this collection
@@ -621,7 +623,7 @@ def get_str_to_keep(dataset, src):
     Parameters
     ----------
     dataset : str
-        Dataset for persistant.
+        Dataset for persistent.
     src : str
         Name of zfs dataset.
 
@@ -632,32 +634,36 @@ def get_str_to_keep(dataset, src):
     list
         tail_content.
     """
-    content = datasets.read(dataset=dataset).split("\n")
+    with RecordIO(file=dataset, mode='r') as dataset_read:
+        dataset_content = dataset_read.readrecords()
+
     line_counter = 0
     pattern = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + src.upper() + r"'\s*\)")
 
-    for line in content:
-        if pattern.match(line) is not None:
+    decode_list = [codecs.decode(record, "cp1047") for record in dataset_content]
+
+    for record in decode_list:
+        if pattern.match(record) is not None:
             line_counter += 1
             break
         line_counter += 1
 
     begin_block_code = line_counter
-    for line in reversed(content[:line_counter]):
+    for line in reversed(decode_list[:line_counter]):
         if "/* BEGIN ANSIBLE MANAGED" in line:
             begin_block_code -= 1
             break
         begin_block_code -= 1
 
     end_block_code = line_counter
-    for line in content[line_counter:]:
+    for line in decode_list[line_counter:]:
         if "/* END ANSIBLE MANAGED" in line:
             end_block_code += 1
             break
         end_block_code += 1
 
-    head_content = content[:begin_block_code]
-    tail_content = content[end_block_code + 1:]
+    head_content = decode_list[:begin_block_code]
+    tail_content = decode_list[end_block_code + 1:]
 
     head_content.extend(tail_content)
 

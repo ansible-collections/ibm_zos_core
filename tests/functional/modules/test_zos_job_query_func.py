@@ -95,6 +95,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
                 assert qresult.get("jobs") is not None
                 assert qresult.get("jobs")[0].get("system") is not None
                 assert qresult.get("jobs")[0].get("subsystem") is not None
+                assert qresult.get("jobs")[0].get("execution_time") is not None
 
     finally:
         hosts.all.file(path=temp_path, state="absent")
@@ -128,6 +129,7 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
             qresults = hosts.all.zos_job_query(job_name=jobname, owner="*")
             for qresult in qresults.contacted.values():
                 assert qresult.get("jobs") is not None
+                assert qresult.get("jobs")[0].get("execution_time") is not None
 
     finally:
         hosts.all.file(path=temp_path, state="absent")

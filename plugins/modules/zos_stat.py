@@ -128,10 +128,13 @@ EXAMPLES = r"""
 """
 
 # TODO: get samples for creation_job and creation_step.
-# TODO: check whether 'success' is the correct value for returned.
 RETURN = r"""
 stat:
-  description: Dictionary containing information about the resource.
+  description:
+    - Dictionary containing information about the resource.
+    - Attributes that don't apply to the current resource will still be
+      present on the dictionary with null values, so as to not break
+      automation that relies on certain fields to be available.
   returned: success
   type: dict
   contains:

@@ -114,6 +114,12 @@ EXAMPLES = r"""
     volume: "000000"
     tmp_hlq: "RESTRICT"
 
+- name: Get the attributes of a generation data group.
+  zos_stat:
+    name: "USER.GDG.DATA"
+    type: data_set
+    volume: "000000"
+
 - name: Get the attributes of a generation data set.
   zos_stat:
     name: "USER.GDG.DATA(-1)"

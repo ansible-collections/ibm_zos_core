@@ -6,13 +6,12 @@
 Releases
 ========
 
-v1.13.0-beta.1
-==============
+Version 1.13.0-beta.1
+=====================
 
 Minor Changes
 -------------
 
-- ``import_handler`` - When importing a non supported ZOAU version like 1.2.x the module would throw a non user friendly error message. Error message is now explicit about ZOAU not being properly configured for Ansible.
 - ``zos_copy``
 
    - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.

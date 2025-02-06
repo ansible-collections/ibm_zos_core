@@ -487,6 +487,37 @@ stat:
               description: Total number of records.
               returned: success
               type: int
+        limit:
+          description: Maximum amount of active generations allowed in a GDG.
+          returned: success
+          type: int
+        scratch:
+          description: Whether the GDG has the SCRATCH attribute set.
+          returned: success
+          type: bool
+        empty:
+          description: Whether the GDG has the EMPTY attribute set.
+          returned: success
+          type: bool
+        order:
+          description:
+            - Allocation order of new Generation Data Sets for a GDG.
+            - Value can be either 'LIFO' or 'FIFO'.
+          returned: success
+          type: str
+        purge:
+          description: Whether the GDG has the PURGE attribute set.
+          returned: success
+          type: bool
+        extended:
+          description: Whether the GDG has the EXTENDED attribute set.
+          returned: success
+          type: bool
+        active_gens:
+          description: List of the names of the currently active generations of a GDG.
+          returned: success
+          type: list
+          elements: str
 """
 
 import abc
@@ -507,9 +538,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 )
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
+    gdgs = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import exceptions as zoau_exceptions
@@ -552,12 +584,12 @@ class FactsHandler():
         return self.extra_data
 
 
+# TODO: break apart into smaller classes.
 class DataSetHandler(FactsHandler):
     """Class that can query facts from a sequential, partitioned (PDS), partitioned
     extended (PDSE), VSAM or generation data sets.
     """
 
-    # TODO: add gdgs (using LISTCAT)
     # TODO: handle multivol
 
     LISTDSI_SCRIPT = """/* REXX */
@@ -669,9 +701,19 @@ return 0"""
             # and data_set_type to their negative values.
             pass
 
+        # For non-GDGs.
         if DataSet._is_in_vtoc(self.name, self.volume, tmphlq=self.tmp_hlq):
-                self.data_set_type = DataSet.data_set_type(self.name, volume=self.volume, tmphlq=self.tmp_hlq)
+            self.data_set_type = DataSet.data_set_type(self.name, volume=self.volume, tmphlq=self.tmp_hlq)
+            self.data_set_exists = True
+        # We try to create a GDG view if possible, if not, we know for sure the data set just
+        # does not exist.
+        else:
+            try:
+                self.gdg_view = gdgs.GenerationDataGroupView(self.name)
                 self.data_set_exists = True
+                self.data_set_type = 'GDG'
+            except zoau_exceptions.GenerationDataGroupFetchException:
+                pass
 
     def exists(self):
         """Returns whether the given data set was found on the system.
@@ -692,6 +734,8 @@ return 0"""
 
         if self.data_set_type in DataSet.MVS_VSAM:
             data['attributes'] = self._query_vsam()
+        elif self.data_set_type == 'GDG':
+            data['attributes'] = self._query_gdg()
         else:
             data['attributes'] = self._query_non_vsam()
 
@@ -902,6 +946,48 @@ return 0"""
 
         return translation_table[dev_type]
 
+    def _query_gdg(self):
+        """Uses the methods defined in our GenerationDataGroupView object to query
+        a GDG's attributes and current active generations."""
+        attributes = {
+            'type': 'GDG',
+            'limit': self.gdg_view.limit,
+            'scratch': self.gdg_view.scratch,
+            'empty': self.gdg_view.empty,
+            'order': self.gdg_view.order,
+            'purge': self.gdg_view.purge,
+            'extended': self.gdg_view.extended,
+            'active_gens': [generation.name for generation in self.gdg_view.generations()]
+        }
+
+        # Now we call LISTCAT to get the creation time.
+        listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
+        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
+
+        rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
+
+        if rc > 0:
+            raise QueryException(
+                'An error ocurred while querying a Generation Data Group.',
+                rc=rc,
+                stdout=stdout,
+                stderr=stderr
+            )
+
+        listcat_lines = stdout.split('\n')
+        gdg_base_info_limit = 0
+
+        for index in range(len(listcat_lines)):
+            if gdg_base_info_limit == 0:
+                if 'NONVSAM -' in listcat_lines[index]:
+                    gdg_base_info_limit = index
+                    break
+
+        gdg_base_info = ' '.join(listcat_lines[0:gdg_base_info_limit])
+        attributes['creation_date'] = re.search("(CREATION-+)(\d{4}\.\d{3})", gdg_base_info).group(2)
+
+        return attributes
+
     def _find_attributes_from_liscat(self, output, regex_list):
         """Looks up attributes in the output of LISTCAT.
 
@@ -1004,7 +1090,10 @@ return 0"""
             bool -- Whether the value should stay as is or be replace with None.
         """
         # Getting rid of values that basically say the value doesn't matter in
-        # context or is unknown.
+        # context or is unknown. Every value that is not a string we'll assume is
+        # valid.
+        if not isinstance(value, str):
+            return True
         return value is not None and value != '' and '?' not in value and value != 'N/A' and value != 'NO_LIM'
 
     def _parse_values(self, attrs, keys, true_function):

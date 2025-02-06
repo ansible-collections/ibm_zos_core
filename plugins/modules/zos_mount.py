@@ -634,7 +634,7 @@ def get_str_to_keep(dataset, src):
     list
         tail_content.
     """
-    with zoau_io.RecordIO_(dataset, mode='r') as dataset_read:
+    with zoau_io.RecordIO(f"//'{dataset}'") as dataset_read:
         dataset_content = dataset_read.readrecords()
 
     line_counter = 0

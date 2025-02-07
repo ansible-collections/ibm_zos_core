@@ -87,15 +87,16 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
+            assert result.get("jobs")[0].get("execution_time") is not None
 
             fulljobid = result.get("jobs")[0].get("job_id")
             jobmask = fulljobid[0:3] + '*' + fulljobid[5:6] + '*'
             qresults = hosts.all.zos_job_query(job_id=jobmask)
             for qresult in qresults.contacted.values():
                 assert qresult.get("jobs") is not None
+                assert qresult.get("jobs")[0].get("execution_time") is not None
                 assert qresult.get("jobs")[0].get("system") is not None
                 assert qresult.get("jobs")[0].get("subsystem") is not None
-                assert qresult.get("jobs")[0].get("execution_time") is not None
 
     finally:
         hosts.all.file(path=temp_path, state="absent")
@@ -124,6 +125,9 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
+            assert result.get("jobs")[0].get("execution_time") is not None
+            assert result.get("jobs")[0].get("system") is not None
+            assert result.get("jobs")[0].get("subsystem") is not None
 
             jobname = "HE*L*"
             qresults = hosts.all.zos_job_query(job_name=jobname, owner="*")

@@ -57,42 +57,33 @@ ansible-doc to automate tasks on z/OS.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Getting Started
+   :caption: Installation & Execution
+   :hidden:
 
-   installation
-   requirements-single
-   playbooks
+   collection-requirements
+   configuration
 
 .. toctree::
    :maxdepth: 1
-   :caption: Ansible Content
+   :caption: Collections & content
+   :hidden:
 
    plugins
    modules
    filters
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Release Notes
-
    release_notes
-
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: FAQs
-..
-..    faqs
+   life-cycle
 
 .. toctree::
    :maxdepth: 1
-   :caption: Reference
+   :caption: Help & Troubleshooting
+   :hidden:
+
+   character_set
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contribution
+   :hidden:
 
    community_guides
-   license
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Reference
-
-   reference/documentation
-   reference/community

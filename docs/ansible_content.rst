@@ -1,27 +1,25 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020                                          .
+.. © Copyright IBM Corporation 2020, 2025                                    .
 .. ...........................................................................
+
+.. _ibm-zos_core-collection:
 
 =========
 z/OS Core
 =========
 
-The **IBM® z/OS® core collection**, also represented as
-`ibm_zos_core`_ in this document, is  part of the broader
-initiative to bring Ansible® Automation to IBM Z® through the offering
-**Red Hat® Ansible Certified Content for IBM Z**.
+The **IBM z/OS core collection** is part of the Red Hat® *Ansible Certified Content
+for IBM Z®* offering that brings Ansible automation to IBM Z®. This collection
+brings forward the possibility to manage batch jobs, perform program authorizations,
+run operator operations, and execute both JES and MVS commands as well as execute
+shell, python, and REXX scripts. It supports data set creation, searching, copying,
+fetching, and encoding. It provides both archive and unarchive of data sets,
+initializing volumes, performing backups and supports Jinja templating.
 
-The **IBM z/OS core collection** supports automation tasks such as
-creating data sets, submitting jobs, querying jobs,
-retrieving job output, encoding data sets, fetching data sets, copying data
-sets, executing operator commands, executing TSO commands, ping,
-querying operator actions, APF authorizing libraries,
-editing textual data in data sets or Unix System Services files,
-finding data sets, backing up and restoring data sets and
-volumes and running z/OS programs without JCL.
-
-The Ansible modules in this collection are written in Python and REXX and
-interact with `Z Open Automation Utilities`_.
+System programmers can enable pipelines to setup, tear down and deploy applications
+while system administrators can automate time consuming repetitive tasks inevitably
+freeing up their time. New z/OS users can find comfort in Ansible's familiarity and
+expedite their proficiency in record time.
 
 .. _ibm_zos_core:
    https://galaxy.ansible.com/ibm/ibm_zos_core

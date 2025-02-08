@@ -54,7 +54,6 @@ ansible-doc to automate tasks on z/OS.
 .. _filters:
    https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/filter/
 
-
 .. toctree::
    :maxdepth: 1
    :caption: Installation & Execution
@@ -68,11 +67,9 @@ ansible-doc to automate tasks on z/OS.
    :caption: Collections & content
    :hidden:
 
-   plugins
-   modules
-   filters
    release_notes
    life-cycle
+   ansible_content
 
 .. toctree::
    :maxdepth: 1

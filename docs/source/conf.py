@@ -104,6 +104,10 @@ html_theme_options = {
 }
 
 
+suppress_warnings = [
+    'ref.term',  # Suppress WARNING: term not in glossary: 'Managed node' because this is in the parent site.
+]
+
 ##############################################################################
 #                          sphinx-versioning                                 #
 ##############################################################################

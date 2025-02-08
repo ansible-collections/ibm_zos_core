@@ -128,6 +128,7 @@ EXAMPLES = r"""
 """
 
 # TODO: get samples for creation_job and creation_step.
+# TODO: add missing samples
 RETURN = r"""
 stat:
   description:
@@ -558,18 +559,20 @@ except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
+# TODO: add method/decorator that adds all missing attributes so we can keep the
+# return interface consistent across resource types.
 class FactsHandler():
     """Base class for every other handler that will query resources on
     a z/OS system.
     """
 
-    def __init__(self, name, module):
+    def __init__(self, name, module=None):
         """Setting up the three common attributes for each handler (resource name,
         module and extra_data.
 
         Arguments:
             name (str) -- Resource name.
-            module (AnsibleModule) -- Ansible object with the task's context.
+            module (AnsibleModule, optional) -- Ansible object with the task's context.
         """
         self.name = name
         self.module = module
@@ -593,13 +596,199 @@ class FactsHandler():
         return self.extra_data
 
 
-# TODO: break apart into smaller classes.
 class DataSetHandler(FactsHandler):
-    """Class that can query facts from a sequential, partitioned (PDS), partitioned
-    extended (PDSE), VSAM or generation data sets.
+    """Base class that can query facts from a sequential, partitioned (PDS), partitioned
+    extended (PDSE), VSAM or generation data sets. It provides generic utility methods
+    for parsing values.
     """
 
+    # Attributes all data set types share.
+    bool_attrs = ['has_extended_attrs', 'updated_since_backup', 'encrypted']
+    datetime_attrs = ['creation_date', 'expiration_date', 'last_reference']
+    # This list should be overwritten by a subclass.
+    num_attrs = []
+
     # TODO: handle multivol
+    def __init__(
+        self, 
+        name,
+        volume=None,
+        module=None,
+        tmp_hlq=None,
+        sms_managed=False,
+        exists=False,
+        ds_type=None
+    ):
+        """Create a new handler that will handle the query of an MVS data set.
+        Creating this object directly should only be used when wanting to represent
+        a non-existent data set. All subclasses should be preferred in every
+        other case.
+
+        Arguments:
+            name (str) -- Name of the data set.
+            volume (str, optional) -- Volume where the data set is allocated.
+            module (AnsibleModule, optional) -- Ansible object with the task's context.
+            tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
+            sms_managed (bool, optional) -- Whether the data set is managed by SMS.
+            exists (bool, optional) -- Whether the data set is present on the given volume.
+            ds_type (str, optional) -- Type of the data set.
+        """
+        super(DataSetHandler, self).__init__(name, module)
+        self.volume = volume
+        self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
+        self.sms_managed = sms_managed
+        self.data_set_exists = exists
+        self.data_set_type = ds_type
+
+
+    def exists(self):
+        """Returns whether the given data set was found on the system.
+        """
+        return self.data_set_exists
+
+    def query(self):
+        """Return a minimal attributes dictionary.
+
+        Returns:
+            dict -- Skeleton of the attributes dictionary for a data set.
+        """
+        data = {
+            'resource_type': 'data_set',
+            'name': self.name
+        }
+        return data
+
+    def _parse_attributes(self, attrs):
+        """Since all attributes returned by running commands return strings,
+        this method ensures numerical and boolean values are returned as such.
+        It also makes sure datetimes are better formatted and replaces '?', 'N/A',
+        'NO_LIM', with more user-friendly values.
+
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a command call.
+
+        Returns:
+            dict -- Attributes dictionary with parsed values.
+        """
+        attrs = {
+            key: attrs[key] if self._is_value_valid(attrs[key]) else None
+            for key in attrs
+        }
+
+        # Numerical values.
+        attrs = self._parse_values(attrs, self.num_attrs, int)
+
+        # Boolean values.
+        attrs = self._replace_values(attrs, self.bool_attrs, True, False, 'YES')
+
+        # Datetime values.
+        attrs = self._parse_datetimes(attrs, self.datetime_attrs)
+
+        return attrs
+
+    def _is_value_valid(self, value):
+        """Returns whether the value should be replaced for None.
+
+        Arguments:
+            value (str) -- Raw value of an attribute for a data set.
+
+        Returns:
+            bool -- Whether the value should stay as is or be replace with None.
+        """
+        # Getting rid of values that basically say the value doesn't matter in
+        # context or is unknown. Every value that is not a string we'll assume is
+        # valid.
+        if not isinstance(value, str):
+            return True
+        return value is not None and value != '' and '?' not in value and value != 'N/A' and value != 'NO_LIM'
+
+    def _parse_values(self, attrs, keys, true_function):
+        """Tries to parse attributes with a given function.
+
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
+            keys (list) -- List of keys from attrs to parse.
+            true_function (function) -- Parsing function to use (like 'int').
+
+        Returns:
+            dict -- Updated attributes with parsed values.
+        """
+        for key in keys:
+            try:
+                if key in attrs:
+                    attrs[key] = true_function(attrs[key]) if attrs[key] else None
+            # If we fail to parse something, we just leave it be to avoid
+            # losing information.
+            except ValueError:
+                pass
+
+        return attrs
+
+    def _replace_values(self, attrs, keys, true_value, false_value, condition):
+        """Replace strings for the given values depending on the result of a
+        condition.
+
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
+            keys (list) -- List of keys from attrs to test and replace.
+            true_value (any) -- Value to use when condition is true (like True).
+            false_value (any) -- Value to use when condition is false (like False).
+            condition (any) -- Value to compare each attribute against.
+
+        Returns:
+            dict -- Updated attributes with replaced values.
+        """
+        for key in keys:
+            if key in attrs:
+                attrs[key] = true_value if attrs[key] == condition else false_value
+
+        return attrs
+
+    def _parse_datetimes(self, attrs, keys):
+        """Converts ordinal dates (YYYY/DDD) to more common ones (YYYY-MM-DD).
+        
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
+            keys (list) -- List of keys from attrs to convert.
+        """
+        for key in keys:
+            try:
+                if key in attrs:
+                    attrs[key] = attrs[key].replace('.', '/')
+                    attrs[key] = datetime.strptime(attrs[key], '%Y/%j').strftime('%Y-%m-%d')
+            except ValueError:
+                # z/OS returns 0 or 0000/000 when a date is not set, so we set it to None.
+                if attrs[key] == "0" or "0000/000" in attrs[key]:
+                    attrs[key] = None
+
+        return attrs
+
+
+class NonVSAMDataSetHandler(DataSetHandler):
+    """Class that can query sequential or partitioned data sets using LISTDSI.
+    """
+
+    num_attrs = [
+        'record_length',
+        'block_size',
+        'num_volumes',
+        'primary_space',
+        'secondary_space',
+        'allocation_available',
+        'allocation_used',
+        'extents_allocated',
+        'extents_used',
+        'blocks_per_track',
+        'tracks_per_cylinder',
+        'dir_blocks_allocated',
+        'dir_blocks_used',
+        'members',
+        'pages_allocated',
+        'pages_used',
+        'perc_pages_used',
+        'pdse_version',
+        'max_pdse_generation'
+    ]
 
     LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
@@ -683,75 +872,30 @@ else
 
 return 0"""
 
-    def __init__(self, name, volume, module, tmp_hlq, sms_managed):
-        """Create a new handler that will handle the query of an MVS data set.
+    def __init__(self, name, volume, module, sms_managed, ds_type, tmp_hlq=None):
+        """Create a new handler that will handle the query of a sequential or
+        partitioned data set. This subclass should only be instantiated by
+        get_data_set_handler.
 
         Arguments:
             name (str) -- Name of the data set.
             volume (str) -- Volume where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
-            tmp_hlq (str) -- Temporary HLQ to be used in some operations.
             sms_managed (bool) -- Whether the data set is managed by SMS.
+            ds_type (str) -- Type of the data set.
+            tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
         """
-        super(DataSetHandler, self).__init__(name, module)
-        self.volume = volume
-        self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
-        self.sms_managed = sms_managed
-        self.data_set_exists = False
-        self.data_set_type = None
-
-        try:
-            if DataSet.is_gds_relative_name(self.name):
-                # Replacing the relative name because _is_in_vtoc, data_set_type and
-                # LISTDSI need the absolute name to locate the data set.
-                self.name = DataSet.resolve_gds_absolute_name(self.name)
-        except (GDSNameResolveError, Exception):
-            # Don't need to do anything in this case since we already set data_set_exists
-            # and data_set_type to their negative values.
-            pass
-
-        # For non-GDGs.
-        if DataSet._is_in_vtoc(self.name, self.volume, tmphlq=self.tmp_hlq):
-            self.data_set_type = DataSet.data_set_type(self.name, volume=self.volume, tmphlq=self.tmp_hlq)
-            self.data_set_exists = True
-        # We try to create a GDG view if possible, if not, we know for sure the data set just
-        # does not exist.
-        else:
-            try:
-                self.gdg_view = gdgs.GenerationDataGroupView(self.name)
-                self.data_set_exists = True
-                self.data_set_type = 'GDG'
-            except zoau_exceptions.GenerationDataGroupFetchException:
-                pass
-
-    def exists(self):
-        """Returns whether the given data set was found on the system.
-        """
-        return self.data_set_exists
+        super(NonVSAMDataSetHandler, self).__init__(
+            name,
+            volume=volume,
+            module=module,
+            tmp_hlq=tmp_hlq,
+            sms_managed=sms_managed,
+            exists=True,
+            ds_type=ds_type
+        )
 
     def query(self):
-        """Query a non-VSAM or VSAM data set and parse the output taken from
-        the query commands.
-
-        Returns:
-            dict -- Attributes queried for a data set.
-        """
-        data = {
-            'resource_type': 'data_set',
-            'name': self.name
-        }
-
-        if self.data_set_type in DataSet.MVS_VSAM:
-            data['attributes'] = self._query_vsam()
-        elif self.data_set_type == 'GDG':
-            data['attributes'] = self._query_gdg()
-        else:
-            data['attributes'] = self._query_non_vsam()
-
-        data['attributes'] = self._parse_attributes(data['attributes'])
-        return data
-
-    def _query_non_vsam(self):
         """Uses LISTDSI to query facts about a data set, while also handling
         specific arguments needed depending on data set type.
 
@@ -762,6 +906,7 @@ return 0"""
             QueryException: When the script's data set's allocation fails.
             QueryException: When ZOAU fails to write the script to its data set.
         """
+        data = super().query()
         attributes = {}
 
         try:
@@ -794,7 +939,9 @@ return 0"""
         finally:
             datasets.delete(temp_script_location)
 
-        return attributes
+        data['attributes'] = self._parse_attributes(attributes)
+
+        return data
 
     def _run_listdsi_command(self, temp_script_location):
         """Runs the LISTDSI script defined in this class and checks for errors
@@ -839,8 +986,80 @@ return 0"""
 
         return rc, stdout, stderr
 
-    def _query_vsam(self):
+    def _parse_attributes(self, attrs):
+        """Calls the generic _parse_attributes method and then handles the JCL
+        attributes nested dictionary.
+
+        Arguments:
+            attrs (dict) -- Raw dictionary processed from a LISTDSI call.
+
+        Returns:
+            dict -- Attributes dictionary with parsed values.
+        """
+        attrs = super()._parse_attributes(attrs)
+
+        if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_job'] == '':
+            attrs['jcl_attrs']['creation_job'] = None
+        if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_step'] == '':
+            attrs['jcl_attrs']['creation_step'] = None
+
+        return attrs
+
+
+class VSAMDataSetHandler(DataSetHandler):
+    """Class that can query VSAM data sets using LISTCAT.
+    """
+
+    num_attrs = [
+        'avg_record_length',
+        'max_record_length',
+        'bufspace',
+        'key_length',
+        'key_offset',
+        'total_records'
+    ]
+
+    dev_type_translation_table = {
+        '3010200E': '3380',
+        '3010200F': '3390',
+        '30102004': '9345',
+        '30C08003': '3400-2',
+        '32008003': '3400-5',
+        '32108003': '3400-6',
+        '33008003': '3400-9',
+        '34008003': '3400-3',
+        '78008080': '3480',
+        '78048080': '3480X',
+        '78048081': '3490',
+        '78048083': '3590-1',
+    }
+
+    def __init__(self, name, volume, module, sms_managed, ds_type, tmp_hlq=None):
+        """Create a new handler that will handle the query of a VSAM.
+        This subclass should only be instantiated by get_data_set_handler.
+
+        Arguments:
+            name (str) -- Name of the data set.
+            volume (str) -- Volume where the data set is allocated.
+            module (AnsibleModule) -- Ansible object with the task's context.
+            sms_managed (bool) -- Whether the data set is managed by SMS.
+            ds_type (str) -- Type of the data set.
+            tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
+        """
+        super(VSAMDataSetHandler, self).__init__(
+            name,
+            volume=volume,
+            module=module,
+            tmp_hlq=tmp_hlq,
+            sms_managed=sms_managed,
+            exists=True,
+            ds_type=ds_type
+        )
+
+    def query(self):
         """Uses LISTCAT to query facts about a VSAM."""
+        data = super().query()
+
         listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
         mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
 
@@ -875,7 +1094,7 @@ return 0"""
             'type': self.data_set_type,
             'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
         }
-        attributes['device_type'] = self._translate_dev_type(attributes['device_type'])
+        attributes['device_type'] = self.dev_type_translation_table[attributes['device_type']]
 
         general_info_regex_searches = [
             # TODO: check if \( is always needed where used
@@ -924,78 +1143,8 @@ return 0"""
             attributes['data'].update(self._find_attributes_from_liscat(data_info, assoc_regex_searches))
             attributes['index'].update(self._find_attributes_from_liscat(index_info, assoc_regex_searches))
 
-        return attributes
-
-    def _translate_dev_type(self, dev_type):
-        """Looks up the device type code from LISTCAT's output and returns
-        its generic name.
-
-        Arguments
-        ---------
-            dev_type (str) -- Device type code returned by LISTCAT.
-
-        Returns
-        -------
-            str -- Generic name for the device type.
-        """
-        translation_table = {
-            '3010200E': '3380',
-            '3010200F': '3390',
-            '30102004': '9345',
-            '30C08003': '3400-2',
-            '32008003': '3400-5',
-            '32108003': '3400-6',
-            '33008003': '3400-9',
-            '34008003': '3400-3',
-            '78008080': '3480',
-            '78048080': '3480X',
-            '78048081': '3490',
-            '78048083': '3590-1',
-        }
-
-        return translation_table[dev_type]
-
-    def _query_gdg(self):
-        """Uses the methods defined in our GenerationDataGroupView object to query
-        a GDG's attributes and current active generations."""
-        attributes = {
-            'type': 'GDG',
-            'limit': self.gdg_view.limit,
-            'scratch': self.gdg_view.scratch,
-            'empty': self.gdg_view.empty,
-            'order': self.gdg_view.order,
-            'purge': self.gdg_view.purge,
-            'extended': self.gdg_view.extended,
-            'active_gens': [generation.name for generation in self.gdg_view.generations()]
-        }
-
-        # Now we call LISTCAT to get the creation time.
-        listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
-        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
-
-        rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
-
-        if rc > 0:
-            raise QueryException(
-                'An error ocurred while querying a Generation Data Group.',
-                rc=rc,
-                stdout=stdout,
-                stderr=stderr
-            )
-
-        listcat_lines = stdout.split('\n')
-        gdg_base_info_limit = 0
-
-        for index in range(len(listcat_lines)):
-            if gdg_base_info_limit == 0:
-                if 'NONVSAM -' in listcat_lines[index]:
-                    gdg_base_info_limit = index
-                    break
-
-        gdg_base_info = ' '.join(listcat_lines[0:gdg_base_info_limit])
-        attributes['creation_date'] = re.search("(CREATION-+)(\d{4}\.\d{3})", gdg_base_info).group(2)
-
-        return attributes
+        data['attributes'] = self._parse_attributes(attributes)
+        return data
 
     def _find_attributes_from_liscat(self, output, regex_list):
         """Looks up attributes in the output of LISTCAT.
@@ -1021,150 +1170,104 @@ return 0"""
         return attributes
 
     def _parse_attributes(self, attrs):
-        """Since all attributes returned by running commands return strings,
-        this method ensures numerical and boolean values are returned as such.
-        It also makes sure datetimes are better formatted and replaces '?', 'N/A',
-        'NO_LIM', with more user-friendly values.
+        """Calls the generic _parse_attributes method and then handles the data and
+        index attributes dictionaries.
 
         Arguments:
-            attrs (dict) -- Raw dictionary processed from a LISTDSI call.
+            attrs (dict) -- Raw dictionary processed from a LISTCAT call.
 
         Returns:
-            dict -- Attributes' dictionary with parsed values.
+            dict -- Attributes dictionary with parsed values.
         """
-        attrs = {
-            key: attrs[key] if self._is_value_valid(attrs[key]) else None
-            for key in attrs
+        attrs = super()._parse_attributes(attrs)
+
+        if 'data' in attrs:
+            attrs['data'] = super()._parse_attributes(attrs['data'])
+        if 'index' in attrs:
+            attrs['index'] = super()._parse_attributes(attrs['index'])
+
+        return attrs
+
+
+class GenerationDataGroupHandler(DataSetHandler):
+    """Class that can query Generation Data Groups.
+    """
+
+    def __init__(
+        self,
+        name,
+        volume,
+        module,
+        sms_managed,
+        ds_type,
+        gdg_view,
+        tmp_hlq=None
+    ):
+        """Create a new handler that will handle the query of a GDG.
+        This subclass should only be instantiated by get_data_set_handler.
+
+        Arguments:
+            name (str) -- Name of the data set.
+            volume (str) -- Volume where the data set is allocated.
+            module (AnsibleModule) -- Ansible object with the task's context.
+            sms_managed (bool) -- Whether the data set is managed by SMS.
+            ds_type (str) -- Type of the data set.
+            gdg_view (GenerationDataGroupView) -- Object containing a view of the GDG.
+            tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
+        """
+        super(GenerationDataGroupHandler, self).__init__(
+            name,
+            volume=volume,
+            module=module,
+            tmp_hlq=tmp_hlq,
+            sms_managed=sms_managed,
+            exists=True,
+            ds_type=ds_type
+        )
+        self.gdg_view = gdg_view
+
+    def query(self):
+        """Uses the methods defined in our GenerationDataGroupView object to query
+        a GDG's attributes and current active generations."""
+        data = super().query()
+
+        attributes = {
+            'type': 'GDG',
+            'limit': self.gdg_view.limit,
+            'scratch': self.gdg_view.scratch,
+            'empty': self.gdg_view.empty,
+            'order': self.gdg_view.order,
+            'purge': self.gdg_view.purge,
+            'extended': self.gdg_view.extended,
+            'active_gens': [generation.name for generation in self.gdg_view.generations()]
         }
 
-        if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_job'] == '':
-            attrs['jcl_attrs']['creation_job'] = None
-        if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_step'] == '':
-            attrs['jcl_attrs']['creation_step'] = None
+        # Now we call LISTCAT to get the creation time.
+        listcat_cmd = f" LISTCAT ENTRIES('{self.name}') ALL"
+        mvs_cmd = f'mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin -Q={self.tmp_hlq}'
+        rc, stdout, stderr = self.module.run_command(mvs_cmd, data=listcat_cmd, errors='replace')
+        if rc > 0:
+            raise QueryException(
+                'An error ocurred while querying a Generation Data Group.',
+                rc=rc,
+                stdout=stdout,
+                stderr=stderr
+            )
 
-        # Numerical values.
-        num_attrs = [
-            'record_length',
-            'block_size',
-            'num_volumes',
-            'primary_space',
-            'secondary_space',
-            'allocation_available',
-            'allocation_used',
-            'extents_allocated',
-            'extents_used',
-            'blocks_per_track',
-            'tracks_per_cylinder',
-            'dir_blocks_allocated',
-            'dir_blocks_used',
-            'members',
-            'pages_allocated',
-            'pages_used',
-            'perc_pages_used',
-            'pdse_version',
-            'max_pdse_generation'
-        ]
-        attrs = self._parse_values(attrs, num_attrs, int)
+        listcat_lines = stdout.split('\n')
+        gdg_base_info_limit = 0
 
-        vsam_num_attrs = [
-            'avg_record_length',
-            'max_record_length',
-            'bufspace',
-            'key_length',
-            'key_offset',
-            'total_records'
-        ]
-        if 'data' in attrs:
-            attrs['data'] = self._parse_values(attrs['data'], vsam_num_attrs, int)
-        if 'index' in attrs:
-            attrs['index'] = self._parse_values(attrs['index'], vsam_num_attrs, int)
+        for index in range(len(listcat_lines)):
+            if gdg_base_info_limit == 0:
+                if 'NONVSAM -' in listcat_lines[index]:
+                    gdg_base_info_limit = index
+                    break
 
-        # Boolean values.
-        bool_attrs = ['has_extended_attrs', 'updated_since_backup', 'encrypted']
-        attrs = self._replace_values(attrs, bool_attrs, True, False, 'YES')
+        gdg_base_info = ' '.join(listcat_lines[0:gdg_base_info_limit])
+        attributes['creation_date'] = re.search("(CREATION-+)(\d{4}\.\d{3})", gdg_base_info).group(2)
+        data['attributes'] = self._parse_attributes(attributes)
 
-        # Datetime values.
-        datetime_attrs = ['creation_date', 'expiration_date', 'last_reference']
-        attrs = self._parse_datetimes(attrs, datetime_attrs)
-
-        return attrs
-
-    def _is_value_valid(self, value):
-        """Returns whether the value should be replaced for None.
-
-        Arguments:
-            value (str) -- Raw value of an attribute for a data set.
-
-        Returns:
-            bool -- Whether the value should stay as is or be replace with None.
-        """
-        # Getting rid of values that basically say the value doesn't matter in
-        # context or is unknown. Every value that is not a string we'll assume is
-        # valid.
-        if not isinstance(value, str):
-            return True
-        return value is not None and value != '' and '?' not in value and value != 'N/A' and value != 'NO_LIM'
-
-    def _parse_values(self, attrs, keys, true_function):
-        """Tries to parse attributes with a given function.
-
-        Arguments:
-            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
-            keys (list) -- List of keys from attrs to parse.
-            true_function (function) -- Parsing function to use (like 'int').
-
-        Returns:
-            dict -- Updated attributes with parsed values.
-        """
-        for key in keys:
-            try:
-                if key in attrs:
-                    attrs[key] = true_function(attrs[key]) if attrs[key] else None
-            # If we fail to parse something, we just leave it be to avoid
-            # losing information.
-            except ValueError:
-                pass
-
-        return attrs
-
-    def _replace_values(self, attrs, keys, true_value, false_value, condition):
-        """Replace strings for the given values depending on the result of a
-        condition.
-
-        Arguments:
-            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
-            keys (list) -- List of keys from attrs to test and replace.
-            true_value (any) -- Value to use when condition is true (like True).
-            false_value (any) -- Value to use when condition is false (like False).
-            condition (any) -- Value to compare each attribute against.
-
-        Returns:
-            dict -- Updated attributes with replaced values.
-        """
-        for key in keys:
-            if key in attrs:
-                attrs[key] = true_value if attrs[key] == condition else false_value
-
-        return attrs
-
-    def _parse_datetimes(self, attrs, keys):
-        """Converts ordinal dates (YYYY/DDD) to more common ones (YYYY-MM-DD).
-        
-        Arguments:
-            attrs (dict) -- Raw dictionary processed from a LISTDSI script.
-            keys (list) -- List of keys from attrs to convert.
-        """
-        for key in keys:
-            try:
-                if key in attrs:
-                    attrs[key] = attrs[key].replace('.', '/')
-                    attrs[key] = datetime.strptime(attrs[key], '%Y/%j').strftime('%Y-%m-%d')
-            except ValueError:
-                # z/OS returns 0 or 0000/000 when a date is not set, so we set it to None.
-                if attrs[key] == "0" or "0000/000" in attrs[key]:
-                    attrs[key] = None
-
-        return attrs
+        return data
 
 
 class QueryException(Exception):
@@ -1191,13 +1294,62 @@ class QueryException(Exception):
         super().__init__(msg)
 
 
+def get_data_set_handler(
+    name,
+    volume,
+    module,
+    tmp_hlq=None,
+    sms_managed=False
+):
+    """Returns the correct handler needed depending on the type of data set
+    we will query.
+
+    Arguments:
+        name (str) -- Name of the data set.
+        volume (str) -- Volume where the data set is allocated.
+        module (AnsibleModule) -- Ansible object with the task's context.
+        tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
+        sms_managed (bool, optional) -- Whether the data set is managed by SMS.
+
+    Returns:
+        DataSetHandler: Handler for data sets.
+    """
+    try:
+        if DataSet.is_gds_relative_name(name):
+            # Replacing the relative name because _is_in_vtoc, data_set_type and
+            # LISTDSI need the absolute name to locate the data set.
+            name = DataSet.resolve_gds_absolute_name(name)
+    except (GDSNameResolveError, Exception):
+        return DataSetHandler(name, exists=False)
+
+    # For non-GDGs.
+    if DataSet._is_in_vtoc(name, volume, tmphlq=tmp_hlq):
+        ds_type = DataSet.data_set_type(name, volume=volume, tmphlq=tmp_hlq)
+    # We try to create a GDG view if possible, if not, we know for sure the data set just
+    # does not exist.
+    else:
+        try:
+            gdg_view = gdgs.GenerationDataGroupView(name)
+            ds_type = 'GDG'
+        except zoau_exceptions.GenerationDataGroupFetchException:
+            return DataSetHandler(name, exists=False)
+
+    # Now instantiating a concrete handler based on the data set's type.
+    if ds_type in DataSet.MVS_SEQ or ds_type in DataSet.MVS_PARTITIONED:
+        return NonVSAMDataSetHandler(name, volume, module, sms_managed, ds_type, tmp_hlq)
+    elif ds_type in DataSet.MVS_VSAM:
+        return VSAMDataSetHandler(name, volume, module, sms_managed, ds_type, tmp_hlq)
+    else:
+        return GenerationDataGroupHandler(name, volume, module, sms_managed, ds_type, gdg_view, tmp_hlq)
+
+
 def get_facts_handler(
     name,
     resource_type,
     module,
-    volume = None,
-    tmp_hlq = None,
-    sms_managed = False
+    volume=None,
+    tmp_hlq=None,
+    sms_managed=False
 ):
     """Returns the correct handler needed depending on the type of resource
     we will query.
@@ -1214,7 +1366,7 @@ def get_facts_handler(
         DataSetHandler: Handler for data sets.
     """
     if resource_type == 'data_set':
-        return DataSetHandler(name, volume, module, tmp_hlq, sms_managed)
+        return get_data_set_handler(name, volume, module, tmp_hlq, sms_managed)
     elif resource_type == 'file':
         pass
     elif resource_type == 'aggregate':

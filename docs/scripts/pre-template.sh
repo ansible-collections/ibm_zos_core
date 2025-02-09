@@ -27,6 +27,6 @@
 
 template_doc_source=`ansible-config dump|grep DEFAULT_MODULE_PATH| cut -d'=' -f2|sed 's/[][]//g' | tr -d \'\" |sed 's/modules/doc_fragments\/template.py/g'`
 cp $template_doc_source $template_doc_source.tmp
-sed -i'' -e "s/\"\\\\n\"/'\\\\\\\\n'/g" $template_doc_source
-sed -i'' -e "s/\"\\\\r\"/'\\\\\\\\r'/g" $template_doc_source
-sed -i'' -e "s/\"\\\\r\\\\n\"/'\\\\\\\\r\\\\\\\\n'/g" $template_doc_source
+sed -i '' -e "s/\"\\\\n\"/'\\\\\\\\n'/g" $template_doc_source
+sed -i '' -e "s/\"\\\\r\"/'\\\\\\\\r'/g" $template_doc_source
+sed -i '' -e "s/\"\\\\r\\\\n\"/'\\\\\\\\r\\\\\\\\n'/g" $template_doc_source

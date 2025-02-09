@@ -1,4 +1,4 @@
-.rst-content dl:not(.docutils) dt:first-child {
+  .rst-content dl:not(.docutils) dt:first-child {
     margin-top: 0;
   }
 
@@ -50,4 +50,4 @@
 
   body{
     font-family:"Arial", Helvetica, sans-serif;
-}
+  }

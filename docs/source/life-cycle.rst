@@ -31,7 +31,7 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-----------------------------------------------------------+
 | 1.13.x     | Current        | `1.13.x changelogs`_  | TBD              | TBD               | N/A                                                       |
 +------------+----------------+-----------------------+------------------+-------------------+-----------------------------------------------------------+
-| 1.12.x     | Released       | `1.12.x changelogs`_  | 06 December 2024 | 06 December 2024  | :ref:`Full support<Ansible Z life cycles - phase>`        |
+| 1.12.x     | Released       | `1.12.x changelogs`_  | 06 December 2024 | 06 December 2024  | `Full support`_                                           |
 +------------+----------------+-----------------------+------------------+-------------------+-----------------------------------------------------------+
 | 1.11.x     | Released       | `1.11.x changelogs`_  | 01 October 2024  | 01 October 2026   | :ref:`Full support<Ansible Z life cycles - phase>`        |
 +------------+----------------+-----------------------+------------------+-------------------+-----------------------------------------------------------+
@@ -69,3 +69,6 @@ its critical dates, and which type of support it's currently eligible for.
     https://github.com/ansible-collections/ibm_zos_core/blob/v1.6.0/CHANGELOG.rst
 .. _1.5.x changelogs:
     https://github.com/ansible-collections/ibm_zos_core/blob/v1.5.0/CHANGELOG.rst
+
+.. _Full support:
+    ../../../collections_content/collection-life-cycles.html#life-cycle-phase

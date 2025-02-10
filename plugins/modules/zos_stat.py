@@ -546,6 +546,81 @@ stat:
           type: list
           elements: str
           sample: ["USER.GDG.G0001V00", "USER.GDG.G0002V00"]
+        auditfid:
+          description: File system identification string for an aggregate.
+          returned: success
+          type: str
+          sample: "C3C6C3F0 F0F3000E 0000"
+        bitmap_file_size:
+          description: Size in K of an aggregate's bitmap file.
+          returned: success
+          type: int
+          sample: 8
+        converttov5:
+          description: Value of the converttov5 flag of an aggregate.
+          returned: success
+          type: bool
+          sample: false
+        filesystem_table_size:
+          description: Size in K of an aggregate's filesystem table.
+          returned: success
+          type: int
+          sample: 16
+        free:
+          description: Kilobytes still free in an aggregate.
+          returned: success
+          type: int
+          sample: 559
+        free_1k_fragments:
+          description: Number of free 1-KB fragments in an aggregate.
+          returned: success
+          type: int
+          sample: 7
+        free_8k_blocks:
+          description: Number of free 8-KB blocks in an aggregate.
+          returned: success
+          type: int
+          sample: 69
+        log_file_size:
+          description: Size in K of an aggregate's log file.
+          returned: success
+          type: int
+          sample: 112
+        sysplex_aware:
+          description: Value of the sysplex_aware flag of an aggregate.
+          returned: success
+          type: bool
+          sample: true
+        total_size:
+          description: Total K available in an aggregate.
+          returned: success
+          type: int
+          sample: 648000
+        version:
+          description: Version of an aggregate.
+          returned: success
+          type: str
+          sample: "1.5"
+        quiesced:
+          description: Attributes available when an aggregate has been quiesced.
+          returned: success
+          type: dict
+          contains:
+            job:
+              description: Name of the job that quiesced the aggregate.
+              returned: success
+              type: str
+              sample: USERJOB
+            system:
+              description: Name of the system that quiesced the aggregate.
+              returned: success
+              type: str
+              sample: GENSYS
+            timestamp:
+              description: Timestamp of the quiesce operation.
+              returned: success
+              type: str
+              sample: "2025-02-01T18:02:05"
 """
 
 import abc
@@ -612,6 +687,109 @@ class FactsHandler():
             str -- Any extra data found while querying.
         """
         return self.extra_data
+
+
+class AggregateHandler(FactsHandler):
+    """Class in charge of dealing with queries of aggregates via zfsadm.
+    """
+
+    def __init__(self, name, module=None):
+        """Creates a new handler.
+
+        Arguments:
+            name (str) -- Aggregate's name.
+            module (AnsibleModule, optional) -- Ansible object with the task's context.
+        """
+        super(AggregateHandler, self).__init__(name, module)
+        self.has_been_queried = False
+        self.raw_attributes = None
+
+    def exists(self):
+        """Returns whether or not zfsadm found the aggregate.
+        """
+        if not self.has_been_queried:
+            self._run_zfsadm()
+
+        return self.raw_attributes is not None
+
+    def query(self):
+        """Calls zfsadm aggrinfo to get information about an aggregate.
+
+        Returns
+        -------
+            dict -- Attributes from an aggregate.
+        """
+        if not self.has_been_queried:
+            self._run_zfsadm()
+
+        size_search = re.search('([0-9]+)( K free out of total )([0-9]+)', self.raw_attributes)
+        version_search = re.search('(version )([0-9]+\.[0-9]+)', self.raw_attributes)
+        auditfid_search = re.search('(auditfid )([0-9A-Z]{8} [0-9A-Z]{8} [0-9A-Z]{4})', self.raw_attributes)
+        free_8k_blocks_search = re.search('([0-9]+)( free 8k blocks)', self.raw_attributes)
+        free_fragments_search = re.search('([0-9]+)( free 1K fragments)', self.raw_attributes)
+        log_file_search = re.search('([0-9]+)( K log file)', self.raw_attributes)
+        filesystem_table_search = re.search('([0-9]+)( K filesystem table)', self.raw_attributes)
+        bitmap_search = re.search('([0-9]+)( K bitmap file)', self.raw_attributes)
+        quiesced_search = re.search('(Quiesced by job )([0-9a-zA-Z]+)( on system )([0-9a-zA-Z]+)( on )(.+)', self.raw_attributes)
+
+        try:
+            attributes = {
+                'name': self.name,
+                'resource_type': 'aggregate',
+                'attributes': {
+                    'total_size': int(size_search.group(3)),
+                    'free': int(size_search.group(1)),
+                    'version': version_search.group(2),
+                    'auditfid': auditfid_search.group(2),
+                    'free_8k_blocks': int(free_8k_blocks_search.group(1)),
+                    'free_1k_fragments': int(free_fragments_search.group(1)),
+                    'log_file_size': int(log_file_search.group(1)),
+                    'filesystem_table_size': int(filesystem_table_search.group(1)),
+                    'bitmap_file_size': int(bitmap_search.group(1)),
+                    'sysplex_aware': True if 'sysplex_aware' in self.raw_attributes else False,
+                    'converttov5': True if 'converttov5' in self.raw_attributes else False,
+                    'quiesced': {
+                        'job': None,
+                        'system': None,
+                        'timestamp': None
+                    }
+                }
+            }
+
+            if quiesced_search:
+                attributes['attributes']['quiesced']['job'] = quiesced_search.group(2)
+                attributes['attributes']['quiesced']['system'] = quiesced_search.group(4)
+
+                quiesced_timestamp = datetime.strptime(
+                    quiesced_search.group(6),
+                    '%a %b %d %H:%M:%S %Y'
+                ).strftime('%Y-%m-%dT%H:%M:%S')
+
+                attributes['attributes']['quiesced']['timestamp'] = quiesced_timestamp
+        except Exception as err:
+            raise QueryException(f"An error ocurred while parsing an aggregate's information: {str(err)}.")
+
+        return attributes
+
+    def _run_zfsadm(self):
+        """Runs zfsadm and stores the result in self.raw_attributes.
+        """
+        zfsadm_cmd = f'zfsadm aggrinfo -aggregate {self.name} -long'
+        rc, stdout, stderr = self.module.run_command(zfsadm_cmd)
+        self.has_been_queried = True
+
+        if rc == 0:
+            self.raw_attributes = stdout
+        else:
+            # We raise an exception when the error is something other than the aggregate
+            # was not found.
+            if rc > 0 and '624E' not in stderr:
+                raise QueryException(
+                    f"An error ocurred while querying information about {self.name}",
+                    rc=rc,
+                    stdout=stdout,
+                    stderr=stderr
+                )
 
 
 class DataSetHandler(FactsHandler):
@@ -1381,14 +1559,14 @@ def get_facts_handler(
         sms_managed (bool, optional) -- Whether a data set is managed by SMS.
 
     Returns:
-        DataSetHandler: Handler for data sets.
+        FactsHandler: Handler for data sets/aggregates/files.
     """
     if resource_type == 'data_set':
         return get_data_set_handler(name, volume, module, tmp_hlq, sms_managed)
     elif resource_type == 'file':
         pass
     elif resource_type == 'aggregate':
-        pass
+        return AggregateHandler(name, module)
 
 
 def run_module():

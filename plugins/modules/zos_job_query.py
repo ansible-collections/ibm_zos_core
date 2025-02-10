@@ -38,8 +38,8 @@ options:
        - A job name can be up to 8 characters long.
        - The I(job_name) can contain include multiple wildcards.
        - The asterisk (`*`) wildcard will match zero or more specified characters.
-       - Note that using this value will query the system for '*' and then return just matching values
-       - This may lead to security issues if there are read-access limitations on some users or jobs
+       - Note that using this value will query the system for '*' and then return just matching values.
+       - This may lead to security issues if there are read-access limitations on some users or jobs.
     type: str
     required: False
     default: "*"

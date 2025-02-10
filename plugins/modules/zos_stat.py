@@ -127,8 +127,6 @@ EXAMPLES = r"""
     volume: "000000"
 """
 
-# TODO: get samples for creation_job and creation_step.
-# TODO: add missing samples
 RETURN = r"""
 stat:
   description:
@@ -230,12 +228,12 @@ stat:
               description: JCL job that created the data set.
               returned: success
               type: str
-              sample:
+              sample: DSALLOC
             creation_step:
               description: JCL job step that created the data set.
               returned: success
               type: str
-              sample:
+              sample: ALLOC
         volser:
           description: Name of the volume containing the data set.
           returned: success
@@ -435,34 +433,41 @@ stat:
               description: Key length for data records, in bytes.
               returned: success
               type: int
+              sample: 4
             key_offset:
               description: Key offset for data records.
               returned: success
               type: int
+              sample: 3
             max_record_length:
               description: Maximum length of data records, in bytes.
               returned: success
               type: int
+              sample: 80
             avg_record_length:
               description: Average length of data records, in bytes.
               returned: success
               type: int
+              sample: 80
             bufspace:
               description:
                 - Minimum buffer space in bytes to be provided by a
                   processing program.
               returned: success
               type: int
+              sample: 37376
             total_records:
               description: Total number of records.
               returned: success
               type: int
+              sample: 50
             spanned:
               description:
                 - Whether the data set allows records to be spanned
                   across control intervals.
               returned: success
               type: bool
+              sample: false
         index:
           description:
             - Dictionary containing attributes for the INDEX part of a VSAM. 
@@ -475,59 +480,72 @@ stat:
               description: Key length for index records, in bytes.
               returned: success
               type: int
+              sample: 4
             key_offset:
               description: Key offset for index records.
               returned: success
               type: int
+              sample: 3
             max_record_length:
               description: Maximum length of index records, in bytes.
               returned: success
               type: int
+              sample: 0
             avg_record_length:
               description: Average length of index records, in bytes.
               returned: success
               type: int
+              sample: 505
             bufspace:
               description:
                 - Minimum buffer space in bytes to be provided by a
                   processing program.
               returned: success
               type: int
+              sample: 0
             total_records:
               description: Total number of records.
               returned: success
               type: int
+              sample: 0
         limit:
           description: Maximum amount of active generations allowed in a GDG.
           returned: success
           type: int
+          sample: 10
         scratch:
           description: Whether the GDG has the SCRATCH attribute set.
           returned: success
           type: bool
+          sample: false
         empty:
           description: Whether the GDG has the EMPTY attribute set.
           returned: success
           type: bool
+          sample: false
         order:
           description:
             - Allocation order of new Generation Data Sets for a GDG.
             - Value can be either 'LIFO' or 'FIFO'.
           returned: success
           type: str
+          sample: LIFO
         purge:
           description: Whether the GDG has the PURGE attribute set.
           returned: success
           type: bool
+          sample: false
         extended:
           description: Whether the GDG has the EXTENDED attribute set.
           returned: success
           type: bool
+          sample: false
         active_gens:
           description: List of the names of the currently active generations of a GDG.
           returned: success
           type: list
           elements: str
+          sample: ["USER.GDG.G0001V00", "USER.GDG.G0002V00"]
 """
 
 import abc

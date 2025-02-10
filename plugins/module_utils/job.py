@@ -240,6 +240,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_id=job_id,
         owner=owner,
         job_name=job_name,
+        dd_scan=False,
     )
 
     if len(job_status_result) == 0:
@@ -251,6 +252,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
             job_id=job_id,
             owner=owner,
             job_name=job_name,
+            dd_scan=False,
         )
 
     return job_status_result
@@ -374,7 +376,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
             job["duration"] = duration
-            job["execution_time"] = entry.execution_time
+            if hasattr(entry, "execution_time"):
+                job["execution_time"] = entry.execution_time
+            if hasattr(entry, "system"):
+                job["system"] = entry.system
+            if hasattr(entry, "subsystem"):
+                job["subsystem"] = entry.subsystem
 
             if dd_scan:
                 # If true, it means the job is not ready for DD queries and the duration and

@@ -207,7 +207,7 @@ hlq
 
 
 tmp_hlq
-  Override the default high level qualifier (HLQ) for temporary data sets used in the modules operation.
+  Override the default high level qualifier (HLQ) for temporary data sets used in the module's operation.
 
   If *tmp_hlq* is set, this value will be applied to all temporary data sets.
 

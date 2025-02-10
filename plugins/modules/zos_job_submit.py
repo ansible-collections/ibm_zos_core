@@ -179,6 +179,10 @@ jobs:
       description: The total lapsed time the JCL ran for.
       type: int
       sample: 0
+    execution_time:
+      description: Total duration time of the job execution, if it has finished.
+      type: str
+      sample: 00:00:10
     ddnames:
       description:
          Data definition names.
@@ -568,6 +572,7 @@ jobs:
                   ]
               },
               "job_class": "K",
+              "execution_time": "00:00:10",
               "svc_class": "?",
               "priority": 1,
               "program_name": "IEBGENER",
@@ -860,6 +865,7 @@ def build_return_schema(result):
         "job_id": None,
         "job_name": None,
         "duration": None,
+        "execution_time": None,
         "ddnames": {
             "ddname": None,
             "record_count": None,
@@ -1069,6 +1075,7 @@ def run_module():
             # being an immutable type can not be changed and must be returned or accessed from the job.py.
             if job_output is not None:
                 duration = job_output_txt[0].get("duration") if not None else duration
+                result["execution_time"] = job_output_txt[0].get("execution_time")
 
             result["duration"] = duration
 

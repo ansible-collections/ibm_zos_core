@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -338,6 +338,7 @@ def run_module():
     executable = module.params.get('executable')
     creates = module.params.get('creates')
     removes = module.params.get('removes')
+    remote_src = module.params.get('remote_src')
     script_permissions = None
 
     if creates and os.path.exists(creates):
@@ -360,6 +361,14 @@ def run_module():
         module.fail_json(
             msg='The given chdir {0} does not exist on the system.'.format(chdir)
         )
+
+    if remote_src and not os.path.exists(script_path):
+        result = dict(
+            changed=False,
+            skipped=True,
+            msg='File {0} does not exist on the system, skipping script'.format(script_path)
+        )
+        module.fail_json(**result)
 
     # Checking if current user has permission to execute the script.
     # If not, we'll try to set execution permissions if possible.

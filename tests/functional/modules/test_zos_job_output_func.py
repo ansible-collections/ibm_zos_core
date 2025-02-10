@@ -115,6 +115,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("steps") is not None
             assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001"
             assert result.get("jobs")[0].get("content_type") == "JOB"
+            assert result.get("jobs")[0].get("execution_time") is not None
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 

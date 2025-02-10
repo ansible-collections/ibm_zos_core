@@ -1707,7 +1707,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
-        a = hosts.all.zos_copy(
+        hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=src,
             remote_src=False
@@ -1735,7 +1735,6 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             assert cp_res.get("dest") == dest
             assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
-            print(v_cp)
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
     finally:

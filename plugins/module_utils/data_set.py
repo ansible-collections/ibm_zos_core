@@ -1990,6 +1990,19 @@ class DataSetUtils(object):
                 ).replace("-", "")
         return result
 
+    @staticmethod
+    def verify_dataset_in_use(data_set):
+        result = {}
+        listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
+            "  LISTDS '{0}'".format(data_set), authorized=True
+        )
+
+        if listds_rc == 0:
+            return False
+        else:
+            if re.findall(r"ALREADY IN USE", listds_out):
+                return True
+
 
 class MVSDataSet():
     """

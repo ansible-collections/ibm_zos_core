@@ -232,15 +232,10 @@ def copy_asa_uss2mvs(src, dest, tmphlq=None):
     """
 
     module = AnsibleModuleHelper(argument_spec={})
-<<<<<<< HEAD
-    new_dest = dest.replace("\\$", "$")
-    oget_cmd = f"tsocmd \" OGET '{src}' '{new_dest}' \""
-=======
     new_dest = dest.replace('\\', '')
     new_source = src.replace('\\', '')
     # Removes escaping to execute this command
     oget_cmd = f"tsocmd \" OGET '{new_source}' '{new_dest}' \""
->>>>>>> ff2c2da1 ([Bug][1.12.1] Fix zos_copy failing when copying asa characters into a data set with special chars in their name (#1904))
     rc, out, err = module.run_command(oget_cmd)
 
     return TSOCmdResponse(rc, out, err)

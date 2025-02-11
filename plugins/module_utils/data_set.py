@@ -1991,12 +1991,11 @@ class DataSetUtils(object):
         return result
 
     @staticmethod
-    def verify_dataset_in_use(data_set):
-        result = {}
+    def verify_dataset_in_use(data_set, module):
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
             "  LISTDS '{0}'".format(data_set), authorized=True
         )
-
+        module.fail_json(msg="{0} {1} {2}".format(listds_rc, listds_out, listds_err))
         if listds_rc == 0:
             return False
         else:

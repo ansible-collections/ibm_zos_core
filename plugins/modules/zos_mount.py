@@ -1040,9 +1040,11 @@ def run_module(module, arg_def):
                 stderr=str(res_args),
             )
 
-        datasets.delete(dataset=data_store)
-        datasets.copy(source=bk_ds, target=data_store)
-        datasets.delete(dataset=bk_ds)
+        try:
+            datasets.delete(dataset=data_store)
+            datasets.copy(source=bk_ds, target=data_store)
+        finally:
+            datasets.delete(dataset=bk_ds)
 
         if will_mount:
             d = datetime.today()

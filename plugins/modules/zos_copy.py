@@ -187,7 +187,7 @@ options:
     description:
       - By default, when C(dest) is a MVS data set and is being used by another
         process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
-        to bypass this check and continue with copy.
+        to bypass DISP=SHR and continue with the copy operation.
       - If set to C(true) and destination is a MVS data set opened by another
         process then zos_copy will try to copy using DISP=SHR.
       - Using C(force_lock) uses operations that are subject to race conditions
@@ -3547,7 +3547,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set_locked(dest_name)
+            is_dest_lock = data_set_locked(dataset_name=dest_name)
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(

@@ -64,6 +64,14 @@ verbose
   | **default**: False
 
 
+max_rc
+  Specifies the maximum return code allowed for the program output. If the program generates a return code higher than the specified maximum, the module will fail.
+
+  | **required**: False
+  | **type**: int
+  | **default**: 0
+
+
 dds
   The input data source.
 

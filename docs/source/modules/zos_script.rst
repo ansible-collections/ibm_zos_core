@@ -302,7 +302,7 @@ Notes
 
    All local scripts copied to a remote z/OS system  will be removed from the managed node before the module finishes executing.
 
-   Execution permissions for the group assigned to the script will be added to remote scripts. The original permissions for remote scripts will be restored by the module before the task ends.
+   Execution permissions for the group assigned to the script will be added to remote scripts if they are missing. The original permissions for remote scripts will be restored by the module before the task ends.
 
    The module will only add execution permissions for the file owner.
 

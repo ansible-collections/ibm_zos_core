@@ -1,4 +1,0 @@
-trivial:
-  - module_utils/data_set.py - add default values to the init method of
-    MVSDataSet.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1495).

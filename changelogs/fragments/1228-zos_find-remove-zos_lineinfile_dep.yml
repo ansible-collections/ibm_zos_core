@@ -1,3 +1,0 @@
-trivial:
-  - zos_find - Removed zos_lineinfile dependency from test cases.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1228).

@@ -1,9 +1,0 @@
-minor_changes:
-  - zos_lineinfile - Added support for GDG and GDS relative name notation to use a data set.
-    And backup in new generations. Added support for data set names with special characters
-    like $, /#, /- and @.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
-  - zos_blockinfile - Added support for GDG and GDS relative name notation to use a data set.
-    And backup in new generations. Added support for data set names with special characters
-    like $, /#, /- and @.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1516).

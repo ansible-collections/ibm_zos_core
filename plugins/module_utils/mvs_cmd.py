@@ -249,6 +249,27 @@ def amaterse(cmd="", dds=None, authorized=False):
     return _run_mvs_command("AMATERSE", "", dds, authorized)
 
 
+def iefbr14(dds=None):
+    """IEFBR14 performs no action other than return a completion code of 0;
+    however, "running" this utility invokes other system components that
+    perform useful tasks.
+
+    Parameters
+    ----------
+    dds : dict
+        Any DD statements to pass to MVS command.
+    authorized : bool
+        Whether the command should be run in authorized
+        mode.
+
+    Returns
+    -------
+    tuple(int, str, str)
+        A tuple of return code, stdout and stderr.
+    """
+    return _run_mvs_command("IEFBR14", "", dds, False)
+
+
 def adrdssu(cmd, dds=None, authorized=False):
     """The ADRDSSU program enables you to copy SMS-compressed data without
     having to decompress the data and also provides support for copying
@@ -302,7 +323,10 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False, tmphlq=None):
         mvscmd += "auth"
     if tmphlq:
         mvscmd += " -Q={0}".format(tmphlq)
-    mvscmd += " --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin)
+    if pgm == "IEFBR14":
+        mvscmd += " --pgm={0}".format(pgm)
+    else:
+        mvscmd += " --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin)
     if dd:
         for k, v in dd.items():
             mvscmd += " --{0}={1}".format(k, v)

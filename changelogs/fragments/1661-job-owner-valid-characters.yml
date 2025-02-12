@@ -1,9 +1,0 @@
-bugfixes:
-  - zos_job_output - RACF user names containing a ``@``, ``$``, or ``#``
-    raised an invalid argument error. Fix now allows the use of all valid
-    characters for a RACF user.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
-  - zos_job_query - RACF user names containing a ``@``, ``$``, or ``#``
-    raised an invalid argument error. Fix now allows the use of all valid
-    characters for a RACF user.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1661).

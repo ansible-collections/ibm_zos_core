@@ -1,4 +1,0 @@
-trivial:
-  - zos_archive - Added GDS relative name support into zos_archive documentation,
-    where it is already implemented but not mentioned.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1750).

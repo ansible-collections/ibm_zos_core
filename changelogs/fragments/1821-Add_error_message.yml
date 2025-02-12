@@ -1,3 +1,0 @@
-minor_changes:
-  - zos_copy - Adds error message when a PDS/E source member does not exist or is not cataloged.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1821).

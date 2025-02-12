@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_mvs_raw - Module would not populate stderr return value. Fix now populates stderr in return values.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1808).
-

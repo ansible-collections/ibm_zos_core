@@ -1,4 +1,0 @@
-trivial:
-  - module_utils/copy.py - Replaced calls to cp with calls to ZOAU's
-    datasets' Python API.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1831)

@@ -1,4 +1,0 @@
-minor_changes:
-  - zos_job_submit - Added support to run zos_job_submit tasks in async mode inside
-    playbooks.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1786).

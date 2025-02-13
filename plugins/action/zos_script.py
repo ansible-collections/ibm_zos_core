@@ -24,6 +24,7 @@ display = Display()
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
+        self._supports_async = True
         if task_vars is None:
             task_vars = dict()
 
@@ -99,6 +100,8 @@ class ActionModule(ActionBase):
             )
             copy_task = self._task.copy()
             copy_task.args = copy_module_args
+            # Making the zos_copy task run synchronously every time.
+            copy_task.async_val = 0
             copy_action = self._shared_loader_obj.action_loader.get(
                 'ibm.ibm_zos_core.zos_copy',
                 task=copy_task,
@@ -133,7 +136,8 @@ class ActionModule(ActionBase):
         module_result = self._execute_module(
             module_name='ibm.ibm_zos_core.zos_script',
             module_args=module_args,
-            task_vars=task_vars
+            task_vars=task_vars,
+            wrap_async=self._task.async_val
         )
 
         result = module_result

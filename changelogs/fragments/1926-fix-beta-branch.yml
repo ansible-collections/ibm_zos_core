@@ -1,0 +1,5 @@
+trivial:
+  - tests/conftests.py - Removed some duplicated code entries.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1925).
+  - docs/source/release_notes.rst - Updated v1.13.0-beta.1 release notes.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1925).

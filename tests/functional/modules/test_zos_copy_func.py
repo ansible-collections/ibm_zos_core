@@ -1727,18 +1727,19 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         # We need to escape the data set name because we are using cat, using dcat will
         # bring the trailing empty spaces according to the data set record length.
         # We only need to escape $ character in this notation
-        dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_escaped),
+            cmd="dcat \'{0}\'".format(dest),
             executable=SHELL_EXECUTABLE,
         )
 
         for cp_res in copy_result.contacted.values():
+            print(cp_res)
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
             assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
+            print(v_cp)
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
     finally:

@@ -1992,6 +1992,14 @@ class DataSetUtils(object):
 
     @staticmethod
     def verify_dataset_in_use(data_set):
+        """Function to call iefbr14 to verify the dsp of data_set
+
+        Args:
+            data_set {str}: Name of dataset to verify the dsp=shr
+
+        Returns:
+            bool:  If the data_set is in dsp=shr
+        """
         data_set_disp = data_set + ",shr"
         dd={"dd":data_set_disp}
         almost_n_rc, almost_n_stdout, almost_n_stderr = mvs_cmd.iefbr14(dds=dd)

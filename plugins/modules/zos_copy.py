@@ -945,10 +945,9 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets, opercmd, gdgs
+    from zoautil_py import datasets, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
-    opercmd = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
 
 try:

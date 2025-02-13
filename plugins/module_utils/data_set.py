@@ -2001,7 +2001,7 @@ class DataSetUtils(object):
             bool:  If the data_set is in dsp=shr
         """
         data_set_disp = data_set + ",shr"
-        dd={"dd":data_set_disp}
+        dd = {"dd" : data_set_disp}
         almost_n_rc, almost_n_stdout, almost_n_stderr = mvs_cmd.iefbr14(dds=dd)
 
         if almost_n_rc == 0:

@@ -504,7 +504,7 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
-                temp_path, data_set_name_special_chars.replace('$', r'\$')
+                temp_path, data_set_name_special_chars.replace('$', '\\$')
             )
         )
         results = hosts.all.zos_job_submit(

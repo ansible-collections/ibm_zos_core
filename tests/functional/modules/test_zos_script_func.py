@@ -19,6 +19,8 @@ import os
 import tempfile
 import pytest
 import yaml
+from shellescape import quote
+import subprocess
 __metaclass__ = type
 
 from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser

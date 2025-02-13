@@ -1,3 +1,0 @@
-trivial:
-  - zos_operator - Pass capital letters to the command to idcams utility.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1550).

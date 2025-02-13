@@ -1,4 +1,0 @@
-minor_changes:
-  - zos_encode - add support for encoding generation data sets (GDS), as well
-    as using a GDS for backup.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1531).

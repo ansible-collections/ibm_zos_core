@@ -616,7 +616,6 @@ def test_job_submit_local_badjcl(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="local", wait_time_s=10)
 
     for result in results.contacted.values():
-        print(result)
         # Expecting: The job completion code (CC) was not in the job log....."
         assert result.get("changed") is False
         assert re.search(r'completion code', repr(result.get("msg")))

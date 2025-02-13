@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -331,7 +331,7 @@ def test_fetch_vsam_data_set(ansible_zos_module, volumes_on_systems):
         hosts.all.zos_job_submit(
             src=f"{temp_jcl_path}/SAMPLE", location="uss", wait_time_s=30
         )
-        hosts.all.shell(cmd=f"echo \"{TEST_DATA}\c\" > {uss_file}")
+        hosts.all.shell(cmd=f"echo \"{TEST_DATA}\\c\" > {uss_file}")
         hosts.all.zos_encode(
             src=uss_file,
             dest=test_vsam,

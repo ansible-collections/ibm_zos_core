@@ -485,13 +485,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     if len(job["class"]) < 1:
                         job["class"] = entry.job_class
 
-                    if len(job["system"]) < 1:
+                    if job["system"] is not None and len(job["system"]) < 1:
                         if "--  S Y S T E M  " in tmpcont:
                             tmptext = tmpcont.split("--  S Y S T E M  ")[1]
                             job["system"] = (tmptext.split(
                                 "--", 1)[0]).replace(" ", "")
 
-                    if len(job["subsystem"]) < 1:
+                    if job["subsystem"] is not None and len(job["subsystem"]) < 1:
                         if "--  N O D E " in tmpcont:
                             tmptext = tmpcont.split("--  N O D E ")[1]
                             job["subsystem"] = (tmptext.split("\n")[

@@ -1,0 +1,2 @@
+trivial:
+  - lineinfile - add warning when using an empty regexp (https://github.com/ansible-collections/ibm_zos_core/pull/1925).

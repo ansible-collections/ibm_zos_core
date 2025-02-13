@@ -194,10 +194,3 @@ def get_config(request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
     path = request.config.getoption("--zinventory")
     yield path
-
-
-@pytest.fixture(scope="function")
-def get_config(request):
-    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
-    path = request.config.getoption("--zinventory")
-    yield path

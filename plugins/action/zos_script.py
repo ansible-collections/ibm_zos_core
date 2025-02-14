@@ -147,8 +147,8 @@ class ActionModule(ActionBase):
             # restore it to what the user supplied.
             result['cmd'] = user_cmd
 
-        if not remote_src:
-            self._remote_cleanup(tempfile_path)
+        # if not remote_src:
+        #     self._remote_cleanup(tempfile_path)
 
         return result
 

@@ -73,7 +73,6 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
-    ANSIBLE_KEEP_REMOTE_FILES: "1"
 
   tasks:
     - name: Execute script in async mode.

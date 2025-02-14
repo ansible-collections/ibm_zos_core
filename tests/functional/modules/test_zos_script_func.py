@@ -77,7 +77,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
   tasks:
     - name: Submit async job.
       ibm.ibm_zos_core.zos_script:
-        cmd: "/{3}" "FIRST=a" "SECOND=b"
+        cmd: "{3}" "FIRST=a" "SECOND=b"
         location: local
       async: 45
       poll: 0

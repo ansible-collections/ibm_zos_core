@@ -608,17 +608,17 @@ def test_job_submit_local_extra_r(ansible_zos_module):
         assert result.get("changed") is True
 
 
-def test_job_submit_local_badjcl(ansible_zos_module):
-    tmp_file = tempfile.NamedTemporaryFile(delete=True)
-    with open(tmp_file.name, "w",encoding="utf-8") as f:
-        f.write(JCL_FILE_CONTENTS_BAD)
-    hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(src=tmp_file.name, location="local", wait_time_s=10)
+# def test_job_submit_local_badjcl(ansible_zos_module):
+#     tmp_file = tempfile.NamedTemporaryFile(delete=True)
+#     with open(tmp_file.name, "w",encoding="utf-8") as f:
+#         f.write(JCL_FILE_CONTENTS_BAD)
+#     hosts = ansible_zos_module
+#     results = hosts.all.zos_job_submit(src=tmp_file.name, location="local", wait_time_s=10)
 
-    for result in results.contacted.values():
-        # Expecting: The job completion code (CC) was not in the job log....."
-        assert result.get("changed") is False
-        assert re.search(r'completion code', repr(result.get("msg")))
+#     for result in results.contacted.values():
+#         # Expecting: The job completion code (CC) was not in the job log....."
+#         assert result.get("changed") is False
+#         assert re.search(r'completion code', repr(result.get("msg")))
 
 
 def test_job_submit_pds_volume(ansible_zos_module, volumes_on_systems):

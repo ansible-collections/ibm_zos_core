@@ -75,9 +75,9 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
     LANG: "C"
 
   tasks:
-    - name: Submit async job.
+    - name: Execute script in async mode.
       ibm.ibm_zos_core.zos_script:
-        cmd: "{3} 'FIRST=a' 'SECOND=b'"
+        cmd: "{3}"
       async: 45
       poll: 0
       register: job_task
@@ -611,7 +611,7 @@ def test_rexx_script_with_args_remote_src(ansible_zos_module):
 def test_job_script_async(get_config):
     # Creating temp JCL file used by the playbook.
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-    with open(tmp_file.name, "w",encoding="utf-8") as f:
+    with open(tmp_file.name, "w") as f:
         f.write(REXX_SCRIPT_ARGS)
 
     # Getting all the info required to run the playbook.

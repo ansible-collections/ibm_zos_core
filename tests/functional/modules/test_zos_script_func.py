@@ -81,6 +81,9 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
       async: 45
       poll: 0
       register: job_task
+    - name: print result
+      debug:
+        msg: "{{{{job_task}}}}"
 """
 
 INVENTORY_ASYNC_TEST = """all:

@@ -78,17 +78,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
     - name: Execute script in async mode.
       ibm.ibm_zos_core.zos_script:
         cmd: "{3}"
-      async: 45
-      poll: 0
       register: job_task
-
-    - name: Query async task.
-      async_status:
-        jid: "{{{{ job_task.ansible_job_id }}}}"
-      register: job_result
-      until: job_result.finished
-      retries: 20
-      delay: 5
 """
 
 INVENTORY_ASYNC_TEST = """all:

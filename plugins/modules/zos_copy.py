@@ -3183,7 +3183,6 @@ def data_set_locked(dataset_name):
     # in the result with a length greater than 4.
     result = dict()
     result["stdout"] = []
-    dataset_name = dataset_name.replace("$", "\\$")
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
 
     try:

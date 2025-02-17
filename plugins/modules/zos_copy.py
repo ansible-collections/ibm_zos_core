@@ -3496,7 +3496,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set.DataSetUtils.verify_dataset_in_use(data_set=data_set.extract_dsname(dest_name))
+            is_dest_lock = data_set.DataSetUtils.verify_dataset_disposition(data_set=data_set.extract_dsname(dest_name), disposition="shr")
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(

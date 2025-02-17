@@ -1714,7 +1714,8 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=src,
-            remote_src=False
+            remote_src=False,
+            force_lock=True
         )
 
         copy_result = hosts.all.zos_copy(
@@ -1772,7 +1773,8 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=src,
-            remote_src=False
+            remote_src=False,
+            force_lock=True
         )
 
         copy_result = hosts.all.zos_copy(
@@ -1828,7 +1830,8 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=full_src,
-            remote_src=False
+            remote_src=False,
+            force_lock=True
         )
 
         copy_result = hosts.all.zos_copy(
@@ -1885,7 +1888,8 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=full_src,
-            remote_src=False
+            remote_src=False,
+            force_lock=True
         )
 
         copy_result = hosts.all.zos_copy(
@@ -1938,7 +1942,8 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=src,
-            remote_src=False
+            remote_src=False,
+            force_lock=True
         )
 
         dest = get_random_file_name(dir=TMP_DIRECTORY)

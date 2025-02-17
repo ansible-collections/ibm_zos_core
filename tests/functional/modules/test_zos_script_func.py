@@ -477,7 +477,6 @@ def managed_user_run_script(ansible_zos_module):
     )
 
     for result in zos_script_result.contacted.values():
-        print(result)
         assert result.get('changed') is True
         assert result.get('failed', False) is False
         assert result.get('rc') == 0

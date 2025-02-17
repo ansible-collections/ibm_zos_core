@@ -147,15 +147,7 @@ class ActionModule(ActionBase):
             # restore it to what the user supplied.
             result['cmd'] = user_cmd
 
-        # if not remote_src:
-        #     self._remote_cleanup(tempfile_path)
-
         return result
-
-    def _remote_cleanup(self, tempfile_path):
-        """Removes the temporary file in a managed node created for a local
-        script."""
-        self._connection.exec_command("rm -f {0}".format(tempfile_path))
 
     def _process_boolean(self, arg, default=False):
         try:

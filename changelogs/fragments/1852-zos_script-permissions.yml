@@ -1,6 +1,0 @@
-bugfixes:
-  - zos_script - When the user trying to run a remote script had execute permissions but wasn't
-    owner of the file, the module would fail while trying to change permissions on it. Fix now
-    ensures the module first checks if the user can execute the script and only try to change
-    permissions when necessary.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1852).

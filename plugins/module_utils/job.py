@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -33,7 +33,6 @@ try:
     from zoautil_py import exceptions
 except ImportError:
     exceptions = ZOAUImportError(traceback.format_exc())
-
 
 try:
     # For files that import individual functions from a ZOAU module,
@@ -240,6 +239,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_id=job_id,
         owner=owner,
         job_name=job_name,
+        dd_scan=False,
     )
 
     if len(job_status_result) == 0:
@@ -251,6 +251,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
             job_id=job_id,
             owner=owner,
             job_name=job_name,
+            dd_scan=False,
         )
 
     return job_status_result
@@ -320,14 +321,17 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
     final_entries = []
 
-    # In 1.3.0, include_extended has to be set to true so we get the program name for a job.
-    entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+    # In ZOAU>= 1.3.0, include_extended has to be set to true so we get the program name for a job.
+    # Observation shows the job_name parameter is not being used, so we will drop that
+
+    # expanding > 1.3.0 of zoau, to include all params
+    entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+        entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
 
     if entries:
         for entry in entries:
@@ -374,7 +378,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
             job["duration"] = duration
-            job["execution_time"] = entry.execution_time
+            if hasattr(entry, "execution_time"):
+                job["execution_time"] = entry.execution_time
+            if hasattr(entry, "system"):
+                job["system"] = entry.system
+            if hasattr(entry, "subsystem"):
+                job["subsystem"] = entry.subsystem
 
             if dd_scan:
                 # If true, it means the job is not ready for DD queries and the duration and

@@ -1,4 +1,0 @@
-trivial:
-  - zos_job_submit - Added a test case for non-printable UTF8 characters
-    to validate ZOAU changes. This covers the full EBCDIC range.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1689).

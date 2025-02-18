@@ -258,9 +258,6 @@ def iefbr14(dds=None):
     ----------
     dds : dict
         Any DD statements to pass to MVS command.
-    authorized : bool
-        Whether the command should be run in authorized
-        mode.
 
     Returns
     -------

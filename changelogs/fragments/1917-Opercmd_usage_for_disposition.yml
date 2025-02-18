@@ -1,3 +1,3 @@
 minor_changes:
-  - zos_copy - Replace call of opercmd for validate the dsp=shr of a dataset.
+  - zos_copy - Removes the need to allow READ access to MVS.MCSOPER.ZOAU to execute the module by changing how the module checks if a data set is locked.
     (https://github.com/ansible-collections/ibm_zos_core/pull/1917).

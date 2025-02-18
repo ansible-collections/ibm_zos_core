@@ -370,6 +370,7 @@ options:
           - pdse
           - member
           - basic
+          - large
           - library
           - gdg
       space_primary:
@@ -3887,7 +3888,7 @@ def main():
                         type='str',
                         choices=['basic', 'ksds', 'esds', 'rrds',
                                  'lds', 'seq', 'pds', 'pdse', 'member',
-                                 'library', 'gdg'],
+                                 'large', 'library', 'gdg'],
                         required=True,
                     ),
                     space_primary=dict(

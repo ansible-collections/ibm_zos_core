@@ -349,17 +349,17 @@ def run_module():
     try:
         if creates and os.path.exists(creates):
             result = dict(
-              changed=False,
-              skipped=True,
-              msg='File {0} already exists on the system, skipping script'.format(creates)
+                changed=False,
+                skipped=True,
+                msg='File {0} already exists on the system, skipping script'.format(creates)
             )
             module.exit_json(**result)
 
         if removes and not os.path.exists(removes):
             result = dict(
-              changed=False,
-              skipped=True,
-              msg='File {0} is already missing on the system, skipping script'.format(removes)
+                changed=False,
+                skipped=True,
+                msg='File {0} is already missing on the system, skipping script'.format(removes)
             )
             module.exit_json(**result)
 
@@ -369,9 +369,9 @@ def run_module():
 
         if remote_src and not os.path.exists(script_path):
             result = dict(
-              changed=False,
-              skipped=True,
-              msg='File {0} does not exist on the system, skipping script'.format(script_path)
+                changed=False,
+                skipped=True,
+                msg='File {0} does not exist on the system, skipping script'.format(script_path)
             )
             module.fail_json(**result)
 
@@ -418,7 +418,7 @@ def run_module():
         if script_rc != 0 or stderr:
             result['msg'] = 'The script terminated with an error'
             if temp_file is not None:
-                  os.remove(temp_file)
+                os.remove(temp_file)
             module.fail_json(
                 **result
             )

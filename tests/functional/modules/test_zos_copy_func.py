@@ -13,7 +13,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 import pytest
 import os
 import shutil
@@ -1700,7 +1699,12 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
     try:
         src = get_tmp_ds_name(llq_size=4)
         src = f"{src}$#@"
-        hosts.all.shell(cmd=f"dtouch -tseq {src}")
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="seq",
+            replace=True
+        )
 
         dest = get_tmp_ds_name(llq_size=4)
         dest = f"{dest}$#@"
@@ -1709,8 +1713,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=src,
-            remote_src=False,
-            force_lock=True
+            remote_src=False
         )
 
         copy_result = hosts.all.zos_copy(
@@ -1730,13 +1733,11 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         )
 
         for cp_res in copy_result.contacted.values():
-            print(cp_res)
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
             assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
-            print(v_cp)
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
     finally:
@@ -1753,7 +1754,12 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
     try:
         src = get_tmp_ds_name(llq_size=4)
         src = f"{src}$#@"
-        hosts.all.shell(cmd=f"dtouch -tseq {src}")
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="seq",
+            replace=True
+        )
 
         dest = get_tmp_ds_name(llq_size=4)
         dest = f"{dest}$#@"
@@ -1763,8 +1769,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=src,
-            remote_src=False,
-            force_lock=True
+            remote_src=False
         )
 
         copy_result = hosts.all.zos_copy(
@@ -1806,7 +1811,12 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
         src = get_tmp_ds_name(llq_size=4)
         src = f"{src}$#@"
         full_src = "{0}(MEM$#@)".format(src)
-        hosts.all.shell(cmd=f"dtouch -tpdse {src}")
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            replace=True
+        )
 
         dest = get_tmp_ds_name(llq_size=4)
         dest = f"{dest}$#@"
@@ -1815,8 +1825,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=full_src,
-            remote_src=False,
-            force_lock=True
+            remote_src=False
         )
 
         copy_result = hosts.all.zos_copy(
@@ -1858,7 +1867,12 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
         src = get_tmp_ds_name(llq_size=4)
         src = f"{src}$#@"
         full_src = "{0}(MEMBER)".format(src)
-        hosts.all.shell(cmd=f"dtouch -tpdse {src}")
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            replace=True
+        )
 
         dest = get_tmp_ds_name(llq_size=4)
         dest = f"{dest}$#@"
@@ -1909,13 +1923,19 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
     try:
         src = get_tmp_ds_name(llq_size=4)
         src = f"{src}$#@"
-        hosts.all.shell(cmd=f"dtouch -tseq -rfba -l80 -B27920 {src}")
-
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="seq",
+            record_format="fba",
+            record_length=80,
+            block_size=27920,
+            replace=True
+        )
         hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
             dest=src,
-            remote_src=False,
-            force_lock=True
+            remote_src=False
         )
 
         dest = get_random_file_name(dir=TMP_DIRECTORY)
@@ -2302,7 +2322,7 @@ def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.shell(cmd=f"dtouch -tpdse {dest}")
+        hosts.all.zos_data_set(name=dest, type="seq", state="present")
 
         if src["is_file"]:
             copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])

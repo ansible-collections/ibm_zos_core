@@ -2004,7 +2004,7 @@ class DataSetUtils(object):
         dd = {"dd" : data_set_disp}
         almost_n_rc, almost_n_stdout, almost_n_stderr = mvs_cmd.iefbr14(dds=dd)
 
-        if almost_n_rc == 0:
+        if almost_n_rc != 0:
             return True
         else:
             return False

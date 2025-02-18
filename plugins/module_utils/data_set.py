@@ -1990,6 +1990,25 @@ class DataSetUtils(object):
                 ).replace("-", "")
         return result
 
+    @staticmethod
+    def verify_dataset_disposition(data_set, disposition):
+        """Function to call iefbr14 to verify the dsp of data_set
+
+        Args:
+            data_set {str}: Name of dataset to verify the dsp=shr
+
+        Returns:
+            bool:  If the data_set is in dsp=shr
+        """
+        data_set_disp = f"{data_set},{disposition}"
+        dd = {"dd" : data_set_disp}
+        rc, stdput, stderr = mvs_cmd.iefbr14(dds=dd)
+
+        if rc != 0:
+            return True
+        else:
+            return False
+
 
 class MVSDataSet():
     """

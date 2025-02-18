@@ -470,7 +470,6 @@ def managed_user_run_script(ansible_zos_module):
     hosts = ansible_zos_module
     script_path = '/tmp/zos_script_test_script'
     msg = "Success"
-
     zos_script_result = hosts.all.zos_script(
         cmd=script_path,
         remote_src=True
@@ -482,7 +481,6 @@ def managed_user_run_script(ansible_zos_module):
         assert result.get('rc') == 0
         assert result.get('stdout', '').strip() == msg
         assert result.get('stderr', '') == ''
-
 
 # Related to issue #1542 in our repository.
 def test_user_run_script_from_another_user(ansible_zos_module, z_python_interpreter):
@@ -601,10 +599,9 @@ def test_rexx_script_with_args_remote_src(ansible_zos_module):
             assert args in result.get('remote_cmd')
             assert result.get('stderr', '') == ''
     finally:
-        if os.path.exists(script_path):
-            os.remove(script_path)
         if os.path.exists(local_script):
             os.remove(local_script)
+        hosts.all.file(path=script_path, state="absent")
 
 
 def test_job_script_async(get_config):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -504,7 +504,7 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
-                temp_path, data_set_name_special_chars.replace('$', '\$')
+                temp_path, data_set_name_special_chars.replace('$', '\\$')
             )
         )
         results = hosts.all.zos_job_submit(

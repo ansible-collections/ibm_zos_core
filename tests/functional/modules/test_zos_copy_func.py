@@ -2085,6 +2085,91 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.asa
+@pytest.mark.parametrize("ds_type, f_lock",[
+    ( "pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ( "pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ( "seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ( "pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ( "pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ( "seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+])
+def test_copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock ):
+    hosts = ansible_zos_module
+    data_set = get_tmp_ds_name(llq_size=4)
+    data_set = f"{data_set}$#@"
+    member_name = "MEM1"
+
+    if ds_type == "pds" or ds_type == "pdse":
+        dest_data_set = f"{data_set}({member_name})"
+    else:
+        dest_data_set = data_set
+
+    try:
+        hosts.all.zos_data_set(name=data_set, state="present", type=ds_type, replace=True, record_format="fba")
+        if ds_type == "pds" or ds_type == "pdse":
+            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
+
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
+        hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(temp_dir, dest_data_set),
+            dest=f'{temp_dir}/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+
+        results = hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=dest_data_set,
+            remote_src=False,
+            asa_text=True,
+            force=True,
+            force_lock=f_lock
+        )
+
+        for result in results.contacted.values():
+            print(result)
+            if f_lock: #and apf_auth_user:
+                assert result.get("changed") is True
+                assert result.get("msg") is None
+
+                # We need to escape the data set name because we are using cat, using dcat will
+                # bring the trailing empty spaces according to the data set record length.
+                # We only need to escape $ character in this notation
+                dest_escaped = dest_data_set.replace('$', '\\$')
+                verify_copy = hosts.all.shell(
+                    cmd="cat \"//'{0}'\"".format(dest_escaped),
+                    executable=SHELL_EXECUTABLE,
+                )
+
+                for v_cp in verify_copy.contacted.values():
+                    assert v_cp.get("rc") == 0
+                    assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+            else:
+                assert result.get("failed") is True
+                assert result.get("changed") is False
+                assert "because a task is accessing the data set" in result.get("msg")
+                assert result.get("rc") is None
+    finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd=f'rm -r {temp_dir}')
+        # remove destination data set.
+        hosts.all.zos_data_set(name=data_set, state="absent")
+
+
 def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
     """
     This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'. 

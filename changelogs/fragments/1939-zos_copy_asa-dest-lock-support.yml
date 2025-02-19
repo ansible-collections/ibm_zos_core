@@ -3,4 +3,4 @@ bugfixes:
     a copy would fail saying the destination was already in use.
     Fix now opens destination data sets up with disposition SHR when ``force_lock`` and
     ``asa_text`` are set to true.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1932).
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1939).

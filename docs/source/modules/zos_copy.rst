@@ -357,7 +357,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library, gdg
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, large, library, gdg
 
 
   space_primary

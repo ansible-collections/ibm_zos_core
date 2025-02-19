@@ -227,6 +227,8 @@ stderr_lines:
 import os
 import stat
 import shlex
+import os
+from ansible.module_utils._text import to_text
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -340,84 +342,101 @@ def run_module():
     removes = module.params.get('removes')
     remote_src = module.params.get('remote_src')
     script_permissions = None
+    temp_file = script_path if not remote_src else None
 
-    if creates and os.path.exists(creates):
-        result = dict(
-            changed=False,
-            skipped=True,
-            msg='File {0} already exists on the system, skipping script'.format(creates)
-        )
-        module.exit_json(**result)
+    result = dict()
 
-    if removes and not os.path.exists(removes):
-        result = dict(
-            changed=False,
-            skipped=True,
-            msg='File {0} is already missing on the system, skipping script'.format(removes)
-        )
-        module.exit_json(**result)
-
-    if chdir and not os.path.exists(chdir):
-        module.fail_json(
-            msg='The given chdir {0} does not exist on the system.'.format(chdir)
-        )
-
-    if remote_src and not os.path.exists(script_path):
-        result = dict(
-            changed=False,
-            skipped=True,
-            msg='File {0} does not exist on the system, skipping script'.format(script_path)
-        )
-        module.fail_json(**result)
-
-    # Checking if current user has permission to execute the script.
-    # If not, we'll try to set execution permissions if possible.
-    if not os.access(script_path, os.X_OK):
-        # Adding owner execute permissions to the script.
-        # The module will fail if the Ansible user is not the owner!
-        try:
-            script_permissions = os.lstat(script_path).st_mode
-            os.chmod(
-                script_path,
-                script_permissions | stat.S_IXUSR
+    try:
+        if creates and os.path.exists(creates):
+            result = dict(
+                changed=False,
+                skipped=True,
+                msg='File {0} already exists on the system, skipping script'.format(creates)
             )
-        except PermissionError:
-            module.fail_json(
-                msg='User running Ansible does not have permission to run script {0}.'.format(
-                    script_path
+            module.exit_json(**result)
+
+        if removes and not os.path.exists(removes):
+            result = dict(
+                changed=False,
+                skipped=True,
+                msg='File {0} is already missing on the system, skipping script'.format(removes)
+            )
+            module.exit_json(**result)
+
+        if chdir and not os.path.exists(chdir):
+            msg = 'The given chdir {0} does not exist on the system.'.format(chdir)
+            raise Exception(msg)
+
+        if remote_src and not os.path.exists(script_path):
+            result = dict(
+                changed=False,
+                skipped=True,
+                msg='File {0} does not exist on the system, skipping script'.format(script_path)
+            )
+            module.fail_json(**result)
+
+        # Checking if current user has permission to execute the script.
+        # If not, we'll try to set execution permissions if possible.
+        if not os.access(script_path, os.X_OK):
+            # Adding owner execute permissions to the script.
+            # The module will fail if the Ansible user is not the owner!
+            try:
+                script_permissions = os.lstat(script_path).st_mode
+                os.chmod(
+                    script_path,
+                    script_permissions | stat.S_IXUSR
                 )
-            )
+            except PermissionError:
+                msg = 'User running Ansible does not have permission to run script {0}.'.format(script_path)
+                raise PermissionError(msg)
 
-    if executable:
-        cmd_str = "{0} {1}".format(executable, cmd_str)
+        if executable:
+            cmd_str = "{0} {1}".format(executable, cmd_str)
 
-    cmd_str = cmd_str.strip()
-    script_rc, stdout, stderr = module.run_command(
-        cmd_str,
-        cwd=chdir,
-        errors='replace'
-    )
-
-    result = dict(
-        changed=True,
-        cmd=module.params.get('cmd'),
-        remote_cmd=cmd_str,
-        rc=script_rc,
-        stdout=stdout,
-        stderr=stderr,
-        stdout_lines=stdout.split('\n'),
-        stderr_lines=stderr.split('\n'),
-    )
-
-    # Reverting script's permissions when needed.
-    if script_permissions:
-        os.chmod(script_path, script_permissions)
-
-    if script_rc != 0 or stderr:
-        result['msg'] = 'The script terminated with an error'
-        module.fail_json(
-            **result
+        cmd_str = cmd_str.strip()
+        script_rc, stdout, stderr = module.run_command(
+            cmd_str,
+            cwd=chdir,
+            errors='replace'
         )
+
+        result = dict(
+            changed=True,
+            cmd=module.params.get('cmd'),
+            remote_cmd=cmd_str,
+            rc=script_rc,
+            stdout=stdout,
+            stderr=stderr,
+            stdout_lines=stdout.split('\n'),
+            stderr_lines=stderr.split('\n'),
+        )
+
+        # Reverting script's permissions when needed.
+        if script_permissions:
+            os.chmod(script_path, script_permissions)
+
+        if script_rc != 0 or stderr:
+            result['msg'] = 'The script terminated with an error'
+            if temp_file is not None:
+                os.remove(temp_file)
+            module.fail_json(
+                **result
+            )
+    except PermissionError as err:
+        result["failed"] = True
+        result["changed"] = False
+        result["msg"] = ("The script terminated with an error: {0}".format(to_text(err)))
+        module.exit_json(**result)
+    except Exception as err:
+        # if not result["changed"]:
+        result["changed"] = False
+        result["failed"] = True
+        result["msg"] = ("The script terminated with an error: {0}".format(to_text(err)))
+        module.exit_json(**result)
+
+    finally:
+        if temp_file is not None:
+            os.remove(temp_file)
 
     module.exit_json(**result)
 

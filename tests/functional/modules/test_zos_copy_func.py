@@ -2174,7 +2174,7 @@ def test_copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set, state="absent")
 
 
-def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module):
+def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module, z_python_interpreter):
     """
     This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'.
     This this a wrapper for the actual test case `managed_user_copy_dest_lock_test_with_no_opercmd_access`.

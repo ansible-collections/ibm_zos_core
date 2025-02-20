@@ -36,6 +36,8 @@ options:
           generation data sets (GDS).
     type: str
     required: true
+    aliases:
+      - src
   volume:
     description:
         - Name of the volume where the data set will be searched on.
@@ -1577,7 +1579,8 @@ def run_module():
         argument_spec={
             'name': {
                 'type': 'str',
-                'required': True
+                'required': True,
+                'aliases': ['src']
             },
             'volume': {
                 'type': 'str',
@@ -1609,7 +1612,8 @@ def run_module():
     args_def = {
         'name': {
             'arg_type': 'data_set_or_path',
-            'required': True
+            'required': True,
+            'aliases': ['src']
         },
         'volume': {
             'arg_type': 'str',

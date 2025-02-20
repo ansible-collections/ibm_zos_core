@@ -1437,8 +1437,8 @@ class CopyHandler(object):
             content = src_file.read(1024)
 
             while content:
-                # In EBCDIC, \r\n are bytes 0d and 15, respectively.
-                if b'\x0d\x15' in content:
+                # In EBCDIC, \r is bytes 0d
+                if b'\x0d' in content:
                     return True
                 content = src_file.read(1024)
 
@@ -1470,8 +1470,10 @@ class CopyHandler(object):
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
                     chunk = src_file.read(1024)
-                    # In IBM-037, \r is the byte 0d.
-                    converted_file.write(chunk.replace(b'\x0d', b''))
+                    while chunk:
+                        # In IBM-037, \r is the byte 0d.
+                        converted_file.write(chunk.replace(b'\x0d', b''))
+                        chunk = src_file.read(1024)
 
             self._tag_file_encoding(converted_src, "IBM-037")
 
@@ -3720,6 +3722,10 @@ def run_module(module, arg_def):
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
         if is_uss:
+            # Normalizing encodings to IBM-037 and removing carriage return
+            if src_ds_type == "USS" and not is_binary:
+                new_src = conv_path or src
+                conv_path = normalize_line_endings(new_src, encoding)
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,

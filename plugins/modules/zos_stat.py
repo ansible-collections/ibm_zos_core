@@ -22,7 +22,7 @@ module: zos_stat
 version_added: '1.14.0'
 author:
   - "Ivan Moreno (@rexemin)"
-short_description: Retrieve facts from z/OS
+short_description: Retrieve facts from MVS data sets, USS files and aggregates
 description:
   - The L(zos_stat,./zos_stat.html) module retrieves facts from resources
     stored in a z/OS system.
@@ -30,7 +30,7 @@ description:
 options:
   name:
     description:
-        - Name of a data set or aggregate, or a file path, to query.
+        - Name of a data set, aggregate, or a file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs, generation data groups (GDG) or
           generation data sets (GDS).
@@ -78,7 +78,7 @@ options:
 
 notes:
   - When querying data sets, the module will create a temporary data set
-    that requires around 4 kilobytes of available space on the remote host.
+    that requires around 4 kilobytes of available space on the managed node.
     This data set will be removed before the module finishes execution.
   - Sometimes, the system could be unable to properly determine the
     organization or record format of the data set or the space units used
@@ -91,6 +91,7 @@ notes:
 seealso:
   - module: ansible.builtin.stat
   - module: zos_find
+  - module: zos_gather_facts
 """
 
 EXAMPLES = r"""
@@ -423,7 +424,7 @@ stat:
           sample: BASIC
         data:
           description:
-            - Dictionary containing attributes for the DATA part of a VSAM. 
+            - Dictionary containing attributes for the DATA component of a VSAM. 
             - For the rest of the attributes of this data set, query it
               directly with this module.
           returned: success
@@ -470,7 +471,7 @@ stat:
               sample: false
         index:
           description:
-            - Dictionary containing attributes for the INDEX part of a VSAM. 
+            - Dictionary containing attributes for the INDEX component of a VSAM. 
             - For the rest of the attributes of this data set, query it
               directly with this module.
           returned: success

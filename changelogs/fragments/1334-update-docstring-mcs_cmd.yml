@@ -1,3 +1,0 @@
-trivial:
-  - mvs_cmd - Updated docstrings to numpy style for visual aid to developers.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1334).

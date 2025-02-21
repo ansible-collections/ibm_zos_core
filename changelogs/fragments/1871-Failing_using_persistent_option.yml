@@ -1,0 +1,3 @@
+bugfixes:
+  - zos_mount - Module failed when using persistent option with a data set that contains non UTF-8 characters. Fix now can use a data set with non UTF-8 characters as data_store.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1871).

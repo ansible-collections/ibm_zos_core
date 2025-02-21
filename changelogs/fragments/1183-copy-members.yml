@@ -1,3 +1,0 @@
-minor_changes:
-  - zos_copy - Improve zos_copy performance when copying multiple members from one PDS/E to another.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1183).

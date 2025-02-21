@@ -370,6 +370,7 @@ options:
           - pdse
           - member
           - basic
+          - large
           - library
           - gdg
       space_primary:
@@ -3183,7 +3184,7 @@ def data_set_locked(dataset_name):
     # in the result with a length greater than 4.
     result = dict()
     result["stdout"] = []
-    dataset_name = data_set.DataSet.escape_data_set_name(name=dataset_name)
+    dataset_name = dataset_name.replace("$", "\\$")
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
 
     try:
@@ -3887,7 +3888,7 @@ def main():
                         type='str',
                         choices=['basic', 'ksds', 'esds', 'rrds',
                                  'lds', 'seq', 'pds', 'pdse', 'member',
-                                 'library', 'gdg'],
+                                 'large', 'library', 'gdg'],
                         required=True,
                     ),
                     space_primary=dict(

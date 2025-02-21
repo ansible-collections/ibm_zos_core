@@ -1,4 +1,0 @@
-trivial:
-  - zos_data_set - Batch mode when type=gdg failed asking for limit option.
-    Fix now accepts limit as part of batch option.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1515).

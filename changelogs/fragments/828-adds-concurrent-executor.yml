@@ -1,7 +1,0 @@
-trivial:
-  - ce.py - Adds the concurrent executor capable of running
-    test cases concurrently against a pool of managed nodes.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/828).
-  - zinventory-raw - a new pytest fixture that can accept a JSON
-    vs a configuration file. 
-    (https://github.com/ansible-collections/ibm_zos_core/pull/828).

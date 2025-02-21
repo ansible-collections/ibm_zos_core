@@ -1,6 +1,0 @@
-bugfixes:
-  - zos_copy - a regression in version 1.4.0 made the module stop automatically
-    computing member names when copying a single file into a PDS/E. Fix now
-    lets a user copy a single file into a PDS/E without adding a member in the
-    dest option.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1570).

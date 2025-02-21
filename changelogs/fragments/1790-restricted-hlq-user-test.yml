@@ -1,3 +1,0 @@
-trivial:
-  - zos_mvs_raw - Added test to validate users with restricted access to HLQ.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1790).

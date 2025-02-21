@@ -1,4 +1,0 @@
-minor_changes:
-  - zos_operator - Added new option ``case_sensitive`` to module, allowing users
-    to control how case in a command is handled by it.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1641)

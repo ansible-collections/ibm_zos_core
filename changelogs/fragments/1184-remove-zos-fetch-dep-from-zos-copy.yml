@@ -1,3 +1,0 @@
-trivial:
-  - zos_copy - Remove zos_fetch dependency from zos_copy test cases.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1184).

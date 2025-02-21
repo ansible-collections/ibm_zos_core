@@ -1,3 +1,0 @@
-trivial:
-  - zos_lineinfile - Remove zos_encode dependency from zos_lineinfile test cases.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1179).

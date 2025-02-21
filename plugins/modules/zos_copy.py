@@ -3725,7 +3725,7 @@ def run_module(module, arg_def):
             # Normalizing encodings to IBM-037 and removing carriage return
             if src_ds_type == "USS" and not is_binary:
                 new_src = conv_path or src
-                conv_path = normalize_line_endings(new_src, encoding)
+                conv_path = copy_handler.create_temp_with_lf_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,

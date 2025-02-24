@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: "1.12.0"
+version: "1.12.1"
 
 # Collection README file
 readme: README.md
@@ -96,6 +96,9 @@ build_ignore:
   - tests/sanity/ignore-2.12.txt
   - tests/sanity/ignore-2.13.txt
   - tests/sanity/ignore-2.14.txt
-  - venv*
+  - tests/sanity/ignore-2.15.txt
+  - tests/sanity/ignore-2.16.txt
+  - tests/sanity/ignore-2.17.txt
+    - venv*
   - ansible_collections
   - '*.log'

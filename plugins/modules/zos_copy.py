@@ -3761,7 +3761,7 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         if is_uss:
             # Normalizing encodings to IBM-037 and removing carriage return
-            if src_ds_type == "USS" and not is_binary:
+            if src_ds_type == "USS" and not is_binary and not executable:
                 new_src = conv_path or src
                 if os.path.isfile(new_src):
                     conv_path = copy_handler.remove_cr_endings(new_src)

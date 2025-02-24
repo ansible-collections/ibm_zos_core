@@ -3208,6 +3208,24 @@ def data_set_locked(dataset_name):
         )
 
 
+def remote_cleanup(module):
+    """Remove all files or data sets pointed to by 'dest' on the remote
+    z/OS system. The idea behind this cleanup step is that if, for some
+    reason, the module fails after copying the data, we want to return the
+    remote system to its original state. Which means deleting any newly
+    created files or data sets.
+    """
+    dest = module.params.get('dest')
+    if "/" in dest:
+        if os.path.isfile(dest):
+            os.remove(dest)
+        else:
+            os.rmdir(dest)
+    else:
+        dest = data_set.extract_dsname(dest)
+        data_set.DataSet.ensure_absent(name=dest)
+
+
 def run_module(module, arg_def):
     """Initialize module
 
@@ -4051,9 +4069,12 @@ def main():
     res_args = conv_path = None
     try:
         res_args, conv_path = run_module(module, arg_def)
+        path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
+        shutil.rmtree(path)
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])
+        remote_cleanup(module=module)
         module.fail_json(**(err.json_args))
     finally:
         cleanup([conv_path])

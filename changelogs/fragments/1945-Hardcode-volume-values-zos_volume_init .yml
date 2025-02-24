@@ -1,0 +1,4 @@
+trivial:
+  - tests/functional/modules/test_zos_volume_init_func.py- The script now has hardcoded required volumes, 
+    allowing these parameters to be ignored in the pipeline and execution.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1945).

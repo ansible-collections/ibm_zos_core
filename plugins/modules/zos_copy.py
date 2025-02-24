@@ -1484,6 +1484,44 @@ class CopyHandler(object):
                 stderr=to_native(err)
             )
 
+    def remove_cr_endings(self, src):
+        """Creates a temporary file with the same content as src but without
+        carriage returns.
+
+        Parameters
+        ----------
+        src : str
+            Path to a USS source file.
+
+        Returns
+        -------
+        str
+            Path to the temporary file created.
+
+        Raises
+        ------
+        CopyOperationError
+            If the conversion fails.
+        """
+        try:
+            fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
+            os.close(fd)
+
+            with open(converted_src, "wb") as converted_file:
+                with open(src, "rb") as src_file:
+                    chunk = src_file.read(1024)
+                    while chunk:
+                        # In IBM-037, \r is the byte 0d.
+                        converted_file.write(chunk.replace(b'\x0d', b''))
+                        chunk = src_file.read(1024)
+
+            return converted_src
+        except Exception as err:
+            raise CopyOperationError(
+                msg="Error while trying to convert EOL sequence for source.",
+                stderr=to_native(err)
+            )
+
 
 class USSCopyHandler(CopyHandler):
     def __init__(
@@ -3726,7 +3764,7 @@ def run_module(module, arg_def):
             if src_ds_type == "USS" and not is_binary:
                 new_src = conv_path or src
                 if os.path.isfile(new_src):
-                    conv_path = normalize_line_endings(new_src, encoding)
+                    conv_path = copy_handler.remove_cr_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,

@@ -47,8 +47,6 @@ def test_guard_rail_and_setup(ansible_zos_module):
 
     volume_1 = TEST_VOL_SER
     volume_2 = TEST_VOL_ADDR
-    print("volume 1 is ",volume_1)
-    print("volume 2 is ",volume_2)
 
     clear_volume(hosts, volume_1)
 
@@ -82,8 +80,6 @@ def test_index_param_index(ansible_zos_module):
 
     volume_1 = TEST_VOL_SER
     volume_2 = TEST_VOL_ADDR
-    print("volume 1 is ",volume_1)
-    print("volume 2 is ",volume_2)
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
@@ -115,8 +111,6 @@ def test_index_param_index_sms_false(ansible_zos_module):
 
     volume_1 = TEST_VOL_SER
     volume_2 = TEST_VOL_ADDR
-    print("volume 1 is ",volume_1)
-    print("volume 2 is ",volume_2)
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
@@ -150,8 +144,6 @@ def test_volid_address_assigned_correctly(ansible_zos_module):
 
     volume_1 = TEST_VOL_SER
     volume_2 = TEST_VOL_ADDR
-    print("volume 1 is ",volume_1)
-    print("volume 2 is ",volume_2)
 
     params = {
         'address': volume_2,

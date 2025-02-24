@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,6 +16,8 @@ import pytest
 
 __metaclass__ = type
 
+TEST_VOL_ADDR = '01A2'
+TEST_VOL_SER = 'USER02'
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
@@ -39,12 +41,13 @@ def clear_volume(hosts, volume):
 # verify_volid below or change value to match current volume serial on
 # target.
 
-def test_guard_rail_and_setup(ansible_zos_module, volumes_on_systems):
+def test_guard_rail_and_setup(ansible_zos_module):
     hosts = ansible_zos_module
     # remove all data sets from target volume. Expected to be the following 3
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
+
     clear_volume(hosts, volume_1)
 
     params = {
@@ -72,12 +75,11 @@ def test_guard_rail_and_setup(ansible_zos_module, volumes_on_systems):
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_index_param_index(ansible_zos_module, volumes_on_systems):
+def test_index_param_index(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
@@ -104,12 +106,11 @@ def test_index_param_index(ansible_zos_module, volumes_on_systems):
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_index_param_index_sms_false(ansible_zos_module, volumes_on_systems):
+def test_index_param_index_sms_false(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {volume_2},offline")
@@ -138,12 +139,11 @@ def test_index_param_index_sms_false(ansible_zos_module, volumes_on_systems):
 
 
 # check that correct volume_addr is assigned to correct volid
-def test_volid_address_assigned_correctly(ansible_zos_module, volumes_on_systems):
+def test_volid_address_assigned_correctly(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         'address': volume_2,
@@ -185,12 +185,12 @@ def test_volid_address_assigned_correctly(ansible_zos_module, volumes_on_systems
 
     assert volume_1 in display_cmd_output
 
-def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module, volumes_on_systems):
+def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
+
 
     params = {
         'address': volume_2,
@@ -212,12 +212,11 @@ def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module, volumes_on_
         assert "'Index' cannot be False" in result.get("msg")
 
 
-def test_vtoc_size_parm(ansible_zos_module, volumes_on_systems):
+def test_vtoc_size_parm(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
     params = {
         'address': volume_2,
         'verify_offline': False,
@@ -240,12 +239,11 @@ def test_vtoc_size_parm(ansible_zos_module, volumes_on_systems):
         assert VTOC_LOC_MSG.format(params.get('vtoc_size')) in content_str
 
 
-def test_good_param_values_only_volid(ansible_zos_module, volumes_on_systems):
+def test_good_param_values_only_volid(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         'address': volume_2,
@@ -265,12 +263,11 @@ def test_good_param_values_only_volid(ansible_zos_module, volumes_on_systems):
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_good_param_values_volid_n_verify_volid(ansible_zos_module, volumes_on_systems):
+def test_good_param_values_volid_n_verify_volid(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         'address': volume_2,
@@ -291,12 +288,11 @@ def test_good_param_values_volid_n_verify_volid(ansible_zos_module, volumes_on_s
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_good_param_values_volid_n_verify_volume_empty(ansible_zos_module, volumes_on_systems):
+def test_good_param_values_volid_n_verify_volume_empty(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         'address': volume_2,
@@ -317,13 +313,12 @@ def test_good_param_values_volid_n_verify_volume_empty(ansible_zos_module, volum
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_bad_param_values_address_not_hexadecimal(ansible_zos_module, volumes_on_systems):
+def test_bad_param_values_address_not_hexadecimal(ansible_zos_module):
     hosts = ansible_zos_module
 
     expected_rc = 12
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": 'XYZ',
@@ -345,13 +340,12 @@ def test_bad_param_values_address_not_hexadecimal(ansible_zos_module, volumes_on
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_bad_param_values_address_length_too_short(ansible_zos_module, volumes_on_systems):
+def test_bad_param_values_address_length_too_short(ansible_zos_module):
     hosts = ansible_zos_module
 
     expected_rc = 12
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": '01',
@@ -373,14 +367,12 @@ def test_bad_param_values_address_length_too_short(ansible_zos_module, volumes_o
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_bad_param_values_address_specified_is_not_accesible_to_current(ansible_zos_module, volumes_on_systems):
+def test_bad_param_values_address_specified_is_not_accesible_to_current(ansible_zos_module):
     hosts = ansible_zos_module
 
     expected_rc = 12
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
-
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
     params = {
         "address": '0000',
         "verify_offline": False,
@@ -401,13 +393,12 @@ def test_bad_param_values_address_specified_is_not_accesible_to_current(ansible_
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_bad_param_values_negative_value_for_vtoc_size(ansible_zos_module, volumes_on_systems):
+def test_bad_param_values_negative_value_for_vtoc_size(ansible_zos_module):
     hosts = ansible_zos_module
 
     expected_rc = 12
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": volume_2,
@@ -430,13 +421,12 @@ def test_bad_param_values_negative_value_for_vtoc_size(ansible_zos_module, volum
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_bad_param_incorrect_existing_volid(ansible_zos_module, volumes_on_systems):
+def test_bad_param_incorrect_existing_volid(ansible_zos_module):
     hosts = ansible_zos_module
 
     expected_rc = 12
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": volume_2,
@@ -459,13 +449,12 @@ def test_bad_param_incorrect_existing_volid(ansible_zos_module, volumes_on_syste
     hosts.all.zos_operator(cmd=f"vary {volume_2},online")
 
 
-def test_bad_param_volid_value_too_long(ansible_zos_module, volumes_on_systems):
+def test_bad_param_volid_value_too_long(ansible_zos_module):
     hosts = ansible_zos_module
 
     expected_rc = 12
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address": 'ABCDEFGHIJK',
@@ -495,13 +484,12 @@ def test_bad_param_volid_value_too_long(ansible_zos_module, volumes_on_systems):
 #        If there is a data set remaining on the volume, that would interfere
 #        with other tests!
 
-def test_no_existing_data_sets_check(ansible_zos_module, volumes_on_systems):
+def test_no_existing_data_sets_check(ansible_zos_module):
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name()
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     setup_params = {
         'address': volume_2,
@@ -555,12 +543,11 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_on_systems):
 #        Therefore, while testing against the EC machines, the verify_offline
 #        check needs to be skipped in order for ickdsf to be invoked.
 
-def test_minimal_params(ansible_zos_module, volumes_on_systems):
+def test_minimal_params(ansible_zos_module):
     hosts = ansible_zos_module
 
-    volumes = Volume_Handler(volumes_on_systems)
-    volume_1 = volumes.get_available_vol()
-    volume_2 = volumes.get_available_vol()
+    volume_1 = TEST_VOL_SER
+    volume_2 = TEST_VOL_ADDR
 
     params = {
         "address":volume_2,

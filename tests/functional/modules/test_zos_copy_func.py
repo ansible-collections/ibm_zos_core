@@ -2016,7 +2016,7 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
     hosts = ansible_zos_module
     data_set_1 = get_tmp_ds_name()
     data_set_2 = get_tmp_ds_name(llq_size=4)
-    data_set_2 = f"{data_set_2}TST"
+    data_set_2 = f"{data_set_2}$#@"
     member_1 = "MEM1"
     if ds_type == "pds" or ds_type == "pdse":
         src_data_set = data_set_1 + "({0})".format(member_1)

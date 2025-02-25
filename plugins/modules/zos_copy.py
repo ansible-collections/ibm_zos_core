@@ -946,10 +946,9 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets, opercmd, gdgs
+    from zoautil_py import datasets, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
-    opercmd = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
 
 try:
@@ -1084,7 +1083,7 @@ class CopyHandler(object):
         copy_args["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq)
+            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
 
             if response.rc != 0:
                 raise CopyOperationError(
@@ -2154,7 +2153,7 @@ class PDSECopyHandler(CopyHandler):
         opts["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq)
+            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
             rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
@@ -3158,56 +3157,6 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def data_set_locked(dataset_name):
-    """
-    Checks if a data set is in use and therefore locked (DISP=SHR), which
-    is often caused by a long running task. Returns a boolean value to indicate the data set status.
-
-    Parameters
-    ----------
-    dataset_name (str):
-        The data set name used to check if there is a lock.
-
-    Returns
-    -------
-    bool
-        True if the data set is locked, or False if the data set is not locked.
-
-    Raises
-    ------
-    CopyOperationError
-        When the user does not have Universal Access Authority to
-        ZOAU SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS.
-    """
-    # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
-    # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
-    # in the result with a length greater than 4.
-    result = dict()
-    result["stdout"] = []
-    dataset_name = dataset_name.replace("$", "\\$")
-    command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
-
-    try:
-        response = opercmd.execute(command=command_dgrs)
-        stdout = response.stdout_response
-
-        if stdout is not None:
-            for out in stdout.split("\n"):
-                if out:
-                    result["stdout"].append(out)
-        if len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
-            return False
-
-        return True
-    except zoau_exceptions.ZOAUException as copy_exception:
-        raise CopyOperationError(
-            msg="Unable to determine if the dest {0} is in use.".format(dataset_name),
-                rc=copy_exception.response.rc,
-                stdout=copy_exception.response.stdout_response,
-                stderr=copy_exception.response.stderr_response
-        )
-
-
 def remote_cleanup(module):
     """Remove all files or data sets pointed to by 'dest' on the remote
     z/OS system. The idea behind this cleanup step is that if, for some
@@ -3566,7 +3515,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set_locked(dataset_name=dest_name)
+            is_dest_lock = data_set.DataSetUtils.verify_dataset_disposition(data_set=data_set.extract_dsname(dest_name), disposition="old")
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(

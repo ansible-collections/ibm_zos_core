@@ -558,10 +558,20 @@ releases:
         a copy would fail saying the destination was already in use. Fix now opens
         destination data sets up with disposition SHR when ``force_lock`` and ``asa_text``
         are set to true. (https://github.com/ansible-collections/ibm_zos_core/pull/1932).
+      release_summary: 'Release Date: ''2025-02-24''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
     fragments:
     - 1904-zos_copy-asa-special-char.yml
     - 1917-wrong_behaviour_force_lock_parameter.yml
     - 1932-zos_copy-asa-dest-lock-support.yml
+    - v1.12.1_summary.yaml
     release_date: '2025-02-25'
   1.2.1:
     changes:

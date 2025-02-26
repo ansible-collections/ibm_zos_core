@@ -97,7 +97,7 @@ INVENTORY_ASYNC_TEST = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: {3}"""
+      ansible_python_interpreter: /allpython/3.11/usr/lpp/IBM/cyp/v3r11/pyz/bin/python3.11"""
 
 
 
@@ -641,7 +641,6 @@ def test_job_script_async(get_config):
                 hosts,
                 ssh_key,
                 user,
-                python_path
             )), 
             inventory.name
         ))

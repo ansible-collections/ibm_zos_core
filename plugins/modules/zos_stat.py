@@ -128,6 +128,16 @@ EXAMPLES = r"""
     name: "USER.GDG.DATA(-1)"
     type: data_set
     volume: "000000"
+
+- name: Get the attributes of an aggregate.
+  zos_stat:
+    name: "HLQ.USER.ZFS.DATA"
+    type: aggregate
+
+- name: Get the attributes of a file inside Unix System Services.
+  zos_stat:
+    name: "/u/user/file.txt"
+    type: file
 """
 
 RETURN = r"""
@@ -188,7 +198,10 @@ stat:
           type: bool
           sample: true
         extended_attrs_bits:
-          description: Current values of the EATTR bits for a data set.
+          description: 
+            - Current values of the EATTR bits for a data set.
+            - For files, it shows the current values of the extended
+              attributes bits as a group of 4 characters.
           returned: success
           type: str
           sample: OPT
@@ -624,12 +637,223 @@ stat:
               returned: success
               type: str
               sample: "2025-02-01T18:02:05"
+        mode:
+          description: Octal representation of a file's permissions.
+          returned: success
+          type: str
+          sample: "0755"
+        atime:
+          description: Time of last access for a file.
+          returned: success
+          type: str
+          sample: "2025-02-23T13:03:45"
+        mtime:
+          description: Time of last modification of a file.
+          returned: success
+          type: str
+          sample: "2025-02-23T13:03:45"
+        ctime:
+          description: Time of last metadata update or creation for a file.
+          returned: success
+          type: str
+          sample: "2025-02-23T13:03:45"
+        uid:
+          description: ID of the file's owner.
+          returned: success
+          type: int
+          sample: 0
+        gid:
+          description: ID of the file's group.
+          returned: success
+          type: int
+          sample: 1
+        size:
+          description: Size of the file in bytes.
+          returned: success
+          type: int
+          sample: 9840
+        inode:
+          description: Inode number of the path.
+          returned: success
+          type: int
+          sample: 1671
+        dev:
+          description: Device the inode resides on.
+          returned: success
+          type: int
+          sample: 1
+        nlink:
+          description: Number of links to the inode.
+          returned: success
+          type: int
+          sample: 1
+        isdir:
+          description: Whether the path is a directory.
+          returned: success
+          type: bool
+          sample: false
+        ischr:
+          description: Whether the path is a character device.
+          returned: success
+          type: bool
+          sample: false
+        isblk:
+          description: Whether the path is a block device.
+          returned: success
+          type: bool
+          sample: false
+        isreg:
+          description: Whether the path is a regular file.
+          returned: success
+          type: bool
+          sample: true
+        isfifo:
+          description: Whether the path is a named pipe.
+          returned: success
+          type: bool
+          sample: false
+        islnk:
+          description: Whether the file is a symbolic link.
+          returned: success
+          type: bool
+          sample: false
+        issock:
+          description: Whether the file is a Unix domain socket.
+          returned: success
+          type: bool
+          sample: false
+        isuid:
+          description: Whether the Ansible user's ID matches the owner's ID.
+          returned: success
+          type: bool
+          sample: false
+        isgid:
+          description: Whether the Ansible user's group matches the owner's group.
+          returned: success
+          type: bool
+          sample: false
+        wusr:
+          description: Whether the file's owner has write permission.
+          returned: success
+          type: bool
+          sample: true
+        rusr:
+          description: Whether the file's owner has read permission.
+          returned: success
+          type: bool
+          sample: true
+        xusr:
+          description: Whether the file's owner has execute permission.
+          returned: success
+          type: bool
+          sample: true
+        wgrp:
+          description: Whether the file's group has write permission.
+          returned: success
+          type: bool
+          sample: false
+        rgrp:
+          description: Whether the file's group has read permission.
+          returned: success
+          type: bool
+          sample: true
+        xgrp:
+          description: Whether the file's group has execute permission.
+          returned: success
+          type: bool
+          sample: true
+        woth:
+          description: Whether others have write permission over the file.
+          returned: success
+          type: bool
+          sample: false
+        roth:
+          description: Whether others have read permission over the file.
+          returned: success
+          type: bool
+          sample: true
+        xoth:
+          description: Whether others have execute permission over the file.
+          returned: success
+          type: bool
+          sample: false
+        writeable:
+          description: Whether the Ansible user can write to the path.
+          returned: success
+          type: bool
+          sample: true
+        readable:
+          description: Whether the Ansible user can read the path.
+          returned: success
+          type: bool
+          sample: true
+        executable:
+          description: Whether the Ansible user can execute the path.
+          returned: success
+          type: bool
+          sample: true
+        pw_name:
+          description: User name of the file's owner.
+          returned: success
+          type: str
+          sample: username
+        gr_name:
+          description: Group name of the file's owner.
+          returned: success
+          type: str
+          sample: group
+        lnk_source:
+          description: Absolute path to the target of a symlink.
+          returned: success
+          type: str
+          sample: "/etc/foobar/file"
+        lnk_target:
+          description:
+            - Target of a symlink.
+            - Preserves relative paths.
+          returned: success
+          type: str
+          sample: "../foobar/file"
+        tag:
+          description:
+            - Current encoding tag associated with the file.
+            - This tag does not necessarily correspond with the actual
+              encoding of the file.
+          returned: success
+          type: str
+          sample: "IBM-1047"
+        audit_bits:
+          description:
+            - Audit bits for the file. Contains two sets of 3 bits.
+            - First 3 bits describe the user-requested audit information.
+            - Last 3 bits describe the auditor-requested audit information.
+            - For each set, the bits represent read, write and execute/search
+              audit options.
+            - An 's' means to audit successful access attempts.
+            - An 'f' means to audit failed access attempts.
+            - An 'a' means to audit all access attempts.
+            - An '-' means to not audit accesses.
+          returned: success
+          type: str
+          sample: "fff---"
+        file_format:
+          description:
+            - File format (for regular files). One of "null", "bin" or "rec".
+            - Text data delimiter for a file. One of "nl", "cr", "lf", "crlf", "lfcr" or "crnl".
+          returned: success
+          type: str
+          sample: "bin"
 """
 
 import abc
 import json
 import re
-from datetime import datetime
+import os
+import stat
+import pwd
+import grp
+from datetime import datetime, timezone, timedelta
+import time
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -793,6 +1017,153 @@ class AggregateHandler(FactsHandler):
                     stdout=stdout,
                     stderr=stderr
                 )
+
+
+class FileHandler(FactsHandler):
+    """Class in charge of dealing with queries of files via os.stat and ls.
+    """
+
+    def __init__(self, name, module=None):
+        """Creates a new handler.
+
+        Arguments:
+            name (str) -- File path.
+            module (AnsibleModule, optional) -- Ansible object with the task's context.
+        """
+        super(FileHandler, self).__init__(name, module)
+        try:
+            current_time = time.localtime()
+            utc_offset = current_time.tm_gmtoff
+            current_tz = current_time.tm_zone
+            self.tz_info = timezone(timedelta(seconds=utc_offset), current_tz)
+        except (OverflowError, OSError) as err:
+            raise QueryException(f"An error ocurred while trying to get information about the system's time: {str(err)}.")
+
+    def exists(self):
+        """Returns whether or not the file path exists on the system.
+        """
+        return os.path.exists(self.name)
+
+    def query(self):
+        """Calls os.stat and ls to obtain the file path's attributes.
+
+        Returns
+        -------
+            dict -- Attributes from a file path.
+        """
+        try:
+            raw_attributes = os.stat(self.name, follow_symlinks=True)
+            mode = raw_attributes.st_mode
+
+            # TODO: get these attrs
+            # charset
+            # checksum
+            # mimetype
+
+            attributes = {
+                'name': self.name,
+                'resource_type': 'file',
+                'attributes': {
+                    'mode': "%04o" % stat.S_IMODE(mode),
+                    'atime': raw_attributes.st_atime,
+                    'mtime': raw_attributes.st_mtime,
+                    'ctime': raw_attributes.st_ctime,
+                    'uid': raw_attributes.st_uid,
+                    'gid': raw_attributes.st_gid,
+                    'size': raw_attributes.st_size,
+                    'inode': raw_attributes.st_ino,
+                    'dev': raw_attributes.st_dev,
+                    'nlink': raw_attributes.st_nlink,
+                    'isdir': stat.S_ISDIR(mode),
+                    'ischr': stat.S_ISCHR(mode),
+                    'isblk': stat.S_ISBLK(mode),
+                    'isreg': stat.S_ISREG(mode),
+                    'isfifo': stat.S_ISFIFO(mode),
+                    'islnk': stat.S_ISLNK(mode),
+                    'issock': stat.S_ISSOCK(mode),
+                    'isuid': bool(mode & stat.S_ISUID),
+                    'isgid': bool(mode & stat.S_ISGID),
+                    'wusr': bool(mode & stat.S_IWUSR),
+                    'rusr': bool(mode & stat.S_IRUSR),
+                    'xusr': bool(mode & stat.S_IXUSR),
+                    'wgrp': bool(mode & stat.S_IWGRP),
+                    'rgrp': bool(mode & stat.S_IRGRP),
+                    'xgrp': bool(mode & stat.S_IXGRP),
+                    'woth': bool(mode & stat.S_IWOTH),
+                    'roth': bool(mode & stat.S_IROTH),
+                    'xoth': bool(mode & stat.S_IXOTH)
+                }
+            }
+
+            attributes['attributes']['writeable'] = os.access(self.name, os.W_OK)
+            attributes['attributes']['readable'] = os.access(self.name, os.R_OK)
+            attributes['attributes']['executable'] = os.access(self.name, os.X_OK)
+
+            try:
+                attributes['attributes']['pw_name'] = pwd.getpwuid(raw_attributes.st_uid).pw_name
+                attributes['attributes']['gr_name'] = grp.getgrgid(raw_attributes.st_gid).gr_name
+            except (TypeError, KeyError, ValueError, OverflowError):
+                attributes['attributes']['pw_name'] = None
+                attributes['attributes']['gr_name'] = None
+
+            datetime_keys = ['atime', 'mtime', 'ctime']
+            attributes['attributes'] = self._parse_datetimes(attributes['attributes'], datetime_keys)
+
+            if attributes['attributes']['islnk']:
+                attributes['attributes']['lnk_source'] = os.path.realpath(self.name)
+                attributes['attributes']['lnk_target'] = os.readlink(self.name)
+            else:
+                attributes['attributes']['lnk_source'] = None
+                attributes['attributes']['lnk_target'] = None
+
+            self._run_ls()
+            attributes['attributes']['tag'] = self.z_attributes[1]
+            attributes['attributes']['audit_bits'] = self.z_attributes[4]
+            attributes['attributes']['extended_attrs_bits'] = self.z_attributes[5]
+
+            if self.z_attributes[6] != '----':
+                attributes['attributes']['file_format'] = self.z_attributes[6]
+            else:
+                attributes['attributes']['file_format'] = None
+        except Exception as err:
+            raise QueryException(f"An error ocurred while querying a file path's information: {str(err)}.")
+
+        return attributes
+
+    def _run_ls(self):
+        """Runs ls and stores the result in self.z_attributes.
+        """
+        # Turning on 'long' mode (l) and setting unprintable chars to ? (q).
+        # Asking for extended attributes (E), file format (H),
+        # to follow links (L), tag information (T) and audit bits (W).
+        ls_cmd = f'ls -lqEHLTW {self.name}'
+        rc, stdout, stderr = self.module.run_command(ls_cmd)
+
+        if rc == 0:
+            self.z_attributes = stdout.split()
+        else:
+            raise QueryException(
+                f"An error ocurred while querying information about {self.name}",
+                rc=rc,
+                stdout=stdout,
+                stderr=stderr
+            )
+
+    def _parse_datetimes(self, attrs, keys):
+        """Converts timestamps to date times (YYYY-MM-DDTHH:MM:SS).
+        
+        Arguments:
+            attrs (dict) -- Raw dictionary gotten from a stat call.
+            keys (list) -- List of keys from attrs to convert.
+        """
+        for key in keys:
+            try:
+                if key in attrs:
+                    attrs[key] = datetime.fromtimestamp(attrs[key], tz=self.tz_info).strftime('%Y-%m-%dT%H:%M:%S')
+            except (OverflowError, ValueError):
+                pass
+
+        return attrs
 
 
 class DataSetHandler(FactsHandler):
@@ -1567,7 +1938,7 @@ def get_facts_handler(
     if resource_type == 'data_set':
         return get_data_set_handler(name, volume, module, tmp_hlq, sms_managed)
     elif resource_type == 'file':
-        pass
+        return FileHandler(name, module)
     elif resource_type == 'aggregate':
         return AggregateHandler(name, module)
 

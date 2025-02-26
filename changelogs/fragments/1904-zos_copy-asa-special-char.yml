@@ -1,4 +1,0 @@
-bugfixes:
-   - zos_copy - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail.
-       Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
-       (https://github.com/ansible-collections/ibm_zos_core/pull/1904).

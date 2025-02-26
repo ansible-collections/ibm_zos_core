@@ -1474,7 +1474,7 @@ class CopyHandler(object):
                     while chunk:
                         # In IBM-037, \r is the byte 0d.
                         converted_file.write(chunk.replace(b'\x0d', b''))
-                        chunk = src_file.read(1024)
+                        chunk = src_file.read(chunk_size)
 
             self._tag_file_encoding(converted_src, "IBM-037")
 
@@ -1515,7 +1515,7 @@ class CopyHandler(object):
                     while chunk:
                         # In IBM-037, \r is the byte 0d.
                         converted_file.write(chunk.replace(b'\x0d', b''))
-                        chunk = src_file.read(1024)
+                        chunk = src_file.read(chunk_size)
 
             return converted_src
         except Exception as err:

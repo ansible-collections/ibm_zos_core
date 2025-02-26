@@ -1466,10 +1466,11 @@ class CopyHandler(object):
         try:
             fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
             os.close(fd)
-
+            #defining 32 MB chunk size for reading large files efficiently
+            chunk_size = 32 * 1024 * 1024
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
-                    chunk = src_file.read(1024)
+                    chunk = src_file.read(chunk_size)
                     while chunk:
                         # In IBM-037, \r is the byte 0d.
                         converted_file.write(chunk.replace(b'\x0d', b''))
@@ -3761,7 +3762,7 @@ def run_module(module, arg_def):
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
         if is_uss:
-            # Removing carriage return
+            # Removing the carriage return characters
             if src_ds_type == "USS" and not is_binary and not executable:
                 new_src = conv_path or src
                 if os.path.isfile(new_src):

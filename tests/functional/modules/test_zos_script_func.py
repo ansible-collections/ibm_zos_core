@@ -574,6 +574,8 @@ def test_rexx_script_with_args_remote_src(ansible_zos_module):
             os.remove(script_path)
         if os.path.exists(local_script):
             os.remove(local_script)
+
+
 def test_rexx_script_with_args_and_carriagereturn(ansible_zos_module):
     hosts = ansible_zos_module
     script_path = ''

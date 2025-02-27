@@ -3766,7 +3766,7 @@ def run_module(module, arg_def):
             if src_ds_type == "USS" and not is_binary and not executable:
                 new_src = conv_path or src
                 if os.path.isfile(new_src):
-                    conv_path = copy_handler.remove_cr_endings(new_src)
+                    conv_path = copy_handler.create_temp_with_lf_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,

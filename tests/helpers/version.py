@@ -66,7 +66,7 @@ def is_zoau_version_higher_than(ansible_zos_module,min_version_str):
     """
     if is_valid_version_string(min_version_str):
         # check zoau version on system (already a list)
-        system_version_list = get_zoau_version(ansible_zos_module)
+        system_version_list = get_zoau_version_str(ansible_zos_module)
 
         # convert input to list format
         min_version_list = min_version_str.split('.')
@@ -133,3 +133,19 @@ def is_valid_version_string(version_str):
             return False
 
     return True
+
+def get_zoau_version_str(ansible_zos_module):
+    """Attempts to call zoaversion on target and parses out version string.
+
+    Returns
+    -------
+    Union[int, int, int]
+        ZOAU version found in format [#,#,#]. There is a
+        provision for a 4th level eg "v1.2.0.1".
+    """
+    ZOAU_API_VERSION = get_zoau_version(ansible_zos_module)
+    version_list = (
+        ZOAU_API_VERSION.split('.')
+    )
+
+    return version_list

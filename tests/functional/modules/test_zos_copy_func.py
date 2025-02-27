@@ -2040,11 +2040,9 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
             dest=f'{temp_dir}/call_c_pgm.jcl',
             force=True
         )
-        res1=hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
-        print(res1.contacted.values())
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
         # submit jcl
-        res2=hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
-        print(res2.contacted.values())
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
         # pause to ensure c code acquires lock
         time.sleep(5)
         results = hosts.all.zos_copy(
@@ -2085,10 +2083,10 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
         # clean up c code/object/executable files, jcl
-        # hosts.all.shell(cmd=f'rm -r {temp_dir}')
-        # # remove pdse
-        # hosts.all.zos_data_set(name=data_set_1, state="absent")
-        # hosts.all.zos_data_set(name=data_set_2, state="absent")
+        hosts.all.shell(cmd=f'rm -r {temp_dir}')
+        # remove pdse
+        hosts.all.zos_data_set(name=data_set_1, state="absent")
+        hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
 def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module, z_python_interpreter):

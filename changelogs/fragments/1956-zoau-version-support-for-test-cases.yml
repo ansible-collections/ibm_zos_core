@@ -1,7 +1,7 @@
 trivial:
 
   - tests/functional/modules/test_zos_operator_func.py- test function test_zos_operator_positive_verbose_blocking
-    is enbled and working as expected now. 
+    is enabled and condition to version check is operational now. 
     (https://github.com/ansible-collections/ibm_zos_core/pull/1956).
 
   - tests/functional/modules/test_zos_apf_func.py- version check added for test_add_already_present, 

@@ -131,7 +131,7 @@ INVENTORY = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: /allpython/3.11-3/usr/lpp/IBM/cyp/v3r11/pyz/bin/python3.11"""
+      ansible_python_interpreter: /allpython/3.11/usr/lpp/IBM/cyp/v3r11/pyz/bin/python3.11"""
 
 def make_temp_folder(hosts):
     """Create a temporary file on a z/OS system and return its path."""

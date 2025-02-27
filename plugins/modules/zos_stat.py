@@ -1254,6 +1254,11 @@ class DataSetHandler(FactsHandler):
         # Datetime values.
         attrs = self._parse_datetimes(attrs, self.datetime_attrs)
 
+        # Switching strings to lowercase.
+        for key in attrs.keys():
+            if isinstance(attrs[key], str):
+                attrs[key] = attrs[key].lower()
+
         return attrs
 
     def _is_value_valid(self, value):
@@ -1667,8 +1672,7 @@ class VSAMDataSetHandler(DataSetHandler):
         attributes['device_type'] = self.dev_type_translation_table[attributes['device_type']]
 
         general_info_regex_searches = [
-            # TODO: check if \( is always needed where used
-            ('extended_attrs_bits', '(EATTR-+\()([0-9a-zA-Z]+)'),
+            ('extended_attrs_bits', '(EATTR-+\(?)([0-9a-zA-Z]+)'),
             ('creation_date', '(CREATION-+)(\d{4}\.\d{3})'),
             ('expiration_date', '(EXPIRATION-+)(\d{4}\.\d{3})'),
             ('sms_mgmt_class', '(MANAGEMENTCLASS-+)([0-9a-zA-Z]+)'),
@@ -1676,7 +1680,7 @@ class VSAMDataSetHandler(DataSetHandler):
             ('sms_data_class', '(DATACLASS-+)([0-9a-zA-Z]+)'),
             ('encrypted', '(DATA SET ENCRYPTION-+\()([a-zA-Z]{2,3})'),
             ('key_label', '(DATA SET KEY LABEL-+)([a-zA-Z]+)'),
-            ('password', '(PROTECTION-PSWD-+\()([a-zA-Z]+)'),
+            ('password', '(PROTECTION-PSWD-+\(?)([a-zA-Z]+)'),
             ('racf', '(RACF-+\()([a-zA-Z]{2,3})')
         ]
 
@@ -1687,7 +1691,7 @@ class VSAMDataSetHandler(DataSetHandler):
                 attributes['extended_attrs_bits'] = None
 
         if attributes['password'] == 'NULL':
-            attributes['password'] = 'NONE'
+            attributes['password'] = 'none'
         elif attributes['password'] == 'SUPP':
             self.extra_data = f'{self.extra_data}\nUnable to get security attributes.'
 

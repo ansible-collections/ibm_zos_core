@@ -61,6 +61,8 @@ ddname
 
 
 
+
+
 Examples
 --------
 
@@ -218,6 +220,7 @@ jobs
                     }
                 ],
                 "duration": 0,
+                "execution_time": "00:00:03",
                 "job_class": "R",
                 "job_id": "JOB00134",
                 "job_name": "HELLO",
@@ -281,6 +284,12 @@ jobs
 
     | **type**: str
     | **sample**: 14:15:00
+
+  execution_time
+    Total duration time of the job execution, if it has finished. If the job is still running, it represents the time elapsed from the job execution start and current time.
+
+    | **type**: str
+    | **sample**: 00:00:10
 
   ddnames
     Data definition names.

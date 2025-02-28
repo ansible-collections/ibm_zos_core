@@ -273,6 +273,8 @@ template_parameters
 
 
 
+
+
 Examples
 --------
 
@@ -565,6 +567,7 @@ jobs
                         "stepname": "DLORD6"
                     }
                 ],
+                "execution_time": "00:00:10",
                 "job_class": "K",
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
@@ -624,6 +627,12 @@ jobs
     The total lapsed time the JCL ran for.
 
     | **type**: int
+
+  execution_time
+    Total duration time of the job execution, if it has finished.
+
+    | **type**: str
+    | **sample**: 00:00:10
 
   ddnames
     Data definition names.

@@ -688,6 +688,15 @@ template_parameters
 
 
 
+Attributes
+----------
+
+action
+  | **support**: full
+async
+  | **support**: none
+
+
 Examples
 --------
 

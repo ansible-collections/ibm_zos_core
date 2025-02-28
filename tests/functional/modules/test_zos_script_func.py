@@ -647,7 +647,6 @@ def test_rexx_script_with_args_and_carriagereturn(ansible_zos_module):
     finally:
         if os.path.exists(script_path):
             os.remove(script_path)
-        hosts.all.file(path=script_path, state="absent")
 
 
 def test_job_script_async(get_config):

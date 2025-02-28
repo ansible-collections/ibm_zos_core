@@ -148,6 +148,20 @@ def create_local_file(content, suffix):
 
     return file_path
 
+def create_local_file_with_carriagereturn(content, suffix):
+    """Creates a tempfile that has the given content."""
+
+    fd, file_path = tempfile.mkstemp(
+        prefix='zos_script',
+        suffix=suffix
+    )
+    os.close(fd)
+
+    with open(file_path, 'w', encoding="utf-8", newline='\r\n') as f:
+        f.write(content)
+
+    return file_path
+
 
 def test_rexx_script_without_args(ansible_zos_module):
     hosts = ansible_zos_module
@@ -604,6 +618,37 @@ def test_rexx_script_with_args_remote_src(ansible_zos_module):
         hosts.all.file(path=script_path, state="absent")
 
 
+def test_rexx_script_with_args_and_carriagereturn(ansible_zos_module):
+    hosts = ansible_zos_module
+    script_path = ''
+    try:
+        rexx_script = REXX_SCRIPT_ARGS
+        script_path = create_local_file_with_carriagereturn(rexx_script, 'rexx')
+
+        first_arg = 'one'
+        second_arg = 'two'
+        args = f'FIRST={first_arg} SECOND={second_arg}'
+        cmd = f"{script_path} '{args}'"
+
+        zos_script_result = hosts.all.zos_script(
+            cmd=cmd
+        )
+
+        for result in zos_script_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('rc') == 0
+            assert first_arg in result.get('stdout', '')
+            assert second_arg in result.get('stdout', '')
+            # Making sure the action plugin passed every argument to the module.
+            assert args in result.get('invocation').get('module_args').get('cmd')
+            assert args in result.get('remote_cmd')
+            assert result.get('stderr', '') == ''
+    finally:
+        if os.path.exists(script_path):
+            os.remove(script_path)
+
+
 def test_job_script_async(get_config):
     # Creating temp REXX file used by the playbook.
     try:
@@ -632,7 +677,7 @@ def test_job_script_async(get_config):
                 cut_python_path,
                 python_version,
                 script_path
-            )), 
+            )),
             playbook.name
         ))
 
@@ -642,7 +687,7 @@ def test_job_script_async(get_config):
                 ssh_key,
                 user,
                 python_path
-            )), 
+            )),
             inventory.name
         ))
 

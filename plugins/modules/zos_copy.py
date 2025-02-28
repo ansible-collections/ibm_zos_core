@@ -1466,7 +1466,7 @@ class CopyHandler(object):
         try:
             fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
             os.close(fd)
-            #defining 32 MB chunk size for reading large files efficiently
+            # defining 32 MB chunk size for reading large files efficiently
             chunk_size = 32 * 1024 * 1024
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
@@ -1507,7 +1507,7 @@ class CopyHandler(object):
         try:
             fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
             os.close(fd)
-            #defining 32 MB chunk size for reading large files efficiently
+            # defining 32 MB chunk size for reading large files efficiently
             chunk_size = 32 * 1024 * 1024
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:

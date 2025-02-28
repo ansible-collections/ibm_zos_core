@@ -77,6 +77,40 @@ options:
         C(TMPHLQ) is used.
     type: str
     required: false
+  follow:
+    description:
+      - Whether to follow symlinks when querying files.
+    type: bool
+    required: false
+    default: false
+  get_mime:
+    description:
+      - Whether to get information about the nature of a file, such as the charset
+        and type of media it represents.
+    type: bool
+    required: false
+    default: true
+  get_checksum:
+    description:
+      - Whether to compute a file's checksum and return it. Otherwise ignored.
+    type: bool
+    required: false
+    default: true
+  checksum_algorithm:
+    description:
+      - Algorithm used to compute a file's checksum.
+      - Will throw an error if the managed node is unable to use the
+        specified algorithm.
+    type: str
+    required: false
+    default: "sha1"
+    choices:
+      - "md5"
+      - "sha1"
+      - "sha224"
+      - "sha256"
+      - "sha384"
+      - "sha512"
 
 notes:
   - When querying data sets, the module will create a temporary data set
@@ -850,6 +884,7 @@ import json
 import re
 import os
 import stat
+import hashlib
 import pwd
 import grp
 from datetime import datetime, timezone, timedelta
@@ -1023,14 +1058,21 @@ class FileHandler(FactsHandler):
     """Class in charge of dealing with queries of files via os.stat and ls.
     """
 
-    def __init__(self, name, module=None):
+    def __init__(self, name, module=None, file_args=None):
         """Creates a new handler.
 
         Arguments:
             name (str) -- File path.
             module (AnsibleModule, optional) -- Ansible object with the task's context.
+            file_args (dict, optional) -- Dictionary containing whether to follow symlinks,
+                get MIME information, and how to compute a file's checksum.
         """
         super(FileHandler, self).__init__(name, module)
+        self.follow = file_args.get('follow', False)
+        self.get_mime = file_args.get('get_mime', True)
+        self.get_checksum = file_args.get('get_checksum', True)
+        self.checksum_algorithm = file_args.get('checksum_algorithm', 'sha1')
+
         try:
             current_time = time.localtime()
             utc_offset = current_time.tm_gmtoff
@@ -1052,7 +1094,7 @@ class FileHandler(FactsHandler):
             dict -- Attributes from a file path.
         """
         try:
-            raw_attributes = os.stat(self.name, follow_symlinks=True)
+            raw_attributes = os.stat(self.name, follow_symlinks=self.follow)
             mode = raw_attributes.st_mode
 
             # TODO: get these attrs
@@ -1923,7 +1965,8 @@ def get_facts_handler(
     module,
     volume=None,
     tmp_hlq=None,
-    sms_managed=False
+    sms_managed=False,
+    file_args=None
 ):
     """Returns the correct handler needed depending on the type of resource
     we will query.
@@ -1935,6 +1978,7 @@ def get_facts_handler(
         volume (str, optional) -- Volume where a data set is allocated.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
         sms_managed (bool, optional) -- Whether a data set is managed by SMS.
+        file_args (dict, optional) -- Options affecting how a file is query.
 
     Returns:
         FactsHandler: Handler for data sets/aggregates/files.
@@ -1942,7 +1986,7 @@ def get_facts_handler(
     if resource_type == 'data_set':
         return get_data_set_handler(name, volume, module, tmp_hlq, sms_managed)
     elif resource_type == 'file':
-        return FileHandler(name, module)
+        return FileHandler(name, module, file_args)
     elif resource_type == 'aggregate':
         return AggregateHandler(name, module)
 
@@ -1975,6 +2019,27 @@ def run_module():
             'tmp_hlq': {
                 'type': 'str',
                 'required': False
+            },
+            'follow': {
+                'type': 'bool',
+                'required': False,
+                'default': False
+            },
+            'get_mime': {
+                'type': 'bool',
+                'required': False,
+                'default': True
+            },
+            'get_checksum': {
+                'type': 'bool',
+                'required': False,
+                'default': True
+            },
+            'checksum_algorithm': {
+                'type': 'str',
+                'required': False,
+                'default': 'sha1',
+                'choices': ['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512']
             }
         },
         required_if=[
@@ -2005,6 +2070,22 @@ def run_module():
         'tmp_hlq': {
             'arg_type': 'str',
             'required': False
+        },
+        'follow': {
+            'arg_type': 'bool',
+            'required': False
+        },
+        'get_mime': {
+            'arg_type': 'bool',
+            'required': False
+        },
+        'get_checksum': {
+            'arg_type': 'bool',
+            'required': False
+        },
+        'checksum_algorithm': {
+            'arg_type': 'str',
+            'required': False
         }
     }
 
@@ -2023,6 +2104,12 @@ def run_module():
     resource_type = module.params.get('type')
     tmp_hlq = module.params.get('tmp_hlq')
     sms_managed = module.params.get('sms_managed')
+    file_args = {
+        'follow': module.params.get('follow'),
+        'get_mime': module.params.get('get_mime'),
+        'get_checksum': module.params.get('get_checksum'),
+        'checksum_algorithm': module.params.get('checksum_algorithm'),
+    }
 
     facts_handler = get_facts_handler(
         name,
@@ -2030,7 +2117,8 @@ def run_module():
         module,
         volume,
         tmp_hlq,
-        sms_managed
+        sms_managed,
+        file_args
     )
     result = {}
 

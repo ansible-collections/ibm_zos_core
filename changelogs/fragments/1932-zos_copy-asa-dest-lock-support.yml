@@ -1,6 +1,0 @@
-bugfixes:
-  - zos_copy - When ``asa_text`` was set to true at the same time as ``force_lock``,
-    a copy would fail saying the destination was already in use.
-    Fix now opens destination data sets up with disposition SHR when ``force_lock`` and
-    ``asa_text`` are set to true.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1932).

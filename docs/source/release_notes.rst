@@ -1,10 +1,23 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2024                                    .
+.. © Copyright IBM Corporation 2020, 2025                                    .
 .. ...........................................................................
 
 ========
 Releases
 ========
+
+Version 1.12.1
+==============
+
+Bugfixes
+--------
+
+-  ``zos_copy``
+
+   - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
+   - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.
+   - When ``asa_text`` was set to true at the same time as ``force_lock``,  a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+
 
 Version 1.12.0
 ==============

@@ -1099,7 +1099,6 @@ class FileHandler(FactsHandler):
 
             # TODO: get these attrs
             # charset
-            # checksum
             # mimetype
 
             attributes = {
@@ -1167,6 +1166,12 @@ class FileHandler(FactsHandler):
                 attributes['attributes']['file_format'] = self.z_attributes[6]
             else:
                 attributes['attributes']['file_format'] = None
+
+            if self.get_checksum:
+                attributes['attributes']['checksum'] = self.module.digest_from_file(
+                    self.name,
+                    self.checksum_algorithm
+                )
         except Exception as err:
             raise QueryException(f"An error ocurred while querying a file path's information: {str(err)}.")
 

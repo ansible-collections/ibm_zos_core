@@ -105,8 +105,6 @@ attributes:
     support: none
   diff_mode:
     support: none
-  vault:
-    support: none
 
 notes:
   - When executing local scripts, temporary storage will be used

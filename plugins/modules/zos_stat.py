@@ -205,17 +205,17 @@ stat:
           description: Data set organization.
           returned: success
           type: str
-          sample: PS
+          sample: ps
         type:
           description: Type of the data set.
           returned: success
           type: str
-          sample: LIBRARY
+          sample: library
         record_format:
           description: Record format of a data set.
           returned: success
           type: str
-          sample: VB
+          sample: vb
         record_length:
           description: Record length of a data set.
           returned: success
@@ -238,7 +238,7 @@ stat:
               attributes bits as a group of 4 characters.
           returned: success
           type: str
-          sample: OPT
+          sample: opt
         creation_date:
           description: Date a data set was created.
           returned: success
@@ -309,7 +309,7 @@ stat:
           description: Units used to describe sizes for the data set.
           returned: success
           type: str
-          sample: TRACK
+          sample: track
         primary_space:
           description:
             - Primary allocation.
@@ -368,7 +368,7 @@ stat:
               is set to true.
           returned: success
           type: str
-          sample: STANDARD
+          sample: standard
         sms_mgmt_class:
           description:
             - The SMS management class name.
@@ -376,7 +376,7 @@ stat:
               is set to true.
           returned: success
           type: str
-          sample: VSAM
+          sample: vsam
         sms_storage_class:
           description:
             - The SMS storage class name.
@@ -384,7 +384,7 @@ stat:
               is set to true.
           returned: success
           type: str
-          sample: FAST
+          sample: fast
         encrypted:
           description: Whether the data set is encrypted.
           returned: success
@@ -393,26 +393,26 @@ stat:
         password:
           description:
             - Whether the data set has a password set to read/write.
-            - Value can be either one of 'NONE', 'READ' or 'WRITE'.
-            - For VSAMs, the value can also be 'SUPP', when the module
+            - Value can be either one of 'none', 'read' or 'write'.
+            - For VSAMs, the value can also be 'supp', when the module
               is unable to query its security attributes.
           returned: success
           type: str
-          sample: NONE
+          sample: none
         racf:
           description:
             - Whether there is RACF protection set on the data set.
-            - Value can be either one of 'NONE', 'GENERIC' or 'DISCRETE'
+            - Value can be either one of 'none', 'generic' or 'discrete'
               for non-VSAM data sets.
-            - For VSAMs, the value can be either 'YES' or 'NO'.
+            - For VSAMs, the value can be either 'yes' or 'no'.
           returned: success
           type: str
-          sample: NONE
+          sample: none
         key_label:
           description: The encryption key label for an encrypted data set.
           returned: success
           type: str
-          sample: KEYDSN
+          sample: keydsn
         dir_blocks_allocated:
           description:
             - Number of directory blocks allocated for a PDS.
@@ -467,10 +467,10 @@ stat:
         seq_type:
           description:
             - Type of sequential data set (when it applies).
-            - Value can be either one of 'BASIC', 'LARGE' or 'EXTENDED'.
+            - Value can be either one of 'basic', 'large' or 'extended'.
           returned: success
           type: str
-          sample: BASIC
+          sample: basic
         data:
           description:
             - Dictionary containing attributes for the DATA component of a VSAM. 
@@ -576,10 +576,10 @@ stat:
         order:
           description:
             - Allocation order of new Generation Data Sets for a GDG.
-            - Value can be either 'LIFO' or 'FIFO'.
+            - Value can be either 'lifo' or 'fifo'.
           returned: success
           type: str
-          sample: LIFO
+          sample: lifo
         purge:
           description: Whether the GDG has the PURGE attribute set.
           returned: success

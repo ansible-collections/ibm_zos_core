@@ -559,11 +559,6 @@ seealso:
 - module: zos_fetch
 - module: zos_data_set
 
-attributes:
-  action:
-    support: full
-  async:
-    support: none
 """
 
 EXAMPLES = r"""

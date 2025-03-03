@@ -558,7 +558,6 @@ notes:
 seealso:
 - module: zos_fetch
 - module: zos_data_set
-
 """
 
 EXAMPLES = r"""

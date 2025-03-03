@@ -96,6 +96,18 @@ options:
 extends_documentation_fragment:
   - ibm.ibm_zos_core.template
 
+attributes:
+  action:
+    support: full
+  async:
+    support: full
+  check_mode:
+    support: none
+  diff_mode:
+    support: none
+  vault:
+    support: none
+
 notes:
   - When executing local scripts, temporary storage will be used
     on the remote z/OS system. The size of the temporary storage will

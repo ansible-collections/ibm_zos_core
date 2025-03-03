@@ -848,7 +848,7 @@ stat:
           returned: success
           type: str
           sample: "../foobar/file"
-        tag:
+        charset:
           description:
             - Current encoding tag associated with the file.
             - This tag does not necessarily correspond with the actual
@@ -1097,7 +1097,6 @@ class FileHandler(FactsHandler):
             mode = raw_attributes.st_mode
 
             # TODO: get these attrs
-            # charset
             # mimetype
 
             attributes = {
@@ -1157,7 +1156,7 @@ class FileHandler(FactsHandler):
                 attributes['attributes']['lnk_target'] = None
 
             self._run_ls()
-            attributes['attributes']['tag'] = self.z_attributes[1]
+            attributes['attributes']['charset'] = self.z_attributes[1]
             attributes['attributes']['audit_bits'] = self.z_attributes[4]
             attributes['attributes']['extended_attrs_bits'] = self.z_attributes[5]
 

@@ -99,12 +99,16 @@ extends_documentation_fragment:
 attributes:
   action:
     support: full
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
   async:
     support: full
+    description: Supports being used with the ``async`` keyword.
   check_mode:
     support: none
+    description: Can run in check_mode and return changed status prediction without modifying target, if not supported the action will be skipped.
   diff_mode:
     support: none
+    description: Will return details on what has changed (or possibly needs changing in check_mode), when in diff mode.
 
 notes:
   - When executing local scripts, temporary storage will be used

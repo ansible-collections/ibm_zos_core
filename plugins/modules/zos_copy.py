@@ -187,7 +187,7 @@ options:
     description:
       - By default, when C(dest) is a MVS data set and is being used by another
         process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
-        to bypass this check and continue with copy.
+        to bypass DISP=SHR and continue with the copy operation.
       - If set to C(true) and destination is a MVS data set opened by another
         process then zos_copy will try to copy using DISP=SHR.
       - Using C(force_lock) uses operations that are subject to race conditions
@@ -370,6 +370,7 @@ options:
           - pdse
           - member
           - basic
+          - large
           - library
           - gdg
       space_primary:
@@ -945,10 +946,9 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets, opercmd, gdgs
+    from zoautil_py import datasets, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
-    opercmd = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
 
 try:
@@ -1083,7 +1083,7 @@ class CopyHandler(object):
         copy_args["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq)
+            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
 
             if response.rc != 0:
                 raise CopyOperationError(
@@ -1437,8 +1437,8 @@ class CopyHandler(object):
             content = src_file.read(1024)
 
             while content:
-                # In EBCDIC, \r\n are bytes 0d and 15, respectively.
-                if b'\x0d\x15' in content:
+                # In EBCDIC, \r is bytes 0d
+                if b'\x0d' in content:
                     return True
                 content = src_file.read(1024)
 
@@ -1466,14 +1466,56 @@ class CopyHandler(object):
         try:
             fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
             os.close(fd)
-
+            # defining 32 MB chunk size for reading large files efficiently
+            chunk_size = 32 * 1024 * 1024
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
-                    chunk = src_file.read(1024)
-                    # In IBM-037, \r is the byte 0d.
-                    converted_file.write(chunk.replace(b'\x0d', b''))
+                    chunk = src_file.read(chunk_size)
+                    while chunk:
+                        # In IBM-037, \r is the byte 0d.
+                        converted_file.write(chunk.replace(b'\x0d', b''))
+                        chunk = src_file.read(chunk_size)
 
             self._tag_file_encoding(converted_src, "IBM-037")
+
+            return converted_src
+        except Exception as err:
+            raise CopyOperationError(
+                msg="Error while trying to convert EOL sequence for source.",
+                stderr=to_native(err)
+            )
+
+    def remove_cr_endings(self, src):
+        """Creates a temporary file with the same content as src but without
+        carriage returns.
+
+        Parameters
+        ----------
+        src : str
+            Path to a USS source file.
+
+        Returns
+        -------
+        str
+            Path to the temporary file created.
+
+        Raises
+        ------
+        CopyOperationError
+            If the conversion fails.
+        """
+        try:
+            fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
+            os.close(fd)
+            # defining 32 MB chunk size for reading large files efficiently
+            chunk_size = 32 * 1024 * 1024
+            with open(converted_src, "wb") as converted_file:
+                with open(src, "rb") as src_file:
+                    chunk = src_file.read(chunk_size)
+                    while chunk:
+                        # In IBM-037, \r is the byte 0d.
+                        converted_file.write(chunk.replace(b'\x0d', b''))
+                        chunk = src_file.read(chunk_size)
 
             return converted_src
         except Exception as err:
@@ -2153,7 +2195,7 @@ class PDSECopyHandler(CopyHandler):
         opts["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq)
+            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
             rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
@@ -3157,55 +3199,6 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def data_set_locked(dataset_name):
-    """
-    Checks if a data set is in use and therefore locked (DISP=SHR), which
-    is often caused by a long running task. Returns a boolean value to indicate the data set status.
-
-    Parameters
-    ----------
-    dataset_name (str):
-        The data set name used to check if there is a lock.
-
-    Returns
-    -------
-    bool
-        True if the data set is locked, or False if the data set is not locked.
-
-    Raises
-    ------
-    CopyOperationError
-        When the user does not have Universal Access Authority to
-        ZOAU SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS.
-    """
-    # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
-    # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
-    # in the result with a length greater than 4.
-    result = dict()
-    result["stdout"] = []
-    command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
-
-    try:
-        response = opercmd.execute(command=command_dgrs)
-        stdout = response.stdout_response
-
-        if stdout is not None:
-            for out in stdout.split("\n"):
-                if out:
-                    result["stdout"].append(out)
-        if len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
-            return False
-
-        return True
-    except zoau_exceptions.ZOAUException as copy_exception:
-        raise CopyOperationError(
-            msg="Unable to determine if the dest {0} is in use.".format(dataset_name),
-                rc=copy_exception.response.rc,
-                stdout=copy_exception.response.stdout_response,
-                stderr=copy_exception.response.stderr_response
-        )
-
-
 def run_module(module, arg_def):
     """Initialize module
 
@@ -3546,7 +3539,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set_locked(dest_name)
+            is_dest_lock = data_set.DataSetUtils.verify_dataset_disposition(data_set=data_set.extract_dsname(dest_name), disposition="old")
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(
@@ -3719,6 +3712,11 @@ def run_module(module, arg_def):
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
         if is_uss:
+            # Removing the carriage return characters
+            if src_ds_type == "USS" and not is_binary and not executable:
+                new_src = conv_path or src
+                if os.path.isfile(new_src):
+                    conv_path = copy_handler.remove_cr_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,
@@ -3886,7 +3884,7 @@ def main():
                         type='str',
                         choices=['basic', 'ksds', 'esds', 'rrds',
                                  'lds', 'seq', 'pds', 'pdse', 'member',
-                                 'library', 'gdg'],
+                                 'large', 'library', 'gdg'],
                         required=True,
                     ),
                     space_primary=dict(

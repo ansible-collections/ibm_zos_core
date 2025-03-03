@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,9 +12,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-import pytest
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+from ibm_zos_core.tests.helpers.version import get_zoau_version
 
 __metaclass__ = type
 
@@ -405,7 +405,6 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
 # Negative tests
 #
 
-
 def test_add_already_present(ansible_zos_module, volumes_with_vvds):
     try:
         hosts = ansible_zos_module
@@ -438,10 +437,20 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
             assert result.get("rc") == 0
+        # Second call to zos_apf, same as first but with different expectations
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
+            # RC 0 should be allowed for ZOAU >= 1.3.4, 
+            # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 16 or result.get("rc") == 8
+            zoa_version = get_zoau_version(hosts) or "0.0.0.0" 
+            rc = result.get("rc")            
+            if zoa_version >= "1.3.4.0":
+                assert rc == 0
+            elif zoa_version >= "1.2.0.0":
+                assert rc == 8
+            else:
+                assert rc == 16 
         test_info['state'] = 'absent'
         hosts.all.zos_apf(**test_info)
     finally:
@@ -479,8 +488,17 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
+            # RC 0 should be allowed for ZOAU >= 1.3.4, 
+            # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 16 or result.get("rc") == 8
+            zoa_version = get_zoau_version(hosts) or "0.0.0.0" 
+            rc = result.get("rc")            
+            if zoa_version >= "1.3.4.0":
+                assert rc == 0
+            elif zoa_version >= "1.2.0.0":
+                assert rc == 8
+            else:
+                assert rc == 16
     finally:
         clean_test_env(hosts, test_info)
 

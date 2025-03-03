@@ -1,0 +1,3 @@
+minor_changes:
+  - zos_script - Adds support for running local and remote scripts in asynchronous mode inside playbooks.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1934).

@@ -171,7 +171,7 @@ force
 
 
 force_lock
-  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force_lock`` to bypass this check and continue with copy.
+  By default, when ``dest`` is a MVS data set and is being used by another process with DISP=SHR or DISP=OLD the module will fail. Use ``force_lock`` to bypass DISP=SHR and continue with the copy operation.
 
   If set to ``true`` and destination is a MVS data set opened by another process then zos_copy will try to copy using DISP=SHR.
 
@@ -357,7 +357,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library, gdg
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, large, library, gdg
 
 
   space_primary

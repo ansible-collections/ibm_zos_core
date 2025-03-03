@@ -13,7 +13,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 import pytest
 import os
 import shutil
@@ -1619,7 +1618,8 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         copy_result = hosts.all.zos_copy(
@@ -1629,8 +1629,12 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1655,7 +1659,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
     try:
         dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
-        full_dest = "{0}(TEST)".format(dest)
+        full_dest = "{0}(TE$@#)".format(dest)
 
         copy_result = hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
@@ -1664,17 +1668,23 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
         for cp_res in copy_result.contacted.values():
+            print(cp_res)
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == full_dest
             assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
+            print(v_cp)
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
     finally:
@@ -1687,7 +1697,8 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1695,7 +1706,8 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1711,8 +1723,12 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1736,7 +1752,8 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1744,8 +1761,9 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
-        full_dest = "{0}(MEMBER)".format(dest)
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
+        full_dest = "{0}(MEMB$#@)".format(dest)
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1761,8 +1779,12 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1786,8 +1808,9 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
-        full_src = "{0}(MEMBER)".format(src)
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
+        full_src = "{0}(MEM$#@)".format(src)
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1795,7 +1818,8 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1811,8 +1835,12 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1836,7 +1864,8 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         full_src = "{0}(MEMBER)".format(src)
         hosts.all.zos_data_set(
             name=src,
@@ -1845,8 +1874,9 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
-        full_dest = "{0}(MEMBER)".format(dest)
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
+        full_dest = "{0}(MEM$#@)".format(dest)
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1862,8 +1892,12 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(full_dest),
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1887,7 +1921,8 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1904,6 +1939,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         )
 
         dest = get_random_file_name(dir=TMP_DIRECTORY)
+        dest = f"{dest}$#@"
 
         copy_result = hosts.all.zos_copy(
             src=src,
@@ -1913,7 +1949,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest),
+            cmd="cat '{0}'".format(dest),
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1978,7 +2014,8 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
     hosts = ansible_zos_module
     data_set_1 = get_tmp_ds_name()
-    data_set_2 = get_tmp_ds_name()
+    data_set_2 = get_tmp_ds_name(llq_size=4)
+    data_set_2 = f"{data_set_2}$#@"
     member_1 = "MEM1"
     if ds_type == "pds" or ds_type == "pdse":
         src_data_set = data_set_1 + "({0})".format(member_1)
@@ -2021,13 +2058,13 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
                 assert result.get("msg") is None
                 # verify that the content is the same
                 verify_copy = hosts.all.shell(
-                    cmd="dcat \"{0}\"".format(dest_data_set),
+                    cmd="dcat \'{0}\'".format(dest_data_set),
                     executable=SHELL_EXECUTABLE,
                 )
                 for vp_result in verify_copy.contacted.values():
                     print(vp_result)
                     verify_copy_2 = hosts.all.shell(
-                        cmd="dcat \"{0}\"".format(src_data_set),
+                        cmd="dcat \'{0}\'".format(src_data_set),
                         executable=SHELL_EXECUTABLE,
                     )
                     for vp_result_2 in verify_copy_2.contacted.values():
@@ -2051,58 +2088,33 @@ def test_copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
         hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
-def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module, z_python_interpreter):
-    """
-    This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'. 
-    This this a wrapper for the actual test case `managed_user_copy_dest_lock_test_with_no_opercmd_access`.
-    """
-    managed_user = None
-    managed_user_test_case_name = "managed_user_copy_dest_lock_test_with_no_opercmd_access"
-    try:
-        # Initialize the Managed user API from the pytest fixture.
-        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
-
-        # Important: Execute the test case with the managed users execution utility.
-        managed_user.execute_managed_user_test(
-            managed_user_test_case = managed_user_test_case_name,debug = True,
-            verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
-
-    finally:
-        # Delete the managed user on the remote host to avoid proliferation of users.
-        managed_user.delete_managed_user()
-
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.asa
 @pytest.mark.parametrize("ds_type, f_lock",[
-    ( "pds", False),    # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "pdse", False),   # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "seq", False),    # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "seq", True),     # Opercmd is not called so a user with limited UACC will not matter and will succeed
+    ( "pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ( "pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ( "seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ( "pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ( "pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ( "seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
 ])
-def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock ):
-    """
-    When force_lock option is false, it exercises the opercmd call which requires RACF universal access.
-    This negative test will ensure that if the user does not have RACF universal access that the module
-    not halt execution and instead bubble up the ZOAU exception.
-    """
+def test_copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock ):
     hosts = ansible_zos_module
-
-    data_set_1 = get_tmp_ds_name()
-    data_set_2 = get_tmp_ds_name()
-    member_1 = "MEM1"
+    data_set = get_tmp_ds_name(llq_size=4)
+    data_set = f"{data_set}$#@"
+    member_name = "MEM1"
 
     if ds_type == "pds" or ds_type == "pdse":
-        src_data_set = data_set_1 + "({0})".format(member_1)
-        dest_data_set = data_set_2 + "({0})".format(member_1)
+        dest_data_set = f"{data_set}({member_name})"
     else:
-        src_data_set = data_set_1
-        dest_data_set = data_set_2
+        dest_data_set = data_set
+
     try:
-        hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
-        hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
+        hosts.all.zos_data_set(name=data_set, state="present", type=ds_type, replace=True, record_format="fba")
         if ds_type == "pds" or ds_type == "pdse":
-            hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
             hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
-        # copy text_in source
-        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
+
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
         hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
@@ -2115,36 +2127,40 @@ def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, 
         # submit jcl
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
         # pause to ensure c code acquires lock
-        time.sleep(10)
+        time.sleep(5)
+
         results = hosts.all.zos_copy(
-            src = src_data_set,
-            dest = dest_data_set,
-            remote_src = True,
+            content=ASA_SAMPLE_CONTENT,
+            dest=dest_data_set,
+            remote_src=False,
+            asa_text=True,
             force=True,
-            force_lock=f_lock,
+            force_lock=f_lock
         )
+
         for result in results.contacted.values():
-            if f_lock:
-                assert result.get("changed") == True
+            print(result)
+            if f_lock: #and apf_auth_user:
+                assert result.get("changed") is True
                 assert result.get("msg") is None
-                # verify that the content is the same
+
+                # We need to escape the data set name because we are using cat, using dcat will
+                # bring the trailing empty spaces according to the data set record length.
+                # We only need to escape $ character in this notation
+                dest_escaped = dest_data_set.replace('$', '\\$')
                 verify_copy = hosts.all.shell(
-                    cmd="dcat \"{0}\"".format(dest_data_set),
+                    cmd="cat \"//'{0}'\"".format(dest_escaped),
                     executable=SHELL_EXECUTABLE,
                 )
-                for vp_result in verify_copy.contacted.values():
-                    verify_copy_2 = hosts.all.shell(
-                        cmd="dcat \"{0}\"".format(src_data_set),
-                        executable=SHELL_EXECUTABLE,
-                    )
-                    for vp_result_2 in verify_copy_2.contacted.values():
-                        assert vp_result_2.get("stdout") == vp_result.get("stdout")
-            elif not f_lock:
+
+                for v_cp in verify_copy.contacted.values():
+                    assert v_cp.get("rc") == 0
+                    assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+            else:
                 assert result.get("failed") is True
-                assert result.get("changed") == False
-                assert "Unable to determine if the dest" in result.get("msg")
-                assert "BGYSC0819E Insufficient security authorization for resource MVS.MCSOPER.ZOAU in class OPERCMDS" in result.get("stderr")
-                assert result.get("rc") == 6
+                assert result.get("changed") is False
+                assert "because a task is accessing the data set" in result.get("msg")
+                assert result.get("rc") is None
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
@@ -2153,9 +2169,8 @@ def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, 
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
         # clean up c code/object/executable files, jcl
         hosts.all.shell(cmd=f'rm -r {temp_dir}')
-        # remove pdse
-        hosts.all.zos_data_set(name=data_set_1, state="absent")
-        hosts.all.zos_data_set(name=data_set_2, state="absent")
+        # remove destination data set.
+        hosts.all.zos_data_set(name=data_set, state="absent")
 
 
 @pytest.mark.uss

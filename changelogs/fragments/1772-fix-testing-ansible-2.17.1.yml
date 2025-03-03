@@ -1,5 +1,0 @@
-trivial:
-  - tests/conftest.py - The testing suite could not load environment
-    variables when executing modules. Fix now correctly passes all
-    environment variables to the tests.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1772).

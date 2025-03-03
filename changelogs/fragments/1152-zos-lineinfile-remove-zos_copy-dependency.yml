@@ -1,3 +1,0 @@
-trivial:
-  - zos_lineinfile - remove zos_copy calls from test cases.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1152).

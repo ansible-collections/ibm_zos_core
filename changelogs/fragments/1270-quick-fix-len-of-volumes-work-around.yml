@@ -1,5 +1,0 @@
-trivial:
-  - module_utils/data_set.py - len(volme) was always called on receiving 
-    DatasetVerificationError from Dataset.create() even though volumes=None was
-    a valid possible outcome. The fix adds a null check to the conditional.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1270).

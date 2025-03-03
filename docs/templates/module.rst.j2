@@ -86,6 +86,30 @@ Parameters
 {{ option_generation(options, 0) }}
 {% endif %}
 
+{# ------------------------------------------------------------------------ #}
+{# Parse options and format function                                        #}
+{# ------------------------------------------------------------------------ #}
+
+{% macro attributes_generation(attrs) %}
+{# Set different attribute description for each attribute type #}
+{% set attribute_description = {
+    'action': 'Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller',
+    'async': 'Supports being used with the `async` keyword',
+    'check_mode': 'Can run in check_mode and return changed status prediction without modifying target, if not supported the action will be skipped.',
+    'diff_mode': 'Will return details on what has changed (or possibly needs changing in check_mode), when in diff mode',
+    'platform': 'Target OS/families that can be operated against',
+    'safe_file_operations': 'Uses Ansible’s strict file operation functions to ensure proper permissions and avoid data corruption',
+    'vault': 'Can automatically decrypt Ansible vaulted files'
+} %}
+
+{% for name, spec in attrs.items() %}
+{{ name }}
+  | **support**: {{ spec.support}}
+    {% set description = attribute_description.get(name, '') %}
+    {{ description }}
+{% endfor %}
+{% endmacro %}
+
 {# ------------------------------------------------------------- #}
 {# Generate the attributes doc                                      #}
 {# ------------------------------------------------------------- #}
@@ -93,11 +117,7 @@ Parameters
 {% if attributes -%}
 Attributes
 ----------
-
-{% for name, spec in attributes.items() %}
-{{ name }}
-  | **support**: {{ spec.support}}
-{% endfor %}
+{{ attributes_generation(attributes) }}
 {% endif %}
 
 {# ------------------------------------------------------------- #}

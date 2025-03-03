@@ -260,9 +260,6 @@ check_mode
 diff_mode
   | **support**: none
   | **description**: Will return details on what has changed (or possibly needs changing in check_mode), when in diff mode.
-vault
-  | **support**: none
-  | **description**: Can automatically decrypt Ansible vaulted files.
 
 
 

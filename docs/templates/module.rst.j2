@@ -105,8 +105,8 @@ Parameters
 {% for name, spec in attrs.items() %}
 {{ name }}
   | **support**: {{ spec.support}}
-  {% set description = attribute_description.get(name, '') %}
-| **description**: {{ description }}
+{% set description = attribute_description.get(name, '') %}
+  | **description**: {{ description }}
 {% endfor %}
 {% endmacro %}
 

@@ -128,9 +128,9 @@ class ActionModule(ActionBase):
                 if os.path.exists(rendered_file):
                     with open(rendered_file, 'r') as file:
                         rendered_content = file.read()
-                        display.vvv(u"Full rendered template content for {0}:\n{1}".format(os.path.basename(source), rendered_content), host=self._play_context.remote_addr)
+                        display.vvv(u"Template Content {0}:\n{1}".format(os.path.basename(source), rendered_content), host=self._play_context.remote_addr)
                 else:
-                    display.vvv(u"Rendered template file {0} does not exist.".format(rendered_file))
+                    display.vvv(u"Template file {0} does not exist.".format(rendered_file))
 
             result = {}
             copy_module_args = {}

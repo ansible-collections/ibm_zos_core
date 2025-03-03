@@ -1437,8 +1437,8 @@ class CopyHandler(object):
             content = src_file.read(1024)
 
             while content:
-                # In EBCDIC, \r\n are bytes 0d and 15, respectively.
-                if b'\x0d\x15' in content:
+                # In EBCDIC, \r is bytes 0d
+                if b'\x0d' in content:
                     return True
                 content = src_file.read(1024)
 
@@ -1466,14 +1466,56 @@ class CopyHandler(object):
         try:
             fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
             os.close(fd)
-
+            # defining 32 MB chunk size for reading large files efficiently
+            chunk_size = 32 * 1024 * 1024
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
-                    chunk = src_file.read(1024)
-                    # In IBM-037, \r is the byte 0d.
-                    converted_file.write(chunk.replace(b'\x0d', b''))
+                    chunk = src_file.read(chunk_size)
+                    while chunk:
+                        # In IBM-037, \r is the byte 0d.
+                        converted_file.write(chunk.replace(b'\x0d', b''))
+                        chunk = src_file.read(chunk_size)
 
             self._tag_file_encoding(converted_src, "IBM-037")
+
+            return converted_src
+        except Exception as err:
+            raise CopyOperationError(
+                msg="Error while trying to convert EOL sequence for source.",
+                stderr=to_native(err)
+            )
+
+    def remove_cr_endings(self, src):
+        """Creates a temporary file with the same content as src but without
+        carriage returns.
+
+        Parameters
+        ----------
+        src : str
+            Path to a USS source file.
+
+        Returns
+        -------
+        str
+            Path to the temporary file created.
+
+        Raises
+        ------
+        CopyOperationError
+            If the conversion fails.
+        """
+        try:
+            fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
+            os.close(fd)
+            # defining 32 MB chunk size for reading large files efficiently
+            chunk_size = 32 * 1024 * 1024
+            with open(converted_src, "wb") as converted_file:
+                with open(src, "rb") as src_file:
+                    chunk = src_file.read(chunk_size)
+                    while chunk:
+                        # In IBM-037, \r is the byte 0d.
+                        converted_file.write(chunk.replace(b'\x0d', b''))
+                        chunk = src_file.read(chunk_size)
 
             return converted_src
         except Exception as err:
@@ -3670,6 +3712,11 @@ def run_module(module, arg_def):
         # Copy to USS file or directory
         # ---------------------------------------------------------------------
         if is_uss:
+            # Removing the carriage return characters
+            if src_ds_type == "USS" and not is_binary and not executable:
+                new_src = conv_path or src
+                if os.path.isfile(new_src):
+                    conv_path = copy_handler.remove_cr_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,

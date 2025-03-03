@@ -856,6 +856,12 @@ stat:
           returned: success
           type: str
           sample: "IBM-1047"
+        mimetype:
+          description:
+            - Output from the file utility describing the content.
+          returned: success
+          type: str
+          sample: "commands text"
         audit_bits:
           description:
             - Audit bits for the file. Contains two sets of 3 bits.
@@ -1096,9 +1102,6 @@ class FileHandler(FactsHandler):
             raw_attributes = os.stat(self.name, follow_symlinks=self.follow)
             mode = raw_attributes.st_mode
 
-            # TODO: get these attrs
-            # mimetype
-
             attributes = {
                 'name': self.name,
                 'resource_type': 'file',
@@ -1170,6 +1173,9 @@ class FileHandler(FactsHandler):
                     self.name,
                     self.checksum_algorithm
                 )
+
+            if self.get_mime:
+                attributes['attributes']['mimetype'] = self._run_file()
         except Exception as err:
             raise QueryException(f"An error ocurred while querying a file path's information: {str(err)}.")
 
@@ -1193,6 +1199,23 @@ class FileHandler(FactsHandler):
                 stdout=stdout,
                 stderr=stderr
             )
+
+    def _run_file(self):
+        """Runs file and returns the result.
+        """
+        file_cmd = f'file {self.name}'
+        rc, stdout, stderr = self.module.run_command(file_cmd)
+
+        if rc == 0:
+            # file's output comes in three parts:
+            # file_path: filetype - description of the filetype.
+            # So we extract the middle part for the module.
+            file_type_complete = stdout.split(':')[1]
+            file_type_simplified = file_type_complete.split('-')[0]
+
+            return file_type_simplified.strip()
+        else:
+            return None
 
     def _parse_datetimes(self, attrs, keys):
         """Converts timestamps to date times (YYYY-MM-DDTHH:MM:SS).

@@ -96,10 +96,6 @@ message_filter
 
 
 
-
-
-
-
 Examples
 --------
 

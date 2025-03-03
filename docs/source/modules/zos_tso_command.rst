@@ -49,10 +49,6 @@ max_rc
 
 
 
-
-
-
-
 Examples
 --------
 

@@ -193,10 +193,6 @@ scratch
 
 
 
-
-
-
-
 Examples
 --------
 

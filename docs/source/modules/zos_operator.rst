@@ -75,10 +75,6 @@ case_sensitive
 
 
 
-
-
-
-
 Examples
 --------
 

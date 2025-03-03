@@ -688,10 +688,6 @@ template_parameters
 
 
 
-
-
-
-
 Examples
 --------
 

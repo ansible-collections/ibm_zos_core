@@ -283,10 +283,6 @@ tmp_hlq
 
 
 
-
-
-
-
 Examples
 --------
 

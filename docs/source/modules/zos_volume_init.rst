@@ -135,10 +135,6 @@ tmp_hlq
 
 
 
-
-
-
-
 Examples
 --------
 

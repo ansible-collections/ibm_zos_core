@@ -57,10 +57,6 @@ filter
 
 
 
-
-
-
-
 Examples
 --------
 

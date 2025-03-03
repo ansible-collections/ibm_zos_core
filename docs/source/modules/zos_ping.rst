@@ -27,10 +27,6 @@ Synopsis
 
 
 
-
-
-
-
 Examples
 --------
 

@@ -193,10 +193,6 @@ indentation
 
 
 
-
-
-
-
 Examples
 --------
 

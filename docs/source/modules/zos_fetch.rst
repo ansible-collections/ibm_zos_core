@@ -137,10 +137,6 @@ ignore_sftp_stderr
 
 
 
-
-
-
-
 Examples
 --------
 

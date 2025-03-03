@@ -206,10 +206,6 @@ force
 
 
 
-
-
-
-
 Examples
 --------
 

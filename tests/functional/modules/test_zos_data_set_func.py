@@ -1110,12 +1110,10 @@ def test_gdg_create_and_replace(ansible_zos_module):
         data_set_name = get_tmp_ds_name()
         results = hosts.all.zos_data_set(name=data_set_name, empty=False, force=True, record_format="u", record_length=0, replace=True, space_primary=5, space_secondary=3, space_type="cyl", state="present", type="gdg", limit=3)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(name=data_set_name, empty=False, force=True, record_format="u", record_length=0, replace=True, space_primary=5, space_secondary=3, space_type="cyl", state="present", type="gdg", limit=3)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:

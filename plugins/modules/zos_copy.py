@@ -4018,8 +4018,9 @@ def main():
     res_args = conv_path = None
     try:
         res_args, conv_path = run_module(module, arg_def)
-        path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-        shutil.rmtree(path)
+        path = os.path.normpath(f"{module.tmpdr}/ansible-zos-copy")
+        if os.path.exist(path):
+            shutil.rmtree(path)
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])

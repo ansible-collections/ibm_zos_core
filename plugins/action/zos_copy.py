@@ -274,13 +274,14 @@ class ActionModule(ActionBase):
                 encoding=encoding,
             )
         )
+        # print(vars(self._task))
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,
             task_vars=task_vars,
             wrap_async=self._task.async_val
         )
-
+        print(copy_res)
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
             return result
@@ -434,6 +435,7 @@ def _update_result(is_binary, copy_res, original_args, original_src):
     note = copy_res.get("note")
     backup_name = copy_res.get("backup_name")
     dest_data_set_attrs = copy_res.get("dest_data_set_attrs")
+    ansible_job_id = copy_res.get('ansible_job_id')
     updated_result = dict(
         dest=copy_res.get("dest"),
         is_binary=is_binary,
@@ -446,6 +448,8 @@ def _update_result(is_binary, copy_res, original_args, original_src):
         updated_result["note"] = note
     if backup_name:
         updated_result["backup_name"] = backup_name
+    if ansible_job_id:
+        updated_result["ansible_job_id"] = ansible_job_id
     if ds_type == "USS":
         updated_result.update(
             dict(

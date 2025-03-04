@@ -38,12 +38,15 @@ options:
     required: true
     aliases:
       - src
-  volume:
+  volumes:
     description:
-        - Name of the volume where the data set will be searched on.
+        - Name(s) of the volume(s) where the data set will be searched on.
         - Required when getting facts from a data set. Ignored otherwise.
-    type: str
+    type: list
+    elements: str
     required: false
+    aliases:
+      - volume
   type:
     description:
         - Type of resource to query.
@@ -137,6 +140,14 @@ EXAMPLES = r"""
     type: data_set
     volume: "000000"
 
+- name: Get the attributes of a sequential data set allocated on multiple volumes.
+  zos_stat:
+    name: USER.SEQ.DATA
+    type: data_set
+    volumes:
+      - "000000"
+      - "222222"
+
 - name: Get the attributes of a PDSE managed by SMS.
   zos_stat:
     name: USER.PDSE.DATA
@@ -172,6 +183,7 @@ EXAMPLES = r"""
   zos_stat:
     name: "/u/user/file.txt"
     type: file
+    get_checksum: true
 """
 
 RETURN = r"""
@@ -1246,11 +1258,10 @@ class DataSetHandler(FactsHandler):
     # This list should be overwritten by a subclass.
     num_attrs = []
 
-    # TODO: handle multivol
     def __init__(
         self, 
         name,
-        volume=None,
+        volumes=None,
         module=None,
         tmp_hlq=None,
         sms_managed=False,
@@ -1264,7 +1275,7 @@ class DataSetHandler(FactsHandler):
 
         Arguments:
             name (str) -- Name of the data set.
-            volume (str, optional) -- Volume where the data set is allocated.
+            volumes (list, optional) -- Volumes where the data set is allocated.
             module (AnsibleModule, optional) -- Ansible object with the task's context.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
             sms_managed (bool, optional) -- Whether the data set is managed by SMS.
@@ -1272,7 +1283,7 @@ class DataSetHandler(FactsHandler):
             ds_type (str, optional) -- Type of the data set.
         """
         super(DataSetHandler, self).__init__(name, module)
-        self.volume = volume
+        self.volumes = volumes
         self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
         self.sms_managed = sms_managed
         self.data_set_exists = exists
@@ -1433,13 +1444,18 @@ class NonVSAMDataSetHandler(DataSetHandler):
         'max_pdse_generation'
     ]
 
+    VOLUME_OPTIONS = {
+        'monovolume': '"VOLUME(" || volume || ")"',
+        'multivolume': '"MULTIVOL"'
+    }
+
     LISTDSI_SCRIPT = """/* REXX */
 /***********************************************************
 * © Copyright IBM Corporation 2025
 ***********************************************************/
 arg data_set_name volume extra_args
 listdsi_args = "'" || data_set_name || "'"
-listdsi_args = listdsi_args "VOLUME(" || volume || ")"
+listdsi_args = listdsi_args {0}
 listdsi_args = listdsi_args extra_args
 data_set_info = LISTDSI(LISTDSI_ARGS)
 
@@ -1451,7 +1467,7 @@ if SYSREASON > 0 then
 
 if data_set_info == 0 then
   do
-    say '{'
+    say '{{'
     /* General information */
     say '"dsorg":"' || SYSDSORG || '",'
     say '"type":"' || SYSDSSMS || '",'
@@ -1465,10 +1481,10 @@ if data_set_info == 0 then
     say '"expiration_date":"' || SYSEXDATE || '",'
     say '"last_reference":"' || SYSREFDATE || '",'
     say '"updated_since_backup":"' || SYSUPDATED || '",'
-    say '"jcl_attrs":{'
+    say '"jcl_attrs":{{'
     say '"creation_step":"' || SYSCREATESTEP || '",'
     say '"creation_job":"' || SYSCREATEJOB || '"'
-    say '},'
+    say '}},'
     /* Allocation information */
     say '"volser":"' || SYSVOLUME || '",'
     say '"num_volumes":"' || SYSNUMVOLS || '",'
@@ -1502,27 +1518,27 @@ if data_set_info == 0 then
     say '"max_pdse_generation":"' || SYSMAXGENS || '",'
     /* Sequential attributes */
     say '"seq_type":"' || SYSSEQDSNTYPE || '"'
-    say '}'
+    say '}}'
   end
 else
   do
-    say '{'
+    say '{{'
     say '"error":true'
     say '"msg":"Data set was not found"'
-    say '}'
+    say '}}'
     return 1
   end
 
 return 0"""
 
-    def __init__(self, name, volume, module, sms_managed, ds_type, tmp_hlq=None):
+    def __init__(self, name, volumes, module, sms_managed, ds_type, tmp_hlq=None):
         """Create a new handler that will handle the query of a sequential or
         partitioned data set. This subclass should only be instantiated by
         get_data_set_handler.
 
         Arguments:
             name (str) -- Name of the data set.
-            volume (str) -- Volume where the data set is allocated.
+            volumes (list) -- Volumes where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
             sms_managed (bool) -- Whether the data set is managed by SMS.
             ds_type (str) -- Type of the data set.
@@ -1530,7 +1546,7 @@ return 0"""
         """
         super(NonVSAMDataSetHandler, self).__init__(
             name,
-            volume=volume,
+            volumes=volumes,
             module=module,
             tmp_hlq=tmp_hlq,
             sms_managed=sms_managed,
@@ -1565,7 +1581,13 @@ return 0"""
                 record_length=60
             )
 
-            datasets.write(temp_script_location, self.LISTDSI_SCRIPT)
+            # Modifying the script to handle a multi-volume data set.
+            if len(self.volumes) == 1:
+                script = self.LISTDSI_SCRIPT.format(self.VOLUME_OPTIONS['monovolume'])
+            else:
+                script = self.LISTDSI_SCRIPT.format(self.VOLUME_OPTIONS['multivolume'])
+
+            datasets.write(temp_script_location, script)
             rc, stdout, stderr = self._run_listdsi_command(temp_script_location)
 
             attributes = json.loads(stdout)
@@ -1608,7 +1630,12 @@ return 0"""
         if self.sms_managed:
             extra_args = f'{extra_args} SMSINFO'
 
-        tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name} {self.volume} {extra_args}' exec" """
+        if len(self.volumes) == 1:
+            volume = self.volumes[0]
+            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name} {volume} {extra_args}' exec" """
+        else:
+            tso_cmd = f"""tsocmd "EXEC '{temp_script_location}' '{self.name} null {extra_args}' exec" """
+
         rc, stdout, stderr = self.module.run_command(tso_cmd)
 
         # Retrying the query without asking for SMS information.
@@ -1641,6 +1668,9 @@ return 0"""
         """
         attrs = super()._parse_attributes(attrs)
 
+        if 'volumes' in attrs:
+            attrs['volumes'] = [vol for vol in attrs['volumes'].split()]
+
         if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_job'] == '':
             attrs['jcl_attrs']['creation_job'] = None
         if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_step'] == '':
@@ -1649,6 +1679,7 @@ return 0"""
         return attrs
 
 
+# TODO: handle volumes properly (or ignore them)
 class VSAMDataSetHandler(DataSetHandler):
     """Class that can query VSAM data sets using LISTCAT.
     """
@@ -1677,13 +1708,13 @@ class VSAMDataSetHandler(DataSetHandler):
         '78048083': '3590-1',
     }
 
-    def __init__(self, name, volume, module, sms_managed, ds_type, tmp_hlq=None):
+    def __init__(self, name, volumes, module, sms_managed, ds_type, tmp_hlq=None):
         """Create a new handler that will handle the query of a VSAM.
         This subclass should only be instantiated by get_data_set_handler.
 
         Arguments:
             name (str) -- Name of the data set.
-            volume (str) -- Volume where the data set is allocated.
+            volumes (list) -- Volumes where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
             sms_managed (bool) -- Whether the data set is managed by SMS.
             ds_type (str) -- Type of the data set.
@@ -1691,7 +1722,7 @@ class VSAMDataSetHandler(DataSetHandler):
         """
         super(VSAMDataSetHandler, self).__init__(
             name,
-            volume=volume,
+            volumes=volumes,
             module=module,
             tmp_hlq=tmp_hlq,
             sms_managed=sms_managed,
@@ -1732,7 +1763,7 @@ class VSAMDataSetHandler(DataSetHandler):
         data_info = ' '.join(listcat_lines[gen_info_limit:data_info_limit])
         index_info = ' '.join(listcat_lines[data_info_limit:])
         attributes = {
-            'volser': self.volume,
+            'volser': self.volumes,
             'dsorg': 'VSAM',
             'type': self.data_set_type,
             'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
@@ -1763,7 +1794,7 @@ class VSAMDataSetHandler(DataSetHandler):
         elif attributes['password'] == 'SUPP':
             self.extra_data = f'{self.extra_data}\nUnable to get security attributes.'
 
-
+        # TODO: add volser to each component.
         if 'ASSOCIATIONS' in vsam_general_info:
             attributes['data'] = {
                 'name': re.search('(DATA-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
@@ -1831,6 +1862,7 @@ class VSAMDataSetHandler(DataSetHandler):
         return attrs
 
 
+# TODO: handle volumes properly (or ignore them)
 class GenerationDataGroupHandler(DataSetHandler):
     """Class that can query Generation Data Groups.
     """
@@ -1838,7 +1870,7 @@ class GenerationDataGroupHandler(DataSetHandler):
     def __init__(
         self,
         name,
-        volume,
+        volumes,
         module,
         sms_managed,
         ds_type,
@@ -1850,7 +1882,7 @@ class GenerationDataGroupHandler(DataSetHandler):
 
         Arguments:
             name (str) -- Name of the data set.
-            volume (str) -- Volume where the data set is allocated.
+            volumes (list) -- Volumes where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
             sms_managed (bool) -- Whether the data set is managed by SMS.
             ds_type (str) -- Type of the data set.
@@ -1859,7 +1891,7 @@ class GenerationDataGroupHandler(DataSetHandler):
         """
         super(GenerationDataGroupHandler, self).__init__(
             name,
-            volume=volume,
+            volumes=volumes,
             module=module,
             tmp_hlq=tmp_hlq,
             sms_managed=sms_managed,
@@ -1938,7 +1970,7 @@ class QueryException(Exception):
 
 def get_data_set_handler(
     name,
-    volume,
+    volumes,
     module,
     tmp_hlq=None,
     sms_managed=False
@@ -1948,7 +1980,7 @@ def get_data_set_handler(
 
     Arguments:
         name (str) -- Name of the data set.
-        volume (str) -- Volume where the data set is allocated.
+        volume (list) -- Volumes where the data set is allocated.
         module (AnsibleModule) -- Ansible object with the task's context.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
         sms_managed (bool, optional) -- Whether the data set is managed by SMS.
@@ -1964,32 +1996,51 @@ def get_data_set_handler(
     except (GDSNameResolveError, Exception):
         return DataSetHandler(name, exists=False)
 
-    # For non-GDGs.
-    if DataSet._is_in_vtoc(name, volume, tmphlq=tmp_hlq):
-        ds_type = DataSet.data_set_type(name, volume=volume, tmphlq=tmp_hlq)
-    # We try to create a GDG view if possible, if not, we know for sure the data set just
-    # does not exist.
+    # Finding all the volumes where the data set is allocated.
+    cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
+    found_volumes = [vol for vol in volumes if vol in cataloged_list]
+    missing_volumes = [vol for vol in volumes if vol not in found_volumes]
+    gdg_view = ds_type = None
+    
+    # We continue when we find the data set on at least 1 volume supplied by the user.
+    if len(found_volumes) >= 1:
+        ds_type = DataSet.data_set_type(name, volume=found_volumes[0], tmphlq=tmp_hlq)
     else:
+        # In case we're dealing with an empty GDG.
         try:
             gdg_view = gdgs.GenerationDataGroupView(name)
-            ds_type = 'GDG'
         except zoau_exceptions.GenerationDataGroupFetchException:
             return DataSetHandler(name, exists=False)
 
     # Now instantiating a concrete handler based on the data set's type.
     if ds_type in DataSet.MVS_SEQ or ds_type in DataSet.MVS_PARTITIONED:
-        return NonVSAMDataSetHandler(name, volume, module, sms_managed, ds_type, tmp_hlq)
+        handler = NonVSAMDataSetHandler(name, found_volumes, module, sms_managed, ds_type, tmp_hlq)
+        if len(missing_volumes) > 0:
+            handler.extra_data = f'{handler.extra_data}Data set was not found in the following volumes: {missing_volumes}\n'
+        return handler
     elif ds_type in DataSet.MVS_VSAM:
-        return VSAMDataSetHandler(name, volume, module, sms_managed, ds_type, tmp_hlq)
+        handler = VSAMDataSetHandler(name, found_volumes, module, sms_managed, ds_type, tmp_hlq)
+        if len(missing_volumes) > 0:
+            handler.extra_data = f'{handler.extra_data}Data set was not found in the following volumes: {missing_volumes}\n'
+        return handler
     else:
-        return GenerationDataGroupHandler(name, volume, module, sms_managed, ds_type, gdg_view, tmp_hlq)
+        # We try to create a GDG view before the handler.
+        if not gdg_view:
+            try:
+                gdg_view = gdgs.GenerationDataGroupView(name)
+                ds_type = 'GDG'
+            except zoau_exceptions.GenerationDataGroupFetchException:
+                return DataSetHandler(name, exists=False)
+
+        return GenerationDataGroupHandler(name, volumes, module, sms_managed, ds_type, gdg_view, tmp_hlq)
+
 
 
 def get_facts_handler(
     name,
     resource_type,
     module,
-    volume=None,
+    volumes=None,
     tmp_hlq=None,
     sms_managed=False,
     file_args=None
@@ -2001,7 +2052,7 @@ def get_facts_handler(
         name (str) -- Name of the resource.
         resource_type (str) -- One of 'data_set', 'aggregate' or 'file'.
         module (AnsibleModule) -- Ansible object with the task's context.
-        volume (str, optional) -- Volume where a data set is allocated.
+        volumes (list, optional) -- Volumes where a data set is allocated.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
         sms_managed (bool, optional) -- Whether a data set is managed by SMS.
         file_args (dict, optional) -- Options affecting how a file is query.
@@ -2010,7 +2061,7 @@ def get_facts_handler(
         FactsHandler: Handler for data sets/aggregates/files.
     """
     if resource_type == 'data_set':
-        return get_data_set_handler(name, volume, module, tmp_hlq, sms_managed)
+        return get_data_set_handler(name, volumes, module, tmp_hlq, sms_managed)
     elif resource_type == 'file':
         return FileHandler(name, module, file_args)
     elif resource_type == 'aggregate':
@@ -2027,9 +2078,11 @@ def run_module():
                 'required': True,
                 'aliases': ['src']
             },
-            'volume': {
-                'type': 'str',
-                'required': False
+            'volumes': {
+                'type': 'list',
+                'elements': 'str',
+                'required': False,
+                'aliases': ['volume']
             },
             'type': {
                 'type': 'str',
@@ -2070,7 +2123,7 @@ def run_module():
         },
         required_if=[
             # Forcing a volume when querying data sets.
-            ('type', 'data_set', ('volume',))
+            ('type', 'data_set', ('volumes',))
         ],
         supports_check_mode=True,
     )
@@ -2081,9 +2134,11 @@ def run_module():
             'required': True,
             'aliases': ['src']
         },
-        'volume': {
-            'arg_type': 'str',
-            'required': False
+        'volumes': {
+            'arg_type': 'list',
+            'elements': 'volume',
+            'required': False,
+            'aliases': ['volume']
         },
         'type': {
             'arg_type': 'str',
@@ -2126,7 +2181,7 @@ def run_module():
         )
 
     name = module.params.get('name')
-    volume = module.params.get('volume')
+    volumes = module.params.get('volumes')
     resource_type = module.params.get('type')
     tmp_hlq = module.params.get('tmp_hlq')
     sms_managed = module.params.get('sms_managed')
@@ -2141,7 +2196,7 @@ def run_module():
         name,
         resource_type,
         module,
-        volume,
+        volumes,
         tmp_hlq,
         sms_managed,
         file_args

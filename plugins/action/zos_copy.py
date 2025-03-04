@@ -42,6 +42,8 @@ display = Display()
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """
+        self._supports_async = True
+
         if task_vars is None:
             task_vars = dict()
 
@@ -272,20 +274,14 @@ class ActionModule(ActionBase):
                 encoding=encoding,
             )
         )
+        # print(vars(self._task))
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,
             task_vars=task_vars,
+            wrap_async=self._task.async_val
         )
-
-        # Erasing all rendered Jinja2 templates from the controller.
-        if template_dir:
-            shutil.rmtree(template_dir, ignore_errors=True)
-        # Remove temporary directory from remote
-        if self.tmp_dir is not None:
-            path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            self._connection.exec_command(f"rm -rf {path}*")
-
+        print(copy_res)
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
             return result
@@ -304,8 +300,11 @@ class ActionModule(ActionBase):
             )
             if backup or backup_name:
                 result["backup_name"] = copy_res.get("backup_name")
-            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
+
+        # Erasing all rendered Jinja2 templates from the controller.
+        if template_dir:
+            shutil.rmtree(template_dir, ignore_errors=True)
 
         return _update_result(is_binary, copy_res, self._task.args, original_src)
 
@@ -412,25 +411,6 @@ class ActionModule(ActionBase):
 
         return dict(temp_path=full_temp_path)
 
-    def _remote_cleanup(self, dest, dest_exists, task_vars):
-        """Remove all files or data sets pointed to by 'dest' on the remote
-        z/OS system. The idea behind this cleanup step is that if, for some
-        reason, the module fails after copying the data, we want to return the
-        remote system to its original state. Which means deleting any newly
-        created files or data sets.
-        """
-        if dest_exists is False:
-            if "/" in dest:
-                self._connection.exec_command("rm -rf {0}".format(dest))
-            else:
-                module_args = dict(name=dest, state="absent")
-                if is_member(dest):
-                    module_args["type"] = "member"
-                self._execute_module(
-                    module_name="ibm.ibm_zos_core.zos_data_set",
-                    module_args=module_args,
-                    task_vars=task_vars,
-                )
 
     def _exit_action(self, result, msg, failed=False):
         """Exit action plugin with a message"""
@@ -455,6 +435,7 @@ def _update_result(is_binary, copy_res, original_args, original_src):
     note = copy_res.get("note")
     backup_name = copy_res.get("backup_name")
     dest_data_set_attrs = copy_res.get("dest_data_set_attrs")
+    ansible_job_id = copy_res.get('ansible_job_id')
     updated_result = dict(
         dest=copy_res.get("dest"),
         is_binary=is_binary,
@@ -467,6 +448,8 @@ def _update_result(is_binary, copy_res, original_args, original_src):
         updated_result["note"] = note
     if backup_name:
         updated_result["backup_name"] = backup_name
+    if ansible_job_id:
+        updated_result["ansible_job_id"] = ansible_job_id
     if ds_type == "USS":
         updated_result.update(
             dict(

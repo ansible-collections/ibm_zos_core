@@ -2433,7 +2433,7 @@ class GenerationDataGroup():
         else:
             if not replace:
                 return changed
-            changed = self.ensure_absent()
+            changed = self.ensure_absent(True)
             gdg = gdgs.create(**arguments)
         if isinstance(gdg, gdgs.GenerationDataGroupView):
             changed = True

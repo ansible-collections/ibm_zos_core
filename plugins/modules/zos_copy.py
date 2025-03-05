@@ -3217,6 +3217,57 @@ def remote_cleanup(module):
         data_set.DataSet.ensure_absent(name=dest)
 
 
+def update_result(res_args, original_args):
+    ds_type = res_args.get("ds_type")
+    src = res_args.get("src")
+    note = res_args.get("note")
+    backup_name = res_args.get("backup_name")
+    dest_data_set_attrs = res_args.get("dest_data_set_attrs")
+    updated_result = dict(
+        dest=res_args.get("dest"),
+        is_binary=original_args.get("is_binary"),
+        changed=res_args.get("changed"),
+        invocation=dict(module_args=original_args),
+    )
+    if src:
+        updated_result["src"] = original_args.get("src")
+    if note:
+        updated_result["note"] = note
+    if backup_name:
+        updated_result["backup_name"] = backup_name
+    if ds_type == "USS":
+        updated_result.update(
+            dict(
+                gid=res_args.get("gid"),
+                uid=res_args.get("uid"),
+                group=res_args.get("group"),
+                owner=res_args.get("owner"),
+                mode=res_args.get("mode"),
+                state=res_args.get("state"),
+                size=res_args.get("size"),
+            )
+        )
+        checksum = res_args.get("checksum")
+        if checksum:
+            updated_result["checksum"] = checksum
+    if dest_data_set_attrs is not None:
+        if len(dest_data_set_attrs) > 0:
+            dest_data_set_attrs.pop("name")
+            updated_result["dest_created"] = True
+            updated_result["destination_attributes"] = dest_data_set_attrs
+
+            # Setting attributes to lower case to conform to docs.
+            # Part of the change to lowercase choices in the collection involves having
+            # a consistent interface that also returns the same values in lowercase.
+            if "record_format" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["record_format"] = updated_result["destination_attributes"]["record_format"].lower()
+            if "space_type" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["space_type"] = updated_result["destination_attributes"]["space_type"].lower()
+            if "type" in updated_result["destination_attributes"]:
+                updated_result["destination_attributes"]["type"] = updated_result["destination_attributes"]["type"].lower()
+    return updated_result
+
+
 def run_module(module, arg_def):
     """Initialize module
 
@@ -4065,9 +4116,19 @@ def main():
     res_args = conv_path = None
     try:
         res_args, conv_path = run_module(module, arg_def)
-        path = os.path.normpath(f"{module.tmpdir}/ansible-zos-copy")
+
+        # Verification of default tmpdir use by the collection to remove
+        position = str(module.tmpdir[:-1]).rfind('/')
+        tmp_dir = str(module.tmpdir)[:position]
+        path = os.path.normpath(f"{tmp_dir}/ansible-zos-copy")
         if os.path.exists(path):
             shutil.rmtree(path)
+        # Verification of a tmpdir set by the user to remove content
+        path = os.path.normpath(f"{tmp_dir}")
+        if os.path.exists(path):
+            shutil.rmtree(path)
+
+        res_args = update_result(res_args=res_args, original_args=module.params)
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])

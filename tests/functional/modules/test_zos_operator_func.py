@@ -36,7 +36,7 @@ PARALLEL_RUNNING = """- hosts : zvm
   environment:
     _BPXK_AUTOCVT: "ON"
     ZOAU_HOME: "{0}"
-    PYTHONPATH: "{0}/lib"
+    PYTHONPATH: "{0}/lib/{2}"
     LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
     PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
     _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
@@ -62,7 +62,7 @@ INVENTORY = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: /allpython/3.11-3/usr/lpp/IBM/cyp/v3r11/pyz/bin/python3.11"""
+      ansible_python_interpreter: {3}"""
 
 
 def test_zos_operator_various_command(ansible_zos_module):
@@ -226,6 +226,7 @@ def test_zos_operator_parallel_terminal(get_config):
             hosts,
             ssh_key,
             user,
+            python_path
         )), inventory))
         command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
             inventory,

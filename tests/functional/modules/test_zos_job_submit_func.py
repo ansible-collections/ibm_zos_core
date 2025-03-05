@@ -435,7 +435,7 @@ INVENTORY_ASYNC_TEST = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: /allpython/3.11/usr/lpp/IBM/cyp/v3r11/pyz/bin/python3.11"""
+      ansible_python_interpreter: {3}"""
 
 
 @pytest.mark.parametrize(
@@ -1205,6 +1205,7 @@ def test_job_submit_async(get_config):
     playbook = tempfile.NamedTemporaryFile(delete=True)
     inventory = tempfile.NamedTemporaryFile(delete=True)
 
+    print("Hello debug")
     os.system("echo {0} > {1}".format(
         quote(PLAYBOOK_ASYNC_TEST.format(
             zoau,
@@ -1220,6 +1221,7 @@ def test_job_submit_async(get_config):
             hosts,
             ssh_key,
             user,
+            python_path
         )), 
         inventory.name
     ))

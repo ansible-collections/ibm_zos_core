@@ -41,7 +41,7 @@ options:
   volumes:
     description:
         - Name(s) of the volume(s) where the data set will be searched on.
-        - Required when getting facts from a non-VSAM data set. Ignored
+        - Required when getting attributes from a non-VSAM data set. Ignored
           otherwise.
     type: list
     elements: str
@@ -531,6 +531,16 @@ stat:
               returned: success
               type: bool
               sample: false
+            volser:
+              description: Name of the volume containing the DATA component.
+              returned: success
+              type: str
+              sample: "000000"
+            device_type:
+              description: Generic device type where the DATA component resides.
+              returned: success
+              type: str
+              sample: "3390"
         index:
           description:
             - Dictionary containing attributes for the INDEX component of a VSAM. 
@@ -571,6 +581,16 @@ stat:
               returned: success
               type: int
               sample: 0
+            volser:
+              description: Name of the volume containing the INDEX component.
+              returned: success
+              type: str
+              sample: "000000"
+            device_type:
+              description: Generic device type where the INDEX component resides.
+              returned: success
+              type: str
+              sample: "3390"
         limit:
           description: Maximum amount of active generations allowed in a GDG.
           returned: success
@@ -1683,7 +1703,6 @@ return 0"""
         return attrs
 
 
-# TODO: handle volumes properly (or ignore them)
 class VSAMDataSetHandler(DataSetHandler):
     """Class that can query VSAM data sets using LISTCAT.
     """
@@ -1712,7 +1731,7 @@ class VSAMDataSetHandler(DataSetHandler):
         '78048083': '3590-1',
     }
 
-    def __init__(self, name, volumes, module, sms_managed, ds_type, tmp_hlq=None):
+    def __init__(self, name, module, ds_type, tmp_hlq=None):
         """Create a new handler that will handle the query of a VSAM.
         This subclass should only be instantiated by get_data_set_handler.
 
@@ -1726,10 +1745,8 @@ class VSAMDataSetHandler(DataSetHandler):
         """
         super(VSAMDataSetHandler, self).__init__(
             name,
-            volumes=volumes,
             module=module,
             tmp_hlq=tmp_hlq,
-            sms_managed=sms_managed,
             exists=True,
             ds_type=ds_type
         )
@@ -1767,12 +1784,9 @@ class VSAMDataSetHandler(DataSetHandler):
         data_info = ' '.join(listcat_lines[gen_info_limit:data_info_limit])
         index_info = ' '.join(listcat_lines[data_info_limit:])
         attributes = {
-            'volser': self.volumes,
             'dsorg': 'VSAM',
             'type': self.data_set_type,
-            'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
         }
-        attributes['device_type'] = self.dev_type_translation_table[attributes['device_type']]
 
         general_info_regex_searches = [
             ('extended_attrs_bits', '(EATTR-+\(?)([0-9a-zA-Z]+)'),
@@ -1798,15 +1812,21 @@ class VSAMDataSetHandler(DataSetHandler):
         elif attributes['password'] == 'SUPP':
             self.extra_data = f'{self.extra_data}\nUnable to get security attributes.'
 
-        # TODO: add volser to each component.
         if 'ASSOCIATIONS' in vsam_general_info:
             attributes['data'] = {
                 'name': re.search('(DATA-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
-                'spanned': True if re.search('\bSPANNED\b', data_info) else False
+                'spanned': True if re.search('\bSPANNED\b', data_info) else False,
+                'volser': re.search("(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", data_info).group(2),
+                'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
             }
+            attributes['data']['device_type'] = self.dev_type_translation_table[attributes['data']['device_type']]
+
             attributes['index'] = {
-                'name': re.search('(INDEX-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2)
+                'name': re.search('(INDEX-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
+                'volser': re.search("(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", index_info).group(2),
+                'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", index_info).group(2)
             }
+            attributes['index']['device_type'] = self.dev_type_translation_table[attributes['index']['device_type']]
 
             assoc_regex_searches = [
                 ('key_length', '(KEYLEN-+)(\d+)'),
@@ -1989,19 +2009,36 @@ def get_data_set_handler(
     """
     try:
         if DataSet.is_gds_relative_name(name):
-            # Replacing the relative name because _is_in_vtoc, data_set_type and
-            # LISTDSI need the absolute name to locate the data set.
+            # Replacing the relative name because data_set_type,
+            # data_set_cataloged_volume_list and LISTDSI need the
+            # absolute name to locate the data set.
             name = DataSet.resolve_gds_absolute_name(name)
     except (GDSNameResolveError, Exception):
         return DataSetHandler(name, exists=False)
+
+    # If the data set doesn't exist, the return value will be None.
+    # We search in all volumes first in case we're dealing with a VSAM.
+    ds_type = DataSet.data_set_type(name, tmphlq=tmp_hlq)
+
+    # If we got a hit for a GDG, we'll stop right now. The user should set
+    # type='GDG' in their task.
+    if not ds_type or ds_type == 'GDG':
+        return DataSetHandler(name, exists=False)
+    elif ds_type in DataSet.MVS_VSAM:
+        return VSAMDataSetHandler(name, module, ds_type, tmp_hlq)
+
+    # If we're not dealing with a VSAM, we'll continue with looking through
+    # the volumes the user supplied.
+    if not volumes or len(volumes) == 0:
+        raise QueryException('The data set requested needs a volume to be supplied in the task options.')
 
     # Finding all the volumes where the data set is allocated.
     cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
     found_volumes = [vol for vol in volumes if vol in cataloged_list]
     missing_volumes = [vol for vol in volumes if vol not in found_volumes]
-    ds_type = None
     
     # We continue when we find the data set on at least 1 volume supplied by the user.
+    # Overwriting the first ds_type just in case.
     if len(found_volumes) >= 1:
         ds_type = DataSet.data_set_type(name, volume=found_volumes[0], tmphlq=tmp_hlq)
     else:
@@ -2010,11 +2047,6 @@ def get_data_set_handler(
     # Now instantiating a concrete handler based on the data set's type.
     if ds_type in DataSet.MVS_SEQ or ds_type in DataSet.MVS_PARTITIONED:
         handler = NonVSAMDataSetHandler(name, found_volumes, module, sms_managed, ds_type, tmp_hlq)
-        if len(missing_volumes) > 0:
-            handler.extra_data = f'{handler.extra_data}Data set was not found in the following volumes: {missing_volumes}\n'
-        return handler
-    elif ds_type in DataSet.MVS_VSAM:
-        handler = VSAMDataSetHandler(name, found_volumes, module, sms_managed, ds_type, tmp_hlq)
         if len(missing_volumes) > 0:
             handler.extra_data = f'{handler.extra_data}Data set was not found in the following volumes: {missing_volumes}\n'
         return handler
@@ -2109,10 +2141,6 @@ def run_module():
                 'choices': ['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512']
             }
         },
-        required_if=[
-            # Forcing a volume when querying data sets.
-            ('type', 'data_set', ('volumes',))
-        ],
         # TODO: properly support check mode
         # supports_check_mode=True
     )
@@ -2181,15 +2209,19 @@ def run_module():
         'checksum_algorithm': module.params.get('checksum_algorithm'),
     }
 
-    facts_handler = get_facts_handler(
-        name,
-        resource_type,
-        module,
-        volumes,
-        tmp_hlq,
-        sms_managed,
-        file_args
-    )
+    try:
+        facts_handler = get_facts_handler(
+            name,
+            resource_type,
+            module,
+            volumes,
+            tmp_hlq,
+            sms_managed,
+            file_args
+        )
+    except QueryException as err:
+        module.fail_json(**err.json_args)
+
     result = {}
 
     if not facts_handler.exists():

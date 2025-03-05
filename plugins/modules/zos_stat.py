@@ -30,10 +30,10 @@ description:
 options:
   name:
     description:
-        - Name of a data set, aggregate, or a file path, to query.
+        - Name of a data set, generation data group (GDG), aggregate,
+          or a file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
-          extended (PDSE), VSAMs, generation data groups (GDG) or
-          generation data sets (GDS).
+          extended (PDSE), VSAMs or generation data sets (GDS).
     type: str
     required: true
     aliases:
@@ -41,7 +41,8 @@ options:
   volumes:
     description:
         - Name(s) of the volume(s) where the data set will be searched on.
-        - Required when getting facts from a data set. Ignored otherwise.
+        - Required when getting facts from a non-VSAM data set. Ignored
+          otherwise.
     type: list
     elements: str
     required: false
@@ -57,6 +58,7 @@ options:
       - data_set
       - file
       - aggregate
+      - gdg
   sms_managed:
     description:
         - Whether the data set is managed by the Storage Management Subsystem.
@@ -165,8 +167,7 @@ EXAMPLES = r"""
 - name: Get the attributes of a generation data group.
   zos_stat:
     name: "USER.GDG.DATA"
-    type: data_set
-    volume: "000000"
+    type: gdg
 
 - name: Get the attributes of a generation data set.
   zos_stat:
@@ -204,7 +205,7 @@ stat:
       type: str
       sample: USER.SEQ.DATA.SET
     resource_type:
-      description: One of 'data_set', 'file' or 'aggregate'.
+      description: One of 'data_set', 'gdg', 'file' or 'aggregate'.
       returned: success
       type: str
       sample: data_set
@@ -933,6 +934,9 @@ except ImportError:
 
 # TODO: add method/decorator that adds all missing attributes so we can keep the
 # return interface consistent across resource types.
+# Add method here that takes expected_attrs from a subclass and iterates over it
+# to add the missing ones. Add expected_attrs to each subclass with their respective
+# attributes.
 class FactsHandler():
     """Base class for every other handler that will query resources on
     a z/OS system.
@@ -1862,7 +1866,6 @@ class VSAMDataSetHandler(DataSetHandler):
         return attrs
 
 
-# TODO: handle volumes properly (or ignore them)
 class GenerationDataGroupHandler(DataSetHandler):
     """Class that can query Generation Data Groups.
     """
@@ -1870,43 +1873,39 @@ class GenerationDataGroupHandler(DataSetHandler):
     def __init__(
         self,
         name,
-        volumes,
         module,
-        sms_managed,
-        ds_type,
-        gdg_view,
         tmp_hlq=None
     ):
         """Create a new handler that will handle the query of a GDG.
-        This subclass should only be instantiated by get_data_set_handler.
 
         Arguments:
             name (str) -- Name of the data set.
-            volumes (list) -- Volumes where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
-            sms_managed (bool) -- Whether the data set is managed by SMS.
-            ds_type (str) -- Type of the data set.
-            gdg_view (GenerationDataGroupView) -- Object containing a view of the GDG.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
         """
-        super(GenerationDataGroupHandler, self).__init__(
-            name,
-            volumes=volumes,
-            module=module,
-            tmp_hlq=tmp_hlq,
-            sms_managed=sms_managed,
-            exists=True,
-            ds_type=ds_type
-        )
-        self.gdg_view = gdg_view
+        self.name = name
+        self.module = module
+        self.extra_data = ''
+        self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
+
+        try:
+            self.gdg_view = gdgs.GenerationDataGroupView(self.name)
+        except zoau_exceptions.GenerationDataGroupFetchException:
+            self.gdg_view = None
+
+    def exists(self):
+        """Returns True if a GDG view was able to be instantiated."""
+        return self.gdg_view is not None
 
     def query(self):
         """Uses the methods defined in our GenerationDataGroupView object to query
         a GDG's attributes and current active generations."""
-        data = super().query()
+        data = {
+            'resource_type': 'gdg',
+            'name': self.name
+        }
 
         attributes = {
-            'type': 'GDG',
             'limit': self.gdg_view.limit,
             'scratch': self.gdg_view.scratch,
             'empty': self.gdg_view.empty,
@@ -2000,17 +1999,13 @@ def get_data_set_handler(
     cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
     found_volumes = [vol for vol in volumes if vol in cataloged_list]
     missing_volumes = [vol for vol in volumes if vol not in found_volumes]
-    gdg_view = ds_type = None
+    ds_type = None
     
     # We continue when we find the data set on at least 1 volume supplied by the user.
     if len(found_volumes) >= 1:
         ds_type = DataSet.data_set_type(name, volume=found_volumes[0], tmphlq=tmp_hlq)
     else:
-        # In case we're dealing with an empty GDG.
-        try:
-            gdg_view = gdgs.GenerationDataGroupView(name)
-        except zoau_exceptions.GenerationDataGroupFetchException:
-            return DataSetHandler(name, exists=False)
+        return DataSetHandler(name, exists=False)
 
     # Now instantiating a concrete handler based on the data set's type.
     if ds_type in DataSet.MVS_SEQ or ds_type in DataSet.MVS_PARTITIONED:
@@ -2024,16 +2019,7 @@ def get_data_set_handler(
             handler.extra_data = f'{handler.extra_data}Data set was not found in the following volumes: {missing_volumes}\n'
         return handler
     else:
-        # We try to create a GDG view before the handler.
-        if not gdg_view:
-            try:
-                gdg_view = gdgs.GenerationDataGroupView(name)
-                ds_type = 'GDG'
-            except zoau_exceptions.GenerationDataGroupFetchException:
-                return DataSetHandler(name, exists=False)
-
-        return GenerationDataGroupHandler(name, volumes, module, sms_managed, ds_type, gdg_view, tmp_hlq)
-
+        return DataSetHandler(name, exists=False)
 
 
 def get_facts_handler(
@@ -2050,7 +2036,7 @@ def get_facts_handler(
 
     Arguments:
         name (str) -- Name of the resource.
-        resource_type (str) -- One of 'data_set', 'aggregate' or 'file'.
+        resource_type (str) -- One of 'data_set', 'gdg', 'aggregate' or 'file'.
         module (AnsibleModule) -- Ansible object with the task's context.
         volumes (list, optional) -- Volumes where a data set is allocated.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
@@ -2058,10 +2044,12 @@ def get_facts_handler(
         file_args (dict, optional) -- Options affecting how a file is query.
 
     Returns:
-        FactsHandler: Handler for data sets/aggregates/files.
+        FactsHandler: Handler for data sets/GDGs/aggregates/files.
     """
     if resource_type == 'data_set':
         return get_data_set_handler(name, volumes, module, tmp_hlq, sms_managed)
+    elif resource_type == 'gdg':
+        return GenerationDataGroupHandler(name, module, tmp_hlq)
     elif resource_type == 'file':
         return FileHandler(name, module, file_args)
     elif resource_type == 'aggregate':
@@ -2088,7 +2076,7 @@ def run_module():
                 'type': 'str',
                 'required': False,
                 'default': 'data_set',
-                'choices': ['data_set', 'file', 'aggregate']
+                'choices': ['data_set', 'gdg', 'file', 'aggregate']
             },
             'sms_managed': {
                 'type': 'bool',
@@ -2125,7 +2113,8 @@ def run_module():
             # Forcing a volume when querying data sets.
             ('type', 'data_set', ('volumes',))
         ],
-        supports_check_mode=True,
+        # TODO: properly support check mode
+        # supports_check_mode=True
     )
 
     args_def = {

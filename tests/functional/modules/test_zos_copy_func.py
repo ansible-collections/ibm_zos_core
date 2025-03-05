@@ -222,6 +222,53 @@ SH {0}/pdse-lock '{1}'
 //STDERR DD SYSOUT=*
 //"""
 
+PLAYBOOK_ASYNC_TEST = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+  tasks:
+    - name: Create a copy
+        zos_copy:
+        src: /etc/profile
+        remote_src: True
+        force: True
+        dest: {3}
+        async: 50
+        poll: 0
+        register: copy_output
+
+    - name: Query async task.
+        async_status:
+        jid: "{{ copy_output.ansible_job_id }}"
+        register: job_result
+        until: job_result.finished
+        retries: 10
+        delay: 30
+
+    - name: Echo copy_output.
+        debug:
+        msg: "{{ job_result }}"
+"""
+
+INVENTORY_ASYNC_TEST = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
+
 def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
@@ -5514,3 +5561,64 @@ def test_copy_to_dataset_with_special_symbols(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=dest_data_set, state="absent")
+
+
+def test_job_script_async(get_config):
+    try:
+        ds_name = get_tmp_ds_name()
+        path = get_config
+        with open(path, 'r') as file:
+            enviroment = yaml.safe_load(file)
+
+        ssh_key = enviroment["ssh_key"]
+        hosts = enviroment["host"].upper()
+        user = enviroment["user"].upper()
+        python_path = enviroment["python_path"]
+        cut_python_path = python_path[:python_path.find('/bin')].strip()
+        zoau = enviroment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split('/')[2]
+
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system("echo {0} > {1}".format(
+            quote(PLAYBOOK_ASYNC_TEST.format(
+                zoau,
+                cut_python_path,
+                python_version,
+                ds_name
+            )),
+            playbook.name
+        ))
+
+        os.system("echo {0} > {1}".format(
+            quote(INVENTORY_ASYNC_TEST.format(
+                hosts,
+                ssh_key,
+                user,
+                python_path
+            )),
+            inventory.name
+        ))
+
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name,
+            playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding='utf-8'
+        )
+        assert result.returncode == 0
+        assert "ok=3" in result.stdout
+        assert "changed=3" in result.stdout
+        assert result.stderr == ""
+    finally:
+        if os.path.exists(inventory.name):
+            os.remove(inventory.name)
+        if os.path.exists(playbook.name):
+            os.remove(playbook.name)

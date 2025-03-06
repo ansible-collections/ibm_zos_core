@@ -3200,21 +3200,21 @@ def normalize_line_endings(src, encoding=None):
 
 
 def remote_cleanup(module):
-    """Remove all files or data sets pointed to by 'dest' on the remote
-    z/OS system. The idea behind this cleanup step is that if, for some
-    reason, the module fails after copying the data, we want to return the
-    remote system to its original state. Which means deleting any newly
-    created files or data sets.
-    """
-    dest = module.params.get('dest')
-    if "/" in dest:
-        if os.path.isfile(dest):
-            os.remove(dest)
-        else:
-            os.rmdir(dest)
-    else:
-        dest = data_set.extract_dsname(dest)
-        data_set.DataSet.ensure_absent(name=dest)
+     """Remove all files or data sets pointed to by 'dest' on the remote
+     z/OS system. The idea behind this cleanup step is that if, for some
+     reason, the module fails after copying the data, we want to return the
+     remote system to its original state. Which means deleting any newly
+     created files or data sets.
+     """
+     dest = module.params.get('dest')
+     if "/" in dest:
+         if os.path.isfile(dest):
+             os.remove(dest)
+         else:
+             shutil.rmtree(dest)
+     else:
+         dest = data_set.extract_dsname(dest)
+         data_set.DataSet.ensure_absent(name=dest)
 
 
 def update_result(res_args, original_args):
@@ -4118,11 +4118,15 @@ def main():
         res_args, conv_path = run_module(module, arg_def)
 
         # Verification of default tmpdir use by the collection to remove
-        position = str(module.tmpdir[:-1]).rfind('/')
-        tmp_dir = str(module.tmpdir)[:position]
+        path = str(module.tmpdir)
+        position = path[:-1].rfind('/')
+        tmp_dir = path[:position]
 
         default_path = os.path.normpath(f"{tmp_dir}/ansible-zos-copy")
-        if os.path.exists(default_path):
+
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        elif os.path.exists(default_path):
             shutil.rmtree(default_path)
 
         res_args = update_result(res_args=res_args, original_args=module.params)

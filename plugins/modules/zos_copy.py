@@ -229,14 +229,12 @@ options:
   executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
-      - If the C(src) executable has an alias, the alias information is also copied. If the
-        C(dest) is Unix, the alias is not visible in Unix, even though the information is there and
-        will be visible if copied to a library.
       - If I(executable=true), and C(dest) is a data set, it must be a PDS or PDSE (library).
       - If C(dest) is a nonexistent data set, the library attributes assigned will be
         Undefined (U) record format with a record length of 0, block size of 32760 and the
         remaining attributes will be computed.
       - If C(dest) is a file, execute permission for the user will be added to the file (``u+x``).
+      - If the C(src) executable has an alias, the alias do not be copy unless C(aliases=true).
     type: bool
     default: false
     required: false

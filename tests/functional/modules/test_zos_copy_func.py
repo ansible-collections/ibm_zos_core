@@ -5564,7 +5564,7 @@ def test_copy_to_dataset_with_special_symbols(ansible_zos_module):
         hosts.all.zos_data_set(name=dest_data_set, state="absent")
 
 
-def test_job_script_async(get_config):
+def test_job_script_async(ansible_zos_module, get_config):
     try:
         ds_name = get_tmp_ds_name()
         path = get_config
@@ -5619,4 +5619,4 @@ def test_job_script_async(get_config):
         assert "changed=3" in result.stdout
         assert result.stderr == ""
     finally:
-        hosts.all.zos_data_set(name=ds_name, state="absent")
+        ansible_zos_module.all.zos_data_set(name=ds_name, state="absent")

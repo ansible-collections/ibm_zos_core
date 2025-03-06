@@ -4,8 +4,8 @@
 .. _zos_stat_module:
 
 
-zos_stat -- Retrieve facts from z/OS
-====================================
+zos_stat -- Retrieve facts from MVS data sets, USS files and aggregates
+=======================================================================
 
 
 
@@ -28,21 +28,22 @@ Parameters
 
 
 name
-  Name of a data set or aggregate, or a file path, to query.
+  Name of a data set, generation data group (GDG), aggregate, or a file path, to query.
 
-  Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs, generation data groups (GDG) or generation data sets (GDS).
+  Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
 
   | **required**: True
   | **type**: str
 
 
-volume
-  Name of the volume where the data set will be searched on.
+volumes
+  Name(s) of the volume(s) where the data set will be searched on.
 
-  Required when getting facts from a data set. Ignored otherwise.
+  Required when getting attributes from a non-VSAM data set. Ignored otherwise.
 
   | **required**: False
-  | **type**: str
+  | **type**: list
+  | **elements**: str
 
 
 type
@@ -51,7 +52,7 @@ type
   | **required**: False
   | **type**: str
   | **default**: data_set
-  | **choices**: data_set, file, aggregate
+  | **choices**: data_set, file, aggregate, gdg
 
 
 sms_managed
@@ -65,7 +66,7 @@ sms_managed
 
   | **required**: False
   | **type**: bool
-  | **default**: True
+  | **default**: False
 
 
 tmp_hlq
@@ -75,6 +76,41 @@ tmp_hlq
 
   | **required**: False
   | **type**: str
+
+
+follow
+  Whether to follow symlinks when querying files.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
+get_mime
+  Whether to get information about the nature of a file, such as the charset and type of media it represents.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: True
+
+
+get_checksum
+  Whether to compute a file's checksum and return it. Otherwise ignored.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: True
+
+
+checksum_algorithm
+  Algorithm used to compute a file's checksum.
+
+  Will throw an error if the managed node is unable to use the specified algorithm.
+
+  | **required**: False
+  | **type**: str
+  | **default**: sha1
+  | **choices**: md5, sha1, sha224, sha256, sha384, sha512
 
 
 
@@ -90,6 +126,14 @@ Examples
        name: USER.SEQ.DATA
        type: data_set
        volume: "000000"
+
+   - name: Get the attributes of a sequential data set allocated on multiple volumes.
+     zos_stat:
+       name: USER.SEQ.DATA
+       type: data_set
+       volumes:
+         - "000000"
+         - "222222"
 
    - name: Get the attributes of a PDSE managed by SMS.
      zos_stat:
@@ -108,14 +152,24 @@ Examples
    - name: Get the attributes of a generation data group.
      zos_stat:
        name: "USER.GDG.DATA"
-       type: data_set
-       volume: "000000"
+       type: gdg
 
    - name: Get the attributes of a generation data set.
      zos_stat:
        name: "USER.GDG.DATA(-1)"
        type: data_set
        volume: "000000"
+
+   - name: Get the attributes of an aggregate.
+     zos_stat:
+       name: "HLQ.USER.ZFS.DATA"
+       type: aggregate
+
+   - name: Get the attributes of a file inside Unix System Services.
+     zos_stat:
+       name: "/u/user/file.txt"
+       type: file
+       get_checksum: true
 
 
 
@@ -124,7 +178,7 @@ Notes
 -----
 
 .. note::
-   When querying data sets, the module will create a temporary data set that requires around 4 kilobytes of available space on the remote host. This data set will be removed before the module finishes execution.
+   When querying data sets, the module will create a temporary data set that requires around 4 kilobytes of available space on the managed node. This data set will be removed before the module finishes execution.
 
    Sometimes, the system could be unable to properly determine the organization or record format of the data set or the space units used to represent its allocation. When this happens, the values for these fields will be null.
 
@@ -139,6 +193,7 @@ See Also
 
    - :ref:`ansible.builtin.stat_module`
    - :ref:`zos_find_module`
+   - :ref:`zos_gather_facts_module`
 
 
 
@@ -149,6 +204,8 @@ Return Values
 
 stat
   Dictionary containing information about the resource.
+
+  Attributes that don't apply to the current resource will still be present on the dictionary with null values, so as to not break automation that relies on certain fields to be available.
 
   | **returned**: success
   | **type**: dict
@@ -163,7 +220,7 @@ stat
     | **sample**: USER.SEQ.DATA.SET
 
   resource_type
-    One of 'data_set', 'file' or 'aggregate'.
+    One of 'data_set', 'gdg', 'file' or 'aggregate'.
 
     | **returned**: success
     | **type**: str
@@ -180,21 +237,21 @@ stat
 
       | **returned**: success
       | **type**: str
-      | **sample**: PS
+      | **sample**: ps
 
     type
       Type of the data set.
 
       | **returned**: success
       | **type**: str
-      | **sample**: LIBRARY
+      | **sample**: library
 
     record_format
       Record format of a data set.
 
       | **returned**: success
       | **type**: str
-      | **sample**: VB
+      | **sample**: vb
 
     record_length
       Record length of a data set.
@@ -224,9 +281,11 @@ stat
     extended_attrs_bits
       Current values of the EATTR bits for a data set.
 
+      For files, it shows the current values of the extended attributes bits as a group of 4 characters.
+
       | **returned**: success
       | **type**: str
-      | **sample**: OPT
+      | **sample**: opt
 
     creation_date
       Date a data set was created.
@@ -277,12 +336,14 @@ stat
 
         | **returned**: success
         | **type**: str
+        | **sample**: DSALLOC
 
       creation_step
         JCL job step that created the data set.
 
         | **returned**: success
         | **type**: str
+        | **sample**: ALLOC
 
 
     volser
@@ -326,7 +387,7 @@ stat
 
       | **returned**: success
       | **type**: str
-      | **sample**: TRACK
+      | **sample**: track
 
     primary_space
       Primary allocation.
@@ -400,7 +461,7 @@ stat
 
       | **returned**: success
       | **type**: str
-      | **sample**: STANDARD
+      | **sample**: standard
 
     sms_mgmt_class
       The SMS management class name.
@@ -409,7 +470,7 @@ stat
 
       | **returned**: success
       | **type**: str
-      | **sample**: VSAM
+      | **sample**: vsam
 
     sms_storage_class
       The SMS storage class name.
@@ -418,7 +479,7 @@ stat
 
       | **returned**: success
       | **type**: str
-      | **sample**: FAST
+      | **sample**: fast
 
     encrypted
       Whether the data set is encrypted.
@@ -429,31 +490,31 @@ stat
     password
       Whether the data set has a password set to read/write.
 
-      Value can be either one of 'NONE', 'READ' or 'WRITE'.
+      Value can be either one of 'none', 'read' or 'write'.
 
-      For VSAMs, the value can also be 'SUPP', when the module is unable to query its security attributes.
+      For VSAMs, the value can also be 'supp', when the module is unable to query its security attributes.
 
       | **returned**: success
       | **type**: str
-      | **sample**: NONE
+      | **sample**: none
 
     racf
       Whether there is RACF protection set on the data set.
 
-      Value can be either one of 'NONE', 'GENERIC' or 'DISCRETE' for non-VSAM data sets.
+      Value can be either one of 'none', 'generic' or 'discrete' for non-VSAM data sets.
 
-      For VSAMs, the value can be either 'YES' or 'NO'.
+      For VSAMs, the value can be either 'yes' or 'no'.
 
       | **returned**: success
       | **type**: str
-      | **sample**: NONE
+      | **sample**: none
 
     key_label
       The encryption key label for an encrypted data set.
 
       | **returned**: success
       | **type**: str
-      | **sample**: KEYDSN
+      | **sample**: keydsn
 
     dir_blocks_allocated
       Number of directory blocks allocated for a PDS.
@@ -519,14 +580,14 @@ stat
     seq_type
       Type of sequential data set (when it applies).
 
-      Value can be either one of 'BASIC', 'LARGE' or 'EXTENDED'.
+      Value can be either one of 'basic', 'large' or 'extended'.
 
       | **returned**: success
       | **type**: str
-      | **sample**: BASIC
+      | **sample**: basic
 
     data
-      Dictionary containing attributes for the DATA part of a VSAM.
+      Dictionary containing attributes for the DATA component of a VSAM.
 
       For the rest of the attributes of this data set, query it directly with this module.
 
@@ -538,36 +599,42 @@ stat
 
         | **returned**: success
         | **type**: int
+        | **sample**: 4
 
       key_offset
         Key offset for data records.
 
         | **returned**: success
         | **type**: int
+        | **sample**: 3
 
       max_record_length
         Maximum length of data records, in bytes.
 
         | **returned**: success
         | **type**: int
+        | **sample**: 80
 
       avg_record_length
         Average length of data records, in bytes.
 
         | **returned**: success
         | **type**: int
+        | **sample**: 80
 
       bufspace
         Minimum buffer space in bytes to be provided by a processing program.
 
         | **returned**: success
         | **type**: int
+        | **sample**: 37376
 
       total_records
         Total number of records.
 
         | **returned**: success
         | **type**: int
+        | **sample**: 50
 
       spanned
         Whether the data set allows records to be spanned across control intervals.
@@ -575,9 +642,23 @@ stat
         | **returned**: success
         | **type**: bool
 
+      volser
+        Name of the volume containing the DATA component.
+
+        | **returned**: success
+        | **type**: str
+        | **sample**: 000000
+
+      device_type
+        Generic device type where the DATA component resides.
+
+        | **returned**: success
+        | **type**: str
+        | **sample**: 3390
+
 
     index
-      Dictionary containing attributes for the INDEX part of a VSAM.
+      Dictionary containing attributes for the INDEX component of a VSAM.
 
       For the rest of the attributes of this data set, query it directly with this module.
 
@@ -589,12 +670,14 @@ stat
 
         | **returned**: success
         | **type**: int
+        | **sample**: 4
 
       key_offset
         Key offset for index records.
 
         | **returned**: success
         | **type**: int
+        | **sample**: 3
 
       max_record_length
         Maximum length of index records, in bytes.
@@ -607,6 +690,7 @@ stat
 
         | **returned**: success
         | **type**: int
+        | **sample**: 505
 
       bufspace
         Minimum buffer space in bytes to be provided by a processing program.
@@ -620,12 +704,27 @@ stat
         | **returned**: success
         | **type**: int
 
+      volser
+        Name of the volume containing the INDEX component.
+
+        | **returned**: success
+        | **type**: str
+        | **sample**: 000000
+
+      device_type
+        Generic device type where the INDEX component resides.
+
+        | **returned**: success
+        | **type**: str
+        | **sample**: 3390
+
 
     limit
       Maximum amount of active generations allowed in a GDG.
 
       | **returned**: success
       | **type**: int
+      | **sample**: 10
 
     scratch
       Whether the GDG has the SCRATCH attribute set.
@@ -642,10 +741,11 @@ stat
     order
       Allocation order of new Generation Data Sets for a GDG.
 
-      Value can be either 'LIFO' or 'FIFO'.
+      Value can be either 'lifo' or 'fifo'.
 
       | **returned**: success
       | **type**: str
+      | **sample**: lifo
 
     purge
       Whether the GDG has the PURGE attribute set.
@@ -665,6 +765,443 @@ stat
       | **returned**: success
       | **type**: list
       | **elements**: str
+      | **sample**:
+
+        .. code-block:: json
+
+            [
+                "USER.GDG.G0001V00",
+                "USER.GDG.G0002V00"
+            ]
+
+    auditfid
+      File system identification string for an aggregate.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: C3C6C3F0 F0F3000E 0000
+
+    bitmap_file_size
+      Size in K of an aggregate's bitmap file.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 8
+
+    converttov5
+      Value of the converttov5 flag of an aggregate.
+
+      | **returned**: success
+      | **type**: bool
+
+    filesystem_table_size
+      Size in K of an aggregate's filesystem table.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 16
+
+    free
+      Kilobytes still free in an aggregate.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 559
+
+    free_1k_fragments
+      Number of free 1-KB fragments in an aggregate.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 7
+
+    free_8k_blocks
+      Number of free 8-KB blocks in an aggregate.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 69
+
+    log_file_size
+      Size in K of an aggregate's log file.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 112
+
+    sysplex_aware
+      Value of the sysplex_aware flag of an aggregate.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    total_size
+      Total K available in an aggregate.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 648000
+
+    version
+      Version of an aggregate.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: 1.5
+
+    quiesced
+      Attributes available when an aggregate has been quiesced.
+
+      | **returned**: success
+      | **type**: dict
+
+      job
+        Name of the job that quiesced the aggregate.
+
+        | **returned**: success
+        | **type**: str
+        | **sample**: USERJOB
+
+      system
+        Name of the system that quiesced the aggregate.
+
+        | **returned**: success
+        | **type**: str
+        | **sample**: GENSYS
+
+      timestamp
+        Timestamp of the quiesce operation.
+
+        | **returned**: success
+        | **type**: str
+        | **sample**: 2025-02-01T18:02:05
+
+
+    mode
+      Octal representation of a file's permissions.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: 0755
+
+    atime
+      Time of last access for a file.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: 2025-02-23T13:03:45
+
+    mtime
+      Time of last modification of a file.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: 2025-02-23T13:03:45
+
+    ctime
+      Time of last metadata update or creation for a file.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: 2025-02-23T13:03:45
+
+    uid
+      ID of the file's owner.
+
+      | **returned**: success
+      | **type**: int
+
+    gid
+      ID of the file's group.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 1
+
+    size
+      Size of the file in bytes.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 9840
+
+    inode
+      Inode number of the path.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 1671
+
+    dev
+      Device the inode resides on.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 1
+
+    nlink
+      Number of links to the inode.
+
+      | **returned**: success
+      | **type**: int
+      | **sample**: 1
+
+    isdir
+      Whether the path is a directory.
+
+      | **returned**: success
+      | **type**: bool
+
+    ischr
+      Whether the path is a character device.
+
+      | **returned**: success
+      | **type**: bool
+
+    isblk
+      Whether the path is a block device.
+
+      | **returned**: success
+      | **type**: bool
+
+    isreg
+      Whether the path is a regular file.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    isfifo
+      Whether the path is a named pipe.
+
+      | **returned**: success
+      | **type**: bool
+
+    islnk
+      Whether the file is a symbolic link.
+
+      | **returned**: success
+      | **type**: bool
+
+    issock
+      Whether the file is a Unix domain socket.
+
+      | **returned**: success
+      | **type**: bool
+
+    isuid
+      Whether the Ansible user's ID matches the owner's ID.
+
+      | **returned**: success
+      | **type**: bool
+
+    isgid
+      Whether the Ansible user's group matches the owner's group.
+
+      | **returned**: success
+      | **type**: bool
+
+    wusr
+      Whether the file's owner has write permission.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    rusr
+      Whether the file's owner has read permission.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    xusr
+      Whether the file's owner has execute permission.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    wgrp
+      Whether the file's group has write permission.
+
+      | **returned**: success
+      | **type**: bool
+
+    rgrp
+      Whether the file's group has read permission.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    xgrp
+      Whether the file's group has execute permission.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    woth
+      Whether others have write permission over the file.
+
+      | **returned**: success
+      | **type**: bool
+
+    roth
+      Whether others have read permission over the file.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    xoth
+      Whether others have execute permission over the file.
+
+      | **returned**: success
+      | **type**: bool
+
+    writeable
+      Whether the Ansible user can write to the path.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    readable
+      Whether the Ansible user can read the path.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    executable
+      Whether the Ansible user can execute the path.
+
+      | **returned**: success
+      | **type**: bool
+      | **sample**:
+
+        .. code-block:: json
+
+            true
+
+    pw_name
+      User name of the file's owner.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: username
+
+    gr_name
+      Group name of the file's owner.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: group
+
+    lnk_source
+      Absolute path to the target of a symlink.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: /etc/foobar/file
+
+    lnk_target
+      Target of a symlink.
+
+      Preserves relative paths.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: ../foobar/file
+
+    charset
+      Current encoding tag associated with the file.
+
+      This tag does not necessarily correspond with the actual encoding of the file.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: IBM-1047
+
+    mimetype
+      Output from the file utility describing the content.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: commands text
+
+    audit_bits
+      Audit bits for the file. Contains two sets of 3 bits.
+
+      First 3 bits describe the user-requested audit information.
+
+      Last 3 bits describe the auditor-requested audit information.
+
+      For each set, the bits represent read, write and execute/search audit options.
+
+      An 's' means to audit successful access attempts.
+
+      An 'f' means to audit failed access attempts.
+
+      An 'a' means to audit all access attempts.
+
+      An '-' means to not audit accesses.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: fff---
+
+    file_format
+      File format (for regular files). One of "null", "bin" or "rec".
+
+      Text data delimiter for a file. One of "nl", "cr", "lf", "crlf", "lfcr" or "crnl".
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: bin
 
 
 

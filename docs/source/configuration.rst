@@ -195,25 +195,36 @@ Step 3: Group variables (group_vars)
 
         The following section explains the environment variables.
 
-        - *BPXK_AUTOCVT* - Activate automatic file conversion of tagged files including
-           I/O for regular, pipe, and character-special files that are tagged.
-        - *ZOAU_HOME*  - the Z Open Automation Utilities (ZOAU) install root path.
-        - *PYTHONPATH* - the ZOAU Python library path.
-        - *LIBPATH* - the Python libraries  path on the managed node and the ZOAU python
-          library path separated by semi-colons.
-        - *PATH* - the ZOAU `/bin` path and Python interpreter path.
-        - *_CEE_RUNOPTS* - the invocation Language Environment runtime options for programs.
-        - *_TAG_REDIR_IN* - enables tagging of the shell's stdin redirection based on the
-          existing file tags. It must be set to txt.
-        - *_TAG_REDIR_OUT* - enables tagging of the shell's stdout redirection based on the
-          existing file tags. It must be set to txt.
-        - *_TAG_REDIR_ERR* - enables tagging of the shell's stderr redirection based on the
-          existing file tags. It must be set to txt.
-        - *LANG* -  the name of the default locale. The C value specifies the Portable Operating
-          System Interface (POSIX) locale.
-        - *PYTHONSTDINENCODING* - instructs Ansible which encoding it will pipe content to
-          Python's stdin when pipelining=true the encoding Unix System Services is configured as,
-          supported encodings are ASCII or EBCDIC. 
+        BPXK_AUTOCVT
+            - Activate automatic file conversion of tagged files
+              including I/O for regular, pipe, and character-special files that are tagged.
+        ZOAU_HOME
+            - the Z Open Automation Utilities (ZOAU) install root path.
+        PYTHONPATH
+            - The ZOAU Python library path.
+        LIBPATH
+            - The Python libraries  path on the managed node and the ZOAU python
+              library path separated by semi-colons.
+        PATH
+            - The ZOAU `/bin` path and Python interpreter path.
+        _CEE_RUNOPTS
+            - The invocation Language Environment runtime options for programs.
+        _TAG_REDIR_IN
+            - Enables tagging of the shell's stdin redirection based on the
+              existing file tags. It must be set to txt.
+        _TAG_REDIR_OUT
+            - Enables tagging of the shell's stdout redirection based on the
+              existing file tags. It must be set to txt.
+        _TAG_REDIR_ERR
+            - enables tagging of the shell's stderr redirection based on the
+              existing file tags. It must be set to txt.
+        LANG
+            - The name of the default locale. The C value specifies the Portable Operating
+              System Interface (POSIX) locale.
+        PYTHONSTDINENCODING
+            - Instructs Ansible which encoding it will pipe content to Python's stdin
+              when ``pipelining=true`` the encoding Unix System Services is configured as,
+              supported encodings are ASCII or EBCDIC.
 
 Step 4: Inventory
 ==================

@@ -4120,12 +4120,13 @@ def main():
         # Verification of default tmpdir use by the collection to remove
         position = str(module.tmpdir[:-1]).rfind('/')
         tmp_dir = str(module.tmpdir)[:position]
-        path = os.path.normpath(f"{tmp_dir}/ansible-zos-copy")
-        if os.path.exists(path):
-            shutil.rmtree(path)
+
+        default_path = os.path.normpath(f"{tmp_dir}/ansible-zos-copy")
+        path = os.path.normpath(f"{module.tmpdir}")
+        if os.path.exists(default_path):
+            shutil.rmtree(default_path)
         # Verification of a tmpdir set by the user to remove content
-        path = os.path.normpath(f"{tmp_dir}")
-        if os.path.exists(path):
+        elif os.path.exists(path):
             shutil.rmtree(path)
 
         res_args = update_result(res_args=res_args, original_args=module.params)

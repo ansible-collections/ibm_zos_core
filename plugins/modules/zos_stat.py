@@ -72,7 +72,7 @@ options:
           in the output from the task.
     type: bool
     required: false
-    default: true
+    default: false
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary data
@@ -116,9 +116,6 @@ options:
       - "sha256"
       - "sha384"
       - "sha512"
-attributes:
-  check_mode:
-    support: full
 
 notes:
   - When querying data sets, the module will create a temporary data set
@@ -248,7 +245,7 @@ stat:
           type: bool
           sample: true
         extended_attrs_bits:
-          description: 
+          description:
             - Current values of the EATTR bits for a data set.
             - For files, it shows the current values of the extended
               attributes bits as a group of 4 characters.
@@ -489,7 +486,7 @@ stat:
           sample: basic
         data:
           description:
-            - Dictionary containing attributes for the DATA component of a VSAM. 
+            - Dictionary containing attributes for the DATA component of a VSAM.
             - For the rest of the attributes of this data set, query it
               directly with this module.
           returned: success
@@ -546,7 +543,7 @@ stat:
               sample: "3390"
         index:
           description:
-            - Dictionary containing attributes for the INDEX component of a VSAM. 
+            - Dictionary containing attributes for the INDEX component of a VSAM.
             - For the rest of the attributes of this data set, query it
               directly with this module.
           returned: success
@@ -930,15 +927,17 @@ import pwd
 import grp
 from datetime import datetime, timezone, timedelta
 import time
+import traceback
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    ZOAUImportError
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
-    MVSDataSet,
-    GenerationDataGroup,
     DatasetCreateError,
     GDSNameResolveError
 )
@@ -956,7 +955,6 @@ except ImportError:
 
 
 # TODO: run pylint
-# TODO: run ansible's sanity tests
 # TODO: add method/decorator that adds all missing attributes so we can keep the
 # return interface consistent across resource types.
 # Add method here that takes expected_attrs from a subclass and iterates over it
@@ -1030,15 +1028,15 @@ class AggregateHandler(FactsHandler):
         if not self.has_been_queried:
             self._run_zfsadm()
 
-        size_search = re.search('([0-9]+)( K free out of total )([0-9]+)', self.raw_attributes)
-        version_search = re.search('(version )([0-9]+\.[0-9]+)', self.raw_attributes)
-        auditfid_search = re.search('(auditfid )([0-9A-Z]{8} [0-9A-Z]{8} [0-9A-Z]{4})', self.raw_attributes)
-        free_8k_blocks_search = re.search('([0-9]+)( free 8k blocks)', self.raw_attributes)
-        free_fragments_search = re.search('([0-9]+)( free 1K fragments)', self.raw_attributes)
-        log_file_search = re.search('([0-9]+)( K log file)', self.raw_attributes)
-        filesystem_table_search = re.search('([0-9]+)( K filesystem table)', self.raw_attributes)
-        bitmap_search = re.search('([0-9]+)( K bitmap file)', self.raw_attributes)
-        quiesced_search = re.search('(Quiesced by job )([0-9a-zA-Z]+)( on system )([0-9a-zA-Z]+)( on )(.+)', self.raw_attributes)
+        size_search = re.search(r'([0-9]+)( K free out of total )([0-9]+)', self.raw_attributes)
+        version_search = re.search(r'(version )([0-9]+\.[0-9]+)', self.raw_attributes)
+        auditfid_search = re.search(r'(auditfid )([0-9A-Z]{8} [0-9A-Z]{8} [0-9A-Z]{4})', self.raw_attributes)
+        free_8k_blocks_search = re.search(r'([0-9]+)( free 8k blocks)', self.raw_attributes)
+        free_fragments_search = re.search(r'([0-9]+)( free 1K fragments)', self.raw_attributes)
+        log_file_search = re.search(r'([0-9]+)( K log file)', self.raw_attributes)
+        filesystem_table_search = re.search(r'([0-9]+)( K filesystem table)', self.raw_attributes)
+        bitmap_search = re.search(r'([0-9]+)( K bitmap file)', self.raw_attributes)
+        quiesced_search = re.search(r'(Quiesced by job )([0-9a-zA-Z]+)( on system )([0-9a-zA-Z]+)( on )(.+)', self.raw_attributes)
 
         try:
             attributes = {
@@ -1260,7 +1258,7 @@ class FileHandler(FactsHandler):
 
     def _parse_datetimes(self, attrs, keys):
         """Converts timestamps to date times (YYYY-MM-DDTHH:MM:SS).
-        
+
         Arguments:
             attrs (dict) -- Raw dictionary gotten from a stat call.
             keys (list) -- List of keys from attrs to convert.
@@ -1288,7 +1286,7 @@ class DataSetHandler(FactsHandler):
     num_attrs = []
 
     def __init__(
-        self, 
+        self,
         name,
         volumes=None,
         module=None,
@@ -1317,7 +1315,6 @@ class DataSetHandler(FactsHandler):
         self.sms_managed = sms_managed
         self.data_set_exists = exists
         self.data_set_type = ds_type
-
 
     def exists(self):
         """Returns whether the given data set was found on the system.
@@ -1429,7 +1426,7 @@ class DataSetHandler(FactsHandler):
 
     def _parse_datetimes(self, attrs, keys):
         """Converts ordinal dates (YYYY/DDD) to more common ones (YYYY-MM-DD).
-        
+
         Arguments:
             attrs (dict) -- Raw dictionary processed from a LISTDSI script.
             keys (list) -- List of keys from attrs to convert.
@@ -1676,7 +1673,7 @@ return 0"""
         if rc != 0 and 'IKJ58430I' in stdout:
             tso_cmd = tso_cmd.replace('SMSINFO', '')
             rc, stdout, stderr = self.module.run_command(tso_cmd)
-            self.extra_data  = f'{self.extra_data}The data set is not managed by SMS.\n'
+            self.extra_data = f'{self.extra_data}The data set is not managed by SMS.\n'
 
         if rc != 0:
             raise QueryException(
@@ -1701,7 +1698,7 @@ return 0"""
         attrs = super()._parse_attributes(attrs)
 
         if 'volumes' in attrs:
-            attrs['volumes'] = [vol for vol in attrs['volumes'].split()]
+            attrs['volumes'] = list(attrs['volumes'].split())
 
         if 'jcl_attrs' in attrs and attrs['jcl_attrs']['creation_job'] == '':
             attrs['jcl_attrs']['creation_job'] = None
@@ -1797,16 +1794,16 @@ class VSAMDataSetHandler(DataSetHandler):
         }
 
         general_info_regex_searches = [
-            ('extended_attrs_bits', '(EATTR-+\(?)([0-9a-zA-Z]+)'),
-            ('creation_date', '(CREATION-+)(\d{4}\.\d{3})'),
-            ('expiration_date', '(EXPIRATION-+)(\d{4}\.\d{3})'),
-            ('sms_mgmt_class', '(MANAGEMENTCLASS-+)([0-9a-zA-Z]+)'),
-            ('sms_storage_class', '(STORAGECLASS-+)([0-9a-zA-Z]+)'),
-            ('sms_data_class', '(DATACLASS-+)([0-9a-zA-Z]+)'),
-            ('encrypted', '(DATA SET ENCRYPTION-+\()([a-zA-Z]{2,3})'),
-            ('key_label', '(DATA SET KEY LABEL-+)([a-zA-Z]+)'),
-            ('password', '(PROTECTION-PSWD-+\(?)([a-zA-Z]+)'),
-            ('racf', '(RACF-+\()([a-zA-Z]{2,3})')
+            ('extended_attrs_bits', r'(EATTR-+\(?)([0-9a-zA-Z]+)'),
+            ('creation_date', r'(CREATION-+)(\d{4}\.\d{3})'),
+            ('expiration_date', r'(EXPIRATION-+)(\d{4}\.\d{3})'),
+            ('sms_mgmt_class', r'(MANAGEMENTCLASS-+)([0-9a-zA-Z]+)'),
+            ('sms_storage_class', r'(STORAGECLASS-+)([0-9a-zA-Z]+)'),
+            ('sms_data_class', r'(DATACLASS-+)([0-9a-zA-Z]+)'),
+            ('encrypted', r'(DATA SET ENCRYPTION-+\()([a-zA-Z]{2,3})'),
+            ('key_label', r'(DATA SET KEY LABEL-+)([a-zA-Z]+)'),
+            ('password', r'(PROTECTION-PSWD-+\(?)([a-zA-Z]+)'),
+            ('racf', r'(RACF-+\()([a-zA-Z]{2,3})')
         ]
 
         attributes.update(self._find_attributes_from_liscat(vsam_general_info, general_info_regex_searches))
@@ -1822,27 +1819,27 @@ class VSAMDataSetHandler(DataSetHandler):
 
         if 'ASSOCIATIONS' in vsam_general_info:
             attributes['data'] = {
-                'name': re.search('(DATA-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
-                'spanned': True if re.search('\bSPANNED\b', data_info) else False,
-                'volser': re.search("(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", data_info).group(2),
-                'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
+                'name': re.search(r'(DATA-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
+                'spanned': True if re.search(r'\bSPANNED\b', data_info) else False,
+                'volser': re.search(r"(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", data_info).group(2),
+                'device_type': re.search(r"(DEVTYPE-+X')(\d{7}[0-9A-F])", data_info).group(2)
             }
             attributes['data']['device_type'] = self.dev_type_translation_table[attributes['data']['device_type']]
 
             attributes['index'] = {
-                'name': re.search('(INDEX-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
-                'volser': re.search("(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", index_info).group(2),
-                'device_type': re.search("(DEVTYPE-+X')(\d{7}[0-9A-F])", index_info).group(2)
+                'name': re.search(r'(INDEX-+)([0-9a-zA-Z\.@\$#-]+)', vsam_general_info).group(2),
+                'volser': re.search(r"(VOLSER-+)([0-9a-zA-Z\$\#@]{1,6})", index_info).group(2),
+                'device_type': re.search(r"(DEVTYPE-+X')(\d{7}[0-9A-F])", index_info).group(2)
             }
             attributes['index']['device_type'] = self.dev_type_translation_table[attributes['index']['device_type']]
 
             assoc_regex_searches = [
-                ('key_length', '(KEYLEN-+)(\d+)'),
-                ('key_offset', '(RKP-+)(\d+)'),
-                ('max_record_length', '(AVGLRECL-+)(\d+)'),
-                ('avg_record_length', '(MAXLRECL-+)(\d+)'),
-                ('bufspace', '(BUFSPACE-+)(\d+)'),
-                ('total_records', '(REC-TOTAL-+)(\d+)')
+                ('key_length', r'(KEYLEN-+)(\d+)'),
+                ('key_offset', r'(RKP-+)(\d+)'),
+                ('max_record_length', r'(AVGLRECL-+)(\d+)'),
+                ('avg_record_length', r'(MAXLRECL-+)(\d+)'),
+                ('bufspace', r'(BUFSPACE-+)(\d+)'),
+                ('total_records', r'(REC-TOTAL-+)(\d+)')
             ]
 
             attributes['data'].update(self._find_attributes_from_liscat(data_info, assoc_regex_searches))
@@ -1965,7 +1962,7 @@ class GenerationDataGroupHandler(DataSetHandler):
                     break
 
         gdg_base_info = ' '.join(listcat_lines[0:gdg_base_info_limit])
-        attributes['creation_date'] = re.search("(CREATION-+)(\d{4}\.\d{3})", gdg_base_info).group(2)
+        attributes['creation_date'] = re.search(r"(CREATION-+)(\d{4}\.\d{3})", gdg_base_info).group(2)
         data['attributes'] = self._parse_attributes(attributes)
 
         return data
@@ -2044,7 +2041,7 @@ def get_data_set_handler(
     cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
     found_volumes = [vol for vol in volumes if vol in cataloged_list]
     missing_volumes = [vol for vol in volumes if vol not in found_volumes]
-    
+
     # We continue when we find the data set on at least 1 volume supplied by the user.
     # Overwriting the first ds_type just in case.
     if len(found_volumes) >= 1:

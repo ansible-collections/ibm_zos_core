@@ -116,6 +116,9 @@ options:
       - "sha256"
       - "sha384"
       - "sha512"
+attributes:
+  check_mode:
+    support: full
 
 notes:
   - When querying data sets, the module will create a temporary data set
@@ -952,6 +955,8 @@ except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
+# TODO: run pylint
+# TODO: run ansible's sanity tests
 # TODO: add method/decorator that adds all missing attributes so we can keep the
 # return interface consistent across resource types.
 # Add method here that takes expected_attrs from a subclass and iterates over it
@@ -1649,9 +1654,12 @@ return 0"""
         """
         extra_args = ''
         # Asking for PDS/PDSE-specific attributes.
-        if self.data_set_type in DataSet.MVS_PARTITIONED:
+        if self.module.check_mode:
+            self.extra_data = f'{self.extra_data}Skipping PDS/E directory attributes and SMS information while running in check mode.\n'
+
+        if not self.module.check_mode and self.data_set_type in DataSet.MVS_PARTITIONED:
             extra_args = 'DIRECTORY'
-        if self.sms_managed:
+        if not self.module.check_mode and self.sms_managed:
             extra_args = f'{extra_args} SMSINFO'
 
         if len(self.volumes) == 1:
@@ -2141,8 +2149,7 @@ def run_module():
                 'choices': ['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512']
             }
         },
-        # TODO: properly support check mode
-        # supports_check_mode=True
+        supports_check_mode=True
     )
 
     args_def = {

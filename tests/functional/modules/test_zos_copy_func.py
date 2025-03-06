@@ -684,6 +684,7 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
         )
 
         for result in copy_result.contacted.values():
+            print(result)
             assert result.get("msg") is not None
             assert result.get("changed") is False
             assert "Error" in result.get("msg")

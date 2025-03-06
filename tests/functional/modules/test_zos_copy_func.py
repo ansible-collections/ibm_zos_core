@@ -5619,7 +5619,4 @@ def test_job_script_async(get_config):
         assert "changed=3" in result.stdout
         assert result.stderr == ""
     finally:
-        if os.path.exists(inventory.name):
-            os.remove(inventory.name)
-        if os.path.exists(playbook.name):
-            os.remove(playbook.name)
+        hosts.all.zos_data_set(name=ds_name, state="absent")

@@ -954,7 +954,6 @@ except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
-# TODO: run pylint
 # TODO: add method/decorator that adds all missing attributes so we can keep the
 # return interface consistent across resource types.
 # Add method here that takes expected_attrs from a subclass and iterates over it
@@ -979,11 +978,12 @@ class FactsHandler():
 
     @abc.abstractmethod
     def exists(self):
-        pass
+        """Method that should return whether a resource exists on the managed node."""
 
     @abc.abstractmethod
     def query(self):
-        pass
+        """Method that should query attributes about a resource and return a
+        dictionary as a result."""
 
     def get_extra_data(self):
         """Extra data will be treated as any information that should be returned
@@ -1006,7 +1006,7 @@ class AggregateHandler(FactsHandler):
             name (str) -- Aggregate's name.
             module (AnsibleModule, optional) -- Ansible object with the task's context.
         """
-        super(AggregateHandler, self).__init__(name, module)
+        super().__init__(name, module)
         self.has_been_queried = False
         self.raw_attributes = None
 
@@ -1030,13 +1030,28 @@ class AggregateHandler(FactsHandler):
 
         size_search = re.search(r'([0-9]+)( K free out of total )([0-9]+)', self.raw_attributes)
         version_search = re.search(r'(version )([0-9]+\.[0-9]+)', self.raw_attributes)
-        auditfid_search = re.search(r'(auditfid )([0-9A-Z]{8} [0-9A-Z]{8} [0-9A-Z]{4})', self.raw_attributes)
-        free_8k_blocks_search = re.search(r'([0-9]+)( free 8k blocks)', self.raw_attributes)
-        free_fragments_search = re.search(r'([0-9]+)( free 1K fragments)', self.raw_attributes)
+        auditfid_search = re.search(
+            r'(auditfid )([0-9A-Z]{8} [0-9A-Z]{8} [0-9A-Z]{4})',
+            self.raw_attributes
+        )
+        free_8k_blocks_search = re.search(
+            r'([0-9]+)( free 8k blocks)',
+            self.raw_attributes
+        )
+        free_fragments_search = re.search(
+            r'([0-9]+)( free 1K fragments)',
+            self.raw_attributes
+        )
         log_file_search = re.search(r'([0-9]+)( K log file)', self.raw_attributes)
-        filesystem_table_search = re.search(r'([0-9]+)( K filesystem table)', self.raw_attributes)
+        filesystem_table_search = re.search(
+            r'([0-9]+)( K filesystem table)',
+            self.raw_attributes
+        )
         bitmap_search = re.search(r'([0-9]+)( K bitmap file)', self.raw_attributes)
-        quiesced_search = re.search(r'(Quiesced by job )([0-9a-zA-Z]+)( on system )([0-9a-zA-Z]+)( on )(.+)', self.raw_attributes)
+        quiesced_search = re.search(
+            r'(Quiesced by job )([0-9a-zA-Z]+)( on system )([0-9a-zA-Z]+)( on )(.+)',
+            self.raw_attributes
+        )
 
         try:
             attributes = {
@@ -1052,8 +1067,8 @@ class AggregateHandler(FactsHandler):
                     'log_file_size': int(log_file_search.group(1)),
                     'filesystem_table_size': int(filesystem_table_search.group(1)),
                     'bitmap_file_size': int(bitmap_search.group(1)),
-                    'sysplex_aware': True if 'sysplex_aware' in self.raw_attributes else False,
-                    'converttov5': True if 'converttov5' in self.raw_attributes else False,
+                    'sysplex_aware': 'sysplex_aware' in self.raw_attributes,
+                    'converttov5': 'converttov5' in self.raw_attributes,
                     'quiesced': {
                         'job': None,
                         'system': None,
@@ -1073,7 +1088,9 @@ class AggregateHandler(FactsHandler):
 
                 attributes['attributes']['quiesced']['timestamp'] = quiesced_timestamp
         except Exception as err:
-            raise QueryException(f"An error ocurred while parsing an aggregate's information: {str(err)}.")
+            raise QueryException(
+                f"An error ocurred while parsing an aggregate's information: {str(err)}."
+            )
 
         return attributes
 
@@ -1111,11 +1128,12 @@ class FileHandler(FactsHandler):
             file_args (dict, optional) -- Dictionary containing whether to follow symlinks,
                 get MIME information, and how to compute a file's checksum.
         """
-        super(FileHandler, self).__init__(name, module)
+        super().__init__(name, module)
         self.follow = file_args.get('follow', False)
         self.get_mime = file_args.get('get_mime', True)
         self.get_checksum = file_args.get('get_checksum', True)
         self.checksum_algorithm = file_args.get('checksum_algorithm', 'sha1')
+        self.z_attributes = None
 
         try:
             current_time = time.localtime()
@@ -1123,7 +1141,9 @@ class FileHandler(FactsHandler):
             current_tz = current_time.tm_zone
             self.tz_info = timezone(timedelta(seconds=utc_offset), current_tz)
         except (OverflowError, OSError) as err:
-            raise QueryException(f"An error ocurred while trying to get information about the system's time: {str(err)}.")
+            raise QueryException(
+                f"An error ocurred while trying to get information about the system's time: {str(err)}."
+            )
 
     def exists(self):
         """Returns whether or not the file path exists on the system.
@@ -1188,7 +1208,10 @@ class FileHandler(FactsHandler):
                 attributes['attributes']['gr_name'] = None
 
             datetime_keys = ['atime', 'mtime', 'ctime']
-            attributes['attributes'] = self._parse_datetimes(attributes['attributes'], datetime_keys)
+            attributes['attributes'] = self._parse_datetimes(
+                attributes['attributes'],
+                datetime_keys
+            )
 
             if attributes['attributes']['islnk']:
                 attributes['attributes']['lnk_source'] = os.path.realpath(self.name)
@@ -1216,7 +1239,9 @@ class FileHandler(FactsHandler):
             if self.get_mime:
                 attributes['attributes']['mimetype'] = self._run_file()
         except Exception as err:
-            raise QueryException(f"An error ocurred while querying a file path's information: {str(err)}.")
+            raise QueryException(
+                f"An error ocurred while querying a file path's information: {str(err)}."
+            )
 
         return attributes
 
@@ -1266,7 +1291,10 @@ class FileHandler(FactsHandler):
         for key in keys:
             try:
                 if key in attrs:
-                    attrs[key] = datetime.fromtimestamp(attrs[key], tz=self.tz_info).strftime('%Y-%m-%dT%H:%M:%S')
+                    attrs[key] = datetime.fromtimestamp(
+                        attrs[key],
+                        tz=self.tz_info
+                    ).strftime('%Y-%m-%dT%H:%M:%S')
             except (OverflowError, ValueError):
                 pass
 
@@ -1309,7 +1337,7 @@ class DataSetHandler(FactsHandler):
             exists (bool, optional) -- Whether the data set is present on the given volume.
             ds_type (str, optional) -- Type of the data set.
         """
-        super(DataSetHandler, self).__init__(name, module)
+        super().__init__(name, module)
         self.volumes = volumes
         self.tmp_hlq = tmp_hlq if tmp_hlq else datasets.get_hlq()
         self.sms_managed = sms_managed
@@ -1570,7 +1598,7 @@ return 0"""
             ds_type (str) -- Type of the data set.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
         """
-        super(NonVSAMDataSetHandler, self).__init__(
+        super().__init__(
             name,
             volumes=volumes,
             module=module,
@@ -1748,7 +1776,7 @@ class VSAMDataSetHandler(DataSetHandler):
             ds_type (str) -- Type of the data set.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
         """
-        super(VSAMDataSetHandler, self).__init__(
+        super().__init__(
             name,
             module=module,
             tmp_hlq=tmp_hlq,
@@ -1806,7 +1834,13 @@ class VSAMDataSetHandler(DataSetHandler):
             ('racf', r'(RACF-+\()([a-zA-Z]{2,3})')
         ]
 
-        attributes.update(self._find_attributes_from_liscat(vsam_general_info, general_info_regex_searches))
+        attributes.update(
+            self._find_attributes_from_liscat(
+                vsam_general_info,
+                general_info_regex_searches
+            )
+        )
+
         if 'extended_attrs_bits' in attributes:
             attributes['has_extended_attrs'] = 'YES' if attributes['extended_attrs_bits'] != 'NULL' else 'NO'
             if attributes['extended_attrs_bits'] == 'NULL':
@@ -1842,8 +1876,14 @@ class VSAMDataSetHandler(DataSetHandler):
                 ('total_records', r'(REC-TOTAL-+)(\d+)')
             ]
 
-            attributes['data'].update(self._find_attributes_from_liscat(data_info, assoc_regex_searches))
-            attributes['index'].update(self._find_attributes_from_liscat(index_info, assoc_regex_searches))
+            attributes['data'].update(self._find_attributes_from_liscat(
+                data_info,
+                assoc_regex_searches
+            ))
+            attributes['index'].update(self._find_attributes_from_liscat(
+                index_info,
+                assoc_regex_searches
+            ))
 
         data['attributes'] = self._parse_attributes(attributes)
         return data
@@ -1962,7 +2002,10 @@ class GenerationDataGroupHandler(DataSetHandler):
                     break
 
         gdg_base_info = ' '.join(listcat_lines[0:gdg_base_info_limit])
-        attributes['creation_date'] = re.search(r"(CREATION-+)(\d{4}\.\d{3})", gdg_base_info).group(2)
+        attributes['creation_date'] = re.search(
+            r"(CREATION-+)(\d{4}\.\d{3})",
+            gdg_base_info
+        ).group(2)
         data['attributes'] = self._parse_attributes(attributes)
 
         return data
@@ -2035,7 +2078,9 @@ def get_data_set_handler(
     # If we're not dealing with a VSAM, we'll continue with looking through
     # the volumes the user supplied.
     if not volumes or len(volumes) == 0:
-        raise QueryException('The data set requested needs a volume to be supplied in the task options.')
+        raise QueryException(
+            'The data set requested needs a volume to be supplied in the task options.'
+        )
 
     # Finding all the volumes where the data set is allocated.
     cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
@@ -2051,9 +2096,18 @@ def get_data_set_handler(
 
     # Now instantiating a concrete handler based on the data set's type.
     if ds_type in DataSet.MVS_SEQ or ds_type in DataSet.MVS_PARTITIONED:
-        handler = NonVSAMDataSetHandler(name, found_volumes, module, sms_managed, ds_type, tmp_hlq)
+        handler = NonVSAMDataSetHandler(
+            name,
+            found_volumes,
+            module,
+            sms_managed,
+            ds_type,
+            tmp_hlq
+        )
+
         if len(missing_volumes) > 0:
             handler.extra_data = f'{handler.extra_data}Data set was not found in the following volumes: {missing_volumes}\n'
+
         return handler
     else:
         return DataSetHandler(name, exists=False)

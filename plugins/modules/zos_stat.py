@@ -42,8 +42,11 @@ options:
   volumes:
     description:
         - Name(s) of the volume(s) where the data set will be searched on.
-        - Required when getting attributes from a non-VSAM data set. Ignored
-          otherwise.
+        - If omitted, the module will look up the master catalog to find
+          all volumes where a data set is allocated.
+        - When used, if the data set is not found in at least one volume
+          from the list, the module will fail with a "data set not found"
+          message.
     type: list
     elements: str
     required: false
@@ -137,6 +140,11 @@ seealso:
 """
 
 EXAMPLES = r"""
+- name: Get the attributes of a sequential data set.
+  zos_stat:
+    name: USER.SEQ.DATA
+    type: data_set
+
 - name: Get the attributes of a sequential data set on volume '000000'.
   zos_stat:
     name: USER.SEQ.DATA
@@ -155,14 +163,12 @@ EXAMPLES = r"""
   zos_stat:
     name: USER.PDSE.DATA
     type: data_set
-    volume: "000000"
     sms_managed: true
 
 - name: Get the attributes of a sequential data set with a non-default temporary HLQ.
   zos_stat:
     name: USER.SEQ.DATA
     type: data_set
-    volume: "000000"
     tmp_hlq: "RESTRICT"
 
 - name: Get the attributes of a generation data group.
@@ -174,7 +180,6 @@ EXAMPLES = r"""
   zos_stat:
     name: "USER.GDG.DATA(-1)"
     type: data_set
-    volume: "000000"
 
 - name: Get the attributes of an aggregate.
   zos_stat:
@@ -314,6 +319,15 @@ stat:
           type: list
           elements: str
           sample: ["000000", "SCR03"]
+        missing_volumes:
+          description:
+            - When using the C(volumes) option, this field will contain every volume
+              specified in a task where the data set was missing. Will be an empty list
+              in any other case.
+          returned: success
+          type: list
+          elements: str
+          sample: ["222222", "AUXVOL"]
         device_type:
           description: Generic device type where the data set resides.
           returned: success
@@ -1586,7 +1600,16 @@ else
 
 return 0"""
 
-    def __init__(self, name, volumes, module, sms_managed, ds_type, tmp_hlq=None):
+    def __init__(
+            self,
+            name,
+            volumes,
+            module,
+            sms_managed,
+            ds_type,
+            tmp_hlq=None,
+            missing_volumes=None
+    ):
         """Create a new handler that will handle the query of a sequential or
         partitioned data set. This subclass should only be instantiated by
         get_data_set_handler.
@@ -1598,6 +1621,8 @@ return 0"""
             sms_managed (bool) -- Whether the data set is managed by SMS.
             ds_type (str) -- Type of the data set.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
+            missing_volumes (list, optional) -- List of volumes where a data set was searched
+                but not found.
         """
         super().__init__(
             name,
@@ -1608,6 +1633,7 @@ return 0"""
             exists=True,
             ds_type=ds_type
         )
+        self.missing_volumes = missing_volumes
 
     def query(self):
         """Uses LISTDSI to query facts about a data set, while also handling
@@ -1659,6 +1685,7 @@ return 0"""
         finally:
             datasets.delete(temp_script_location)
 
+        attributes['missing_volumes'] = self.missing_volumes
         data['attributes'] = self._parse_attributes(attributes)
 
         return data
@@ -2076,19 +2103,16 @@ def get_data_set_handler(
     elif ds_type in DataSet.MVS_VSAM:
         return VSAMDataSetHandler(name, module, ds_type, tmp_hlq)
 
-    # If we're not dealing with a VSAM, we'll continue with looking through
-    # the volumes the user supplied.
-    if not volumes or len(volumes) == 0:
-        raise QueryException(
-            'The data set requested needs a volume to be supplied in the task options.'
-        )
-
     # Finding all the volumes where the data set is allocated.
     cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
-    found_volumes = [vol for vol in volumes if vol in cataloged_list]
-    missing_volumes = [vol for vol in volumes if vol not in found_volumes]
+    if volumes and len(volumes) > 0:
+        found_volumes = [vol for vol in volumes if vol in cataloged_list]
+        missing_volumes = [vol for vol in volumes if vol not in found_volumes]
+    else:
+        found_volumes = cataloged_list
+        missing_volumes = []
 
-    # We continue when we find the data set on at least 1 volume supplied by the user.
+    # We continue when we find the data set on at least 1 volume.
     # Overwriting the first ds_type just in case.
     if len(found_volumes) >= 1:
         ds_type = DataSet.data_set_type(name, volume=found_volumes[0], tmphlq=tmp_hlq)
@@ -2103,11 +2127,9 @@ def get_data_set_handler(
             module,
             sms_managed,
             ds_type,
-            tmp_hlq
+            tmp_hlq,
+            missing_volumes
         )
-
-        if len(missing_volumes) > 0:
-            handler.extra_data = f'{handler.extra_data}Data set was not found in the following volumes: {missing_volumes}\n'
 
         return handler
     else:

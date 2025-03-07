@@ -239,20 +239,21 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
+
   tasks:
     - name: Create a copy
         zos_copy:
-        src: /etc/profile
-        remote_src: True
-        force: True
-        dest: {3}
+            src: /etc/profile
+            remote_src: True
+            force: True
+            dest: {3}
         async: 50
         poll: 0
         register: copy_output
 
     - name: Query async task.
         async_status:
-        jid: "{{ copy_output.ansible_job_id }}"
+            jid: "{{ copy_output.ansible_job_id }}"
         register: job_result
         until: job_result.finished
         retries: 10
@@ -260,7 +261,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
 
     - name: Echo copy_output.
         debug:
-        msg: "{{ job_result }}"
+            msg: "{{ job_result }}"
 """
 
 INVENTORY_ASYNC_TEST = """all:

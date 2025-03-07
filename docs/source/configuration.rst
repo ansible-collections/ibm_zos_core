@@ -89,14 +89,14 @@ Step 2: Host variables (host_vars)
 
     Before continuing, you must have the following information:
 
-        #. the absolute path of where **IBM Open Enterprise SDK for Python** is installed.
-        #. the IBM Open Enterprise SDK for Python **version** installed, eg 3.12
-        #. the absolute path of where **Z Open Automation Utilities** (ZOAU) is installed.
-        #. the absolute path of the **ZOAU python package** (zoautil-py) which can vary
+        #. The absolute path of where **IBM Open Enterprise SDK for Python** is installed.
+        #. The IBM Open Enterprise SDK for Python **version** installed, eg 3.12
+        #. The absolute path of where **Z Open Automation Utilities** (ZOAU) is installed.
+        #. The absolute path of the **ZOAU python package** (zoautil-py) which can vary
            depending if ``pip3`` was used to install the python package.
 
             - If ``pip3`` was **not** used to install the python package, you can find
-              the package under ${ZOAU_HOME}/lib/${python_version}
+              the package under **${ZOAU_HOME}/lib/${python_version}**
             - If ``pip3`` was used to install the package, the following command can
               aid in finding the absolute path to the package.
 
@@ -118,17 +118,21 @@ Step 2: Host variables (host_vars)
 
     Now that you have gathered the required dependency details, edit the file
     ``zos_host.yml`` located at ``/tmp/playbooks/inventories/host_vars/zos_host.yml``
-    that was created in a previous step. You will need to configure the following
-    properties:
+    that was created in 'Step 1: Directory Structure'. You will need to configure the
+    following properties:
 
-    - *PYZ* - the python installation home path on the z/OS manage node
-    - *PYZ_VERSION* - the version of python on the z/OS managed node
-    - *ZOAU* - the ZOAU installation home on the z/OS managed node
-    - *ZOAU_PYTHON_LIBRARY_PATH* - the path to the ZOAU python library 'zoautil_py'
+    PYZ
+        - The python installation home path on the z/OS manage node
+    PYZ_VERSION
+        - the version of python on the z/OS managed node
+    ZOAU
+        - the ZOAU installation home on the z/OS managed node
+    ZOAU_PYTHON_LIBRARY_PATH
+        - the path to the ZOAU python library 'zoautil_py'
 
     If you have installed the ZOAU python package using ``pip3``, enter this into
-    ``zos_host.yml`` and update only the first 4 properties with dependency information
-    (PYZ, PYZ_VERSION, ZOAU, ZOAU_PYTHON_LIBRARY_PATH).
+    ``zos_host.yml`` and update only the environment variables `PYZ`, `PYZ_VERSION`,
+    `ZOAU`, `ZOAU_PYTHON_LIBRARY_PATH` with the dependency paths.
 
     .. code-block:: sh
 
@@ -139,8 +143,8 @@ Step 2: Host variables (host_vars)
         ansible_python_interpreter: "{{ PYZ }}/bin/python3"
 
     If you are using the included pre-compiled python binaries included with ZOAU,
-    enter this into ``zos_host.yml``` and update only the first 3 properties with
-    dependency information (PYZ, PYZ_VERSION, ZOAU).
+    enter this into ``zos_host.yml``` and update only the environment variables
+    `PYZ`, `PYZ_VERSION`, `ZOAU` with the dependency paths.
 
     .. code-block:: sh
 

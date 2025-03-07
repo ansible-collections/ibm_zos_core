@@ -21,6 +21,7 @@ import time
 import yaml
 import tempfile
 import subprocess
+from shellescape import quote
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name

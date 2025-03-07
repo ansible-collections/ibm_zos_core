@@ -22,16 +22,17 @@ module: zos_stat
 version_added: '1.14.0'
 author:
   - "Ivan Moreno (@rexemin)"
-short_description: Retrieve facts from MVS data sets, USS files and aggregates
+short_description: Retrieve facts from MVS data sets, USS files, aggregates and generation data groups
 description:
   - The L(zos_stat,./zos_stat.html) module retrieves facts from resources
     stored in a z/OS system.
-  - Resources that can be queried are files, data sets and aggregates.
+  - Resources that can be queried are UNIX System Services files, data sets,
+    generation data groups and aggregates.
 options:
   name:
     description:
         - Name of a data set, generation data group (GDG), aggregate,
-          or a file path, to query.
+          or a UNIX System Services file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs or generation data sets (GDS).
     type: str

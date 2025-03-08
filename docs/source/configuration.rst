@@ -84,7 +84,7 @@ Step 2: Host variables (host_vars)
     (ZOAU) dependencies.
 
     If you have not installed either dependency, please review the
-    :ref::`managed node requirements<ibm-zos-core-collection-requirements>`
+    :ref::`managed node requirements<ibm-zos-core-collection-requirements-control-node>`
     for this collection.
 
     Before continuing, you must have the following information:
@@ -96,15 +96,19 @@ Step 2: Host variables (host_vars)
            depending if ``pip3`` was used to install the python package.
 
             - If ``pip3`` was **not** used to install the python package, you can find
-              the package under **${ZOAU_HOME}/lib/${python_version}**
+              the compiled package under **<path to zoau>/lib/<python version>**, for example:
+                .. code-block:: sh
+
+                /usr/lpp/IBM/zoautil/1.12
+
             - If ``pip3`` was used to install the package, the following command can
               aid in finding the absolute path to the package.
 
-            .. code-block:: sh
+                .. code-block:: sh
 
-                pip3 show zoautil-py
+                    pip3 show zoautil-py
 
-            Which will contain the **Location** of the package, for example:
+            This will result in showing the **Location** of the package, for example:
 
             .. code-block:: sh
 

@@ -84,7 +84,7 @@ Step 2: Host variables (host_vars)
     (ZOAU) dependencies.
 
     If you have not installed either dependency, please review the
-    :ref::`managed node requirements<ibm-zos-core-collection-requirements-control-node>`
+    `managed node requirements`_
     for this collection.
 
     Before continuing, you must have the following information:
@@ -99,7 +99,7 @@ Step 2: Host variables (host_vars)
               the compiled package under **<path to zoau>/lib/<python version>**, for example:
                 .. code-block:: sh
 
-                /usr/lpp/IBM/zoautil/1.12
+                    /usr/lpp/IBM/zoautil/1.12
 
             - If ``pip3`` was used to install the package, the following command can
               aid in finding the absolute path to the package.
@@ -694,3 +694,5 @@ Step 7: Run a playbook
    https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html#about-playbooks
 .. _run your first command and playbook:
    https://docs.ansible.com/ansible/latest/network/getting_started/first_playbook.html#run-your-first-command-and-playbook
+.. _managed node requirements:
+   collection-requirements.html#control-node

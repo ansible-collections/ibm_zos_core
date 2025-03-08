@@ -14,7 +14,7 @@
 :orphan:
 
 =======================
-Collection requirements
+Collection Requirements
 =======================
 
 The **dependency matrix** lists the minimum required component versions for each
@@ -31,7 +31,7 @@ a newer supported version of **ansible-core** must be installed.
 
 .. _ibm-zos-core-collection-requirements-control-node:
 
-Control node
+Control Node
 ------------
 
 .. dropdown:: When you install an Ansible version, review the ... (expand for more)
@@ -52,7 +52,7 @@ Control node
 
 .. _ibm-zos-core-collection-requirements-managed-node:
 
-Managed node
+Managed Node
 ------------
 
 .. dropdown:: The managed requires the following to be installed ... (expand for more)
@@ -79,7 +79,7 @@ Managed node
 
 .. _ibm-zos-core-collection-requirements-dependency-matrix:
 
-Dependency matrix
+Dependency Matrix
 -----------------
 
 .. dropdown:: The dependency matrix lists the dependencies for both, the control node and managed node ... (expand for more)

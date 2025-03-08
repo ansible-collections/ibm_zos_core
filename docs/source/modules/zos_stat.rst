@@ -4,8 +4,8 @@
 .. _zos_stat_module:
 
 
-zos_stat -- Retrieve facts from MVS data sets, USS files and aggregates
-=======================================================================
+zos_stat -- Retrieve facts from MVS data sets, USS files, aggregates and generation data groups
+===============================================================================================
 
 
 
@@ -17,7 +17,7 @@ zos_stat -- Retrieve facts from MVS data sets, USS files and aggregates
 Synopsis
 --------
 - The `zos_stat <./zos_stat.html>`_ module retrieves facts from resources stored in a z/OS system.
-- Resources that can be queried are files, data sets and aggregates.
+- Resources that can be queried are UNIX System Services files, data sets, generation data groups and aggregates.
 
 
 
@@ -28,7 +28,7 @@ Parameters
 
 
 name
-  Name of a data set, generation data group (GDG), aggregate, or a file path, to query.
+  Name of a data set, generation data group (GDG), aggregate, or a UNIX System Services file path, to query.
 
   Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
 
@@ -39,7 +39,9 @@ name
 volumes
   Name(s) of the volume(s) where the data set will be searched on.
 
-  Required when getting attributes from a non-VSAM data set. Ignored otherwise.
+  If omitted, the module will look up the master catalog to find all volumes where a data set is allocated.
+
+  When used, if the data set is not found in at least one volume from the list, the module will fail with a "data set not found" message.
 
   | **required**: False
   | **type**: list
@@ -121,6 +123,11 @@ Examples
 .. code-block:: yaml+jinja
 
    
+   - name: Get the attributes of a sequential data set.
+     zos_stat:
+       name: USER.SEQ.DATA
+       type: data_set
+
    - name: Get the attributes of a sequential data set on volume '000000'.
      zos_stat:
        name: USER.SEQ.DATA
@@ -139,14 +146,12 @@ Examples
      zos_stat:
        name: USER.PDSE.DATA
        type: data_set
-       volume: "000000"
        sms_managed: true
 
    - name: Get the attributes of a sequential data set with a non-default temporary HLQ.
      zos_stat:
        name: USER.SEQ.DATA
        type: data_set
-       volume: "000000"
        tmp_hlq: "RESTRICT"
 
    - name: Get the attributes of a generation data group.
@@ -158,7 +163,6 @@ Examples
      zos_stat:
        name: "USER.GDG.DATA(-1)"
        type: data_set
-       volume: "000000"
 
    - name: Get the attributes of an aggregate.
      zos_stat:
@@ -373,6 +377,21 @@ stat
             [
                 "000000",
                 "SCR03"
+            ]
+
+    missing_volumes
+      When using the ``volumes`` option, this field will contain every volume specified in a task where the data set was missing. Will be an empty list in any other case.
+
+      | **returned**: success
+      | **type**: list
+      | **elements**: str
+      | **sample**:
+
+        .. code-block:: json
+
+            [
+                "222222",
+                "AUXVOL"
             ]
 
     device_type
@@ -910,6 +929,15 @@ stat
       | **type**: str
       | **sample**: 2025-02-23T13:03:45
 
+    checksum
+      Checksum of the file computed by the hashing algorithm specified in ``checksum_algorithm``.
+
+      Will be null if ``get_checksum=false``.
+
+      | **returned**: success
+      | **type**: str
+      | **sample**: 2025-02-23T13:03:45
+
     uid
       ID of the file's owner.
 
@@ -1168,6 +1196,8 @@ stat
 
     mimetype
       Output from the file utility describing the content.
+
+      Will be null if ``get_mime=false``.
 
       | **returned**: success
       | **type**: str

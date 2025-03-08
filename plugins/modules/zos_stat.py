@@ -739,6 +739,14 @@ stat:
           returned: success
           type: str
           sample: "2025-02-23T13:03:45"
+        checksum:
+          description:
+            - Checksum of the file computed by the hashing algorithm specified
+              in C(checksum_algorithm).
+            - Will be null if C(get_checksum=false).
+          returned: success
+          type: str
+          sample: "2025-02-23T13:03:45"
         uid:
           description: ID of the file's owner.
           returned: success
@@ -907,6 +915,7 @@ stat:
         mimetype:
           description:
             - Output from the file utility describing the content.
+            - Will be null if C(get_mime=false).
           returned: success
           type: str
           sample: "commands text"
@@ -969,15 +978,16 @@ except ImportError:
     zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 
-# TODO: add method/decorator that adds all missing attributes so we can keep the
-# return interface consistent across resource types.
-# Add method here that takes expected_attrs from a subclass and iterates over it
-# to add the missing ones. Add expected_attrs to each subclass with their respective
-# attributes.
 class FactsHandler():
     """Base class for every other handler that will query resources on
     a z/OS system.
     """
+
+    # Should be overwritten by every subclass with their own attributes.
+    expected_attrs = {
+        'flat': [],
+        'nested': []
+    }
 
     def __init__(self, name, module=None):
         """Setting up the three common attributes for each handler (resource name,
@@ -1013,6 +1023,25 @@ class FactsHandler():
 class AggregateHandler(FactsHandler):
     """Class in charge of dealing with queries of aggregates via zfsadm.
     """
+
+    expected_attrs = {
+        'flat': [
+            'total_size',
+            'free',
+            'version',
+            'auditfid',
+            'free_8k_blocks',
+            'free_1k_fragments',
+            'log_file_size',
+            'filesystem_table_size',
+            'bitmap_file_size',
+            'sysplex_aware',
+            'converttov5'
+        ],
+        'nested': [
+            ['quiesced', ['job', 'system', 'timestamp']]
+        ]
+    }
 
     def __init__(self, name, module=None):
         """Creates a new handler.
@@ -1134,6 +1163,20 @@ class FileHandler(FactsHandler):
     """Class in charge of dealing with queries of files via os.stat and ls.
     """
 
+    expected_attrs = {
+        'flat': [
+            'mode', 'atime', 'mtime', 'ctime', 'checksum',
+            'uid', 'gid', 'size', 'inode', 'dev',
+            'nlink', 'isdir', 'ischr', 'isblk', 'isreg', 'isfifo',
+            'islnk', 'issock', 'isuid', 'isgid',
+            'wusr', 'rusr', 'xusr', 'wgrp', 'rgrp', 'xgrp', 'woth', 'roth', 'xoth',
+            'writeable', 'readable', 'executable',
+            'pw_name', 'gr_name', 'lnk_source', 'lnk_target', 'charset',
+            'mimetype', 'audit_bits', 'file_format'
+        ],
+        'nested': []
+    }
+
     def __init__(self, name, module=None, file_args=None):
         """Creates a new handler.
 
@@ -1250,9 +1293,13 @@ class FileHandler(FactsHandler):
                     self.name,
                     self.checksum_algorithm
                 )
+            else:
+                attributes['attributes']['checksum'] = None
 
             if self.get_mime:
                 attributes['attributes']['mimetype'] = self._run_file()
+            else:
+                attributes['attributes']['mimetype'] = None
         except Exception as err:
             raise QueryException(
                 f"An error ocurred while querying a file path's information: {str(err)}."
@@ -1491,6 +1538,25 @@ class NonVSAMDataSetHandler(DataSetHandler):
     """Class that can query sequential or partitioned data sets using LISTDSI.
     """
 
+    expected_attrs = {
+        'flat': [
+            'dsorg', 'type', 'record_format', 'record_length', 'block_size',
+            'has_extended_attrs', 'extended_attrs_bits',
+            'creation_date', 'creation_time', 'expiration_date', 'last_reference', 'updated_since_backup',
+            'volser', 'num_volumes', 'volumes', 'missing_volumes', 'device_type',
+            'space_units', 'primary_space', 'secondary_space',
+            'allocation_available', 'allocation_used', 'extents_allocated', 'extents_used',
+            'blocks_per_track', 'tracks_per_cylinder',
+            'sms_data_class', 'sms_mgmt_class', 'sms_storage_class',
+            'encrypted', 'password', 'racf', 'key_label',
+            'dir_blocks_allocated', 'dir_blocks_used', 'pages_allocated', 'pages_used', 'perc_pages_used',
+            'members', 'pdse_version', 'max_pdse_generation', 'seq_type'
+        ],
+        'nested': [
+            ['jcl_attrs', ['creation_job', 'creation_step']]
+        ]
+    }
+
     num_attrs = [
         'record_length',
         'block_size',
@@ -1686,7 +1752,10 @@ return 0"""
             datasets.delete(temp_script_location)
 
         attributes['missing_volumes'] = self.missing_volumes
-        data['attributes'] = self._parse_attributes(attributes)
+        data['attributes'] = fill_missing_attrs(
+            self._parse_attributes(attributes),
+            self.expected_attrs
+        )
 
         return data
 
@@ -1768,6 +1837,34 @@ class VSAMDataSetHandler(DataSetHandler):
     """Class that can query VSAM data sets using LISTCAT.
     """
 
+    expected_attrs = {
+        'flat': [
+            'type',
+            'dsorg',
+            'has_extended_attrs',
+            'extended_attrs_bits',
+            'creation_date',
+            'expiration_date',
+            'sms_mgmt_class',
+            'sms_storage_class',
+            'sms_data_class',
+            'encrypted',
+            'key_label',
+            'password',
+            'racf'
+        ],
+        'nested': [
+            ['data', [
+                'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
+                'bufspace', 'total_records', 'spanned', 'volser', 'device_type'
+            ]],
+            ['index', [
+                'key_length', 'key_offset', 'max_record_length', 'avg_record_length',
+                'bufspace', 'total_records', 'volser', 'device_type'
+            ]]
+        ]
+    }
+
     num_attrs = [
         'avg_record_length',
         'max_record_length',
@@ -1789,7 +1886,7 @@ class VSAMDataSetHandler(DataSetHandler):
         '78008080': '3480',
         '78048080': '3480X',
         '78048081': '3490',
-        '78048083': '3590-1',
+        '78048083': '3590-1'
     }
 
     def __init__(self, name, module, ds_type, tmp_hlq=None):
@@ -1963,6 +2060,19 @@ class GenerationDataGroupHandler(DataSetHandler):
     """Class that can query Generation Data Groups.
     """
 
+    expected_attrs = {
+        'flat': [
+            'limit',
+            'scratch',
+            'empty',
+            'order',
+            'purge',
+            'extended',
+            'active_gens'
+        ],
+        'nested': []
+    }
+
     def __init__(
         self,
         name,
@@ -2061,6 +2171,63 @@ class QueryException(Exception):
             'stderr': stderr
         }
         super().__init__(msg)
+
+
+def fill_missing_attrs(current_attrs, expected_attrs):
+    """Takes attrs and adds all missing attributes to it by iterating over
+    expected_attrs.
+
+    Arguments:
+        current_attrs (dict) -- Dictionary containing attributes of a resource.
+        expected_attrs (dict) -- Dictionary containing all keys that should be available
+            in current_attrs.
+
+    Returns:
+        dict -- Updated dictionary containing missing values (all new ones equal to None).
+    """
+    for attr in expected_attrs['flat']:
+        if attr not in current_attrs:
+            current_attrs[attr] = None
+
+    for nest in expected_attrs['nested']:
+        if nest[0] not in current_attrs:
+            current_attrs[nest[0]] = {sub_key: None for sub_key in nest[1]}
+
+    return current_attrs
+
+
+def fill_return_json(attrs):
+    """Completes the return JSON for this module by adding all missing keys
+    that are documented.
+
+    Arguments:
+        attrs (dict) -- Output from one of the handlers of this module.
+
+    Returns:
+        dict -- Dictionary containing all documented keys (new ones equal None).
+    """
+    handlers = {
+        'aggregate': AggregateHandler,
+        'file': FileHandler,
+        'gdg': GenerationDataGroupHandler,
+        'nonvsam': NonVSAMDataSetHandler,
+        'vsam': VSAMDataSetHandler
+    }
+
+    for handler in handlers.keys():
+        # Skipping attributes that are already present.
+        if attrs['resource_type'] == handler:
+            continue
+        elif attrs['resource_type'] == 'data_set':
+            dsorg = attrs['attributes']['dsorg']
+            if handler == 'vsam' and dsorg == 'vsam':
+                continue
+            elif handler == 'nonvsam' and dsorg in DataSet.MVS_SEQ.union(DataSet.MVS_PARTITIONED):
+                continue
+
+        attrs['attributes'] = fill_missing_attrs(attrs['attributes'], handlers[handler].expected_attrs)
+
+    return attrs
 
 
 def get_data_set_handler(
@@ -2324,7 +2491,7 @@ def run_module():
         result['msg'] = f'An unexpected error ocurred while querying a resource: {str(err)}.'
         module.fail_json(**result)
 
-    result['stat'] = data
+    result['stat'] = fill_return_json(data)
     result['changed'] = True
     if notes:
         result['notes'] = notes

@@ -1542,14 +1542,16 @@ class NonVSAMDataSetHandler(DataSetHandler):
         'flat': [
             'dsorg', 'type', 'record_format', 'record_length', 'block_size',
             'has_extended_attrs', 'extended_attrs_bits',
-            'creation_date', 'creation_time', 'expiration_date', 'last_reference', 'updated_since_backup',
+            'creation_date', 'creation_time', 'expiration_date',
+            'last_reference', 'updated_since_backup',
             'volser', 'num_volumes', 'volumes', 'missing_volumes', 'device_type',
             'space_units', 'primary_space', 'secondary_space',
             'allocation_available', 'allocation_used', 'extents_allocated', 'extents_used',
             'blocks_per_track', 'tracks_per_cylinder',
             'sms_data_class', 'sms_mgmt_class', 'sms_storage_class',
             'encrypted', 'password', 'racf', 'key_label',
-            'dir_blocks_allocated', 'dir_blocks_used', 'pages_allocated', 'pages_used', 'perc_pages_used',
+            'dir_blocks_allocated', 'dir_blocks_used',
+            'pages_allocated', 'pages_used', 'perc_pages_used',
             'members', 'pdse_version', 'max_pdse_generation', 'seq_type'
         ],
         'nested': [
@@ -2225,7 +2227,10 @@ def fill_return_json(attrs):
             elif handler == 'nonvsam' and dsorg in DataSet.MVS_SEQ.union(DataSet.MVS_PARTITIONED):
                 continue
 
-        attrs['attributes'] = fill_missing_attrs(attrs['attributes'], handlers[handler].expected_attrs)
+        attrs['attributes'] = fill_missing_attrs(
+            attrs['attributes'],
+            handlers[handler].expected_attrs
+        )
 
     return attrs
 

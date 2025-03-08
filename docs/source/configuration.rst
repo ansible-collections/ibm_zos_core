@@ -84,8 +84,7 @@ Step 2: Host variables (host_vars)
     (ZOAU) dependencies.
 
     If you have not installed either dependency, please review the
-    `managed node requirements`_
-    for this collection.
+    `managed node requirements`_ for this collection.
 
     Before continuing, you must have the following information:
 

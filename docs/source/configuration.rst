@@ -95,11 +95,8 @@ Step 2: Host variables (host_vars)
            depending if ``pip3`` was used to install the python package.
 
             - If ``pip3`` was **not** used to install the python package, you can find
-              the compiled package under **<path to zoau>/lib/<python version>**, for example:
-                .. code-block:: sh
-
-                    /usr/lpp/IBM/zoautil/1.12
-
+              the compiled package under **<path to zoau>/lib/<python version>**, for
+              example ``/usr/lpp/IBM/zoautil/1.12``.
             - If ``pip3`` was used to install the package, the following command can
               aid in finding the absolute path to the package.
 

@@ -94,17 +94,17 @@ Step 2: Host variables (host_vars)
         #. The absolute path of the **ZOAU python package** (zoautil-py) which can vary
            depending if ``pip3`` was used to install the python package.
 
-            - If ``pip3`` was **not** used to install the python package, you can find
+            - If ``pip3`` was **not** used to install the ZOAU python package, you can find
               the compiled package under **<path to zoau>/lib/<python version>**, for
-              example ``/usr/lpp/IBM/zoautil/1.12``.
-            - If ``pip3`` was used to install the package, the following command can
-              aid in finding the absolute path to the package.
+              example **/usr/lpp/IBM/zoautil/1.12**.
+            - If ``pip3`` was used to install the ZOAU python package, the following command
+              can aid in finding the absolute path to the package.
 
                 .. code-block:: sh
 
                     pip3 show zoautil-py
 
-            This will result in showing the **Location** of the package, for example:
+            This will result in showing the '**Location**' of the package, for example:
 
             .. code-block:: sh
 
@@ -118,41 +118,52 @@ Step 2: Host variables (host_vars)
 
     Now that you have gathered the required dependency details, edit the file
     ``zos_host.yml`` located at ``/tmp/playbooks/inventories/host_vars/zos_host.yml``
-    that was created in 'Step 1: Directory Structure'. You will need to configure the
-    following properties:
+    that was created in '**Step 1: Directory Structure**'.
 
-    PYZ
-        - The python installation home path on the z/OS manage node
-    PYZ_VERSION
-        - the version of python on the z/OS managed node
-    ZOAU
-        - the ZOAU installation home on the z/OS managed node
-    ZOAU_PYTHON_LIBRARY_PATH
-        - the path to the ZOAU python library 'zoautil_py'
+    .. dropdown:: You will need to configure the following properties ... (expand for more)
+        :icon: info
 
-    If you have installed the ZOAU python package using ``pip3``, enter this into
-    ``zos_host.yml`` and update only the environment variables `PYZ`, `PYZ_VERSION`,
-    `ZOAU`, `ZOAU_PYTHON_LIBRARY_PATH` with the dependency paths.
+        You will need to configure the following properties.
 
-    .. code-block:: sh
+        PYZ
+            - The python installation home path on the z/OS manage node.
+        PYZ_VERSION
+            - The version of python on the z/OS managed node.
+        ZOAU
+            - The ZOAU installation home on the z/OS managed node.
+        ZOAU_PYTHON_LIBRARY_PATH
+            - The path to the ZOAU python library 'zoautil_py'.
 
-        PYZ: "/usr/lpp/IBM/cyp/v3r12/pyz"
-        PYZ_VERSION: "3.12"
-        ZOAU: "/usr/lpp/IBM/zoautil"
-        ZOAU_PYTHON_LIBRARY_PATH: "/usr/lpp/IBM/cyp/v3r12/pyz/lib/python3.12/site-packages/"
-        ansible_python_interpreter: "{{ PYZ }}/bin/python3"
+    .. dropdown:: If you have installed the ZOAU python package using *pip3* ... (expand for more)
+        :icon: info
 
-    If you are using the included pre-compiled python binaries included with ZOAU,
-    enter this into ``zos_host.yml``` and update only the environment variables
-    `PYZ`, `PYZ_VERSION`, `ZOAU` with the dependency paths.
+        If you have installed the ZOAU python package using ``pip3``, enter this into
+        ``zos_host.yml`` and update only the environment variables `PYZ`, `PYZ_VERSION`,
+        `ZOAU`, `ZOAU_PYTHON_LIBRARY_PATH` with the dependency paths.
 
-    .. code-block:: sh
+        .. code-block:: sh
 
-        PYZ: "/usr/lpp/IBM/cyp/v3r12/pyz"
-        PYZ_VERSION: "3.12"
-        ZOAU: "/usr/lpp/IBM/zoautil"
-        ZOAU_PYTHON_LIBRARY_PATH: "{{ ZOAU }}/lib/{{ PYZ_VERSION }}"
-        ansible_python_interpreter: "{{ PYZ }}/bin/python3"
+            PYZ: "/usr/lpp/IBM/cyp/v3r12/pyz"
+            PYZ_VERSION: "3.12"
+            ZOAU: "/usr/lpp/IBM/zoautil"
+            ZOAU_PYTHON_LIBRARY_PATH: "/usr/lpp/IBM/cyp/v3r12/pyz/lib/python3.12/site-packages/"
+            ansible_python_interpreter: "{{ PYZ }}/bin/python3"
+
+    .. dropdown:: If you are using the included pre-compiled ZOAU python binaries ... (expand for more)
+        :icon: info
+
+        If you are using the included pre-compiled ZOAU python binaries, enter this
+        into ``zos_host.yml``` and update only the environment variables
+        `PYZ`, `PYZ_VERSION`, `ZOAU` with the dependency paths.
+
+        .. code-block:: sh
+
+            PYZ: "/usr/lpp/IBM/cyp/v3r12/pyz"
+            PYZ_VERSION: "3.12"
+            ZOAU: "/usr/lpp/IBM/zoautil"
+            ZOAU_PYTHON_LIBRARY_PATH: "{{ ZOAU }}/lib/{{ PYZ_VERSION }}"
+            ansible_python_interpreter: "{{ PYZ }}/bin/python3"
+
 
     .. admonition:: Use environment variables in a playbook
 
@@ -238,7 +249,7 @@ Step 4: Inventory
     :icon: file-code
 
     The following section discusses how Ansible interacts with managed
-    node (hosts) using a list known as `inventory`_. It is a configuration file that
+    nodes (hosts) using a list known as `inventory`_. It is a configuration file that
     specifies the hosts and group of hosts on which Ansible commands, modules, and playbooks
     will operate. It also defines variables and connection details for those hosts, such as
     IP address. For more information, see `Building Ansible inventories`_.
@@ -267,7 +278,7 @@ Step 4: Inventory
 Step 5: User
 ============
 
-.. dropdown:: The following section discusses how the collection connects to the managed node over SSH  ... (expand for more)
+.. dropdown:: The following section discusses how the collection connects to the managed node over SSH ... (expand for more)
     :color: primary
     :icon: command-palette
 
@@ -277,38 +288,22 @@ Step 5: User
     From a security perspective, the collection will require both an OMVS segment
     and TSO segment in the users profile.
 
-    With the **ADDGROUP** command you can:
+    With the RACF **ADDGROUP** command you can:
 
-    - define a new group to RACF.
-    - add a profile for the new group to the RACF database.
-    - specify z/OS® UNIX System Services information for the group being defined to RACF.
+    - Define a new group to RACF.
+    - Add a profile for the new group to the RACF database.
+    - Specify z/OS UNIX System Services information for the group being defined to RACF.
     - specify that RACF is to automatically assign an unused GID value to the group.
 
-    With the **ADDUSER** command you can:
+    With the RACF **ADDUSER** command you can:
 
-    - define a new user to RACF.
-    - add a profile for the new user to the RACF database.
-    - create a connect profile that connects the user to the default group.
-    - create an OMVS segment.
-    - create a TSO segment.
+    - Define a new user to RACF.
+    - Add a profile for the new user to the RACF database.
+    - Create a connect profile that connects the user to the default group.
+    - Create an OMVS segment.
+    - Create a TSO segment.
 
-    **Operands explained**:
-
-    - *uuuuuuuu* Specifies the user to be defined to RACF. 1 - 8 alphanumeric characters.
-      A user id can contain any of the supported symbols A-Z, 0-9, #, $, or @.
-    - *gggggggg* Specifies the name of a RACF-defined group to be used as the default
-      group for the user. If you do not specify a group, RACF uses your current connect
-      group as the default. 1 - 8 alphanumeric characters, beginning with an alphabetic
-      character. A group name can contain any of the supported symbols A-Z, 0-9, #, $, or @.
-    - *nnnnnnnn* Specifies a RACF-defined user or group to be assigned as the owner of the
-      new group. If you do not specify an owner, you are defined as the owner of the group.
-    - *pppppppp* Specifies the user's initial logon password. This password is always set
-      expired, thus requiring the user to change the password at initial logon.
-    - *aaaaaaaa* Specifies the user's default TSO account number. The account number you
-      specify must be protected by a profile in the ACCTNUM general resource class, and
-      the user must be granted READ access to the profile.
-
-    When issuing these RACF commands, you might require sufficient authority to the proper
+    When issuing RACF commands, you might require sufficient authority to the proper
     resources. It is recommended you review the `RACF language reference`_.
 
     You can define a new group to RACF with command:
@@ -324,6 +319,30 @@ Step 5: User
        ADDUSER uuuuuuuu DFLTGRP(gggggggg) OWNER(nnnnnnnn) PASSWORD(pppppppp) TSO(ACCTNUM(aaaaaaaa) PROC(pppppppp)) OMVS(HOME(/u/uuuuuuuu) PROGRAM('/bin/sh')) AUTOUID
 
     To learn more about creating users with RACF, see `RACF command syntax`_.
+
+    .. dropdown:: The following section explains the RACF operands ... (expand for more)
+        :icon: info
+
+        The following section explains the RACF operands used in the above RACF commands.
+
+        uuuuuuuu
+            - Specifies the user to be defined to RACF. 1 - 8 alphanumeric characters. A
+              user id can contain any of the supported symbols A-Z, 0-9, #, $, or @.
+        gggggggg
+            - Specifies the name of a RACF-defined group to be used as the default
+              group for the user. If you do not specify a group, RACF uses your current connect
+              group as the default. 1 - 8 alphanumeric characters, beginning with an alphabetic
+              character. A group name can contain any of the supported symbols A-Z, 0-9, #, $, or @.
+        nnnnnnnn
+            - Specifies a RACF-defined user or group to be assigned as the owner of the
+              new group. If you do not specify an owner, you are defined as the owner of the group.
+        pppppppp
+            - Specifies the user's initial logon password. This password is always set
+              expired, thus requiring the user to change the password at initial logon.
+        aaaaaaaa
+            - Specifies the user's default TSO account number. The account number you
+              specify must be protected by a profile in the ACCTNUM general resource class, and
+              the user must be granted READ access to the profile.
 
 Step 6: Security
 ================
@@ -587,7 +606,7 @@ Step 7: Run a playbook
     :color: primary
     :icon: command-palette
 
-    The following section discusses how to use an IBM z/OS core collection in an Ansible playbook.
+    The following section discusses how to use the IBM z/OS Core collection in an Ansible playbook.
     An `Ansible playbook`_ consists of organized instructions that define work for a managed
     node (host) to be managed with Ansible.
 
@@ -626,7 +645,7 @@ Step 7: Run a playbook
     use he Ansible command ``ansible-playbook`` with the inventory you definewd
     in step 4 along with a reqeust for a password using opiton ``--ask-pass``.
 
-    The command syntax is ``ansible-playbook -i <inventory> <playbook> --ask-pass``;
+    The command syntax is ``ansible-playbook -i <inventory> <playbook> --ask-pass``,
     for example;
 
     .. code-block:: sh

@@ -121,7 +121,8 @@ Step 2: Host variables (host_vars)
     that was created in '**Step 1: Directory Structure**'.
 
     .. dropdown:: You will need to configure the following properties ... (expand for more)
-        :icon: info
+        :color: info
+        :icon: file-code
 
         You will need to configure the following properties.
 
@@ -135,7 +136,8 @@ Step 2: Host variables (host_vars)
             - The path to the ZOAU python library 'zoautil_py'.
 
     .. dropdown:: If you have installed the ZOAU python package using *pip3* ... (expand for more)
-        :icon: info
+        :color: info
+        :icon: file-code
 
         If you have installed the ZOAU python package using ``pip3``, enter this into
         ``zos_host.yml`` and update only the environment variables `PYZ`, `PYZ_VERSION`,
@@ -150,7 +152,8 @@ Step 2: Host variables (host_vars)
             ansible_python_interpreter: "{{ PYZ }}/bin/python3"
 
     .. dropdown:: If you are using the included pre-compiled ZOAU python binaries ... (expand for more)
-        :icon: info
+        :color: info
+        :icon: file-code
 
         If you are using the included pre-compiled ZOAU python binaries, enter this
         into ``zos_host.yml``` and update only the environment variables
@@ -206,7 +209,8 @@ Step 3: Group variables (group_vars)
 
 
     .. dropdown:: The following section explains the environment variables ... (expand for more)
-        :icon: info
+        :color: info
+        :icon: file-code
 
         The following section explains the environment variables.
 
@@ -321,7 +325,8 @@ Step 5: User
     To learn more about creating users with RACF, see `RACF command syntax`_.
 
     .. dropdown:: The following section explains the RACF operands ... (expand for more)
-        :icon: info
+        :color: info
+        :icon: file-code
 
         The following section explains the RACF operands used in the above RACF commands.
 

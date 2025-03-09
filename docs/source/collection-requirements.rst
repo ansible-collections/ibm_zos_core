@@ -100,6 +100,12 @@ Dependency Matrix
    +---------+----------------------------+---------------------------------------------------+
    | Version | Control Node               | Managed Node                                      |
    +=========+============================+===================================================+
+   | 1.13.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R5 - V3Rx                              |
+   |         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |
+   |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                  |
+   |         |                            |- IBM `Open Enterprise SDK for Python`_            |
+   |         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.3       |
+   +---------+----------------------------+---------------------------------------------------+
    | 1.12.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R5 - V3Rx                              |
    |         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |
    |         |- `AAP`_ >=2.4              |- `z/OS OpenSSH`_                                  |

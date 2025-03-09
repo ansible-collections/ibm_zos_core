@@ -671,8 +671,8 @@ Step 7: Run a playbook
         execution. This is helpful in situations where communication is failing and
         you want to obtain more details. To adjust the logging verbosity, append more
         letter `v`'s; for example, `-v`, `-vv`, `-vvv`, or `-vvvv`. Each letter `v`
-        increases logging verbosity similar to traditional logging levels INFO, WARN,
-        ERROR, DEBUG.
+        increases logging verbosity similar to traditional logging levels **INFO**,
+        **WARN**, **ERROR**, **DEBUG**.
 
         Using the previous example, the following will set the highest level of
         verbosity.

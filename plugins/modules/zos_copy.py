@@ -316,7 +316,7 @@ options:
         into the root of C(dest). If it doesn't end with "/", the directory itself
         will be copied.
       - If C(src) is a directory or a file, file names will be truncated and/or modified
-        to ensure a valid name for a data set or member
+        to ensure a valid name for a data set or member.
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
       - If C(src) is a generation data set (GDS), it must be a previously allocated one.
       - If C(src) is a generation data group (GDG), C(dest) can be another GDG or a USS

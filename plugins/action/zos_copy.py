@@ -235,6 +235,13 @@ class ActionModule(ActionBase):
                             return self._exit_action(result, str(err), failed=True)
 
                         src = rendered_file
+                        if os.path.exists(rendered_file):
+                            file_n = os.path.basename(rendered_file)
+                            with open(rendered_file, 'r') as file:
+                                rendered_content = file.read()
+                                display.vvv(f"Template Content ({file_n}):\n{rendered_content}", host=self._play_context.remote_addr)
+                        else:
+                            display.vvv(u"Template File {0} does not exist.".format(rendered_file))
 
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(

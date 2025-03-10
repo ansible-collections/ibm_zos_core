@@ -234,7 +234,7 @@ options:
         Undefined (U) record format with a record length of 0, block size of 32760 and the
         remaining attributes will be computed.
       - If C(dest) is a file, execute permission for the user will be added to the file (``u+x``).
-      - If the C(src) executable has an alias, the alias do not be copy unless C(aliases=true).
+      - If the C(src) executable has an alias, the alias will not be copied unless C(aliases=true).
     type: bool
     default: false
     required: false

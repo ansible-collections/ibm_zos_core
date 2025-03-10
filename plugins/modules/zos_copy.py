@@ -316,13 +316,14 @@ options:
         into the root of C(dest). If it doesn't end with "/", the directory itself
         will be copied.
       - If C(src) is a directory or a file, file names will be truncated and/or modified
-        to ensure a valid name for a data set or member.
+        to ensure a valid name for a data set or member
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
       - If C(src) is a generation data set (GDS), it must be a previously allocated one.
       - If C(src) is a generation data group (GDG), C(dest) can be another GDG or a USS
         directory.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
-        PDS/PDSE.
+        PDS/PDSE. i.e. Using SOME.TEST.PDS(*) will copy all members from one PDS/E
+        to another without removing the destination PDS/E.
       - Required unless using C(content).
     type: str
   validate:

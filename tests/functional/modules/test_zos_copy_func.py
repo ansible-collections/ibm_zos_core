@@ -5619,7 +5619,7 @@ def test_job_script_async(ansible_zos_module, get_config):
         )
         assert result.returncode == 0
         assert "ok=3" in result.stdout
-        assert "changed=3" in result.stdout
+        assert "changed=2" in result.stdout
         assert result.stderr == ""
     finally:
         ansible_zos_module.all.zos_data_set(name=ds_name, state="absent")

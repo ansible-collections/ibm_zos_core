@@ -164,26 +164,8 @@ As Red Hat Ansible [Certified Content](https://catalog.redhat.com/software/searc
 
 ## Release Notes and Roadmap
 
-The collection's cumulative release notes can be reviewed [here](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html). Note, some collections release before an ansible-core version reaches End of Life (EOL), thus the version of ansible-core that is supported must be a version that is currently supported.
-
-For AAP users, to see the supported ansible-core versions, review the [AAP Life Cycle](https://access.redhat.com/support/policy/updates/ansible-automation-platform).
-
-For Galaxy and GitHub users, to see the supported ansible-core versions, review the [ansible-core support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix).
-
-<br/>The collection's changelogs can be reviewed in the following table.
-
-| Version  | Status         | Release notes | Changelogs |
-|----------|----------------|---------------|------------|
-| 1.14.x   | In development | unreleased    | unreleased |
-| 1.13.x   | Current | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-13-0.beta.1)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.13.0-beta.1/CHANGELOG.rst) |
-| 1.12.x   | Released   | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-12-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.12.0/CHANGELOG.rst) |
-| 1.11.x   | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-11-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.11.0/CHANGELOG.rst) |
-| 1.10.x   | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-10-0)   | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0/CHANGELOG.rst) |
-| 1.9.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-9-2)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.2/CHANGELOG.rst)  |
-| 1.8.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-8-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.8.0/CHANGELOG.rst)  |
-| 1.7.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-7-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.7.0/CHANGELOG.rst)  |
-| 1.6.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-6-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.6.0/CHANGELOG.rst)  |
-| 1.5.x    | Released       | [Release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html#version-1-5-0)    | [Changelogs](https://github.com/ansible-collections/ibm_zos_core/blob/v1.5.0/CHANGELOG.rst)  |
+The collection's cumulative [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html) are an easy way to review changes. The collection [Life Cycle](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/life-cycle.html) also referred to as the Roadmap contains changelog details, support dates and the current level of support
+for each collection. For a complete guide to support, review the **Ansible for IBM Z** [Collection Life Cycles](https://ibm.github.io/z_ansible_collections_doc/collections_content/collection-life-cycles.html#life-cycles).
 
 ## Related Information
 

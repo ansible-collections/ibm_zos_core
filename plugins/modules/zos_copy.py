@@ -322,7 +322,8 @@ options:
       - If C(src) is a generation data group (GDG), C(dest) can be another GDG or a USS
         directory.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
-        PDS/PDSE.
+        PDS/PDSE. i.e. Using SOME.TEST.PDS(*) will copy all members from one PDS/E
+        to another without removing the destination PDS/E.
       - Required unless using C(content).
     type: str
   validate:

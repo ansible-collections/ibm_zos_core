@@ -39,8 +39,9 @@ notes:
       encoding resulting in a module failure. If you are using OpenSSH 9.0 (ssh -V) or later,
       you can instruct SSH to use SCP by adding the entry C(scp_extra_args="-O") into the ini
       file named C(ansible.cfg).
-seealso:
-- module: ansible.builtin.ssh
+    - For more information, review the
+      L(ansible.builtin.ssh, https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html)
+      module.
 """
 
 EXAMPLES = r"""

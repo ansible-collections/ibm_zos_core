@@ -106,11 +106,11 @@ options:
         description:
           - Sequence that starts a newline in a template.
         type: str
-        default: '\\n'
+        default: "\n"
         choices:
-          - '\\n'
-          - '\\r'
-          - '\\r\\n'
+          - "\n"
+          - "\r"
+          - "\r\n"
       auto_reload:
         description:
           - Whether to reload a template file when it has changed after the task

@@ -245,6 +245,8 @@ options:
       - Aliases are implicitly preserved when libraries are copied over to USS destinations.
         That is, when C(executable=True) and C(dest) is a USS file or directory, this option will be ignored.
       - Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
+      - If the C(dest) is Unix, the alias is not visible in Unix, even though the information is there and
+        will be visible if copied to a library.
     type: bool
     default: false
     required: false

@@ -28,10 +28,6 @@ from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
 from ansible import cli
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
@@ -42,6 +38,8 @@ display = Display()
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """
+        self._supports_async = True
+
         if task_vars is None:
             task_vars = dict()
 
@@ -235,6 +233,13 @@ class ActionModule(ActionBase):
                             return self._exit_action(result, str(err), failed=True)
 
                         src = rendered_file
+                        if os.path.exists(rendered_file):
+                            file_n = os.path.basename(rendered_file)
+                            with open(rendered_file, 'r') as file:
+                                rendered_content = file.read()
+                                display.vvv(f"Template Content ({file_n}):\n{rendered_content}", host=self._play_context.remote_addr)
+                        else:
+                            display.vvv(u"Template File {0} does not exist.".format(rendered_file))
 
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
@@ -272,19 +277,13 @@ class ActionModule(ActionBase):
                 encoding=encoding,
             )
         )
+
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
             module_args=task_args,
             task_vars=task_vars,
+            wrap_async=self._task.async_val
         )
-
-        # Erasing all rendered Jinja2 templates from the controller.
-        if template_dir:
-            shutil.rmtree(template_dir, ignore_errors=True)
-        # Remove temporary directory from remote
-        if self.tmp_dir is not None:
-            path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            self._connection.exec_command(f"rm -rf {path}*")
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
@@ -304,10 +303,13 @@ class ActionModule(ActionBase):
             )
             if backup or backup_name:
                 result["backup_name"] = copy_res.get("backup_name")
-            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
-        return _update_result(is_binary, copy_res, self._task.args, original_src)
+        # Erasing all rendered Jinja2 templates from the controller.
+        if template_dir:
+            shutil.rmtree(template_dir, ignore_errors=True)
+
+        return copy_res
 
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
@@ -412,26 +414,6 @@ class ActionModule(ActionBase):
 
         return dict(temp_path=full_temp_path)
 
-    def _remote_cleanup(self, dest, dest_exists, task_vars):
-        """Remove all files or data sets pointed to by 'dest' on the remote
-        z/OS system. The idea behind this cleanup step is that if, for some
-        reason, the module fails after copying the data, we want to return the
-        remote system to its original state. Which means deleting any newly
-        created files or data sets.
-        """
-        if dest_exists is False:
-            if "/" in dest:
-                self._connection.exec_command("rm -rf {0}".format(dest))
-            else:
-                module_args = dict(name=dest, state="absent")
-                if is_member(dest):
-                    module_args["type"] = "member"
-                self._execute_module(
-                    module_name="ibm.ibm_zos_core.zos_data_set",
-                    module_args=module_args,
-                    task_vars=task_vars,
-                )
-
     def _exit_action(self, result, msg, failed=False):
         """Exit action plugin with a message"""
         result.update(
@@ -446,59 +428,6 @@ class ActionModule(ActionBase):
         else:
             result["note"] = msg
         return result
-
-
-def _update_result(is_binary, copy_res, original_args, original_src):
-    """ Helper function to update output result with the provided values """
-    ds_type = copy_res.get("ds_type")
-    src = copy_res.get("src")
-    note = copy_res.get("note")
-    backup_name = copy_res.get("backup_name")
-    dest_data_set_attrs = copy_res.get("dest_data_set_attrs")
-    updated_result = dict(
-        dest=copy_res.get("dest"),
-        is_binary=is_binary,
-        changed=copy_res.get("changed"),
-        invocation=dict(module_args=original_args),
-    )
-    if src:
-        updated_result["src"] = original_src
-    if note:
-        updated_result["note"] = note
-    if backup_name:
-        updated_result["backup_name"] = backup_name
-    if ds_type == "USS":
-        updated_result.update(
-            dict(
-                gid=copy_res.get("gid"),
-                uid=copy_res.get("uid"),
-                group=copy_res.get("group"),
-                owner=copy_res.get("owner"),
-                mode=copy_res.get("mode"),
-                state=copy_res.get("state"),
-                size=copy_res.get("size"),
-            )
-        )
-        checksum = copy_res.get("checksum")
-        if checksum:
-            updated_result["checksum"] = checksum
-    if dest_data_set_attrs is not None:
-        if len(dest_data_set_attrs) > 0:
-            dest_data_set_attrs.pop("name")
-            updated_result["dest_created"] = True
-            updated_result["destination_attributes"] = dest_data_set_attrs
-
-            # Setting attributes to lower case to conform to docs.
-            # Part of the change to lowercase choices in the collection involves having
-            # a consistent interface that also returns the same values in lowercase.
-            if "record_format" in updated_result["destination_attributes"]:
-                updated_result["destination_attributes"]["record_format"] = updated_result["destination_attributes"]["record_format"].lower()
-            if "space_type" in updated_result["destination_attributes"]:
-                updated_result["destination_attributes"]["space_type"] = updated_result["destination_attributes"]["space_type"].lower()
-            if "type" in updated_result["destination_attributes"]:
-                updated_result["destination_attributes"]["type"] = updated_result["destination_attributes"]["type"].lower()
-
-    return updated_result
 
 
 def _process_boolean(arg, default=False):

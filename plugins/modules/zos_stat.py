@@ -2279,7 +2279,7 @@ def get_data_set_handler(
     cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
     if volumes and len(volumes) > 0:
         found_volumes = [vol for vol in volumes if vol in cataloged_list]
-        missing_volumes = [vol for vol in volumes if vol not in found_volumes]
+        missing_volumes = [vol.lower() for vol in volumes if vol not in found_volumes]
     else:
         found_volumes = cataloged_list
         missing_volumes = []

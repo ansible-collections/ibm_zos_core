@@ -20,6 +20,7 @@ import os
 import tempfile
 import pytest
 
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
@@ -154,11 +155,6 @@ def assert_invalid_attrs_are_none(attrs, resource_type):
                 assert attrs[nest[0]][sub_key] is None
 
 
-# TODO: add tests:
-# - SMS-managed data set
-# - encrypted data set
-# - data set with eattr
-# - tmp_hlq
 def test_query_data_set_seq_no_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
 
@@ -209,8 +205,8 @@ def test_query_data_set_seq_no_volume(ansible_zos_module, volumes_on_systems):
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
-            assert stat['attributes'].get('volser') == available_vol
-            assert stat['attributes'].get('volumes') == [available_vol]
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('num_volumes') == 1
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
@@ -278,8 +274,8 @@ def test_query_data_set_pds_no_volume(ansible_zos_module, volumes_on_systems):
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
-            assert stat['attributes'].get('volser') == available_vol
-            assert stat['attributes'].get('volumes') == [available_vol]
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('num_volumes') == 1
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
@@ -349,8 +345,8 @@ def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
-            assert stat['attributes'].get('volser') == available_vol
-            assert stat['attributes'].get('volumes') == [available_vol]
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('num_volumes') == 1
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
@@ -491,8 +487,8 @@ def test_query_data_set_gds(ansible_zos_module, volumes_on_systems):
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
-            assert stat['attributes'].get('volser') == available_vol
-            assert stat['attributes'].get('volumes') == [available_vol]
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('num_volumes') == 1
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
@@ -562,8 +558,8 @@ def test_query_data_set_seq_with_correct_volume(ansible_zos_module, volumes_on_s
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
-            assert stat['attributes'].get('volser') == available_vol
-            assert stat['attributes'].get('volumes') == [available_vol]
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
             assert stat['attributes'].get('num_volumes') == 1
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
@@ -673,8 +669,8 @@ def test_query_data_set_seq_multi_volume(ansible_zos_module, volumes_on_systems)
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
-            assert stat['attributes'].get('volser') == available_vol_1
-            assert stat['attributes'].get('volumes') == [available_vol_1, available_vol_2]
+            assert stat['attributes'].get('volser') == available_vol_1.lower()
+            assert stat['attributes'].get('volumes') == [available_vol_1.lower(), available_vol_2.lower()]
             assert stat['attributes'].get('num_volumes') == 2
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
@@ -747,15 +743,15 @@ def test_query_data_set_seq_multi_volume_missing_one(ansible_zos_module, volumes
             assert stat['attributes'].get('has_extended_attrs') is False
             assert stat['attributes'].get('creation_date') == creation_date
             assert stat['attributes'].get('creation_time') is None
-            assert stat['attributes'].get('volser') == available_vol_1
-            assert stat['attributes'].get('volumes') == [available_vol_1, available_vol_2]
+            assert stat['attributes'].get('volser') == available_vol_1.lower()
+            assert stat['attributes'].get('volumes') == [available_vol_1.lower(), available_vol_2.lower()]
             assert stat['attributes'].get('num_volumes') == 2
             assert stat['attributes'].get('device_type') == '3390'
             assert stat['attributes'].get('primary_space') == primary_space
             assert stat['attributes'].get('allocation_available') == primary_space
             assert stat['attributes'].get('secondary_space') == secondary_space
             assert stat['attributes'].get('space_units') == 'track'
-            assert stat['attributes'].get('missing_volumes') == [missing_vol]
+            assert stat['attributes'].get('missing_volumes') == [missing_vol.lower()]
 
             assert_invalid_attrs_are_none(stat['attributes'], 'seq')
     finally:
@@ -1032,3 +1028,40 @@ def test_query_data_set_non_existent(ansible_zos_module, resource_type):
         assert result.get('changed', False) is False
         assert result.get('failed') is True
         assert 'could not be found' in result.get('msg', '')
+
+
+def test_query_data_set_tmp_hlq(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    try:
+        name = get_tmp_ds_name()
+        tmphlq = "TMPHLQ"
+
+        volumes = Volume_Handler(volumes_on_systems)
+        available_vol = volumes.get_available_vol()
+
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -tseq -V{available_vol} {name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=name,
+            type='data_set',
+            tmp_hlq=tmphlq
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == name
+            assert stat.get('attributes') is not None
+    finally:
+        hosts.all.shell(cmd=f'drm {name}')

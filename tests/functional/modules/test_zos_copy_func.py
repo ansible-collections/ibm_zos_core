@@ -2064,9 +2064,11 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 ])
 def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
     retries = 0
-    max_retries = 3
+    max_retries = 5
     success = False
 
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
     while retries < max_retries:
         print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
         result = copy_dest_lock(ansible_zos_module, ds_type, f_lock)
@@ -2082,6 +2084,7 @@ def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
 
 def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
     hosts = ansible_zos_module
+    assert_msg = ""
 
     temp_dir = None
     data_set_1 = get_tmp_ds_name()
@@ -2103,6 +2106,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
             replace=True
         )
         for result in ds_creation_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2114,6 +2118,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
             replace=True
         )
         for result in ds_creation_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2126,6 +2131,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
                 replace=True
             )
             for result in member_creation_result.contacted.values():
+                assert_msg = result.get("stdout", "")
                 print(result)
                 assert result.get("changed") is True
                 assert result.get("failed", False) is False
@@ -2137,6 +2143,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
                 replace=True
             )
             for result in member_creation_result.contacted.values():
+                assert_msg = result.get("stdout", "")
                 print(result)
                 assert result.get("changed") is True
                 assert result.get("failed", False) is False
@@ -2144,6 +2151,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
         # copy text_in source
         decho_result = hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
         for result in decho_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2152,6 +2160,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
         temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
         c_src_result = hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
         for result in c_src_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2162,12 +2171,14 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
             force=True
         )
         for result in jcl_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
 
         subproc_result = hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
         for result in subproc_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2175,6 +2186,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
         # submit jcl
         job_result = hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
         for result in job_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2190,6 +2202,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
         )
 
         for result in results.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             if f_lock: #and apf_auth_user:
                 assert result.get("changed") == True
@@ -2216,7 +2229,12 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
 
         return True
     except AssertionError:
-        return False
+        # Checking for the error code from when the system thinks both data sets
+        # are identical.
+        if "FSUM8977" in assert_msg:
+            return False
+        else:
+            raise
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
@@ -2244,9 +2262,11 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
 ])
 def test_copy_asa_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
     retries = 0
-    max_retries = 3
+    max_retries = 5
     success = False
 
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
     while retries < max_retries:
         print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
         result = copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock)
@@ -2262,6 +2282,7 @@ def test_copy_asa_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
 
 def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
     hosts = ansible_zos_module
+    assert_msg = ""
 
     temp_dir = None
     data_set = get_tmp_ds_name(llq_size=4)
@@ -2282,6 +2303,7 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
             record_format="fba"
         )
         for result in ds_creation_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2294,6 +2316,7 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
                 replace=True
             )
             for result in member_creation_result.contacted.values():
+                assert_msg = result.get("stdout", "")
                 print(result)
                 assert result.get("changed") is True
                 assert result.get("failed", False) is False
@@ -2302,6 +2325,7 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
         temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
         c_src_result = hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
         for result in c_src_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2312,12 +2336,14 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
             force=True
         )
         for result in jcl_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
 
         subproc_result = hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
         for result in subproc_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2325,6 +2351,7 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
         # submit jcl
         job_result = hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
         for result in job_result.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
@@ -2342,6 +2369,7 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
         )
 
         for result in results.contacted.values():
+            assert_msg = result.get("stdout", "")
             print(result)
             if f_lock: #and apf_auth_user:
                 assert result.get("changed") is True
@@ -2367,7 +2395,12 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
 
         return True
     except AssertionError:
-        return False
+        # Checking for the error code from when the system thinks both data sets
+        # are identical.
+        if "FSUM8977" in assert_msg:
+            return False
+        else:
+            raise
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")

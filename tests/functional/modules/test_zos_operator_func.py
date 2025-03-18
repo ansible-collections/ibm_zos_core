@@ -58,7 +58,7 @@ INVENTORY = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: /allpython/3.12/usr/lpp/IBM/cyp/v3r12/pyz/bin/python3"""
+      ansible_python_interpreter: {3}"""
 
 
 def test_zos_operator_various_command(ansible_zos_module):

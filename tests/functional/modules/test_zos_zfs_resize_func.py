@@ -1031,8 +1031,7 @@ def test_no_auto_increase(get_config):
             hosts,
             ssh_key,
             user,
-            cut_python_path,
-            python_version
+            python_path
         )), inventory))
         command = "ansible-playbook -i {0} {1}".format(
             inventory,

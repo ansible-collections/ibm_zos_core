@@ -245,10 +245,10 @@ empty
 
   If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
 
+  Default is false.
 
   | **required**: False
   | **type**: bool
-  | **default**: False
 
 
 extended
@@ -258,10 +258,10 @@ extended
 
   If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
 
+  Default is false.
 
   | **required**: False
   | **type**: bool
-  | **default**: False
 
 
 fifo
@@ -271,10 +271,10 @@ fifo
 
   If true, the order is the oldest GDS defined to the newest GDS.
 
+  Default is false.
 
   | **required**: False
   | **type**: bool
-  | **default**: False
 
 
 limit

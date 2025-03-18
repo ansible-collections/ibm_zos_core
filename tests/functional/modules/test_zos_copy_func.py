@@ -2260,7 +2260,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
     ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
     ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
 ])
-def test_copy_asa_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
+def test_copy_dest_lock_wrapper_asa(ansible_zos_module, ds_type, f_lock):
     retries = 0
     max_retries = 5
     success = False

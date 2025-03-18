@@ -18,11 +18,7 @@ __metaclass__ = type
 import os
 import yaml
 from shellescape import quote
-
-from ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker,
-)
-
+from ibm_zos_core.tests.helpers.version import is_zoau_version_higher_than
 
 __metaclass__ = type
 
@@ -156,8 +152,8 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
 
 
 def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
-    if zoau_version_checker.is_zoau_version_higher_than("1.2.4.5"):
-        hosts = ansible_zos_module
+    hosts = ansible_zos_module
+    if is_zoau_version_higher_than(hosts,"1.2.4.5"):
         wait_time_s=5
         results = hosts.all.zos_operator(
             cmd="d u,all", verbose=True, wait_time_s=wait_time_s

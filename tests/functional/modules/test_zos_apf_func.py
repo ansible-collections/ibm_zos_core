@@ -12,10 +12,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-import re
-import pytest
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+from ibm_zos_core.tests.helpers.version import get_zoau_version
 
 __metaclass__ = type
 
@@ -405,17 +404,6 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
 #
 # Negative tests
 #
-def get_zoa_version(ansible_zos_module):
-    cmd_str = "zoaversion"
-    version_results = ansible_zos_module.all.shell(cmd=cmd_str)
-    zoa_version = None        
-    for result in version_results.contacted.values():
-        output = result.get("stdout")
-        if output:
-            match = re.search(r'v(\d+\.\d+\.\d+\.\d+)', output)
-            if match:
-                zoa_version = match.group(1)
-    return zoa_version
 
 def test_add_already_present(ansible_zos_module, volumes_with_vvds):
     try:
@@ -455,7 +443,7 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
             # RC 0 should be allowed for ZOAU >= 1.3.4, 
             # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            zoa_version = get_zoa_version(hosts) or "0.0.0.0" 
+            zoa_version = get_zoau_version(hosts) or "0.0.0.0" 
             rc = result.get("rc")            
             if zoa_version >= "1.3.4.0":
                 assert rc == 0
@@ -503,7 +491,7 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
             # RC 0 should be allowed for ZOAU >= 1.3.4, 
             # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            zoa_version = get_zoa_version(hosts) or "0.0.0.0" 
+            zoa_version = get_zoau_version(hosts) or "0.0.0.0" 
             rc = result.get("rc")            
             if zoa_version >= "1.3.4.0":
                 assert rc == 0

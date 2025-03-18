@@ -245,10 +245,10 @@ empty
 
   If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
 
-  Default is false.
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 extended

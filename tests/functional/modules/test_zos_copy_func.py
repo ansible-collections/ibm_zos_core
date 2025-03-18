@@ -2055,14 +2055,14 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
 @pytest.mark.seq
 @pytest.mark.parametrize("ds_type, f_lock",[
-    ( "pds", True),   # Success path, pds locked, force_lock enabled and user authorized
-    ( "pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
-    ( "seq", True),   # Success path, seq locked, force_lock enabled and user authorized
-    ( "pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ( "pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ( "seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
 ])
-def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock ):
+def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
     retries = 0
     max_retries = 3
     success = False
@@ -2080,7 +2080,7 @@ def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock ):
     assert success is True
 
 
-def copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
+def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
     hosts = ansible_zos_module
 
     temp_dir = None
@@ -2235,15 +2235,35 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock ):
 @pytest.mark.pdse
 @pytest.mark.asa
 @pytest.mark.parametrize("ds_type, f_lock",[
-    ( "pds", True),   # Success path, pds locked, force_lock enabled and user authorized
-    ( "pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
-    ( "seq", True),   # Success path, seq locked, force_lock enabled and user authorized
-    ( "pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ( "pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ( "seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
 ])
-def test_copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock ):
+def test_copy_asa_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
+    retries = 0
+    max_retries = 3
+    success = False
+
+    while retries < max_retries:
+        print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
+        result = copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock)
+
+        if result:
+            success = True
+            break
+
+        retries += 1
+
+    assert success is True
+
+
+def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
     hosts = ansible_zos_module
+
+    temp_dir = None
     data_set = get_tmp_ds_name(llq_size=4)
     data_set = f"{data_set}$#@"
     member_name = "MEM1"
@@ -2254,21 +2274,61 @@ def test_copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock ):
         dest_data_set = data_set
 
     try:
-        hosts.all.zos_data_set(name=data_set, state="present", type=ds_type, replace=True, record_format="fba")
+        ds_creation_result = hosts.all.zos_data_set(
+            name=data_set,
+            state="present",
+            type=ds_type,
+            replace=True,
+            record_format="fba"
+        )
+        for result in ds_creation_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
         if ds_type == "pds" or ds_type == "pdse":
-            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
+            member_creation_result = hosts.all.zos_data_set(
+                name=dest_data_set,
+                state="present",
+                type="member",
+                replace=True
+            )
+            for result in member_creation_result.contacted.values():
+                print(result)
+                assert result.get("changed") is True
+                assert result.get("failed", False) is False
 
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
-        hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
+        c_src_result = hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
+        for result in c_src_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        jcl_result = hosts.all.zos_copy(
             content=call_c_jcl.format(temp_dir, dest_data_set),
             dest=f'{temp_dir}/call_c_pgm.jcl',
             force=True
         )
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
+        for result in jcl_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        subproc_result = hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
+        for result in subproc_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
         # submit jcl
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
+        job_result = hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
+        for result in job_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
         # pause to ensure c code acquires lock
         time.sleep(5)
 
@@ -2304,6 +2364,10 @@ def test_copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock ):
                 assert result.get("changed") is False
                 assert "because a task is accessing the data set" in result.get("msg")
                 assert result.get("rc") is None
+
+        return True
+    except AssertionError:
+        return False
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
@@ -2311,7 +2375,8 @@ def test_copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock ):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
         # clean up c code/object/executable files, jcl
-        hosts.all.shell(cmd=f'rm -r {temp_dir}')
+        if temp_dir is not None:
+            hosts.all.shell(cmd=f'rm -r {temp_dir}')
         # remove destination data set.
         hosts.all.zos_data_set(name=data_set, state="absent")
 

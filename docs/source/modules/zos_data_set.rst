@@ -258,10 +258,10 @@ extended
 
   If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
 
-  Default is false.
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 fifo

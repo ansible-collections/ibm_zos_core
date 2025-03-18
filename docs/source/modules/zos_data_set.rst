@@ -271,10 +271,10 @@ fifo
 
   If true, the order is the oldest GDS defined to the newest GDS.
 
-  Default is false.
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 limit

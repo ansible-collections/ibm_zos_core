@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -649,6 +649,13 @@ options:
         required: false
         default: false
 
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
 """
 EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist

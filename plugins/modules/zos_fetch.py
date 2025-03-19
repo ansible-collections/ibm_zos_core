@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -135,6 +135,15 @@ options:
     type: bool
     required: false
     default: true
+
+attributes:
+  action:
+    support: full
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is

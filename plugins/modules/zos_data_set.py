@@ -247,6 +247,7 @@ options:
       - Default is false.
     type: bool
     required: false
+    default: false
   extended:
     description:
       - Sets the I(extended) attribute for Generation Data Groups.
@@ -563,6 +564,7 @@ options:
           - Default is false.
         type: bool
         required: false
+        default: false
       extended:
         description:
           - Sets the I(extended) attribute for Generation Data Groups.
@@ -1534,7 +1536,8 @@ def parse_and_validate_args(params):
                 ),
                 empty=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default= False
                 ),
                 purge=dict(
                     type="bool",
@@ -1625,7 +1628,7 @@ def parse_and_validate_args(params):
         ),
         # GDG options
         limit=dict(type="int", required=False),
-        empty=dict(type="bool", required=False),
+        empty=dict(type="bool", required=False, default= False),
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
         extended=dict(type="bool", required=False),
@@ -1748,7 +1751,7 @@ def run_module():
                 ),
                 # GDG options
                 limit=dict(type="int", required=False),
-                empty=dict(type="bool", required=False),
+                empty=dict(type="bool", required=False, default = False),
                 purge=dict(type="bool", required=False),
                 scratch=dict(type="bool", required=False),
                 extended=dict(type="bool", required=False),
@@ -1818,7 +1821,7 @@ def run_module():
         ),
         # GDG options
         limit=dict(type="int", required=False, no_log=False),
-        empty=dict(type="bool", required=False),
+        empty=dict(type="bool", required=False, default= False),
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
         extended=dict(type="bool", required=False),

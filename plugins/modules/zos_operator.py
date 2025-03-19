@@ -77,7 +77,7 @@ attributes:
   async:
     support: full
     description: Supports being used with the ``async`` keyword.
-    
+
 notes:
     - Commands may need to use specific prefixes like $, they can be discovered by
       issuing the following command C(D OPDATA,PREFIX).

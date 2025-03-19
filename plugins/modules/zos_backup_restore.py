@@ -208,7 +208,7 @@ attributes:
   async:
     support: full
     description: Supports being used with the ``async`` keyword.
-    
+
 notes:
     - It is the playbook author or user's responsibility to ensure they have
       appropriate authority to the RACF FACILITY resource class. A user is

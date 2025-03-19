@@ -128,7 +128,7 @@ attributes:
   async:
     support: full
     description: Supports being used with the ``async`` keyword.
-    
+
 notes:
   - It is the playbook author or user's responsibility to avoid files that should
     not be encoded, such as binary files. A user is described as the remote user,

@@ -71,7 +71,7 @@ EXPECTED_ATTRS = {
             'allocation_available', 'allocation_used', 'tracks_per_cylinder',
             'extents_allocated', 'extents_used', 'blocks_per_track',
             'sms_data_class', 'sms_mgmt_class', 'sms_storage_class',
-            'encrypted', 'password', 'racf', 'key_label', 'members'
+            'encrypted', 'key_status', 'racf', 'key_label', 'members'
         ],
         'nested': [
             ['jcl_attrs', ['creation_job', 'creation_step']]

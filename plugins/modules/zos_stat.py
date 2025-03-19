@@ -418,7 +418,7 @@ stat:
           returned: success
           type: bool
           sample: false
-        password:
+        key_status:
           description:
             - Whether the data set has a password set to read/write.
             - Value can be either one of 'none', 'read' or 'write'.
@@ -1549,7 +1549,7 @@ class NonVSAMDataSetHandler(DataSetHandler):
             'allocation_available', 'allocation_used', 'extents_allocated', 'extents_used',
             'blocks_per_track', 'tracks_per_cylinder',
             'sms_data_class', 'sms_mgmt_class', 'sms_storage_class',
-            'encrypted', 'password', 'racf', 'key_label',
+            'encrypted', 'key_status', 'racf', 'key_label',
             'dir_blocks_allocated', 'dir_blocks_used',
             'pages_allocated', 'pages_used', 'perc_pages_used',
             'members', 'pdse_version', 'max_pdse_generation', 'seq_type'
@@ -1641,7 +1641,7 @@ if data_set_info == 0 then
     say '"sms_data_class":"' || SYSDATACLASS || '",'
     /* Security information */
     say '"encrypted":"' || SYSENCRYPT || '",'
-    say '"password":"' || SYSPASSWORD || '",'
+    say '"key_status":"' || SYSPASSWORD || '",'
     say '"racf":"' || SYSRACFA || '",'
     say '"key_label":"' || SYSKEYLABEL || '",'
     /* PDS/E attributes */
@@ -1852,7 +1852,7 @@ class VSAMDataSetHandler(DataSetHandler):
             'sms_data_class',
             'encrypted',
             'key_label',
-            'password',
+            'key_status',
             'racf'
         ],
         'nested': [
@@ -1957,7 +1957,7 @@ class VSAMDataSetHandler(DataSetHandler):
             ('sms_data_class', r'(DATACLASS-+)([0-9a-zA-Z]+)'),
             ('encrypted', r'(DATA SET ENCRYPTION-+\()([a-zA-Z]{2,3})'),
             ('key_label', r'(DATA SET KEY LABEL-+)([a-zA-Z]+)'),
-            ('password', r'(PROTECTION-PSWD-+\(?)([a-zA-Z]+)'),
+            ('key_status', r'(PROTECTION-PSWD-+\(?)([a-zA-Z]+)'),
             ('racf', r'(RACF-+\()([a-zA-Z]{2,3})')
         ]
 
@@ -1973,9 +1973,9 @@ class VSAMDataSetHandler(DataSetHandler):
             if attributes['extended_attrs_bits'] == 'NULL':
                 attributes['extended_attrs_bits'] = None
 
-        if attributes['password'] == 'NULL':
-            attributes['password'] = 'none'
-        elif attributes['password'] == 'SUPP':
+        if attributes['key_status'] == 'NULL':
+            attributes['key_status'] = 'none'
+        elif attributes['key_status'] == 'SUPP':
             self.extra_data = f'{self.extra_data}\nUnable to get security attributes.'
 
         if 'ASSOCIATIONS' in vsam_general_info:

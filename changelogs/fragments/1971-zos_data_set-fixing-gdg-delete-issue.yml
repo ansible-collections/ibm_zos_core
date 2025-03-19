@@ -1,3 +1,4 @@
 bugfixes:
-    - zos_data_set - Module is failing with Error when trying to delete a non-existing GDG. Fix now provides success response.
+    - zos_data_set - Module would fail when trying to delete a non-existent Generation Data Group.
+      Fix now provides a successful response with `changed=false`.
       (https://github.com/ansible-collections/ibm_zos_core/pull/1971)

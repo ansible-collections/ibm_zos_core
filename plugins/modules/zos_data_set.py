@@ -260,9 +260,9 @@ options:
       - Sets the I(fifo) attribute for Generation Data Groups.
       - If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
       - If true, the order is the oldest GDS defined to the newest GDS.
-      - Default is false.
     type: bool
     required: false
+    default: false
   limit:
     description:
       - Sets the I(limit) attribute for Generation Data Groups.
@@ -578,9 +578,9 @@ options:
           - Sets the I(fifo) attribute for Generation Data Groups.
           - If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
           - If true, the order is the oldest GDS defined to the newest GDS.
-          - Default is false.
         type: bool
         required: false
+        default: false
       limit:
         description:
           - Sets the I(limit) attribute for Generation Data Groups.

@@ -1548,7 +1548,8 @@ def parse_and_validate_args(params):
                 ),
                 scratch=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default=False
                 ),
                 extended=dict(
                     type="bool",
@@ -1634,7 +1635,7 @@ def parse_and_validate_args(params):
         limit=dict(type="int", required=False),
         empty=dict(type="bool", required=False, default= False),
         purge=dict(type="bool", required=False, default= False),
-        scratch=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False, default= False),
         extended=dict(type="bool", required=False, default= False),
         fifo=dict(type="bool", required=False),
         # End of GDG options
@@ -1757,7 +1758,7 @@ def run_module():
                 limit=dict(type="int", required=False),
                 empty=dict(type="bool", required=False, default = False),
                 purge=dict(type="bool", required=False, default= False),
-                scratch=dict(type="bool", required=False),
+                scratch=dict(type="bool", required=False, default= False),
                 extended=dict(type="bool", required=False, default= False),
                 fifo=dict(type="bool", required=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
@@ -1827,7 +1828,7 @@ def run_module():
         limit=dict(type="int", required=False, no_log=False),
         empty=dict(type="bool", required=False, default= False),
         purge=dict(type="bool", required=False, default= False),
-        scratch=dict(type="bool", required=False),
+        scratch=dict(type="bool", required=False, default= False),
         extended=dict(type="bool", required=False, default= False),
         fifo=dict(type="bool", required=False),
         # End of GDG options

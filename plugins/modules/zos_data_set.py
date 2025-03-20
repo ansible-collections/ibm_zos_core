@@ -1547,7 +1547,8 @@ def parse_and_validate_args(params):
                 ),
                 extended=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default=False
                 ),
                 fifo=dict(
                     type="bool",
@@ -1629,7 +1630,7 @@ def parse_and_validate_args(params):
         empty=dict(type="bool", required=False, default= False),
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
-        extended=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False, default= False),
         fifo=dict(type="bool", required=False),
         # End of GDG options
         volumes=dict(
@@ -1752,7 +1753,7 @@ def run_module():
                 empty=dict(type="bool", required=False, default = False),
                 purge=dict(type="bool", required=False),
                 scratch=dict(type="bool", required=False),
-                extended=dict(type="bool", required=False),
+                extended=dict(type="bool", required=False, default= False),
                 fifo=dict(type="bool", required=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
@@ -1822,7 +1823,7 @@ def run_module():
         empty=dict(type="bool", required=False, default= False),
         purge=dict(type="bool", required=False),
         scratch=dict(type="bool", required=False),
-        extended=dict(type="bool", required=False),
+        extended=dict(type="bool", required=False, default= False),
         fifo=dict(type="bool", required=False),
         # End of GDG options
         volumes=dict(

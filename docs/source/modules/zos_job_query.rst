@@ -39,6 +39,10 @@ job_name
 
   The asterisk (`*`) wildcard will match zero or more specified characters.
 
+  Note that using this value will query the system for '*' and then return just matching values.
+
+  This may lead to security issues if there are read-access limitations on some users or jobs.
+
   | **required**: False
   | **type**: str
   | **default**: *
@@ -67,6 +71,17 @@ job_id
   | **required**: False
   | **type**: str
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
 
 
 
@@ -137,6 +152,7 @@ jobs
                 "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
+                "execution_time": "00:00:02",
                 "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
@@ -151,6 +167,7 @@ jobs
                 "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:14:00",
+                "execution_time": "00:00:03",
                 "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
@@ -324,6 +341,12 @@ jobs
 
     | **type**: str
     | **sample**: IEBGENER
+
+  execution_time
+    Total duration time of the job execution, if it has finished. If the job is still running, it represents the time elapsed from the job execution start and current time.
+
+    | **type**: str
+    | **sample**: 00:00:10
 
 
 message

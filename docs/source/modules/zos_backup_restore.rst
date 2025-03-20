@@ -219,6 +219,17 @@ tmp_hlq
 
 
 
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+
+
+
 Examples
 --------
 

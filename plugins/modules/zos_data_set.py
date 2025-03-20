@@ -252,9 +252,9 @@ options:
       - Sets the I(extended) attribute for Generation Data Groups.
       - If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
       - If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
-      - Default is false.
     type: bool
     required: false
+    default: false
   fifo:
     description:
       - Sets the I(fifo) attribute for Generation Data Groups.
@@ -568,9 +568,9 @@ options:
           - Sets the I(extended) attribute for Generation Data Groups.
           - If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
           - If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
-          - Default is false.
         type: bool
         required: false
+        default: false
       fifo:
         description:
           - Sets the I(fifo) attribute for Generation Data Groups.

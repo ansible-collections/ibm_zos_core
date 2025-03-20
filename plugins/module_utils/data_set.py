@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -2453,17 +2453,21 @@ class GenerationDataGroup():
         int
             Indicates if changes were made.
         """
-        # Try to delete
-        rc = datasets.delete(self.name)
-        if rc > 0:
-            if force:
-                if isinstance(self.gdg, gdgs.GenerationDataGroupView):
-                    self.gdg.delete()
+        # Check whether GDG exists or not
+        if gdgs.exists(name=self.name):
+            # Try to delete
+            rc = datasets.delete(self.name)
+            if rc > 0:
+                if force:
+                    if isinstance(self.gdg, gdgs.GenerationDataGroupView):
+                        self.gdg.delete()
+                    else:
+                        gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+                        gdg_view.delete()
                 else:
-                    gdg_view = gdgs.GenerationDataGroupView(name=self.name)
-                    gdg_view.delete()
-            else:
-                raise DatasetDeleteError(self.raw_name, rc)
+                    raise DatasetDeleteError(self.raw_name, rc)
+        else:
+            return False
         return True
 
     def clear(self):

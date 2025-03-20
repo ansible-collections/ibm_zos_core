@@ -278,6 +278,7 @@ options:
         is rolled off and the C(scratch) option is set.
     type: bool
     required: false
+    default: false
   scratch:
     description:
       - Sets the I(scratch) attribute for Generation Data Groups.
@@ -594,6 +595,7 @@ options:
             is rolled off and the C(scratch) option is set.
         type: bool
         required: false
+        default: false
       scratch:
         description:
           - Sets the I(scratch) attribute for Generation Data Groups.

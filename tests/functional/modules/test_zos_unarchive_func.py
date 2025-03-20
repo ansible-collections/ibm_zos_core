@@ -1164,8 +1164,8 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
 
         hosts.all.zos_data_set(
             batch=[
-                {"name": f"{data_set_name}(-1)", "state": "absent", "type": "gdg"},
-                {"name": f"{data_set_name}(0)", "state": "absent", "type": "gdg"},
+                {"name": f"{data_set_name}(-1)", "state": "absent"},
+                {"name": f"{data_set_name}(0)", "state": "absent"},
             ]
         )
         unarchive_result = hosts.all.zos_unarchive(

@@ -174,6 +174,15 @@ options:
     required: false
     type: int
     default: 0
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described

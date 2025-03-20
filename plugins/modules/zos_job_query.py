@@ -61,6 +61,14 @@ options:
       - The asterisk (`*`) wildcard will match zero or more specified characters.
     type: str
     required: False
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
 """
 
 EXAMPLES = r"""

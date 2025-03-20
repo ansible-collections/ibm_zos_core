@@ -1634,11 +1634,11 @@ def parse_and_validate_args(params):
         ),
         # GDG options
         limit=dict(type="int", required=False),
-        empty=dict(type="bool", required=False, default= False),
-        purge=dict(type="bool", required=False, default= False),
-        scratch=dict(type="bool", required=False, default= False),
-        extended=dict(type="bool", required=False, default= False),
-        fifo=dict(type="bool", required=False, default= False),
+        empty=dict(type="bool", required=False, default=False),
+        purge=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False, default=False),
+        extended=dict(type="bool", required=False, default=False),
+        fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
         volumes=dict(
             type=volumes,
@@ -1757,11 +1757,11 @@ def run_module():
                 ),
                 # GDG options
                 limit=dict(type="int", required=False),
-                empty=dict(type="bool", required=False, default = False),
-                purge=dict(type="bool", required=False, default= False),
-                scratch=dict(type="bool", required=False, default= False),
-                extended=dict(type="bool", required=False, default= False),
-                fifo=dict(type="bool", required=False, default= False),
+                empty=dict(type="bool", required=False, default =False),
+                purge=dict(type="bool", required=False, default=False),
+                scratch=dict(type="bool", required=False, default=False),
+                extended=dict(type="bool", required=False, default=False),
+                fifo=dict(type="bool", required=False, default=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
                     type="bool",

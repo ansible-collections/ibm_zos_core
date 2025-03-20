@@ -1539,7 +1539,7 @@ def parse_and_validate_args(params):
                 empty=dict(
                     type="bool",
                     required=False,
-                    default= False
+                    default=False
                 ),
                 purge=dict(
                     type="bool",

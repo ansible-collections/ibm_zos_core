@@ -287,6 +287,7 @@ options:
         EMPTY/NOEMPTY processing.
     type: bool
     required: false
+    default: false
   volumes:
     description:
       - >
@@ -604,6 +605,7 @@ options:
             EMPTY/NOEMPTY processing.
         type: bool
         required: false
+        default: false
       volumes:
         description:
           - >

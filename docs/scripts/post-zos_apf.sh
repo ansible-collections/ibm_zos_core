@@ -28,5 +28,5 @@ SCRIPT_DIR=`dirname "$0"`
 CURR_PATH=`pwd`
 # Delete any temporary index RST
 if [[ -f $CURR_PATH/source/modules/zos_apf.rst ]]; then
-    sed -i'' -e "s/\> \\*\//\> \\\*\//g" $CURR_PATH/source/modules/zos_apf.rst
+    sed -i '' -e "s/\> \\*\//\> \\\*\//g" $CURR_PATH/source/modules/zos_apf.rst
 fi

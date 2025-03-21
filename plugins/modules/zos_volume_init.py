@@ -139,6 +139,9 @@ attributes:
   async:
     support: full
     description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target, if not supported the action will be skipped.
 """
 EXAMPLES = r"""
 - name: Initialize target volume with all default options. Target volume address is '1234', set volume name to 'DEMO01'.

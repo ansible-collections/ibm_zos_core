@@ -1240,6 +1240,9 @@ attributes:
   async:
     support: full
     description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target, if not supported the action will be skipped.
 
 notes:
     - When executing programs using L(zos_mvs_raw,./zos_mvs_raw.html), you may encounter errors

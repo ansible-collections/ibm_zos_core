@@ -41,7 +41,7 @@ attributes:
     description: Supports being used with the ``async`` keyword.
   check_mode:
     support: none
-    description: Can run in check_mode and return changed status prediction without modifying target, if not supported the action will be skipped.
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
     - This module is written in REXX and relies on the SCP protocol to transfer the source to

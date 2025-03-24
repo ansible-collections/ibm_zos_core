@@ -2150,6 +2150,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
 
         # copy text_in source
         decho_result = hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
+        hosts.all.shell(cmd="decho \"this is here to avoid identical errors issues\" \"{0}\"".format(dest_data_set))
         for result in decho_result.contacted.values():
             assert_msg = result.get("stdout", "")
             print(result)

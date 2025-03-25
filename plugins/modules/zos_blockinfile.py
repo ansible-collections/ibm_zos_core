@@ -202,6 +202,8 @@ notes:
     the block will be overwritten on each iteration.
   - When more then one block should be handled in a file you must change
     the I(marker) per task.
+  - When working with a backup of a sequential dataset to avoid false positive
+    backup name should be a sequential dataset too, not a member of pds or pdse.
 seealso:
 - module: zos_data_set
 '''

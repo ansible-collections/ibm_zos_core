@@ -140,6 +140,9 @@ attributes:
   async:
     support: full
     description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
   - For supported character sets used to encode data, refer to the

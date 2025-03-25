@@ -196,6 +196,9 @@ attributes:
   async:
     support: full
     description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
   - It is the playbook author or user's responsibility to avoid files

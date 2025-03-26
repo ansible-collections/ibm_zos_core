@@ -58,7 +58,7 @@ INVENTORY = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: {3}"""
+      ansible_python_interpreter: /allpython/3.13/usr/lpp/IBM/cyp/v3r13/pyz/bin/python3"""
 
 
 def test_zos_operator_various_command(ansible_zos_module):
@@ -222,7 +222,6 @@ def test_zos_operator_parallel_terminal(get_config):
             hosts,
             ssh_key,
             user,
-            python_path
         )), inventory))
         command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
             inventory,

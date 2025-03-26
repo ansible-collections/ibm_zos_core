@@ -158,9 +158,9 @@ module-doc:
 	@echo "Reverting edited source file."
 	scripts/post-template.sh
 
-	@if test -e ../plugins/modules/__init__.py.skip; \
+	@if test -e ../plugins/modules/__init__.py.skip; then \
     echo "Rename file '../plugins/modules/__init__.py.skip' back to ../plugins/modules/__init__.py.'"; \
-	then mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
+	mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
 	fi
 
 	@echo $(line_header)

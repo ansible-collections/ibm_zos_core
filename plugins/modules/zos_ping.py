@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,6 +31,18 @@ author:
   - "Blake Becker (@blakeinate)"
   - "Demetrios Dimatos (@ddimatos)"
 options: {}
+
+attributes:
+  action:
+    support: full
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
     - This module is written in REXX and relies on the SCP protocol to transfer the source to
       the managed z/OS node and encode it in the managed nodes default encoding, eg IBM-1047.
@@ -39,8 +51,9 @@ notes:
       encoding resulting in a module failure. If you are using OpenSSH 9.0 (ssh -V) or later,
       you can instruct SSH to use SCP by adding the entry C(scp_extra_args="-O") into the ini
       file named C(ansible.cfg).
-seealso:
-- module: ansible.builtin.ssh
+    - For more information, review the
+      L(ansible.builtin.ssh, https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html)
+      module.
 """
 
 EXAMPLES = r"""

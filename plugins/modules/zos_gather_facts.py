@@ -61,6 +61,17 @@ options:
         is saved when filtering. Filtering only reduces the number of variables
         that are added to the I(ansible_facts) dictionary. To restrict the facts
         that are collected, refer to the I(gather_subset) parameter.
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 
 EXAMPLES = r"""

@@ -195,6 +195,18 @@ options:
         required: False
         type: bool
         default: False
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
     - It is the playbook author or user's responsibility to ensure they have
       appropriate authority to the RACF® FACILITY resource class. A user is

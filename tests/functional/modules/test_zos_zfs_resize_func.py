@@ -43,6 +43,7 @@ NO_AUTO_INCREMENT= """- hosts : zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
   tasks:
     - name: Create ZFS.
       block:

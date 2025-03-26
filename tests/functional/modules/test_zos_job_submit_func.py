@@ -410,6 +410,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
 
   tasks:
     - name: Submit async job.
@@ -1205,7 +1206,6 @@ def test_job_submit_async(get_config):
     playbook = tempfile.NamedTemporaryFile(delete=True)
     inventory = tempfile.NamedTemporaryFile(delete=True)
 
-    print("Hello debug")
     os.system("echo {0} > {1}".format(
         quote(PLAYBOOK_ASYNC_TEST.format(
             zoau,

@@ -2088,6 +2088,21 @@ while true; do
             option_submitted="--refresh-env"
             refresh_env_mode="active"
             refresh_env_name=""
+    # Handle attached argument format (--refresh-env=all or --refresh-env=venv-2.18)
+            if [[ "$1" == *=* ]]; then 
+                case "${1#--refresh-env=}" in
+                    all) 
+                        refresh_env_mode="all"
+                        ;;
+                    *)
+                        refresh_env_name="${1#*=}"
+                        refresh_env_mode="named"
+                        ;;
+                esac
+                shift
+                continue
+            fi
+
       # End of main command list.
       # Start of command options.
       # Used by:

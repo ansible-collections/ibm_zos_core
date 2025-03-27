@@ -2477,4 +2477,16 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then
     venv_start $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-stop" ] ; then
     venv_stop $name
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--refresh-env" ] ; then
+    case $refresh_env_mode in
+        "all")
+            venv_refresh "all"
+            ;;
+        "named")
+            venv_refresh "$refresh_env_name"
+            ;;
+        *)
+            venv_refresh ""
+            ;;
+    esac
 fi

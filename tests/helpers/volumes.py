@@ -47,12 +47,12 @@ class Volume_Handler:
         def init_volumes(list_volumes):
             list_volumes = []
             for volume in self.volumes:
-                if len(volume) < 2:
-                    list_volumes.append(Volume(volume))
-                else:
+                if type(volume) is list:
                     vol = volume[0]
                     unit = volume[1]
                     list_volumes.append(Volume(vol, unit))
+                else:
+                    list_volumes.append(Volume(volume))
             return list_volumes
         self.volumes = init_volumes(list_volumes)
 
@@ -81,12 +81,6 @@ class Volume_Handler:
         for volume in self.volumes:
             if volume.name == vol:
                 volume.free()
-
-    def init_volumes(self):
-        list_volumes = []
-        for volume in self.volumes:
-            list_volumes.append(Volume(volume))
-        self.volumes =list_volumes
 
 
 def get_volumes(ansible_zos_module, path):

@@ -1,0 +1,15 @@
+trivial:
+  - test_zos_copy_func.py - Add python encoding interpreter for async and parallel testing.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2026).
+
+  - test_zos_job_submit_func.py - Add python encoding interpreter for async and parallel testing.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2026).
+
+  - test_zos_operator_func.py - Add python encoding interpreter for async and parallel testing.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2026).
+
+  - test_zos_script_func.py - Add python encoding interpreter for async and parallel testing.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2026).
+
+  - test_zos_zfs_resize_func.py - Add python encoding interpreter for async and parallel testing.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2026).

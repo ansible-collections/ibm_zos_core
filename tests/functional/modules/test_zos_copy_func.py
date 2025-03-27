@@ -239,6 +239,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
 
   tasks:
     - name: Create a copy

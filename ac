@@ -2091,47 +2091,51 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
-      --refresh-env|--refresh-env=?*)           # command 
-            option_submitted="--refresh-env"
-            refresh_env_mode="active"
-            refresh_env_name=""
-    # Handle attached argument format (--refresh-env=all or --refresh-env=venv-2.18)
-            if [[ "$1" == *=* ]]; then 
-                case "${1#--refresh-env=}" in
-                    all) 
-                        refresh_env_mode="all"
-                        ;;
-                    *)
-                        refresh_env_name="${1#*=}"
-                        refresh_env_mode="named"
-                        ;;
-                esac
-                shift
-                continue
-            fi
-    # Handle separate arguments
-    while : ; do
-        case "$2" in
-            --all)
-                refresh_env_mode="all"
-                shift
-                ;;
-            --name)
-                refresh_env_name="$3"
-                refresh_env_mode="named"
-                shift 2
-                ;;
-            --name=*)
-                refresh_env_name="${2#*=}"
-                refresh_env_mode="named"
-                shift
-                ;;
-            *)
-                break
-                ;;
-        esac
-    done
-    ;;
+      # Initialize default variables for refreshing environments
+option_submitted="--refresh-env"     # Track the option submitted (refresh-env)
+refresh_env_mode="active"            # Default mode: refresh the active environment
+refresh_env_name=""                  # Name of the environment (empty initially)
+
+# Handle attached argument format (--refresh-env=all or --refresh-env=venv-2.18)
+if [[ "$1" == *=* ]]; then 
+    case "${1#--refresh-env=}" in
+        all) 
+            refresh_env_mode="all"    # Set mode to "all" if the argument is --refresh-env=all
+            venv_refresh "$refresh_env_mode" ""
+            ;;
+        *)
+            refresh_env_name="${1#*=}"    # Extract the environment name if the argument is in the form --refresh-env=<env-name>
+            refresh_env_mode="named"      # Set mode to "named" for a specific environment
+            venv_refresh "$refresh_env_mode" "$refresh_env_name"
+            ;;
+    esac
+    shift
+    continue
+fi
+
+# Handle separate arguments for --all, --name, or --name=<env-name>
+while : ; do
+    case "$2" in
+        --all)                           # If --all is passed, set mode to "all"
+            refresh_env_mode="all"
+            shift
+            ;;
+        --name)                          # If --name is passed, the next argument is the environment name
+            refresh_env_name="$3"
+            refresh_env_mode="named"
+            shift 2
+            ;;
+        --name=*)                        # If --name=<env-name> is passed, extract the environment name
+            refresh_env_name="${2#*=}"
+            refresh_env_mode="named"
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+;;
 
       # End of main command list.
       # Start of command options.
@@ -2483,16 +2487,6 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then
     venv_start $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-stop" ] ; then
     venv_stop $name
-elif [ "$option_submitted" ] && [ "$option_submitted" = "--refresh-env" ] ; then
-    case $refresh_env_mode in
-        "all")
-            venv_refresh "all"
-            ;;
-        "named")
-            venv_refresh "$refresh_env_name"
-            ;;
-        *)
-            venv_refresh ""
-            ;;
-    esac
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--refresh-env" ]; then
+    venv_refresh "$refresh_env_name" "$refresh_env_mode"
 fi

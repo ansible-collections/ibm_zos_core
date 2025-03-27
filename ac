@@ -2091,9 +2091,9 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
-option_submitted="--refresh-env"     # option submitted (refresh-env)
-refresh_env_mode="active"            # Default
-refresh_env_name=""                  # (empty initially)
+option_submitted="--refresh-env"     #(refresh-env)
+refresh_env_mode="active"            #Default
+refresh_env_name=""                  #(empty initially)
 
 # Handle attached argument format (--refresh-env=all or --refresh-env=venv-2.18)
 if [[ "$1" == *=* ]]; then 

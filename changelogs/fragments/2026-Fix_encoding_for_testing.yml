@@ -1,5 +1,5 @@
 trivial:
-  - test_zos_copy_func.py - Add python encoding interpetrer for async and parralel testing.
+  - test_zos_copy_func.py - Add python encoding interpreter for async and parallel testing.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2026).
 
   - test_zos_job_submit_func.py - Add python encoding interpetrer for async and parralel testing.

@@ -2084,6 +2084,10 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
+      --refresh-env|--refresh-env=?*)           # command 
+            option_submitted="--refresh-env"
+            refresh_env_mode="active"
+            refresh_env_name=""
       # End of main command list.
       # Start of command options.
       # Used by:

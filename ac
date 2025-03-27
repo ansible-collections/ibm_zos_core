@@ -2091,10 +2091,17 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
+      --refresh-env|--refresh-env=?*)           # command 
+            option_submitted="--refresh-env"
+            refresh_env_mode="active"
+            refresh_env_name=""
+    
+    # Initialize default variables for refreshing environments
+option_submitted="--refresh-env"     # Track the option submitted (refresh-env)
+refresh_env_mode="active"            # Default mode: refresh the active environment
+refresh_env_name=""                  # Name of the environment (empty initially)
 
-option_submitted="--refresh-env"     
-refresh_env_mode="active"            
-refresh_env_name=""                  
+# Handle attached argument format (--refresh-env=all or --refresh-env=venv-2.18)
 if [[ "$1" == *=* ]]; then 
     case "${1#--refresh-env=}" in
         all) 

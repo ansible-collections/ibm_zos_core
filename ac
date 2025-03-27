@@ -1919,6 +1919,7 @@ venv_stop(){
 ##  $ ac --refresh-env              # Active environment
 ##  $ ac --refresh-env --all        # All environments
 ##  $ ac --refresh-env --name venv-2.18  # Specific environment
+##  $ ac --refresh-env --name=venv-2.18  # Specific environment
 venv_refresh() {
     local target_envs=()
     local source_dir="${PWD}/scripts"

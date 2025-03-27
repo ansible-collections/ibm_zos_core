@@ -1910,17 +1910,18 @@ venv_stop(){
     kill -9 $venv_pid > /dev/null 2>&1
 }
 #->venv-refresh:
-## Refresh managed virtual environments with latest scripts
+## Refresh managed virtual environments with the latest scripts
 ## Usage: ac --refresh-env [--all] [--name <venv-name>]
 ## Options:
 ##     --all    - Refresh all environments
 ##     --name   - Specific environment to refresh
 ## Example:
-##  $ ac --refresh-env              # Active environment
-##  $ ac --refresh-env --all        # All environments
-##  $ ac --refresh-env --name venv-2.18  # Specific environment
-##  $ ac --refresh-env --name=venv-2.18  # Specific environment
+##  $ ac --refresh-env              # Refresh the active environment
+##  $ ac --refresh-env --all        # Refresh all environments
+##  $ ac --refresh-env --name venv-2.18  # Refresh a specific environment (e.g., venv-2.18)
 venv_refresh() {
+    local env_name="$1"
+    local mode="$2"
     local target_envs=()
     local source_dir="${PWD}/scripts"
     
@@ -1933,35 +1934,40 @@ venv_refresh() {
         [[ ! -f "${source_dir}/${f}" ]] && message_error "Missing source file: ${source_dir}/${f}" && exit_all
     done
 
-    # Determine targets
-    case "$1" in
+    # Handle the modes: all, named, or active
+    case "$mode" in
         all)
-            # Find all valid environments
+            # Refresh all environments
             for env in "${VENV_HOME_MANAGED}"/venv-*; do
                 [[ -d "$env" ]] && target_envs+=("$env")
             done
-            [[ ${#target_envs[@]} -eq 0 ]] && message_error "No managed environments found" && exit_all
+            if [[ ${#target_envs[@]} -eq 0 ]]; then
+                message_error "No managed environments found" && exit_all
+            fi
+            ;;
+        named)
+            # Refresh the specified environment
+            if [[ -z "$env_name" ]]; then
+                message_error "Environment name must be specified for 'named' mode" && exit_all
+            fi
+            env=$(validate_venv "$env_name")
+            target_envs+=("$env")
             ;;
         *)
-            if [[ -n "$1" ]]; then
-                # Specific environment
-                env=$(validate_venv "$1")
-                target_envs+=("$env")
-            else
-                # Active environment
-                ensure_managed_venv_exists "--refresh-env"
-                target_envs+=("$VENV")
-            fi
+            # Default case: refresh the active environment
+            ensure_managed_venv_exists "--refresh-env"
+            target_envs+=("$VENV")
             ;;
     esac
 
-    # Perform copy operations
+    # Perform copy operations for each environment
     for env in "${target_envs[@]}"; do
         message "Refreshing: $(basename "$env")"
         cp -v "${source_dir}/profile.sh" "${source_dir}/mounts.sh" "${source_dir}/mounts.env" "$env/"
         chmod +x "$env/mounts.sh" "$env/profile.sh"
     done
 }
+
 # ==============================================================================
 # Main arg parsing
 # ==============================================================================

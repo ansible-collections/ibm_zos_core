@@ -1909,7 +1909,84 @@ venv_stop(){
     venv_pid=`ps -ef |grep $venv_tty | grep -v "grep" | grep "/bin/sh -i" | awk '{print $3}'`
     kill -9 $venv_pid > /dev/null 2>&1
 }
+#->venv-refresh:
+## Refresh managed virtual environments with the latest scripts
+## Usage: ac --refresh-env [--all] [--name <venv-name>]
+## Options:
+##     --all    - Refresh all environments
+##     --name   - Specific environment to refresh
+## Example:
+##  $ ac --refresh-env              # Refresh the active environment
+##  $ ac --refresh-env --all        # Refresh all environments
+##  $ ac --refresh-env=all        # Refresh all environments
+##  $ ac --refresh-env --name venv-2.18  # Refresh a specific environment (e.g., venv-2.18)
+##  $ ac --refresh-env=venv-2.18  # Refresh a specific environment (e.g., venv-2.18)
+venv_refresh() {
+    local raw_arg="$1"       # Value from --refresh-env=...
+    local all_flag="$2"      # --all option value
+    local name_arg="$3"      # --name option value
+    local mode
+    local env_name
+    local target_envs=()
+    local source_dir="${PWD}/scripts"
 
+    # Validate source files
+    local required_files=("profile.sh" "mounts.sh" "mounts.env")
+    for f in "${required_files[@]}"; do
+        [[ ! -f "${source_dir}/${f}" ]] && message_error "Missing source file: ${source_dir}/${f}" && exit_all
+    done
+
+    # Argument resolution priority: 1. = syntax 2. --all/--name flags
+    if [ -n "$raw_arg" ]; then
+        # Handle --refresh-env=value syntax
+        case "$raw_arg" in
+            all)
+                mode="all"
+                ;;
+            venv-*)
+                mode="named"
+                env_name="$raw_arg"
+                ;;
+            *)
+                message_error "Invalid refresh-env argument: $raw_arg"
+                exit_all
+                ;;
+        esac
+    elif [ "$all_flag" = "true" ]; then
+        mode="all"
+    elif [ -n "$name_arg" ]; then
+        mode="named"
+        env_name="$name_arg"
+    else
+        mode="active"
+    fi
+
+    # Mode execution
+    case "$mode" in
+        all)
+            for env in "${VENV_HOME_MANAGED}"/venv-*; do
+                [[ -d "$env" ]] && target_envs+=("$env")
+            done
+            [[ ${#target_envs[@]} -eq 0 ]] && message_error "No managed environments found" && exit_all
+            ;;
+        named)
+            [[ -z "$env_name" ]] && message_error "Environment name required" && exit_all
+            env=$(validate_venv "$env_name")
+            target_envs+=("$env")
+            ;;
+        active)
+            ensure_managed_venv_exists "--refresh-env"
+            target_envs+=("$VENV")
+            ;;
+    esac
+
+    # Perform file operations
+    for env in "${target_envs[@]}"; do
+        message "Refreshing: $(basename "$env")"
+        cp -v "${source_dir}/profile.sh" "${source_dir}/mounts.sh" "${source_dir}/mounts.env" "$env/"
+        chmod +x "$env/mounts.sh" "$env/profile.sh"
+    done
+}
 # ==============================================================================
 # Main arg parsing
 # ==============================================================================
@@ -2033,6 +2110,18 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
+      --refresh-env|--refresh-env=?*)           # command
+            ensure_managed_venv_exists $1
+            option_submitted="--refresh-env"
+
+            # Capture raw argument value if using = syntax
+            if [[ "$1" == *=* ]]; then
+                refresh_arg="${1#*=}"
+            else
+                refresh_arg=""
+            fi
+            ;;
+
       # End of main command list.
       # Start of command options.
       # Used by:
@@ -2383,4 +2472,6 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then
     venv_start $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-stop" ] ; then
     venv_stop $name
+elif [ "$option_submitted" = "--refresh-env" ]; then
+    venv_refresh "$refresh_arg" "$all" "$name"
 fi

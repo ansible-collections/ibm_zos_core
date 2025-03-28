@@ -1918,7 +1918,9 @@ venv_stop(){
 ## Example:
 ##  $ ac --refresh-env              # Refresh the active environment
 ##  $ ac --refresh-env --all        # Refresh all environments
+##  $ ac --refresh-env=all        # Refresh all environments
 ##  $ ac --refresh-env --name venv-2.18  # Refresh a specific environment (e.g., venv-2.18)
+##  $ ac --refresh-env=venv-2.18  # Refresh a specific environment (e.g., venv-2.18)
 venv_refresh() {
     local raw_arg="$1"       # Value from --refresh-env=...
     local all_flag="$2"      # --all option value

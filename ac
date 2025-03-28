@@ -2111,8 +2111,8 @@ while true; do
       --refresh-env|--refresh-env=?*)           # command
             ensure_managed_venv_exists $1
             option_submitted="--refresh-env"
-    
-    # Capture raw argument value if using = syntax
+
+            # Capture raw argument value if using = syntax
             if [[ "$1" == *=* ]]; then
                 refresh_arg="${1#*=}"
             else

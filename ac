@@ -1920,13 +1920,13 @@ venv_stop(){
 ##  $ ac --refresh-env --all        # Refresh all environments
 ##  $ ac --refresh-env --name venv-2.18  # Refresh a specific environment (e.g., venv-2.18)
 venv_refresh() {
-    local env_name="$1"
-    local mode="$2"
+    local raw_arg="$1"       # Value from --refresh-env=...
+    local all_flag="$2"      # --all option value
+    local name_arg="$3"      # --name option value
+    local mode
+    local env_name
     local target_envs=()
     local source_dir="${PWD}/scripts"
-    
-    # Use global definition from top of script
-    local VENV_HOME_MANAGED=${PWD%/venv}/venv
 
     # Validate source files
     local required_files=("profile.sh" "mounts.sh" "mounts.env")
@@ -1934,40 +1934,57 @@ venv_refresh() {
         [[ ! -f "${source_dir}/${f}" ]] && message_error "Missing source file: ${source_dir}/${f}" && exit_all
     done
 
-    # Handle the modes: all, named, or active
+    # Argument resolution priority: 1. = syntax 2. --all/--name flags
+    if [ -n "$raw_arg" ]; then
+        # Handle --refresh-env=value syntax
+        case "$raw_arg" in
+            all)
+                mode="all"
+                ;;
+            venv-*)
+                mode="named"
+                env_name="$raw_arg"
+                ;;
+            *)
+                message_error "Invalid refresh-env argument: $raw_arg"
+                exit_all
+                ;;
+        esac
+    elif [ "$all_flag" = "true" ]; then
+        mode="all"
+    elif [ -n "$name_arg" ]; then
+        mode="named"
+        env_name="$name_arg"
+    else
+        mode="active"
+    fi
+
+    # Mode execution
     case "$mode" in
         all)
-            # Refresh all environments
             for env in "${VENV_HOME_MANAGED}"/venv-*; do
                 [[ -d "$env" ]] && target_envs+=("$env")
             done
-            if [[ ${#target_envs[@]} -eq 0 ]]; then
-                message_error "No managed environments found" && exit_all
-            fi
+            [[ ${#target_envs[@]} -eq 0 ]] && message_error "No managed environments found" && exit_all
             ;;
         named)
-            # Refresh the specified environment
-            if [[ -z "$env_name" ]]; then
-                message_error "Environment name must be specified for 'named' mode" && exit_all
-            fi
+            [[ -z "$env_name" ]] && message_error "Environment name required" && exit_all
             env=$(validate_venv "$env_name")
             target_envs+=("$env")
             ;;
-        *)
-            # Default case: refresh the active environment
+        active)
             ensure_managed_venv_exists "--refresh-env"
             target_envs+=("$VENV")
             ;;
     esac
 
-    # Perform copy operations for each environment
+    # Perform file operations
     for env in "${target_envs[@]}"; do
         message "Refreshing: $(basename "$env")"
         cp -v "${source_dir}/profile.sh" "${source_dir}/mounts.sh" "${source_dir}/mounts.env" "$env/"
         chmod +x "$env/mounts.sh" "$env/profile.sh"
     done
 }
-
 # ==============================================================================
 # Main arg parsing
 # ==============================================================================
@@ -2091,56 +2108,17 @@ while true; do
             ensure_managed_venv_exists $1
             option_submitted="--venv-stop"
             ;;
-      --refresh-env|--refresh-env=?*)           # command 
+      --refresh-env|--refresh-env=?*)           # command
+            ensure_managed_venv_exists $1
             option_submitted="--refresh-env"
-            refresh_env_mode="active"
-            refresh_env_name=""
     
-    # Initialize default variables for refreshing environments
-option_submitted="--refresh-env"     # Track the option submitted (refresh-env)
-refresh_env_mode="active"            # Default mode: refresh the active environment
-refresh_env_name=""                  # Name of the environment (empty initially)
-
-# Handle attached argument format (--refresh-env=all or --refresh-env=venv-2.18)
-if [[ "$1" == *=* ]]; then 
-    case "${1#--refresh-env=}" in
-        all) 
-            refresh_env_mode="all"    # Set mode to "all" if the argument is --refresh-env=all
-            venv_refresh "$refresh_env_mode" ""
+    # Capture raw argument value if using = syntax
+            if [[ "$1" == *=* ]]; then
+                refresh_arg="${1#*=}"
+            else
+                refresh_arg=""
+            fi
             ;;
-        *)
-            refresh_env_name="${1#*=}"    # Extract the environment name if the argument is in the form --refresh-env=<env-name>
-            refresh_env_mode="named"      # Set mode to "named" for a specific environment
-            venv_refresh "$refresh_env_mode" "$refresh_env_name"
-            ;;
-    esac
-    shift
-    continue
-fi
-
-# Handle separate arguments for --all, --name, or --name=<env-name>
-while : ; do
-    case "$2" in
-        --all)                           # If --all is passed, set mode to "all"
-            refresh_env_mode="all"
-            shift
-            ;;
-        --name)                          # If --name is passed, the next argument is the environment name
-            refresh_env_name="$3"
-            refresh_env_mode="named"
-            shift 2
-            ;;
-        --name=*)                        # If --name=<env-name> is passed, extract the environment name
-            refresh_env_name="${2#*=}"
-            refresh_env_mode="named"
-            shift
-            ;;
-        *)
-            break
-            ;;
-    esac
-done
-;;
 
       # End of main command list.
       # Start of command options.
@@ -2492,6 +2470,6 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-start" ] ; then
     venv_start $name
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--venv-stop" ] ; then
     venv_stop $name
-elif [ "$option_submitted" ] && [ "$option_submitted" = "--refresh-env" ]; then
-    venv_refresh "$refresh_env_name" "$refresh_env_mode"
+elif [ "$option_submitted" = "--refresh-env" ]; then
+    venv_refresh "$refresh_arg" "$all" "$name"
 fi

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -61,6 +61,17 @@ options:
         (e.g "JESJCL", "?")
     type: str
     required: false
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 
 EXAMPLES = r"""
@@ -113,7 +124,13 @@ jobs:
       sample:
     content_type:
       description:
-         Type of address space.
+        Type of address space used by the job, can be one of the following types.
+        - APPC for an APPC Initiator.
+        - JGRP for a JOBGROUP.
+        - JOB for a Batch job.
+        - STC for a Started task.
+        - TSU for a Time sharing user.
+        - \? for an unknown or pending job.
       type: str
       sample: JOB
     creation_date:
@@ -126,6 +143,12 @@ jobs:
         Time, local to the target system, when the job was created.
       type: str
       sample: "14:15:00"
+    execution_time:
+      description:
+        Total duration time of the job execution, if it has finished. If the job is still running,
+        it represents the time elapsed from the job execution start and current time.
+      type: str
+      sample: 00:00:10
     ddnames:
       description:
          Data definition names.
@@ -384,6 +407,7 @@ jobs:
           }
         ],
         "duration": 0,
+        "execution_time": "00:00:03",
         "job_class": "R",
         "job_id": "JOB00134",
         "job_name": "HELLO",

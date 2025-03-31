@@ -1,3 +1,0 @@
-trivial:
-  - module_utils/data_set.py - Added new functions to support GDG and symbols.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1467).

@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.10.0-beta.1
+version: "1.13.0-beta.1"
 
 # Collection README file
 readme: README.md
@@ -18,7 +18,6 @@ authors:
   - Ketan Kelkar <ketan.kelkar@ibm.com>
   - Ivan Moreno <ivan.moreno.soto@ibm.com>
   - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
-  - Jenny Huang <jennyhuang@ibm.com>
   - Marcel Gutierrez <andre.marcel.gutierrez@ibm.com>
 
 # Description
@@ -98,3 +97,5 @@ build_ignore:
   - tests/sanity/ignore-2.13.txt
   - tests/sanity/ignore-2.14.txt
   - venv*
+  - ansible_collections
+  - '*.log'

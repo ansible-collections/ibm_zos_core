@@ -18,7 +18,7 @@ Synopsis
 --------
 - Return a list of data sets based on specific criteria.
 - Multiple criteria can be added (AND'd) together.
-- The \ :literal:`zos\_find`\  module can only find MVS data sets. Use the \ `find <https://docs.ansible.com/ansible/latest/modules/find_module.html>`__\  module to find USS files.
+- The ``zos_find`` module can only find MVS data sets. Use the `find <https://docs.ansible.com/ansible/latest/modules/find_module.html>`_ module to find USS files.
 
 
 
@@ -44,9 +44,9 @@ age
 age_stamp
   Choose the age property against which to compare age.
 
-  \ :literal:`creation\_date`\  is the date the data set was created and \ :literal:`ref\_date`\  is the date the data set was last referenced.
+  ``creation_date`` is the date the data set was created and ``ref_date`` is the date the data set was last referenced.
 
-  \ :literal:`ref\_date`\  is only applicable to sequential and partitioned data sets.
+  ``ref_date`` is only applicable to sequential and partitioned data sets.
 
   | **required**: False
   | **type**: str
@@ -80,7 +80,7 @@ patterns
 
   This parameter expects a list, which can be either comma separated or YAML.
 
-  If \ :literal:`pds\_patterns`\  is provided, \ :literal:`patterns`\  must be member patterns.
+  If ``pds_patterns`` is provided, ``patterns`` must be member patterns.
 
   When searching for members within a PDS/PDSE, pattern can be a regular expression.
 
@@ -107,7 +107,7 @@ pds_patterns
 
   Required when searching for data set members.
 
-  Valid only for \ :literal:`nonvsam`\  resource types. Otherwise ignored.
+  Valid only for ``nonvsam`` resource types. Otherwise ignored.
 
   | **required**: False
   | **type**: list
@@ -117,14 +117,16 @@ pds_patterns
 resource_type
   The type of resource to search.
 
-  \ :literal:`nonvsam`\  refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
+  ``nonvsam`` refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
 
-  \ :literal:`cluster`\  refers to a VSAM cluster. The \ :literal:`data`\  and \ :literal:`index`\  are the data and index components of a VSAM cluster.
+  ``cluster`` refers to a VSAM cluster. The ``data`` and ``index`` are the data and index components of a VSAM cluster.
+
+  ``gdg`` refers to Generation Data Groups. The module searches based on the GDG base name.
 
   | **required**: False
   | **type**: str
   | **default**: nonvsam
-  | **choices**: nonvsam, cluster, data, index
+  | **choices**: nonvsam, cluster, data, index, gdg
 
 
 volume
@@ -133,6 +135,60 @@ volume
   | **required**: False
   | **type**: list
   | **elements**: str
+
+
+empty
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *empty* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+extended
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *extended* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+fifo
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *fifo* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+limit
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *limit* attribute set as provided.
+
+  | **required**: False
+  | **type**: int
+
+
+purge
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *purge* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
+
+
+scratch
+  A GDG attribute, only valid when ``resource_type=gdg``.
+
+  If provided, will search for data sets with *scratch* attribute set as provided.
+
+  | **required**: False
+  | **type**: bool
 
 
 
@@ -185,6 +241,15 @@ Examples
          - USER.*
        resource_type: cluster
 
+   - name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
+     zos_find:
+       patterns:
+         - USER.*
+       resource_type: gdg
+       limit: 30
+       scratch: true
+       purge: true
+
 
 
 
@@ -192,11 +257,11 @@ Notes
 -----
 
 .. note::
-   Only cataloged data sets will be searched. If an uncataloged data set needs to be searched, it should be cataloged first. The \ `zos\_data\_set <./zos_data_set.html>`__\  module can be used to catalog uncataloged data sets.
+   Only cataloged data sets will be searched. If an uncataloged data set needs to be searched, it should be cataloged first. The `zos_data_set <./zos_data_set.html>`_ module can be used to catalog uncataloged data sets.
 
-   The \ `zos\_find <./zos_find.html>`__\  module currently does not support wildcards for high level qualifiers. For example, \ :literal:`SOME.\*.DATA.SET`\  is a valid pattern, but \ :literal:`\*.DATA.SET`\  is not.
+   The `zos_find <./zos_find.html>`_ module currently does not support wildcards for high level qualifiers. For example, ``SOME.*.DATA.SET`` is a valid pattern, but ``*.DATA.SET`` is not.
 
-   If a data set pattern is specified as \ :literal:`USER.\*`\ , the matching data sets will have two name segments such as \ :literal:`USER.ABC`\ , \ :literal:`USER.XYZ`\  etc. If a wildcard is specified as \ :literal:`USER.\*.ABC`\ , the matching data sets will have three name segments such as \ :literal:`USER.XYZ.ABC`\ , \ :literal:`USER.TEST.ABC`\  etc.
+   If a data set pattern is specified as ``USER.*``, the matching data sets will have two name segments such as ``USER.ABC``, ``USER.XYZ`` etc. If a wildcard is specified as ``USER.*.ABC``, the matching data sets will have three name segments such as ``USER.XYZ.ABC``, ``USER.TEST.ABC`` etc.
 
    The time taken to execute the module is proportional to the number of data sets present on the system and how large the data sets are.
 

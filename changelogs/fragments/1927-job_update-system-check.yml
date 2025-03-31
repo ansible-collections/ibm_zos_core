@@ -1,0 +1,4 @@
+trivial:
+   - module_utils/job.py - In some systems, system and subsystem return values from jls are returned as None values,
+     breaking the current implementation. This ensures that the job modules will not fail even under that circumstance.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/1927).

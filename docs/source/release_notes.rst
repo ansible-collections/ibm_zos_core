@@ -1,13 +1,313 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2024                                    .
+.. © Copyright IBM Corporation 2020, 2025                                    .
 .. ...........................................................................
 
 ========
 Releases
 ========
 
-Version 1.10.0-beta.1
+Version 1.13.0-beta.1
 =====================
+
+Minor Changes
+-------------
+
+- ``zos_copy``
+
+   - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+   - Adds error message when a PDS/E source member does not exist or is not cataloged.
+
+- ``zos_job_submit``
+
+   - Add deploy and forget capability. Now when wait_time_s is 0, the module will submit the job and will not wait to get the job details or content, returning only the job id.
+   - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+   - Added support to run zos_job_submit tasks in async mode inside playbooks.
+
+- ``zos_mvs_raw`` - Added ``max_rc`` option. Now when the user sets ``max_rc``, the module tolerates the failure if the return code is smaller than the ``max_rc`` specified, however, return value ``changed`` will be False if the program return code is not 0.
+- ``zos_script`` - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
+
+Bugfixes
+--------
+
+- ``zos_copy`` - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message.
+- ``zos_fetch`` - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file). Change now allows the user to use different types of relative paths as a parameter.
+- ``zos_find``
+
+   - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types.
+   - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster.
+
+- ``zos_job_query`` - Module was not returning values for system and subsystem. Fix now returns these values.
+- ``zos_mvs_raw``
+
+   - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail. Fix now has a consistent behavior and fails in both cases.
+   - Module would not populate stderr return value. Fix now populates stderr in return values.
+   - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+   - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+   - Option ``tmp_hlq`` was not being used as HLQ when creating backup data sets. Fix now uses ``tmp_hlq`` as HLQ for backup data sets.
+
+- ``zos_script`` - When the user trying to run a remote script had execute permissions but wasn't owner of the file, the module would fail while trying to change permissions on it. Fix now ensures the module first checks if the user can execute the script and only try to change permissions when necessary.
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_zfs_resize - Resize a zfs data set.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
+
+Version 1.12.1
+==============
+
+Bugfixes
+--------
+
+-  ``zos_copy``
+
+   - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
+   - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.
+   - When ``asa_text`` was set to true at the same time as ``force_lock``,  a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
+- ``zos_find`` - When trying to find a VSAM data set that is allocated with DISP=OLD using age filter the module will not find it.
+
+Version 1.12.0
+==============
+
+Minor Changes
+-------------
+
+- ``zos_backup_restore`` - default behavior for module option **hlq** changed. When option **operation** is set to **restore** and the **hlq** is not provided, the original high level qualifiers in a backup will be used for a restore.
+
+- ``zos_job_output`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_job_query`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_job_submit`` - has added the address space type for a job returned as **content_type** in the module response.
+
+- ``zos_mvs_raw`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+- ``zos_operator`` - has added the option **case_sensitive**, allowing the module to control the commands case.
+
+- ``zos_script`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+- ``zos_tso_command`` - updates the stdout and stderr when an unknown, unrecognized, or unrepresentable characters with the 'replacement character' (�), found in the Unicode standard at code point U+FFFD.
+
+Bugfixes
+--------
+
+- ``zos_apf`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_archive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_backup_restore`` - when a recoverable error was encountered and **recover = True**, the module would fail. The change now allows the module to recover.
+
+- ``zos_blockinfile``
+
+   - when the modules **marker_begin** and **marker_end** were set to the same value, the module would not delete the block. Now the module requires the **marker_begin** and **marker_end** to have different values.
+   - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option..
+
+- ``zos_copy``
+
+   - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+   - module would fail if the user did not have Universal Access Authority for SAF Profile **MVS.MCSOPER.ZOAU** and SAF Class **OPERCMDS**. Now the module handles the exception and returns an informative message.
+   - module would ignore the value set for **remote_tmp** in the Ansible configuration file. Now the module uses the value of **remote_tmp** or the default value **~/.ansible/tmp** if none is given.
+
+- ``zos_data_set`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_encode`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_fetch`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_find``
+
+   - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types.
+   - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster.
+
+- ``zos_job_output`` - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
+
+- ``zos_job_query``
+
+   - module did not return values for properties **system** and **subsystem**. Now the module returns these values.
+   - module would raise an invalid argument error for a user ID that contained **@**, **$**, or **#**. Now the module supports RACF user naming conventions.
+
+- ``zos_lineinfile`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_mount`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+- ``zos_mvs_raw``
+
+   - Module sub-option **base64** for **return_content** did not retrieve DD output as Base64. Now the module returns Base64 encoded contents for the DD.
+   - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+   - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+   - If a program failed with a non-zero return code and verbose was false, the module would succeed (false positive). Fix now fails the module for all instances where a program has a non-zero return code.
+
+- ``zos_script`` - module would only read the first command line argument if more than one was used. Now the module passes all arguments to the remote command.
+
+- ``zos_unarchive`` - module option **tmp_hlq** was previously ignored and default values were used. Now the module uses the value set in the option.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
+- ``zos_find`` - When trying to find a VSAM data set that is allocated with DISP=OLD using age filter the module will not find it.
+
+Version 1.11.1
+==============
+
+Bugfixes
+--------
+
+- ``zos_mvs_raw``
+
+   - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail(false positive). Fix now has a consistent behavior and fails in both cases.
+   - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+   - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr.
+
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name from APF(authorized program facility), operation will fail.
+
+Version 1.11.0
+==============
+
+Minor Changes
+-------------
+
+- ``zos_apf`` - Added support for data set names (libraries) with special characters ($, /#, /- and @).
+- ``zos_archive``
+
+   - Added support for GDG and GDS relative name notation to archive data sets.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_backup_restore``
+
+   - Added support for GDS relative name notation to include or exclude data sets when operation is backup.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_blockinfile``
+
+   - Added support for GDG and GDS relative name notation to specify a data set. And backup in new generations.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_copy``
+
+   - Added support for copying from and to generation data sets (GDS) and generation data groups (GDG) including using a GDS for backup.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_data_set``
+
+   - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_encode``
+
+   - Added support for converting the encodings of generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_fetch``
+
+   - Added support for fetching generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_find``
+
+   - Added support for finding generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_job_submit``
+
+   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+   - Added support for running JCL stored in generation data groups (GDG) and generation data sets (GDS).
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_lineinfile``
+
+   - Added support for GDG and GDS relative name notation to specify the target data set and to backup into new generations.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_mount`` - Added support for data set names with special characters ($, /#, /- and @).
+- ``zos_mvs_raw``
+
+   - Added support for GDG and GDS relative name notation to specify data set names.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_script`` - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+- ``zos_tso_command``
+
+   - Added support for using GDG and GDS relative name notation in running TSO commands.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+- ``zos_unarchive``
+
+   - Improved the mechanism for copying to remote systems by removing the use of deepcopy, which had previously resulted in the module failing on some systems.
+   - Added support for data set names with special characters ($, /#, /- and @).
+
+Bugfixes
+--------
+
+- ``zos_copy``
+
+   - Fixes the issue that prevents the module from automatically computing member names when copying a file into a PDS/E. The module now computes the member name when copying into a PDS/E.
+   - Fixes an issue that would perform an unnecessary check if a destination data set is locked for data sets the module created. The module only performs this check for destinations that are present.
+
+- ``zos_data_set`` - When checking if a data set is cataloged, module failed to account for exceptions which occurred during the LISTCAT. The module now raises an MVSCmdExecError if the return code from LISTCAT exceeds the determined threshold.
+- ``zos_job_submit`` - Was not propagating any error types including UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered. The module now shares the error type (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) in the error message.
+- ``zos_mvs_raw`` - The first character of each line in dd_output was missing. The module now includes the first character of each line.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
+
+Version 1.10.0
+==============
 
 Major Changes
 -------------
@@ -95,23 +395,19 @@ It is intended to assist in updating your playbooks so this collection will cont
 Availability
 ------------
 
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 Known Issues
 ------------
-
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_data_set`` - When data set creation fails, exception can throw a bad import error instead of data set creation error.
+- ``zos_copy`` - To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters JSON decoding (DecodeError, TypeError, KeyError) errors when interacting with results that contain non-printable UTF-8 characters in the response. This will be addressed in **ZOAU version 1.3.2** and later.
 
-- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response.
-
-   - If you encounter this, some options are to:
+   - Some options to work around this known issue are:
 
       - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
       - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
@@ -119,27 +415,23 @@ Known Issues
         job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
       - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
 
-Version 1.9.1
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+- Use of special characters (#, @, $, \- ) in different options like data set names and commands is not fully supported, some modules support them but is the user responsibility to escape them. Read each module documentation for further details.
+
+Version 1.9.4
 =============
 
 Bugfixes
 --------
 
-- ``zos_find`` - Option size failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
-- ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
+- ``zos_mvs_raw`` - If verbose was true, even if the program return code was 0, the module would fail. Fix now ensures the module fails on non-zero return code only.
 
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Known Issues
 ------------
@@ -160,6 +452,115 @@ Known Issues
 - ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
 
 - In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+
+Version 1.9.3
+=============
+
+Bugfixes
+--------
+
+- ``zos_job_submit`` - module did not return values for properties **system** and **subsystem**. Now the module returns these values.
+- ``zos_mvs_raw``
+
+    - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail. Fix now has a consistent behavior and fails in both cases.
+    - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+
+- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
+
+   - If the appropriate level of ZOAU can not be installed, some options are to:
+
+      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
+
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+
+
+Version 1.9.2
+=============
+
+Bugfixes
+--------
+
+- ``zos_copy`` - when creating the destination data set, the module would unnecessarily check if a data set is locked by another process. The module no longer performs this check when it creates the data set.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+
+- ``zos_job_submit`` - when setting 'location' to 'LOCAL' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
+
+   - If the appropriate level of ZOAU can not be installed, some options are to:
+
+      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
+
+- In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set, this is so that the collection can continue to maintain certified status.
+
+Version 1.9.1
+=============
+
+Bugfixes
+--------
+
+- ``zos_find`` - Option size failed if a PDS/E matched the pattern, now filtering on utilized size for a PDS/E is supported.
+- ``zos_mvs_raw`` - Option **tmp_hlq** when creating temporary data sets was previously ignored, now the option honors the High Level Qualifier for temporary data sets created during the module execution.
+
+Known Issues
+------------
+
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+
+- ``zos_job_submit``, ``zos_job_output``, ``zos_operator_action_query`` - encounters UTF-8 decoding errors when interacting with results that contain non-printable UTF-8 characters in the response. This has been addressed in this release and corrected with **ZOAU version 1.2.5.6** or later.
+
+   - If the appropriate level of ZOAU can not be installed, some options are to:
+
+      - Specify that the ASA assembler option be enabled to instruct the assembler to use ANSI control characters instead of machine code control characters.
+      - Ignore module errors by using  **ignore_errors:true** for a specific playbook task.
+      - If the error is resulting from a batch job, add **ignore_errors:true** to the task and capture the output into a registered variable to extract the
+        job ID with a regular expression. Then use ``zos_job_output`` to display the DD without the non-printable character such as the DD **JESMSGLG**.
+      - If the error is the result of a batch job, set option **return_output** to false so that no DDs are read which could contain the non-printable UTF-8 characters.
+
+- ``zos_data_set`` - An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended and documented **space_primary** option.
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
 
 Version 1.9.0
 =============
@@ -270,21 +671,12 @@ Several modules have reported UTF-8 decoding errors when interacting with result
 An undocumented option **size** was defined in module **zos_data_set**, this has been removed to satisfy collection certification, use the intended
 and documented **space_primary** option.
 
-In the past, choices could be defined in either lower or upper case. Now, only the case that is identified in the docs can be set,
-this is so that the collection can continue to maintain certified status.
-
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Version 1.8.0
 =============
@@ -360,15 +752,9 @@ unique, some options to work around the error are below.
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Version 1.7.0
 =============
@@ -425,15 +811,9 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Version 1.6.0
 =============
@@ -486,15 +866,9 @@ Bugfixes
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Version 1.5.0
 =============
@@ -600,15 +974,9 @@ Deprecated Features
 Availability
 ------------
 
-* `Automation Hub`_
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 .. .............................................................................
 .. Global Links
@@ -617,7 +985,7 @@ controller and z/OS managed node dependencies.
    https://github.com/ansible-collections/ibm_zos_core
 .. _Galaxy:
    https://galaxy.ansible.com/ibm/ibm_zos_core
-.. _Automation Hub:
+.. _Ansible Automation Platform:
    https://www.ansible.com/products/automation-hub
 .. _IBM Open Enterprise SDK for Python:
    https://www.ibm.com/products/open-enterprise-python-zos
@@ -659,8 +1027,6 @@ controller and z/OS managed node dependencies.
    https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
-.. _z/OS core support matrix:
-   https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/releases_maintenance.html
 
 .. .............................................................................
 .. Playbook Links

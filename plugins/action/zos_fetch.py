@@ -123,7 +123,7 @@ class ActionModule(ActionBase):
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
-            self._task.args.get("ignore_sftp_stderr"), default=False
+            self._task.args.get("ignore_sftp_stderr"), default=True
         )
         validate_checksum = _process_boolean(
             self._task.args.get("validate_checksum"), default=True
@@ -157,10 +157,19 @@ class ActionModule(ActionBase):
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
+        # To manage relative paths we verify and add the current directory
+        # Required to be cast to str
+        if not (dest.startswith("/")):
+            if dest.startswith("~"):
+                dest = os.path.expanduser(dest)
+            dest = os.path.realpath(dest)
+            dest = os.path.join(os.getcwd(), dest)
+            dest = f"{dest}/" if os.path.isdir(dest) else str(dest)
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #
         new_module_args = self._task.args.copy()
+        new_module_args.update(dest=dest)
         encoding_to = None
         if encoding:
             encoding_to = encoding.get("to", None)
@@ -276,7 +285,7 @@ class ActionModule(ActionBase):
         local_checksum = _get_file_checksum(dest)
 
         # ********************************************************** #
-        # Fetch remote data.
+        # Fetch remote data.                                         #
         # ********************************************************** #
         try:
             if ds_type in SUPPORTED_DS_TYPES:

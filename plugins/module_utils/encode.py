@@ -17,7 +17,6 @@ __metaclass__ = type
 from tempfile import NamedTemporaryFile, mkstemp, mkdtemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
-from ansible.module_utils.six import PY3
 
 import shutil
 import errno
@@ -42,11 +41,7 @@ try:
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from shlex import quote
 
 
 class Defaults:
@@ -66,7 +61,7 @@ class Defaults:
         system_charset = locale.getdefaultlocale()[1]
         if system_charset is None:
             module = AnsibleModuleHelper(argument_spec={})
-            rc, out, err = module.run_command("locale -c charmap")
+            rc, out, err = module.run_command("locale -c charmap", errors='replace')
             if rc != 0 or not out or err:
                 if system.is_zos():
                     system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET
@@ -167,7 +162,7 @@ class EncodeUtils(object):
         parsed_args = parser.parse_args({"encoding": encoding})
         return parsed_args.get("encoding")
 
-    def listdsi_data_set(self, ds):
+    def listdsi_data_set(self, ds, tmphlq=None):
         """Invoke IDCAMS LISTCAT command to get the record length and space used
         to estimate the space used by the VSAM data set.
 
@@ -175,6 +170,8 @@ class EncodeUtils(object):
         ----------
         ds : str
             The VSAM data set to be checked.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
 
         Returns
         -------
@@ -192,8 +189,12 @@ class EncodeUtils(object):
         reclen = 80
         space_u = 1024
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(ds)
+
         cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
-        rc, out, err = self.module.run_command(cmd, data=listcat_cmd)
+        if tmphlq:
+            cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
+        rc, out, err = self.module.run_command(cmd, data=listcat_cmd, errors='replace')
         if rc:
             raise EncodeError(err)
         if out:
@@ -284,7 +285,7 @@ class EncodeUtils(object):
         """
         code_set = None
         iconv_list_cmd = ["iconv", "-l"]
-        rc, out, err = self.module.run_command(iconv_list_cmd)
+        rc, out, err = self.module.run_command(iconv_list_cmd, errors='replace')
         if rc:
             raise EncodeError(err)
         if out:
@@ -319,7 +320,7 @@ class EncodeUtils(object):
         iconv_cmd = "printf {0} | iconv -f {1} -t {2}".format(
             quote(src), quote(from_encoding), quote(to_encoding)
         )
-        rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
+        rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True, errors='replace')
         if rc:
             raise EncodeError(err)
         return out
@@ -364,7 +365,7 @@ class EncodeUtils(object):
             quote(from_code), quote(to_code), quote(src), quote(temp_fi)
         )
         try:
-            rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
+            rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True, errors='replace')
             if rc:
                 raise EncodeError(err)
             if dest == temp_fi:
@@ -431,6 +432,8 @@ class EncodeUtils(object):
                     "Directory {0} is empty. Please check the path.".format(src)
                 )
             elif len(file_list) == 1:
+                dest_f = dest
+                src_f = src
                 if path.isdir(dest):
                     file_name = path.basename(file_list[0])
                     src_f = path.join(validation.validate_safe_path(src), validation.validate_safe_path(file_name))
@@ -465,7 +468,7 @@ class EncodeUtils(object):
         return convert_rc
 
     def mvs_convert_encoding(
-        self, src, dest, from_code, to_code, src_type=None, dest_type=None
+        self, src, dest, from_code, to_code, src_type=None, dest_type=None, tmphlq=None
     ):
         """Convert the encoding of the data from
            1) USS to MVS(PS, PDS/E VSAM)
@@ -489,6 +492,8 @@ class EncodeUtils(object):
             The input MVS data set or type: PS, PDS, PDSE, VSAM(KSDS).
         dest_type : str
             The output MVS data set type.
+        tmphlq : str
+            High Level Qualifier for temporary datasets.
 
         Returns
         -------
@@ -507,20 +512,20 @@ class EncodeUtils(object):
             if src_type == "PS":
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
-                rc, out, err = copy.copy_ps2uss(src, temp_src)
+                rc, out, err = copy.copy_uss_mvs(src, temp_src)
             if src_type == "PO":
                 temp_src = mkdtemp()
-                rc, out, err = copy.copy_pds2uss(src, temp_src)
-            if src_type == "VSAM":
-                reclen, space_u = self.listdsi_data_set(src.upper())
+                rc, out, err = copy.copy_uss_mvs(src, temp_src)
+            if src_type == "KSDS":
+                reclen, space_u = self.listdsi_data_set(src.upper(), tmphlq=tmphlq)
                 # RDW takes the first 4 bytes in the VB format, hence we need to add an extra buffer to the vsam max recl.
                 reclen += 4
                 temp_ps = self.temp_data_set(reclen, space_u)
-                rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps)
+                rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps, tmphlq=tmphlq)
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
-                rc, out, err = copy.copy_ps2uss(temp_ps, temp_src)
-            if dest_type == "PS" or dest_type == "VSAM":
+                rc, out, err = copy.copy_uss_mvs(temp_ps, temp_src)
+            if dest_type == "PS" or dest_type == "KSDS":
                 temp_dest_fo = NamedTemporaryFile()
                 temp_dest = temp_dest_fo.name
             if dest_type == "PO":
@@ -530,22 +535,22 @@ class EncodeUtils(object):
                 if not dest_type:
                     convert_rc = True
                 else:
-                    if dest_type == "VSAM":
-                        reclen, space_u = self.listdsi_data_set(dest.upper())
+                    if dest_type == "KSDS":
+                        reclen, space_u = self.listdsi_data_set(dest.upper(), tmphlq=tmphlq)
                         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
                         reclen += 4
                         temp_ps = self.temp_data_set(reclen, space_u)
-                        rc, out, err = copy.copy_uss2mvs(temp_dest, temp_ps, "PS")
-                        rc, out, err = copy.copy_vsam_ps(temp_ps, dest.upper())
+                        rc, out, err = copy.copy_uss_mvs(temp_dest, temp_ps)
+                        rc, out, err = copy.copy_vsam_ps(temp_ps, dest.upper(), tmphlq=tmphlq)
                         convert_rc = True
                     elif dest_type == "PO":
                         for (dir, subdir, files) in walk(temp_dest):
                             for file in files:
                                 temp_file = path.join(validation.validate_safe_path(dir), validation.validate_safe_path(file))
-                                rc, out, err = copy.copy_uss2mvs(temp_file, dest, "PO")
+                                rc, out, err = copy.copy_uss_mvs(temp_file, dest)
                                 convert_rc = True
                     else:
-                        rc, out, err = copy.copy_uss2mvs(temp_dest, dest, dest_type)
+                        rc, out, err = copy.copy_uss_mvs(temp_dest, dest)
                         convert_rc = True
         except Exception:
             raise
@@ -581,7 +586,7 @@ class EncodeUtils(object):
         is_dir = os.path.isdir(file_path)
 
         tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
-        rc, out, err = self.module.run_command(tag_cmd)
+        rc, out, err = self.module.run_command(tag_cmd, errors='replace')
         if rc != 0:
             raise TaggingError(file_path, tag, rc, out, err)
 
@@ -605,7 +610,7 @@ class EncodeUtils(object):
 
         try:
             tag_cmd = "ls -T {0}".format(file_path)
-            rc, stdout, stderr = self.module.run_command(tag_cmd)
+            rc, stdout, stderr = self.module.run_command(tag_cmd, errors='replace')
 
             if rc != 0:
                 return None

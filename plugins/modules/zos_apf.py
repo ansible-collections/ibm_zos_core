@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -195,6 +195,18 @@ options:
         required: False
         type: bool
         default: False
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
     - It is the playbook author or user's responsibility to ensure they have
       appropriate authority to the RACF® FACILITY resource class. A user is
@@ -292,12 +304,14 @@ backup_name:
     type: str
 '''
 
+import os
 import re
 import json
 from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, backup as Backup)
+    better_arg_parser, zoau_version_checker, data_set, backup as Backup)
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
@@ -305,12 +319,14 @@ import traceback
 
 try:
     from zoautil_py import zsystem
+    from zoautil_py import ztypes
 except Exception:
     zsystem = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
-DS_TYPE = ['PS', 'PO']
+DS_TYPE = data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED)
 
 
 def backupOper(module, src, backup, tmphlq=None):
@@ -338,11 +354,15 @@ def backupOper(module, src, backup, tmphlq=None):
     fail_json
         Creating backup has failed.
     """
-    # analysis the file type
-    ds_utils = data_set.DataSetUtils(src)
-    file_type = ds_utils.ds_type()
+    file_type = None
+    if data_set.is_data_set(src):
+        file_type = data_set.DataSet.data_set_type(src, tmphlq=tmphlq)
+    else:
+        if os.path.exists(src):
+            file_type = 'USS'
+
     if file_type != 'USS' and file_type not in DS_TYPE:
-        message = "{0} data set type is NOT supported".format(str(file_type))
+        message = "Dataset {0} of type {1} is NOT supported".format(src, str(file_type))
         module.fail_json(msg=message)
 
     # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
@@ -355,10 +375,132 @@ def backupOper(module, src, backup, tmphlq=None):
             backup_name = Backup.uss_file_backup(src, backup_name=backup, compress=False)
         else:
             backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+    except Backup.BackupError as exc:
+        module.fail_json(
+            msg=exc.msg,
+            rc=exc.rc,
+            stdout=exc.stdout,
+            stderr=exc.stderr
+        )
     except Exception:
-        module.fail_json(msg="creating backup has failed")
+        module.fail_json(
+            msg="An error ocurred during backup."
+        )
 
     return backup_name
+
+
+def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, persistent=None):
+    """Returns a string that can run an APF command in a shell.
+
+    Parameters
+    ----------
+    library : str
+        Name of the data set that will be operated on.
+    opt : str
+        APF operation (either add or del)
+    volume : str
+        Volume of library.
+    sms : bool
+        Whether library is managed by SMS.
+    force_dynamic : bool
+        Whether the APF list format should be dynamic.
+    persistent : dict
+        Options for persistent entries that should be modified by APF.
+
+    Returns
+    -------
+    str
+        APF command.
+    """
+    # -i is  available in ZOAU version 1.3.4
+    # before that all versions will not be able to use -i
+    if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+        operation = "-i -A" if opt == "add" else "-i -D"
+
+    else:
+        operation = "-A" if opt == "add" else "-D"
+
+    operation_args = library
+
+    if volume:
+        operation_args = f"{operation_args},{volume}"
+    elif sms:
+        operation_args = f"{operation_args},SMS"
+
+    command = f"apfadm {operation} '{operation_args}'"
+
+    if force_dynamic:
+        command = f"{command} -f"
+
+    if persistent:
+        if opt == "add":
+            persistent_args = f""" -P '{persistent.get("addDataset")}' """
+        else:
+            persistent_args = f""" -R '{persistent.get("delDataset")}' """
+
+        if persistent.get("marker"):
+            persistent_args = f""" {persistent_args} -M '{persistent.get("marker")}' """
+
+        command = f"{command} {persistent_args}"
+
+    return command
+
+
+def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
+    """Returns a string that can run an APF command for multiple operations
+    in a shell.
+
+    Parameters
+    ----------
+    batch : list
+        List of dicts containing different APF add/del operations.
+    force_dynamic : bool
+        Whether the APF list format should be dynamic.
+    persistent : dict
+        Options for persistent entries that should be modified by APF.
+
+    Returns
+    -------
+    str
+        APF command.
+    """
+    command = "apfadm"
+
+    for item in batch:
+        if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+            operation = "-i -A" if item["opt"] == "add" else "-i -D"
+
+        else:
+            operation = "-A" if item["opt"] == "add" else "-D"
+
+        operation_args = item["dsname"]
+
+        volume = item.get("volume")
+        sms = item.get("sms")
+
+        if volume:
+            operation_args = f"{operation_args},{volume}"
+        elif sms:
+            operation_args = f"{operation_args},SMS"
+
+        command = f"{command} {operation} '{operation_args}'"
+
+    if force_dynamic:
+        command = f"{command} -f"
+
+    if persistent:
+        if persistent.get("addDataset"):
+            persistent_args = f""" -P '{persistent.get("addDataset")}' """
+        else:
+            persistent_args = f""" -R '{persistent.get("delDataset")}' """
+
+        if persistent.get("marker"):
+            persistent_args = f""" {persistent_args} -M '{persistent.get("marker")}' """
+
+        command = f"{command} {persistent_args}"
+
+    return command
 
 
 def main():
@@ -551,11 +693,21 @@ def main():
                 item['opt'] = opt
                 item['dsname'] = item.get('library')
                 del item['library']
-            ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
+            # Commenting this line to implement a workaround for names with '$'. ZOAU should
+            # release a fix soon so we can uncomment this Python API call.
+            # ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
+            apf_command = make_apf_batch_command(batch, force_dynamic=force_dynamic, persistent=persistent)
+            rc, out, err = module.run_command(apf_command)
+            ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
         else:
             if not library:
                 module.fail_json(msg='library is required')
-            ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
+            # Commenting this line to implement a workaround for names with '$'. ZOAU should
+            # release a fix soon so we can uncomment this Python API call.
+            # ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
+            apf_command = make_apf_command(library, opt, volume=volume, sms=sms, force_dynamic=force_dynamic, persistent=persistent)
+            rc, out, err = module.run_command(apf_command)
+            ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response
@@ -563,6 +715,13 @@ def main():
     result['stderr'] = operErr
     result['rc'] = operRc
     result['stdout'] = operOut
+
+    if operation != 'list' and operRc == 0:
+        if operErr.strip():
+            result['changed'] = False
+        else:
+            result['changed'] = True
+
     if operation == 'list':
         try:
             data = json.loads(operOut)

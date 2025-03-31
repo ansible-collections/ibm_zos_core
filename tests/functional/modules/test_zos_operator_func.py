@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2023
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,14 +15,51 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import pytest
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker,
-)
-
+import os
+import yaml
+from shellescape import quote
+from ibm_zos_core.tests.helpers.version import is_zoau_version_higher_than
 
 __metaclass__ = type
+
+PARALLEL_RUNNING = """- hosts : zvm
+  collections :
+    - ibm.ibm_zos_core
+  gather_facts: False
+  vars:
+    ZOAU: "{0}"
+    PYZ: "{1}"
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+  tasks:
+      - name: zos_operator
+        zos_operator:
+          cmd: 'd a,all'
+          wait_time_s: 3
+          verbose: true
+        register: output
+
+      - name: print output
+        debug:
+          var: output"""
+
+INVENTORY = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
 
 
 def test_zos_operator_various_command(ansible_zos_module):
@@ -56,10 +93,10 @@ def test_zos_operator_invalid_command_to_ensure_transparency(ansible_zos_module)
     results = hosts.all.zos_operator(cmd="DUMP COMM=('ERROR DUMP')", verbose=False)
     for result in results.contacted.values():
         assert result.get("changed") is True
-    transparency = False
-    if any('DUMP COMMAND' in str for str in result.get("content")):
-        transparency = True
-    assert transparency
+        transparency = False
+        if any('DUMP COMMAND' in str for str in result.get("content")):
+            transparency = True
+        assert transparency
 
 
 def test_zos_operator_positive_path(ansible_zos_module):
@@ -79,6 +116,7 @@ def test_zos_operator_positive_path_verbose(ansible_zos_module):
         assert result.get("changed") is True
         assert result.get("content") is not None
         # Traverse the content list for a known verbose keyword and track state
+        is_verbose = False
         if any('BGYSC0804I' in str for str in result.get("content")):
             is_verbose = True
         assert is_verbose
@@ -115,8 +153,8 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
 
 
 def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
-    if zoau_version_checker.is_zoau_version_higher_than("1.2.4.5"):
-        hosts = ansible_zos_module
+    hosts = ansible_zos_module
+    if is_zoau_version_higher_than(hosts,"1.2.4.5"):
         wait_time_s=5
         results = hosts.all.zos_operator(
             cmd="d u,all", verbose=True, wait_time_s=wait_time_s
@@ -130,6 +168,24 @@ def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
             assert result.get('elapsed') >= wait_time_s
 
 
+def test_zos_operator_positive_path_preserve_case(ansible_zos_module):
+    hosts = ansible_zos_module
+    command = "D U,all"
+    results = hosts.all.zos_operator(
+        cmd=command,
+        verbose=False,
+        case_sensitive=True
+    )
+
+    for result in results.contacted.values():
+        assert result["rc"] == 0
+        assert result.get("changed") is True
+        assert result.get("content") is not None
+        # Making sure the output from opercmd logged the command
+        # exactly as it was written.
+        assert len(result.get("content")) > 1
+        assert command in result.get("content")[1]
+
 
 def test_response_come_back_complete(ansible_zos_module):
     hosts = ansible_zos_module
@@ -141,3 +197,40 @@ def test_response_come_back_complete(ansible_zos_module):
         # HASP646 Only appears in the last line that before did not appears
         last_line = len(stdout)
         assert "HASP646" in stdout[last_line - 1]
+
+
+def test_zos_operator_parallel_terminal(get_config):
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
+
+    try:
+        playbook = "playbook.yml"
+        inventory = "inventory.yml"
+        os.system("echo {0} > {1}".format(quote(PARALLEL_RUNNING.format(
+            zoau,
+            cut_python_path,
+            python_version
+        )), playbook))
+        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), inventory))
+        command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
+            inventory,
+            playbook,
+        )
+        stdout = os.system(command)
+        assert stdout == 0
+    finally:
+        os.remove("inventory.yml")
+        os.remove("playbook.yml")

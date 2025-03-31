@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -44,6 +44,17 @@ options:
     default: 0
     required: false
     type: int
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 
 RETURN = r"""
@@ -126,7 +137,9 @@ EXAMPLES = r"""
 """
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 from os import chmod
+import re
 from tempfile import NamedTemporaryFile
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -194,7 +207,7 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         f.write(script)
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
     for command in commands:
-        rc, stdout, stderr = module.run_command([tmp_file.name, command])
+        rc, stdout, stderr = module.run_command([tmp_file.name, command], errors='replace')
         command_results = {}
         command_results["command"] = command
         command_results["rc"] = rc
@@ -253,6 +266,31 @@ def list_or_str_type(contents, dependencies):
     return contents
 
 
+def preprocess_data_set_names(command):
+    """
+    Applies necessary preprocessing to the data set names, such as converting
+    a GDS relative name into an absolute one.
+
+    Parameters
+    ----------
+    command : str
+        command in which to look for a data set name.
+
+    Returns
+    -------
+    str
+        The command with the modified data set names if any.
+
+    """
+    pattern = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)|\((?:[-+]?[0-9]+)\)){0,1}"
+    data_set_list = re.findall(pattern, command)
+    for name in data_set_list:
+        if data_set.DataSet.is_gds_relative_name(name):
+            dataset_name = data_set.DataSet.resolve_gds_absolute_name(name)
+            command = command.replace(name, dataset_name)
+    return command
+
+
 def run_module():
     """Initialize module.
 
@@ -287,6 +325,7 @@ def run_module():
         module.fail_json(msg=repr(e), **result)
 
     commands = parsed_args.get("commands")
+    commands = list(map(preprocess_data_set_names, commands))
     max_rc = parsed_args.get("max_rc")
     if max_rc is None:
         max_rc = 0

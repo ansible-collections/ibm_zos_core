@@ -20,11 +20,11 @@ from ansible.utils.display import Display
 from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
-import copy
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
-from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
+from datetime import datetime
+from os import path
 
 display = Display()
 
@@ -32,6 +32,8 @@ display = Display()
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """
+        self._supports_async = True
+
         if task_vars is None:
             task_vars = {}
 
@@ -56,22 +58,9 @@ class ActionModule(ActionBase):
 
             source = self._task.args.get("src", None)
 
-            # Get a temporary file on the managed node
-            tempfile = self._execute_module(
-                module_name="tempfile", module_args={}, task_vars=task_vars,
-            )
-            dest_path = tempfile.get("path")
-            # Calling execute_module from this step with tempfile leaves behind a tmpdir.
-            # This is called to ensure the proper removal.
-            tmpdir = self._connection._shell.tmpdir
-            if tmpdir:
-                self._remove_tmp_path(tmpdir)
-
             result["failed"] = True
             if source is None:
                 result["msg"] = "Source is required."
-            elif dest_path is None:
-                result["msg"] = "Failed copying to remote, destination file was not created. {0}".format(tempfile.get("msg"))
             elif source is not None and os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
                 result["msg"] = "Source must be a file."
             else:
@@ -87,30 +76,36 @@ class ActionModule(ActionBase):
                 result["msg"] = to_text(e)
                 return result
 
-            if tmp is None or "-tmp-" not in tmp:
-                tmp = self._make_tmp_path()
+            tmp_dir = self._connection._shell._options.get("remote_tmp")
+            rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_dir))
+            if rc > 0:
+                msg = f"Failed to resolve remote temporary directory {tmp_dir}. Ensure that the directory exists and user has proper access."
+                return self._exit_action({}, msg, failed=True)
+
+            tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+            temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
+            dest_path = path.join(tmp_dir, temp_file_dir, path.basename(source))
+            # Creating the name for the temp file needed.
+            self._connection.exec_command("mkdir -p {0}".format(path.dirname(dest_path)))
 
             source_full = None
             try:
                 source_full = self._loader.get_real_file(source)
-                # source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
                 result["msg"] = "Source {0} not found. {1}".format(source_full, e)
                 self._remove_tmp_path(tmp)
                 return result
 
-            # if self._connection._shell.path_has_trailing_slash(dest):
-            #     dest_file = self._connection._shell.join_path(dest, source_rel)
-            # else:
-            self._connection._shell.join_path(dest_path)
-
-            tmp_src = self._connection._shell.join_path(tmp, "source")
-
             rendered_file = None
             if use_template:
                 template_parameters = module_args.get("template_parameters", dict())
                 encoding = module_args.get("encoding", dict())
+
+                if template_parameters and not template_parameters.get("autoescape", True):
+                    display.warning(
+                        msg="Disabling autoescaping in Jinja may result in security risks, use with caution."
+                    )
 
                 try:
                     renderer = template.create_template_environment(
@@ -130,12 +125,12 @@ class ActionModule(ActionBase):
                     return result
 
                 source_full = rendered_file
-
-            remote_path = None
-            remote_path = self._transfer_file(source_full, tmp_src)
-
-            if remote_path:
-                self._fixup_perms2((tmp, remote_path))
+                if os.path.exists(rendered_file):
+                    with open(rendered_file, 'r') as file:
+                        rendered_content = file.read()
+                        display.vvv(u"Template Content {0}:\n{1}".format(os.path.basename(source), rendered_content), host=self._play_context.remote_addr)
+                else:
+                    display.vvv(u"Template file {0} does not exist.".format(rendered_file))
 
             result = {}
             copy_module_args = {}
@@ -143,23 +138,30 @@ class ActionModule(ActionBase):
 
             copy_module_args.update(
                 dict(
-                    src=tmp_src,
+                    src=source_full,
                     dest=dest_path,
                     mode="0600",
                     force=True,
                     encoding=module_args.get('encoding'),
-                    remote_src=True,
+                    remote_src=False,
                 )
             )
-            copy_task = copy.deepcopy(self._task)
+            copy_task = self._task.copy()
             copy_task.args = copy_module_args
-            zos_copy_action_module = ZosCopyActionModule(task=copy_task,
-                                                         connection=self._connection,
-                                                         play_context=self._play_context,
-                                                         loader=self._loader,
-                                                         templar=self._templar,
-                                                         shared_loader_obj=self._shared_loader_obj)
-            result.update(zos_copy_action_module.run(task_vars=task_vars))
+            # Making the zos_copy task run synchronously every time.
+            copy_task.async_val = 0
+
+            copy_action = self._shared_loader_obj.action_loader.get(
+                'ibm.ibm_zos_core.zos_copy',
+                task=copy_task,
+                connection=self._connection,
+                play_context=self._play_context,
+                loader=self._loader,
+                templar=self._templar,
+                shared_loader_obj=self._shared_loader_obj
+            )
+
+            result.update(copy_action.run(task_vars=task_vars))
             if result.get("msg") is None:
                 module_args["src"] = dest_path
                 result.update(
@@ -167,6 +169,7 @@ class ActionModule(ActionBase):
                         module_name="ibm.ibm_zos_core.zos_job_submit",
                         module_args=module_args,
                         task_vars=task_vars,
+                        wrap_async=self._task.async_val
                     )
                 )
             else:
@@ -178,6 +181,7 @@ class ActionModule(ActionBase):
                     module_name="ibm.ibm_zos_core.zos_job_submit",
                     module_args=module_args,
                     task_vars=task_vars,
+                    wrap_async=self._task.async_val
                 )
             )
 

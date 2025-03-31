@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,9 +12,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-import pytest
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+from ibm_zos_core.tests.helpers.version import get_zoau_version
 
 __metaclass__ = type
 
@@ -41,11 +41,14 @@ APFADDDSNAME({4})VOLUME({5})
 DEL_EXPECTED = """/*BEGINAPFLIST*/
 /*ENDAPFLIST*/"""
 
+TEST_HLQ = "ANSIBLE"
+
+
 def clean_test_env(hosts, test_info):
-    cmd_str = f"drm {test_info['library']}"
+    cmd_str = f"drm '{test_info['library']}' "
     hosts.all.shell(cmd=cmd_str)
     if test_info.get('persistent'):
-        cmd_str = f"drm {test_info['persistent']['data_set_name']}"
+        cmd_str = f"drm '{test_info['persistent']['data_set_name']}' "
         hosts.all.shell(cmd=cmd_str)
 
 
@@ -60,21 +63,21 @@ def test_add_del(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         ds = get_tmp_ds_name(3,2)
-        hosts.all.shell(f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
@@ -106,21 +109,21 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module, volumes_with_vvds):
         }
         test_info['tmp_hlq'] = tmphlq
         ds = get_tmp_ds_name(3,2,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
@@ -148,21 +151,21 @@ def test_add_del_volume(ansible_zos_module, volumes_with_vvds):
         }
         ds = get_tmp_ds_name(1,1,True)
 
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
@@ -221,21 +224,21 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         ds = get_tmp_ds_name(1,1,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
@@ -263,11 +266,6 @@ def test_add_del_volume_persist(ansible_zos_module, volumes_with_vvds):
     finally:
         clean_test_env(hosts, test_info)
 
-
-# keyword: ENABLE-FOR-1-3
-# Test commented because there is a failure in ZOAU 1.2.x, that should be fixed in 1.3.x, so
-# whoever works in issue https://github.com/ansible-collections/ibm_zos_core/issues/726
-# should uncomment this test as part of the validation process.
 
 def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
     try:
@@ -298,15 +296,15 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         }
         for item in test_info['batch']:
             ds = get_tmp_ds_name(1,1,True)
-            hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+            hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
             item['library'] = ds
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             item['volume'] = vol
         prstds = get_tmp_ds_name(5,5,True)
-        cmd_str = f"dtouch -tseq {prstds}"
+        cmd_str = f"dtouch -tseq '{prstds}' "
         hosts.all.shell(cmd=cmd_str)
 
         test_info['persistent']['data_set_name'] = prstds
@@ -322,7 +320,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
             test_info['batch'][2]['volume']
         )
         add_exptd = add_exptd.replace(" ", "")
-        cmd_str = f"cat \"//'{test_info['persistent']['data_set_name']}'\" "
+        cmd_str = f"""dcat '{test_info["persistent"]["data_set_name"]}' """
         results = hosts.all.shell(cmd=cmd_str)
         for result in results.contacted.values():
             actual = result.get("stdout")
@@ -333,7 +331,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
         for result in results.contacted.values():
             assert result.get("rc") == 0
         del_exptd = DEL_EXPECTED.replace(" ", "")
-        cmd_str = f"cat \"//'{test_info['persistent']['data_set_name']}'\" "
+        cmd_str = f"""dcat '{test_info["persistent"]["data_set_name"]}' """
         results = hosts.all.shell(cmd=cmd_str)
         for result in results.contacted.values():
             actual = result.get("stdout")
@@ -342,7 +340,7 @@ def test_batch_add_del(ansible_zos_module, volumes_with_vvds):
     finally:
         for item in test_info['batch']:
             clean_test_env(hosts, item)
-        hosts.all.shell(cmd=f"drm {test_info['persistent']['data_set_name']}")
+        hosts.all.shell(cmd=f"drm '{test_info['persistent']['data_set_name']}' ")
 
 
 def test_operation_list(ansible_zos_module):
@@ -371,21 +369,21 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
         }
         test_info['state'] = 'present'
         ds = get_tmp_ds_name(3,2,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         hosts.all.zos_apf(**test_info)
@@ -407,7 +405,6 @@ def test_operation_list_with_filter(ansible_zos_module, volumes_with_vvds):
 # Negative tests
 #
 
-
 def test_add_already_present(ansible_zos_module, volumes_with_vvds):
     try:
         hosts = ansible_zos_module
@@ -420,30 +417,40 @@ def test_add_already_present(ansible_zos_module, volumes_with_vvds):
         }
         test_info['state'] = 'present'
         ds = get_tmp_ds_name(3,2,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
             assert result.get("rc") == 0
+        # Second call to zos_apf, same as first but with different expectations
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
+            # RC 0 should be allowed for ZOAU >= 1.3.4, 
+            # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 16 or result.get("rc") == 8
+            zoa_version = get_zoau_version(hosts) or "0.0.0.0" 
+            rc = result.get("rc")            
+            if zoa_version >= "1.3.4.0":
+                assert rc == 0
+            elif zoa_version >= "1.2.0.0":
+                assert rc == 8
+            else:
+                assert rc == 16 
         test_info['state'] = 'absent'
         hosts.all.zos_apf(**test_info)
     finally:
@@ -461,28 +468,37 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
             "force_dynamic":True
         }
         ds = get_tmp_ds_name(1,1,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
+            # RC 0 should be allowed for ZOAU >= 1.3.4, 
+            # in zoau < 1.3.4 -i is not recognized  in apfadm 
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            assert result.get("rc") == 16 or result.get("rc") == 8
+            zoa_version = get_zoau_version(hosts) or "0.0.0.0" 
+            rc = result.get("rc")            
+            if zoa_version >= "1.3.4.0":
+                assert rc == 0
+            elif zoa_version >= "1.2.0.0":
+                assert rc == 8
+            else:
+                assert rc == 16
     finally:
         clean_test_env(hosts, test_info)
 
@@ -494,7 +510,7 @@ def test_add_not_found(ansible_zos_module):
         "state":"present",
         "force_dynamic":True
     }
-    test_info['library'] = 'APFTEST.FOO.BAR'
+    test_info['library'] = f'{TEST_HLQ}.FOO.BAR'
     results = hosts.all.zos_apf(**test_info)
     for result in results.contacted.values():
         # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
@@ -514,21 +530,21 @@ def test_add_with_wrong_volume(ansible_zos_module, volumes_with_vvds):
         }
         test_info['state'] = 'present'
         ds = get_tmp_ds_name(3,2,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         test_info['volume'] = 'T12345'
@@ -556,21 +572,21 @@ def test_persist_invalid_ds_format(ansible_zos_module, volumes_with_vvds):
         }
         test_info['state'] = 'present'
         ds = get_tmp_ds_name(3,2,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         ds_name = test_info['persistent']['data_set_name']
@@ -599,21 +615,21 @@ def test_persist_invalid_marker(ansible_zos_module, volumes_with_vvds):
         }
         test_info['state'] = 'present'
         ds = get_tmp_ds_name(3,2,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         test_info['persistent']['marker'] = "# Invalid marker format"
@@ -640,21 +656,21 @@ def test_persist_invalid_marker_len(ansible_zos_module, volumes_with_vvds):
         }
         test_info['state'] = 'present'
         ds = get_tmp_ds_name(3,2,True)
-        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} {ds} ")
+        hosts.all.shell(cmd=f"dtouch -tseq -V{volume} '{ds}' ")
         test_info['library'] = ds
         if test_info.get('volume') is not None:
-            cmd_str = "dls -l " + ds + " | awk '{print $5}' "
+            cmd_str = "dls -l '" + ds + "' | awk '{print $5}' "
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 vol = result.get("stdout")
             test_info['volume'] = vol
         if test_info.get('persistent'):
-            cmd_str = "mvstmp APFTEST.PRST"
+            cmd_str = f"mvstmp {TEST_HLQ}.PRST"
             results = hosts.all.shell(cmd=cmd_str)
             for result in results.contacted.values():
                 prstds = result.get("stdout")
             prstds = prstds[:30]
-            cmd_str = f"dtouch -tseq {prstds}"
+            cmd_str = f"dtouch -tseq '{prstds}' "
             hosts.all.shell(cmd=cmd_str)
             test_info['persistent']['data_set_name'] = prstds
         test_info['persistent']['marker'] = "/* {mark} This is a awfully lo%70sng marker */" % ("o")

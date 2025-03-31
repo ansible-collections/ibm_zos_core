@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import pytest
 from pprint import pprint
-from pipes import quote
+from shlex import quote
 import unittest
 
 # TODO: remove some of the logic from tests and make pytest fixtures

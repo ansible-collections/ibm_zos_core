@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -51,6 +51,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to include in the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to include when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -68,6 +69,7 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns
             to exclude from the backup.
+          - When I(operation=backup) GDS relative names are supported.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to exclude when restoring from a backup.
           - The single asterisk, C(*), is used in place of exactly one qualifier.
@@ -117,11 +119,12 @@ options:
       - There are no enforced conventions for backup names.
         However, using a common extension like C(.dzp) for UNIX files and C(.DZP) for data sets will
         improve readability.
+      - GDS relative names are supported when I(operation=restore).
     type: str
     required: True
   recover:
     description:
-      - Specifies if potentially recoverable errors should be ignored.
+      - When I(recover=true) and I(operation=backup) then potentially recoverable errors will be ignored.
     type: bool
     default: False
   overwrite:
@@ -183,17 +186,45 @@ options:
   hlq:
     description:
       - Specifies the new HLQ to use for the data sets being restored.
-      - Defaults to running user's username.
+      - If no value is provided, the data sets will be restored with their original HLQs.
     type: str
     required: false
   tmp_hlq:
     description:
-      - Override the default high level qualifier (HLQ) for temporary and backup
+      - Override the default high level qualifier (HLQ) for temporary
+        data sets used in the module's operation.
+      - If I(tmp_hlq) is set, this value will be applied to all temporary
         data sets.
-      - The default HLQ is the Ansible user that executes the module and if
-        that is not available, then the value of C(TMPHLQ) is used.
+      - If I(tmp_hlq) is not set, the value will be the username who submits
+        the ansible task, this is the default behavior. If the username can
+        not be identified, the value C(TMPHLQ) is used.
     required: false
     type: str
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
+notes:
+    - It is the playbook author or user's responsibility to ensure they have
+      appropriate authority to the RACF FACILITY resource class. A user is
+      described as the remote user, configured to run either the playbook or
+      playbook tasks, who can also obtain escalated privileges to execute as
+      root or another user.
+    - When using this module, if the RACF FACILITY class
+      profile B(STGADMIN.ADR.DUMP.TOLERATE.ENQF) is active, you must
+      have READ access authority to use the module option I(recover=true).
+      If the RACF FACILITY class checking is not set up, any user can use
+      the module option without access to the class.
+    - If your system uses a different security product, consult that product's
+      documentation to configure the required security classes.
 """
 
 RETURN = r""""""
@@ -216,6 +247,15 @@ EXAMPLES = r"""
         - private.test.*
       exclude: user.private.*
     backup_name: MY.BACKUP.DZP
+
+- name: Backup a list of GDDs to data set my.backup.dzp
+  zos_backup_restore:
+    operation: backup
+    data_sets:
+      include:
+        - user.gdg(-1)
+        - user.gdg(0)
+    backup_name: my.backup.dzp
 
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
   zos_backup_restore:
@@ -257,8 +297,8 @@ EXAMPLES = r"""
     space: 1
     space_type: g
 
-- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
-    Use z/OS username as new HLQ.
+- name: Restore data sets from a backup stored in the UNIX file /tmp/temp_backup.dzp.
+    Restore the data sets with the original high level qualifiers.
   zos_backup_restore:
     operation: restore
     backup_name: /tmp/temp_backup.dzp
@@ -312,18 +352,18 @@ EXAMPLES = r"""
     sms_management_class: DB2SMS10
 """
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-from ansible.module_utils.basic import AnsibleModule
-
-from re import match, search, IGNORECASE
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
-from os import path
 import traceback
+from os import path
+from re import IGNORECASE, match, search
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import \
+    BetterArgParser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
+    DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
+
 try:
     from zoautil_py import datasets
     from zoautil_py import exceptions as zoau_exceptions
@@ -386,8 +426,8 @@ def main():
         if operation == "backup":
             backup(
                 backup_name=backup_name,
-                include_data_sets=data_sets.get("include"),
-                exclude_data_sets=data_sets.get("exclude"),
+                include_data_sets=resolve_gds_name_if_any(data_sets.get("include")),
+                exclude_data_sets=resolve_gds_name_if_any(data_sets.get("exclude")),
                 volume=volume,
                 full_volume=full_volume,
                 temp_volume=temp_volume,
@@ -421,6 +461,26 @@ def main():
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
     module.exit_json(**result)
+
+
+def resolve_gds_name_if_any(data_set_list):
+    """Resolve all gds names in a list, if no gds relative name is found then
+    the original name will be kept.
+    Parameters
+    ----------
+    data_set_list : list
+        List of data set names.
+
+    Returns
+    -------
+    list
+        List of data set names with resolved gds names.
+    """
+    if isinstance(data_set_list, list):
+        for index, name in enumerate(data_set_list):
+            if DataSet.is_gds_relative_name(name):
+                data_set_list[index] = DataSet.resolve_gds_absolute_name(name)
+    return data_set_list
 
 
 def parse_and_validate_args(params):
@@ -466,7 +526,7 @@ def parse_and_validate_args(params):
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type=sms_type, required=False),
         sms_management_class=dict(type=sms_type, required=False),
-        hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
+        hlq=dict(type=hlq_type, default=None, dependencies=["operation"]),
         tmp_hlq=dict(type=hlq_type, required=False),
     )
 
@@ -662,7 +722,7 @@ def data_set_pattern_type(contents, dependencies):
         )
     for pattern in contents:
         if not match(
-            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
             str(pattern),
             IGNORECASE,
         ):
@@ -700,28 +760,7 @@ def hlq_type(contents, dependencies):
         raise ValueError("hlq_type is only valid when operation=restore.")
     if not match(r"^(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})$", contents, IGNORECASE):
         raise ValueError("Invalid argument {0} for hlq_type.".format(contents))
-    return contents.upper()
-
-
-def hlq_default(contents, dependencies):
-    """Sets the default HLQ to use if none is provided.
-
-    Parameters
-    ----------
-    contents : str
-        The HLQ to use.
-    dependencies : dict
-        Any dependent arguments.
-
-    Returns
-    -------
-    str
-        The HLQ to use.
-    """
-    hlq = None
-    if dependencies.get("operation") == "restore":
-        hlq = datasets.get_hlq()
-    return hlq
+    return contents
 
 
 def sms_type(contents, dependencies):
@@ -832,7 +871,7 @@ def backup_name_type(contents, dependencies):
     if contents is None:
         return None
     if not match(
-        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}(?:\(([-+]?[0-9]+)\)){0,1}$",
         str(contents),
         IGNORECASE,
     ):
@@ -973,11 +1012,14 @@ def to_dunzip_args(**kwargs):
             size += kwargs.get("space_type")
         zoau_args["size"] = size
 
-    if kwargs.get("hlq"):
+    if kwargs.get("hlq") is None:
+        zoau_args["keep_original_hlq"] = True
+    else:
         zoau_args["high_level_qualifier"] = kwargs.get("hlq")
 
     if kwargs.get("tmp_hlq"):
-        zoau_args["tmphlq"] = str(kwargs.get("tmp_hlq"))
+        zoau_args["high_level_qualifier"] = str(kwargs.get("tmp_hlq"))
+        zoau_args["keep_original_hlq"] = False
 
     return zoau_args
 

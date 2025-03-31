@@ -819,7 +819,7 @@ class OutputDefinition(DataDefinition):
     def __init__(
         self,
         tmphlq="",
-        record_format="FBA",
+        record_format="FB",
         space_primary=100,
         space_secondary=50,
         space_type="trk",

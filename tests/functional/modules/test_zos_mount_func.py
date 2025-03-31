@@ -11,7 +11,9 @@ import tempfile
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    DataSet,
+)
 
 INITIAL_PRM_MEMBER = """/* Initial file to look like BPXPRM */
 /* some settings at the top */
@@ -29,7 +31,13 @@ MOUNT FILESYSTEM('IMSTESTU.ZZZ.KID.GA.ZFS')
       AUTOMOVE
 """
 
-# SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
+SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
+    MOUNTPOINT('/tmp/src/somedirectory') 0xC1
+    MOUNTPOINT('/tmp/zfs_aggr1')
+    TYPE('ZFS')
+    SECURITY
+"""
+
 SHELL_EXECUTABLE = "/bin/sh"
 
 
@@ -57,29 +65,34 @@ def populate_tmpfile():
 
 
 def create_sourcefile(hosts, volume):
+    # returns un-escaped source file name, but uses escaped file name for shell commands
+    # this is intentionally done to test escaping of data set names
     starter = get_sysname(hosts).split(".")[0].upper()
     if len(starter) < 2:
         starter = "IMSTESTU"
-    thisfile = starter + ".TTT.MNT.ZFS"
+    basefile = starter + ".A@$#TO.MNT.ZFS"
+    thisfile = DataSet.escape_data_set_name(basefile)
     print(
-        "csf: starter={0} thisfile={1} is type {2}".format(
+        "\ncsf: starter={0} thisfile={1} is type {2}".format(
             starter, thisfile, str(type(thisfile))
         )
     )
 
-    hosts.all.shell(
+    mount_result = hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
         + " -volumes {0} -cylinders 200 1".format(volume),
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
-    hosts.all.shell(
+
+    mount_result = hosts.all.shell(
         cmd="zfsadm format -aggregate " + thisfile,
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
-    return thisfile
+
+    return basefile
 
 
 def test_basic_mount(ansible_zos_module, volumes_on_systems):
@@ -102,8 +115,13 @@ def test_basic_mount(ansible_zos_module, volumes_on_systems):
             fs_type="zfs",
             state="absent",
         )
-        hosts.all.file(path="/pythonx/", state="absent")
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
 
+        hosts.all.file(path="/pythonx/", state="absent")
 
 
 def test_double_mount(ansible_zos_module, volumes_on_systems):
@@ -128,6 +146,12 @@ def test_double_mount(ansible_zos_module, volumes_on_systems):
             fs_type="zfs",
             state="absent",
         )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.file(path="/pythonx/", state="absent")
 
 
@@ -137,7 +161,10 @@ def test_remount(ansible_zos_module, volumes_on_systems):
     volume_1 = volumes.get_available_vol()
     srcfn = create_sourcefile(hosts, volume_1)
     try:
+        mount_results = hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
+
         hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="zfs", state="mounted")
+
         mount_result = hosts.all.zos_mount(
             src=srcfn, path="/pythonx", fs_type="zfs", state="remounted"
         )
@@ -145,12 +172,18 @@ def test_remount(ansible_zos_module, volumes_on_systems):
             assert result.get("rc") == 0
             assert result.get("changed") is True
     finally:
-        hosts.all.zos_mount(
+        mount_result = hosts.all.zos_mount(
             src=srcfn,
             path="/pythonx",
             fs_type="zfs",
             state="absent",
         )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.file(path="/pythonx/", state="absent")
 
 
@@ -212,6 +245,11 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             fs_type="zfs",
             state="absent",
         )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
         hosts.all.zos_data_set(
@@ -224,6 +262,73 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module, volumes_on_
             record_length=80,
         )
 
+def test_basic_mount_with_bpx_no_utf_8_characters(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    srcfn = create_sourcefile(hosts, volume_1)
+
+    tmp_file_filename = "/tmp/testfile.txt"
+
+    hosts.all.shell(
+         cmd="touch {0}".format(tmp_file_filename)
+    )
+
+    hosts.all.zos_blockinfile(path=tmp_file_filename, insertafter="EOF", block=SRC_INVALID_UTF8)
+
+    dest = get_tmp_ds_name()
+    dest_path = dest + "(AUTO1)"
+
+    hosts.all.shell(
+        cmd="dtouch -tpdse {0}".format(dest)
+    )
+
+    hosts.all.zos_copy(
+        src=tmp_file_filename,
+        dest=dest_path,
+        is_binary=True,
+        remote_src=True,
+    )
+
+    try:
+        mount_result = hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="mounted",
+            persistent=dict(data_store=dest_path),
+        )
+
+        for result in mount_result.values():
+            print(result)
+            assert result.get("rc") == 0
+            assert result.get("changed") is True
+
+        result_cat = hosts.all.shell(
+            cmd="dcat '{0}'".format(dest_path),
+        )
+
+        for result in result_cat.contacted.values():
+            assert srcfn in result.get("stdout")
+    finally:
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="zfs",
+            state="absent",
+        )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+        hosts.all.file(path=tmp_file_filename, state="absent")
+        hosts.all.file(path="/pythonx/", state="absent")
+        hosts.all.shell(
+            cmd="drm " + dest,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
@@ -301,11 +406,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             is_binary=True,
             remote_src=True,
         )
-        hosts.all.shell(
-            cmd="chtag -t -c ISO8859-1 " + test_tmp_file_filename,
-            executable=SHELL_EXECUTABLE,
-            stdin="",
-        )
         results = hosts.all.shell(
             cmd="cat " + test_tmp_file_filename, executable=SHELL_EXECUTABLE, stdin=""
         )
@@ -329,6 +429,12 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module, volumes_on_syst
             fs_type="zfs",
             state="absent",
         )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
@@ -367,6 +473,12 @@ def test_basic_mount_with_tmp_hlq_option(ansible_zos_module, volumes_on_systems)
             tmp_hlq=tmphlq,
             persistent=dict(data_store=persist_data_set, backup=True)
         )
+        hosts.all.shell(
+            cmd="drm " + DataSet.escape_data_set_name(srcfn),
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
         hosts.all.zos_data_set(name=persist_data_set, state="absent")
         for result in unmount_result.values():
             assert result.get("rc") == 0

@@ -1,0 +1,4 @@
+trivial:
+  - test_zos_copy_func.py - Add a wrapper that retries two specific tests when
+    getting an intermittent error from `cp`.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1986)

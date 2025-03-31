@@ -241,7 +241,10 @@ def test_invalid_sms_classes(zos_backup_restore_mocker, sms_class):
 
 @pytest.mark.parametrize(
     "volume",
-    ["0000000", "", "@!!&$", "HELLOWORLD"],
+    [pytest.param("0000000", id='six_zeros'),
+    pytest.param("", id='empty_string'),
+    pytest.param("@!!&$", id='symbols'),
+    pytest.param("HELLOWORLD", id='hello_world')]
 )
 def test_invalid_volumes(zos_backup_restore_mocker, volume):
     valid_args = dict(

@@ -77,8 +77,8 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(owner="INVALID")
     for result in results.contacted.values():
-        assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
+        assert result.get("failed") is True
+        assert result.get("stderr") is not None
 
 
 def test_zos_job_output_reject(ansible_zos_module):
@@ -95,14 +95,13 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
 
         jobs = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         for job in jobs.contacted.values():
-            print(job)
             assert job.get("jobs") is not None
 
         for job in jobs.contacted.values():
@@ -115,6 +114,8 @@ def test_zos_job_output_job_exists(ansible_zos_module):
             assert result.get("jobs") is not None
             assert result.get("jobs")[0].get("ret_code").get("steps") is not None
             assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001"
+            assert result.get("jobs")[0].get("content_type") == "JOB"
+            assert result.get("jobs")[0].get("execution_time") is not None
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 
@@ -124,10 +125,10 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(
-            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+            cmd=f"echo {quote(JCL_FILE_CONTENTS)} > {TEMP_PATH}/SAMPLE"
         )
         result = hosts.all.zos_job_submit(
-            src="{0}/SAMPLE".format(TEMP_PATH), location="uss", volume=None
+            src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         hosts.all.file(path=TEMP_PATH, state="absent")
         dd_name = "JESMSGLG"

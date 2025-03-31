@@ -1,4 +1,0 @@
-trivial:
-  - zos_copy - use keyword argument force when copying data sets, instead
-    of a dictionary.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1488).

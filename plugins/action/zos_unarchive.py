@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,8 +17,6 @@ from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
-import copy
-from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
 
 USS_SUPPORTED_FORMATS = ['tar', 'zip', 'bz2', 'pax', 'gz']
@@ -36,10 +34,13 @@ def _process_boolean(arg, default=False):
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
+        self._supports_async = True
         if task_vars is None:
             task_vars = dict()
 
         result = super(ActionModule, self).run(tmp, task_vars)
+
+        self._task_vars = task_vars
 
         if result.get("skipped"):
             return result
@@ -55,6 +56,7 @@ class ActionModule(ActionBase):
                     module_name="ibm.ibm_zos_core.zos_unarchive",
                     module_args=module_args,
                     task_vars=task_vars,
+                    wrap_async=self._task.async_val
                 )
             )
         else:
@@ -102,15 +104,19 @@ class ActionModule(ActionBase):
                     is_binary=True,
                 )
             )
-            copy_task = copy.deepcopy(self._task)
+            copy_task = self._task.copy()
             copy_task.args = copy_module_args
-            zos_copy_action_module = ZosCopyActionModule(task=copy_task,
-                                                         connection=self._connection,
-                                                         play_context=self._play_context,
-                                                         loader=self._loader,
-                                                         templar=self._templar,
-                                                         shared_loader_obj=self._shared_loader_obj)
-            result.update(zos_copy_action_module.run(task_vars=task_vars))
+            # Making the zos_copy task run synchronously every time.
+            copy_task.async_val = 0
+            copy_action = self._shared_loader_obj.action_loader.get(
+                'ibm.ibm_zos_core.zos_copy',
+                task=copy_task,
+                connection=self._connection,
+                play_context=self._play_context,
+                loader=self._loader,
+                templar=self._templar,
+                shared_loader_obj=self._shared_loader_obj)
+            result.update(copy_action.run(task_vars=task_vars))
             display.vvv(u"Copy result {0}".format(result), host=self._play_context.remote_addr)
             if result.get("msg") is None:
                 module_args["src"] = dest
@@ -120,6 +126,7 @@ class ActionModule(ActionBase):
                         module_name="ibm.ibm_zos_core.zos_unarchive",
                         module_args=module_args,
                         task_vars=task_vars,
+                        wrap_async=self._task.async_val
                     )
                 )
             else:

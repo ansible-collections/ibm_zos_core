@@ -1,3 +1,0 @@
-trivial:
-  - zos_operator - Added a doc entry to inform users they need to escape certain special chars.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1507).

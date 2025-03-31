@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2023, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,6 +24,7 @@ display = Display()
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
+        self._supports_async = True
         if task_vars is None:
             task_vars = dict()
 
@@ -46,7 +47,7 @@ class ActionModule(ActionBase):
             return result
 
         script_path = cmd_parts[0]
-        script_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
+        script_args = ' '.join(cmd_parts[1:]) if len(cmd_parts) > 1 else ""
         remote_src = self._process_boolean(module_args.get('remote_src'))
         user_cmd = tempfile_path = None
 
@@ -99,6 +100,8 @@ class ActionModule(ActionBase):
             )
             copy_task = self._task.copy()
             copy_task.args = copy_module_args
+            # Making the zos_copy task run synchronously every time.
+            copy_task.async_val = 0
             copy_action = self._shared_loader_obj.action_loader.get(
                 'ibm.ibm_zos_core.zos_copy',
                 task=copy_task,
@@ -133,7 +136,8 @@ class ActionModule(ActionBase):
         module_result = self._execute_module(
             module_name='ibm.ibm_zos_core.zos_script',
             module_args=module_args,
-            task_vars=task_vars
+            task_vars=task_vars,
+            wrap_async=self._task.async_val
         )
 
         result = module_result
@@ -143,15 +147,7 @@ class ActionModule(ActionBase):
             # restore it to what the user supplied.
             result['cmd'] = user_cmd
 
-        if not remote_src:
-            self._remote_cleanup(tempfile_path)
-
         return result
-
-    def _remote_cleanup(self, tempfile_path):
-        """Removes the temporary file in a managed node created for a local
-        script."""
-        self._connection.exec_command("rm -f {0}".format(tempfile_path))
 
     def _process_boolean(self, arg, default=False):
         try:

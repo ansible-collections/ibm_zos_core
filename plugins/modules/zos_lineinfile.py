@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -37,7 +37,7 @@ options:
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
       - Generation data set (GDS) relative name of generation already
-        created. C(e.g. SOME.CREATION(-1).)
+        created. e.g. I(SOME.CREATION(-1)).
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -188,6 +188,18 @@ options:
     required: false
     type: bool
     default: false
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described
@@ -251,7 +263,7 @@ EXAMPLES = r"""
   zos_lineinfile:
     src: SOME.CREATION.TEST
     insertafter: EOF
-    backup: True
+    backup: true
     backup_name: CREATION.GDS(+1)
     line: 'Should be a working test now'
 """
@@ -483,7 +495,7 @@ def execute_dsed(src, state, encoding, module, line=False, first_match=False, fo
 
     cmd = "dsed {0}{1}{2}{3}".format(force, backrefs, encoding, options)
 
-    rc, stdout, stderr = module.run_command(cmd)
+    rc, stdout, stderr = module.run_command(cmd, errors='replace')
     cmd = clean_command_output(cmd)
     return rc, cmd, stdout
 
@@ -674,7 +686,7 @@ def main():
     if data_set.DataSet.is_gds_relative_name(src) and is_gds is False:
         module.fail_json(msg="{0} does not exist".format(src))
 
-    ds_utils = data_set.DataSetUtils(src)
+    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
 
     # Check if dest/src exists
     if not ds_utils.exists():

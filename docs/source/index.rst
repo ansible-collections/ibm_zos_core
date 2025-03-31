@@ -54,45 +54,33 @@ ansible-doc to automate tasks on z/OS.
 .. _filters:
    https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/filter/
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Installation & Execution
+   :hidden:
+
+   collection-requirements
+   configuration
 
 .. toctree::
    :maxdepth: 1
-   :caption: Getting Started
-
-   installation
-   requirements-single
-   playbooks
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Ansible Content
-
-   plugins
-   modules
-   filters
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Release Notes
+   :caption: Collections & content
+   :hidden:
 
    release_notes
-
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: FAQs
-..
-..    faqs
+   life-cycle
+   ansible_content
 
 .. toctree::
    :maxdepth: 1
-   :caption: Reference
+   :caption: Help & Troubleshooting
+   :hidden:
+
+   character_set
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contribution
+   :hidden:
 
    community_guides
-   license
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Reference
-
-   reference/documentation
-   reference/community

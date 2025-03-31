@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -33,7 +33,6 @@ try:
     from zoautil_py import exceptions
 except ImportError:
     exceptions = ZOAUImportError(traceback.format_exc())
-
 
 try:
     # For files that import individual functions from a ZOAU module,
@@ -90,7 +89,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, dd_scan=Tru
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
-        owner=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type="username_pattern"),
         job_name=dict(arg_type="qualifier_pattern"),
         dd_name=dict(arg_type=_ddname_pattern),
     )
@@ -181,7 +180,6 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_not_found_msg)
 
     job["class"] = ""
-    job["content_type"] = ""
 
     job["ddnames"] = []
     dd = {}
@@ -224,7 +222,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     """
     arg_defs = dict(
         job_id=dict(arg_type="str"),
-        owner=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type="username_pattern"),
         job_name=dict(arg_type="str"),
     )
 
@@ -241,7 +239,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_id=job_id,
         owner=owner,
         job_name=job_name,
-        dd_scan=False
+        dd_scan=False,
     )
 
     if len(job_status_result) == 0:
@@ -253,7 +251,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
             job_id=job_id,
             owner=owner,
             job_name=job_name,
-            dd_scan=False
+            dd_scan=False,
         )
 
     return job_status_result
@@ -323,14 +321,17 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
     final_entries = []
 
-    # In 1.3.0, include_extended has to be set to true so we get the program name for a job.
-    entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+    # In ZOAU>= 1.3.0, include_extended has to be set to true so we get the program name for a job.
+    # Observation shows the job_name parameter is not being used, so we will drop that
+
+    # expanding > 1.3.0 of zoau, to include all params
+    entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = jobs.fetch_multiple(job_id=job_id_temp, include_extended=True)
+        entries = jobs.fetch_multiple(job_id=job_id_temp, job_owner=owner, include_extended=True)
 
     if entries:
         for entry in entries:
@@ -350,6 +351,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["subsystem"] = ""
             job["system"] = ""
             job["owner"] = entry.owner
+            # Sometimes, with job type STC, the first entry will have an extra
+            # space at the end of it.
+            job["content_type"] = entry.job_type.strip()
 
             # From v1.3.0, ZOAU sets unavailable job fields as None, instead of '?'.
             job["ret_code"] = {}
@@ -371,10 +375,15 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["queue_position"] = entry.queue_position
             job["program_name"] = entry.program_name
             job["class"] = ""
-            job["content_type"] = ""
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
             job["duration"] = duration
+            if hasattr(entry, "execution_time"):
+                job["execution_time"] = entry.execution_time
+            if hasattr(entry, "system"):
+                job["system"] = entry.system
+            if hasattr(entry, "subsystem"):
+                job["subsystem"] = entry.subsystem
 
             if dd_scan:
                 # If true, it means the job is not ready for DD queries and the duration and
@@ -445,8 +454,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                     else:
                         dd["procstep"] = None
 
-                    if "record_length" in single_dd:
-                        dd["byte_count"] = single_dd["record_length"]
+                    if "bytes" in single_dd:
+                        dd["byte_count"] = single_dd["bytes"]
                     else:
                         dd["byte_count"] = 0
 
@@ -463,10 +472,11 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                                     single_dd["step_name"],
                                     single_dd["dd_name"]
                                 )
-                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError):
+                            except (UnicodeDecodeError, JSONDecodeError, TypeError, KeyError) as e:
+                                error_type = e.__class__.__name__
                                 tmpcont = (
-                                    "Non-printable UTF-8 characters were present in this output. "
-                                    "Please access it from the job log."
+                                    f"Non-printable UTF-8 characters were present in this output, a {error_type} error has occurred."
+                                    "Please access the content from the job log."
                                 )
 
                     dd["content"] = tmpcont.split("\n")
@@ -475,17 +485,15 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                     job["ddnames"].append(dd)
                     if len(job["class"]) < 1:
-                        if "- CLASS " in tmpcont:
-                            tmptext = tmpcont.split("- CLASS ")[1]
-                            job["class"] = tmptext.split(" ")[0]
+                        job["class"] = entry.job_class
 
-                    if len(job["system"]) < 1:
+                    if job["system"] is None:
                         if "--  S Y S T E M  " in tmpcont:
                             tmptext = tmpcont.split("--  S Y S T E M  ")[1]
                             job["system"] = (tmptext.split(
                                 "--", 1)[0]).replace(" ", "")
 
-                    if len(job["subsystem"]) < 1:
+                    if job["subsystem"] is None:
                         if "--  N O D E " in tmpcont:
                             tmptext = tmpcont.split("--  N O D E ")[1]
                             job["subsystem"] = (tmptext.split("\n")[
@@ -504,7 +512,8 @@ def _ddname_pattern(contents, resolve_dependencies):
     ----------
     contents : bool
         The contents of the argument.
-        resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+    resolved_dependencies : dict
+        Contains all of the dependencies and their contents,
         which have already been handled,
         for use during current arguments handling operations.
 
@@ -524,7 +533,7 @@ def _ddname_pattern(contents, resolve_dependencies):
         re.IGNORECASE,
     ):
         raise ValueError(
-            'Invalid argument type for "{0}". expected "ddname_pattern"'.format(
+            'Invalid argument type for "{0}". Expected "ddname_pattern"'.format(
                 contents
             )
         )

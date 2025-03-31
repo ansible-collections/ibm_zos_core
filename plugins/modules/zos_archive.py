@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -40,6 +40,7 @@ options:
       - GDS relative notation is supported.
       - "MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE)."
       - VSAMs are not supported.
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: list
     required: true
     elements: str
@@ -121,6 +122,7 @@ options:
         source data sets provided and/or found by expanding the pattern name.
         Calculating space can impact module performance. Specifying space attributes
         in the I(dest_data_set) option will improve performance.
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: str
     required: true
   exclude:
@@ -131,6 +133,7 @@ options:
       - "Patterns (wildcards) can contain one of the following, `?`, `*`."
       - "* matches everything."
       - "? matches any single character."
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: list
     required: false
     elements: str
@@ -304,6 +307,17 @@ options:
     default: false
     required: false
 
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
   - This module does not perform a send or transmit operation to a remote
     node. If you want to transport the archive you can use zos_fetch to
@@ -380,7 +394,7 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        use_adrdssu: True
+        use_adrdssu: true
 
 - name: Archive multiple data sets into a new GDS
   zos_archive:
@@ -389,7 +403,7 @@ EXAMPLES = r'''
     format:
       name: terse
       format_options:
-        use_adrdssu: True
+        use_adrdssu: true
 '''
 
 RETURN = r'''
@@ -1018,6 +1032,7 @@ class MVSArchive(Archive):
             High level qualifier for temporary datasets.
         """
         super(MVSArchive, self).__init__(module)
+        self.tmphlq = module.params.get("tmp_hlq")
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
         self.expanded_sources = self.expand_mvs_paths(self.sources)
@@ -1026,7 +1041,6 @@ class MVSArchive(Archive):
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
-        self.tmphlq = module.params.get("tmp_hlq")
 
     def open(self):
         pass
@@ -1038,7 +1052,7 @@ class MVSArchive(Archive):
         """Finds target datasets in host.
         """
         for path in self.sources:
-            if data_set.DataSet.data_set_exists(path):
+            if data_set.DataSet.data_set_exists(path, tmphlq=self.tmphlq):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
@@ -1148,7 +1162,7 @@ class MVSArchive(Archive):
             Name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
         # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
@@ -1219,7 +1233,7 @@ class MVSArchive(Archive):
             The SHA256 hash of the contents of input file.
         """
         sha256_cmd = "sha256 \"//'{0}'\"".format(src)
-        rc, out, err = self.module.run_command(sha256_cmd)
+        rc, out, err = self.module.run_command(sha256_cmd, errors='replace')
         checksums = out.split("= ")
         if len(checksums) > 0:
             return checksums[1]
@@ -1266,7 +1280,7 @@ class MVSArchive(Archive):
         bool
             If destination path exists.
         """
-        return data_set.DataSet.data_set_exists(self.dest)
+        return data_set.DataSet.data_set_exists(self.dest, tmphlq=self.tmphlq)
 
     def remove_targets(self):
         """Removes the archived targets and changes the state accordingly.

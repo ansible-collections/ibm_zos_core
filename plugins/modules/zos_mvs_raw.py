@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,6 +22,7 @@ module: zos_mvs_raw
 author:
   - "Xiao Yuan Ma (@bjmaxy)"
   - "Blake Becker (@blakeinate)"
+  - "Oscar Fernando Flores (@fernandofloresg)"
 short_description: Run a z/OS program.
 description:
   - Run a z/OS program.
@@ -57,6 +58,13 @@ options:
     required: false
     type: bool
     default: false
+  max_rc:
+    description:
+      - Specifies the maximum return code allowed for the program output. If the
+        program generates a return code higher than the specified maximum, the module will fail.
+    required: false
+    type: int
+    default: 0
   dds:
     description:
       - The input data source.
@@ -89,7 +97,7 @@ options:
             description:
               - The data set name.
               - A data set name can be a GDS relative name.
-              - When using GDS relative name and it is a positive generation, disposition new must be used.
+              - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
             type: str
             required: false
           type:
@@ -340,7 +348,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -520,7 +528,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -587,7 +595,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -628,7 +636,7 @@ options:
                   - The type of the content to be returned.
                   - C(text) means return content in encoding specified by I(response_encoding).
                   - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content in binary mode.
+                  - C(base64) means return content as base64 encoded in binary.
                 type: str
                 choices:
                   - text
@@ -708,7 +716,7 @@ options:
                     description:
                       - The data set name.
                       - A data set name can be a GDS relative name.
-                      - When using GDS relative name and it is a positive generation, disposition new must be used.
+                      - When using GDS relative name and it is a positive generation, I(disposition=new) must be used.
                     type: str
                     required: false
                   type:
@@ -959,7 +967,7 @@ options:
                           - The type of the content to be returned.
                           - C(text) means return content in encoding specified by I(response_encoding).
                           - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                          - C(base64) means return content in binary mode.
+                          - C(base64) means return content as base64 encoded in binary.
                         type: str
                         choices:
                           - text
@@ -1137,7 +1145,7 @@ options:
                           - The type of the content to be returned.
                           - C(text) means return content in encoding specified by I(response_encoding).
                           - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                          - C(base64) means return content in binary mode.
+                          - C(base64) means return content as base64 encoded in binary.
                         type: str
                         choices:
                           - text
@@ -1199,7 +1207,7 @@ options:
                           - The type of the content to be returned.
                           - C(text) means return content in encoding specified by I(response_encoding).
                           - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                          - C(base64) means return content in binary mode.
+                          - C(base64) means return content as base64 encoded in binary.
                         type: str
                         choices:
                           - text
@@ -1224,6 +1232,18 @@ options:
         that is not available, then the value C(TMPHLQ) is used.
     required: false
     type: str
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
     - When executing programs using L(zos_mvs_raw,./zos_mvs_raw.html), you may encounter errors
       that originate in the programs implementation. Two such known issues are
@@ -1643,15 +1663,18 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+
+import base64
 import re
 import traceback
 
 from shlex import quote
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, zoau_io
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
+    zoau_io = ZOAUImportError(traceback.format_exc())
 
 ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 
@@ -1848,6 +1871,7 @@ def run_module():
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         tmp_hlq=dict(type="str", required=False, default=None),
+        max_rc=dict(type="int", required=False, default=0),
         dds=dict(
             type="list",
             elements="dict",
@@ -1886,6 +1910,7 @@ def run_module():
             program_parm = parms.get("parm")
             authorized = parms.get("auth")
             verbose = parms.get("verbose")
+            max_rc = parms.get("max_rc")
             program_response = run_zos_program(
                 program=program,
                 parm=program_parm,
@@ -1894,21 +1919,26 @@ def run_module():
                 verbose=verbose,
                 tmphlq=tmphlq,
             )
-            if program_response.rc != 0 and program_response.stderr:
+            response = build_response(program_response.rc, dd_statements, program_response.stdout, program_response.stderr)
+            result = combine_dicts(result, response)
+
+            if program_response.rc > max_rc:
                 raise ZOSRawError(
                     program,
                     "{0} {1}".format(program_response.stdout, program_response.stderr),
                 )
 
-            response = build_response(program_response.rc, dd_statements, program_response.stdout)
-            result["changed"] = True
+            if program_response.rc != 0:
+                result["changed"] = False
+            else:
+                result["changed"] = True
+
         except Exception as e:
             result["backups"] = backups
             module.fail_json(msg=repr(e), **result)
     else:
         result = dict(changed=True, dd_names=[], ret_code=dict(code=0))
-    to_return = combine_dicts(result, response)
-    module.exit_json(**to_return)
+    module.exit_json(**result)
     # ---------------------------------------------------------------------------- #
 
 
@@ -2081,6 +2111,7 @@ def parse_and_validate_args(params):
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         tmp_hlq=dict(type="qualifier_or_empty", required=False, default=None),
+        max_rc=dict(type="int", required=False, default=0),
         dds=dict(
             type="list",
             elements="dict",
@@ -2530,7 +2561,7 @@ def build_dd_statements(parms):
                       List of DDStatement objects representing DD statements specified in module parms.
     """
     dd_statements = []
-    tmphlq = parms.get("tmphlq")
+    tmphlq = parms.get("tmp_hlq")
     for dd in parms.get("dds"):
         dd_name, key = get_dd_name_and_key(dd)
         dd = set_extra_attributes_in_dd(dd, tmphlq, key)
@@ -2762,7 +2793,7 @@ def run_zos_program(
     return response
 
 
-def build_response(rc, dd_statements, stdout):
+def build_response(rc, dd_statements, stdout, stderr):
     """Build response dictionary to return at module completion.
 
     Parameters
@@ -2781,6 +2812,7 @@ def build_response(rc, dd_statements, stdout):
     response["backups"] = gather_backups(dd_statements)
     response["dd_names"] = gather_output(dd_statements)
     response["stdout"] = stdout
+    response["stderr"] = stderr
     return response
 
 
@@ -2948,12 +2980,12 @@ def get_data_set_output(dd_statement):
     if dd_statement.definition.return_content.type == "text":
         contents = get_data_set_content(
             name=dd_statement.definition.name,
-            binary=False,
+            base64_encode=False,
             from_encoding=dd_statement.definition.return_content.src_encoding,
             to_encoding=dd_statement.definition.return_content.response_encoding,
         )
     elif dd_statement.definition.return_content.type == "base64":
-        contents = get_data_set_content(name=dd_statement.definition.name, binary=True)
+        contents = get_data_set_content(name=dd_statement.definition.name, base64_encode=True)
     return build_dd_response(dd_statement.name, dd_statement.definition.name, contents)
 
 
@@ -2974,12 +3006,12 @@ def get_unix_file_output(dd_statement):
     if dd_statement.definition.return_content.type == "text":
         contents = get_unix_content(
             name=dd_statement.definition.name,
-            binary=False,
+            base64_encode=False,
             from_encoding=dd_statement.definition.return_content.src_encoding,
             to_encoding=dd_statement.definition.return_content.response_encoding,
         )
     elif dd_statement.definition.return_content.type == "base64":
-        contents = get_unix_content(name=dd_statement.definition.name, binary=True)
+        contents = get_unix_content(name=dd_statement.definition.name, base64_encode=True)
     return build_dd_response(dd_statement.name, dd_statement.definition.name, contents)
 
 
@@ -3034,15 +3066,15 @@ def build_dd_response(dd_name, name, contents):
     return dd_response
 
 
-def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=None):
+def get_data_set_content(name, base64_encode=False, from_encoding=None, to_encoding=None):
     """Retrieve the raw contents of a data set.
 
     Parameters
     ----------
         name : str
              The name of the data set.
-        binary : bool, optional
-               Determines if contents are retrieved without encoding conversion. Defaults to False.
+        base64_encode : bool, optional
+               Determines if contents are retrieved as binary and base64 encoded. Defaults to False.
         from_encoding : str, optional
                       The encoding of the data set on the z/OS system. Defaults to None.
         to_encoding : str, optional
@@ -3056,20 +3088,24 @@ def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=Non
     quoted_name = quote(name)
     if "'" not in quoted_name:
         quoted_name = "'{0}'".format(quoted_name)
-    return get_content(
-        '"//{0}"'.format(quoted_name), binary, from_encoding, to_encoding
-    )
+
+    if base64_encode:
+        with zoau_io.RecordIO("//{0}".format(quoted_name), "r") as records:
+            content = base64.b64encode(b''.join(records.readrecords())).decode()
+    else:
+        content = get_content('"//{0}"'.format(quoted_name), from_encoding, to_encoding)
+    return content
 
 
-def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
+def get_unix_content(name, base64_encode=False, from_encoding=None, to_encoding=None):
     """Retrieve the raw contents of a UNIX file.
 
     Parameters
     ----------
         name : str
              The name of the UNIX file.
-        binary : bool, optional
-               Determines if contents are retrieved without encoding conversion. Defaults to False.
+        base64_encode : bool, optional
+               Determines if contents are retrieved as binary and base64 encoded. Defaults to False.
         from_encoding : str, optional
                       The encoding of the UNIX file on the z/OS system. Defaults to None.
         to_encoding : str, optional
@@ -3080,18 +3116,21 @@ def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
         stdout : str
                The raw content of the UNIX file.
     """
-    return get_content("{0}".format(quote(name)), binary, from_encoding, to_encoding)
+    if base64_encode:
+        with open(name, "rb") as f:
+            content = base64.b64encode(f.read()).decode()
+    else:
+        content = get_content("{0}".format(quote(name)), from_encoding, to_encoding)
+    return content
 
 
-def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=None):
+def get_content(formatted_name, from_encoding=None, to_encoding=None):
     """Retrieve raw contents of a data set or UNIXfile.
 
     Parameters
     ----------
         name : str
              The name of the data set or UNIX file, formatted and quoted for proper usage in command.
-        binary : bool, optional
-               Determines if contents are retrieved without encoding conversion. Defaults to False.
         from_encoding : str, optional
                       The encoding of the data set or UNIX file on the z/OS system. Defaults to None.
         to_encoding : str, optional
@@ -3103,17 +3142,16 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
                The raw content of the data set or UNIX file. If unsuccessful in retrieving data, returns empty string.
     """
     module = AnsibleModuleHelper(argument_spec={})
-    conversion_command = ""
-    if not binary:
-        conversion_command = " | iconv -f {0} -t {1}".format(
-            quote(from_encoding), quote(to_encoding)
-        )
+    conversion_command = " | iconv -f {0} -t {1}".format(
+        quote(from_encoding), quote(to_encoding)
+    )
     # * name argument should already be quoted by the time it reaches here
     # TODO: determine if response should be byte object
     rc, stdout, stderr = module.run_command(
         "cat {0}{1}".format(formatted_name, conversion_command),
         use_unsafe_shell=True,
         environ_update=ENCODING_ENVIRONMENT_VARS,
+        errors='replace'
     )
     if rc:
         return ""

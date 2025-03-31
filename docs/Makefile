@@ -141,32 +141,6 @@ module-doc:
 	mkdir -p source/modules; \
 	fi
 
-	# @if ! test -d ../plugins/modules/rexx_module_doc; then \
-	# echo "Make ../plugins/modules/rexx_module_doc directory to extract REXX doc into temporary file."; \
-	# mkdir -p ../plugins/modules/rexx_module_doc; \
-	# else \
-	# echo "Delete ../plugins/modules/rexx_module_doc directory used to extract REXX doc into temporary file."; \
-	# rm -rf ../plugins/modules/rexx_module_doc; \
-	# echo "Make ../plugins/modules/rexx_module_doc directory to extract REXX doc into temporary file."; \
-	# mkdir -p ../plugins/modules/rexx_module_doc; \
-	# fi
-
-	# @for rexx_module in `ls ../plugins/modules/*rexx`; do\
-	#    REXX_FILE=`basename $$rexx_module .rexx`; \
-	#    echo "Extracting documentation for module $$REXX_FILE into ../plugins/modules/rexx_module_doc/$$REXX_FILE.py"; \
-	#    touch ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	#    sed -n "/DOCUMENTATION = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	#    sed -n "/EXAMPLES = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	#    sed -n "/RETURN = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	#    echo "Generating ReStructuredText for module $$REXX_FILE inot source/modules/$$REXX_FILE.rst"; \
-	#    ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	# done
-
-	# @if test -d ../plugins/modules/rexx_module_doc; then \
-	# echo "Delete ../plugins/modules/rexx_module_doc directory used to extract REXX doc into temporary file."; \
-	# rm -rf ../plugins/modules/rexx_module_doc; \
-	# fi
-
 	@if test -e ../plugins/modules/__init__.py; then \
 	echo "Rename file '../plugins/modules/__init__.py' to ../plugins/modules/__init__.py.skip to avoid reading empty python file.'"; \
 	mv ../plugins/modules/__init__.py ../plugins/modules/__init__.py.skip; \
@@ -184,9 +158,9 @@ module-doc:
 	@echo "Reverting edited source file."
 	scripts/post-template.sh
 
-	@if test -e ../plugins/modules/__init__.py.skip; \
+	@if test -e ../plugins/modules/__init__.py.skip; then \
     echo "Rename file '../plugins/modules/__init__.py.skip' back to ../plugins/modules/__init__.py.'"; \
-	then mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
+	mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
 	fi
 
 	@echo $(line_header)

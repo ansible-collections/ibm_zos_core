@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -122,18 +122,31 @@ options:
     type: str
   ignore_sftp_stderr:
     description:
-      - During data transfer through sftp, the module fails if the sftp command
-        directs any content to stderr. The user is able to override this
-        behavior by setting this parameter to C(true). By doing so, the module
-        would essentially ignore the stderr stream produced by sftp and continue
-        execution.
+      - During data transfer through SFTP, the SFTP command directs content to
+        stderr. By default, the module essentially ignores the stderr stream
+        produced by SFTP and continues execution. The user is able to override
+        this behavior by setting this parameter to C(false). By doing so, any
+        content written to stderr is considered an error by Ansible and will
+        cause the module to fail.
       - When Ansible verbosity is set to greater than 3, either through the
         command line interface (CLI) using B(-vvvv) or through environment
         variables such as B(verbosity = 4), then this parameter will
         automatically be set to C(true).
     type: bool
     required: false
-    default: false
+    default: true
+
+attributes:
+  action:
+    support: full
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: none
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -319,6 +332,11 @@ except Exception:
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
 
+try:
+    from zoautil_py import exceptions as zoau_exceptions
+except Exception:
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
+
 
 class FetchHandler:
     def __init__(self, module):
@@ -349,7 +367,7 @@ class FetchHandler:
         tuple(int,str,str)
             Return code, standard output and standard error.
         """
-        return self.module.run_command(cmd, **kwargs)
+        return self.module.run_command(cmd, errors='replace', **kwargs)
 
     def _get_vsam_size(self, vsam):
         """Invoke IDCAMS LISTCAT command to get the record length and space used.
@@ -376,6 +394,7 @@ class FetchHandler:
         max_recl = 80
         # Bytes per cylinder for a 3390 DASD
         bytes_per_cyl = 849960
+        rec_total = 80
 
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
         cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
@@ -620,29 +639,37 @@ class FetchHandler:
 
         Raises
         ------
-        fail_json
+        ZOSFetchError
             Error copying partitioned dataset to USS.
         fail_json
             Error converting encoding of the member.
         """
         dir_path = tempfile.mkdtemp(dir=temp_dir)
-        cmd = "cp -B \"//'{0}'\" {1}"
-        if not is_binary:
-            cmd = cmd.replace(" -B", "")
-        rc, out, err = self._run_command(cmd.format(src, dir_path))
-        if rc != 0:
+
+        copy_args = {
+            "options": ""
+        }
+
+        if is_binary:
+            copy_args["options"] = "-B"
+
+        try:
+            datasets.copy(source=src, target=dir_path, **copy_args)
+
+        except zoau_exceptions.ZOAUException as copy_exception:
             rmtree(dir_path)
-            self._fail_json(
+            raise ZOSFetchError(
                 msg=(
                     "Error copying partitioned data set {0} to USS. Make sure it is"
                     " not empty".format(src)
                 ),
-                stdout=out,
-                stderr=err,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
-                rc=rc,
+                rc=copy_exception.response.rc,
+                stdout=copy_exception.response.stdout_response,
+                stderr=copy_exception.response.stderr_response,
+                stdout_lines=copy_exception.response.stdout_response.splitlines(),
+                stderr_lines=copy_exception.response.stderr_response.splitlines(),
             )
+
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
@@ -739,7 +766,7 @@ class FetchHandler:
 
         Raises
         ------
-        fail_json
+        ZOSFetchError
             Unable to copy to USS.
         fail_json
             Error converting encoding of the dataset.
@@ -753,22 +780,27 @@ class FetchHandler:
             fd, file_path = tempfile.mkstemp(dir=temp_dir)
             os.close(fd)
 
-        cmd = "cp -B \"//'{0}'\" {1}"
-        if not is_binary:
-            cmd = cmd.replace(" -B", "")
+        copy_args = {
+            "options": ""
+        }
 
-        rc, out, err = self._run_command(cmd.format(src, file_path))
+        if is_binary:
+            copy_args["options"] = "-B"
 
-        if rc != 0:
+        try:
+            datasets.copy(source=src, target=file_path, **copy_args)
+
+        except zoau_exceptions.ZOAUException as copy_exception:
             os.remove(file_path)
-            self._fail_json(
+            raise ZOSFetchError(
                 msg="Unable to copy {0} to USS".format(src),
-                stdout=str(out),
-                stderr=str(err),
-                rc=rc,
-                stdout_lines=str(out).splitlines(),
-                stderr_lines=str(err).splitlines(),
+                rc=copy_exception.response.rc,
+                stdout=copy_exception.response.stdout_response,
+                stderr=copy_exception.response.stderr_response,
+                stdout_lines=copy_exception.response.stdout_response.splitlines(),
+                stderr_lines=copy_exception.response.stderr_response.splitlines(),
             )
+
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
@@ -821,7 +853,7 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            ignore_sftp_stderr=dict(type="bool", default=False, required=False),
+            ignore_sftp_stderr=dict(type="bool", default=True, required=False),
             tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
@@ -884,6 +916,7 @@ def run_module():
     fail_on_missing = boolean(parsed_args.get("fail_on_missing"))
     is_binary = boolean(parsed_args.get("is_binary"))
     encoding = module.params.get("encoding")
+    tmphlq = module.params.get("tmp_hlq")
 
     # ********************************************************** #
     #  Check for data set existence and determine its type       #
@@ -905,7 +938,8 @@ def run_module():
                 src_exists = data_set.DataSet.data_set_member_exists(src_data_set.name)
             else:
                 src_exists = data_set.DataSet.data_set_exists(
-                    src_data_set.name
+                    src_data_set.name,
+                    tmphlq=tmphlq
                 )
 
         if not src_exists:
@@ -935,7 +969,10 @@ def run_module():
         if "/" in src:
             ds_type = "USS"
         else:
-            ds_type = data_set.DataSet.data_set_type(data_set.extract_dsname(src_data_set.name))
+            ds_type = data_set.DataSet.data_set_type(
+                data_set.extract_dsname(src_data_set.name),
+                tmphlq=tmphlq
+            )
 
         if not ds_type:
             module.fail_json(msg="Unable to determine source type. No data was fetched.")
@@ -1028,6 +1065,36 @@ def run_module():
 
     res_args["ds_type"] = ds_type
     module.exit_json(**res_args)
+
+
+class ZOSFetchError(Exception):
+    def __init__(self, msg, rc="", stdout="", stderr="", stdout_lines="", stderr_lines=""):
+        """Error in a copy operation.
+
+        Parameters
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        rc : int
+            Result code.
+        stdout : str
+            Standart output.
+        stderr : str
+            Standart error.
+        stdout_lines : str
+            Standart output divided in lines.
+        stderr_lines : str
+            Standart error divided in lines.
+        """
+        self.json_args = dict(
+            msg=msg,
+            rc=rc,
+            stdout=stdout,
+            stderr=stderr,
+            stdout_lines=stdout_lines,
+            stderr_lines=stderr_lines,
+        )
+        super().__init__(self.msg)
 
 
 def main():

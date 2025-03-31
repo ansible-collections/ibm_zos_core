@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -165,6 +165,17 @@ options:
     type: bool
     required: false
 
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
     be searched, it should be cataloged first. The L(zos_data_set,./zos_data_set.html) module can be
@@ -234,7 +245,6 @@ EXAMPLES = r"""
     limit: 30
     scratch: true
     purge: true
-
 """
 
 
@@ -420,7 +430,7 @@ def data_set_filter(module, pds_paths, patterns):
                 if result[1] == "PO":
                     if pds_paths:
                         mls_rc, mls_out, mls_err = module.run_command(
-                            "mls '{0}(*)'".format(result[0])
+                            "mls '{0}(*)'".format(result[0]), errors='replace'
                         )
                         if mls_rc == 2:
                             filtered_data_sets["pds"][result[0]] = {}
@@ -504,7 +514,8 @@ def vsam_filter(module, patterns, resource_type, age=None):
     filtered_data_sets = set()
     now = time.time()
     for pattern in patterns:
-        rc, out, err = _vls_wrapper(pattern, details=True)
+        request_details = age is not None
+        rc, out, err = _vls_wrapper(pattern, details=request_details)
         if rc > 4:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
@@ -876,7 +887,7 @@ def _dgrep_wrapper(
         dgrep_cmd += " -C{0}".format(context)
 
     dgrep_cmd += " {0} {1}".format(quote(content), quote(data_set_pattern))
-    return AnsibleModuleHelper(argument_spec={}).run_command(dgrep_cmd)
+    return AnsibleModuleHelper(argument_spec={}).run_command(dgrep_cmd, errors='replace')
 
 
 def _dls_wrapper(
@@ -933,7 +944,7 @@ def _dls_wrapper(
         dls_cmd += " -j"
 
     dls_cmd += " {0}".format(quote(data_set_pattern))
-    return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd)
+    return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd, errors='replace')
 
 
 def _vls_wrapper(pattern, details=False, verbose=False):
@@ -960,7 +971,7 @@ def _vls_wrapper(pattern, details=False, verbose=False):
         vls_cmd += " -v"
 
     vls_cmd += " {0}".format(quote(pattern))
-    return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
+    return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd, errors='replace')
 
 
 def _match_resource_type(type1, type2):
@@ -1070,7 +1081,6 @@ def run_module(module):
             size = int(m.group(1)) * bytes_per_unit.get(m.group(2), 1)
         else:
             module.fail_json(size=size, msg="failed to process size")
-
     if resource_type == "NONVSAM":
         if contains:
             init_filtered_data_sets = content_filter(
@@ -1105,7 +1115,7 @@ def run_module(module):
 
         res_args['examined'] = init_filtered_data_sets.get("searched")
 
-    elif resource_type == "CLUSTER":
+    elif resource_type in ["CLUSTER", "DATA", "INDEX"]:
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         res_args['examined'] = len(filtered_data_sets)
     elif resource_type == "GDG":

@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2024                                          .
+.. © Copyright IBM Corporation 2024, 2025                                    .
 .. ...........................................................................
 
 ========================
@@ -89,6 +89,21 @@ The z/OS managed node includes several shells, currently the only supported shel
 +---------+----------------------------+---------------------------------------------------+---------------+---------------+
 | Version | Controller                 | Managed Node                                      | GA            | End of Life   |
 +=========+============================+===================================================+===============+===============+
+| 1.13.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R4 - V3Rx                              | TBD           | TBD           |
+|         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=2.4              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.3       |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| 1.12.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R5 - V3Rx                              | 6 Dec 2024    | 6 Dec 2026    |
+|         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=2.4              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.2       |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
+| 1.11.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R4 - V2Rx                              | 1 Oct 2024    | 1 Oct 2026    |
+|         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |               |               |
+|         |- `AAP`_ >=2.4              |- IBM `Open Enterprise SDK for Python`_            |               |               |
+|         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.1       |               |               |
++---------+----------------------------+---------------------------------------------------+---------------+---------------+
 | 1.10.x  |- `ansible-core`_ >=2.15.x  |- `z/OS`_ V2R4 - V2Rx                              | 21 June 2024  | 21 June 2026  |
 |         |- `Ansible`_ >=8.0.x        |- `z/OS shell`_                                    |               |               |
 |         |- `AAP`_ >=2.4              |- IBM `Open Enterprise SDK for Python`_            |               |               |

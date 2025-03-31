@@ -87,6 +87,21 @@ Parameters
 {% endif %}
 
 {# ------------------------------------------------------------- #}
+{# Generate the attributes doc                                      #}
+{# ------------------------------------------------------------- #}
+
+{% if attributes -%}
+Attributes
+----------
+{% for name, spec in attributes.items() %}
+{{ name }}
+  | **support**: {{ spec.support}}
+  | **description**: {{ spec.description }}
+{% endfor %}
+
+{% endif %}
+
+{# ------------------------------------------------------------- #}
 {# Generate the sample doc                                       #}
 {# ------------------------------------------------------------- #}
 

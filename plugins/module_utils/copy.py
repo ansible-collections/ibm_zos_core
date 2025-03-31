@@ -29,13 +29,12 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
 
-from shlex import quote
-
 try:
-    from zoautil_py import datasets, gdgs
+    from zoautil_py import datasets, gdgs, exceptions as zoau_exceptions
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
+    zoau_exceptions = ZOAUImportError(traceback.format_exc())
 
 REPRO = """  REPRO INDATASET({}) -
     OUTDATASET({}) REPLACE """
@@ -79,146 +78,51 @@ def _validate_path(path):
     return parsed_args.get("path")
 
 
-def copy_uss2mvs(src, dest, ds_type, is_binary=False):
-    """Copy uss a file or path to an MVS data set.
+def copy_uss_mvs(src, dest, is_binary=False):
+    """Wrapper function for datasets.copy that handles possible
+    exceptions that may occur.
 
     Parameters
     ----------
     src : str
-        The uss file or path to be copied.
+        Source dataset or file.
     dest : str
-        The destination MVS data set, it must be a PS or PDS(E).
-    ds_type : str
-        The dsorg of the dest.
+        Destination dataset name or file.
 
     Keyword Parameters
     ------------------
     is_binary : bool
-        Whether the file to be copied contains binary data.
+        Whether to perform a binary copy.
 
     Returns
     -------
-    bool
-        The return code after the copy command executed successfully.
-    str
-        The stdout after the copy command executed successfully.
-    str
-        The stderr after the copy command executed successfully.
+    tuple
+        Tuple containing return code, standard output and standard
+        error from the datasets API.
 
     Raises
     ------
-    USSCmdExecError
-        When any exception is raised during the conversion.
+    ZOAUImportError
+        When there's an issue calling the datasets API.
     """
-    module = AnsibleModuleHelper(argument_spec={})
-    src = _validate_path(src)
-    dest = _validate_data_set_name(dest)
-    if ds_type == "PO":
-        cp_uss2mvs = "cp -CM -F rec {0} \"//'{1}'\"".format(quote(src), dest)
-    else:
-        cp_uss2mvs = "cp -F rec {0} \"//'{1}'\"".format(quote(src), dest)
+    copy_args = {
+        "options": ""
+    }
+
     if is_binary:
-        cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_uss2mvs)
-    if rc:
-        raise USSCmdExecError(cp_uss2mvs, rc, out, err)
-    return rc, out, err
+        copy_args["options"] = "-B"
 
+    try:
+        datasets.copy(source=src, target=dest, **copy_args)
+    except zoau_exceptions.ZOAUException as copy_exception:
+        # Returning the exception content instead of raising it
+        # since a lot of code that uses this function expects it
+        # so they can decide what to do in case of an error.
+        return copy_exception.response.rc, \
+            copy_exception.response.stdout_response, \
+            copy_exception.response.stderr_response
 
-def copy_ps2uss(src, dest, is_binary=False):
-    """Copy a PS data set to a uss file.
-
-    Parameters
-    ----------
-    src : str
-        The MVS data set to be copied, it must be a PS data set
-        or a PDS(E) member.
-    dest : str
-        The destination uss file.
-
-    Keyword Parameters
-    ------------------
-    is_binary : bool
-        Whether the file to be copied contains binary data.
-
-    Returns
-    -------
-    bool
-        The return code after the copy command executed successfully.
-    str
-        The stdout after the copy command executed successfully.
-    str
-        The stderr after the copy command executed successfully.
-
-    Raises
-    ------
-    USSCmdExecError
-        When any exception is raised during the conversion.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    src = _validate_data_set_name(src)
-    dest = _validate_path(dest)
-    cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
-    if is_binary:
-        cp_ps2uss = cp_ps2uss.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_ps2uss)
-    if rc:
-        raise USSCmdExecError(cp_ps2uss, rc, out, err)
-    return rc, out, err
-
-
-def copy_pds2uss(src, dest, is_binary=False, asa_text=False):
-    """Copy the whole PDS(E) to a uss path.
-
-    Parameters
-    ----------
-    src : str
-        The MVS data set to be copied, it must be a PDS(E) data set.
-    dest : str
-        The destination uss path.
-
-    Keyword Parameters
-    ------------------
-    is_binary : bool
-        Whether the file to be copied contains binary data.
-    asa_text : bool
-        Whether the file to be copied contains ASA control
-        characters.
-
-    Returns
-    -------
-    bool
-        The return code after the USS command executed successfully.
-    str
-        The stdout after the USS command executed successfully.
-    str
-        The stderr after the USS command executed successfully.
-
-    Raises
-    ------
-    USSCmdExecError
-        When any exception is raised during the conversion.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    src = _validate_data_set_name(src)
-    dest = _validate_path(dest)
-
-    cp_pds2uss = "cp -U -F rec \"//'{0}'\" {1}".format(src, quote(dest))
-
-    # When dealing with ASA control chars, each record follows a
-    # different format than what '-F rec' means, so we remove it
-    # to allow the system to leave the control chars in the
-    # destination.
-    if asa_text:
-        cp_pds2uss = cp_pds2uss.replace("-F rec", "", 1)
-    elif is_binary:
-        cp_pds2uss = cp_pds2uss.replace("rec", "bin", 1)
-
-    rc, out, err = module.run_command(cp_pds2uss)
-    if rc:
-        raise USSCmdExecError(cp_pds2uss, rc, out, err)
-
-    return rc, out, err
+    return 0, "", ""
 
 
 def copy_gdg2uss(src, dest, is_binary=False, asa_text=False):
@@ -264,82 +168,7 @@ def copy_gdg2uss(src, dest, is_binary=False, asa_text=False):
     return True
 
 
-def copy_uss2uss_binary(src, dest):
-    """Copy a USS file to a USS location in binary mode.
-
-    Parameters
-    ----------
-    src : str
-        The source USS path.
-    dest : str
-        The destination USS path.
-
-    Returns
-    -------
-    bool
-        The return code after the USS command executed successfully.
-    str
-        The stdout after the USS command executed successfully.
-    str
-        The stderr after the USS command executed successfully.
-
-    Raises
-    ------
-    USSCmdExecError
-        When any exception is raised during the conversion.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    src = _validate_path(src)
-    dest = _validate_path(dest)
-    cp_uss2uss = "cp -F bin {0} {1}".format(quote(src), quote(dest))
-    rc, out, err = module.run_command(cp_uss2uss)
-    if rc:
-        raise USSCmdExecError(cp_uss2uss, rc, out, err)
-    return rc, out, err
-
-
-def copy_mvs2mvs(src, dest, is_binary=False):
-    """Copy an MVS source to MVS target.
-
-    Parameters
-    ----------
-    src : str
-        Name of source data set.
-    dest : str
-        Name of destination data set.
-
-    Keyword Parameters
-    ------------------
-    is_binary : bool
-        Whether the data set to be copied contains binary data.
-
-    Returns
-    -------
-    bool
-        The return code after the USS command executed successfully.
-    str
-        The stdout after the USS command executed successfully.
-    str
-        The stderr after the USS command executed successfully.
-
-    Raises
-    ------
-    USSCmdExecError
-        When any exception is raised during the conversion.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    src = _validate_data_set_name(src)
-    dest = _validate_data_set_name(dest)
-    cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
-    if is_binary:
-        cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin", 1)
-    rc, out, err = module.run_command(cp_mvs2mvs)
-    if rc:
-        raise USSCmdExecError(cp_mvs2mvs, rc, out, err)
-    return rc, out, err
-
-
-def copy_vsam_ps(src, dest):
+def copy_vsam_ps(src, dest, tmphlq=None):
     """Copy a VSAM(KSDS) data set to a PS data set vise versa.
 
     Parameters
@@ -348,6 +177,8 @@ def copy_vsam_ps(src, dest):
         The VSAM(KSDS) or PS data set to be copied.
     dest : str
         The PS or VSAM(KSDS) data set.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -367,14 +198,18 @@ def copy_vsam_ps(src, dest):
     src = _validate_data_set_name(src)
     dest = _validate_data_set_name(dest)
     repro_cmd = REPRO.format(src, dest)
+
     cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
-    rc, out, err = module.run_command(cmd, data=repro_cmd)
+    if tmphlq:
+        cmd = "{0} -Q={1}".format(cmd, tmphlq)
+
+    rc, out, err = module.run_command(cmd, data=repro_cmd, errors='replace')
     if rc:
         raise USSCmdExecError(cmd, rc, out, err)
     return rc, out, err
 
 
-def copy_asa_uss2mvs(src, dest):
+def copy_asa_uss2mvs(src, dest, tmphlq=None, force_lock=False):
     """Copy a file from USS to an ASA sequential data set or PDS/E member.
 
     Parameters
@@ -383,6 +218,10 @@ def copy_asa_uss2mvs(src, dest):
         Path of the USS file.
     dest : str
         The MVS destination data set or member.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
+    force_lock : bool
+        Whether to open the destination in SHR mode.
 
     Returns
     -------
@@ -393,13 +232,23 @@ def copy_asa_uss2mvs(src, dest):
     str
         The stderr after the copy command executed successfully.
     """
-    oget_cmd = "OGET '{0}' '{1}'".format(src, dest)
-    rc, out, err = ikjeft01(oget_cmd, authorized=True)
+
+    # Removes escaping to execute this command
+    dest = dest.replace('\\', '')
+    src = src.replace('\\', '')
+    dest_dsp = "shr" if force_lock else "old"
+
+    ocopy_cmd = "OCOPY INDD(DSSRC) OUTDD(DSTAR) TEXT"
+    ocopy_dds = {
+        "dssrc": src,
+        "dstar": f"{dest},{dest_dsp}"
+    }
+    rc, out, err = ikjeft01(ocopy_cmd, dds=ocopy_dds, authorized=True, tmphlq=tmphlq)
 
     return TSOCmdResponse(rc, out, err)
 
 
-def copy_asa_mvs2uss(src, dest):
+def copy_asa_mvs2uss(src, dest, tmphlq=None):
     """Copy an ASA sequential data set or member to USS.
 
     Parameters
@@ -408,6 +257,8 @@ def copy_asa_mvs2uss(src, dest):
         The MVS data set to be copied.
     dest : str
         Destination path in USS.
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -420,14 +271,16 @@ def copy_asa_mvs2uss(src, dest):
     """
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
-
-    oput_cmd = "OPUT '{0}' '{1}'".format(src, dest)
-    rc, out, err = ikjeft01(oput_cmd, authorized=True)
+    # Removes escaping to execute this command
+    new_dest = dest.replace('\\', '')
+    new_source = src.replace('\\', '')
+    oput_cmd = "OPUT '{0}' '{1}'".format(new_source, new_dest)
+    rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
 
     return TSOCmdResponse(rc, out, err)
 
 
-def copy_asa_pds2uss(src, dest):
+def copy_asa_pds2uss(src, dest, tmphlq=None):
     """Copy all members from an ASA PDS/E to USS.
 
     Parameters
@@ -436,6 +289,8 @@ def copy_asa_pds2uss(src, dest):
         The MVS data set to be copied.
     dest : str
         Destination path in USS (must be a directory).
+    tmphlq : str
+        High Level Qualifier for temporary datasets.
 
     Returns
     -------
@@ -465,7 +320,7 @@ def copy_asa_pds2uss(src, dest):
         dest_path = path.join(dest, member)
 
         oput_cmd = "OPUT '{0}' '{1}'".format(src_member, dest_path)
-        rc, out, err = ikjeft01(oput_cmd, authorized=True)
+        rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
 
         if rc != 0:
             return TSOCmdResponse(rc, out, err)

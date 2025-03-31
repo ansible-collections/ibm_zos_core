@@ -221,7 +221,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl, volumes_on_s
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="uss"
+            src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -267,7 +267,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl, volumes_
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="uss"
+            src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -315,7 +315,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl, volumes_on_sy
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="uss"
+            src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
@@ -356,7 +356,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(
 
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_1, dataset)), TEMP_PATH))
-    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="uss")
+    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30)
 
     # verify data set creation was successful
     for result in results.contacted.values():
@@ -371,7 +371,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(
 
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl.format(volume_2, dataset)), TEMP_PATH))
-    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="uss")
+    results = hosts.all.zos_job_submit(src=TEMP_PATH + "/SAMPLE", location="uss", wait_time_s=30)
 
     # verify data set creation was successful
     for result in results.contacted.values():
@@ -1103,3 +1103,32 @@ def test_create_member_special_chars(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=data_set_name, state="absent")
 
+
+def test_gdg_create_and_replace(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name()
+        results = hosts.all.zos_data_set(name=data_set_name, empty=False, force=True, record_format="u", 
+                                         record_length=0, replace=True, space_primary=5, space_secondary=3, 
+                                         space_type="cyl", state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=data_set_name, empty=False, force=True, record_format="u", 
+                                         record_length=0, replace=True, space_primary=5, space_secondary=3, 
+                                         space_type="cyl", state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=data_set_name, state="absent", force=True, type="gdg")
+
+def test_gdg_deletion_when_absent(ansible_zos_module):
+    hosts = ansible_zos_module
+    data_set_name = get_tmp_ds_name()
+    results = hosts.all.zos_data_set(name=data_set_name, force=False, record_format="fb", replace=False, 
+                                    space_primary=5, space_secondary=3, space_type="m", state="absent", type="gdg")
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("module_stderr") is None
+        assert result.get("failed") is None

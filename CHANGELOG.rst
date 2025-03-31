@@ -4,6 +4,147 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.13.0-beta.1
+==============
+
+Release Summary
+---------------
+
+Release Date: '2025-01-30'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- module_utils/import_handler - When importing a non supported ZOAU version like 1.2.x the module would throw a non user friendly error message. Error message is now explicit about ZOAU not being properly configured for Ansible. (https://github.com/ansible-collections/ibm_zos_core/pull/1804).
+- zos_copy - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates. (https://github.com/ansible-collections/ibm_zos_core/pull/1810).
+- zos_copy - Adds error message when a PDS/E source member does not exist or is not cataloged. (https://github.com/ansible-collections/ibm_zos_core/pull/1821).
+- zos_job_submit - Add deploy and forget capability. Now when wait_time_s is 0, the module will submit the job and will not wait to get the job details or content, returning only the job id. (https://github.com/ansible-collections/ibm_zos_core/pull/1746).
+- zos_job_submit - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates. (https://github.com/ansible-collections/ibm_zos_core/pull/1810).
+- zos_job_submit - Added support to run zos_job_submit tasks in async mode inside playbooks. (https://github.com/ansible-collections/ibm_zos_core/pull/1786).
+- zos_mvs_raw - Added ``max_rc`` option. Now when the user sets ``max_rc``, the module tolerates the failure if the return code is smaller than the ``max_rc`` specified, however, return value ``changed`` will be False if the program return code is not 0. (https://github.com/ansible-collections/ibm_zos_core/pull/1813).
+- zos_script - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates. (https://github.com/ansible-collections/ibm_zos_core/pull/1810).
+
+Bugfixes
+--------
+
+- zos_copy - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message. (https://github.com/ansible-collections/ibm_zos_core/pull/1744).
+- zos_fetch - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file). Change now allows the user to use different types of relative paths as a parameter. (https://github.com/ansible-collections/ibm_zos_core/pull/1769).
+- zos_find - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types. (https://github.com/ansible-collections/ibm_zos_core/pull/1822).
+- zos_find - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster. (https://github.com/ansible-collections/ibm_zos_core/pull/1822).
+- zos_job_query - Module was not returning values for system and subsystem. Fix now returns these values. (https://github.com/ansible-collections/ibm_zos_core/pull/1759).
+- zos_mvs_raw - If a program failed with a non-zero return code and verbose was false, the module would succeed. Whereas, if the program failed and verbose was true the module would fail. Fix now has a consistent behavior and fails in both cases. (https://github.com/ansible-collections/ibm_zos_core/pull/1774).
+- zos_mvs_raw - Module would not populate stderr return value. Fix now populates stderr in return values. (https://github.com/ansible-collections/ibm_zos_core/pull/1808).
+- zos_mvs_raw - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program. (https://github.com/ansible-collections/ibm_zos_core/pull/1774).
+- zos_mvs_raw - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr. (https://github.com/ansible-collections/ibm_zos_core/pull/1794).
+- zos_mvs_raw - Option ``tmp_hlq`` was not being used as HLQ when creating backup data sets. Fix now uses ``tmp_hlq`` as HLQ for backup data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1847).
+- zos_script - When the user trying to run a remote script had execute permissions but wasn't owner of the file, the module would fail while trying to change permissions on it. Fix now ensures the module first checks if the user can execute the script and only try to change permissions when necessary. (https://github.com/ansible-collections/ibm_zos_core/pull/1852).
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_zfs_resize - Resize a zfs data set.
+
+v1.12.0
+=======
+
+Release Summary
+---------------
+
+Release Date: '2024-12-06'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_backup_restore - Redefines the default behavior of module option `hlq`. When option `operation` is set to `restore` and the `hlq` is not provided, the original high level qualifiers in a backup will be used for a restore. (https://github.com/ansible-collections/ibm_zos_core/pull/1632).
+- zos_job_output - Added address space type used by jobs in return JSON as `content_type`. (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+- zos_job_query - Added address space type used by jobs in return JSON as `content_type`. (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+- zos_job_submit - Added address space type used by jobs in return JSON as `content_type`. (https://github.com/ansible-collections/ibm_zos_core/pull/1673).
+- zos_mvs_raw - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+- zos_operator - Added new option ``case_sensitive`` to module, allowing users to control how case in a command is handled by it. (https://github.com/ansible-collections/ibm_zos_core/pull/1641)
+- zos_script - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+- zos_tso_command - Un-mappable chars in stdout/stderr streams are now replaced with the replacement character. (https://github.com/ansible-collections/ibm_zos_core/pull/1634).
+
+Bugfixes
+--------
+
+- zos_apf - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_archive - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_backup_restore - When a recoverable error was encountered and ``recover=True``, the module would ignore the option and fail. Fix now does not fail when a recoverable error is raised when ``recover=True``. (https://github.com/ansible-collections/ibm_zos_core/pull/1643).
+- zos_blockinfile - Previously module was not able to delete a block when 'marker_begin' and 'marker_end' were set to the same value. Fix introduces a requirement for 'marker_begin' and 'marker_end' to have different values. (https://github.com/ansible-collections/ibm_zos_core/pull/1684).
+- zos_blockinfile - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_copy - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message. (https://github.com/ansible-collections/ibm_zos_core/pull/1766).
+- zos_copy - Previously, the module ignored the value of ``remote_tmp`` set in Ansible configuration file and used the ``/tmp/`` directory. Fix now uses the value of ``remote_tmp`` or the default value ``~/.ansible/tmp`` if none is given. (https://github.com/ansible-collections/ibm_zos_core/pull/1739).
+- zos_copy - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_data_set - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_encode - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_fetch - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_find - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types. (https://github.com/ansible-collections/ibm_zos_core/pull/1818).
+- zos_find - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster. (https://github.com/ansible-collections/ibm_zos_core/pull/1818).
+- zos_job_output - RACF user names containing a ``@``, ``$``, or ``#`` raised an invalid argument error. Fix now allows the use of all valid characters for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
+- zos_job_query - Module was not returning values for system and subsystem. Fix now returns these values. (https://github.com/ansible-collections/ibm_zos_core/pull/1761).
+- zos_job_query - RACF user names containing a ``@``, ``$``, or ``#`` raised an invalid argument error. Fix now allows the use of all valid characters for a RACF user. (https://github.com/ansible-collections/ibm_zos_core/pull/1661).
+- zos_lineinfile - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_mount - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+- zos_mvs_raw - If a program failed with a non-zero return code and verbose was false, the module would succeed (false positive). Fix now fails the module for all instances where a program has a non-zero return code. (https://github.com/ansible-collections/ibm_zos_core/pull/1780).
+- zos_mvs_raw - Module would obfuscate the return code from the program when failing returning 8 instead. Fix now returns the proper return code from the program. (https://github.com/ansible-collections/ibm_zos_core/pull/1780).
+- zos_mvs_raw - Module would return the stderr content in stdout when verbose was true and return code was 0. Fix now does not replace stdout content with stderr. (https://github.com/ansible-collections/ibm_zos_core/pull/1800).
+- zos_mvs_raw - base64 sub-option for return_content under option for retrieving DD output did not return base64. Fix now returns the base64 encoded contents of the DD. (https://github.com/ansible-collections/ibm_zos_core/pull/1691).
+- zos_script - The module would discard command line arguments in a command, except for the first one. Fix now makes sure that all arguments are passed to the remote command that gets executed. (https://github.com/ansible-collections/ibm_zos_core/pull/1698).
+- zos_unarchive - The ``tmp_hlq`` option was previously ignored and default values were used instead. Fix now honors the value set in the module option. (https://github.com/ansible-collections/ibm_zos_core/pull/1695).
+
+v1.11.0
+=======
+
+Release Summary
+---------------
+
+Release Date: '2024-10-01'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_apf - Change input to auto-escape 'library' names containing symbols (https://github.com/ansible-collections/ibm_zos_core/pull/1493).
+- zos_archive - Added support for GDG and GDS relative name notation to archive data sets. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1511).
+- zos_backup_restore - Added support for GDS relative name notation to include or exclude data sets when operation is backup. Added support for data set names with special characters like $, /#, and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1527).
+- zos_blockinfile - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
+- zos_copy - add support for copying generation data sets (GDS) and generation data groups (GDG), as well as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1564).
+- zos_data_set - Added support for GDG and GDS relative name notation to create, delete, catalog and uncatalog a data set. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1504).
+- zos_encode - add support for encoding generation data sets (GDS), as well as using a GDS for backup. (https://github.com/ansible-collections/ibm_zos_core/pull/1531).
+- zos_fetch - add support for fetching generation data groups and generation data sets. (https://github.com/ansible-collections/ibm_zos_core/pull/1519)
+- zos_find - added support for GDG/GDS and special characters (https://github.com/ansible-collections/ibm_zos_core/pull/1518).
+- zos_job_submit - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+- zos_job_submit - add support for generation data groups and generation data sets as sources for jobs. (https://github.com/ansible-collections/ibm_zos_core/pull/1497)
+- zos_lineinfile - Added support for GDG and GDS relative name notation to use a data set. And backup in new generations. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1516).
+- zos_mount - Added support for data set names with special characters ($, /#, /- and @). This is for both src and backup data set names. (https://github.com/ansible-collections/ibm_zos_core/pull/1631).
+- zos_mvs_raw - Added support for GDG and GDS relative name notation to use a data set. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1525).
+- zos_mvs_raw - Added support for GDG and GDS relative positive name notation to use a data set. (https://github.com/ansible-collections/ibm_zos_core/pull/1541).
+- zos_mvs_raw - Redesign the wrappers of dd clases to use properly the arguments. (https://github.com/ansible-collections/ibm_zos_core/pull/1470).
+- zos_script - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+- zos_tso_command - Added support for GDG and GDS relative name notation to use a data set name. Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1563).
+- zos_unarchive - Added support for data set names with special characters like $, /#, /- and @. (https://github.com/ansible-collections/ibm_zos_core/pull/1511).
+- zos_unarchive - Improved the copy to remote mechanic to avoid using deepcopy that could result in failure for some systems. (https://github.com/ansible-collections/ibm_zos_core/pull/1561).
+
+Bugfixes
+--------
+
+- module_util/data_set.py - DataSet.data_set_cataloged function previously only returned True or False, but failed to account for exceptions which occurred during the LISTCAT. The fix now raises an MVSCmdExecError if the return code from LISTCAT is too high. (https://github.com/ansible-collections/ibm_zos_core/pull/1535).
+- zos_copy - a regression in version 1.4.0 made the module stop automatically computing member names when copying a single file into a PDS/E. Fix now lets a user copy a single file into a PDS/E without adding a member in the dest option. (https://github.com/ansible-collections/ibm_zos_core/pull/1570).
+- zos_copy - module would use opercmd to check if a non existent destination data set is locked. Fix now only checks if the destination is already present. (https://github.com/ansible-collections/ibm_zos_core/pull/1623).
+- zos_job_submit - Was not propagating any error types UnicodeDecodeError, JSONDecodeError, TypeError, KeyError when encountered, now the error message shares the type error. (https://github.com/ansible-collections/ibm_zos_core/pull/1560).
+- zos_mvs_raw - DD_output first character from each line was missing. Change now includes the first character of each line. (https://github.com/ansible-collections/ibm_zos_core/pull/1543).
+
 v1.10.0
 =======
 

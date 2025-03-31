@@ -15,10 +15,14 @@
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import pytest
 import tempfile
 from tempfile import mkstemp
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+import yaml
+from shellescape import quote
+import subprocess
 
 __metaclass__ = type
 
@@ -32,6 +36,51 @@ USS_EXCLUSION_FILE = f"{USS_TEMP_DIR}/foo.txt"
 USS_DEST_ARCHIVE = "testarchive.dzp"
 
 USS_FORMATS = ['tar', 'gz', 'bz2', 'zip', 'pax']
+
+PLAYBOOK_ASYNC_TEST = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Execute script in async mode.
+      ibm.ibm_zos_core.zos_unarchive:
+        src: {3}
+        format:
+          name: {4}
+        remote_src: True
+      async: 45
+      poll: 0
+      register: job_task
+
+    - name: Query async task.
+      async_status:
+        jid: "{{{{ job_task.ansible_job_id }}}}"
+      register: job_result
+      until: job_result.finished
+      retries: 20
+      delay: 5
+"""
+
+INVENTORY_ASYNC_TEST = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
 
 def set_uss_test_env(ansible_zos_module, test_files):
     for key, value in test_files.items():
@@ -1158,14 +1207,14 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
             assert result.get("dest") == archive_data_set
             assert f"{data_set_name}.G0001V00" in result.get("archived")
             assert f"{data_set_name}.G0002V00" in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
         hosts.all.zos_data_set(
             batch=[
-                {"name": f"{data_set_name}(-1)", "state": "absent", "type": "gdg"},
-                {"name": f"{data_set_name}(0)", "state": "absent", "type": "gdg"},
+                {"name": f"{data_set_name}(-1)", "state": "absent"},
+                {"name": f"{data_set_name}(0)", "state": "absent"},
             ]
         )
         unarchive_result = hosts.all.zos_unarchive(
@@ -1178,10 +1227,87 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
             assert len(result.get("missing")) == 0
             assert f"{data_set_name}.G0001V00" in result.get("targets")
             assert f"{data_set_name}.G0002V00" in result.get("targets")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert f"{data_set_name}.G0001V00" in c_result.get("stdout")
                 assert f"{data_set_name}.G0002V00" in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd=f"drm {HLQ}.*")
+        hosts.all.shell(cmd=f'drm "{HLQ}.*"')
 
+@pytest.mark.uss
+def test_zos_unarchive_async(ansible_zos_module, get_config):
+    try:
+        # Load environment details from the config file
+        with open(get_config, 'r') as file:
+            environment = yaml.safe_load(file)
+
+        ssh_key = environment["ssh_key"]
+        hosts = environment["host"].upper()
+        user = environment["user"].upper()
+        python_path = environment["python_path"]
+        cut_python_path = python_path[:python_path.find('/bin')].strip()
+        zoau = environment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split('/')[2]
+        archive_format = USS_FORMATS[0]
+
+        # Create a temporary archive file for testing
+        hosts_zos = ansible_zos_module
+        hosts_zos.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+        hosts_zos.all.file(path=USS_TEMP_DIR, state="directory")
+        set_uss_test_env(hosts_zos, USS_TEST_FILES)
+        dest = f"{USS_TEMP_DIR}/archive.{archive_format}"
+        archive_result = hosts_zos.all.zos_archive(src=list(USS_TEST_FILES.keys()),
+                                        dest=dest,
+                                        format=dict(
+                                            name=archive_format
+                                        ))
+        # remove files
+        for file in USS_TEST_FILES.keys():
+            hosts_zos.all.file(path=file, state="absent")
+
+        # Create temporary playbook and inventory files
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system("echo {0} > {1}".format(
+            quote(PLAYBOOK_ASYNC_TEST.format(
+                zoau,
+                cut_python_path,
+                python_version,
+                dest,  
+                archive_format,  
+            )),
+            playbook.name
+        ))
+
+        os.system("echo {0} > {1}".format(
+            quote(INVENTORY_ASYNC_TEST.format(
+                hosts,
+                ssh_key,
+                user,
+                python_path
+            )),
+            inventory.name
+        ))
+
+        # Run the Ansible playbook
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name,
+            playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding='utf-8'
+        )
+
+        # Assertions to validate the result
+        assert result.returncode == 0
+        assert "ok=2" in result.stdout
+        assert "changed=2" in result.stdout
+        assert result.stderr == ""
+    finally:
+        hosts_zos.all.file(path=f"{USS_TEMP_DIR}", state="absent")

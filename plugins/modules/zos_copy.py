@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1083,7 +1083,7 @@ class CopyHandler(object):
         copy_args["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq)
+            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
 
             if response.rc != 0:
                 raise CopyOperationError(
@@ -2153,7 +2153,7 @@ class PDSECopyHandler(CopyHandler):
         opts["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq)
+            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
             rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
@@ -3183,6 +3183,7 @@ def data_set_locked(dataset_name):
     # in the result with a length greater than 4.
     result = dict()
     result["stdout"] = []
+    dataset_name = dataset_name.replace("$", "\\$")
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
 
     try:
@@ -3546,7 +3547,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set_locked(dest_name)
+            is_dest_lock = data_set_locked(dataset_name=dest_name)
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(

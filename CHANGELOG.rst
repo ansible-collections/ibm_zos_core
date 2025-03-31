@@ -4,13 +4,13 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
-v1.13.0-beta.1
-==============
+v1.13.0
+=======
 
 Release Summary
 ---------------
 
-Release Date: '2025-01-30'
+Release Date: '2025-03-31'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
@@ -32,6 +32,9 @@ Bugfixes
 --------
 
 - zos_copy - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message. (https://github.com/ansible-collections/ibm_zos_core/pull/1744).
+- zos_copy - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false. (https://github.com/ansible-collections/ibm_zos_core/pull/1936)
+- zos_copy - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true. (https://github.com/ansible-collections/ibm_zos_core/pull/1924).
+- zos_copy - When ``asa_text`` was set to true at the same time as ``force_lock``, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true. (https://github.com/ansible-collections/ibm_zos_core/pull/1939).
 - zos_fetch - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file). Change now allows the user to use different types of relative paths as a parameter. (https://github.com/ansible-collections/ibm_zos_core/pull/1769).
 - zos_find - Module would not find VSAM data and index resource types. Fix now finds the data and index resource types. (https://github.com/ansible-collections/ibm_zos_core/pull/1822).
 - zos_find - Module would not find a VSAM cluster resource type if it was in use with DISP=OLD. Fix now finds the VSAM cluster. (https://github.com/ansible-collections/ibm_zos_core/pull/1822).

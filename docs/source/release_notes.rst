@@ -6,13 +6,12 @@
 Releases
 ========
 
-v1.13.0-beta.1
+Version 1.13.0
 ==============
 
 Minor Changes
 -------------
 
-- ``import_handler`` - When importing a non supported ZOAU version like 1.2.x the module would throw a non user friendly error message. Error message is now explicit about ZOAU not being properly configured for Ansible.
 - ``zos_copy``
 
    - Added new option ``autoescape`` to ``template_parameters``, allowing users to disable autoescaping of common XML/HTML characters when working with Jinja templates.
@@ -30,7 +29,13 @@ Minor Changes
 Bugfixes
 --------
 
-- ``zos_copy`` - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message.
+- ``zos_copy``
+
+   - Improve module zos_copy error handling when the user does not have universal access authority set to UACC(READ) for SAF Profile 'MVS.MCSOPER.ZOAU' and SAF Class OPERCMDS. The module now handles the exception and returns an informative message.
+   - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.
+   - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
+   - When ``asa_text`` was set to true at the same time as ``force_lock``, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+
 - ``zos_fetch`` - Some relative paths were not accepted as a parameter e.g. C(files/fetched_file). Change now allows the user to use different types of relative paths as a parameter.
 - ``zos_find``
 
@@ -56,20 +61,43 @@ New Modules
 Availability
 ------------
 
+* `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation might fail.
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
+Version 1.12.1
+==============
+
+Bugfixes
+--------
+
+-  ``zos_copy``
+
+   - Previously, if the dataset name included special characters such as ``$`` and ``asa_text`` option is true, the module would fail. Fix now allows the use of special characters in the data set name when ``asa_text`` option is true.
+   - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.
+   - When ``asa_text`` was set to true at the same time as ``force_lock``,  a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+
+Availability
 ------------
 
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-control node and z/OS managed node dependencies.
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
 
 Known Issues
 ------------
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
 - ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
 - ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation will fail.
+- ``zos_find`` - When trying to find a VSAM data set that is allocated with DISP=OLD using age filter the module will not find it.
 
 Version 1.12.0
 ==============
@@ -153,12 +181,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-control node and z/OS managed node dependencies.
-
 Known Issues
 ------------
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
@@ -185,12 +207,6 @@ Availability
 * `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-control node and z/OS managed node dependencies.
 
 Known Issues
 ------------
@@ -292,12 +308,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-control node and z/OS managed node dependencies.
-
 Known Issues
 ------------
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
@@ -397,12 +407,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 Known Issues
 ------------
 - ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
@@ -436,12 +440,6 @@ Availability
 * `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Known Issues
 ------------
@@ -482,12 +480,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 Known Issues
 ------------
 
@@ -523,12 +515,6 @@ Availability
 * `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Known Issues
 ------------
@@ -583,12 +569,6 @@ Availability
 * `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Version 1.9.0
 =============
@@ -706,12 +686,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 Version 1.8.0
 =============
 
@@ -790,12 +764,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 Version 1.7.0
 =============
 
@@ -855,12 +823,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 Version 1.6.0
 =============
 
@@ -915,12 +877,6 @@ Availability
 * `Ansible Automation Platform`_
 * `Galaxy`_
 * `GitHub`_
-
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
 
 Version 1.5.0
 =============
@@ -1030,12 +986,6 @@ Availability
 * `Galaxy`_
 * `GitHub`_
 
-Requirements
-------------
-
-The IBM z/OS core collection has several dependencies, please review the `z/OS core support matrix`_ to understand both the
-controller and z/OS managed node dependencies.
-
 .. .............................................................................
 .. Global Links
 .. .............................................................................
@@ -1085,8 +1035,6 @@ controller and z/OS managed node dependencies.
    https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
-.. _z/OS core support matrix:
-   https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/releases_maintenance.html
 
 .. .............................................................................
 .. Playbook Links

@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -209,7 +209,7 @@ def copy_vsam_ps(src, dest, tmphlq=None):
     return rc, out, err
 
 
-def copy_asa_uss2mvs(src, dest, tmphlq=None):
+def copy_asa_uss2mvs(src, dest, tmphlq=None, force_lock=False):
     """Copy a file from USS to an ASA sequential data set or PDS/E member.
 
     Parameters
@@ -220,6 +220,8 @@ def copy_asa_uss2mvs(src, dest, tmphlq=None):
         The MVS destination data set or member.
     tmphlq : str
         High Level Qualifier for temporary datasets.
+    force_lock : bool
+        Whether to open the destination in SHR mode.
 
     Returns
     -------
@@ -231,9 +233,17 @@ def copy_asa_uss2mvs(src, dest, tmphlq=None):
         The stderr after the copy command executed successfully.
     """
 
-    module = AnsibleModuleHelper(argument_spec={})
-    oget_cmd = f"tsocmd \" OGET '{src}' '{dest}' \""
-    rc, out, err = module.run_command(oget_cmd)
+    # Removes escaping to execute this command
+    dest = dest.replace('\\', '')
+    src = src.replace('\\', '')
+    dest_dsp = "shr" if force_lock else "old"
+
+    ocopy_cmd = "OCOPY INDD(DSSRC) OUTDD(DSTAR) TEXT"
+    ocopy_dds = {
+        "dssrc": src,
+        "dstar": f"{dest},{dest_dsp}"
+    }
+    rc, out, err = ikjeft01(ocopy_cmd, dds=ocopy_dds, authorized=True, tmphlq=tmphlq)
 
     return TSOCmdResponse(rc, out, err)
 
@@ -261,8 +271,10 @@ def copy_asa_mvs2uss(src, dest, tmphlq=None):
     """
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
-
-    oput_cmd = "OPUT '{0}' '{1}'".format(src, dest)
+    # Removes escaping to execute this command
+    new_dest = dest.replace('\\', '')
+    new_source = src.replace('\\', '')
+    oput_cmd = "OPUT '{0}' '{1}'".format(new_source, new_dest)
     rc, out, err = ikjeft01(oput_cmd, authorized=True, tmphlq=tmphlq)
 
     return TSOCmdResponse(rc, out, err)

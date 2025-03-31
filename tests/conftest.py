@@ -1,5 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2024
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -51,15 +50,7 @@ def pytest_addoption(parser):
         "-Z",
         action="store",
         default=None,
-        default=None,
         help="Absolute path to YAML file containing inventory info for functional testing.",
-    )
-    parser.addoption(
-        "--zinventory-raw",
-        "-R",
-        action="store",
-        default=None,
-        help="Str - dictionary with values {'host': 'ibm.com', 'user': 'root', 'zoau': '/usr/lpp/zoau', 'pyz': '/usr/lpp/IBM/pyz'}",
     )
     parser.addoption(
         "--zinventory-raw",
@@ -73,15 +64,6 @@ def pytest_addoption(parser):
 @pytest.fixture(scope="session")
 def z_python_interpreter(request):
     """ Generate temporary shell wrapper for python interpreter. """
-    src = None
-    helper = None
-    if request.config.getoption("--zinventory"):
-        src = request.config.getoption("--zinventory")
-        helper = ZTestHelper.from_yaml_file(src)
-    elif request.config.getoption("--zinventory-raw"):
-        src = request.config.getoption("--zinventory-raw")
-        helper = ZTestHelper.from_args(src)
-
     src = None
     helper = None
     if request.config.getoption("--zinventory"):
@@ -141,47 +123,8 @@ def ansible_zos_module(request, z_python_interpreter):
     except Exception:
         pass
 
-    # Call of the class by the class ls_Volume (volumes.py file) as many times needed
-    # one time the array is filled
-@pytest.fixture(scope="session")
-def volumes_on_systems(ansible_zos_module, request):
-    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
-    path = request.config.getoption("--zinventory")
-    list_volumes = None
-
-    # If path is None, check if zinventory-raw is used instead and if so, extract the
-    # volumes dictionary and pass it along.
-    if path is None:
-        src = request.config.getoption("--zinventory-raw")
-        helper = ZTestHelper.from_args(src)
-        list_volumes = helper.get_volumes_list()
-    else:
-        list_volumes = get_volumes(ansible_zos_module, path)
-    yield list_volumes
-
-
-@pytest.fixture(scope="session")
-def volumes_with_vvds(ansible_zos_module, request):
-    """ Return a list of volumes that have a VVDS. If no volume has a VVDS
-    then it will try to create one for each volume found and return volumes only
-    if a VVDS was successfully created for it."""
-    path = request.config.getoption("--zinventory")
-    list_volumes = None
-
-    # If path is None, check if zinventory-raw is used instead and if so, extract the
-    # volumes dictionary and pass it along.
-    if path is None:
-        src = request.config.getoption("--zinventory-raw")
-        helper = ZTestHelper.from_args(src)
-        list_volumes = helper.get_volumes_list()
-    else:
-        list_volumes = get_volumes(ansible_zos_module, path)
-
-    volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, list_volumes)
-    yield volumes_with_vvds
-
-    # Call of the class by the class ls_Volume (volumes.py file) as many times needed
-    # one time the array is filled
+# Call of the class by the class ls_Volume (volumes.py file) as many times needed
+# one time the array is filled
 @pytest.fixture(scope="session")
 def volumes_on_systems(ansible_zos_module, request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
@@ -244,13 +187,6 @@ def zos_import_mocker(mocker):
         return newimp
 
     yield (mocker, perform_imports)
-
-
-@pytest.fixture(scope="function")
-def get_config(request):
-    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
-    path = request.config.getoption("--zinventory")
-    yield path
 
 
 @pytest.fixture(scope="function")

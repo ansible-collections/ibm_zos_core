@@ -1,10 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
-# pylint: disable=too-many-lines
-# pylint: disable=consider-iterating-dictionary
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2023, 2024
@@ -719,7 +712,8 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, ds_form
             format=format_dict,
         )
         # remote data_sets from host
-        hosts.all.shell(cmd=f"drm {dataset.replace("$", "/$")}*")
+        dataset = dataset.replace("$", "/$")
+        hosts.all.shell(cmd=f"drm {dataset.replace}*")
 
         if ds_format == "terse":
             del format_dict["format_options"]["terse_pack"]

@@ -1330,14 +1330,13 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
 def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup_name):
     hosts = ansible_zos_module
     ds_type = dstype
-    backup_ds_name = ""
     params = {
         "block":"export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         "state":"present",
         "backup":True
     }
     if backup_name:
-        if backup_ds_name == "SEQ":
+        if backup_name == "SEQ":
             params["backup_name"] = get_tmp_ds_name()
         else:
             params["backup_name"] = get_tmp_ds_name() + "(MEM)"
@@ -1355,6 +1354,14 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
+        backup_ds_name = backup_ds_name.replace('$','\$')
+        bk_results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup_ds_name))
+        if backup_name == "MEM" and dstype == "seq":
+            for result in bk_results.contacted.values():
+                assert result.get("stdout") == ""
+        else:
+            for result in bk_results.contacted.values():
+                assert result.get("stdout") == TEST_CONTENT
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
         if backup_ds_name != "":

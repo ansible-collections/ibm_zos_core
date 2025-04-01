@@ -649,7 +649,6 @@ def main():
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception as err:
             module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
-    double_quotes_exists = check_double_quotes(marker, ins_bef, ins_aft, block)
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':

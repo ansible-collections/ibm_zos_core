@@ -41,7 +41,7 @@ def clear_volume(hosts, volume):
 # verify_volid below or change value to match current volume serial on
 # target.
 
-def test_guard_rail_and_setup(ansible_zos_module, volumes_on_systems):
+def test_guard_rail_and_setup(ansible_zos_module):
     hosts = ansible_zos_module
     # remove all data sets from target volume. Expected to be the following 3
 
@@ -139,7 +139,7 @@ def test_index_param_index_sms_false(ansible_zos_module):
 
 
 # check that correct volume_addr is assigned to correct volid
-def test_volid_address_assigned_correctly(ansible_zos_module, volumes_on_systems):
+def test_volid_address_assigned_correctly(ansible_zos_module):
     hosts = ansible_zos_module
 
     volume_1 = TEST_VOL_SER
@@ -185,7 +185,7 @@ def test_volid_address_assigned_correctly(ansible_zos_module, volumes_on_systems
 
     assert volume_1 in display_cmd_output
 
-def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module, volumes_on_systems):
+def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module):
     hosts = ansible_zos_module
 
     volume_1 = TEST_VOL_SER
@@ -484,7 +484,7 @@ def test_bad_param_volid_value_too_long(ansible_zos_module):
 #        If there is a data set remaining on the volume, that would interfere
 #        with other tests!
 
-def test_no_existing_data_sets_check(ansible_zos_module, volumes_on_systems):
+def test_no_existing_data_sets_check(ansible_zos_module):
     hosts = ansible_zos_module
     dataset = get_tmp_ds_name()
 
@@ -543,7 +543,7 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_on_systems):
 #        Therefore, while testing against the EC machines, the verify_offline
 #        check needs to be skipped in order for ickdsf to be invoked.
 
-def test_minimal_params(ansible_zos_module, volumes_on_systems):
+def test_minimal_params(ansible_zos_module):
     hosts = ansible_zos_module
 
     volume_1 = TEST_VOL_SER

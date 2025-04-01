@@ -18,11 +18,7 @@ __metaclass__ = type
 import os
 import yaml
 from shellescape import quote
-
-from ibm_zos_core.plugins.module_utils import (
-    zoau_version_checker,
-)
-
+from ibm_zos_core.tests.helpers.version import is_zoau_version_higher_than
 
 __metaclass__ = type
 
@@ -44,6 +40,7 @@ PARALLEL_RUNNING = """- hosts : zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
   tasks:
       - name: zos_operator
         zos_operator:
@@ -62,7 +59,7 @@ INVENTORY = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: {3}/bin/python{4}"""
+      ansible_python_interpreter: {3}"""
 
 
 def test_zos_operator_various_command(ansible_zos_module):
@@ -156,8 +153,8 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
 
 
 def test_zos_operator_positive_verbose_blocking(ansible_zos_module):
-    if zoau_version_checker.is_zoau_version_higher_than("1.2.4.5"):
-        hosts = ansible_zos_module
+    hosts = ansible_zos_module
+    if is_zoau_version_higher_than(hosts,"1.2.4.5"):
         wait_time_s=5
         results = hosts.all.zos_operator(
             cmd="d u,all", verbose=True, wait_time_s=wait_time_s
@@ -226,12 +223,11 @@ def test_zos_operator_parallel_terminal(get_config):
             hosts,
             ssh_key,
             user,
-            cut_python_path,
-            python_version
+            python_path
         )), inventory))
         command = "(ansible-playbook -i {0} {1}) & (ansible-playbook -i {0} {1})".format(
             inventory,
-            playbook
+            playbook,
         )
         stdout = os.system(command)
         assert stdout == 0

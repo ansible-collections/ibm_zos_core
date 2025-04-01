@@ -5,7 +5,6 @@ ibm.ibm\_zos\_core Release Notes
 .. contents:: Topics
 
 v1.13.0
-=======
 
 Release Summary
 ---------------

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -133,6 +133,17 @@ options:
 extends_documentation_fragment:
   - ibm.ibm_zos_core.template
 
+attributes:
+  action:
+    support: full
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
@@ -179,6 +190,10 @@ jobs:
       description: The total lapsed time the JCL ran for.
       type: int
       sample: 0
+    execution_time:
+      description: Total duration time of the job execution, if it has finished.
+      type: str
+      sample: 00:00:10
     ddnames:
       description:
          Data definition names.
@@ -568,6 +583,7 @@ jobs:
                   ]
               },
               "job_class": "K",
+              "execution_time": "00:00:10",
               "svc_class": "?",
               "priority": 1,
               "program_name": "IEBGENER",
@@ -860,6 +876,7 @@ def build_return_schema(result):
         "job_id": None,
         "job_name": None,
         "duration": None,
+        "execution_time": None,
         "ddnames": {
             "ddname": None,
             "record_count": None,
@@ -1069,6 +1086,7 @@ def run_module():
             # being an immutable type can not be changed and must be returned or accessed from the job.py.
             if job_output is not None:
                 duration = job_output_txt[0].get("duration") if not None else duration
+                result["execution_time"] = job_output_txt[0].get("execution_time")
 
             result["duration"] = duration
 

@@ -1,0 +1,3 @@
+trivial:
+  - zos_copy - Update documentation on zos_copy option C(executable) do not copy aliases.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/1969).

@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2025
+# Copyright (c) IBM Corporation 2019, 2024
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,11 +35,6 @@ def add_vars_to_compute_environment(env_vars):
 
 
 def pytest_addoption(parser):
-    """
-    Add CLI options and modify options for pytest-ansible where needed.
-    Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
-    will always return true because a default will be returned.
-    """
     """
     Add CLI options and modify options for pytest-ansible where needed.
     Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
@@ -123,8 +118,8 @@ def ansible_zos_module(request, z_python_interpreter):
     except Exception:
         pass
 
-# Call of the class by the class ls_Volume (volumes.py file) as many times needed
-# one time the array is filled
+    # Call of the class by the class ls_Volume (volumes.py file) as many times needed
+    # one time the array is filled
 @pytest.fixture(scope="session")
 def volumes_on_systems(ansible_zos_module, request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""

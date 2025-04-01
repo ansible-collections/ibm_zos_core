@@ -285,14 +285,6 @@ class ActionModule(ActionBase):
             wrap_async=self._task.async_val
         )
 
-        # Erasing all rendered Jinja2 templates from the controller.
-        if template_dir:
-            shutil.rmtree(template_dir, ignore_errors=True)
-        # Remove temporary directory from remote
-        if self.tmp_dir is not None:
-            path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            self._connection.exec_command(f"rm -rf {path}*")
-
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
             return result

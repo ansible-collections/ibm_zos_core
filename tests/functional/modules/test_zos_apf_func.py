@@ -488,11 +488,11 @@ def test_del_not_present(ansible_zos_module, volumes_with_vvds):
         test_info['state'] = 'absent'
         results = hosts.all.zos_apf(**test_info)
         for result in results.contacted.values():
-            # RC 0 should be allowed for ZOAU >= 1.3.4, 
-            # in zoau < 1.3.4 -i is not recognized  in apfadm 
+            # RC 0 should be allowed for ZOAU >= 1.3.4,
+            # in zoau < 1.3.4 -i is not recognized  in apfadm
             # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
-            zoa_version = get_zoau_version(hosts) or "0.0.0.0" 
-            rc = result.get("rc")            
+            zoa_version = get_zoau_version(hosts) or "0.0.0.0"
+            rc = result.get("rc")
             if zoa_version >= "1.3.4.0":
                 assert rc == 0
             elif zoa_version >= "1.2.0.0":

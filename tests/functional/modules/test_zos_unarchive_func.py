@@ -449,7 +449,7 @@ def test_mvs_unarchive_single_data_set(
             state="present",
             record_length=record_length,
             record_format=record_format,
-            =True
+            replace=True
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
@@ -458,7 +458,7 @@ def test_mvs_unarchive_single_data_set(
                     name=f"{dataset}({member})",
                     type="member",
                     state="present",
-                    =True
+                    replace=True
                 )
         # Write some content into src the same size of the record,
         # need to reduce 4 from V and VB due to RDW

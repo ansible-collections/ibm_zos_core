@@ -1,0 +1,21 @@
+host: ec33012a.vmec.svl.ibm.com
+user: omvsadm
+ssh_key: "~/.ssh/id_ed25519"
+python_path: /allpython/3.13/usr/lpp/IBM/cyp/v3r13/pyz/bin/python3
+environment:
+  _BPXK_AUTOCVT: "ON"
+  _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+#  _TAG_REDIR_ERR: txt
+  _TAG_REDIR_IN: txt
+  _TAG_REDIR_OUT: txt
+  LANG: C
+  ZOAU_ROOT: "/zoau/v1.3.4"
+  ZOAU_HOME: "/zoau/v1.3.4"
+  LIBPATH: "/zoau/v1.3.4/lib:/allpython/3.13/usr/lpp/IBM/cyp/v3r13/pyz/lib:/lib:/usr/lib:."
+#  ZOAUTIL_DIR: "/zoau/v1.3.3"
+  PYTHONPATH: "/zoau/v1.3.4/lib/3.13/"
+  PATH: "/zoau/v1.3.4/bin:/allpython/3.13/usr/lpp/IBM/cyp/v3r13/pyz/bin:/bin:/var/bin"
+#  PYTHONSTDINENCODING: "cp1047"
+VOLUMES:
+  - '000000'
+  - '333333'

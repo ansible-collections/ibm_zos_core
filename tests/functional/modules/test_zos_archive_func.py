@@ -86,7 +86,7 @@ def create_multiple_members(ansible_zos_module, pds_name, member_base_name, n):
     test_members = []
     for i in range(n):
         curr_ds = {
-            "name":F"{pds_name}({member_base_name+str(i)})",
+            "name":f"{pds_name}({member_base_name+str(i)})",
             "type":"member",
             "state":"present",
             "replace":True,

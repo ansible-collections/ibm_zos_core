@@ -608,7 +608,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
-                    name="{0}({1})".format(src_data_set, member),
+                    name=f"{src_data_set}({member})",
                     type="member",
                     state="present"
                 )
@@ -618,7 +618,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, ds_format
             if member == "":
                 ds_to_write = f"{src_data_set}"
             else:
-                ds_to_write = "{0}({1})".format(src_data_set, member)
+                ds_to_write = f"{src_data_set}({member})"
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {
@@ -1001,7 +1001,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
-                    name="{0}({1})".format(src_data_set, member),
+                    name=f"{src_data_set}({member})",
                     type="member",
                     state="present"
                 )
@@ -1011,7 +1011,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
             if member == "":
                 ds_to_write = f"{src_data_set}"
             else:
-                ds_to_write = "{0}({1})".format(src_data_set, member)
+                ds_to_write = f"{src_data_set}({member})"
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = {

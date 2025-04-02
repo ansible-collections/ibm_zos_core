@@ -449,7 +449,7 @@ def test_mvs_unarchive_single_data_set(
             state="present",
             record_length=record_length,
             record_format=record_format,
-            replace=True
+            =True
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
@@ -458,7 +458,7 @@ def test_mvs_unarchive_single_data_set(
                     name=f"{dataset}({member})",
                     type="member",
                     state="present",
-                    replace=True
+                    =True
                 )
         # Write some content into src the same size of the record,
         # need to reduce 4 from V and VB due to RDW
@@ -713,7 +713,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, ds_form
         )
         # remote data_sets from host
         dataset = dataset.replace("$", "/$")
-        hosts.all.shell(cmd=f"drm {dataset.replace}*")
+        hosts.all.shell(cmd=f"drm {dataset}*")
 
         if ds_format == "terse":
             del format_dict["format_options"]["terse_pack"]

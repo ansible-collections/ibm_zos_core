@@ -1568,7 +1568,7 @@ def test_backup_uss_file(ansible_zos_module, backup):
                 dest=dest,
                 force=True,
                 backup=True,
-                backup_name=backup
+                backup_name=backup_name
             )
 
         else:

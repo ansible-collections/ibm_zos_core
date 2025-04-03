@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -36,8 +37,10 @@ options:
       - List of names or globs of UNIX System Services (USS) files,
         PS (sequential data sets), PDS, PDSE to compress or archive.
       - USS file paths should be absolute paths.
+      - GDS relative notation is supported.
       - "MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE)."
       - VSAMs are not supported.
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: list
     required: true
     elements: str
@@ -119,16 +122,18 @@ options:
         source data sets provided and/or found by expanding the pattern name.
         Calculating space can impact module performance. Specifying space attributes
         in the I(dest_data_set) option will improve performance.
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: str
     required: true
   exclude:
     description:
-      - Remote absolute path, glob, or list of paths, globs or data set name
-        patterns for the file, files or data sets to exclude from src list
-        and glob expansion.
+      - Remote absolute path, glob, or list of paths, globs, data set name
+        patterns or generation data sets (GDSs) in relative notation for the file,
+        files or data sets to exclude from src list and glob expansion.
       - "Patterns (wildcards) can contain one of the following, `?`, `*`."
       - "* matches everything."
       - "? matches any single character."
+      - GDS relative names are supported. e.g. I(USER.GDG(-1)).
     type: list
     required: false
     elements: str
@@ -302,6 +307,17 @@ options:
     default: false
     required: false
 
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
   - This module does not perform a send or transmit operation to a remote
     node. If you want to transport the archive you can use zos_fetch to
@@ -331,7 +347,7 @@ EXAMPLES = r'''
       name: tar
 
 # Archive multiple files
-- name: Compress list of files into a zip
+- name: Archive list of files into a zip
   zos_archive:
     src:
       - /tmp/archive/foo.txt
@@ -341,7 +357,7 @@ EXAMPLES = r'''
     name: zip
 
 # Archive one data set into terse
-- name: Compress data set into a terse
+- name: Archive data set into a terse
   zos_archive:
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
@@ -349,7 +365,7 @@ EXAMPLES = r'''
       name: terse
 
 # Use terse with different options
-- name: Compress data set into a terse, specify pack algorithm and use adrdssu
+- name: Archive data set into a terse, specify pack algorithm and use adrdssu
   zos_archive:
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
@@ -360,13 +376,34 @@ EXAMPLES = r'''
         use_adrdssu: true
 
 # Use a pattern to store
-- name: Compress data set pattern using xmit
+- name: Archive data set pattern using xmit
   zos_archive:
     src: "USER.ARCHIVE.*"
     exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
     dest: "USER.ARCHIVE.RESULT.XMIT"
     format:
       name: xmit
+
+- name: Archive multiple GDSs into a terse
+  zos_archive:
+    src:
+      - "USER.GDG(0)"
+      - "USER.GDG(-1)"
+      - "USER.GDG(-2)"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+      format_options:
+        use_adrdssu: true
+
+- name: Archive multiple data sets into a new GDS
+  zos_archive:
+    src: "USER.ARCHIVE.*"
+    dest: "USER.GDG(+1)"
+    format:
+      name: terse
+      format_options:
+        use_adrdssu: true
 '''
 
 RETURN = r'''
@@ -415,27 +452,22 @@ expanded_exclude_sources:
     returned: always
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-    validation,
-    mvs_cmd,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
-)
-import os
-import tarfile
-import zipfile
 import abc
 import glob
-import re
 import math
+import os
+import re
+import tarfile
 import traceback
+import zipfile
 from hashlib import sha256
 
+from ansible.module_utils._text import to_bytes
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set, mvs_cmd, validation)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
+    ZOAUImportError
 
 try:
     from zoautil_py import datasets
@@ -1000,6 +1032,7 @@ class MVSArchive(Archive):
             High level qualifier for temporary datasets.
         """
         super(MVSArchive, self).__init__(module)
+        self.tmphlq = module.params.get("tmp_hlq")
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
         self.expanded_sources = self.expand_mvs_paths(self.sources)
@@ -1008,7 +1041,6 @@ class MVSArchive(Archive):
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
-        self.tmphlq = module.params.get("tmp_hlq")
 
     def open(self):
         pass
@@ -1020,7 +1052,7 @@ class MVSArchive(Archive):
         """Finds target datasets in host.
         """
         for path in self.sources:
-            if data_set.DataSet.data_set_exists(path):
+            if data_set.DataSet.data_set_exists(path, tmphlq=self.tmphlq):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
@@ -1130,7 +1162,7 @@ class MVSArchive(Archive):
             Name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
+        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
         # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
@@ -1201,7 +1233,7 @@ class MVSArchive(Archive):
             The SHA256 hash of the contents of input file.
         """
         sha256_cmd = "sha256 \"//'{0}'\"".format(src)
-        rc, out, err = self.module.run_command(sha256_cmd)
+        rc, out, err = self.module.run_command(sha256_cmd, errors='replace')
         checksums = out.split("= ")
         if len(checksums) > 0:
             return checksums[1]
@@ -1248,7 +1280,7 @@ class MVSArchive(Archive):
         bool
             If destination path exists.
         """
-        return data_set.DataSet.data_set_exists(self.dest)
+        return data_set.DataSet.data_set_exists(self.dest, tmphlq=self.tmphlq)
 
     def remove_targets(self):
         """Removes the archived targets and changes the state accordingly.
@@ -1278,11 +1310,17 @@ class MVSArchive(Archive):
         """
         expanded_path = []
         for path in paths:
+            e_path = []
             if '*' in path:
                 # list_dataset_names returns a list of data set names or empty.
                 e_paths = datasets.list_dataset_names(path)
             else:
                 e_paths = [path]
+
+            # resolve GDS relative names
+            for index, e_path in enumerate(e_paths):
+                if data_set.DataSet.is_gds_relative_name(e_path):
+                    e_paths[index] = data_set.DataSet.resolve_gds_absolute_name(e_path)
             expanded_path.extend(e_paths)
         return expanded_path
 
@@ -1415,17 +1453,18 @@ class AMATerseArchive(MVSArchive):
                 self.module.fail_json(
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
-        # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(
+        dataset = data_set.MVSDataSet(
             name=self.dest,
-            replace=True,
-            type='seq',
+            data_set_type='seq',
             record_format='fb',
             record_length=AMATERSE_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
-            space_type=self.dest_data_set.get("space_type"))
+            space_type=self.dest_data_set.get("space_type")
+        )
+        changed = dataset.create(replace=True)
         self.changed = self.changed or changed
-        self.add(source, dest)
+        self.dest = dataset.name
+        self.add(source, self.dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 
 
@@ -1509,16 +1548,19 @@ class XMITArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(
+        dataset = data_set.MVSDataSet(
             name=self.dest,
-            replace=True,
-            type='seq',
+            data_set_type='seq',
             record_format='fb',
             record_length=XMIT_RECORD_LENGTH,
             space_primary=self.dest_data_set.get("space_primary"),
-            space_type=self.dest_data_set.get("space_type"))
+            space_type=self.dest_data_set.get("space_type")
+        )
+        changed = dataset.create(replace=True)
         self.changed = self.changed or changed
-        self.add(source, dest)
+        self.changed = self.changed or changed
+        self.dest = dataset.name
+        self.add(source, self.dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 
     def get_error_hint(self, output):

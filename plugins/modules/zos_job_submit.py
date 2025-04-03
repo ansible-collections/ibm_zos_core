@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,6 +23,7 @@ author:
     - "Xiao Yuan Ma (@bjmaxy)"
     - "Rich Parker (@richp405)"
     - "Demetrios Dimatos (@ddimatos)"
+    - "Ivan Moreno (@rexemin)"
 short_description: Submit JCL
 description:
     - Submit JCL in a data set, USS file, or file on the controller.
@@ -36,9 +37,9 @@ options:
     description:
       - The source file or data set containing the JCL to submit.
       - It could be a physical sequential data set, a partitioned data set
-        qualified by a member or a path (e.g. C(USER.TEST), V(USER.JCL(TEST\))),
+        qualified by a member or a path (e.g. C(USER.TEST), ``USER.JCL(TEST)``),
         or a generation data set from a generation data group
-        (for example, V(USER.TEST.GDG(-2\))).
+        (for example, ``USER.TEST.GDG(-2)``).
       - Or a USS file. (e.g C(/u/tester/demo/sample.jcl))
       - Or a LOCAL file in ansible control node.
         (e.g C(/User/tester/ansible-playbook/sample.jcl))
@@ -69,6 +70,11 @@ options:
         node.
       - I(wait_time_s) is measured in seconds and must be a value greater than 0
         and less than 86400.
+      - The module can submit and forget jobs by setting I(wait_time_s) to 0. This way the
+        module will not try to retrieve the job details other than job id.
+        Job details and contents can be retrieved later by using
+        L(zos_job_query,./zos_job_query.html) or L(zos_job_output,./zos_job_output.html)
+        if needed.
   max_rc:
     required: false
     type: int
@@ -127,6 +133,17 @@ options:
 extends_documentation_fragment:
   - ibm.ibm_zos_core.template
 
+attributes:
+  action:
+    support: full
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
@@ -158,10 +175,25 @@ jobs:
          The name of the batch job.
       type: str
       sample: HELLO
+    content_type:
+      description:
+        - Type of address space used by the job, can be one of the following types.
+        - APPC for an APPC Initiator.
+        - JGRP for a JOBGROUP.
+        - JOB for a Batch job.
+        - STC for a Started task.
+        - TSU for a Time sharing user.
+        - \? for an unknown or pending job.
+      type: str
+      sample: STC
     duration:
       description: The total lapsed time the JCL ran for.
       type: int
       sample: 0
+    execution_time:
+      description: Total duration time of the job execution, if it has finished.
+      type: str
+      sample: 00:00:10
     ddnames:
       description:
          Data definition names.
@@ -239,6 +271,8 @@ jobs:
             - Job status `SEC` or `SEC ERROR` indicates the job as encountered a security error.
             - Job status `SYS` indicates a system failure.
             - Job status `?` indicates status can not be determined.
+            - Job status `TYPRUN=SCAN` indicates that the job had the TYPRUN parameter with SCAN option.
+            - Job status `NOEXEC` indicates that the job had the TYPRUN parameter with COPY option.
             - Jobs where status can not be determined will result in None (NULL).
           type: str
           sample: AC
@@ -549,6 +583,7 @@ jobs:
                   ]
               },
               "job_class": "K",
+              "execution_time": "00:00:10",
               "svc_class": "?",
               "priority": 1,
               "program_name": "IEBGENER",
@@ -639,7 +674,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
 from timeit import default_timer as timer
-from os import remove
+from os import path
+import shutil
 import traceback
 from time import sleep
 import re
@@ -707,10 +743,10 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_ti
     kwargs = {
         # Since every fetch retry waits for a second before continuing,
         # we can just pass the timeout (also in seconds) to this arg.
-        "fetch_max_retries": timeout,
+        # When timeout is 0 we still want to retry to get the job id.
+        "fetch_max_retries": timeout if timeout > 0 else 3,
     }
 
-    present = False
     duration = 0
     job_submitted = None
     result = {}
@@ -718,49 +754,51 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_ti
     try:
         job_submitted = jobs.submit(src, is_unix=is_unix, **kwargs)
 
-        # Introducing a sleep to ensure we have the result of job submit carrying the job id.
-        while (job_submitted is None and duration <= timeout):
-            current_time = timer()
-            duration = round(current_time - start_time)
-            sleep(0.5)
+        if timeout > 0:
 
-        # Second sleep is to wait long enough for the job rc to not equal a `?`
-        # which is what ZOAU sends back, opitonally we can check the 'status' as
-        # that is sent back as `AC` when the job is not complete but the problem
-        # with monitoring 'AC' is that STARTED tasks never exit the AC status.
-        job_fetched = None
-        job_fetch_rc = None
-        job_fetch_status = None
-
-        if job_submitted:
-            try:
-                job_fetched = jobs.fetch_multiple(job_submitted.job_id)[0]
-                job_fetch_rc = job_fetched.return_code
-                job_fetch_status = job_fetched.status
-            except zoau_exceptions.JobFetchException:
-                pass
-
-            # Before moving forward lets ensure our job has completed but if we see
-            # status that matches one in JOB_STATUSES, don't wait, let the code
-            # drop through and get analyzed in the main as it will scan the job ouput
-            # Any match to JOB_STATUSES ends our processing and wait times
-            while (job_fetch_status not in JOB_STATUSES and
-                    job_fetch_status == 'AC' and
-                    ((job_fetch_rc is None or len(job_fetch_rc) == 0 or
-                      job_fetch_rc == '?') and duration < timeout)):
+            # Introducing a sleep to ensure we have the result of job submit carrying the job id.
+            while (job_submitted is None and duration <= timeout):
                 current_time = timer()
                 duration = round(current_time - start_time)
-                sleep(1)
+                sleep(0.5)
+
+            # Second sleep is to wait long enough for the job rc to not equal a `?`
+            # which is what ZOAU sends back, opitonally we can check the 'status' as
+            # that is sent back as `AC` when the job is not complete but the problem
+            # with monitoring 'AC' is that STARTED tasks never exit the AC status.
+            job_fetched = None
+            job_fetch_rc = None
+            job_fetch_status = None
+
+            if job_submitted:
                 try:
                     job_fetched = jobs.fetch_multiple(job_submitted.job_id)[0]
                     job_fetch_rc = job_fetched.return_code
                     job_fetch_status = job_fetched.status
-                # Allow for jobs that need more time to be fectched to run the wait_time_s
-                except zoau_exceptions.JobFetchException as err:
-                    if duration >= timeout:
-                        raise err
-                    else:
-                        continue
+                except zoau_exceptions.JobFetchException:
+                    pass
+
+                # Before moving forward lets ensure our job has completed but if we see
+                # status that matches one in JOB_STATUSES, don't wait, let the code
+                # drop through and get analyzed in the main as it will scan the job ouput
+                # Any match to JOB_STATUSES ends our processing and wait times
+                while (job_fetch_status not in JOB_STATUSES and
+                        job_fetch_status == 'AC' and
+                        ((job_fetch_rc is None or len(job_fetch_rc) == 0 or
+                          job_fetch_rc == '?') and duration < timeout)):
+                    current_time = timer()
+                    duration = round(current_time - start_time)
+                    sleep(1)
+                    try:
+                        job_fetched = jobs.fetch_multiple(job_submitted.job_id)[0]
+                        job_fetch_rc = job_fetched.return_code
+                        job_fetch_status = job_fetched.status
+                    # Allow for jobs that need more time to be fectched to run the wait_time_s
+                    except zoau_exceptions.JobFetchException as err:
+                        if duration >= timeout:
+                            raise err
+                        else:
+                            continue
 
     # ZOAU throws a JobSubmitException when the job sumbission fails thus there is no
     # JCL RC to share with the user, if there is a RC, that will be processed
@@ -818,6 +856,52 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_ti
         module.fail_json(**result)
 
     return job_submitted.job_id if job_submitted else None, duration
+
+
+def build_return_schema(result):
+    """ Builds return values schema with empty values.
+
+        Parameters
+        ----------
+        result : dict
+            Dictionary used to return values at execution finalization.
+
+        Returns
+        -------
+        dict
+            Dictionary used to return values at execution finalization.
+    """
+    result = {
+        "jobs": [],
+        "job_id": None,
+        "job_name": None,
+        "duration": None,
+        "execution_time": None,
+        "ddnames": {
+            "ddname": None,
+            "record_count": None,
+            "id": None,
+            "stepname": None,
+            "procstep": None,
+            "byte_count": None,
+            "content": [],
+        },
+        "ret_code": {
+            "code": None,
+            "msg": None,
+            "msg_code": None,
+            "msg_txt": None,
+            "steps": [],
+        },
+        "job_class": None,
+        "svc_class": None,
+        "priority": None,
+        "asid": None,
+        "creation_date": None,
+        "queue_position": None,
+        "program_name": None,
+    }
+    return result
 
 
 def run_module():
@@ -879,6 +963,7 @@ def run_module():
                     choices=['\n', '\r', '\r\n']
                 ),
                 auto_reload=dict(type='bool', default=False),
+                autoescape=dict(type='bool', default=True),
             )
         ),
     )
@@ -940,8 +1025,10 @@ def run_module():
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
+    # Builds return value schema to make sure we return the return values schema.
+    result = build_return_schema(result)
 
-    if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
+    if wait_time_s < 0 or wait_time_s > MAX_WAIT_TIME_S:
         result["failed"] = True
         result["msg"] = ("The value for option 'wait_time_s' is not valid, it must "
                          "be greater than 0 and less than {0}.".format(str(MAX_WAIT_TIME_S)))
@@ -986,142 +1073,157 @@ def run_module():
     # Explictly pass None for the unused args else a default of '*' will be
     # used and return undersirable results
     job_output_txt = None
+    result['job_id'] = job_submitted_id
+    is_changed = True
+    # If wait_time_s is 0, we do a deploy and forget strategy.
+    if wait_time_s != 0:
 
-    try:
-        job_output_txt = job_output(
-            job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
-            dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
+        try:
+            job_output_txt = job_output(
+                job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
+                dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
+            # This is resolvig a bug where the duration coming from job_output is passed by value, duration
+            # being an immutable type can not be changed and must be returned or accessed from the job.py.
+            if job_output is not None:
+                duration = job_output_txt[0].get("duration") if not None else duration
+                result["execution_time"] = job_output_txt[0].get("execution_time")
 
-        # This is resolvig a bug where the duration coming from job_output is passed by value, duration
-        # being an immutable type can not be changed and must be returned or accessed from the job.py.
-        if job_output is not None:
-            duration = job_output_txt[0].get("duration") if not None else duration
+            result["duration"] = duration
 
-        result["duration"] = duration
+            if duration >= wait_time_s:
+                result["failed"] = True
+                result["changed"] = False
+                _msg = ("The JCL submitted with job id {0} but appears to be a long "
+                        "running job that exceeded its maximum wait time of {1} "
+                        "second(s). Consider using module zos_job_query to poll for "
+                        "a long running job or increase option 'wait_times_s' to a value "
+                        "greater than {2}.".format(str(job_submitted_id), str(wait_time_s), str(duration)))
+                _msg_suffix = ("Consider using module zos_job_query to poll for "
+                               "a long running job or increase option 'wait_times_s' to a value "
+                               "greater than {0}.".format(str(duration)))
 
-        if duration >= wait_time_s:
-            result["failed"] = True
-            result["changed"] = False
-            _msg = ("The JCL submitted with job id {0} but appears to be a long "
-                    "running job that exceeded its maximum wait time of {1} "
-                    "second(s). Consider using module zos_job_query to poll for "
-                    "a long running job or increase option 'wait_times_s' to a value "
-                    "greater than {2}.".format(str(job_submitted_id), str(wait_time_s), str(duration)))
-            _msg_suffix = ("Consider using module zos_job_query to poll for "
-                           "a long running job or increase option 'wait_times_s' to a value "
-                           "greater than {0}.".format(str(duration)))
+                if job_output_txt is not None:
+                    result["jobs"] = job_output_txt
+                    job_ret_code = job_output_txt[0].get("ret_code")
+                    job_ret_code.update({"msg_txt": _msg_suffix})
+                result["msg"] = _msg
+                module.exit_json(**result)
 
-            if job_output_txt is not None:
+            # Job has submitted, the module changed the managed node
+            is_changed = True
+
+            if job_output_txt:
                 result["jobs"] = job_output_txt
                 job_ret_code = job_output_txt[0].get("ret_code")
-                job_ret_code.update({"msg_txt": _msg_suffix})
-            result["msg"] = _msg
-            module.exit_json(**result)
 
-        # Job has submitted, the module changed the managed node
-        is_changed = True
+                if job_ret_code:
+                    job_ret_code_msg = job_ret_code.get("msg")
+                    job_ret_code_code = job_ret_code.get("code")
+                    job_ret_code_msg_code = job_ret_code.get("msg_code")
 
-        if job_output_txt:
-            result["jobs"] = job_output_txt
-            job_ret_code = job_output_txt[0].get("ret_code")
+                    if return_output is True and max_rc is not None:
+                        is_changed = assert_valid_return_code(max_rc, job_ret_code_code, job_ret_code, result)
 
-            if job_ret_code:
-                job_ret_code_msg = job_ret_code.get("msg")
-                job_ret_code_code = job_ret_code.get("code")
-                job_ret_code_msg_code = job_ret_code.get("msg_code")
+                    if job_ret_code_msg is not None:
+                        if re.search("^(?:{0})".format("|".join(JOB_STATUSES)), job_ret_code_msg):
+                            # If the job_ret_code_msg doesn't have a CC (completion code), the job failed.
+                            if re.search("^(?:CC)", job_ret_code_msg) is None:
+                                _msg = ("The job completion code (CC) was not in the job log. "
+                                        "please review the job log for status {0}.".format(job_ret_code_msg))
+                                result["stderr"] = _msg
+                                job_ret_code.update({"msg_txt": _msg})
+                                raise Exception(_msg)
 
-                if return_output is True and max_rc is not None:
-                    is_changed = assert_valid_return_code(max_rc, job_ret_code_code, job_ret_code, result)
-
-                if job_ret_code_msg is not None:
-                    if re.search("^(?:{0})".format("|".join(JOB_STATUSES)), job_ret_code_msg):
-                        # If the job_ret_code_msg doesn't have a CC (completion code), the job failed.
-                        if re.search("^(?:CC)", job_ret_code_msg) is None:
-                            _msg = ("The job completion code (CC) was not in the job log. "
-                                    "please review the job log for status {0}.".format(job_ret_code_msg))
-                            result["stderr"] = _msg
+                    if job_ret_code_code is not None and job_ret_code_msg == 'NOEXEC':
+                        job_dd_names = job_output_txt[0].get("ddnames")
+                        jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
+                        # These are the conditions for a job run with TYPRUN=COPY.
+                        if not jes_jcl_dd:
+                            job_ret_code.update({"msg": "TYPRUN=COPY"})
+                            _msg = ("The job was run with TYPRUN=COPY. "
+                                    "This way, the steps are not executed, but the JCL is validated and stored "
+                                    "in the JES spool. "
+                                    "Please review the job log for further details.")
                             job_ret_code.update({"msg_txt": _msg})
-                            raise Exception(_msg)
 
-                if job_ret_code_code is None:
-                    # If there is no job_ret_code_code (Job return code) it may NOT be an error,
-                    # some jobs will never return have an RC, eg Jobs with TYPRUN=*,
-                    # Started tasks (which are not supported) so further analyze the
-                    # JESJCL DD to figure out if its a TYPRUN job
+                    if job_ret_code_code is None or job_ret_code.get("msg") == 'NOEXEC':
+                        # If there is no job_ret_code_code (Job return code) it may NOT be an error,
+                        # some jobs will never return have an RC, eg Started tasks(which are not supported),
+                        # so further analyze the
+                        # JESJCL DD to figure out if its a TYPRUN job
 
-                    job_dd_names = job_output_txt[0].get("ddnames")
-                    jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
+                        job_dd_names = job_output_txt[0].get("ddnames")
+                        jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
 
-                    # Its possible jobs don't have a JESJCL which are active and this would
-                    # cause an index out of range error.
-                    if not jes_jcl_dd:
-                        _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
-                        _msg = ("The job return code was not available in the job log, "
-                                "please review the job log{0}".format(_msg_detail))
-                        job_ret_code.update({"msg_txt": _msg})
-                        raise Exception(_msg)
-
-                    jes_jcl_dd_content = jes_jcl_dd[0].get("content")
-                    jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
-
-                    # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
-                    special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
-                                                           .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
-
-                    if special_processing_keyword:
-                        job_ret_code.update({"msg": special_processing_keyword[0]})
-                        job_ret_code.update({"code": None})
-                        job_ret_code.update({"msg_code": None})
-                        job_ret_code.update({"msg_txt": "The job {0} was run with special job "
-                                             "processing {1}. This will result in no completion, "
-                                             "return code or job steps and changed will be false."
-                                             .format(job_submitted_id, special_processing_keyword[0])})
-                        is_changed = False
-                    else:
-                        # The job_ret_code_code is None at this point, but the job_ret_code_msg_code could be populated
-                        # so check both and provide a proper response.
-
-                        if job_ret_code_msg_code is None:
+                        # Its possible jobs don't have a JESJCL which are active and this would
+                        # cause an index out of range error.
+                        if not jes_jcl_dd:
                             _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
                             _msg = ("The job return code was not available in the job log, "
                                     "please review the job log{0}".format(_msg_detail))
                             job_ret_code.update({"msg_txt": _msg})
                             raise Exception(_msg)
 
-                        # raise Exception("The job return code was not available in the job log, "
-                        #                 "please review the job log and error {0}.".format(job_ret_code_msg))
-                elif job_ret_code_code != 0 and max_rc is None:
-                    _msg = ("The job return code {0} was non-zero in the "
-                            "job output, this job has failed.".format(str(job_ret_code_code)))
-                    job_ret_code.update({"msg_txt": _msg})
+                        jes_jcl_dd_content = jes_jcl_dd[0].get("content")
+                        jes_jcl_dd_content_str = " ".join(jes_jcl_dd_content)
+                        # The regex can be r"({0})\s*=\s*(COPY|HOLD|JCLHOLD|SCAN)" once zoau support is in.
+                        special_processing_keyword = re.search(r"({0})\s*=\s*(SCAN)"
+                                                               .format("|".join(JOB_SPECIAL_PROCESSING)), jes_jcl_dd_content_str)
+
+                        if job_ret_code_msg == 'NOEXEC':
+                            job_ret_code.update({"msg": special_processing_keyword[0]})
+                            job_ret_code.update({"code": None})
+                            job_ret_code.update({"msg_code": None})
+                            job_ret_code.update({"msg_txt": "The job {0} was run with special job "
+                                                 "processing {1}. This will result in no completion, "
+                                                 "return code or job steps and changed will be false."
+                                                 .format(job_submitted_id, special_processing_keyword[0])})
+                            is_changed = False
+                        else:
+                            # The job_ret_code_code is None at this point, but the job_ret_code_msg_code could be populated
+                            # so check both and provide a proper response.
+
+                            if job_ret_code_msg_code is None:
+                                _msg_detail = " for status {0}.".format(job_ret_code_msg) if job_ret_code_msg else "."
+                                _msg = ("The job return code was not available in the job log, "
+                                        "please review the job log{0}".format(_msg_detail))
+                                job_ret_code.update({"msg_txt": _msg})
+                                raise Exception(_msg)
+
+                            # raise Exception("The job return code was not available in the job log, "
+                            #                 "please review the job log and error {0}.".format(job_ret_code_msg))
+                    elif job_ret_code_code != 0 and max_rc is None:
+                        _msg = ("The job return code {0} was non-zero in the "
+                                "job output, this job has failed.".format(str(job_ret_code_code)))
+                        job_ret_code.update({"msg_txt": _msg})
+                        result["stderr"] = _msg
+                        raise Exception(_msg)
+
+                    if not return_output:
+                        for job in result.get("jobs", []):
+                            job["ddnames"] = []
+                else:
+                    _msg = "The 'ret_code' dictionary was unavailable in the job log."
+                    result["ret_code"] = None
                     result["stderr"] = _msg
                     raise Exception(_msg)
-
-                if not return_output:
-                    for job in result.get("jobs", []):
-                        job["ddnames"] = []
             else:
-                _msg = "The 'ret_code' dictionary was unavailable in the job log."
-                result["ret_code"] = None
+                _msg = "The job output log is unavailable."
                 result["stderr"] = _msg
+                result["jobs"] = None
                 raise Exception(_msg)
-        else:
-            _msg = "The job output log is unavailable."
-            result["stderr"] = _msg
-            result["jobs"] = None
-            raise Exception(_msg)
-    except Exception as err:
-        result["failed"] = True
-        result["changed"] = False
-        result["msg"] = ("The JCL submitted with job id {0} but "
-                         "there was an error, please review "
-                         "the error for further details: {1}".format
-                         (str(job_submitted_id), to_text(err)))
-        module.exit_json(**result)
+        except Exception as err:
+            result["failed"] = True
+            result["changed"] = False
+            result["msg"] = ("The JCL submitted with job id {0} but "
+                             "there was an error, please review "
+                             "the error for further details: {1}".format
+                             (str(job_submitted_id), to_text(err)))
+            module.exit_json(**result)
 
-    finally:
-        if temp_file is not None:
-            remove(temp_file)
+        finally:
+            if temp_file is not None:
+                shutil.rmtree(path.dirname(temp_file))
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'
     result["changed"] = True if is_changed else False

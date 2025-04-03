@@ -400,7 +400,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -480,7 +480,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -550,7 +550,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
                 assert src_data_set != c_result.get("stdout")
@@ -614,7 +614,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set):
             assert result.get("dest") == archive_data_set
             for ds in target_ds_list:
                 assert ds.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -682,7 +682,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
                     assert exclude not in result.get("archived")
                 else:
                     assert ds.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
     finally:
@@ -705,8 +705,8 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
 def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
-        archive_data_set = get_tmp_ds_name()
-        src_data_set = get_tmp_ds_name(5, 4)
+        archive_data_set = get_tmp_ds_name(symbols=True)
+        src_data_set = get_tmp_ds_name(5, 4, symbols=True)
         HLQ = "ANSIBLE"
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
                                   base_name=src_data_set,
@@ -744,15 +744,15 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
         for result in archive_result.contacted.values():
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
                 for ds in target_ds_list:
                     assert ds.get("name") in result.get("archived")
                     assert ds.get("name") not in c_result.get("stdout")
     finally:
-        hosts.all.shell(cmd="drm {0}*".format(src_data_set))
-        hosts.all.zos_data_set(name=archive_data_set, state="absent")
+        hosts.all.shell(cmd="drm {0}.*".format(HLQ))
+
 
 @pytest.mark.ds
 @pytest.mark.parametrize(
@@ -820,7 +820,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
                     assert ds.get("name") not in result.get("archived")
                 else:
                     assert ds.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
@@ -902,7 +902,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 
@@ -917,3 +917,91 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_gdg_archive(ansible_zos_module, dstype, format):
+    try:
+        HLQ = "ANSIBLE"
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name(symbols=True)
+        archive_data_set = get_tmp_ds_name(symbols=True)
+        results = hosts.all.zos_data_set(name=data_set_name, state="present", type="gdg", limit=3)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(name=f"{data_set_name}(+1)", state="present", type=dstype)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"] = dict(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            src=[f"{data_set_name}(0)",f"{data_set_name}(-1)" ],
+            dest=archive_data_set,
+            format=format_dict,
+        )
+        for result in archive_result.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("dest") == archive_data_set
+            assert f"{data_set_name}.G0001V00" in result.get("archived")
+            assert f"{data_set_name}.G0002V00" in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                assert archive_data_set in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd=f"drm {HLQ}.*")
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize("dstype", ["seq", "pds", "pdse"])
+def test_archive_into_gds(ansible_zos_module, dstype, format):
+    try:
+        HLQ = "ANSIBLE"
+        hosts = ansible_zos_module
+        data_set_name = get_tmp_ds_name(symbols=True)
+        archive_data_set = get_tmp_ds_name(symbols=True)
+        results = hosts.all.zos_data_set(
+            batch = [
+                {"name":archive_data_set, "state":"present", "type":"gdg", "limit":3},
+                {"name":data_set_name, "state":"present", "type":dstype}
+            ]
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"] = dict(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            src=data_set_name,
+            dest=f"{archive_data_set}(+1)",
+            format=format_dict,
+        )
+        for result in archive_result.contacted.values():
+            assert result.get("changed") is True
+            assert data_set_name in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = """dls "{0}.*" """.format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                assert archive_data_set in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd=f"drm {HLQ}.*")
+

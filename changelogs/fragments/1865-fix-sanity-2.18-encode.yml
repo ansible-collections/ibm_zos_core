@@ -1,0 +1,3 @@
+trivial:
+  - module_utils/encode.py - Fixed sanity error using variable 'dest_f' before assignment.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1865).

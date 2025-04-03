@@ -17,17 +17,22 @@ import os
 import shutil
 import re
 import time
+import yaml
 import tempfile
 import subprocess
 import pytest
+from shellescape import quote
 
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.utils import get_random_file_name
 __metaclass__ = type
 
 
+# Test temporary folder
+TMP_DIRECTORY = '/tmp/'
 DUMMY_DATA = """DUMMY DATA ---- LINE 001 ------
 DUMMY DATA ---- LINE 002 ------
 DUMMY DATA ---- LINE 003 ------
@@ -122,13 +127,6 @@ ASA_COPY_CONTENT = """  Space, do not advance.
 
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
-TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
-TEST_PDS = "IMSTESTL.COMNUC"
-TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
-TEST_VSAM = "IMSTESTL.LDS01.WADS2"
-TEST_VSAM_KSDS = "SYS1.STGINDEX"
-TEST_PDSE = "SYS1.NFSLIBE"
-TEST_PDSE_MEMBER = "SYS1.NFSLIBE(GFSAMAIN)"
 
 COBOL_PRINT_STR = "HELLO WORLD ONE"
 COBOL_PRINT_STR2 = "HELLO WORLD TWO"
@@ -141,9 +139,6 @@ COBOL_SRC = """
            DISPLAY "{0}".\n
            STOP RUN.\n
 """
-
-
-
 
 # format params for LINK_JCL:
 # {0} - cobol src pds dsn
@@ -209,7 +204,7 @@ int main()
 call_c_hello_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
 //STDPARM DD *
-SH /tmp/c/hello_world
+SH {0}/hello_world
 //STDIN  DD DUMMY
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
@@ -233,11 +228,60 @@ int main(int argc, char** argv)
 call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
 //STDPARM DD *
-SH /tmp/disp_shr/pdse-lock '{0}'
+SH {0}/pdse-lock '{1}'
 //STDIN  DD DUMMY
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
 //"""
+
+PLAYBOOK_ASYNC_TEST = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Create a copy
+      zos_copy:
+            src: /etc/profile
+            remote_src: True
+            force: True
+            dest: {3}
+      async: 50
+      poll: 0
+      register: copy_output
+
+    - name: Query async task.
+      async_status:
+        jid: "{{{{ copy_output.ansible_job_id }}}}"
+      register: job_result
+      until: job_result.finished
+      retries: 10
+      delay: 30
+
+    - name: Echo copy_output.
+      debug:
+        msg: "{{ job_result }}"
+"""
+
+INVENTORY_ASYNC_TEST = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -275,7 +319,7 @@ def populate_partitioned_data_set(hosts, name, ds_type, members=None):
         members = ["MEMBER1", "MEMBER2", "MEMBER3"]
     ds_list = [f"{name}({member})" for member in members]
 
-    hosts.all.zos_data_set(name=name, type=ds_type, state="present")
+    hosts.all.shell(cmd=f"dtouch -t{ds_type} {name}")
 
     for member in ds_list:
         hosts.all.shell(
@@ -342,9 +386,9 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
     hosts.all.zos_data_set(**params)
 
     if add_data:
-        record_src = "/tmp/zos_copy_vsam_record"
+        record_src = get_random_file_name(dir=TMP_DIRECTORY)
 
-        hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
+        hosts.all.shell(cmd=f"echo '{VSAM_RECORDS}' > '{record_src}' ")
         hosts.all.zos_encode(
             src=record_src,
             dest=name,
@@ -383,7 +427,7 @@ def link_loadlib_from_cobol(
         loadlib_mem (str) - candidate loadlib member
         loadlib_alias_mem (str) - alias member name
     """
-    temp_jcl_uss_path = "/tmp/link.jcl"
+    temp_jcl_uss_path = get_random_file_name(dir=TMP_DIRECTORY)
     rc = 0
     try:
         # Copy over the Link program to USS
@@ -400,11 +444,12 @@ def link_loadlib_from_cobol(
         )
         # Submit link JCL.
         job_result = hosts.all.zos_job_submit(
-            src="/tmp/link.jcl",
+            src=temp_jcl_uss_path,
             location="uss",
             wait_time_s=60
         )
         for result in job_result.contacted.values():
+            print(result)
             rc = result.get("jobs")[0].get("ret_code").get("code")
     finally:
         hosts.all.file(path=temp_jcl_uss_path, state="absent")
@@ -522,12 +567,14 @@ def generate_loadlib(
     )
 
 
-def generate_executable_uss(hosts, src, src_jcl_call):
+def generate_executable_uss(hosts, dir, src, src_jcl_call):
     hosts.all.zos_copy(content=hello_world, dest=src, force=True)
-    hosts.all.zos_copy(content=call_c_hello_jcl, dest=src_jcl_call, force=True)
-    hosts.all.shell(cmd="xlc -o hello_world hello_world.c", chdir="/tmp/c/")
+
+    hosts.all.zos_copy(content=call_c_hello_jcl.format(dir), dest=src_jcl_call, force=True)
+    hosts.all.shell(cmd="xlc -o hello_world hello_world.c", chdir=dir)
     hosts.all.shell(cmd=f"submit {src_jcl_call}")
-    verify_exe_src = hosts.all.shell(cmd="/tmp/c/hello_world")
+    verify_exe_src = hosts.all.shell(cmd="{0}/hello_world".format(dir))
+
     for res in verify_exe_src.contacted.values():
         assert res.get("rc") == 0
         stdout = res.get("stdout")
@@ -575,7 +622,7 @@ def generate_executable_uss(hosts, src, src_jcl_call):
 ])
 def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest_path = "/tmp/zos_copy_test_profile"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
         hosts.all.file(path=dest_path, state="absent")
@@ -647,10 +694,9 @@ def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
 ])
 def test_copy_file_to_existing_uss_file(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest_path = "/tmp/test_profile"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
-        hosts.all.file(path=dest_path, state="absent")
         hosts.all.file(path=dest_path, state="touch")
         stat_res = list(hosts.all.stat(path=dest_path).contacted.values())
         timestamp = stat_res[0].get("stat").get("atime")
@@ -712,11 +758,11 @@ def test_copy_file_to_existing_uss_file(ansible_zos_module, src):
 ])
 def test_copy_file_to_uss_dir(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest = "/tmp"
-    dest_path = "/tmp/profile"
+    dest = get_random_file_name(suffix='/', dir=TMP_DIRECTORY)
+    # This name is kept because we copy from /etc/profile file and keep the original file name.
+    dest_path = dest + "profile"
 
     try:
-        hosts.all.file(path=dest_path, state="absent")
 
         copy_res = hosts.all.zos_copy(
             src=src["src"],
@@ -731,15 +777,15 @@ def test_copy_file_to_uss_dir(ansible_zos_module, src):
         for st in stat_res.contacted.values():
             assert st.get("stat").get("exists") is True
     finally:
-        hosts.all.file(path=dest_path, state="absent")
+        hosts.all.file(path=dest, state="absent")
 
 
 @pytest.mark.uss
 def test_copy_file_to_uss_dir_missing_parents(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
-    dest_dir = "/tmp/parent_dir"
-    dest = f"{dest_dir}/subdir/profile"
+    dest_dir = get_random_file_name(dir=TMP_DIRECTORY)
+    dest = "{0}/subdir/profile".format(dest_dir)
 
     try:
         hosts.all.file(path=dest_dir, state="absent")
@@ -760,8 +806,8 @@ def test_copy_file_to_uss_dir_missing_parents(ansible_zos_module):
 @pytest.mark.uss
 def test_copy_local_symlink_to_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_lnk = "/tmp/etclnk"
-    dest_path = "/tmp/profile"
+    src_lnk = get_random_file_name(dir=TMP_DIRECTORY)
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
     try:
         try:
             os.symlink("/etc/profile", src_lnk)
@@ -787,9 +833,8 @@ def test_copy_local_symlink_to_uss_file(ansible_zos_module):
 @pytest.mark.uss
 def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY) + "/profile"
     try:
-        hosts.all.file(path=dest_path, state="absent")
         copy_res = hosts.all.zos_copy(
             src="/etc/profile",
             dest=dest_path,
@@ -810,8 +855,8 @@ def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
 @pytest.mark.uss
 def test_copy_inline_content_to_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    dest = "/tmp/"
-    dest_path = "/tmp/inline_copy"
+    dest = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
+    dest_path = dest + "inline_copy"
 
     try:
         copy_res = hosts.all.zos_copy(content="Inline content", dest=dest)
@@ -824,16 +869,16 @@ def test_copy_inline_content_to_uss_dir(ansible_zos_module):
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:
-        hosts.all.file(path=dest_path, state="absent")
+        hosts.all.file(path=dest, state="absent")
 
 
 @pytest.mark.uss
 def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
     hosts = ansible_zos_module
-    src_dir = "/tmp/new_dir/"
-    src_file = f"{src_dir}profile"
-    dest_dir = "/tmp/test_dir"
-    dest_old_content = f"{dest_dir}/old_dir"
+    src_dir = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
+    src_file = "{0}profile".format(src_dir)
+    dest_dir = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
+    dest_old_content = "{0}/old_dir".format(dest_dir)
 
     try:
         hosts.all.file(path=src_dir, state="directory")
@@ -848,6 +893,7 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
         )
 
         for result in copy_result.contacted.values():
+            print(result)
             assert result.get("msg") is not None
             assert result.get("changed") is False
             assert "Error" in result.get("msg")
@@ -862,7 +908,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
     hosts = ansible_zos_module
 
     # Remote path
-    path = "/tmp/ansible"
+    path = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
 
     # Remote src path with original files
     src_path = path + "/src"
@@ -968,7 +1014,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
 @pytest.mark.uss
 def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/test/"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
 
     try:
         source_1 = tempfile.TemporaryDirectory(prefix="level_", suffix="_1")
@@ -1014,7 +1060,7 @@ def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
     this means we only copy that directory contents without creating it on the remote.
     """
     hosts = ansible_zos_module
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
 
     temp_path = tempfile.mkdtemp()
     src_basename = "source" if copy_directory else "source/"
@@ -1062,9 +1108,9 @@ def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
 def test_copy_uss_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
     hosts = ansible_zos_module
     src_basename = "source_dir" if copy_directory else "source_dir/"
-    src_dir = f"/tmp/{src_basename}"
-    src_file = os.path.normpath(f"{src_dir}/profile")
-    dest_dir = "/tmp/dest_dir"
+    src_dir = get_random_file_name(dir=TMP_DIRECTORY) + "/" + src_basename
+    src_file = os.path.normpath("{0}/profile".format(src_dir))
+    dest_dir = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
         hosts.all.file(path=src_dir, state="directory")
@@ -1111,7 +1157,7 @@ def test_copy_uss_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
 @pytest.mark.parametrize("copy_directory", [False, True])
 def test_copy_local_dir_to_existing_dir_forced(ansible_zos_module, copy_directory):
     hosts = ansible_zos_module
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
     dest_file = f"{dest_path}/profile"
 
     temp_path = tempfile.mkdtemp()
@@ -1171,10 +1217,11 @@ def test_copy_local_dir_to_existing_dir_forced(ansible_zos_module, copy_director
 @pytest.mark.parametrize("copy_directory", [False, True])
 def test_copy_uss_dir_to_existing_dir_forced(ansible_zos_module, copy_directory):
     hosts = ansible_zos_module
-    src_basename = "source_dir" if copy_directory else "source_dir/"
-    src_dir = f"/tmp/{src_basename}"
-    src_file = os.path.normpath(f"{src_dir}/profile")
-    dest_dir = "/tmp/dest_dir"
+    src_basename = get_random_file_name() if copy_directory else get_random_file_name(suffix='/')
+    src_parent = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
+    src_dir = src_parent + src_basename
+    src_file = os.path.normpath("{0}/profile".format(src_dir))
+    dest_dir = get_random_file_name(dir=TMP_DIRECTORY)
     dest_file = f"{dest_dir}/file"
 
     try:
@@ -1223,7 +1270,7 @@ def test_copy_uss_dir_to_existing_dir_forced(ansible_zos_module, copy_directory)
             assert result.get("stat").get("isdir") is False
 
     finally:
-        hosts.all.file(path=src_dir, state="absent")
+        hosts.all.file(path=src_parent, state="absent")
         hosts.all.file(path=dest_dir, state="absent")
 
 
@@ -1231,7 +1278,7 @@ def test_copy_uss_dir_to_existing_dir_forced(ansible_zos_module, copy_directory)
 @pytest.mark.parametrize("create_dest", [False, True])
 def test_copy_local_nested_dir_to_uss(ansible_zos_module, create_dest):
     hosts = ansible_zos_module
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
 
     source_path = tempfile.mkdtemp()
     if not source_path.endswith("/"):
@@ -1277,8 +1324,8 @@ def test_copy_local_nested_dir_to_uss(ansible_zos_module, create_dest):
 @pytest.mark.parametrize("create_dest", [False, True])
 def test_copy_uss_nested_dir_to_uss(ansible_zos_module, create_dest):
     hosts = ansible_zos_module
-    source_path = "/tmp/old_dir/"
-    dest_path = "/tmp/new_dir"
+    source_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
 
     subdir_a_path = f"{source_path}subdir_a"
     subdir_b_path = f"{source_path}subdir_b"
@@ -1325,7 +1372,7 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
     source_path = f"{source_parent_path}/{source_basename}"
     mode = "0755"
 
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
     dest_profile = f"{dest_path}/profile"
     dest_subdir = f"{dest_path}/{source_basename}"
     if copy_directory:
@@ -1412,11 +1459,11 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
 def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
     hosts = ansible_zos_module
 
-    source_basename = "source" if copy_directory else "source/"
-    source_path = f"/tmp/{source_basename}"
+    source_basename = get_random_file_name() if copy_directory else get_random_file_name(suffix='/')
+    source_path = "/{0}/{1}".format(TMP_DIRECTORY, source_basename)
     mode = "0755"
 
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
     dest_subdir = f"{dest_path}/{source_basename}"
     dest_profile = f"{dest_path}/profile"
     if copy_directory:
@@ -1502,16 +1549,20 @@ def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
 
 
 @pytest.mark.uss
-@pytest.mark.parametrize("backup", [None, "/tmp/uss_backup"])
+@pytest.mark.parametrize("backup", [False, True])
 def test_backup_uss_file(ansible_zos_module, backup):
     hosts = ansible_zos_module
     src = "/etc/profile"
-    dest = "/tmp/profile"
+    dest_dir = get_random_file_name(dir=TMP_DIRECTORY)
+    dest = f"{dest_dir}/profile"
     backup_name = None
 
     try:
+        hosts.all.file(path=dest_dir, state="directory")
         hosts.all.file(path=dest, state="touch")
+
         if backup:
+            backup_name = get_random_file_name(dir=TMP_DIRECTORY)
             copy_res = hosts.all.zos_copy(
                 src=src,
                 dest=dest,
@@ -1519,32 +1570,33 @@ def test_backup_uss_file(ansible_zos_module, backup):
                 backup=True,
                 backup_name=backup
             )
+
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_name = result.get("backup_name")
+            backup_name_result = result.get("backup_name")
 
             if backup:
-                assert backup_name == backup
+                assert backup_name_result == backup_name
             else:
-                assert backup_name is not None
+                assert backup_name_result is not None
 
-        stat_res = hosts.all.stat(path=backup_name)
+        stat_res = hosts.all.stat(path=backup_name_result)
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
 
     finally:
-        hosts.all.file(path=dest, state="absent")
-        if backup_name:
-            hosts.all.file(path=backup_name, state="absent")
+        hosts.all.file(path=dest_dir, state="absent")
+        if backup_name_result:
+            hosts.all.file(path=backup_name_result, state="absent")
 
 
 @pytest.mark.uss
 def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    src_path = "/tmp/testfile"
+    src_path = get_random_file_name(dir=TMP_DIRECTORY)
     dest = "/tmp"
     try:
         with open(src_path, "w",encoding="utf-8") as file:
@@ -1564,7 +1616,7 @@ def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
 def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
     hosts = ansible_zos_module
     src_path = "/tmp/non_existent_src"
-    dest = "/tmp"
+    dest = TMP_DIRECTORY
 
     copy_res = hosts.all.zos_copy(src=src_path, dest=dest, remote_src=is_remote)
     for result in copy_res.contacted.values():
@@ -1577,7 +1629,7 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 @pytest.mark.parametrize("encoding", ["utf-8", "iso8859-1"])
 def test_copy_template_file(ansible_zos_module, encoding):
     hosts = ansible_zos_module
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
     temp_dir = tempfile.mkdtemp()
 
     try:
@@ -1592,11 +1644,11 @@ def test_copy_template_file(ansible_zos_module, encoding):
 
         # Adding the template vars to each host.
         template_vars = {
-            "var":"This should be rendered",
+            "var":"This should be rendered with 'quotes'.",
             "if_var":5,
             "array":[1, 2, 3]
         }
-        # pylint: disable-next=protected-access
+
         for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
             host.vars.update(template_vars)
 
@@ -1604,6 +1656,11 @@ def test_copy_template_file(ansible_zos_module, encoding):
             src=temp_template,
             dest=dest_path,
             use_template=True,
+            template_parameters={
+                # This should make sure that we don't get stuff like '&#39' when
+                # rendering quotes.
+                "autoescape": False
+            },
             encoding={
                 "from": encoding,
                 "to": "IBM-1047"
@@ -1639,7 +1696,7 @@ def test_copy_template_file(ansible_zos_module, encoding):
 @pytest.mark.template
 def test_copy_template_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
 
     # Ensuring there's a traling slash to copy the contents of the directory.
     temp_dir = os.path.normpath(tempfile.mkdtemp())
@@ -1727,7 +1784,7 @@ def test_copy_template_dir(ansible_zos_module):
 @pytest.mark.template
 def test_copy_template_file_with_non_default_markers(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/new_dir"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY)
     temp_dir = tempfile.mkdtemp()
 
     try:
@@ -1842,7 +1899,8 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         copy_result = hosts.all.zos_copy(
@@ -1852,8 +1910,12 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{dest}'\"",
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1878,7 +1940,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
     try:
         dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
-        full_dest = f"{dest}(TEST)"
+        full_dest = f"{dest}(TE$@#)"
 
         copy_result = hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
@@ -1887,17 +1949,23 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{full_dest}'\"",
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
         for cp_res in copy_result.contacted.values():
+            print(cp_res)
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == full_dest
             assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
+            print(v_cp)
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
     finally:
@@ -1910,7 +1978,8 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1918,7 +1987,8 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1934,8 +2004,12 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{dest}'\"",
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1959,7 +2033,8 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1967,8 +2042,10 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         dest = get_tmp_ds_name()
-        full_dest = f"{dest}(MEMBER)"
+        full_dest = f"{dest}(MEMB$#@)"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1984,8 +2061,12 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{full_dest}'\"",
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2009,8 +2090,9 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
-        full_src = f"{src}(MEMBER)"
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
+        full_src = f"{src}(MEM$#@)"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -2018,7 +2100,8 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
             replace=True
         )
 
-        dest = get_tmp_ds_name()
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -2034,8 +2117,12 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{dest}'\"",
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2059,7 +2146,8 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         full_src = f"{src}(MEMBER)"
         hosts.all.zos_data_set(
             name=src,
@@ -2068,8 +2156,11 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
             replace=True
         )
 
+        dest = get_tmp_ds_name(llq_size=4)
+        dest = f"{dest}$#@"
         dest = get_tmp_ds_name()
-        full_dest = f"{dest}(MEMBER)"
+        full_dest = f"{dest}(MEM$#@)"
+
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -2085,8 +2176,12 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
             asa_text=True
         )
 
+        # We need to escape the data set name because we are using cat, using dcat will
+        # bring the trailing empty spaces according to the data set record length.
+        # We only need to escape $ character in this notation
+        dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{full_dest}'\"",
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2110,7 +2205,8 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
-        src = get_tmp_ds_name()
+        src = get_tmp_ds_name(llq_size=4)
+        src = f"{src}$#@"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -2126,7 +2222,8 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
             remote_src=False
         )
 
-        dest = "/tmp/zos_copy_asa_test.txt"
+        dest = get_random_file_name(dir=TMP_DIRECTORY)
+        dest = f"{dest}$#@"
 
         copy_result = hosts.all.zos_copy(
             src=src,
@@ -2136,7 +2233,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd=f"cat {dest}",
+            cmd=f"cat '{dest}'",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2167,7 +2264,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
     }])
 def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest_path = "/tmp/test/"
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
     mode = "750"
     other_mode = "744"
     mode_overwrite = "0777"
@@ -2196,11 +2293,42 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
 
 @pytest.mark.seq
-@pytest.mark.parametrize("ds_type", [ "pds", "pdse", "seq"])
-def test_copy_dest_lock(ansible_zos_module, ds_type):
+@pytest.mark.parametrize("ds_type, f_lock",[
+    ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+])
+def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
+    retries = 0
+    max_retries = 5
+    success = False
+
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
+    while retries < max_retries:
+        print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
+        result = copy_dest_lock(ansible_zos_module, ds_type, f_lock)
+
+        if result:
+            success = True
+            break
+
+        retries += 1
+
+    assert success is True
+
+
+def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
     hosts = ansible_zos_module
+    assert_msg = ""
+
+    temp_dir = None
     data_set_1 = get_tmp_ds_name()
-    data_set_2 = get_tmp_ds_name()
+    data_set_2 = get_tmp_ds_name(llq_size=4)
+    data_set_2 = f"{data_set_2}$#@"
     member_1 = "MEM1"
     if ds_type in ["pds", "pdse"]:
         src_data_set = f"{data_set_1}({member_1})"
@@ -2208,25 +2336,100 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
     else:
         src_data_set = data_set_1
         dest_data_set = data_set_2
+
     try:
-        hosts = ansible_zos_module
-        hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
-        hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
-        if ds_type in ["pds", "pdse"]:
-            hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
-            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
+        ds_creation_result = hosts.all.zos_data_set(
+            name=data_set_1,
+            state="present",
+            type=ds_type,
+            replace=True
+        )
+        for result in ds_creation_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        ds_creation_result = hosts.all.zos_data_set(
+            name=data_set_2,
+            state="present",
+            type=ds_type,
+            replace=True
+        )
+        for result in ds_creation_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        if ds_type == "pds" or ds_type == "pdse":
+            member_creation_result = hosts.all.zos_data_set(
+                name=src_data_set,
+                state="present",
+                type="member",
+                replace=True
+            )
+            for result in member_creation_result.contacted.values():
+                assert_msg = result.get("stdout", "")
+                print(result)
+                assert result.get("changed") is True
+                assert result.get("failed", False) is False
+
+            member_creation_result = hosts.all.zos_data_set(
+                name=dest_data_set,
+                state="present",
+                type="member",
+                replace=True
+            )
+            for result in member_creation_result.contacted.values():
+                assert_msg = result.get("stdout", "")
+                print(result)
+                assert result.get("changed") is True
+                assert result.get("failed", False) is False
+
         # copy text_in source
-        hosts.all.shell(cmd=f"decho \"{DUMMY_DATA}\" \"{src_data_set}\"")
+        decho_result = hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
+        for result in decho_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
-            content=call_c_jcl.format(dest_data_set),
-            dest='/tmp/disp_shr/call_c_pgm.jcl',
+        temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
+        c_src_result = hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
+        for result in c_src_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        jcl_result = hosts.all.zos_copy(
+            content=call_c_jcl.format(temp_dir, dest_data_set),
+            dest=f'{temp_dir}/call_c_pgm.jcl',
             force=True
         )
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+        for result in jcl_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        subproc_result = hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
+        for result in subproc_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
         # submit jcl
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        job_result = hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
+        for result in job_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
         # pause to ensure c code acquires lock
         time.sleep(5)
         results = hosts.all.zos_copy(
@@ -2234,24 +2437,43 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
             dest = dest_data_set,
             remote_src = True,
             force=True,
-            force_lock=True,
+            force_lock=f_lock,
         )
+
         for result in results.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("msg") is None
-            # verify that the content is the same
-            verify_copy = hosts.all.shell(
-                cmd=f"dcat \"{dest_data_set}\"",
-                executable=SHELL_EXECUTABLE,
-            )
-            for vp_result in verify_copy.contacted.values():
-                verify_copy_2 = hosts.all.shell(
-                    cmd=f"dcat \"{src_data_set}\"",
+            assert_msg = result.get("stdout", "")
+            print(result)
+            if f_lock: #and apf_auth_user:
+                assert result.get("changed") == True
+                assert result.get("msg") is None
+                # verify that the content is the same
+                verify_copy = hosts.all.shell(
+                    cmd="dcat \'{0}\'".format(dest_data_set),
                     executable=SHELL_EXECUTABLE,
                 )
-                for vp_result_2 in verify_copy_2.contacted.values():
-                    assert vp_result_2.get("stdout") == vp_result.get("stdout")
+                for vp_result in verify_copy.contacted.values():
+                    print(vp_result)
+                    verify_copy_2 = hosts.all.shell(
+                        cmd="dcat \'{0}\'".format(src_data_set),
+                        executable=SHELL_EXECUTABLE,
+                    )
+                    for vp_result_2 in verify_copy_2.contacted.values():
+                        print(vp_result_2)
+                        assert vp_result_2.get("stdout") == vp_result.get("stdout")
+            elif not f_lock:
+                assert result.get("failed") is True
+                assert result.get("changed") == False
+                assert "because a task is accessing the data set" in result.get("msg")
+                assert result.get("rc") is None
 
+        return True
+    except AssertionError:
+        # Checking for the error code from when the system thinks both data sets
+        # are identical.
+        if "FSUM8977" in assert_msg:
+            return False
+        else:
+            raise
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
@@ -2259,10 +2481,176 @@ def test_copy_dest_lock(ansible_zos_module, ds_type):
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
         # clean up c code/object/executable files, jcl
-        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        if temp_dir is not None:
+            hosts.all.shell(cmd=f'rm -r {temp_dir}')
         # remove pdse
         hosts.all.zos_data_set(name=data_set_1, state="absent")
         hosts.all.zos_data_set(name=data_set_2, state="absent")
+
+
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.asa
+@pytest.mark.parametrize("ds_type, f_lock",[
+    ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+])
+def test_copy_dest_lock_wrapper_asa(ansible_zos_module, ds_type, f_lock):
+    retries = 0
+    max_retries = 5
+    success = False
+
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
+    while retries < max_retries:
+        print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
+        result = copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock)
+
+        if result:
+            success = True
+            break
+
+        retries += 1
+
+    assert success is True
+
+
+def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
+    hosts = ansible_zos_module
+    assert_msg = ""
+
+    temp_dir = None
+    data_set = get_tmp_ds_name(llq_size=4)
+    data_set = f"{data_set}$#@"
+    member_name = "MEM1"
+
+    if ds_type == "pds" or ds_type == "pdse":
+        dest_data_set = f"{data_set}({member_name})"
+    else:
+        dest_data_set = data_set
+
+    try:
+        ds_creation_result = hosts.all.zos_data_set(
+            name=data_set,
+            state="present",
+            type=ds_type,
+            replace=True,
+            record_format="fba"
+        )
+        for result in ds_creation_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        if ds_type == "pds" or ds_type == "pdse":
+            member_creation_result = hosts.all.zos_data_set(
+                name=dest_data_set,
+                state="present",
+                type="member",
+                replace=True
+            )
+            for result in member_creation_result.contacted.values():
+                assert_msg = result.get("stdout", "")
+                print(result)
+                assert result.get("changed") is True
+                assert result.get("failed", False) is False
+
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
+        c_src_result = hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
+        for result in c_src_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        jcl_result = hosts.all.zos_copy(
+            content=call_c_jcl.format(temp_dir, dest_data_set),
+            dest=f'{temp_dir}/call_c_pgm.jcl',
+            force=True
+        )
+        for result in jcl_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        subproc_result = hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
+        for result in subproc_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        # submit jcl
+        job_result = hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
+        for result in job_result.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+
+        results = hosts.all.zos_copy(
+            content=ASA_SAMPLE_CONTENT,
+            dest=dest_data_set,
+            remote_src=False,
+            asa_text=True,
+            force=True,
+            force_lock=f_lock
+        )
+
+        for result in results.contacted.values():
+            assert_msg = result.get("stdout", "")
+            print(result)
+            if f_lock: #and apf_auth_user:
+                assert result.get("changed") is True
+                assert result.get("msg") is None
+
+                # We need to escape the data set name because we are using cat, using dcat will
+                # bring the trailing empty spaces according to the data set record length.
+                # We only need to escape $ character in this notation
+                dest_escaped = dest_data_set.replace('$', '\\$')
+                verify_copy = hosts.all.shell(
+                    cmd="cat \"//'{0}'\"".format(dest_escaped),
+                    executable=SHELL_EXECUTABLE,
+                )
+
+                for v_cp in verify_copy.contacted.values():
+                    assert v_cp.get("rc") == 0
+                    assert v_cp.get("stdout") == ASA_SAMPLE_RETURN
+            else:
+                assert result.get("failed") is True
+                assert result.get("changed") is False
+                assert "because a task is accessing the data set" in result.get("msg")
+                assert result.get("rc") is None
+
+        return True
+    except AssertionError:
+        # Checking for the error code from when the system thinks both data sets
+        # are identical.
+        if "FSUM8977" in assert_msg:
+            return False
+        else:
+            raise
+    finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        if temp_dir is not None:
+            hosts.all.shell(cmd=f'rm -r {temp_dir}')
+        # remove destination data set.
+        hosts.all.zos_data_set(name=data_set, state="absent")
 
 
 @pytest.mark.uss
@@ -2407,7 +2795,7 @@ def test_copy_local_binary_file_without_encoding_conversion(ansible_zos_module):
 @pytest.mark.seq
 def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module):
     hosts = ansible_zos_module
-    src = "/tmp/zos_copy_binary_file"
+    src = get_random_file_name(dir=TMP_DIRECTORY)
     dest = get_tmp_ds_name()
 
     try:
@@ -2647,10 +3035,11 @@ def test_copy_file_to_non_empty_sequential_data_set(ansible_zos_module, src):
 @pytest.mark.seq
 def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
-    dest = "/tmp/ddchkpt"
+    src_ds = get_tmp_ds_name()
+    dest = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
+        hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{src_ds}' ")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
@@ -2668,6 +3057,7 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
             assert result.get("stdout") != ""
     finally:
         hosts.all.file(path=dest, state="absent")
+        hosts.all.zos_data_set(name=src_ds, state="absent")
 
 
 @pytest.mark.uss
@@ -2675,11 +3065,13 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
-    dest = "/tmp/ddchkpt"
+    src_ds = get_tmp_ds_name()
+    dest = get_random_file_name(dir=TMP_DIRECTORY)
 
+    hosts = ansible_zos_module
     try:
         hosts.all.file(path=dest, state="touch")
+        hosts.all.shell(cmd=f"decho 'test line' '{src_ds}' ")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         stat_res = hosts.all.stat(path=dest)
@@ -2700,6 +3092,7 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
     finally:
+        hosts.all.shell(cmd=f"drm '{src_ds}' ")
         hosts.all.file(path=dest, state="absent")
 
 
@@ -2707,11 +3100,12 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
 @pytest.mark.seq
 def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
-    dest = "/tmp/ddchkpt"
-    dest_path = dest + "/" + TEST_PS
+    src_ds = get_tmp_ds_name()
+    dest = get_random_file_name(dir=TMP_DIRECTORY)
+    dest_path = dest + "/" + src_ds
 
     try:
+        hosts.all.shell(cmd=f"decho 'test line' '{src_ds}' " )
         hosts.all.file(path=dest, state="directory")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
@@ -2734,11 +3128,11 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
 @pytest.mark.seq
 def test_copy_ps_to_non_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.shell(cmd=f"decho 'this is a test line' '{src_ds}'")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
             cmd=f"cat \"//'{dest}'\"", executable=SHELL_EXECUTABLE
@@ -2760,11 +3154,12 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_empty_ps(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        hosts.all.shell(cmd=f"decho 'test line ' '{src_ds}'")
+        hosts.all.shell(cmd=f"dtouch -tseq '{src_ds}'")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
@@ -2786,12 +3181,12 @@ def test_copy_ps_to_empty_ps(ansible_zos_module, force):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
-        hosts.all.zos_copy(content="Inline content", dest=dest)
+        hosts.all.shell(cmd=f"decho 'This is a test ' '{src_ds}' ")
+        hosts.all.shell(cmd=f"decho 'This is a test ' '{dest}' ")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
@@ -2817,12 +3212,12 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = get_tmp_ds_name()
     dest = get_tmp_ds_name()
 
     try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
-        hosts.all.zos_copy(content=DUMMY_DATA_SPECIAL_CHARS, dest=dest)
+        hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{src_ds}' ")
+        hosts.all.shell(cmd=f"decho '{DUMMY_DATA_SPECIAL_CHARS}' '{dest}' ")
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
@@ -2845,7 +3240,7 @@ def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
 
 
 @pytest.mark.seq
-@pytest.mark.parametrize("backup", [None, "USER.TEST.SEQ.FUNCTEST.BACK"])
+@pytest.mark.parametrize("backup", [None, True])
 def test_backup_sequential_data_set(ansible_zos_module, backup):
     hosts = ansible_zos_module
     src = "/etc/profile"
@@ -2855,23 +3250,26 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
 
         if backup:
+            backup_name = get_tmp_ds_name()
             copy_res = hosts.all.zos_copy(
                 src=src,
                 dest=dest,
                 force=True,
                 backup=True,
-                backup_name=backup
+                backup_name=backup_name
             )
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+            assert result.get("backup_name") is not None
+            result_backup_name = result.get("backup_name")
+            if backup:
+                assert backup_name == result.get("backup_name")
 
         stat_res = hosts.all.shell(
-            cmd=f"tsocmd \"LISTDS '{backup_name}'\"",
+            cmd="tsocmd \"LISTDS '{0}'\"".format(result_backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -2881,7 +3279,7 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_name:
+        if backup:
             hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
@@ -2968,6 +3366,46 @@ def test_copy_file_to_non_existing_member(ansible_zos_module, src):
             assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=data_set, state="absent")
+
+
+# Test related to issue #774: https://github.com/ansible-collections/ibm_zos_core/issues/774.
+@pytest.mark.uss
+@pytest.mark.pdse
+def test_copy_file_to_non_existing_member_implicit(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_data_set = get_tmp_ds_name()
+    dest_member = f"{dest_data_set}(PROFILE)"
+
+    try:
+        hosts.all.zos_data_set(
+            name=dest_data_set,
+            type="pdse",
+            space_primary=5,
+            space_type="m",
+            record_format="fba",
+            record_length=80,
+            replace=True
+        )
+
+        copy_result = hosts.all.zos_copy(
+            src="/etc/profile",
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_member),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_member
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+    finally:
+        hosts.all.zos_data_set(name=dest_data_set, state="absent")
 
 
 @pytest.mark.uss
@@ -3230,7 +3668,7 @@ def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
 @pytest.mark.pdse
 def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
     hosts = ansible_zos_module
-    src_dir = "/tmp/testdir"
+    src_dir = get_random_file_name(dir=TMP_DIRECTORY)
     dest = get_tmp_ds_name()
 
     try:
@@ -3294,7 +3732,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
     hosts = ansible_zos_module
-    src_dir = "/tmp/testdir"
+    src_dir = get_random_file_name(dir=TMP_DIRECTORY)
     dest = get_tmp_ds_name()
 
     try:
@@ -3585,7 +4023,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
     dest_lib_aliases = get_tmp_ds_name(mlq_s)
     pgm_mem_alias = "ALIAS1"
 
-    uss_dest = "/tmp/HELLO"
+    uss_dest = get_random_file_name(dir=TMP_DIRECTORY)
     try:
         # allocate data sets
         hosts.all.zos_data_set(
@@ -3940,7 +4378,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
     dest_lib = get_tmp_ds_name(mlq_s)
     pgm_mem = "HELLO"
     pgm2_mem = "HELLO2"
-    uss_location = "/tmp/loadlib"
+    uss_location = get_random_file_name(dir=TMP_DIRECTORY)
 
 
     try:
@@ -4120,7 +4558,7 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
     pgm2_mem_alias = "ALIAS2"
 
     # note - aliases for executables  are implicitly copied over (by module design) for USS targets.
-    uss_dir_path = '/tmp/uss-loadlib/'
+    uss_dir_path = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
         # allocate pds for cobol src code
@@ -4299,19 +4737,20 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
 @pytest.mark.uss
 def test_copy_executables_uss_to_uss(ansible_zos_module):
     hosts= ansible_zos_module
-    src= "/tmp/c/hello_world.c"
-    src_jcl_call= "/tmp/c/call_hw_pgm.jcl"
-    dest_uss="/tmp/c/hello_world_2"
+    c_dir = get_random_file_name(dir=TMP_DIRECTORY)
+    src= f"{c_dir}/hello_world.c"
+    src_jcl_call= f"{c_dir}/call_hw_pgm.jcl"
+    dest_uss=f"{c_dir}/hello_world_2"
     try:
-        generate_executable_uss(hosts, src, src_jcl_call)
+        generate_executable_uss(hosts, c_dir, src, src_jcl_call)
         copy_uss_res = hosts.all.zos_copy(
-            src="/tmp/c/hello_world",
+            src=f"{c_dir}/hello_world",
             dest=dest_uss,
             remote_src=True,
             executable=True,
             force=True
         )
-        verify_exe_dst = hosts.all.shell(cmd="/tmp/c/hello_world_2")
+        verify_exe_dst = hosts.all.shell(cmd=f"{c_dir}/hello_world_2")
         for result in copy_uss_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
@@ -4320,7 +4759,7 @@ def test_copy_executables_uss_to_uss(ansible_zos_module):
             stdout = res.get("stdout")
             assert  "Hello World" in str(stdout)
     finally:
-        hosts.all.shell(cmd='rm -r /tmp/c')
+        hosts.all.shell(cmd=f'rm -r {c_dir}')
 
 
 @pytest.mark.pdse
@@ -4328,13 +4767,14 @@ def test_copy_executables_uss_to_uss(ansible_zos_module):
 @pytest.mark.parametrize("is_created", ["true", "false"])
 def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
     hosts= ansible_zos_module
-    src= "/tmp/c/hello_world.c"
+    c_dir = get_random_file_name(dir=TMP_DIRECTORY)
+    src= f"{c_dir}/hello_world.c"
     mlq_size = 3
-    src_jcl_call= "/tmp/c/call_hw_pgm.jcl"
+    src_jcl_call= f"{c_dir}/call_hw_pgm.jcl"
     dest = get_tmp_ds_name(mlq_size)
     member = "HELLOSRC"
     try:
-        generate_executable_uss(hosts, src, src_jcl_call)
+        generate_executable_uss(hosts, c_dir, src, src_jcl_call)
         if is_created:
             hosts.all.zos_data_set(
                 name=dest,
@@ -4348,7 +4788,7 @@ def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
                 replace=True
             )
         copy_uss_to_mvs_res = hosts.all.zos_copy(
-            src="/tmp/c/hello_world",
+            src=f"{c_dir}/hello_world",
             dest=f"{dest}({member})",
             remote_src=True,
             executable=True,
@@ -4366,7 +4806,7 @@ def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
             stdout = res.get("stdout")
             assert  "Hello World" in str(stdout)
     finally:
-        hosts.all.shell(cmd='rm -r /tmp/c')
+        hosts.all.shell(cmd=f'rm -r {c_dir}')
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
@@ -4511,7 +4951,7 @@ def test_copy_member_to_non_existing_uss_file(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
     data_set = get_tmp_ds_name()
     src = f"{data_set}(MEMBER)"
-    dest = "/tmp/member"
+    dest = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
         hosts.all.file(path=dest, state="absent")
@@ -4565,7 +5005,7 @@ def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
     hosts = ansible_zos_module
     data_set = get_tmp_ds_name()
     src = f"{data_set}(MEMBER)"
-    dest = "/tmp/member"
+    dest = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
         hosts.all.file(path=dest, state="touch")
@@ -4607,8 +5047,8 @@ def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
 def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
-    dest = "/tmp/"
-    dest_path = f"/tmp/{src_ds}"
+    dest = get_random_file_name(dir=TMP_DIRECTORY)
+    dest_path = "{0}/{1}".format(dest, src_ds)
 
     try:
         hosts.all.zos_data_set(name=src_ds, type=src_type, state="present")
@@ -4642,7 +5082,7 @@ def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
             assert result.get("stat").get("isdir") is True
     finally:
         hosts.all.zos_data_set(name=src_ds, state="absent")
-        hosts.all.file(path=dest_path, state="absent")
+        hosts.all.file(path=dest, state="absent")
 
 
 @pytest.mark.uss
@@ -4653,8 +5093,9 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
     src = f"{src_ds}(MEMBER)"
-    dest = "/tmp/"
-    dest_path = "/tmp/MEMBER"
+    dest = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
+    dest_path = f"{dest}MEMBER"
+
 
     try:
         hosts.all.zos_data_set(name=src_ds, type=src_type, state="present")
@@ -4671,6 +5112,7 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
             assert result.get("changed") is False
             assert error_msg in result.get("msg")
 
+        hosts.all.file(path=dest, state="directory")
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(
@@ -4688,8 +5130,8 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
     finally:
-        hosts.all.zos_data_set(name=src_ds, state="absent")
-        hosts.all.file(path=dest_path, state="absent")
+        # hosts.all.zos_data_set(name=src_ds, state="absent")
+        hosts.all.file(path=dest, state="absent")
 
 
 @pytest.mark.seq
@@ -4830,22 +5272,10 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
 
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    {
-        "type":"pds",
-        "backup":None
-    },
-    {
-        "type":"pds",
-        "backup":"USER.TEST.PDS.BACKUP"
-    },
-    {
-        "type":"pdse",
-        "backup":None
-    },
-    {
-        "type":"pdse",
-        "backup":"USER.TEST.PDSE.BACKUP"
-    },
+    dict(type="pds", backup=False),
+    dict(type="pds", backup=True),
+    dict(type="pdse", backup=False),
+    dict(type="pdse", backup=True),
 ])
 def test_backup_pds(ansible_zos_module, args):
     hosts = ansible_zos_module
@@ -4859,12 +5289,13 @@ def test_backup_pds(ansible_zos_module, args):
         populate_partitioned_data_set(hosts, dest, args["type"], members)
 
         if args["backup"]:
+            backup_name = get_tmp_ds_name()
             copy_res = hosts.all.zos_copy(
                 src=src,
                 dest=dest,
                 force=True,
                 backup=True,
-                backup_name=args["backup"]
+                backup_name=backup_name
             )
         else:
             copy_res = hosts.all.zos_copy(
@@ -4879,12 +5310,12 @@ def test_backup_pds(ansible_zos_module, args):
             assert result.get("changed") is True
             assert result.get("dest") == dest
 
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+            result_backup_name = result.get("backup_name")
+            assert result_backup_name is not None
             if args["backup"]:
-                assert backup_name == args["backup"]
+                assert result_backup_name == backup_name
 
-        verify_copy = get_listcat_information(hosts, backup_name, args["type"])
+        verify_copy = get_listcat_information(hosts, result_backup_name, args["type"])
 
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None
@@ -4949,8 +5380,9 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
 @pytest.mark.vsam
 def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
+    src_ds = get_tmp_ds_name()
     dest_ds = get_tmp_ds_name()
+    create_vsam_data_set(hosts, src_ds, "ksds", add_data=True, key_length=12, key_offset=0)
 
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True)
@@ -4968,7 +5400,13 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
             assert "IN-CAT" in output
             assert re.search(r"\bINDEXED\b", output)
     finally:
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
+        hosts.all.zos_data_set(
+            batch=[
+                {"name": dest_ds, "state": "absent"},
+                {"name": src_ds, "state": "absent"}
+            ]
+        )
+
 
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])
@@ -5006,7 +5444,7 @@ def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
 
 
 @pytest.mark.vsam
-@pytest.mark.parametrize("backup", [None, "USER.TEST.VSAM.KSDS.BACK"])
+@pytest.mark.parametrize("backup", [False, True])
 def test_backup_ksds(ansible_zos_module, backup):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()
@@ -5018,11 +5456,12 @@ def test_backup_ksds(ansible_zos_module, backup):
         create_vsam_data_set(hosts, dest, "ksds", add_data=True, key_length=12, key_offset=0)
 
         if backup:
+            backup_name = get_tmp_ds_name()
             copy_res = hosts.all.zos_copy(
                 src=src,
                 dest=dest,
                 backup=True,
-                backup_name=backup,
+                backup_name=backup_name,
                 remote_src=True,
                 force=True
             )
@@ -5038,14 +5477,14 @@ def test_backup_ksds(ansible_zos_module, backup):
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+            result_backup_name = result.get("backup_name")
+            assert result_backup_name is not None
 
             if backup:
-                assert backup_name == backup
+                assert result_backup_name == backup_name
 
         verify_copy = get_listcat_information(hosts, dest, "ksds")
-        verify_backup = get_listcat_information(hosts, backup_name, "ksds")
+        verify_backup = get_listcat_information(hosts, result_backup_name, "ksds")
 
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None
@@ -5072,7 +5511,8 @@ def test_backup_ksds(ansible_zos_module, backup):
 @pytest.mark.vsam
 def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
+    src_ds = get_tmp_ds_name()
+    create_vsam_data_set(hosts, src_ds, "ksds", add_data=True, key_length=12, key_offset=0)
     dest_ds = get_tmp_ds_name()
     volumes = Volume_Handler(volumes_on_systems)
     volume_1 = volumes.get_available_vol()
@@ -5100,7 +5540,12 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
 #            assert re.search(f"\b{volume_1}\b", output)
             assert re.search(r"\b{0}\b".format(volume_1), output)
     finally:
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
+        hosts.all.zos_data_set(
+            batch=[
+                {"name": dest_ds, "state": "absent"},
+                {"name": src_ds, "state": "absent"}
+            ]
+        )
 
 
 def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
@@ -5241,30 +5686,12 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
 
 
 @pytest.mark.parametrize("options", [
-    {
-        "src":"/etc/profile",
-        "dest":"/tmp/zos_copy_test_profile",
-        "force":True,
-        "is_remote":False,
-        "verbosity":"-vvvvv",
-        "verbosity_level":5
-    },
-    {
-        "src":"/etc/profile",
-        "dest":"/mp/zos_copy_test_profile",
-        "force":True,
-        "is_remote":False,
-        "verbosity":"-vvvv",
-        "verbosity_level":4
-    },
-    {
-        "src":"/etc/profile",
-        "dest":"/tmp/zos_copy_test_profile",
-        "force":True,
-        "is_remote":False,
-        "verbosity":"",
-        "verbosity_level":0
-    },
+    dict(src="/etc/profile",
+         force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
+    dict(src="/etc/profile", force=True,
+         is_remote=False, verbosity="-vvvv", verbosity_level=4),
+    dict(src="/etc/profile",
+         force=True, is_remote=False, verbosity="", verbosity_level=0),
 ])
 def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
     """Test the display verbosity, ensure it matches the verbosity_level.
@@ -5279,8 +5706,9 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
         node = hosts["options"]["inventory"].rstrip(',')
         python_path = hosts["options"]["ansible_python_path"]
 
+        dest_path = get_random_file_name(dir=TMP_DIRECTORY)
         # This is an adhoc command, because there was no
-        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + options["dest"] + " is_remote=" + str(
+        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + dest_path + " is_remote=" + str(
             options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
 
         with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout as process:
@@ -5292,4 +5720,674 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
             assert "play context verbosity:" not in output
 
     finally:
-        hosts.all.file(path=options["dest"], state="absent")
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.parametrize("generation", ["0", "+1"])
+def test_copy_seq_gds_inexistent_src(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+
+        copy_results = hosts.all.zos_copy(
+            src=f"{src_data_set}({generation})",
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is not None
+            assert cp_res.get("changed") is False
+            assert cp_res.get("failed") is True
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+
+def test_copy_seq_gds_to_data_set(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=f"{src_data_set}(0)",
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}" """)
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_data_set
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_data_set_to_new_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=f"{dest_data_set}(+1)",
+            remote_src=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_uss_file_to_new_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_file = "/etc/profile"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+
+        copy_results = hosts.all.zos_copy(
+            src=src_file,
+            dest=f"{dest_data_set}(+1)",
+            remote_src=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_pds_to_new_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        member_src = f"{src_data_set}(MEMBER)"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tPDS {src_data_set}")
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{member_src}" """)
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=f"{dest_data_set}(+1)",
+            remote_src=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""mls "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_data_set_to_previous_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}" """)
+        hosts.all.shell(cmd=f"""decho "A record." "{dest_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_uss_file_to_previous_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_file = "/etc/profile"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "A record." "{dest_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_file,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_pds_member_to_previous_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        member_src = f"{src_data_set}(MEMBER)"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tPDS {src_data_set}")
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{member_src}" """)
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "A record." "{dest_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=member_src,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_pds_to_previous_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        member_src = f"{src_data_set}(MEMBER)"
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tPDSE {src_data_set}")
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{member_src}" """)
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tPDS "{dest_data_set}(+1)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=True
+        )
+
+        verify_copy = hosts.all.shell(cmd=f"""mls "{dest_data_set}(0)" """)
+
+        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+        gds_pattern = r"G[0-9]+V[0-9]+"
+
+        for cp_res in copy_results.contacted.values():
+            dest = cp_res.get("dest", "")
+
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") != ""
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_data_set_to_previous_gds_no_force(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}" """)
+        hosts.all.shell(cmd=f"""decho "A record." "{dest_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=f"{dest_data_set}(0)",
+            remote_src=True,
+            force=False
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is not None
+            assert cp_res.get("changed") is False
+            assert cp_res.get("failed") is True
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+@pytest.mark.parametrize("generation", [0, -1])
+def test_copy_data_set_to_previous_non_existent_gds(ansible_zos_module, generation):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+        if generation < 0:
+            hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            # Copying to a previous generation that doesn't exist.
+            dest=f"{dest_data_set}({generation})",
+            remote_src=True,
+            force=True
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is not None
+            assert "generation data set is not allocated" in cp_res.get("msg")
+            assert cp_res.get("changed") is False
+            assert cp_res.get("failed") is True
+    finally:
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_gdg_to_uss_dir(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest = get_random_file_name(dir=TMP_DIRECTORY)
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        hosts.all.file(path=dest, state="directory")
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest,
+            remote_src=True
+        )
+
+        verify_dest = hosts.all.shell(cmd=f"ls {dest}/{src_data_set}")
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+        for v_res in verify_dest.contacted.values():
+            assert v_res.get("rc") == 0
+            assert len(v_res.get("stdout_lines", [])) > 0
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+        hosts.all.file(path=dest, state="absent")
+
+
+@pytest.mark.parametrize("new_gdg", [True, False])
+def test_copy_gdg_to_gdg(ansible_zos_module, new_gdg):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        if not new_gdg:
+            hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+            hosts.all.shell(cmd=f"""dtouch -tSEQ "{dest_data_set}(+1)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+        if not new_gdg:
+            hosts.all.shell(cmd=f"""drm "{dest_data_set}(-2)" """)
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_copy_gdg_to_gdg_dest_attributes(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {src_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_data_set}(0)" """)
+
+        copy_results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True,
+            dest_data_set={
+                "type": "gdg",
+                "limit": 5,
+                "empty": False,
+                "scratch": True,
+                "purge": True,
+                "extended": False,
+                "fifo": False
+            }
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+    finally:
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(-1)" """)
+        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+
+
+def test_backup_gds(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+        backup_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tSEQ {dest_data_set}")
+        hosts.all.shell(cmd=f"decho \"{DUMMY_DATA}\" \"{src_data_set}\"")
+        hosts.all.shell(cmd=f"decho \"A record\" \"{dest_data_set}\"")
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
+
+        results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True,
+            force=True,
+            backup=True,
+            backup_name=f"{backup_data_set}(+1)",
+        )
+
+        backup_check = hosts.all.shell(
+            cmd=f"""dcat "{backup_data_set}(0)" | wc -l """
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg") is None
+
+        for result in backup_check.contacted.values():
+            assert result.get("rc") == 0
+            assert int(result.get("stdout")) > 0
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{backup_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {backup_data_set}")
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+
+def test_backup_gds_invalid_generation(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name()
+        backup_data_set = get_tmp_ds_name()
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"dtouch -tSEQ {dest_data_set}")
+
+        hosts.all.shell(cmd=f"decho \"{DUMMY_DATA}\" \"{src_data_set}\"")
+        hosts.all.shell(cmd=f"decho \"{DUMMY_DATA}\" \"{dest_data_set}\"")
+
+        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {backup_data_set}")
+        hosts.all.shell(cmd=f"""dtouch -tSEQ "{backup_data_set}(+1)" """)
+
+        results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True,
+            force=True,
+            backup=True,
+            backup_name=f"{backup_data_set}(0)",
+        )
+
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert result.get("changed") is False
+            assert result.get("msg") is not None
+            assert "cannot be used" in result.get("msg")
+
+    finally:
+        hosts.all.shell(cmd=f"""drm "{backup_data_set}(0)" """)
+        hosts.all.shell(cmd=f"drm {backup_data_set}")
+        hosts.all.shell(cmd=f"drm {dest_data_set}")
+        hosts.all.shell(cmd=f"drm {src_data_set}")
+
+
+def test_copy_to_dataset_with_special_symbols(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_data_set = get_tmp_ds_name()
+        dest_data_set = get_tmp_ds_name(symbols=True)
+
+        hosts.all.shell(cmd=f"dtouch -tSEQ {src_data_set}")
+        hosts.all.shell(cmd=f"decho \"{DUMMY_DATA}\" \"{src_data_set}\"")
+
+        results = hosts.all.zos_copy(
+            src=src_data_set,
+            dest=dest_data_set,
+            remote_src=True
+        )
+
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("msg") is None
+
+    finally:
+        hosts.all.zos_data_set(name=src_data_set, state="absent")
+        hosts.all.zos_data_set(name=dest_data_set, state="absent")
+
+
+def test_job_script_async(ansible_zos_module, get_config):
+    try:
+        ds_name = get_tmp_ds_name()
+        path = get_config
+        with open(path, 'r') as file:
+            enviroment = yaml.safe_load(file)
+
+        ssh_key = enviroment["ssh_key"]
+        hosts = enviroment["host"].upper()
+        user = enviroment["user"].upper()
+        python_path = enviroment["python_path"]
+        cut_python_path = python_path[:python_path.find('/bin')].strip()
+        zoau = enviroment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split('/')[2]
+
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system("echo {0} > {1}".format(
+            quote(PLAYBOOK_ASYNC_TEST.format(
+                zoau,
+                cut_python_path,
+                python_version,
+                ds_name
+            )),
+            playbook.name
+        ))
+
+        os.system("echo {0} > {1}".format(
+            quote(INVENTORY_ASYNC_TEST.format(
+                hosts,
+                ssh_key,
+                user,
+                python_path
+            )),
+            inventory.name
+        ))
+
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name,
+            playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding='utf-8'
+        )
+        assert result.returncode == 0
+        assert "ok=3" in result.stdout
+        assert "changed=2" in result.stdout
+        assert result.stderr == ""
+    finally:
+        ansible_zos_module.all.zos_data_set(name=ds_name, state="absent")

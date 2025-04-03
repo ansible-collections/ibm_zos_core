@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -244,25 +244,25 @@ options:
       - If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
       - If true, removes all GDS entries from a GDG base when a new GDS is created that causes the
         GDG limit to be exceeded.
-      - Default is false.
     type: bool
     required: false
+    default: false
   extended:
     description:
       - Sets the I(extended) attribute for Generation Data Groups.
       - If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
       - If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
-      - Default is false.
     type: bool
     required: false
+    default: false
   fifo:
     description:
       - Sets the I(fifo) attribute for Generation Data Groups.
       - If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
       - If true, the order is the oldest GDS defined to the newest GDS.
-      - Default is false.
     type: bool
     required: false
+    default: false
   limit:
     description:
       - Sets the I(limit) attribute for Generation Data Groups.
@@ -278,6 +278,7 @@ options:
         is rolled off and the C(scratch) option is set.
     type: bool
     required: false
+    default: false
   scratch:
     description:
       - Sets the I(scratch) attribute for Generation Data Groups.
@@ -286,6 +287,7 @@ options:
         EMPTY/NOEMPTY processing.
     type: bool
     required: false
+    default: false
   volumes:
     description:
       - >
@@ -560,25 +562,25 @@ options:
           - If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
           - If true, removes all GDS entries from a GDG base when a new GDS is created that causes the
             GDG limit to be exceeded.
-          - Default is false.
         type: bool
         required: false
+        default: false
       extended:
         description:
           - Sets the I(extended) attribute for Generation Data Groups.
           - If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
           - If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
-          - Default is false.
         type: bool
         required: false
+        default: false
       fifo:
         description:
           - Sets the I(fifo) attribute for Generation Data Groups.
           - If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
           - If true, the order is the oldest GDS defined to the newest GDS.
-          - Default is false.
         type: bool
         required: false
+        default: false
       limit:
         description:
           - Sets the I(limit) attribute for Generation Data Groups.
@@ -594,6 +596,7 @@ options:
             is rolled off and the C(scratch) option is set.
         type: bool
         required: false
+        default: false
       scratch:
         description:
           - Sets the I(scratch) attribute for Generation Data Groups.
@@ -602,6 +605,7 @@ options:
             EMPTY/NOEMPTY processing.
         type: bool
         required: false
+        default: false
       volumes:
         description:
           - >
@@ -649,6 +653,16 @@ options:
         required: false
         default: false
 
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 """
 EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist
@@ -1404,7 +1418,9 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
         If changes were made.
     """
     changed = False
-    if state == "present" and data_set.data_set_type in ["member", "gdg"]:
+    if state == "present" and data_set.data_set_type == "member":
+        changed = data_set.ensure_present(replace=replace, tmphlq=tmp_hlq)
+    elif state == "present" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_present(replace=replace)
     elif state == "present":
         changed = data_set.ensure_present(replace=replace, tmp_hlq=tmp_hlq, force=force)
@@ -1413,11 +1429,11 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
     elif state == "absent" and data_set.data_set_type == "gdg":
         changed = data_set.ensure_absent(force=force)
     elif state == "absent":
-        changed = data_set.ensure_absent()
+        changed = data_set.ensure_absent(tmp_hlq=tmp_hlq)
     elif state == "cataloged":
-        changed = data_set.ensure_cataloged()
+        changed = data_set.ensure_cataloged(tmp_hlq=tmp_hlq)
     elif state == "uncataloged":
-        changed = data_set.ensure_uncataloged()
+        changed = data_set.ensure_uncataloged(tmp_hlq=tmp_hlq)
     return changed
 
 
@@ -1532,23 +1548,28 @@ def parse_and_validate_args(params):
                 ),
                 empty=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default=False
                 ),
                 purge=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default=False
                 ),
                 scratch=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default=False
                 ),
                 extended=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default=False
                 ),
                 fifo=dict(
                     type="bool",
-                    required=False
+                    required=False,
+                    default=False
                 ),
                 force=dict(
                     type="bool",
@@ -1623,11 +1644,11 @@ def parse_and_validate_args(params):
         ),
         # GDG options
         limit=dict(type="int", required=False),
-        empty=dict(type="bool", required=False),
-        purge=dict(type="bool", required=False),
-        scratch=dict(type="bool", required=False),
-        extended=dict(type="bool", required=False),
-        fifo=dict(type="bool", required=False),
+        empty=dict(type="bool", required=False, default=False),
+        purge=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False, default=False),
+        extended=dict(type="bool", required=False, default=False),
+        fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
         volumes=dict(
             type=volumes,
@@ -1746,11 +1767,11 @@ def run_module():
                 ),
                 # GDG options
                 limit=dict(type="int", required=False),
-                empty=dict(type="bool", required=False),
-                purge=dict(type="bool", required=False),
-                scratch=dict(type="bool", required=False),
-                extended=dict(type="bool", required=False),
-                fifo=dict(type="bool", required=False),
+                empty=dict(type="bool", required=False, default=False),
+                purge=dict(type="bool", required=False, default=False),
+                scratch=dict(type="bool", required=False, default=False),
+                extended=dict(type="bool", required=False, default=False),
+                fifo=dict(type="bool", required=False, default=False),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
                 force=dict(
                     type="bool",
@@ -1816,11 +1837,11 @@ def run_module():
         ),
         # GDG options
         limit=dict(type="int", required=False, no_log=False),
-        empty=dict(type="bool", required=False),
-        purge=dict(type="bool", required=False),
-        scratch=dict(type="bool", required=False),
-        extended=dict(type="bool", required=False),
-        fifo=dict(type="bool", required=False),
+        empty=dict(type="bool", required=False, default=False),
+        purge=dict(type="bool", required=False, default=False),
+        scratch=dict(type="bool", required=False, default=False),
+        extended=dict(type="bool", required=False, default=False),
+        fifo=dict(type="bool", required=False, default=False),
         # End of GDG options
         volumes=dict(
             type="raw",

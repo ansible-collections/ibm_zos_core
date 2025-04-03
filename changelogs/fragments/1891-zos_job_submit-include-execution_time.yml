@@ -1,0 +1,7 @@
+minor_changes:
+  - zos_job_submit - Add execution_time return value in the modules response.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1891).
+  - zos_job_query - Add execution_time return value in the modules response.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1891).
+  - zos_job_output - Add execution_time return value in the modules response.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/1891).

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -39,7 +39,7 @@ options:
         PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
       - Generation data set (GDS) relative name of generation already
-        created.  C(e.g. SOME.CREATION(-1).)
+        created. e.g. I(SOME.CREATION(-1)).
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -96,6 +96,7 @@ options:
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
+    - Value needs to be different from I(marker_end).
     required: false
     type: str
     default: BEGIN
@@ -103,6 +104,7 @@ options:
     required: false
     description:
     - This will be inserted at C({mark}) in the closing ansible block marker.
+    - Value must be different from I(marker_begin).
     type: str
     default: END
   backup:
@@ -112,7 +114,7 @@ options:
       - When set to C(true), the module creates a backup file or data set.
       - The backup file name will be returned on either success or failure of
         module execution such that data can be retrieved.
-      - Use generation data set (GDS) relative positive name. C(e.g. SOME.CREATION(+1))
+      - Use generation data set (GDS) relative positive name. e.g. I(SOME.CREATION(+1)).
     required: false
     type: bool
     default: false
@@ -172,6 +174,18 @@ options:
     required: false
     type: int
     default: 0
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: none
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described
@@ -188,6 +202,8 @@ notes:
     the block will be overwritten on each iteration.
   - When more then one block should be handled in a file you must change
     the I(marker) per task.
+  - When working with a backup of a sequential dataset, the backup name should also be a sequential dataset.
+    This will avoid the false positive and error condition during backup.
 seealso:
 - module: zos_data_set
 '''
@@ -293,7 +309,7 @@ EXAMPLES = r'''
   zos_blockinfile:
     src: SOME.CREATION.TEST
     insertbefore: BOF
-    backup: True
+    backup: true
     backup_name: CREATION.GDS(+1)
     block: "{{ CONTENT }}"
 '''
@@ -347,7 +363,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    ZOAUImportError,
+    ZOAUImportError
 )
 
 try:
@@ -451,171 +467,6 @@ def absent(src, marker, encoding, force):
         changed {bool} -- Indicates if the destination was modified.
     """
     return datasets.blockinfile(src, False, marker=marker, encoding=encoding, force=force, as_json=True)
-
-
-def quotedString(string):
-    """Deletes the quote mark on strings.
-
-    Parameters
-    ----------
-    string : str
-        String to delete quote marks from.
-
-    Returns
-    -------
-    str
-        String without the quote marks.
-    """
-    # add escape if string was quoted
-    if not isinstance(string, str):
-        return string
-    return string.replace('"', "")
-
-
-def quotedString_double_quotes(string):
-    """Deletes the quote mark on strings.
-
-    Parameters
-    ----------
-    string : str
-        String to modify quote marks from.
-
-    Returns
-    -------
-    str
-        String scaping the quote marks.
-    """
-    # add escape if string was quoted
-    if not isinstance(string, str):
-        return string
-    return string.replace('"', '\\"')
-
-
-def check_double_quotes(marker, ins_bef, ins_aft, block):
-    """Verify the content of strings to determine if double
-      quotes are in the string.
-
-    Parameters
-    ----------
-    marker : str
-        String to verify quote marks from.
-    ins_bef : str
-        String to verify quote marks from.
-    ins_aft : str
-        String to verify quote marks from.
-    block : str
-        String to verify quote marks from.
-
-    Returns
-    -------
-    bool
-        If any string contain double quotes.
-    """
-    if marker:
-        if '"' in marker:
-            return True
-    if ins_bef:
-        if '"' in ins_bef:
-            return True
-    if ins_aft:
-        if '"' in ins_aft:
-            return True
-    if block:
-        if '"' in block:
-            return True
-    return False
-
-
-def execute_dmod(src, block, marker, force, encoding, state, module, ins_bef=None, ins_aft=None):
-    """Execute in terminal dmod command directly.
-
-    Parameters
-    ----------
-    src : str
-        The z/OS USS file or data set to modify.
-    block : str
-        The block to insert/replace into the src.
-    marker : str
-        The block will be inserted/updated with the markers.
-    force : bool
-        If not empty passes True option to dmod cmd.
-    encoding : str
-        Encoding of the src.
-    state : bool
-        Determine if will add or delete the block.
-    module : obj
-        Object to execute the command.
-    ins_bef : str
-        Insert the block before matching '*regex*' pattern or BOF.
-        choices:
-            - BOF
-            - '*regex*'
-    ins_aft : str
-        Insert the block after matching '*regex*' pattern or EOF.
-        choices:
-            - EOF
-            - '*regex*'
-
-    Returns
-    -------
-    int
-        RC of the execution of the command.
-    cmd
-        Command executed.
-    """
-    block = block.replace('"', '\\"')
-    force = "-f" if force else ""
-    encoding = "-c {0}".format(encoding) if encoding else ""
-    marker = "-m \"{0}\"".format(marker) if marker else ""
-    if state:
-        if ins_aft:
-            if ins_aft == "EOF":
-                opts = f'"$ a\\{block}" "{src}"'
-            else:
-                opts = f'-s -e "/{ins_aft}/a\\{block}/$" -e "$ a\\{block}" "{src}"'
-        elif ins_bef:
-            if ins_bef == "BOF":
-                opts = f' "1 i\\{block}" "{src}" '
-            else:
-                opts = f'-s -e "/{ins_bef}/i\\{block}/$" -e "$ a\\{block}" "{src}"'
-
-        cmd = "dmod -b {0} {1} {2} {3}".format(force, encoding, marker, opts)
-    else:
-        cmd = """dmod -b {0} {1} {2} {3}""".format(force, encoding, marker, src)
-
-    rc, stdout, stderr = module.run_command(cmd)
-    cmd = clean_command(cmd)
-    return rc, cmd
-
-
-def clean_command(cmd):
-    """Deletes escaped characters from the str.
-
-    Parameters
-    ----------
-    cmd : str
-        Command to clean any escaped characters.
-
-    Returns
-    -------
-    str
-        Command without escaped characters.
-    """
-    cmd = cmd.replace('/c\\\\', '')
-    cmd = cmd.replace('/a\\\\', '', )
-    cmd = cmd.replace('/i\\\\', '', )
-    cmd = cmd.replace('$ a\\\\', '', )
-    cmd = cmd.replace('1 i\\\\', '', )
-    cmd = cmd.replace('/c\\', '')
-    cmd = cmd.replace('/a\\', '')
-    cmd = cmd.replace('/i\\', '')
-    cmd = cmd.replace('$ a\\', '')
-    cmd = cmd.replace('1 i\\', '')
-    cmd = cmd.replace('/d', '')
-    cmd = cmd.replace('\\\\d', '')
-    cmd = cmd.replace('\\n', '\n')
-    cmd = cmd.replace('\\"', '"')
-    return cmd
 
 
 def main():
@@ -759,7 +610,8 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
-
+    if marker_begin == marker_end:
+        module.fail_json(msg='marker_begin and marker_end must be different.')
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
     # analysis the file type
@@ -772,7 +624,7 @@ def main():
     if data_set.DataSet.is_gds_relative_name(src):
         module.fail_json(msg="{0} does not exist".format(src))
 
-    ds_utils = data_set.DataSetUtils(src)
+    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
     if not ds_utils.exists():
         message = "{0} does NOT exist".format(str(src))
         module.fail_json(msg=message)
@@ -797,47 +649,30 @@ def main():
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception as err:
             module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
-    double_quotes_exists = check_double_quotes(marker, ins_bef, ins_aft, block)
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        if double_quotes_exists:
-            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, True, module=module,
-                                   ins_bef=quotedString_double_quotes(ins_bef), ins_aft=quotedString_double_quotes(ins_aft))
-            result['rc'] = rc
-            result['cmd'] = cmd
-            result['changed'] = True if rc == 0 else False
-            stderr = 'Failed to insert new entry' if rc != 0 else ""
-        else:
-            return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
+        return_content = present(src, block, marker, ins_aft, ins_bef, encoding, force)
     else:
-        if double_quotes_exists:
-            rc, cmd = execute_dmod(src, block, quotedString_double_quotes(marker), force, encoding, False, module=module)
-            result['rc'] = rc
-            result['cmd'] = cmd
-            result['changed'] = True if rc == 0 else False
-            stderr = 'Failed to remove entry' if rc != 0 else ""
-        else:
-            return_content = absent(src, marker, encoding, force)
+        return_content = absent(src, marker, encoding, force)
     # ZOAU 1.3.0 generate false positive working with double quotes (") the call generate distinct return when using and not
-    if not double_quotes_exists:
-        stdout = return_content.stdout_response
-        stderr = return_content.stderr_response
-        rc = return_content.rc
-        stdout = stdout.replace('/d', '\\\\d')
-        try:
-            # Try to extract information from stdout
-            # The triple double quotes is required for special characters (/_) been scape
-            ret = json.loads("""{0}""".format(stdout))
-        except Exception:
-            messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-            if result.get('backup_name'):
-                messageDict['backup_name'] = result['backup_name']
-            module.fail_json(**messageDict)
+    stdout = return_content.stdout_response
+    stderr = return_content.stderr_response
+    rc = return_content.rc
+    stdout = stdout.replace('/d', '\\\\d')
+    try:
+        # Try to extract information from stdout
+        # The triple double quotes is required for special characters (/_) been scape
+        ret = json.loads("""{0}""".format(stdout))
+    except Exception:
+        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+        if result.get('backup_name'):
+            messageDict['backup_name'] = result['backup_name']
+        module.fail_json(**messageDict)
 
-        result['cmd'] = ret['data']['commands']
-        result['changed'] = ret['data']['changed']
-        result['found'] = ret['data']['found']
+    result['cmd'] = ret['data']['commands']
+    result['changed'] = ret['data']['changed']
+    result['found'] = ret['data']['found']
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
     if len(stderr):

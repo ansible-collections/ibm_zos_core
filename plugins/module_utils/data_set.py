@@ -2414,7 +2414,7 @@ class GenerationDataGroup():
         else:
             if not replace:
                 return changed
-            changed = self.ensure_absent()
+            changed = self.ensure_absent(True)
             gdg = gdgs.create(**arguments)
         if isinstance(gdg, gdgs.GenerationDataGroupView):
             changed = True
@@ -2434,17 +2434,21 @@ class GenerationDataGroup():
         int
             Indicates if changes were made.
         """
-        # Try to delete
-        rc = datasets.delete(self.name)
-        if rc > 0:
-            if force:
-                if isinstance(self.gdg, gdgs.GenerationDataGroupView):
-                    self.gdg.delete()
+        # Check whether GDG exists or not
+        if gdgs.exists(name=self.name):
+            # Try to delete
+            rc = datasets.delete(self.name)
+            if rc > 0:
+                if force:
+                    if isinstance(self.gdg, gdgs.GenerationDataGroupView):
+                        self.gdg.delete()
+                    else:
+                        gdg_view = gdgs.GenerationDataGroupView(name=self.name)
+                        gdg_view.delete()
                 else:
-                    gdg_view = gdgs.GenerationDataGroupView(name=self.name)
-                    gdg_view.delete()
-            else:
-                raise DatasetDeleteError(self.raw_name, rc)
+                    raise DatasetDeleteError(self.raw_name, rc)
+        else:
+            return False
         return True
 
     def clear(self):

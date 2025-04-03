@@ -1940,7 +1940,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
     try:
         dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
-        full_dest = f"{dest}(TE$@#)"
+        full_dest = "{0}(TE$@#)".format(dest)
 
         copy_result = hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
@@ -1954,7 +1954,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
         # We only need to escape $ character in this notation
         dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd=f"cat \"//'{dest_escaped}'\"",
+            cmd="cat \"//'{0}'\"".format(dest_escaped),
             executable=SHELL_EXECUTABLE,
         )
 

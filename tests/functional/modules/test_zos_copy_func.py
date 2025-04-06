@@ -13,7 +13,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-import pytest
 import os
 import shutil
 import re
@@ -21,9 +20,12 @@ import time
 import yaml
 import tempfile
 import subprocess
+import pytest
 from shellescape import quote
 
+# pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
+# pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
 __metaclass__ = type
@@ -104,7 +106,15 @@ ASA_SAMPLE_CONTENT = """ Space, do not advance.
 1This is a new page.
 """
 
-ASA_SAMPLE_RETURN = "\nSpace, do not advance.\n\nNewline before printing this line.\nThis line is not going to be seen.\rThis line will overwrite the previous one.\nThis line will be partially seen because it will be longer than the next line.\rThis line will partially overwrite the previous line.\n\n\nThree newlines before this one.\fThis is a new page."
+ASA_SAMPLE_RETURN = """
+Space, do not advance.
+
+Newline before printing this line.
+This line is not going to be seen.\rThis line will overwrite the previous one.
+This line will be partially seen because it will be longer than the next line.\rThis line will partially overwrite the previous line.
+
+
+Three newlines before this one.\fThis is a new page."""
 
 ASA_COPY_CONTENT = """  Space, do not advance.
  0Newline before printing this line.
@@ -275,7 +285,7 @@ INVENTORY_ASYNC_TEST = """all:
 
 def populate_dir(dir_path):
     for i in range(5):
-        with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
+        with open(dir_path + "/" + "file" + str(i + 1), "w",encoding="utf-8") as infile:
             infile.write(DUMMY_DATA)
 
 
@@ -291,7 +301,7 @@ def create_template_file(dir_path, use_default_markers=True, encoding="utf-8"):
 
 def populate_dir_crlf_endings(dir_path):
     for i in range(5):
-        with open(os.path.join(dir_path, "file{0}".format(i)), "wb") as infile:
+        with open(os.path.join(dir_path, f"file{i}"), "wb") as infile:
             infile.write(DUMMY_DATA_CRLF)
 
 
@@ -307,13 +317,13 @@ def populate_partitioned_data_set(hosts, name, ds_type, members=None):
     """
     if not members:
         members = ["MEMBER1", "MEMBER2", "MEMBER3"]
-    ds_list = ["{0}({1})".format(name, member) for member in members]
+    ds_list = [f"{name}({member})" for member in members]
 
     hosts.all.shell(cmd=f"dtouch -t{ds_type} {name}")
 
     for member in ds_list:
         hosts.all.shell(
-            cmd="decho '{0}' '{1}'".format(DUMMY_DATA, member),
+            cmd=f"decho '{DUMMY_DATA}' '{member}'",
             executable=SHELL_EXECUTABLE
         )
 
@@ -327,22 +337,28 @@ def get_listcat_information(hosts, name, ds_type):
         ds_type (str) -- Type of data set ("seq", "pds", "pdse", "ksds").
     """
     if ds_type == "ksds":
-        idcams_input = " LISTCAT ENT('{0}') DATA ALL".format(name)
+        idcams_input = f" LISTCAT ENT('{name}') DATA ALL"
     else:
-        idcams_input = " LISTCAT ENTRIES('{0}')".format(name)
+        idcams_input = f" LISTCAT ENTRIES('{name}')"
 
     return hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
-            dict(dd_output=dict(
-                dd_name="sysprint",
-                return_content=dict(type="text")
-            )),
-            dict(dd_input=dict(
-                dd_name="sysin",
-                content=idcams_input
-            ))
+            {
+                "dd_output":{
+                    "dd_name":"sysprint",
+                    "return_content":{
+                        "type":"text"
+                    }
+                }
+            },
+            {
+                "dd_input":{
+                    "dd_name":"sysin",
+                    "content":idcams_input
+                }
+            }
         ]
     )
 
@@ -358,11 +374,11 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         key_length (int, optional) -- Key length (only for KSDS data sets).
         key_offset (int, optional) -- Key offset (only for KSDS data sets).
     """
-    params = dict(
-        name=name,
-        type=ds_type,
-        state="present"
-    )
+    params = {
+        "name":name,
+        "type":ds_type,
+        "state":"present"
+    }
     if ds_type == "ksds":
         params["key_length"] = key_length
         params["key_offset"] = key_offset
@@ -373,7 +389,11 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         record_src = get_random_file_name(dir=TMP_DIRECTORY)
 
         hosts.all.shell(cmd=f"echo '{VSAM_RECORDS}' > '{record_src}' ")
-        hosts.all.zos_encode(src=record_src, dest=name, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
+        hosts.all.zos_encode(
+            src=record_src,
+            dest=name,
+            encoding={"from": "ISO8859-1", "to": "IBM-1047"}
+        )
         hosts.all.file(path=record_src, state="absent")
 
 
@@ -389,7 +409,14 @@ def validate_loadlib_pgm(hosts, steplib, pgm_name, expected_output_str):
         assert v_cp_pgm.get("stdout").strip() == expected_output_str
 
 
-def link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem='ALIAS1'):
+def link_loadlib_from_cobol(
+        hosts,
+        cobol_src_pds,
+        cobol_src_mem,
+        loadlib_pds,
+        loadlib_mem,
+        loadlib_alias_mem='ALIAS1'
+    ):
     """
     Given a PDSE, links a cobol program (allocated in a temp ds) resulting in a loadlib.
 
@@ -404,8 +431,14 @@ def link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, lo
     rc = 0
     try:
         # Copy over the Link program to USS
-        cp_res = hosts.all.zos_copy(
-            content=LINK_JCL.format(cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem),
+        hosts.all.zos_copy(
+            content=LINK_JCL.format(
+                cobol_src_pds,
+                cobol_src_mem,
+                loadlib_pds,
+                loadlib_mem,
+                loadlib_alias_mem
+            ),
             dest=temp_jcl_uss_path,
             force=True,
         )
@@ -423,49 +456,125 @@ def link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, lo
     return rc
 
 
-def generate_executable_ds(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem="ALIAS1"):
+def generate_executable_ds(
+        hosts,
+        cobol_src_pds,
+        cobol_src_mem,
+        loadlib_pds,
+        loadlib_mem,
+        loadlib_alias_mem="ALIAS1"
+    ):
 
     # copy COBOL src string to pds.
-    hosts.all.zos_copy(content=COBOL_SRC.format(COBOL_PRINT_STR), dest='{0}({1})'.format(cobol_src_pds, cobol_src_mem))
+    hosts.all.zos_copy(
+        content=COBOL_SRC.format(COBOL_PRINT_STR),
+        dest=f'{cobol_src_pds}({cobol_src_mem})'
+    )
 
     # run link-edit to create loadlib.
-    link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, loadlib_pds, loadlib_mem, loadlib_alias_mem)
+    link_rc = link_loadlib_from_cobol(
+        hosts,
+        cobol_src_pds,
+        cobol_src_mem,
+        loadlib_pds,
+        loadlib_mem,
+        loadlib_alias_mem
+    )
     assert link_rc == 0
 
     # execute pgm to test loadlib
-    validate_loadlib_pgm(hosts, steplib=loadlib_pds, pgm_name=loadlib_mem, expected_output_str=COBOL_PRINT_STR)
-    validate_loadlib_pgm(hosts, steplib=loadlib_pds, pgm_name=loadlib_alias_mem, expected_output_str=COBOL_PRINT_STR)
+    validate_loadlib_pgm(
+        hosts,
+        steplib=loadlib_pds,
+        pgm_name=loadlib_mem,
+        expected_output_str=COBOL_PRINT_STR
+    )
+    validate_loadlib_pgm(
+        hosts,
+        steplib=loadlib_pds,
+        pgm_name=loadlib_alias_mem,
+        expected_output_str=COBOL_PRINT_STR
+    )
 
 
-def generate_loadlib(hosts, cobol_src_pds, cobol_src_mems, loadlib_pds, loadlib_mems, loadlib_alias_mems):
+def generate_loadlib(
+        hosts,
+        cobol_src_pds,
+        cobol_src_mems,
+        loadlib_pds,
+        loadlib_mems,
+        loadlib_alias_mems
+    ):
     # copy cobol src
-    hosts.all.zos_copy(content=COBOL_SRC.format(COBOL_PRINT_STR), dest='{0}({1})'.format(cobol_src_pds, cobol_src_mems[0]))
+    hosts.all.zos_copy(
+        content=COBOL_SRC.format(COBOL_PRINT_STR),
+        dest=f'{cobol_src_pds}({cobol_src_mems[0]})'
+    )
     # copy cobol2 src
-    hosts.all.zos_copy(content=COBOL_SRC.format(COBOL_PRINT_STR2), dest='{0}({1})'.format(cobol_src_pds, cobol_src_mems[1]))
+    hosts.all.zos_copy(
+        content=COBOL_SRC.format(COBOL_PRINT_STR2),
+        dest=f'{cobol_src_pds}({cobol_src_mems[1]})'
+    )
 
     # run link-edit for pgm1
-    link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mems[0], loadlib_pds, loadlib_mems[0], loadlib_alias_mems[0])
+    link_rc = link_loadlib_from_cobol(
+        hosts,
+        cobol_src_pds,
+        cobol_src_mems[0],
+        loadlib_pds,
+        loadlib_mems[0],
+        loadlib_alias_mems[0]
+    )
     assert link_rc == 0
     # run link-edit for pgm2
-    link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mems[1], loadlib_pds, loadlib_mems[1], loadlib_alias_mems[1])
+    link_rc = link_loadlib_from_cobol(
+        hosts,
+        cobol_src_pds,
+        cobol_src_mems[1],
+        loadlib_pds,
+        loadlib_mems[1],
+        loadlib_alias_mems[1]
+    )
     assert link_rc == 0
 
     # execute pgm to test pgm1
-    validate_loadlib_pgm(hosts, steplib=loadlib_pds, pgm_name=loadlib_mems[0], expected_output_str=COBOL_PRINT_STR)
+    validate_loadlib_pgm(
+        hosts,
+        steplib=loadlib_pds,
+        pgm_name=loadlib_mems[0],
+        expected_output_str=COBOL_PRINT_STR
+    )
     # execute pgm to test alias of pgm1
-    validate_loadlib_pgm(hosts, steplib=loadlib_pds, pgm_name=loadlib_alias_mems[0], expected_output_str=COBOL_PRINT_STR)
+    validate_loadlib_pgm(
+        hosts,
+        steplib=loadlib_pds,
+        pgm_name=loadlib_alias_mems[0],
+        expected_output_str=COBOL_PRINT_STR
+    )
     # execute pgm to test pgm2
-    validate_loadlib_pgm(hosts, steplib=loadlib_pds, pgm_name=loadlib_mems[1], expected_output_str=COBOL_PRINT_STR2)
+    validate_loadlib_pgm(
+        hosts,
+        steplib=loadlib_pds,
+        pgm_name=loadlib_mems[1],
+        expected_output_str=COBOL_PRINT_STR2
+    )
     # execute pgm to test alias of pgm2
-    validate_loadlib_pgm(hosts, steplib=loadlib_pds, pgm_name=loadlib_alias_mems[1], expected_output_str=COBOL_PRINT_STR2)
+    validate_loadlib_pgm(
+        hosts,
+        steplib=loadlib_pds,
+        pgm_name=loadlib_alias_mems[1],
+        expected_output_str=COBOL_PRINT_STR2
+    )
 
 
 def generate_executable_uss(hosts, dir, src, src_jcl_call):
     hosts.all.zos_copy(content=hello_world, dest=src, force=True)
+
     hosts.all.zos_copy(content=call_c_hello_jcl.format(dir), dest=src_jcl_call, force=True)
     hosts.all.shell(cmd="xlc -o hello_world hello_world.c", chdir=dir)
-    hosts.all.shell(cmd="submit {0}".format(src_jcl_call))
+    hosts.all.shell(cmd=f"submit {src_jcl_call}")
     verify_exe_src = hosts.all.shell(cmd="{0}/hello_world".format(dir))
+
     for res in verify_exe_src.contacted.values():
         assert res.get("rc") == 0
         stdout = res.get("stdout")
@@ -474,12 +583,42 @@ def generate_executable_uss(hosts, dir, src, src_jcl_call):
 
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=False),
-    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=False),
-    dict(src="Example inline content", is_file=False, is_binary=False, is_remote=False),
-    dict(src="Example inline content", is_file=False, is_binary=True, is_remote=False),
-    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=True),
-    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=True),
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":True,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "is_binary":False,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "is_binary":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":False,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":True,
+        "is_remote":True
+    },
 ])
 def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
     hosts = ansible_zos_module
@@ -489,9 +628,18 @@ def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
         hosts.all.file(path=dest_path, state="absent")
 
         if src["is_file"]:
-            copy_res = hosts.all.zos_copy(src=src["src"], dest=dest_path, is_binary=src["is_binary"], remote_src=src["is_remote"])
+            copy_res = hosts.all.zos_copy(
+                src=src["src"],
+                dest=dest_path,
+                is_binary=src["is_binary"],
+                remote_src=src["is_remote"]
+            )
         else:
-            copy_res = hosts.all.zos_copy(content=src["src"], dest=dest_path, is_binary=src["is_binary"])
+            copy_res = hosts.all.zos_copy(
+                content=src["src"],
+                dest=dest_path,
+                is_binary=src["is_binary"]
+            )
 
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
@@ -507,12 +655,42 @@ def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
 
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=False),
-    dict(src="/etc/profile", is_file=True, force=True, is_remote=False),
-    dict(src="Example inline content", is_file=False, force=False, is_remote=False),
-    dict(src="Example inline content", is_file=False, force=True, is_remote=False),
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=True),
-    dict(src="/etc/profile", is_file=True, force=True, is_remote=True),
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":True,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "force":False,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "force":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":False,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":True,
+        "is_remote":True
+    },
 ])
 def test_copy_file_to_existing_uss_file(ansible_zos_module, src):
     hosts = ansible_zos_module
@@ -525,9 +703,18 @@ def test_copy_file_to_existing_uss_file(ansible_zos_module, src):
         assert timestamp is not None
 
         if src["is_file"]:
-            copy_res = hosts.all.zos_copy(src=src["src"], dest=dest_path, force=src["force"], remote_src=src["is_remote"])
+            copy_res = hosts.all.zos_copy(
+                src=src["src"],
+                dest=dest_path,
+                force=src["force"],
+                remote_src=src["is_remote"]
+            )
         else:
-            copy_res = hosts.all.zos_copy(content=src["src"], dest=dest_path, force=src["force"])
+            copy_res = hosts.all.zos_copy(
+                content=src["src"],
+                dest=dest_path,
+                force=src["force"]
+            )
 
         stat_res = hosts.all.stat(path=dest_path)
 
@@ -548,10 +735,26 @@ def test_copy_file_to_existing_uss_file(ansible_zos_module, src):
 
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_binary=False, is_remote=False),
-    dict(src="/etc/profile", is_binary=True, is_remote=False),
-    dict(src="/etc/profile", is_binary=False, is_remote=True),
-    dict(src="/etc/profile", is_binary=True, is_remote=True),
+    {
+        "src":"/etc/profile",
+        "is_binary":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_binary":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_binary":False,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "is_binary":True,
+        "is_remote":True
+    },
 ])
 def test_copy_file_to_uss_dir(ansible_zos_module, src):
     hosts = ansible_zos_module
@@ -561,7 +764,9 @@ def test_copy_file_to_uss_dir(ansible_zos_module, src):
 
     try:
 
-        copy_res = hosts.all.zos_copy(src=src["src"], dest=dest, is_binary=src["is_binary"], remote_src=src["is_remote"])
+        copy_res = hosts.all.zos_copy(
+            src=src["src"],
+            dest=dest, is_binary=src["is_binary"], remote_src=src["is_remote"])
 
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
@@ -610,7 +815,7 @@ def test_copy_local_symlink_to_uss_file(ansible_zos_module):
             pass
         copy_res = hosts.all.zos_copy(src=src_lnk, dest=dest_path, local_follow=True)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest_path), executable=SHELL_EXECUTABLE
+            cmd=f"head {dest_path}", executable=SHELL_EXECUTABLE
         )
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
@@ -731,16 +936,21 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
     str_two = "This is file two."
     str_three = "This is file three."
 
-    # Hex values for expected results, expected used beause pytest-ansible does not allow for delegate_to
-    # and depending on where the `od` runs, you may face big/little endian issues, so using expected utf-8
+    # Hex values for expected results,
+    # expected used beause pytest-ansible does not allow for delegate_to
+    # and depending on where the `od` runs,
+    # you may face big/little endian issues, so using expected utf-8
+    # pylint: disable-next=line-too-long
     str_one_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
 0000000020      2E0A
 0000000022"""
 
+    # pylint: disable-next=line-too-long
     str_two_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    776F
 0000000020      2E0A
 0000000022"""
 
+    # pylint: disable-next=line-too-long
     str_three_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    6872
 0000000020      6565    2E0A
 0000000024"""
@@ -759,9 +969,9 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
 
         # Echo contents into files (could use zos_lineinfile or zos_copy), echo'ing will
         # result in managed node's locale which currently is IBM-1047
-        hosts.all.raw("echo '{0}' > '{1}'".format(str_one, src_file_one))
-        hosts.all.raw("echo '{0}' > '{1}'".format(str_two, src_file_two))
-        hosts.all.raw("echo '{0}' > '{1}'".format(str_three, src_file_three))
+        hosts.all.raw(f"echo '{str_one}' > '{src_file_one}'")
+        hosts.all.raw(f"echo '{str_two}' > '{src_file_two}'")
+        hosts.all.raw(f"echo '{str_three}' > '{src_file_three}'")
 
         # Lets stat the deepest nested directory, not necessary to stat all of them
         results = hosts.all.stat(path=src_file_three)
@@ -770,7 +980,12 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
 
         # Nested zos_copy from IBM-1047 to UTF-8
         # Testing src ending in / such that the contents of the src directory will be copied
-        copy_res = hosts.all.zos_copy(src=src_path+"/", dest=dest_path, encoding={"from": "IBM-1047", "to": "UTF-8"}, remote_src=True)
+        copy_res = hosts.all.zos_copy(
+            src=src_path+"/",
+            dest=dest_path,
+            encoding={"from": "IBM-1047", "to": "UTF-8"},
+            remote_src=True
+        )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -779,9 +994,9 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
         # File z/OS dest is now UTF-8, dump the hex value and compare it to an
         # expected big-endian version, can't run delegate_to local host so expected
         # value is the work around for now.
-        str_one_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_one))
-        str_two_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_two))
-        str_three_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_three))
+        str_one_od_dst = hosts.all.shell(cmd=f"od -x {dst_file_one}")
+        str_two_od_dst = hosts.all.shell(cmd=f"od -x {dst_file_two}")
+        str_three_od_dst = hosts.all.shell(cmd=f"od -x {dst_file_three}")
 
         for result in str_one_od_dst.contacted.values():
             assert result.get("stdout") == str_one_big_endian_hex
@@ -811,22 +1026,24 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_
         level_1 = os.path.basename(source)
         level_2 = os.path.basename(full_source)
 
-        copy_res = hosts.all.zos_copy(src=source, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
+        copy_res = hosts.all.zos_copy(
+            src=source,
+            dest=dest_path,
+            encoding={"from": "ISO8859-1", "to": "IBM-1047"}
+        )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
-        full_outer_file= "{0}/{1}/file3".format(dest_path, level_1)
-        full_iner_file= "{0}/{1}/{2}/file3".format(dest_path, level_1, level_2)
-        verify_copy_1 = hosts.all.shell(cmd="cat {0}".format(full_outer_file))
-        verify_copy_2 = hosts.all.shell(cmd="cat {0}".format(full_iner_file))
+        full_outer_file= f"{dest_path}/{level_1}/file3"
+        full_iner_file= f"{dest_path}/{level_1}/{level_2}/file3"
+        verify_copy_1 = hosts.all.shell(cmd=f"cat {full_outer_file}")
+        verify_copy_2 = hosts.all.shell(cmd=f"cat {full_iner_file}")
 
         for result in verify_copy_1.contacted.values():
-            print(result)
             assert result.get("stdout") == DUMMY_DATA
         for result in verify_copy_2.contacted.values():
-            print(result)
             assert result.get("stdout") == DUMMY_DATA
     finally:
         hosts.all.file(name=dest_path, state="absent")
@@ -847,7 +1064,7 @@ def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
 
     temp_path = tempfile.mkdtemp()
     src_basename = "source" if copy_directory else "source/"
-    source_path = "{0}/{1}".format(temp_path, src_basename)
+    source_path = f"{temp_path}/{src_basename}"
 
     try:
         os.mkdir(source_path)
@@ -855,18 +1072,18 @@ def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
 
         copy_result = hosts.all.zos_copy(src=source_path, dest=dest_path)
 
-        stat_source_res = hosts.all.stat(path="{0}/{1}".format(dest_path, src_basename))
+        stat_source_res = hosts.all.stat(path=f"{dest_path}/{src_basename}")
         if copy_directory:
-            stat_file_res = hosts.all.stat(path="{0}/{1}/file3".format(dest_path, src_basename))
+            stat_file_res = hosts.all.stat(path=f"{dest_path}/{src_basename}/file3")
         else:
-            stat_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+            stat_file_res = hosts.all.stat(path=f"{dest_path}/file3")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
             if copy_directory:
-                assert result.get("dest") == "{0}/{1}".format(dest_path, src_basename)
+                assert result.get("dest") == f"{dest_path}/{src_basename}"
             else:
                 assert result.get("dest") == dest_path
 
@@ -905,18 +1122,18 @@ def test_copy_uss_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
             remote_src=True
         )
 
-        stat_dir_res = hosts.all.stat(path="{0}/{1}".format(dest_dir, src_basename))
+        stat_dir_res = hosts.all.stat(path=f"{dest_dir}/{src_basename}")
         if copy_directory:
-            stat_file_res = hosts.all.stat(path="{0}/{1}/profile".format(dest_dir, src_basename))
+            stat_file_res = hosts.all.stat(path=f"{dest_dir}/{src_basename}/profile")
         else:
-            stat_file_res = hosts.all.stat(path="{0}/profile".format(dest_dir))
+            stat_file_res = hosts.all.stat(path=f"{dest_dir}/profile")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
             if copy_directory:
-                assert result.get("dest") == "{0}/{1}".format(dest_dir, src_basename)
+                assert result.get("dest") == f"{dest_dir}/{src_basename}"
             else:
                 assert result.get("dest") == dest_dir
 
@@ -941,11 +1158,11 @@ def test_copy_uss_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
 def test_copy_local_dir_to_existing_dir_forced(ansible_zos_module, copy_directory):
     hosts = ansible_zos_module
     dest_path = get_random_file_name(dir=TMP_DIRECTORY)
-    dest_file = "{0}/profile".format(dest_path)
+    dest_file = f"{dest_path}/profile"
 
     temp_path = tempfile.mkdtemp()
     source_basename = "source" if copy_directory else "source/"
-    source_path = "{0}/{1}".format(temp_path, source_basename)
+    source_path = f"{temp_path}/{source_basename}"
 
     try:
         os.mkdir(source_path)
@@ -960,19 +1177,19 @@ def test_copy_local_dir_to_existing_dir_forced(ansible_zos_module, copy_director
             force=True
         )
 
-        stat_source_res = hosts.all.stat(path="{0}/{1}".format(dest_path, source_basename))
+        stat_source_res = hosts.all.stat(path=f"{dest_path}/{source_basename}")
         stat_old_file_res = hosts.all.stat(path=dest_file)
         if copy_directory:
-            stat_new_file_res = hosts.all.stat(path="{0}/{1}/file3".format(dest_path, source_basename))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_path}/{source_basename}/file3")
         else:
-            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_path}/file3")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
             if copy_directory:
-                assert result.get("dest") == "{0}/{1}".format(dest_path, source_basename)
+                assert result.get("dest") == f"{dest_path}/{source_basename}"
             else:
                 assert result.get("dest") == dest_path
 
@@ -1005,7 +1222,7 @@ def test_copy_uss_dir_to_existing_dir_forced(ansible_zos_module, copy_directory)
     src_dir = src_parent + src_basename
     src_file = os.path.normpath("{0}/profile".format(src_dir))
     dest_dir = get_random_file_name(dir=TMP_DIRECTORY)
-    dest_file = "{0}/file".format(dest_dir)
+    dest_file = f"{dest_dir}/file"
 
     try:
         hosts.all.file(path=src_dir, state="directory")
@@ -1021,19 +1238,19 @@ def test_copy_uss_dir_to_existing_dir_forced(ansible_zos_module, copy_directory)
             force=True
         )
 
-        stat_dir_res = hosts.all.stat(path="{0}/{1}".format(dest_dir, src_basename))
+        stat_dir_res = hosts.all.stat(path=f"{dest_dir}/{src_basename}")
         stat_old_file_res = hosts.all.stat(path=dest_file)
         if copy_directory:
-            stat_new_file_res = hosts.all.stat(path="{0}/{1}/profile".format(dest_dir, src_basename))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_dir}/{src_basename}/profile")
         else:
-            stat_new_file_res = hosts.all.stat(path="{0}/profile".format(dest_dir))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_dir}/profile")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
             if copy_directory:
-                assert result.get("dest") == "{0}/{1}".format(dest_dir, src_basename)
+                assert result.get("dest") == f"{dest_dir}/{src_basename}"
             else:
                 assert result.get("dest") == dest_dir
 
@@ -1065,9 +1282,9 @@ def test_copy_local_nested_dir_to_uss(ansible_zos_module, create_dest):
 
     source_path = tempfile.mkdtemp()
     if not source_path.endswith("/"):
-        source_path = "{0}/".format(source_path)
-    subdir_a_path = "{0}subdir_a".format(source_path)
-    subdir_b_path = "{0}subdir_b".format(source_path)
+        source_path = f"{source_path}/"
+    subdir_a_path = f"{source_path}subdir_a"
+    subdir_b_path = f"{source_path}subdir_b"
 
     try:
         os.mkdir(subdir_a_path)
@@ -1084,8 +1301,8 @@ def test_copy_local_nested_dir_to_uss(ansible_zos_module, create_dest):
             force=create_dest
         )
 
-        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
-        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path))
+        stat_subdir_a_res = hosts.all.stat(path=f"{dest_path}/subdir_a")
+        stat_subdir_b_res = hosts.all.stat(path=f"{dest_path}/subdir_b")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
@@ -1110,8 +1327,8 @@ def test_copy_uss_nested_dir_to_uss(ansible_zos_module, create_dest):
     source_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
     dest_path = get_random_file_name(dir=TMP_DIRECTORY)
 
-    subdir_a_path = "{0}subdir_a".format(source_path)
-    subdir_b_path = "{0}subdir_b".format(source_path)
+    subdir_a_path = f"{source_path}subdir_a"
+    subdir_b_path = f"{source_path}subdir_b"
 
     try:
         hosts.all.file(path=subdir_a_path, state="directory")
@@ -1126,8 +1343,8 @@ def test_copy_uss_nested_dir_to_uss(ansible_zos_module, create_dest):
             force=create_dest
         )
 
-        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
-        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path))
+        stat_subdir_a_res = hosts.all.stat(path=f"{dest_path}/subdir_a")
+        stat_subdir_b_res = hosts.all.stat(path=f"{dest_path}/subdir_b")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
@@ -1152,16 +1369,16 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
 
     source_parent_path = tempfile.mkdtemp()
     source_basename = "source" if copy_directory else "source/"
-    source_path = "{0}/{1}".format(source_parent_path, source_basename)
+    source_path = f"{source_parent_path}/{source_basename}"
     mode = "0755"
 
     dest_path = get_random_file_name(dir=TMP_DIRECTORY)
-    dest_profile = "{0}/profile".format(dest_path)
-    dest_subdir = "{0}/{1}".format(dest_path, source_basename)
+    dest_profile = f"{dest_path}/profile"
+    dest_subdir = f"{dest_path}/{source_basename}"
     if copy_directory:
-        dest_old_file = "{0}/file1".format(dest_subdir)
+        dest_old_file = f"{dest_subdir}/file1"
     else:
-        dest_old_file = "{0}/file1".format(dest_path)
+        dest_old_file = f"{dest_path}/file1"
     dest_mode = "0644"
 
     try:
@@ -1187,9 +1404,9 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
         stat_old_file_res = hosts.all.stat(path=dest_profile)
         stat_overwritten_file_res = hosts.all.stat(path=dest_old_file)
         if copy_directory:
-            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_subdir))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_subdir}/file3")
         else:
-            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_path}/file3")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
@@ -1247,18 +1464,18 @@ def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
     mode = "0755"
 
     dest_path = get_random_file_name(dir=TMP_DIRECTORY)
-    dest_subdir = "{0}/{1}".format(dest_path, source_basename)
-    dest_profile = "{0}/profile".format(dest_path)
+    dest_subdir = f"{dest_path}/{source_basename}"
+    dest_profile = f"{dest_path}/profile"
     if copy_directory:
-        dest_old_file = "{0}/file1".format(dest_subdir)
+        dest_old_file = f"{dest_subdir}/file1"
     else:
-        dest_old_file = "{0}/file1".format(dest_path)
+        dest_old_file = f"{dest_path}/file1"
     dest_mode = "0644"
 
     try:
         hosts.all.file(path=source_path, state="directory")
         for i in range(1, 4):
-            current_file_path = os.path.normpath("{0}/file{1}".format(source_path, i))
+            current_file_path = os.path.normpath(f"{source_path}/file{i}")
             hosts.all.file(path=current_file_path, state="touch")
 
         if copy_directory:
@@ -1281,9 +1498,9 @@ def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
         stat_old_file_res = hosts.all.stat(path=dest_profile)
         stat_overwritten_file_res = hosts.all.stat(path=dest_old_file)
         if copy_directory:
-            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_subdir))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_subdir}/file3")
         else:
-            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+            stat_new_file_res = hosts.all.stat(path=f"{dest_path}/file3")
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
@@ -1346,7 +1563,14 @@ def test_backup_uss_file(ansible_zos_module, backup):
 
         if backup:
             backup_name = get_random_file_name(dir=TMP_DIRECTORY)
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup_name)
+            copy_res = hosts.all.zos_copy(
+                src=src,
+                dest=dest,
+                force=True,
+                backup=True,
+                backup_name=backup
+            )
+
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
 
@@ -1375,7 +1599,8 @@ def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
     src_path = get_random_file_name(dir=TMP_DIRECTORY)
     dest = "/tmp"
     try:
-        open(src_path, "w").close()
+        with open(src_path, "w",encoding="utf-8") as file:
+            file.close()
         os.chmod(src_path, 0)
         copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
         for result in copy_res.contacted.values():
@@ -1418,11 +1643,12 @@ def test_copy_template_file(ansible_zos_module, encoding):
         hosts.all.file(path=dest_path, state="directory")
 
         # Adding the template vars to each host.
-        template_vars = dict(
-            var="This should be rendered with 'quotes'.",
-            if_var=5,
-            array=[1, 2, 3]
-        )
+        template_vars = {
+            "var":"This should be rendered with 'quotes'.",
+            "if_var":5,
+            "array":[1, 2, 3]
+        }
+
         for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
             host.vars.update(template_vars)
 
@@ -1442,7 +1668,7 @@ def test_copy_template_file(ansible_zos_module, encoding):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest_template),
+            cmd=f"cat {dest_template}",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1474,7 +1700,7 @@ def test_copy_template_dir(ansible_zos_module):
 
     # Ensuring there's a traling slash to copy the contents of the directory.
     temp_dir = os.path.normpath(tempfile.mkdtemp())
-    temp_dir = "{0}/".format(temp_dir)
+    temp_dir = f"{temp_dir}/"
 
     temp_subdir_a = os.path.join(temp_dir, "subdir_a")
     temp_subdir_b = os.path.join(temp_dir, "subdir_b")
@@ -1498,11 +1724,12 @@ def test_copy_template_dir(ansible_zos_module):
         hosts.all.file(path=dest_path, state="directory")
 
         # Adding the template vars to each host.
-        template_vars = dict(
-            var="This should be rendered",
-            if_var=5,
-            array=[1, 2, 3]
-        )
+        template_vars = {
+            "var":"This should be rendered",
+            "if_var":5,
+            "array":[1, 2, 3]
+        }
+        # pylint: disable-next=protected-access
         for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
             host.vars.update(template_vars)
 
@@ -1514,11 +1741,11 @@ def test_copy_template_dir(ansible_zos_module):
         )
 
         verify_copy_a = hosts.all.shell(
-            cmd="cat {0}".format(dest_template_a),
+            cmd=f"cat {dest_template_a}",
             executable=SHELL_EXECUTABLE,
         )
         verify_copy_b = hosts.all.shell(
-            cmd="cat {0}".format(dest_template_b),
+            cmd=f"cat {dest_template_b}",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1567,11 +1794,12 @@ def test_copy_template_file_with_non_default_markers(ansible_zos_module):
         hosts.all.file(path=dest_path, state="directory")
 
         # Adding the template vars to each host.
-        template_vars = dict(
-            var="This should be rendered",
-            if_var=5,
-            array=[1, 2, 3]
-        )
+        template_vars = {
+            "var":"This should be rendered",
+            "if_var":5,
+            "array":[1, 2, 3]
+        }
+        # pylint: disable-next=protected-access
         for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
             host.vars.update(template_vars)
 
@@ -1579,16 +1807,16 @@ def test_copy_template_file_with_non_default_markers(ansible_zos_module):
             src=temp_template,
             dest=dest_path,
             use_template=True,
-            template_parameters=dict(
-                variable_start_string="((",
-                variable_end_string="))",
-                comment_start_string="#%",
-                comment_end_string="%#"
-            )
+            template_parameters={
+                "variable_start_string":"((",
+                "variable_end_string":"))",
+                "comment_start_string":"#%",
+                "comment_end_string":"%#"
+            }
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest_template),
+            cmd=f"cat {dest_template}",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1624,11 +1852,12 @@ def test_copy_template_file_to_dataset(ansible_zos_module):
         temp_template = create_template_file(temp_dir, use_default_markers=True)
 
         # Adding the template vars to each host.
-        template_vars = dict(
-            var="This should be rendered",
-            if_var=5,
-            array=[1, 2, 3]
-        )
+        template_vars = {
+            "var":"This should be rendered",
+            "if_var":5,
+            "array":[1, 2, 3]
+        }
+        # pylint: disable-next=protected-access
         for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
             host.vars.update(template_vars)
 
@@ -1639,7 +1868,7 @@ def test_copy_template_file_to_dataset(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_dataset),
+            cmd=f"cat \"//'{dest_dataset}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1686,7 +1915,7 @@ def test_copy_asa_file_to_asa_sequential(ansible_zos_module):
         # We only need to escape $ character in this notation
         dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_escaped),
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1711,7 +1940,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
     try:
         dest = get_tmp_ds_name()
         hosts.all.zos_data_set(name=dest, state="absent")
-        full_dest = "{0}(TE$@#)".format(dest)
+        full_dest = f"{dest}(TE$@#)"
 
         copy_result = hosts.all.zos_copy(
             content=ASA_SAMPLE_CONTENT,
@@ -1725,7 +1954,7 @@ def test_copy_asa_file_to_asa_partitioned(ansible_zos_module):
         # We only need to escape $ character in this notation
         dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_escaped),
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1780,7 +2009,7 @@ def test_copy_seq_data_set_to_seq_asa(ansible_zos_module):
         # We only need to escape $ character in this notation
         dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_escaped),
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1815,7 +2044,8 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
 
         dest = get_tmp_ds_name(llq_size=4)
         dest = f"{dest}$#@"
-        full_dest = "{0}(MEMB$#@)".format(dest)
+        dest = get_tmp_ds_name()
+        full_dest = f"{dest}(MEMB$#@)"
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1836,7 +2066,7 @@ def test_copy_seq_data_set_to_partitioned_asa(ansible_zos_module):
         # We only need to escape $ character in this notation
         dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_escaped),
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1862,7 +2092,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
     try:
         src = get_tmp_ds_name(llq_size=4)
         src = f"{src}$#@"
-        full_src = "{0}(MEM$#@)".format(src)
+        full_src = f"{src}(MEM$#@)"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1892,7 +2122,7 @@ def test_copy_partitioned_data_set_to_seq_asa(ansible_zos_module):
         # We only need to escape $ character in this notation
         dest_escaped = dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_escaped),
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -1918,7 +2148,7 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
     try:
         src = get_tmp_ds_name(llq_size=4)
         src = f"{src}$#@"
-        full_src = "{0}(MEMBER)".format(src)
+        full_src = f"{src}(MEMBER)"
         hosts.all.zos_data_set(
             name=src,
             state="present",
@@ -1928,7 +2158,9 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
 
         dest = get_tmp_ds_name(llq_size=4)
         dest = f"{dest}$#@"
-        full_dest = "{0}(MEM$#@)".format(dest)
+        dest = get_tmp_ds_name()
+        full_dest = f"{dest}(MEM$#@)"
+
         hosts.all.zos_data_set(name=dest, state="absent")
 
         hosts.all.zos_copy(
@@ -1949,7 +2181,7 @@ def test_copy_partitioned_data_set_to_partitioned_asa(ansible_zos_module):
         # We only need to escape $ character in this notation
         dest_escaped = full_dest.replace('$', '\\$')
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest_escaped),
+            cmd=f"cat \"//'{dest_escaped}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2001,7 +2233,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat '{0}'".format(dest),
+            cmd=f"cat '{dest}'",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2014,7 +2246,7 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
             # Since OPUT preserves all blank spaces associated
             # with a record, we strip them before comparing to
             # what we expect.
-            for cp_line, content_line in zip(v_cp.get("stdout_lines"), ASA_COPY_CONTENT.splitlines()):
+            for cp_line,content_line in zip(v_cp.get("stdout_lines"),ASA_COPY_CONTENT.splitlines()):
                 assert cp_line.rstrip() == content_line
     finally:
         hosts.all.zos_data_set(name=src, state="absent")
@@ -2022,15 +2254,21 @@ def test_copy_asa_data_set_to_text_file(ansible_zos_module):
 
 
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_remote=False),
-    dict(src="/etc/profile", is_remote=True),])
+    {
+        "src":"/etc/profile",
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_remote":True
+    }])
 def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
     hosts = ansible_zos_module
     dest_path = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
     mode = "750"
     other_mode = "744"
     mode_overwrite = "0777"
-    full_path = "{0}/profile".format(dest_path)
+    full_path = f"{dest_path}/profile"
     try:
         hosts.all.file(path=dest_path, state="directory", mode=mode)
         permissions_before = hosts.all.stat(path=dest_path)
@@ -2092,9 +2330,9 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
     data_set_2 = get_tmp_ds_name(llq_size=4)
     data_set_2 = f"{data_set_2}$#@"
     member_1 = "MEM1"
-    if ds_type == "pds" or ds_type == "pdse":
-        src_data_set = data_set_1 + "({0})".format(member_1)
-        dest_data_set = data_set_2 + "({0})".format(member_1)
+    if ds_type in ["pds", "pdse"]:
+        src_data_set = f"{data_set_1}({member_1})"
+        dest_data_set = f"{data_set_2}({member_1})"
     else:
         src_data_set = data_set_1
         dest_data_set = data_set_2
@@ -2241,7 +2479,7 @@ def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         # kill process - release lock - this also seems to end the job
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
-        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        hosts.all.shell(cmd=f"kill 9 {pid.strip()}")
         # clean up c code/object/executable files, jcl
         if temp_dir is not None:
             hosts.all.shell(cmd=f'rm -r {temp_dir}')
@@ -2423,7 +2661,7 @@ def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
 
     fd, src = tempfile.mkstemp()
     os.close(fd)
-    with open(src, "w") as infile:
+    with open(src, "w",encoding="utf-8") as infile:
         infile.write(DUMMY_DATA)
 
     try:
@@ -2437,12 +2675,12 @@ def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+            cmd=f"cat \"//'{dest}'\" > /dev/null 2>/dev/null",
             executable=SHELL_EXECUTABLE,
         )
 
         verify_recl = hosts.all.shell(
-            cmd="dls -l {0}".format(dest),
+            cmd=f"dls -l {dest}",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2490,12 +2728,12 @@ def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd=f"cat \"//'{dest}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
         verify_recl = hosts.all.shell(
-            cmd="dls -l {0}".format(dest),
+            cmd=f"dls -l {dest}",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2566,10 +2804,8 @@ def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module)
         # Creating a binary file on the remote system through Python
         # to avoid encoding issues if we were to copy a local file
         # or use the shell directly.
-        python_cmd = """python3 -c 'with open("{0}", "wb") as f: f.write(b"{1}")'""".format(
-            src,
-            DUMMY_DATA_BINARY_ESCAPED
-        )
+        python_cmd = f"""python3 -c 'with open("{src}", "wb") as f:
+        f.write(b"{DUMMY_DATA_BINARY_ESCAPED}")'"""
         python_result = hosts.all.shell(python_cmd)
         for result in python_result.contacted.values():
             assert result.get("msg") is None or result.get("msg") == ""
@@ -2577,7 +2813,7 @@ def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module)
 
         # Because the original bug report used a file tagged as 'binary'
         # on z/OS, we'll recreate that use case here.
-        hosts.all.shell("chtag -b {0}".format(src))
+        hosts.all.shell(f"chtag -b {src}")
 
         copy_result = hosts.all.zos_copy(
             src=src,
@@ -2598,12 +2834,42 @@ def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module)
 @pytest.mark.uss
 @pytest.mark.seq
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=False),
-    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=False),
-    dict(src="Example inline content", is_file=False, is_binary=False, is_remote=False),
-    dict(src="Example inline content", is_file=False, is_binary=True, is_remote=False),
-    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=True),
-    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=True),
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":True,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "is_binary":False,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "is_binary":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":False,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":True,
+        "is_remote":True
+    },
 ])
 def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
     hosts = ansible_zos_module
@@ -2613,12 +2879,22 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
         hosts.all.zos_data_set(name=dest, state="absent")
 
         if src["is_file"]:
-            copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
+            copy_result = hosts.all.zos_copy(
+                src=src["src"],
+                dest=dest,
+                remote_src=src["is_remote"],
+                is_binary=src["is_binary"]
+            )
         else:
-            copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
+            copy_result = hosts.all.zos_copy(
+                content=src["src"],
+                dest=dest,
+                remote_src=src["is_remote"],
+                is_binary=src["is_binary"]
+            )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+            cmd=f"cat \"//'{dest}'\" > /dev/null 2>/dev/null",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -2637,12 +2913,42 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
 @pytest.mark.uss
 @pytest.mark.seq
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=True, force=True, is_remote=False),
-    dict(src="Example inline content", is_file=False, force=True, is_remote=False),
-    dict(src="/etc/profile", is_file=True, force=True, is_remote=True),
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=False),
-    dict(src="Example inline content", is_file=False, force=False, is_remote=False),
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=True),
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":True,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "force":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":True,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":False,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "force":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":False,
+        "is_remote":True
+    },
 ])
 def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
     hosts = ansible_zos_module
@@ -2652,9 +2958,19 @@ def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
 
         if src["is_file"]:
-            copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])
+            copy_result = hosts.all.zos_copy(
+                src=src["src"],
+                dest=dest,
+                remote_src=src["is_remote"],
+                force=src["force"]
+            )
         else:
-            copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])
+            copy_result = hosts.all.zos_copy(
+                content=src["src"],
+                dest=dest,
+                remote_src=src["is_remote"],
+                force=src["force"]
+            )
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
@@ -2667,10 +2983,26 @@ def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
 @pytest.mark.uss
 @pytest.mark.seq
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", force=False, is_remote=False),
-    dict(src="/etc/profile", force=True, is_remote=False),
-    dict(src="/etc/profile", force=False, is_remote=True),
-    dict(src="/etc/profile", force=True, is_remote=True),
+    {
+        "src":"/etc/profile",
+        "force":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "force":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "force":False,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "force":True,
+        "is_remote":True
+    },
 ])
 def test_copy_file_to_non_empty_sequential_data_set(ansible_zos_module, src):
     hosts = ansible_zos_module
@@ -2680,7 +3012,12 @@ def test_copy_file_to_non_empty_sequential_data_set(ansible_zos_module, src):
         hosts.all.zos_data_set(name=dest, type="seq", state="absent")
         hosts.all.zos_copy(content="Inline content", dest=dest)
 
-        copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])
+        copy_result = hosts.all.zos_copy(
+            src=src["src"],
+            dest=dest,
+            remote_src=src["is_remote"],
+            force=src["force"]
+        )
 
         for result in copy_result.contacted.values():
             if src["force"]:
@@ -2706,7 +3043,7 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"cat {dest}", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -2739,7 +3076,7 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module, force):
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"cat {dest}", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -2773,7 +3110,7 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest_path), executable=SHELL_EXECUTABLE
+            cmd=f"cat {dest_path}", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -2798,7 +3135,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
         hosts.all.shell(cmd=f"decho 'this is a test line' '{src_ds}'")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"cat \"//'{dest}'\"", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -2826,7 +3163,7 @@ def test_copy_ps_to_empty_ps(ansible_zos_module, force):
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"cat \"//'{dest}'\"", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -2853,7 +3190,7 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"cat \"//'{dest}'\"", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -2884,7 +3221,7 @@ def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"cat \"//'{dest}'\"", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -2914,7 +3251,13 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
 
         if backup:
             backup_name = get_tmp_ds_name()
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup_name)
+            copy_res = hosts.all.zos_copy(
+                src=src,
+                dest=dest,
+                force=True,
+                backup=True,
+                backup_name=backup_name
+            )
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
 
@@ -2943,17 +3286,47 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
 @pytest.mark.uss
 @pytest.mark.pdse
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=False),
-    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=False),
-    dict(src="Example inline content", is_file=False, is_binary=False, is_remote=False),
-    dict(src="Example inline content", is_file=False, is_binary=True, is_remote=False),
-    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=True),
-    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=True),
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":True,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "is_binary":False,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "is_binary":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":False,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "is_binary":True,
+        "is_remote":True
+    },
 ])
 def test_copy_file_to_non_existing_member(ansible_zos_module, src):
     hosts = ansible_zos_module
     data_set = get_tmp_ds_name()
-    dest = "{0}(PROFILE)".format(data_set)
+    dest = f"{data_set}(PROFILE)"
 
     try:
         hosts.all.zos_data_set(
@@ -2967,12 +3340,21 @@ def test_copy_file_to_non_existing_member(ansible_zos_module, src):
         )
 
         if src["is_file"]:
-            copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, is_binary=src["is_binary"], remote_src=src["is_remote"])
+            copy_result = hosts.all.zos_copy(
+                src=src["src"],
+                dest=dest,
+                is_binary=src["is_binary"],
+                remote_src=src["is_remote"]
+            )
         else:
-            copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, is_binary=src["is_binary"])
+            copy_result = hosts.all.zos_copy(
+                content=src["src"],
+                dest=dest,
+                is_binary=src["is_binary"]
+            )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+            cmd=f"cat \"//'{dest}'\" > /dev/null 2>/dev/null",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3029,17 +3411,47 @@ def test_copy_file_to_non_existing_member_implicit(ansible_zos_module):
 @pytest.mark.uss
 @pytest.mark.pdse
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=False),
-    dict(src="/etc/profile", is_file=True, force=True, is_remote=False),
-    dict(src="Example inline content", is_file=False, force=False, is_remote=False),
-    dict(src="Example inline content", is_file=False, force=True, is_remote=False),
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=True),
-    dict(src="/etc/profile", is_file=True, force=True, is_remote=True)
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":False,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":True,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "force":False,
+        "is_remote":False
+    },
+    {
+        "src":"Example inline content",
+        "is_file":False,
+        "force":True,
+        "is_remote":False
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":False,
+        "is_remote":True
+    },
+    {
+        "src":"/etc/profile",
+        "is_file":True,
+        "force":True,
+        "is_remote":True
+    }
 ])
 def test_copy_file_to_existing_member(ansible_zos_module, src):
     hosts = ansible_zos_module
     data_set = get_tmp_ds_name()
-    dest = "{0}(PROFILE)".format(data_set)
+    dest = f"{data_set}(PROFILE)"
 
     try:
         hosts.all.zos_data_set(
@@ -3054,12 +3466,17 @@ def test_copy_file_to_existing_member(ansible_zos_module, src):
         hosts.all.zos_data_set(name=dest, type="member", state="present")
 
         if src["is_file"]:
-            copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, force=src["force"], remote_src=src["is_remote"])
+            copy_result = hosts.all.zos_copy(
+                src=src["src"],
+                dest=dest,
+                force=src["force"],
+                remote_src=src["is_remote"]
+            )
         else:
             copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, force=src["force"])
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+            cmd=f"cat \"//'{dest}'\" > /dev/null 2>/dev/null",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3080,19 +3497,37 @@ def test_copy_file_to_existing_member(ansible_zos_module, src):
 @pytest.mark.seq
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="seq", is_binary=False),
-    dict(type="seq", is_binary=True),
-    dict(type="pds", is_binary=False),
-    dict(type="pds", is_binary=True),
-    dict(type="pdse", is_binary=False),
-    dict(type="pdse", is_binary=True)
+    {
+        "type":"seq",
+        "is_binary":False
+    },
+    {
+        "type":"seq",
+        "is_binary":True
+    },
+    {
+        "type":"pds",
+        "is_binary":False
+    },
+    {
+        "type":"pds",
+        "is_binary":True
+    },
+    {
+        "type":"pdse",
+        "is_binary":False
+    },
+    {
+        "type":"pdse",
+        "is_binary":True
+    }
 ])
 def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
     hosts = ansible_zos_module
     src_data_set = get_tmp_ds_name()
-    src = src_data_set if args["type"] == "seq" else "{0}(TEST)".format(src_data_set)
+    src = src_data_set if args["type"] == "seq" else f"{src_data_set}(TEST)"
     dest_data_set = get_tmp_ds_name()
-    dest = "{0}(MEMBER)".format(dest_data_set)
+    dest = f"{dest_data_set}(MEMBER)"
 
     try:
         hosts.all.zos_data_set(name=src_data_set, type=args["type"])
@@ -3100,15 +3535,20 @@ def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
             hosts.all.zos_data_set(name=src, type="member")
 
         hosts.all.shell(
-            "decho 'Records for test' '{0}'".format(src),
+            f"decho 'Records for test' '{src}'",
             executable=SHELL_EXECUTABLE
         )
 
         hosts.all.zos_data_set(name=dest_data_set, type="pdse", replace=True)
-        copy_result = hosts.all.zos_copy(src=src, dest=dest, is_binary=args["is_binary"], remote_src=True)
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            is_binary=args["is_binary"],
+            remote_src=True
+        )
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd=f"cat \"//'{dest}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3127,19 +3567,37 @@ def test_copy_data_set_to_non_existing_member(ansible_zos_module, args):
 @pytest.mark.seq
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="seq", force=False),
-    dict(type="seq", force=True),
-    dict(type="pds", force=False),
-    dict(type="pds", force=True),
-    dict(type="pdse", force=False),
-    dict(type="pdse", force=True)
+    {
+        "type":"seq",
+        "force":False
+    },
+    {
+        "type":"seq",
+        "force":True
+    },
+    {
+        "type":"pds",
+        "force":False
+    },
+    {
+        "type":"pds",
+        "force":True
+    },
+    {
+        "type":"pdse",
+        "force":False
+    },
+    {
+        "type":"pdse",
+        "force":True
+    }
 ])
 def test_copy_data_set_to_existing_member(ansible_zos_module, args):
     hosts = ansible_zos_module
     src_data_set = get_tmp_ds_name()
-    src = src_data_set if args["type"] == "seq" else "{0}(TEST)".format(src_data_set)
+    src = src_data_set if args["type"] == "seq" else f"{src_data_set}(TEST)"
     dest_data_set = get_tmp_ds_name()
-    dest = "{0}(MEMBER)".format(dest_data_set)
+    dest = f"{dest_data_set}(MEMBER)"
 
     try:
         hosts.all.zos_data_set(name=src_data_set, type=args["type"])
@@ -3147,7 +3605,7 @@ def test_copy_data_set_to_existing_member(ansible_zos_module, args):
             hosts.all.zos_data_set(name=src, type="member")
 
         hosts.all.shell(
-            "decho 'Records for test' '{0}'".format(src),
+            f"decho 'Records for test' '{src}'",
             executable=SHELL_EXECUTABLE
         )
 
@@ -3156,7 +3614,7 @@ def test_copy_data_set_to_existing_member(ansible_zos_module, args):
         copy_result = hosts.all.zos_copy(src=src, dest=dest, force=args["force"], remote_src=True)
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd=f"cat \"//'{dest}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3183,7 +3641,7 @@ def test_copy_data_set_to_existing_member(ansible_zos_module, args):
 def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
     hosts = ansible_zos_module
     dest = get_tmp_ds_name()
-    dest_path = "{0}(PROFILE)".format(dest)
+    dest_path = f"{dest}(PROFILE)"
     src_file = "/etc/profile"
 
     try:
@@ -3191,7 +3649,7 @@ def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
 
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=is_remote)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
+            cmd=f"cat \"//'{dest_path}'\" > /dev/null 2>/dev/null",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3244,7 +3702,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
 
     temp_path = tempfile.mkdtemp()
     src_basename = "source/"
-    source_path = "{0}/{1}".format(temp_path, src_basename)
+    source_path = f"{temp_path}/{src_basename}"
 
     try:
         os.mkdir(source_path)
@@ -3252,7 +3710,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
 
         copy_res = hosts.all.zos_copy(src=source_path, dest=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}({1})'\"".format(dest, "FILE2"),
+            cmd=f"cat \"//'{dest}(FILE2)'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3293,7 +3751,7 @@ def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
 
         copy_result = hosts.all.zos_copy(src=src_dir, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"),
+            cmd=f"cat \"//'{dest}(FILE2)'\" > /dev/null 2>/dev/null",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3314,9 +3772,9 @@ def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
 def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_data_set = get_tmp_ds_name()
-    src = src_data_set if src_type == "seq" else "{0}(TEST)".format(src_data_set)
+    src = src_data_set if src_type == "seq" else f"{src_data_set}(TEST)"
     dest_data_set = get_tmp_ds_name()
-    dest = "{0}(MEMBER)".format(dest_data_set)
+    dest = f"{dest_data_set}(MEMBER)"
 
     try:
         hosts.all.zos_data_set(name=src_data_set, type=src_type)
@@ -3324,7 +3782,7 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
             hosts.all.zos_data_set(name=src, type="member")
 
         hosts.all.shell(
-            "decho 'Records for test' '{0}'".format(src),
+            f"decho 'Records for test' '{src}'",
             executable=SHELL_EXECUTABLE
         )
 
@@ -3332,7 +3790,7 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
         copy_result = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
 
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest),
+            cmd=f"cat \"//'{dest}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -3351,10 +3809,22 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
 
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(src_type="pds", dest_type="pds"),
-    dict(src_type="pds", dest_type="pdse"),
-    dict(src_type="pdse", dest_type="pds"),
-    dict(src_type="pdse", dest_type="pdse"),
+    {
+        "src_type":"pds",
+        "dest_type":"pds"
+    },
+    {
+        "src_type":"pds",
+        "dest_type":"pdse"
+    },
+    {
+        "src_type":"pdse",
+        "dest_type":"pds"
+    },
+    {
+        "src_type":"pdse",
+        "dest_type":"pdse"
+    },
 ])
 def test_copy_pds_to_existing_pds(ansible_zos_module, args):
     hosts = ansible_zos_module
@@ -3367,7 +3837,7 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="mls {0}".format(dest),
+            cmd=f"mls {dest}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -3462,16 +3932,16 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
 
         # zos_copy w an executable:
         copy_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src_lib, pgm_mem),
-            dest="{0}({1})".format(dest_lib, pgm_mem),
+            src=f"{src_lib}({pgm_mem})",
+            dest=f"{dest_lib}({pgm_mem})",
             remote_src=True,
             executable=True,
             aliases=False
         )
         # zos_copy w an executables and its alias:
         copy_res_aliases = hosts.all.zos_copy(
-            src="{0}({1})".format(src_lib, pgm_mem),
-            dest="{0}({1})".format(dest_lib_aliases, pgm_mem),
+            src=f"{src_lib}({pgm_mem})",
+            dest=f"{dest_lib_aliases}({pgm_mem})",
             remote_src=True,
             executable=True,
             aliases=True
@@ -3480,20 +3950,20 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}({1})".format(dest_lib, pgm_mem)
+            assert result.get("dest") == f"{dest_lib}({pgm_mem})"
 
         for result in copy_res_aliases.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}({1})".format(dest_lib_aliases, pgm_mem)
+            assert result.get("dest") == f"{dest_lib_aliases}({pgm_mem})"
 
         # check ALIAS keyword and name in mls output
         verify_copy_mls = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib),
+            cmd=f"mls {dest_lib}",
             executable=SHELL_EXECUTABLE
         )
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=f"mls {dest_lib_aliases}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -3501,20 +3971,35 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            mls_alias_str = "ALIAS({0})".format(pgm_mem_alias)
+            mls_alias_str = f"ALIAS({pgm_mem_alias})"
             assert mls_alias_str not in stdout
 
         for v_cp in verify_copy_mls_aliases.contacted.values():
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+            expected_mls_str = f"{pgm_mem} ALIAS({pgm_mem_alias})"
             assert expected_mls_str in stdout
 
         # execute pgms to validate copy
-        validate_loadlib_pgm(hosts, steplib=dest_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
-        validate_loadlib_pgm(hosts, steplib=dest_lib_aliases, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
-        validate_loadlib_pgm(hosts, steplib=dest_lib_aliases, pgm_name=pgm_mem_alias, expected_output_str=COBOL_PRINT_STR)
+        validate_loadlib_pgm(
+            hosts,
+            steplib=dest_lib,
+            pgm_name=pgm_mem,
+            expected_output_str=COBOL_PRINT_STR
+        )
+        validate_loadlib_pgm(
+            hosts,
+            steplib=dest_lib_aliases,
+            pgm_name=pgm_mem,
+            expected_output_str=COBOL_PRINT_STR
+        )
+        validate_loadlib_pgm(
+            hosts,
+            steplib=dest_lib_aliases,
+            pgm_name=pgm_mem_alias,
+            expected_output_str=COBOL_PRINT_STR
+        )
 
     finally:
         hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
@@ -3590,7 +4075,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
 
         # zos_copy an executable to USS file:
         copy_uss_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src_lib, pgm_mem),
+            src=f"{src_lib}({pgm_mem})",
             dest=uss_dest,
             remote_src=True,
             executable=True,
@@ -3601,7 +4086,7 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
 
         # run executable on USS
         verify_exe_uss = hosts.all.shell(
-            cmd="{0}".format(uss_dest)
+            cmd=f"{uss_dest}"
         )
         for v_cp_u in verify_exe_uss.contacted.values():
             assert v_cp_u.get("rc") == 0
@@ -3610,16 +4095,16 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
 
         # zos_copy from USS file w an executable:
         copy_res = hosts.all.zos_copy(
-            src="{0}".format(uss_dest),
-            dest="{0}({1})".format(dest_lib, pgm_mem),
+            src=f"{uss_dest}",
+            dest=f"{dest_lib}({pgm_mem})",
             remote_src=True,
             executable=True,
             aliases=False
         )
         # zos_copy from USS file w an executables and its alias:
         copy_res_aliases = hosts.all.zos_copy(
-            src="{0}".format(uss_dest),
-            dest="{0}({1})".format(dest_lib_aliases, pgm_mem),
+            src=f"{uss_dest}",
+            dest=f"{dest_lib_aliases}({pgm_mem})",
             remote_src=True,
             executable=True,
             aliases=True
@@ -3628,19 +4113,19 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}({1})".format(dest_lib, pgm_mem)
+            assert result.get("dest") == f"{dest_lib}({pgm_mem})"
         for result in copy_res_aliases.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}({1})".format(dest_lib_aliases, pgm_mem)
+            assert result.get("dest") == f"{dest_lib_aliases}({pgm_mem})"
 
         # check ALIAS keyword and name in mls output
         verify_copy_mls = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib),
+            cmd=f"mls {dest_lib}",
             executable=SHELL_EXECUTABLE
         )
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=f"mls {dest_lib_aliases}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -3648,20 +4133,35 @@ def test_copy_pds_loadlib_member_to_uss_to_loadlib(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            mls_alias_str = "ALIAS({0})".format(pgm_mem_alias)
+            mls_alias_str = f"ALIAS({pgm_mem_alias})"
             assert mls_alias_str not in stdout
 
         for v_cp in verify_copy_mls_aliases.contacted.values():
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+            expected_mls_str = f"{pgm_mem} ALIAS({pgm_mem_alias})"
             assert expected_mls_str in stdout
 
         # execute pgms to validate copy
-        validate_loadlib_pgm(hosts, steplib=dest_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
-        validate_loadlib_pgm(hosts, steplib=dest_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
-        validate_loadlib_pgm(hosts, steplib=dest_lib_aliases, pgm_name=pgm_mem_alias, expected_output_str=COBOL_PRINT_STR)
+        validate_loadlib_pgm(
+            hosts,
+            steplib=dest_lib,
+            pgm_name=pgm_mem,
+            expected_output_str=COBOL_PRINT_STR
+        )
+        validate_loadlib_pgm(
+            hosts,
+            steplib=dest_lib,
+            pgm_name=pgm_mem,
+            expected_output_str=COBOL_PRINT_STR
+        )
+        validate_loadlib_pgm(
+            hosts,
+            steplib=dest_lib_aliases,
+            pgm_name=pgm_mem_alias,
+            expected_output_str=COBOL_PRINT_STR
+        )
 
     finally:
         hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
@@ -3758,8 +4258,8 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             # dest data set does not exist, specify it in dest_dataset param.
             # copy src loadlib to dest library pds w/o aliases
             copy_res = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib),
+                src=f"{src_lib}",
+                dest=f"{dest_lib}",
                 remote_src=True,
                 executable=True,
                 aliases=False,
@@ -3774,8 +4274,8 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             )
             # copy src loadlib to dest library pds w aliases
             copy_res_aliases = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib_aliases),
+                src=f"{src_lib}",
+                dest=f"{dest_lib_aliases}",
                 remote_src=True,
                 executable=True,
                 aliases=True,
@@ -3792,16 +4292,16 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         else:
             # copy src loadlib to dest library pds w/o aliases
             copy_res = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib),
+                src=f"{src_lib}",
+                dest=f"{dest_lib}",
                 remote_src=True,
                 executable=True,
                 aliases=False
             )
             # copy src loadlib to dest library pds w aliases
             copy_res_aliases = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
-                dest="{0}".format(dest_lib_aliases),
+                src=f"{src_lib}",
+                dest=f"{dest_lib_aliases}",
                 remote_src=True,
                 executable=True,
                 aliases=True
@@ -3810,20 +4310,20 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}".format(dest_lib)
+            assert result.get("dest") == f"{dest_lib}"
 
         for result in copy_res_aliases.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}".format(dest_lib_aliases)
+            assert result.get("dest") == f"{dest_lib_aliases}"
 
         # check ALIAS keyword and name in mls output
         verify_copy_mls = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib),
+            cmd=f"mls {dest_lib}",
             executable=SHELL_EXECUTABLE
         )
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=f"mls {dest_lib_aliases}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -3831,8 +4331,8 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            mls_alias_str = "ALIAS({0})".format(pgm_mem_alias)
-            mls_alias_str2 = "ALIAS({0})".format(pgm2_mem_alias)
+            mls_alias_str = f"ALIAS({pgm_mem_alias})"
+            mls_alias_str2 = f"ALIAS({pgm2_mem_alias})"
             assert mls_alias_str not in stdout
             assert mls_alias_str2 not in stdout
 
@@ -3840,8 +4340,8 @@ def test_copy_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
+            expected_mls_str = f"{pgm_mem} ALIAS({pgm_mem_alias})"
+            expected_mls_str2 = f"{pgm2_mem} ALIAS({pgm2_mem_alias})"
             assert expected_mls_str in stdout
             assert expected_mls_str2 in stdout
 
@@ -3907,19 +4407,36 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         )
 
         # copy cobol src
-        hosts.all.zos_copy(content=COBOL_SRC.format(COBOL_PRINT_STR), dest='{0}({1})'.format(cobol_src_pds, cobol_src_mem))
+        hosts.all.zos_copy(
+            content=COBOL_SRC.format(COBOL_PRINT_STR),
+            dest=f'{cobol_src_pds}({cobol_src_mem})'
+        )
         # copy cobol2 src
-        hosts.all.zos_copy(content=COBOL_SRC.format(COBOL_PRINT_STR2), dest='{0}({1})'.format(cobol_src_pds, cobol_src_mem2))
+        hosts.all.zos_copy(
+            content=COBOL_SRC.format(COBOL_PRINT_STR2),
+            dest=f'{cobol_src_pds}({cobol_src_mem2})'
+        )
 
         # run link-edit for pgm1
         link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem, src_lib, pgm_mem)
         assert link_rc == 0
         # run link-edit for pgm2
-        link_rc = link_loadlib_from_cobol(hosts, cobol_src_pds, cobol_src_mem2, src_lib, pgm2_mem, loadlib_alias_mem="ALIAS2")
+        link_rc = link_loadlib_from_cobol(
+            hosts,
+            cobol_src_pds,
+            cobol_src_mem2,
+            src_lib, pgm2_mem,
+            loadlib_alias_mem="ALIAS2"
+        )
         assert link_rc == 0
 
         # execute pgm to test pgm1
-        validate_loadlib_pgm(hosts, steplib=src_lib, pgm_name=pgm_mem, expected_output_str=COBOL_PRINT_STR)
+        validate_loadlib_pgm(
+            hosts,
+            steplib=src_lib,
+            pgm_name=pgm_mem,
+            expected_output_str=COBOL_PRINT_STR
+        )
 
         # fetch loadlib into local
         # Copying the loadlib to USS.
@@ -3971,7 +4488,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             # copy src loadlib to dest library pds w/o aliases
             copy_res = hosts.all.zos_copy(
                 src=source_path,
-                dest="{0}".format(dest_lib),
+                dest=f"{dest_lib}",
                 executable=True,
                 aliases=False,
                 dest_data_set={
@@ -3987,7 +4504,7 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
             # copy src loadlib to dest library pds w/o aliases
             copy_res = hosts.all.zos_copy(
                 src=source_path,
-                dest="{0}".format(dest_lib),
+                dest=f"{dest_lib}",
                 executable=True,
                 aliases=False
             )
@@ -3995,11 +4512,11 @@ def test_copy_local_pds_loadlib_to_pds_loadlib(ansible_zos_module, is_created):
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}".format(dest_lib)
+            assert result.get("dest") == f"{dest_lib}"
 
         # check ALIAS keyword and name in mls output
         verify_copy_mls = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib),
+            cmd=f"mls {dest_lib}",
             executable=SHELL_EXECUTABLE
         )
         for v_cp in verify_copy_mls.contacted.values():
@@ -4107,34 +4624,34 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
 
         # copy src lib to USS dir
         copy_res_uss = hosts.all.zos_copy(
-            src="{0}".format(src_lib),
-            dest="{0}".format(uss_dir_path),
+            src=f"{src_lib}",
+            dest=f"{uss_dir_path}",
             remote_src=True,
             executable=True,
         )
         for result in copy_res_uss.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}".format(uss_dir_path)
+            assert result.get("dest") == f"{uss_dir_path}"
 
         # inspect USS dir contents
         verify_exe_uss_ls = hosts.all.shell(
-            cmd='ls {0}/{1}'.format(uss_dir_path, src_lib.upper())
+            cmd=f'ls {uss_dir_path}/{src_lib.upper()}'
         )
         for v_exe_u_ls in verify_exe_uss_ls.contacted.values():
             assert v_exe_u_ls.get("rc") == 0
-            assert "{0}\n{1}".format(src_lib.upper(), pgm_mem)
+            assert f"{src_lib.upper()}\n{pgm_mem}"
 
         # run executables on USS
         verify_exe_uss = hosts.all.shell(
-            cmd="{0}/{1}/{2}".format(uss_dir_path, src_lib.upper(), pgm_mem.lower())
+            cmd=f"{uss_dir_path}/{src_lib.upper()}/{pgm_mem.lower()}"
         )
         for v_cp_u in verify_exe_uss.contacted.values():
             assert v_cp_u.get("rc") == 0
             assert v_cp_u.get("stdout").strip() == COBOL_PRINT_STR
 
         verify_exe_uss = hosts.all.shell(
-            cmd="{0}/{1}/{2}".format(uss_dir_path, src_lib.upper(), pgm2_mem.lower())
+            cmd=f"{uss_dir_path}/{src_lib.upper()}/{pgm2_mem.lower()}"
         )
         for v_cp_u in verify_exe_uss.contacted.values():
             assert v_cp_u.get("rc") == 0
@@ -4143,16 +4660,16 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
 
         # copy USS dir to dest library pds w/o aliases
         copy_res = hosts.all.zos_copy(
-            src="{0}/{1}".format(uss_dir_path, src_lib.upper()),
-            dest="{0}".format(dest_lib),
+            src=f"{uss_dir_path}/{src_lib.upper()}",
+            dest=f"{dest_lib}",
             remote_src=True,
             executable=True,
             aliases=False
         )
         # copy USS dir to dest library pds w aliases
         copy_res_aliases = hosts.all.zos_copy(
-            src="{0}/{1}".format(uss_dir_path, src_lib.upper()),
-            dest="{0}".format(dest_lib_aliases),
+            src=f"{uss_dir_path}/{src_lib.upper()}",
+            dest=f"{dest_lib_aliases}",
             remote_src=True,
             executable=True,
             aliases=True
@@ -4161,20 +4678,20 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}".format(dest_lib)
+            assert result.get("dest") == f"{dest_lib}"
 
         for result in copy_res_aliases.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            assert result.get("dest") == "{0}".format(dest_lib_aliases)
+            assert result.get("dest") == f"{dest_lib_aliases}"
 
         # check ALIAS keyword and name in mls output
         verify_copy_mls = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib),
+            cmd=f"mls {dest_lib}",
             executable=SHELL_EXECUTABLE
         )
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd=f"mls {dest_lib_aliases}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -4182,8 +4699,8 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            mls_alias_str = "ALIAS({0})".format(pgm_mem_alias)
-            mls_alias_str2 = "ALIAS({0})".format(pgm2_mem_alias)
+            mls_alias_str = f"ALIAS({pgm_mem_alias})"
+            mls_alias_str2 = f"ALIAS({pgm2_mem_alias})"
             assert mls_alias_str not in stdout
             assert mls_alias_str2 not in stdout
 
@@ -4191,8 +4708,8 @@ def test_copy_pds_loadlib_to_uss_to_pds_loadlib(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
-            expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
+            expected_mls_str = f"{pgm_mem} ALIAS({pgm_mem_alias})"
+            expected_mls_str2 = f"{pgm2_mem} ALIAS({pgm2_mem_alias})"
             assert expected_mls_str in stdout
             assert expected_mls_str2 in stdout
 
@@ -4272,7 +4789,7 @@ def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
             )
         copy_uss_to_mvs_res = hosts.all.zos_copy(
             src=f"{c_dir}/hello_world",
-            dest="{0}({1})".format(dest, member),
+            dest=f"{dest}({member})",
             remote_src=True,
             executable=True,
             force=True
@@ -4319,7 +4836,7 @@ def test_copy_pds_member_with_system_symbol(ansible_zos_module):
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="mls {0}".format(dest),
+            cmd=f"mls {dest}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -4342,11 +4859,11 @@ def test_copy_pds_member_with_system_symbol(ansible_zos_module):
 def test_copy_multiple_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     src = get_tmp_ds_name()
-    src_wildcard = "{0}(ABC*)".format(src)
+    src_wildcard = f"{src}(ABC*)"
 
     dest = get_tmp_ds_name()
     member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
-    ds_list = ["{0}({1})".format(src, member) for member in member_list]
+    ds_list = [f"{src}({member})" for member in member_list]
 
     try:
         hosts.all.zos_data_set(name=src, type="pds")
@@ -4354,7 +4871,7 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
 
         for member in ds_list:
             hosts.all.shell(
-                cmd="decho '{0}' '{1}'".format(DUMMY_DATA, member),
+                cmd=f"decho '{DUMMY_DATA}' '{member}'",
                 executable=SHELL_EXECUTABLE
             )
 
@@ -4365,7 +4882,7 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
             assert result.get("dest") == dest
 
         verify_copy = hosts.all.shell(
-            cmd="mls {0}".format(dest),
+            cmd=f"mls {dest}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -4391,8 +4908,8 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
 
     dest = get_tmp_ds_name()
     member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
-    src_ds_list = ["{0}({1})".format(src, member) for member in member_list]
-    dest_ds_list = ["{0}({1})".format(dest, member) for member in member_list]
+    src_ds_list = [f"{src}({member})" for member in member_list]
+    dest_ds_list = [f"{dest}({member})" for member in member_list]
 
     try:
         hosts.all.zos_data_set(name=src, type="pds")
@@ -4400,7 +4917,7 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
 
         for src_member in src_ds_list:
             hosts.all.shell(
-                cmd="decho '{0}' '{1}'".format(DUMMY_DATA, src_member),
+                cmd=f"decho '{DUMMY_DATA}' '{src_member}'",
                 executable=SHELL_EXECUTABLE
             )
 
@@ -4412,7 +4929,7 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
                 assert result.get("dest") == dest_member
 
         verify_copy = hosts.all.shell(
-            cmd="mls {0}".format(dest),
+            cmd=f"mls {dest}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -4433,21 +4950,21 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
 def test_copy_member_to_non_existing_uss_file(ansible_zos_module, ds_type):
     hosts = ansible_zos_module
     data_set = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(data_set)
+    src = f"{data_set}(MEMBER)"
     dest = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
         hosts.all.file(path=dest, state="absent")
         hosts.all.zos_data_set(name=data_set, state="present", type=ds_type)
         hosts.all.shell(
-            cmd="decho 'Record for data set' '{0}'".format(src),
+            cmd=f"decho 'Record for data set' '{src}'",
             executable=SHELL_EXECUTABLE
         )
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"head {dest}", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -4467,29 +4984,41 @@ def test_copy_member_to_non_existing_uss_file(ansible_zos_module, ds_type):
 @pytest.mark.uss
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(ds_type="pds", force=False),
-    dict(ds_type="pds", force=True),
-    dict(ds_type="pdse", force=False),
-    dict(ds_type="pdse", force=True)
+    {
+        "ds_type":"pds",
+        "force":False
+    },
+    {
+        "ds_type":"pds",
+        "force":True
+    },
+    {
+        "ds_type":"pdse",
+        "force":False
+    },
+    {
+        "ds_type":"pdse",
+        "force":True
+    }
 ])
 def test_copy_member_to_existing_uss_file(ansible_zos_module, args):
     hosts = ansible_zos_module
     data_set = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(data_set)
+    src = f"{data_set}(MEMBER)"
     dest = get_random_file_name(dir=TMP_DIRECTORY)
 
     try:
         hosts.all.file(path=dest, state="touch")
         hosts.all.zos_data_set(name=data_set, state="present", type=args["ds_type"])
         hosts.all.shell(
-            cmd="decho 'Record for data set' '{0}'".format(src),
+            cmd=f"decho 'Record for data set' '{src}'",
             executable=SHELL_EXECUTABLE
         )
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True, force=args["force"])
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"head {dest}", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -4524,10 +5053,10 @@ def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
     try:
         hosts.all.zos_data_set(name=src_ds, type=src_type, state="present")
         members = ["MEMBER1", "MEMBER2", "MEMBER3"]
-        ds_list = ["{0}({1})".format(src_ds, member) for member in members]
+        ds_list = [f"{src_ds}({member})" for member in members]
         for member in ds_list:
             hosts.all.shell(
-                cmd="decho '{0}' '{1}'".format(DUMMY_DATA, member),
+                cmd=f"decho '{DUMMY_DATA}' '{member}'",
                 executable=SHELL_EXECUTABLE
             )
 
@@ -4563,14 +5092,15 @@ def test_copy_pdse_to_uss_dir(ansible_zos_module, src_type):
 def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(src_ds)
+    src = f"{src_ds}(MEMBER)"
     dest = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')
     dest_path = f"{dest}MEMBER"
+
 
     try:
         hosts.all.zos_data_set(name=src_ds, type=src_type, state="present")
         hosts.all.shell(
-            cmd="decho '{0}' '{1}'".format(DUMMY_DATA, src),
+            cmd=f"decho '{DUMMY_DATA}' '{src}'",
             executable=SHELL_EXECUTABLE
         )
 
@@ -4586,7 +5116,7 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest_path),
+            cmd=f"head {dest_path}",
             executable=SHELL_EXECUTABLE
         )
 
@@ -4610,20 +5140,20 @@ def test_copy_member_to_uss_dir(ansible_zos_module, src_type):
 def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(src_ds)
+    src = f"{src_ds}(MEMBER)"
     dest = get_tmp_ds_name()
 
     try:
         hosts.all.zos_data_set(name=dest, state="absent")
         hosts.all.zos_data_set(name=src_ds, type=src_type, state="present")
         hosts.all.shell(
-            cmd="decho 'A record' '{0}'".format(src),
+            cmd=f"decho 'A record' '{src}'",
             executable=SHELL_EXECUTABLE
         )
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"head \"//'{dest}'\"", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -4642,15 +5172,27 @@ def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
 @pytest.mark.seq
 @pytest.mark.pdse
 @pytest.mark.parametrize("args", [
-    dict(type="pds", force=False),
-    dict(type="pds", force=True),
-    dict(type="pdse", force=False),
-    dict(type="pdse", force=True),
+    {
+        "type":"pds",
+        "force":False
+    },
+    {
+        "type":"pds",
+        "force":True
+    },
+    {
+        "type":"pdse",
+        "force":False
+    },
+    {
+        "type":"pdse",
+        "force":True
+    },
 ])
 def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
     hosts = ansible_zos_module
     src_ds = get_tmp_ds_name()
-    src = "{0}(MEMBER)".format(src_ds)
+    src = f"{src_ds}(MEMBER)"
     dest = get_tmp_ds_name()
 
     try:
@@ -4659,13 +5201,13 @@ def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
 
         for data_set in [src, dest]:
             hosts.all.shell(
-                cmd="decho 'A record' '{0}'".format(data_set),
+                cmd=f"decho 'A record' '{data_set}'",
                 executable=SHELL_EXECUTABLE
             )
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest, force=args["force"], remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
+            cmd=f"head \"//'{dest}'\"", executable=SHELL_EXECUTABLE
         )
 
         for result in copy_res.contacted.values():
@@ -4713,7 +5255,7 @@ def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
         )
 
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest + "(PROFILE)"),
+            cmd=f"head \"//'{dest}(PROFILE)'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -4748,9 +5290,20 @@ def test_backup_pds(ansible_zos_module, args):
 
         if args["backup"]:
             backup_name = get_tmp_ds_name()
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup_name)
+            copy_res = hosts.all.zos_copy(
+                src=src,
+                dest=dest,
+                force=True,
+                backup=True,
+                backup_name=backup_name
+            )
         else:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
+            copy_res = hosts.all.zos_copy(
+                src=src,
+                dest=dest,
+                force=True,
+                backup=True
+            )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -4812,7 +5365,7 @@ def test_copy_data_set_to_volume(ansible_zos_module, volumes_on_systems, src_typ
             assert cp.get('dest') == dest
 
         check_vol = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(dest),
+            cmd=f"tsocmd \"LISTDS '{dest}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -4904,9 +5457,22 @@ def test_backup_ksds(ansible_zos_module, backup):
 
         if backup:
             backup_name = get_tmp_ds_name()
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, backup_name=backup_name, remote_src=True, force=True)
+            copy_res = hosts.all.zos_copy(
+                src=src,
+                dest=dest,
+                backup=True,
+                backup_name=backup_name,
+                remote_src=True,
+                force=True
+            )
         else:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, remote_src=True, force=True)
+            copy_res = hosts.all.zos_copy(
+                src=src,
+                dest=dest,
+                backup=True,
+                remote_src=True,
+                force=True
+            )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -4971,6 +5537,7 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
             output = "\n".join(dd_names[0]["content"])
             assert "IN-CAT" in output
             assert re.search(r"\bINDEXED\b", output)
+#            assert re.search(f"\b{volume_1}\b", output)
             assert re.search(r"\b{0}\b".format(volume_1), output)
     finally:
         hosts.all.zos_data_set(
@@ -5000,19 +5567,19 @@ def test_dest_data_set_parameters(ansible_zos_module, volumes_on_systems):
             dest=dest,
             remote_src=True,
             volume=volume,
-            dest_data_set=dict(
-                type="seq",
-                space_primary=space_primary,
-                space_secondary=space_secondary,
-                space_type=space_type,
-                record_format=record_format,
-                record_length=record_length,
-                block_size=block_size
-            )
+            dest_data_set={
+                "type":"seq",
+                "space_primary":space_primary,
+                "space_secondary":space_secondary,
+                "space_type":space_type,
+                "record_format":record_format,
+                "record_length":record_length,
+                "block_size":block_size
+            }
         )
 
         verify_copy = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(dest),
+            cmd=f"tsocmd \"LISTDS '{dest}'\"",
             executable=SHELL_EXECUTABLE,
         )
 
@@ -5076,7 +5643,10 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
 
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])
-def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(ansible_zos_module, force):
+def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
+    ansible_zos_module,
+    force
+):
     hosts = ansible_zos_module
     dest = get_tmp_ds_name()
     src_file = "/etc/profile"
@@ -5084,12 +5654,19 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, force=force)
-        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmp_hlq=tmphlq, force=force)
+        copy_result = hosts.all.zos_copy(
+            src=src_file,
+            dest=dest,
+            remote_src=True,
+            backup=True,
+            tmp_hlq=tmphlq,
+            force=force
+        )
 
         verify_copy = None
         if force:
             verify_copy = hosts.all.shell(
-                cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+                cmd=f"cat \"//'{dest}'\" > /dev/null 2>/dev/null",
                 executable=SHELL_EXECUTABLE,
             )
 
@@ -5134,13 +5711,13 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
         cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + dest_path + " is_remote=" + str(
             options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
 
-        result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
-        output = result.read().decode()
+        with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout as process:
+            output = process.read().decode()
 
         if options["verbosity_level"] != 0:
-            assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)
+            assert "play context verbosity: "+ str(options["verbosity_level"])+"" in output
         else:
-            assert ("play context verbosity:" not in output)
+            assert "play context verbosity:" not in output
 
     finally:
         hosts.all.file(path=dest_path, state="absent")

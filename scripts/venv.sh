@@ -786,6 +786,8 @@ if [ "${volumes}" ]; then
     done
 fi
 
+CONFIG=${CONFIG}"ssh_key: ~/.ssh/id_rsa\\n"
+
 echo -e $CONFIG>$managed_venv_path/config.yml
 }
 

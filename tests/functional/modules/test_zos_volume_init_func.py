@@ -44,17 +44,17 @@ def test_guard_rail_and_setup(ansible_zos_module, volumes_unit_on_systems):
     volumes = Volume_Handler(volumes_unit_on_systems)
     volume, address = volumes.get_available_vol_addr()
     # remove all data sets from target volume. Expected to be the following 3
-    clear_volume(hosts, volume)
+    clear_volume(hosts, "USER07")
 
     params = {
-        "address":address,
+        "address":"01A7",
         "verify_offline":False,
-        "volid":volume,
-        "verify_volid":volume
+        "volid":"USER07",
+        "verify_volid":"USER07"
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {address},offline")
+    hosts.all.zos_operator(cmd=f"vary {01A7},offline")
 
     results = hosts.all.zos_volume_init(
         address=params['address'],
@@ -68,7 +68,7 @@ def test_guard_rail_and_setup(ansible_zos_module, volumes_unit_on_systems):
         assert result['rc'] == 0
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {address},online")
+    hosts.all.zos_operator(cmd=f"vary {01A7},online")
 
 
 def test_index_param_index(ansible_zos_module, volumes_unit_on_systems):

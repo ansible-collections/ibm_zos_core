@@ -54,7 +54,7 @@ def test_guard_rail_and_setup(ansible_zos_module, volumes_unit_on_systems):
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {01A7},offline")
+    hosts.all.zos_operator(cmd=f"vary 01A7,offline")
 
     results = hosts.all.zos_volume_init(
         address=params['address'],
@@ -68,7 +68,7 @@ def test_guard_rail_and_setup(ansible_zos_module, volumes_unit_on_systems):
         assert result['rc'] == 0
 
     # bring volume back online
-    hosts.all.zos_operator(cmd=f"vary {01A7},online")
+    hosts.all.zos_operator(cmd=f"vary 01A7,online")
 
 
 def test_index_param_index(ansible_zos_module, volumes_unit_on_systems):

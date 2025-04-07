@@ -915,10 +915,11 @@ def test_backup_into_gds(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+        backup_target = f"{data_set_name}.G0002V00"
         results = hosts.all.zos_backup_restore(
             operation="backup",
             data_sets=dict(include=[ds_name]),
-            backup_name=f"{data_set_name}.G0002V00",
+            backup_name=backup_target,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -968,6 +969,8 @@ def test_backup_tolerate_enqueue(ansible_zos_module):
             backup_name=data_sets_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_sets_backup_location
         assert_data_set_or_file_exists(hosts, data_sets_backup_location)
     finally:
         hosts.all.shell(cmd="rm -rf " + temp_file)

@@ -248,6 +248,9 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
             assert isinstance(result['backup_name'], str), "backup_name should be string"
             assert len(result['backup_name']) > 0, "backup_name should not be empty"
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in output"
         assert_data_set_or_file_exists(hosts, backup_name)
     finally:
         delete_data_set_or_file(hosts, data_set_name)

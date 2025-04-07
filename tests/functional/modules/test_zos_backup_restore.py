@@ -290,6 +290,9 @@ def test_backup_of_data_set_when_backup_dest_exists(
         )
         if overwrite:
             assert_module_did_not_fail(results)
+            for result in results.contacted.values():
+                assert result.get("backup_name") == backup_name, \
+                    f"Backup name '{backup_name}' not found in output"
         else:
             assert_module_failed(results)
         assert_data_set_or_file_exists(hosts, backup_name)

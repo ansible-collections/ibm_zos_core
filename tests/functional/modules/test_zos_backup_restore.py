@@ -882,6 +882,8 @@ def test_backup_gds(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+            assert result.get("backup_name") == backup_dest, \
+                f"Expected backup_name '{backup_dest}' in output"
     finally:
         hosts.all.shell(cmd=f"drm ANSIBLE.* ")
 

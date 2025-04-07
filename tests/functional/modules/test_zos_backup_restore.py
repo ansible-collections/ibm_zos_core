@@ -596,6 +596,8 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
             backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location  # Critical Line
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",

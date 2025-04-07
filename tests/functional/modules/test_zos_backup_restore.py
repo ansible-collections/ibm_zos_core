@@ -340,6 +340,13 @@ def test_backup_and_restore_of_data_set(
             overwrite=overwrite,
             recover=recover,
         )
+        assert_module_did_not_fail(results)
+        # NEW: Assert backup_name appears in output
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Expected backup_name '{backup_name}' in output"
+        # Verify backup file/dataset exists
+        assert_data_set_or_file_exists(hosts, backup_name)
         if not overwrite:
             new_hlq = "N" + get_random_q(4)
             hlqs.append(new_hlq)

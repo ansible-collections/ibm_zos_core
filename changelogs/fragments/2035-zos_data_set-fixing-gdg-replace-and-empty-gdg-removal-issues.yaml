@@ -1,8 +1,8 @@
 bugfixes:
     - zos_data_set - Module would fail with TypeError when trying to replace an existing GDG. 
-      Fix now allows to replacing a GDG.
+      Fix now allows the replacement of an existing GDG.
       (https://github.com/ansible-collections/ibm_zos_core/pull/2035)
-      
+
     - zos_data_set - Module would fail when trying to delete a non-existent Generation Data Group.
       Fix now provides a successful response with `changed=false`.
       (https://github.com/ansible-collections/ibm_zos_core/pull/2035)

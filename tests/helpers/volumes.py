@@ -23,13 +23,9 @@ class Volume:
     """ Volume class represents a volume on the z system, it tracks if the volume name
     and status of the volume with respect to the current test session."""
     def __init__(self, *args):
-        if len(args) > 1:
-            self.name = args[0]
-            self.unit = args[1]
-            self.in_use = False
-        else:
-            self.name = args[0]
-            self.in_use = False
+        self.name = args[0]
+        self.unit = args[1] if len(args) > 1 else None
+        self.in_use = False
 
     def __str__(self):
         return f'The volume {self.name} is in {self.in_use} in use'
@@ -68,7 +64,7 @@ class Volume_Handler:
 
     def get_available_vol_addr(self):
         """ Check in the list of volumes one on use or not, also send a default
-        volume 0 as is the one with more tracks available."""
+        volume USER02 as is the one with less data sets included."""
         for volume in self.volumes:
             if not (volume.in_use):
                 volume.use()

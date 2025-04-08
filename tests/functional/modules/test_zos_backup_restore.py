@@ -242,11 +242,6 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
             overwrite=overwrite,
             recover=recover,
         )
-        for result in results.contacted.values():
-            assert 'backup_name' in result, "backup_name missing"
-            assert result['backup_name'] == backup_name, f"Expected {backup_name}, got {result['backup_name']}"
-            assert isinstance(result['backup_name'], str), "backup_name should be string"
-            assert len(result['backup_name']) > 0, "backup_name should not be empty"
         assert_module_did_not_fail(results)
         for result in results.contacted.values():
             assert result.get("backup_name") == backup_name, \

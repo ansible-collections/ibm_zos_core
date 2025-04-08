@@ -457,6 +457,7 @@ def main():
                 sms_management_class=sms_management_class,
                 tmp_hlq=tmp_hlq,
             )
+            result["backup_name"] = backup_name
         result["changed"] = True
 
     except Exception as e:

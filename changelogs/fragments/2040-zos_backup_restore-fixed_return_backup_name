@@ -1,4 +1,6 @@
 trivial:
    - zos_backup_restore - Returned the backup_name and added assertion in test suite
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2040).
+     
    - test_zos_backup_restore - added assertion in test suite 
      (https://github.com/ansible-collections/ibm_zos_core/pull/2040).

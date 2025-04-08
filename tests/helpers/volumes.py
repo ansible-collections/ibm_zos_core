@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-import math
 import time
 import yaml
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -220,8 +219,8 @@ def get_volume_and_unit(ansible_zos_module, path):
                             largest = len(datasets)
                             priv_online.append([vol_w_info[3], vol_w_info[0]])
                         else:
-                            mid = math.ceil(len(priv_online)/2)
-                            priv_online.insert(mid, [vol_w_info[3], vol_w_info[0]])
+                            position = len(priv_online) - 1
+                            priv_online.insert(position, [vol_w_info[3], vol_w_info[0]])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in priv_online:
         list_volumes.append(vol)

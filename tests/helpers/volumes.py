@@ -219,8 +219,7 @@ def get_volume_and_unit(ansible_zos_module, path):
                             largest = len(datasets)
                             priv_online.append([vol_w_info[3], vol_w_info[0]])
                         else:
-                            position = len(priv_online) - 1
-                            priv_online.insert(position, [vol_w_info[3], vol_w_info[0]])
+                            priv_online.insert(1, [vol_w_info[3], vol_w_info[0]])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in priv_online:
         list_volumes.append(vol)

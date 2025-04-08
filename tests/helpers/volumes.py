@@ -206,7 +206,11 @@ def get_volume_and_unit(ansible_zos_module, path):
         vol_w_info = info.split()
         if len(vol_w_info)>3:
             if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
-                priv_online.append([vol_w_info[3], vol_w_info[0]])
+                ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
+                for ds in ds_on_vol.contacted.values():
+                    datasets = str(ds.get("stdout")).split("\n")
+                    if len(datasets) < 30:
+                        priv_online.append([vol_w_info[3], vol_w_info[0]])
     # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
     for vol in priv_online:
         list_volumes.append(vol)

@@ -112,6 +112,8 @@ RETURN = r"""
 import os
 import re
 import codecs
+import shutil
+import tempfile
 import traceback
 from ansible.module_utils.basic import AnsibleModule
 
@@ -125,8 +127,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import zoau_io
+    from zoautil_py import datasets, zoau_io
 except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
     zoau_io = ZOAUImportError(traceback.format_exc())
 
 
@@ -169,7 +172,27 @@ def solve_src_name(module, name):
 
 
 def replace_text(content, regexp, replace):
-    return 0
+    """Function received the test to work on it to find the regexp
+    expected to be replaced.
+
+    Parameters
+    ----------
+        content : list
+            The part or full text to be modified
+        regexp : str
+            The str that will be search to be replaced
+        replace : str
+            The str to replace on the text
+
+    Returns:
+        list: the new array of lines with the content replaced
+    """
+    full_text = "\n".join(content)
+
+    pattern = re.compile(regexp, re.MULTILINE | re.DOTALL)
+    modified_text = pattern.sub(replace, full_text)
+
+    return modified_text.split("\n")
 
 
 def replace_uss(file, regexp, replace, after="", before=""):
@@ -181,7 +204,7 @@ def replace_uss(file, regexp, replace, after="", before=""):
 
     if after:
         line_counter = 0
-        pattern_begin = re.compile(r"after")
+        pattern_begin = re.compile(after, re.DOTALL)
         for line in decode_list:
             if pattern_begin.match(line) is not None:
                 line_counter += 1
@@ -189,30 +212,30 @@ def replace_uss(file, regexp, replace, after="", before=""):
             line_counter += 1
         begin_block_code = line_counter
         if before:
-            pattern_end = re.compile(r"before")
+            pattern_end = re.compile(before, re.DOTALL)
             for line in decode_list:
                 if pattern_end.match(line) is not None:
                     line_counter += 1
                     break
                 line_counter += 1
             end_block_code = line_counter
-            replace_text(decode_list[begin_block_code: end_block_code:], regex=regexp, replace=replace)
+            nex_text = replace_text(decode_list[begin_block_code: end_block_code:], regex=regexp, replace=replace)
         else:
-            replace_text(content=decode_list[begin_block_code:], regex=regexp, replace=replace)
+            nex_text = replace_text(content=decode_list[begin_block_code:], regex=regexp, replace=replace)
 
     elif before:
         last_line = len(decode_list)
-        pattern_end = re.compile(r"before")
+        pattern_end = re.compile(before, re.DOTALL)
         for line in reversed(decode_list):
             if pattern_end.match(line) is not None:
                 last_line -= 1
                 break
             last_line -=1
         end_block_code = last_line
-        replace_text(content=decode_list[:end_block_code], regex=regexp, replace=replace)
+        nex_text = replace_text(content=decode_list[:end_block_code], regex=regexp, replace=replace)
 
     else:
-        replace_text(content=decode_list, regex=regexp, replace=replace)
+        nex_text = replace_text(content=decode_list, regex=regexp, replace=replace)
 
     return 0
 
@@ -226,7 +249,7 @@ def replace_ds(ds, regexp, replace, after="", before=""):
 
     if after:
         line_counter = 0
-        pattern_begin = re.compile(r"after")
+        pattern_begin = re.compile(after, re.DOTALL)
         for line in decode_list:
             if pattern_begin.match(line) is not None:
                 line_counter += 1
@@ -234,7 +257,7 @@ def replace_ds(ds, regexp, replace, after="", before=""):
             line_counter += 1
         begin_block_code = line_counter
         if before:
-            pattern_end = re.compile(r"before")
+            pattern_end = re.compile(before, re.DOTALL)
             for line in decode_list:
                 if pattern_end.match(line) is not None:
                     line_counter += 1
@@ -247,7 +270,7 @@ def replace_ds(ds, regexp, replace, after="", before=""):
 
     elif before:
         last_line = len(decode_list)
-        pattern_end = re.compile(r"before")
+        pattern_end = re.compile(before, re.DOTALL)
         for line in reversed(decode_list):
             if pattern_end.match(line) is not None:
                 last_line -= 1
@@ -299,6 +322,7 @@ def run_module():
 
     src = module.params.get("target")
     src = solve_src_name(module=module, name=src)
+    uss = True if "/" in src else False
     after = module.params.get("after")
     before = module.params.get("before")
     regexp = module.params.get("regexp")
@@ -308,10 +332,47 @@ def run_module():
     backup = module.params.get("backup")
     backup_name = module.params.get("backup_name")
 
-    if "/" in src:
-        replace_uss(file=src, regexp=regexp, replace=replace, after=after, before=before)
+    if uss:
+        full_text = replace_uss(file=src, regexp=regexp, replace=replace, after=after, before=before)
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        tmp_file = tmp_file.name
+        try:
+            with open(tmp_file, 'w') as f:
+                for line in full_text:
+                    f.write(f"{line}\n")
+        except Exception as e:
+            os.remove(tmp_file)
+            module.fail_json(
+                msg=f"Unable to write on data set {src}. {e}",
+                #stderr=str(res_args),
+            )
+        try:
+            f = open(src, 'r+')
+            f.truncate(0)
+            shutil.copyfile(tmp_file, src)
+        finally:
+            os.remove(tmp_file)
+
     else:
-        replace_ds(ds=src, regexp=regexp, replace=replace, after=after, before=before)
+        full_text = replace_ds(ds=src, regexp=regexp, replace=replace, after=after, before=before)
+        bk_ds = datasets.tmp_name()
+        datasets.create(name=bk_ds, dataset_type="SEQ")
+        try:
+            for line in full_text:
+                rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+                if rc_write != 0:
+                    raise Exception("Non zero return code from datasets.write.")
+        except Exception as e:
+            datasets.delete(dataset=bk_ds)
+            module.fail_json(
+                msg=f"Unable to write on data set {src}. {e}",
+                #stderr=str(res_args),
+            )
+        try:
+            datasets.delete(dataset=src)
+            datasets.copy(source=bk_ds, target=src)
+        finally:
+            datasets.delete(dataset=bk_ds)
 
 
     result = dict()

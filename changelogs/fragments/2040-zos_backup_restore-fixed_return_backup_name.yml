@@ -1,4 +1,4 @@
-minor_changes:
+bugfixes:
    - zos_backup_restore - Return value `backup_name` was empty upon successful result. 
      Fix now returns `backup_name` populated.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2040).

@@ -1,6 +1,7 @@
-trivial:
-   - zos_backup_restore - Returned the backup_name and added assertion in test suite
+minor_chnages:
+   - zos_backup_restore - zos_backup_restore - Return value `backup_name` was empty upon successful result. 
+     Fix now returns `backup_name` populated.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2040).
-     
-   - test_zos_backup_restore - added assertion in test suite 
+trivial:     
+   - test_zos_backup_restore - added backup_name assertion for return values in the test suite.  
      (https://github.com/ansible-collections/ibm_zos_core/pull/2040).

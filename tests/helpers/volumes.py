@@ -209,11 +209,11 @@ def get_volume_and_unit(ansible_zos_module, path):
                 ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
                 for ds in ds_on_vol.contacted.values():
                     datasets = str(ds.get("stdout")).split("\n")
-                    largest = 10
+                    largest = 5
                     shortest = 2
                     if len(datasets) < 30:
                         print(len(datasets), vol_w_info[3])
-                        if len(datasets) >= shortest:
+                        if len(datasets) >= shortest and len(datasets) < largest:
                             priv_online.insert(0, [vol_w_info[3], vol_w_info[0]])
                         elif len(datasets) >= largest:
                             largest = len(datasets)

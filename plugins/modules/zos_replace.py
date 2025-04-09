@@ -111,6 +111,7 @@ RETURN = r"""
 
 import os
 import re
+import io
 import codecs
 import shutil
 import tempfile
@@ -119,7 +120,8 @@ from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
-    data_set
+    data_set,
+    backup as Backup
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -133,7 +135,7 @@ except Exception:
     zoau_io = ZOAUImportError(traceback.format_exc())
 
 
-def solve_src_name(module, name):
+def resolve_src_name(module, name):
     """Function to solve and validate the exist of the dataset or uss file.
 
     Parameters
@@ -195,94 +197,109 @@ def replace_text(content, regexp, replace):
     return modified_text.split("\n")
 
 
-def replace_uss(file, regexp, replace, after="", before=""):
+def merge_text(original, replace, begin, end):
+    if begin == 0:
+        tail_content = original[end + 1:]
+        replace.extend(tail_content)
+        return replace
 
-    with open(file, "r") as content_file:
-        file_content = content_file.read()
-
-    decode_list = [codecs.decode(record, "cp1047") for record in file_content]
-
-    if after:
-        line_counter = 0
-        pattern_begin = re.compile(after, re.DOTALL)
-        for line in decode_list:
-            if pattern_begin.match(line) is not None:
-                line_counter += 1
-                break
-            line_counter += 1
-        begin_block_code = line_counter
-        if before:
-            pattern_end = re.compile(before, re.DOTALL)
-            for line in decode_list:
-                if pattern_end.match(line) is not None:
-                    line_counter += 1
-                    break
-                line_counter += 1
-            end_block_code = line_counter
-            nex_text = replace_text(decode_list[begin_block_code: end_block_code:], regex=regexp, replace=replace)
-        else:
-            nex_text = replace_text(content=decode_list[begin_block_code:], regex=regexp, replace=replace)
-
-    elif before:
-        last_line = len(decode_list)
-        pattern_end = re.compile(before, re.DOTALL)
-        for line in reversed(decode_list):
-            if pattern_end.match(line) is not None:
-                last_line -= 1
-                break
-            last_line -=1
-        end_block_code = last_line
-        nex_text = replace_text(content=decode_list[:end_block_code], regex=regexp, replace=replace)
+    elif end == len(original) - 1:
+        head_content = original[:begin]
+        head_content.extend(replace)
+        return head_content
 
     else:
-        nex_text = replace_text(content=decode_list, regex=regexp, replace=replace)
+        head_content = original[:begin]
+        tail_content = original[end + 1:]
+        head_content.extends(replace)
+        head_content.extends(tail_content)
+        return head_content
 
-    return 0
+
+def open_uss(file, encoding):
+    lines = []
+    with io.open(file, "rb") as content_file:
+        for byte_line in content_file:
+            line = codecs.decode(byte_line, encoding)
+            lines.append(line)
+    return lines
 
 
-def replace_ds(ds, regexp, replace, after="", before=""):
+def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
+
+    decode_list = []
+    for line in open_uss(file=file, encoding=encoding):
+        decode_list.append(line)
+
+    if not bool(after) and not bool(before):
+        return replace_text(content=decode_list, regex=regexp, replace=replace)
+
+    pattern_begin = re.compile(after, re.DOTALL) if after else after
+    pattern_end = re.compile(before, re.DOTALL) if before else before
+
+    begin_block_code = 0
+    end_block_code = len(decode_list) - 1
+
+    line_counter = 0
+    search_after = bool(after)
+    search_before = False if search_after else True
+
+    for line in decode_list:
+        if search_after and pattern_begin.match(line) is not None:
+            begin_block_code = line_counter
+            if not before:
+                break
+            else:
+                search_before = True
+                search_after = False
+
+        if search_before and pattern_end.match(line) is not None:
+                end_block_code = line_counter + 1
+                break
+        line_counter += 1
+
+    new_text = replace_text(decode_list[begin_block_code: end_block_code], regex=regexp, replace=replace)
+    full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
+    return full_new_text
+
+
+def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
 
     with zoau_io.RecordIO(f"//'{ds}'") as dataset_read:
         dataset_content = dataset_read.readrecords()
 
-    decode_list = [codecs.decode(record, "cp1047") for record in dataset_content]
+    decode_list = [codecs.decode(record, encoding) for record in dataset_content]
 
-    if after:
-        line_counter = 0
-        pattern_begin = re.compile(after, re.DOTALL)
-        for line in decode_list:
-            if pattern_begin.match(line) is not None:
-                line_counter += 1
+    if not bool(after) and not bool(before):
+        return replace_text(content=decode_list, regex=regexp, replace=replace)
+
+    pattern_begin = re.compile(after, re.DOTALL) if after else after
+    pattern_end = re.compile(before, re.DOTALL) if before else before
+
+    begin_block_code = 0
+    end_block_code = len(decode_list) - 1
+
+    line_counter = 0
+    search_after = True if after else False
+    search_before = False if search_after else True
+
+    for line in decode_list:
+        if search_after and pattern_begin.match(line) is not None:
+            begin_block_code = line_counter + 1
+            if not before:
                 break
-            line_counter += 1
-        begin_block_code = line_counter
-        if before:
-            pattern_end = re.compile(before, re.DOTALL)
-            for line in decode_list:
-                if pattern_end.match(line) is not None:
-                    line_counter += 1
-                    break
-                line_counter += 1
-            end_block_code = line_counter
-            replace_text(decode_list[begin_block_code: end_block_code:], regex=regexp, replace=replace)
-        else:
-            replace_text(content=decode_list[begin_block_code:], regex=regexp, replace=replace)
+            else:
+                search_before = True
+                search_after = False
 
-    elif before:
-        last_line = len(decode_list)
-        pattern_end = re.compile(before, re.DOTALL)
-        for line in reversed(decode_list):
-            if pattern_end.match(line) is not None:
-                last_line -= 1
+        if search_before and pattern_end.match(line) is not None:
+                end_block_code = line_counter + 1
                 break
-            last_line -=1
-        end_block_code = last_line
-        replace_text(content=decode_list[:end_block_code], regex=regexp, replace=replace)
+        line_counter += 1
 
-    else:
-        replace_text(content=decode_list, regex=regexp, replace=replace)
-
-    return 0
+    new_text = replace_text(decode_list[begin_block_code: end_block_code], regex=regexp, replace=replace)
+    full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
+    return full_new_text
 
 
 def run_module():
@@ -321,19 +338,32 @@ def run_module():
         )
 
     src = module.params.get("target")
-    src = solve_src_name(module=module, name=src)
+    src = resolve_src_name(module=module, name=src)
     uss = True if "/" in src else False
     after = module.params.get("after")
     before = module.params.get("before")
     regexp = module.params.get("regexp")
     replace = module.params.get("replace")
-
     encoding = module.params.get("encoding")
     backup = module.params.get("backup")
-    backup_name = module.params.get("backup_name")
+    if parsed_args.get('backup_name') and backup:
+        backup = parsed_args.get('backup_name')
+
+    result = dict()
+
+    if backup:
+        if isinstance(backup, bool):
+            backup = None
+        try:
+            if uss:
+                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
+            else:
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+        except Exception as err:
+            module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
 
     if uss:
-        full_text = replace_uss(file=src, regexp=regexp, replace=replace, after=after, before=before)
+        full_text = replace_uss(file=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
         try:
@@ -344,7 +374,6 @@ def run_module():
             os.remove(tmp_file)
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",
-                #stderr=str(res_args),
             )
         try:
             f = open(src, 'r+')
@@ -354,7 +383,7 @@ def run_module():
             os.remove(tmp_file)
 
     else:
-        full_text = replace_ds(ds=src, regexp=regexp, replace=replace, after=after, before=before)
+        full_text = replace_ds(ds=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
         bk_ds = datasets.tmp_name()
         datasets.create(name=bk_ds, dataset_type="SEQ")
         try:
@@ -366,18 +395,13 @@ def run_module():
             datasets.delete(dataset=bk_ds)
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",
-                #stderr=str(res_args),
             )
         try:
-            datasets.delete(dataset=src)
             datasets.copy(source=bk_ds, target=src)
         finally:
             datasets.delete(dataset=bk_ds)
 
-
-    result = dict()
     result["target"] = src
-    result["found"] = 0
 
 def main():
     run_module()

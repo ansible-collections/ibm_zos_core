@@ -198,7 +198,7 @@ def replace_text(content, regexp, replace):
 
 
 def merge_text(original, replace, begin, end):
-    if begin == 0:
+    if begin == 0 and end != len(original) - 1:
         tail_content = original[end + 1:]
         replace.extend(tail_content)
         return replace
@@ -375,6 +375,7 @@ def run_module():
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",
             )
+
         try:
             f = open(src, 'r+')
             f.truncate(0)
@@ -396,6 +397,7 @@ def run_module():
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",
             )
+
         try:
             datasets.copy(source=bk_ds, target=src)
         finally:

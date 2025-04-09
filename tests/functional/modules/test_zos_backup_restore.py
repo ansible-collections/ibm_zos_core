@@ -339,7 +339,7 @@ def test_backup_and_restore_of_data_set(
         # NEW: Assert backup_name appears in output
         for result in results.contacted.values():
             assert result.get("backup_name") == backup_name, \
-                f"Expected backup_name '{backup_name}' in output"
+                f"Backup name '{backup_name}' not found in output"
         # Verify backup file/dataset exists
         assert_data_set_or_file_exists(hosts, backup_name)
         if not overwrite:

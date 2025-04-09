@@ -360,7 +360,7 @@ def run_module():
             else:
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
         except Exception as err:
-            module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
+            module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}")
 
     if uss:
         full_text = replace_uss(file=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)

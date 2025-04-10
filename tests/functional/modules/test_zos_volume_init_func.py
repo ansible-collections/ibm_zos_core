@@ -507,38 +507,41 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
     dataset = get_tmp_ds_name()
 
     setup_params = {
-        'address': address,
+        'address': '01A6',
         'verify_offline': False,
-        'volid': volume,
+        'volid': 'USER06',
         'sms_managed': False # need non-sms managed to add data set on ECs
     }
     test_params = {
-        'address': address,
+        'address': '01A6',
         'verify_offline': False,
-        'volid': volume,
+        'volid': 'USER06',
         'verify_volume_empty': True,
     }
 
     # take volume offline
-    hosts.all.zos_operator(cmd=f"vary {address},offline")
+    hosts.all.zos_operator(cmd=f"vary {'01A6'},offline")
 
     try:
         # set up/initialize volume properly so a data set can be added
         hosts.all.zos_volume_init(**setup_params)
 
         # bring volume back online
-        hosts.all.zos_operator(cmd=f"vary {address},online")
+        hosts.all.zos_operator(cmd=f"vary {'01A6'},online")
 
         # allocate data set to volume
-        hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
+        allocate = hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
+        for ds in allocate.contacted.values():
+            print(ds)
 
         # take volume back offline
-        hosts.all.zos_operator(cmd=f"vary {address},offline")
+        hosts.all.zos_operator(cmd=f"vary {'01A6'},offline")
 
         # run vol_init against vol with data set on it.
         results = hosts.all.zos_volume_init(**test_params)
 
         for result in results.contacted.values():
+            print(ds)
             assert result.get("changed") is False
             assert result.get('failed') is True
             assert result.get('rc') == 12
@@ -547,7 +550,7 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
     # tests. Not sure what to do for DatasetDeleteError
     finally:
         # bring volume back online
-        hosts.all.zos_operator(cmd=f"vary {address},online")
+        hosts.all.zos_operator(cmd=f"vary {'01A6'},online")
 
         # remove data set
         hosts.all.zos_data_set(name=dataset, state='absent')

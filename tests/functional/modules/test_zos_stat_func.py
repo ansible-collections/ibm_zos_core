@@ -1065,3 +1065,86 @@ def test_query_data_set_tmp_hlq(ansible_zos_module, volumes_on_systems):
             assert stat.get('attributes') is not None
     finally:
         hosts.all.shell(cmd=f'drm {name}')
+
+
+def test_query_data_set_seq_with_alias(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+
+    name = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    alias = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    # Getting rid of the MLQ so that both names fit inside the
+    # 80 columns available for the IDCAMS command.
+    # Resulting names will be of the form ANSIBLE.TXXXXXXX.XXXX.
+    name = f'{name[:7]}.{name[13:]}'
+    alias = f'{alias[:7]}.{alias[13:]}'
+
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+
+    block_size = 85
+    primary_space = 15
+    secondary_space = 5
+    size_units = 'T'
+    record_length = 100
+    record_format = 'fb'
+    creation_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -B{block_size} -e{secondary_space}{size_units} -l{record_length} -r{record_format} -s{primary_space}{size_units} -tseq -V{available_vol} {name}'
+        )
+
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        alias_creation_result = hosts.all.shell(
+            cmd=f'echo "  DEFINE ALIAS (NAME({alias}) RELATE({name}))" | mvscmdauth --pgm=idcams --sysin=stdin --sysprint=*'
+        )
+
+        for result in alias_creation_result.contacted.values():
+            print(result)
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+
+        zos_stat_result = hosts.all.zos_stat(
+            src=alias,
+            type='data_set'
+        )
+
+        for result in zos_stat_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+
+            stat = result['stat']
+            assert stat.get('resource_type') == 'data_set'
+            assert stat.get('name') == alias
+            assert stat.get('attributes') is not None
+
+            assert stat['attributes'].get('dsorg') == 'ps'
+            assert stat['attributes'].get('type') == 'seq'
+            assert stat['attributes'].get('record_format') == record_format
+            assert stat['attributes'].get('record_length') == record_length
+            assert stat['attributes'].get('block_size') == block_size
+            assert stat['attributes'].get('has_extended_attrs') is False
+            assert stat['attributes'].get('creation_date') == creation_date
+            assert stat['attributes'].get('creation_time') is None
+            assert stat['attributes'].get('volser') == available_vol.lower()
+            assert stat['attributes'].get('volumes') == [available_vol.lower()]
+            assert stat['attributes'].get('num_volumes') == 1
+            assert stat['attributes'].get('device_type') == '3390'
+            assert stat['attributes'].get('primary_space') == primary_space
+            assert stat['attributes'].get('allocation_available') == primary_space
+            assert stat['attributes'].get('secondary_space') == secondary_space
+            assert stat['attributes'].get('space_units') == 'track'
+
+            assert_invalid_attrs_are_none(stat['attributes'], 'seq')
+    finally:
+        hosts.all.shell(
+            cmd=f'drm {alias}'
+        )
+
+        hosts.all.shell(
+            cmd=f'drm {name}'
+        )

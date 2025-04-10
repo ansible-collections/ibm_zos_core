@@ -70,12 +70,12 @@ options:
     type: bool
   flat:
     description:
-      - Override the default behavior of appending hostname/path/to/file to the
-        destination. If set to "true", the file or data set will be fetched to
+      - If set to "true", override the default behavior of appending hostname/path/to/file to the
+        destination, instead the file or data set will be fetched to
         the destination directory without appending remote hostname to the
         destination.
     required: false
-    default: "true"
+    default: "false"
     type: bool
   is_binary:
     description:
@@ -848,7 +848,7 @@ def run_module():
             src=dict(required=True, type="str"),
             dest=dict(required=True, type="path"),
             fail_on_missing=dict(required=False, default=True, type="bool"),
-            flat=dict(required=False, default=True, type="bool"),
+            flat=dict(required=False, default=False, type="bool"),
             is_binary=dict(required=False, default=False, type="bool"),
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),

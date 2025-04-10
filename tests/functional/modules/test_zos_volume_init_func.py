@@ -530,7 +530,7 @@ def test_no_existing_data_sets_check(ansible_zos_module, volumes_unit_on_systems
         hosts.all.zos_operator(cmd=f"vary {'01A6'},online")
 
         # allocate data set to volume
-        allocate = hosts.all.zos_data_set(name=dataset, type='pds', volumes=volume)
+        allocate = hosts.all.zos_data_set(name=dataset, type='pds', volumes='01A6')
         for ds in allocate.contacted.values():
             print(ds)
 

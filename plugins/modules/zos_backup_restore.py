@@ -365,7 +365,50 @@ backup_name:
   returned: always
   type: str
   sample: "/u/oeusr03/my_backup.dzp"
-
+failed:
+  description:
+    - Indicates if the operation failed.
+    - Value of C(true) represents failure, otherwise C(false).
+  returned: always
+  type: bool
+  sample: false
+msg:
+  description:
+    - Detailed error message when the operation fails.
+    - Contains full exception information including return code and command output.
+  returned: failure
+  type: str
+  sample: "ZOAUException('[ZOAUResponse]\\n\\trc: 4\\n\\t...')"
+rc:
+  description:
+    - The return code from the underlying ADRDSSU or AMATERSE operation.
+    - Return code 0 indicates success.
+    - Return codes 1-4 may indicate warnings.
+    - Return codes >4 indicate errors.
+  returned: failure
+  type: int
+  sample: 4
+stdout:
+  description:
+    - The standard output from the backup/restore operation.
+    - Contains detailed messages from ADRDSSU and AMATERSE.
+  returned: failure
+  type: str
+  sample: "ADR415W NO DATA SETS WERE COPIED"
+stderr:
+  description:
+    - The standard error from the backup/restore operation.
+    - Contains error messages if the operation encountered problems.
+  returned: failure
+  type: str
+  sample: "BGYSC3904E Failed to dump contents"
+message:
+  description:
+    - Empty in Failure and Successful cases.
+  returned: always
+  type: str
+  sample: ""
+"""
 
 import traceback
 from os import path

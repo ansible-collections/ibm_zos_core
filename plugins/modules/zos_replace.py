@@ -87,6 +87,14 @@ options:
     required: true
     type: str
     aliases: [ src, path, destfile ]
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   regexp:
     description:
       - The regular expression to look for in the contents of the file.
@@ -145,7 +153,8 @@ def resolve_src_name(module, name):
         name : str
             Name of the src
 
-    Returns:
+    Returns
+    ----------
         str: Name of the src.
 
     """
@@ -186,7 +195,8 @@ def replace_text(content, regexp, replace):
         replace : str
             The str to replace on the text
 
-    Returns:
+    Returns
+    ----------
         list: the new array of lines with the content replaced
     """
     full_text = "\n".join(content)
@@ -198,6 +208,23 @@ def replace_text(content, regexp, replace):
 
 
 def merge_text(original, replace, begin, end):
+    """Function to generate the new full text with the replace
+        text inside of it.
+    Args
+    ----------
+        original : list
+            Tue full original text on list
+        replace : list
+            The fraction of text that was replace
+        begin : int
+            Position of the list where start the replace of array
+        end : int
+            Position of the list where end the replace of array
+
+    Returns
+    ----------
+        list : The full text on list mode
+    """
     if begin == 0 and end != len(original) - 1:
         tail_content = original[end + 1:]
         replace.extend(tail_content)
@@ -217,6 +244,19 @@ def merge_text(original, replace, begin, end):
 
 
 def open_uss(file, encoding):
+    """Open a uss file on byte mode and decode properly for modifications.
+
+    Args
+    ----------
+        file : str
+            Path to the src of the information
+        encoding : str
+            Encoding to be use on the decode
+
+    Returns
+    ----------
+        list : Full text of src decoded on encoding expected.
+    """
     lines = []
     with io.open(file, "rb") as content_file:
         for byte_line in content_file:
@@ -226,7 +266,30 @@ def open_uss(file, encoding):
 
 
 def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
+    """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
+    Args
+    ----------
+        file : str
+            Uss path.
+        regexp : str
+            Regex expression to search.
+        replace : str
+            Regex expression or text to replace.
+        encoding : str, optional
+            Encoding to use en decoding content.
+            Defaults to "cp1047".
+        after : str, optional
+            Str or regex to search where to start the section to replace on the text.
+            Defaults to "".
+        before :str, optional
+            Str or regex to search where to end the section to replace on the text.
+            Defaults to "".
+
+    Returns
+    ----------
+        list : List with the new text with the replace expected.
+    """
     decode_list = []
     for line in open_uss(file=file, encoding=encoding):
         decode_list.append(line)
@@ -264,7 +327,30 @@ def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
 
 
 def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
+    """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
+    Args
+    ----------
+        ds : str
+            data set name.
+        regexp : str
+            Regex expression to search.
+        replace : str
+            Regex expression or text to replace.
+        encoding : str, optional
+            Encoding to use en decoding content.
+            Defaults to "cp1047".
+        after : str, optional
+            Str or regex to search where to start the section to replace on the text.
+            Defaults to "".
+        before :str, optional
+            Str or regex to search where to end the section to replace on the text.
+            Defaults to "".
+
+    Returns
+    ----------
+        list : List with the new text with the replace expected.
+    """
     with zoau_io.RecordIO(f"//'{ds}'") as dataset_read:
         dataset_content = dataset_read.readrecords()
 
@@ -311,6 +397,7 @@ def run_module():
             before=dict(type='str'),
             encoding=dict(type='str', default='IBM-1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
+            tmp_hlq=dict(type='str', required=False, default=None),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
@@ -323,6 +410,7 @@ def run_module():
         before=dict(type='str'),
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -346,6 +434,7 @@ def run_module():
     replace = module.params.get("replace")
     encoding = module.params.get("encoding")
     backup = module.params.get("backup")
+    tmphlq = parsed_args.get('tmp_hlq')
     if parsed_args.get('backup_name') and backup:
         backup = parsed_args.get('backup_name')
 
@@ -358,7 +447,7 @@ def run_module():
             if uss:
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception as err:
             module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}")
 

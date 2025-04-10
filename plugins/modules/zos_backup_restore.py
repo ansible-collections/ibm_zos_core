@@ -227,8 +227,6 @@ notes:
       documentation to configure the required security classes.
 """
 
-RETURN = r""""""
-
 EXAMPLES = r"""
 - name: Backup all data sets matching the pattern USER.** to data set MY.BACKUP.DZP
   zos_backup_restore:
@@ -351,6 +349,23 @@ EXAMPLES = r"""
     sms_storage_class: DB2SMS10
     sms_management_class: DB2SMS10
 """
+RETURN = r"""
+changed:
+  description:
+    - Indicates if any changes were made during module operation.
+    - Value of C(true) represents changes were made, otherwise C(false).
+  returned: always
+  type: bool
+  sample: true
+backup_name:
+  description:
+    - Name of the backup file or data set that was created or restored.
+    - Matches the I(backup_name) parameter provided as input.
+    - Empty string if operation failed.
+  returned: always
+  type: str
+  sample: "/u/oeusr03/my_backup.dzp"
+
 
 import traceback
 from os import path

@@ -2365,7 +2365,7 @@ def get_data_set_handler(
 
     try:
         is_an_alias, base_name = get_name_if_data_set_is_alias(name, module, tmp_hlq=tmp_hlq)
-    except:
+    except Exception:
         return DataSetHandler(name, exists=False)
 
     if is_an_alias:

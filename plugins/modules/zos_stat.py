@@ -133,9 +133,10 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
-  - When querying data sets, the module will create a temporary data set
-    that requires around 4 kilobytes of available space on the managed node.
-    This data set will be removed before the module finishes execution.
+  - When querying data sets, the module will create two temporary data sets.
+    One requires around 4 kilobytes of available space on the managed node.
+    The second one, around 1 kilobyte of available space. Both data sets will
+    be removed before the module finishes execution.
   - Sometimes, the system could be unable to properly determine the
     organization or record format of the data set or the space units used
     to represent its allocation. When this happens, the values for these
@@ -978,10 +979,12 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 )
 
 try:
-    from zoautil_py import datasets, gdgs
+    from zoautil_py import datasets, gdgs, mvscmd, ztypes
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
+    mvscmd = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import exceptions as zoau_exceptions
@@ -2290,6 +2293,7 @@ def fill_return_json(attrs):
 def get_name_if_data_set_is_alias(name, module, tmp_hlq=None):
     """Checks the catalog to see if 'name' corresponds to a data set
     alias and returns the original data set name in case it is.
+    Creates a temp data set to hold the IDCAMS command.
 
     Arguments
     ---------
@@ -2302,28 +2306,48 @@ def get_name_if_data_set_is_alias(name, module, tmp_hlq=None):
         bool -- Whether name corresponds to a data set alias.
         str -- Name of the data set that the alias points to
     """
-    # We need to unescape because this calls to system can handle
-    # special characters just fine.
-    name = name.upper().replace("\\", '')
+    try:
+        # We need to unescape because this call to the system can handle
+        # special characters just fine.
+        name = name.upper().replace("\\", '')
 
-    stdin = f" LISTCAT ENTRIES('{name}') ALL"
-    cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
-    if tmp_hlq:
-        cmd = "{0} -Q={1}".format(cmd, tmp_hlq)
+        temp_dd_location = DataSet.create_temp(
+            hlq=tmp_hlq,
+            type='SEQ',
+            record_format='FB',
+            space_primary=1,
+            space_secondary=0,
+            space_type='K',
+            record_length=120
+        )
+        idcams_cmd = f" LISTCAT ENTRIES('{name}') ALL"
+        datasets.write(temp_dd_location, idcams_cmd)
+        cmd_dd = ztypes.DatasetDefinition(temp_dd_location, disposition='SHR')
 
-    rc, stdout, stderr = module.run_command(
-        cmd,
-        data=stdin,
-        errors='replace'
-    )
+        dds = [
+            ztypes.DDStatement('SYSPRINT', '*'),
+            ztypes.DDStatement('SYSIN', cmd_dd)
+        ]
+        if tmp_hlq:
+            response = mvscmd.execute_authorized('IDCAMS', dds=dds, tmphlq=tmp_hlq)
+        else:
+            response = mvscmd.execute_authorized('IDCAMS', dds=dds)
 
-    if rc > 0 or stderr != '':
-        raise QueryException(f'Could not find the data set {name} on the system.')
+    finally:
+        datasets.delete(temp_dd_location)
 
-    if re.search(r'(ALIAS -+)(1)', stdout):
+    if response.rc > 0 or response.stderr_response != '':
+        raise QueryException(
+            f'Could not find the data set {name} on the system.',
+            rc=response.rc,
+            stdout=response.stdout_response,
+            stderr=response.stderr_response
+        )
+
+    if re.search(r'(ALIAS -+)(1)', response.stdout_response):
         base_name = re.search(
             r'(ASSOCIATIONS\s*\n\s*[0-9a-zA-Z]+-+)([0-9a-zA-Z\.@\$#-]+)',
-            stdout
+            response.stdout_response
         ).group(2)
         return True, base_name
     else:

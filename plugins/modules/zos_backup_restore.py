@@ -359,14 +359,14 @@ changed:
   sample: true
 backup_name:
   description:
-    - The backup file or data set name that was processed.
+    - The USS file name or data set name that was used as a backup.
     - Matches the I(backup_name) parameter provided as input.
   returned: always
   type: str
   sample: "/u/oeusr03/my_backup.dzp"
 message:
   description:
-    - Empty ("") for successfull and failure operations.
+    - Returns any important messages about the modules execution, if any.
   returned: always
   type: str
   sample: ""

@@ -2290,74 +2290,6 @@ def fill_return_json(attrs):
     return attrs
 
 
-def get_name_if_data_set_is_alias(name, module, tmp_hlq=None):
-    """Checks the catalog to see if 'name' corresponds to a data set
-    alias and returns the original data set name in case it is.
-    Creates a temp data set to hold the IDCAMS command.
-
-    Arguments
-    ---------
-        name (str) -- Name of a data set or alias.
-        module (AnsibleModule) -- Ansible object with the task's context.
-        tmp_hlq (str, optional) -- Temp HLQ to use with mvscmdauth.
-
-    Returns
-    -------
-        bool -- Whether name corresponds to a data set alias.
-        str -- Name of the data set that the alias points to
-    """
-    try:
-        # We need to unescape because this call to the system can handle
-        # special characters just fine.
-        name = name.upper().replace("\\", '')
-
-        temp_dd_location = DataSet.create_temp(
-            hlq=tmp_hlq,
-            type='SEQ',
-            record_format='FB',
-            space_primary=1,
-            space_secondary=0,
-            space_type='K',
-            record_length=120
-        )
-        idcams_cmd = f" LISTCAT ENTRIES('{name}') ALL"
-        datasets.write(temp_dd_location, idcams_cmd)
-        cmd_dd = ztypes.DatasetDefinition(temp_dd_location, disposition='SHR')
-
-        dds = [
-            ztypes.DDStatement('SYSPRINT', '*'),
-            ztypes.DDStatement('SYSIN', cmd_dd)
-        ]
-
-        if tmp_hlq:
-            os.environ['TMPHLQ'] = tmp_hlq
-
-        response = mvscmd.execute_authorized('IDCAMS', dds=dds)
-
-        if tmp_hlq:
-            del os.environ['TMPHLQ']
-
-    finally:
-        datasets.delete(temp_dd_location)
-
-    if response.rc > 0 or response.stderr_response != '':
-        raise QueryException(
-            f'Could not find the data set {name} on the system.',
-            rc=response.rc,
-            stdout=response.stdout_response,
-            stderr=response.stderr_response
-        )
-
-    if re.search(r'(ALIAS -+)(1)', response.stdout_response):
-        base_name = re.search(
-            r'(ASSOCIATIONS\s*\n\s*[0-9a-zA-Z]+-+)([0-9a-zA-Z\.@\$#-]+)',
-            response.stdout_response
-        ).group(2)
-        return True, base_name
-    else:
-        return False, name
-
-
 def get_data_set_handler(
     name,
     volumes,
@@ -2392,7 +2324,10 @@ def get_data_set_handler(
     alias_name = None
 
     try:
-        is_an_alias, base_name = get_name_if_data_set_is_alias(name, module, tmp_hlq=tmp_hlq)
+        is_an_alias, base_name = DataSet.get_name_if_data_set_is_alias(
+            name,
+            tmp_hlq=tmp_hlq
+        )
     except Exception:
         return DataSetHandler(name, exists=False)
 

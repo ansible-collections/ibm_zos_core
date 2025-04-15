@@ -2328,10 +2328,14 @@ def get_name_if_data_set_is_alias(name, module, tmp_hlq=None):
             ztypes.DDStatement('SYSPRINT', '*'),
             ztypes.DDStatement('SYSIN', cmd_dd)
         ]
+
         if tmp_hlq:
-            response = mvscmd.execute_authorized('IDCAMS', dds=dds, tmphlq=tmp_hlq)
-        else:
-            response = mvscmd.execute_authorized('IDCAMS', dds=dds)
+            os.environ['TMPHLQ'] = tmp_hlq
+
+        response = mvscmd.execute_authorized('IDCAMS', dds=dds)
+
+        if tmp_hlq:
+            del os.environ['TMPHLQ']
 
     finally:
         datasets.delete(temp_dd_location)

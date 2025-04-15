@@ -1103,7 +1103,6 @@ def test_query_data_set_seq_with_alias(ansible_zos_module, volumes_on_systems):
         )
 
         for result in alias_creation_result.contacted.values():
-            print(result)
             assert result.get('changed') is True
             assert result.get('failed', False) is False
 

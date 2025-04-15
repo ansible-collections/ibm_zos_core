@@ -368,6 +368,31 @@ jobs:
         Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
       type: str
       sample: "IEBGENER"
+    system:
+      description:
+         The job entry system that MVS uses to do work.
+      type: str
+      sample: STL1
+    subsystem:
+      description:
+         The job entry subsystem that MVS uses to do work.
+      type: str
+      sample: STL1
+    cpu_time:
+      description:
+        Sum of the CPU time used by each job step, in microseconds.
+      type: int
+      sample: 5
+    execution_node:
+      description:
+        Execution node.
+      type: str
+      sample: "STL1"
+    origin_node:
+      description:
+        Origin node (node of submittal).
+      type: str
+      sample: "STL1"
 
   sample:
      [
@@ -592,7 +617,10 @@ jobs:
               "creation_time": "12:13:00",
               "queue_position": 3,
               "subsystem": "STL1",
-              "system": "STL1"
+              "system": "STL1",
+              "cpu_time": 1,
+              "execution_node": "STL1",
+              "origin_node": "STL1"
           }
      ]
 """

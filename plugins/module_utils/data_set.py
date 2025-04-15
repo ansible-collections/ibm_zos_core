@@ -2123,8 +2123,7 @@ class DataSet(object):
         response = DataSet._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
 
         if response.rc > 0 or response.stderr_response != '':
-            raise QueryException(
-                f'Could not find the data set {name} on the system.',
+            raise MVSCmdExecError(
                 rc=response.rc,
                 stdout=response.stdout_response,
                 stderr=response.stderr_response

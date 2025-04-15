@@ -979,12 +979,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 )
 
 try:
-    from zoautil_py import datasets, gdgs, mvscmd, ztypes
+    from zoautil_py import datasets, gdgs
 except Exception:
     datasets = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
-    mvscmd = ZOAUImportError(traceback.format_exc())
-    ztypes = ZOAUImportError(traceback.format_exc())
 
 try:
     from zoautil_py import exceptions as zoau_exceptions

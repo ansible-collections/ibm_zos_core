@@ -41,6 +41,4 @@ jobs:
           rm -rf ibm-ibm_zos_core-*.tar.gz
           ansible-galaxy collection build
           ansible-galaxy collection install -f ibm-ibm_zos_core-*
-          cd docs
-          make clean
-          make module-doc
+          cd docs && make clean && make module-doc

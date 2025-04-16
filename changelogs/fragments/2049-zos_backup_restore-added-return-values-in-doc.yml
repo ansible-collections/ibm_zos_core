@@ -1,0 +1,4 @@
+trivial:
+  - zos_backup_restore - Updated documentation on zos_backup_restore to notify about return
+    values of Backup and restore operation.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2049).

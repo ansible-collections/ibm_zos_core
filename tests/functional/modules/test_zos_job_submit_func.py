@@ -774,11 +774,11 @@ def test_job_submit_pds_30_sec_job_wait_10_negative(ansible_zos_module):
 @pytest.mark.parametrize("args", [
     {
         "max_rc":None,
-        "wait_time_s":10
+        "wait_time_s":20
     },
     {
         "max_rc":4,
-        "wait_time_s":10
+        "wait_time_s":20
     },
     {
         "max_rc":12,

@@ -310,7 +310,7 @@ import json
 from ansible.module_utils._text import to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, zoau_version_checker, data_set, backup as Backup)
+    better_arg_parser, data_set, backup as Backup)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
@@ -387,6 +387,7 @@ def backupOper(module, src, backup, tmphlq=None):
         )
 
     return backup_name
+
 
 def main():
     """Initialize the module.
@@ -580,13 +581,13 @@ def main():
                 del item['library']
             # ignore=true is added so that it's ignoring in case of addition if already present
             # ignore=true is added so that it's ignoring in case the file is not in apf list while deletion
-            ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent,ignore=True)
+            ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
         else:
             if not library:
                 module.fail_json(msg='library is required')
             # ignore=true is added so that it's ignoring in case of addition if already present
             # ignore=true is added so that it's ignoring in case the file is not in apf list while deletion
-            ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent,ignore=True)
+            ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response

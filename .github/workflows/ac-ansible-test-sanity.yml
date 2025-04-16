@@ -71,4 +71,4 @@ jobs:
         rm -rf ibm-ibm_zos_core-*.tar.gz
         ansible-galaxy collection build
         ansible-galaxy collection install -f ibm-ibm_zos_core-*
-        cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && ansible-test sanity --python 3.13 requirements
+        cd ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core && ansible-test sanity --python 3.12 requirements

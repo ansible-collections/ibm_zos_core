@@ -206,7 +206,7 @@ class DataSet(object):
         if present and not replace and volumes:
             cataloged_volumes = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
             requested_volumes = [v.upper() for v in volumes]
-        #Check if ANY requested volume matches cataloged volumes
+         # Check if ANY requested volume matches cataloged volumes
             if not any(vol.upper() in requested_volumes for vol in cataloged_volumes):
                 raise DatasetCatalogedOnDifferentVolumeError(
                     name=name,

@@ -802,7 +802,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    DataSet, GenerationDataGroup, MVSDataSet, Member
+    DatasetCatalogedOnDifferentVolumeError, DataSet, GenerationDataGroup, MVSDataSet, Member
 )
 from ansible.module_utils.basic import AnsibleModule
 
@@ -1905,19 +1905,19 @@ def run_module():
             for data_set_params in data_set_param_list:
                 # this returns MVSDataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
-                result["changed"] = perform_data_set_operations(
+                current_changed = perform_data_set_operations(
                     data_set=data_set,
                     state=data_set_params.get("state"),
                     replace=data_set_params.get("replace"),
                     tmp_hlq=data_set_params.get("tmp_hlq"),
                     force=data_set_params.get("force"),
-                ) or result.get("changed", False)
+                )
+                result["changed"] = result["changed"] or current_changed
+        except DatasetCatalogedOnDifferentVolumeError as e:
+            module.fail_json(msg=str(e), changed=False)
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
-    else:
-        if module.params.get("replace"):
-            result["changed"] = True
-    module.exit_json(**result)
+        module.exit_json(**result)
 
 
 def main():

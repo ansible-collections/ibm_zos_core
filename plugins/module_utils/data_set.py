@@ -3120,6 +3120,16 @@ class DatasetCatalogError(Exception):
         )
         super().__init__(self.msg)
 
+class DatasetCatalogedOnDifferentVolumeError(Exception):
+    def __init__(self, name, existing_volumes, requested_volumes):
+        existing_vol_str = ", ".join(existing_volumes) if existing_volumes else "none"
+        requested_vol_str = ", ".join(requested_volumes) if requested_volumes else "none"
+        self.msg = (
+            "Data set {0} is cataloged with volume {1}, if you want to create data set {0} "
+            "in volume {2} uncatalog the data set first and then create it."
+        ).format(name, existing_vol_str, requested_vol_str)
+        super().__init__(self.msg)
+
 
 class DatasetUncatalogError(Exception):
     def __init__(self, data_set, rc):

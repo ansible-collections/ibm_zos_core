@@ -68,6 +68,11 @@ jobs:
     - name: Run ac-galaxy-importer
       run: |
         source venv/bin/activate
+        ls .
+        ls venv/lib
+        ls venv/lib/python3.12
+        ls venv/lib/python3.12/site-packages
+        ls venv/lib/python3.12/site-packages/galaxy-importer
         export FLAKE8_IGNORE=`cat ${GALAXY_IMPORTER_CONFIG} | grep -i "ignore = " | cut -d "=" -f 2 | tr -d ' '`
         cp $ORIGINAL_CONSTANTS_DIR/constants.py /tmp/
         sed "s/E402/$FLAKE8_IGNORE/" ${ORIGINAL_CONSTANTS_DIR}/constants.py > ${ORIGINAL_CONSTANTS_DIR}/constants.py.tmp

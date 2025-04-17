@@ -1,0 +1,8 @@
+bugfixes:
+   - zos_data_set - Added validation to check existing cataloged volumes 
+     against requested volumes.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2057).
+trivial:     
+   - data_set - added validation logic to compare rwquested volumes against
+     cataloged volumes.  
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2057).

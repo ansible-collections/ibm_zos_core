@@ -19,7 +19,7 @@ on:
       - '.pytest_cache/**'
       - '.vscode/**'
       - 'Jenkinsfile'
-      # - 'ac'
+      - 'ac'
       - 'ansible.cfg'
       - 'changelogs/**'
       - 'collections/**'

@@ -76,5 +76,5 @@ jobs:
         ansible-galaxy collection build --force
         python3 -m galaxy_importer.main ibm-ibm_zos_core-*.tar.gz
       env:
-        ORIGINAL_CONSTANTS_DIR: venv/lib/python3.12/site-packages/galaxy-importer/
+        ORIGINAL_CONSTANTS_DIR: venv/lib/python3.12/site-packages/galaxy-importer
         GALAXY_IMPORTER_CONFIG: .github/workflows/galaxy-importer.cfg

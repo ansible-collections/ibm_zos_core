@@ -227,7 +227,7 @@ def get_volume_and_unit(ansible_zos_module, path):
                         volumes_datasets.append([datasets, vol_w_info[3], vol_w_info[0]])
 
     print(str(volumes_datasets))
-    sorted_volumes = sorted(volumes_datasets, key=lambda x: x[0])
+    sorted_volumes = sorted(volumes_datasets, key=lambda x: x[0], reverse=False)
     list_volumes = [[x[1], x[2]] for x in sorted_volumes]
 
     return list_volumes

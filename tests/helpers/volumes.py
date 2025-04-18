@@ -209,24 +209,25 @@ def get_volume_and_unit(ansible_zos_module, path):
         if len(vol_w_info)>3:
             if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
 
+                # The next creation of dataset is to validate if the volume will work properly for the test suite
                 dataset = get_tmp_ds_name()
                 valid_creation = hosts.all.zos_data_set(name=dataset, type='pds', volumes=f'{vol_w_info[3]}')
 
                 for valid in valid_creation.contacted.values():
-                    print(valid)
                     if valid.get("changed") == "false":
                         valid = False
                     else:
                         valid = True
                         hosts.all.zos_data_set(name=dataset, state="absent")
 
+                # When is a valid volume is required to get the datasets present on the volume
                 if valid:
                     ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
                     for ds in ds_on_vol.contacted.values():
                         datasets = str(ds.get("stdout")).split("\n")
-                        volumes_datasets.append([datasets, vol_w_info[3], vol_w_info[0]])
+                        volumes_datasets.append([len(datasets), vol_w_info[3], vol_w_info[0]])
 
-    print(str(volumes_datasets))
+    # To ensure we use the best volume available the order of the volumes will help
     sorted_volumes = sorted(volumes_datasets, key=lambda x: x[0], reverse=False)
     list_volumes = [[x[1], x[2]] for x in sorted_volumes]
 

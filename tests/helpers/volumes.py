@@ -187,6 +187,7 @@ def get_volume_and_unit(ansible_zos_module, path):
     priv_online = []
     flag = False
     iteration = 5
+    volumes_datasets = []
     # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
     # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
     while not flag and iteration > 0:
@@ -204,23 +205,29 @@ def get_volume_and_unit(ansible_zos_module, path):
         if "ACTIVATED" in info or "-D U," in info or "UNIT" in info:
             continue
         vol_w_info = info.split()
+
         if len(vol_w_info)>3:
             if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
-                ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
-                for ds in ds_on_vol.contacted.values():
-                    datasets = str(ds.get("stdout")).split("\n")
-                    largest = 5
-                    shortest = 2
-                    if len(datasets) < 30:
-                        if len(datasets) >= shortest and len(datasets) < largest:
-                            priv_online.insert(0, [vol_w_info[3], vol_w_info[0]])
-                        elif len(datasets) >= largest:
-                            largest = len(datasets)
-                            priv_online.append([vol_w_info[3], vol_w_info[0]])
-                        else:
-                            priv_online.insert(1, [vol_w_info[3], vol_w_info[0]])
-    # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
-    for vol in priv_online:
-        list_volumes.append(vol)
+
+                dataset = get_tmp_ds_name()
+                valid_creation = hosts.all.zos_data_set(name=dataset, type='pds', volumes=f'{vol_w_info[3]}')
+
+                for valid in valid_creation.contacted.values():
+                    print(valid)
+                    if valid.get("changed") == "false":
+                        valid = False
+                    else:
+                        valid = True
+                        hosts.all.zos_data_set(name=dataset, state="absent")
+
+                if valid:
+                    ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
+                    for ds in ds_on_vol.contacted.values():
+                        datasets = str(ds.get("stdout")).split("\n")
+                        volumes_datasets.append([datasets, vol_w_info[3], vol_w_info[0]])
+
+    print(str(volumes_datasets))
+    sorted_volumes = sorted(volumes_datasets, key=lambda x: x[0])
+    list_volumes = [[x[1], x[2]] for x in sorted_volumes]
 
     return list_volumes

@@ -114,7 +114,33 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
-
+backup_name:
+    description: Name of the backup file or data set that was created.
+    returned: if backup=true
+    type: str
+    sample: /path/to/file.txt.2015-02-03@04:15
+changed:
+    description:
+        Indicates if the source was modified.
+        Value of 1 represents `true`, otherwise `false`.
+    returned: always
+    type: bool
+    sample: 1
+found:
+    description: Number of the matching patterns
+    returned: success
+    type: int
+    sample: 5
+msg:
+    description: The module messages
+    returned: failure
+    type: str
+    sample: Parameter verification failed
+target:
+    description: The data set name or USS name.
+    returned: always
+    type: str
+    sample: ANSIBLE.USER.TEXT
 """
 
 import os
@@ -143,7 +169,7 @@ except Exception:
     zoau_io = ZOAUImportError(traceback.format_exc())
 
 
-def resolve_src_name(module, name):
+def resolve_src_name(module, name, results):
     """Function to solve and validate the exist of the dataset or uss file.
 
     Parameters
@@ -163,9 +189,9 @@ def resolve_src_name(module, name):
             if os.path.isfile(name):
                 return name
             else:
-                module.fail_json(msg=f"Target {name} uss need to be a file not folder.")
+                module.fail_json(rc=256, msg=f"Path {name} is a directory.", **results)
         else:
-            module.fail_json(msg=f"File {name} uss does not exists.")
+            module.fail_json(rc=257, msg=f"File {name} uss does not exists.", **results)
     else:
         try:
             dataset = data_set.MVSDataSet(
@@ -173,11 +199,11 @@ def resolve_src_name(module, name):
             )
         except Exception:
             messageDict = dict(msg="Unable to resolve name of data set {name}.")
-            module.fail_json(**messageDict)
+            module.fail_json(**messageDict, **results)
 
         ds_utils = data_set.DataSetUtils(name)
         if not ds_utils.exists():
-            module.fail_json(msg=f"{name} does NOT exist.")
+            module.fail_json(msg=f"{name} does NOT exist.", **results)
 
         return dataset.name
 
@@ -198,13 +224,14 @@ def replace_text(content, regexp, replace):
     Returns
     ----------
         list: the new array of lines with the content replaced
+        times_replaced : the number of substitutions made
     """
     full_text = "\n".join(content)
 
-    pattern = re.compile(regexp, re.MULTILINE | re.DOTALL)
-    modified_text = pattern.sub(replace, full_text)
+    pattern = re.compile(regexp, re.MULTILINE)
+    modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
 
-    return modified_text.split("\n")
+    return modified_text.split("\n"), times_replaced
 
 
 def merge_text(original, replace, begin, end):
@@ -225,21 +252,24 @@ def merge_text(original, replace, begin, end):
     ----------
         list : The full text on list mode
     """
-    if begin == 0 and end != len(original) - 1:
-        tail_content = original[end + 1:]
-        replace.extend(tail_content)
-        return replace
-
-    elif end == len(original) - 1:
+    # Case for after exist and before dont
+    if begin != 0 and end == len(original):
         head_content = original[:begin]
         head_content.extend(replace)
         return head_content
 
+    # Case for before exist and after dont
+    elif end != len(original) and begin == 0:
+        tail_content = original[end:]
+        replace.extend(tail_content)
+        return replace
+
+    # Case before and after exists
     else:
         head_content = original[:begin]
-        tail_content = original[end + 1:]
-        head_content.extends(replace)
-        head_content.extends(tail_content)
+        tail_content = original[end:]
+        head_content.extend(replace)
+        head_content.extend(tail_content)
         return head_content
 
 
@@ -295,13 +325,14 @@ def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
         decode_list.append(line)
 
     if not bool(after) and not bool(before):
-        return replace_text(content=decode_list, regex=regexp, replace=replace)
+        new_full_text, replaced = replace_text(content=decode_list, regex=regexp, replace=replace)
+        return new_full_text, replaced
 
     pattern_begin = re.compile(after, re.DOTALL) if after else after
     pattern_end = re.compile(before, re.DOTALL) if before else before
 
     begin_block_code = 0
-    end_block_code = len(decode_list) - 1
+    end_block_code = len(decode_list)
 
     line_counter = 0
     search_after = bool(after)
@@ -309,7 +340,7 @@ def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
 
     for line in decode_list:
         if search_after and pattern_begin.match(line) is not None:
-            begin_block_code = line_counter
+            begin_block_code = line_counter + 1
             if not before:
                 break
             else:
@@ -317,13 +348,13 @@ def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
                 search_after = False
 
         if search_before and pattern_end.match(line) is not None:
-                end_block_code = line_counter + 1
-                break
+            end_block_code = line_counter
+            break
         line_counter += 1
 
-    new_text = replace_text(decode_list[begin_block_code: end_block_code], regex=regexp, replace=replace)
+    new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code], regex=regexp, replace=replace)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
-    return full_new_text
+    return full_new_text, replaced
 
 
 def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
@@ -357,13 +388,14 @@ def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
     decode_list = [codecs.decode(record, encoding) for record in dataset_content]
 
     if not bool(after) and not bool(before):
-        return replace_text(content=decode_list, regex=regexp, replace=replace)
+        new_full_text, replaced = replace_text(content=decode_list, regex=regexp, replace=replace)
+        return new_full_text, replaced
 
     pattern_begin = re.compile(after, re.DOTALL) if after else after
     pattern_end = re.compile(before, re.DOTALL) if before else before
 
     begin_block_code = 0
-    end_block_code = len(decode_list) - 1
+    end_block_code = len(decode_list)
 
     line_counter = 0
     search_after = True if after else False
@@ -379,13 +411,13 @@ def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
                 search_after = False
 
         if search_before and pattern_end.match(line) is not None:
-                end_block_code = line_counter + 1
-                break
+            end_block_code = line_counter
+            break
         line_counter += 1
 
-    new_text = replace_text(decode_list[begin_block_code: end_block_code], regex=regexp, replace=replace)
+    new_text, replaced = replace_text(content=decode_list[begin_block_code : end_block_code], regex=regexp, replace=replace)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
-    return full_new_text
+    return full_new_text, replaced
 
 
 def run_module():
@@ -426,7 +458,13 @@ def run_module():
         )
 
     src = module.params.get("target")
-    src = resolve_src_name(module=module, name=src)
+
+    result = dict()
+    changed = False
+    result["target"] = src
+    result["changed"] = changed
+
+    src = resolve_src_name(module=module, name=src, results=result)
     uss = True if "/" in src else False
     after = module.params.get("after")
     before = module.params.get("before")
@@ -438,8 +476,6 @@ def run_module():
     if parsed_args.get('backup_name') and backup:
         backup = parsed_args.get('backup_name')
 
-    result = dict()
-
     if backup:
         if isinstance(backup, bool):
             backup = None
@@ -449,10 +485,10 @@ def run_module():
             else:
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception as err:
-            module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}")
+            module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}", **result)
 
     if uss:
-        full_text = replace_uss(file=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
+        full_text, replaced = replace_uss(file=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
         try:
@@ -473,7 +509,7 @@ def run_module():
             os.remove(tmp_file)
 
     else:
-        full_text = replace_ds(ds=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
+        full_text, replaced = replace_ds(ds=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
         bk_ds = datasets.tmp_name()
         datasets.create(name=bk_ds, dataset_type="SEQ")
         try:
@@ -485,6 +521,7 @@ def run_module():
             datasets.delete(dataset=bk_ds)
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",
+                **result
             )
 
         try:
@@ -492,7 +529,12 @@ def run_module():
         finally:
             datasets.delete(dataset=bk_ds)
 
-    result["target"] = src
+    changed = True
+    result["found"] = replaced
+    result["changed"] = changed
+
+    module.exit_json(**result)
+
 
 def main():
     run_module()

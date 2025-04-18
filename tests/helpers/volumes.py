@@ -22,8 +22,9 @@ from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 class Volume:
     """ Volume class represents a volume on the z system, it tracks if the volume name
     and status of the volume with respect to the current test session."""
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, *args):
+        self.name = args[0]
+        self.unit = args[1] if len(args) > 1 else None
         self.in_use = False
 
     def __str__(self):
@@ -42,9 +43,14 @@ class Volume_Handler:
         def init_volumes(list_volumes):
             list_volumes = []
             for volume in self.volumes:
-                list_volumes.append(Volume(volume))
+                if type(volume) is list:
+                    vol = volume[0]
+                    unit = volume[1]
+                    list_volumes.append(Volume(vol, unit))
+                else:
+                    list_volumes.append(Volume(volume))
             return list_volumes
-        self.volumes =init_volumes(list_volumes)
+        self.volumes = init_volumes(list_volumes)
 
     def get_available_vol(self):
         """ Check in the list of volumes one on use or not, also send a default
@@ -56,17 +62,21 @@ class Volume_Handler:
         print("Not more volumes in disposal return volume 000000")
         return "000000"
 
+    def get_available_vol_addr(self):
+        """ Check in the list of volumes one on use or not, also send a default
+        volume USER02 as is the one with less data sets included."""
+        for volume in self.volumes:
+            if not (volume.in_use):
+                volume.use()
+                return volume.name, volume.unit
+        print("Not more volumes in disposal return volume USER02")
+        return "USER02","01A2"
+
     def free_vol(self, vol):
         """ Check from the array the volume is already free for other test to use."""
         for volume in self.volumes:
             if volume.name == vol:
                 volume.free()
-
-    def init_volumes(self):
-        list_volumes = []
-        for volume in self.volumes:
-            list_volumes.append(Volume(volume))
-        self.volumes =list_volumes
 
 
 def get_volumes(ansible_zos_module, path):
@@ -163,3 +173,62 @@ def create_vvds_on_volume( ansible_zos_module, volume):
         if vls_res.get("rc") == 0:
             return True
     return False
+
+
+def get_volume_and_unit(ansible_zos_module, path):
+    """Get an array of available volumes, and it's unit"""
+    # Using the command d u,dasd,online to fill an array of available volumes with the priority
+    # of of actives (A) and storage (STRG) first then online (O) and storage and if is needed, the
+    # private ones but actives then to get a flag if is available or not every volumes
+    # is a instance of a class to manage the use.
+    hosts = ansible_zos_module
+    list_volumes = []
+    all_volumes_list = []
+    priv_online = []
+    flag = False
+    iteration = 5
+    volumes_datasets = []
+    # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
+    # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
+    while not flag and iteration > 0:
+        all_volumes = hosts.all.zos_operator(cmd="d u,dasd,online,,65536")
+        time.sleep(1)
+        if all_volumes is not None:
+            for volume in all_volumes.contacted.values():
+                temp = volume.get('content')
+                if temp is not None:
+                    all_volumes_list += temp
+            flag = True if len(all_volumes_list) > 5 else False
+        iteration -= 1
+    # Check if the volume is of storage and is active on prefer but also online as a correct option
+    for info in all_volumes_list:
+        if "ACTIVATED" in info or "-D U," in info or "UNIT" in info:
+            continue
+        vol_w_info = info.split()
+
+        if len(vol_w_info)>3:
+            if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
+
+                # The next creation of dataset is to validate if the volume will work properly for the test suite
+                dataset = get_tmp_ds_name()
+                valid_creation = hosts.all.zos_data_set(name=dataset, type='pds', volumes=f'{vol_w_info[3]}')
+
+                for valid in valid_creation.contacted.values():
+                    if valid.get("changed") == "false":
+                        valid = False
+                    else:
+                        valid = True
+                        hosts.all.zos_data_set(name=dataset, state="absent")
+
+                # When is a valid volume is required to get the datasets present on the volume
+                if valid:
+                    ds_on_vol = hosts.all.shell(cmd=f"vtocls {vol_w_info[3]}")
+                    for ds in ds_on_vol.contacted.values():
+                        datasets = str(ds.get("stdout")).split("\n")
+                        volumes_datasets.append([len(datasets), vol_w_info[3], vol_w_info[0]])
+
+    # To ensure we use the best volume available the order of the volumes will help
+    sorted_volumes = sorted(volumes_datasets, key=lambda x: x[0], reverse=False)
+    list_volumes = [[x[1], x[2]] for x in sorted_volumes]
+
+    return list_volumes

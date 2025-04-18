@@ -203,6 +203,10 @@ class DataSet(object):
         changed = False
         if DataSet.data_set_cataloged(name, tmphlq=tmp_hlq):
             present = True
+        # Validate volume conflicts when:
+        # 1. Dataset exists in catalog (present=True).
+        # 2. User hasn't requested replacement (replace=False).
+        # 3. Specific volumes were requested (volumes parameter provided).
         if present and not replace and volumes:
             cataloged_volumes = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
             requested_volumes = [vol.upper() for vol in volumes]

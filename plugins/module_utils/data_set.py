@@ -203,6 +203,19 @@ class DataSet(object):
         changed = False
         if DataSet.data_set_cataloged(name, tmphlq=tmp_hlq):
             present = True
+        # Validate volume conflicts when:
+        # 1. Dataset exists in catalog (present=True).
+        # 2. User hasn't requested replacement (replace=False).
+        # 3. Specific volumes were requested (volumes parameter provided).
+        if present and not replace and volumes:
+            cataloged_volumes = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
+            requested_volumes = [vol.upper() for vol in volumes]
+            if not any(vol.upper() in requested_volumes for vol in cataloged_volumes):
+                raise DatasetCatalogedOnDifferentVolumeError(
+                    name=name,
+                    existing_volumes=cataloged_volumes,
+                    requested_volumes=volumes
+                )
 
         if not present:
             try:
@@ -3118,6 +3131,17 @@ class DatasetCatalogError(Exception):
         self.msg = 'An error occurred during cataloging of data set "{0}" on volume(s) "{1}". RC={2}. {3}'.format(
             data_set, ", ".join(volumes), rc, message
         )
+        super().__init__(self.msg)
+
+
+class DatasetCatalogedOnDifferentVolumeError(Exception):
+    def __init__(self, name, existing_volumes, requested_volumes):
+        existing_vol_str = ", ".join(existing_volumes) if existing_volumes else "none"
+        requested_vol_str = ", ".join(requested_volumes) if requested_volumes else "none"
+        self.msg = (
+            "Data set {0} is cataloged with volume {1}, if you want to create data set {0} "
+            "in volume {2} uncatalog the data set first and then create it."
+        ).format(name, existing_vol_str, requested_vol_str)
         super().__init__(self.msg)
 
 

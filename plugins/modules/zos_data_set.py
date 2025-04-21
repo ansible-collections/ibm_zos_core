@@ -802,7 +802,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    DatasetCatalogedOnDifferentVolumeError, DataSet, GenerationDataGroup, MVSDataSet, Member
+    DataSet, GenerationDataGroup, MVSDataSet, Member
 )
 from ansible.module_utils.basic import AnsibleModule
 
@@ -1915,8 +1915,6 @@ def run_module():
                 result["changed"] = result["changed"] or current_changed
         except Exception as e:
             module.fail_json(msg=str(e), **result)
-        except Exception as e:
-            module.fail_json(msg=repr(e), **result)
     if module.params.get("replace"):
         result["changed"] = True
     module.exit_json(**result)

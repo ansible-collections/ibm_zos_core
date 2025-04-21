@@ -1,0 +1,3 @@
+trivial:
+  - zos_mount - Added handling to the df call, so that FSUMF168 are ignored.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2060).

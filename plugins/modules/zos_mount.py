@@ -852,9 +852,8 @@ def run_module(module, arg_def):
             module.fail_json(
                 msg="Checking filesystem list failed with error", stderr=str(res_args)
             )
-        else {
+        else:
             rc = 0
-        }
 
     sttest = stdout.splitlines()
     for line in sttest:

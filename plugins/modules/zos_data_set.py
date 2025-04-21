@@ -1913,11 +1913,14 @@ def run_module():
                     force=data_set_params.get("force"),
                 )
                 result["changed"] = result["changed"] or current_changed
-        except DatasetCatalogedOnDifferentVolumeError as e:
-            module.fail_json(msg=str(e), changed=False)
+        except Exception as e:
+            module.fail_json(msg=str(e), **result)
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
-        module.exit_json(**result)
+
+    if module.params.get("replace"):
+        result["changed"] = True        
+    module.exit_json(**result)
 
 
 def main():

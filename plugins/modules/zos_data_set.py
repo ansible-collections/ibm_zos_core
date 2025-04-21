@@ -1917,7 +1917,6 @@ def run_module():
             module.fail_json(msg=str(e), **result)
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
-
     if module.params.get("replace"):
         result["changed"] = True        
     module.exit_json(**result)

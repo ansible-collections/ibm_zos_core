@@ -1918,7 +1918,7 @@ def run_module():
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
     if module.params.get("replace"):
-        result["changed"] = True        
+        result["changed"] = True
     module.exit_json(**result)
 
 

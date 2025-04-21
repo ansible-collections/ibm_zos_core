@@ -321,7 +321,6 @@ try:
     from zoautil_py import zsystem
 except Exception:
     zsystem = ZOAUImportError(traceback.format_exc())
-    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types

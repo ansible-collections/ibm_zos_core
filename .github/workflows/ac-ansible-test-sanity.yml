@@ -13,7 +13,7 @@ on:
       - 'cache/**'
       - '.DS_Store'
       - '.git/**'
-      # - '.github/**'
+      - '.github/**'
       - '.gitignore'
       - '.python-version'
       - '.pytest_cache/**'
@@ -39,7 +39,7 @@ on:
 
 jobs:
   ansible-sanity:
-    # if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     env:
       branch: ${{ github.event.pull_request.head.ref }}

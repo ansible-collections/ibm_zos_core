@@ -15,8 +15,12 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
+from shellescape import quote
 
-from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
+from ibm_zos_core.tests.helpers.dataset import (
+    get_tmp_ds_name,
+    get_random_q,
+)
 
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
 

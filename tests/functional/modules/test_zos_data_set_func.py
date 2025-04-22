@@ -788,6 +788,45 @@ def test_multi_volume_creation_uncatalog_and_catalog_vsam(ansible_zos_module, vo
     finally:
         hosts.all.zos_data_set(name=default_data_set_name, state="absent")
 
+def test_create_dataset_with_different_volume_than_cataloged(ansible_zos_module, volumes_on_systems):
+    """Test error when creating a dataset with a different volume than cataloged."""
+    volumes = Volume_Handler(volumes_on_systems)
+    volume_1 = volumes.get_available_vol()
+    volume_2 = volumes.get_available_vol()
+    
+    if volume_1 == volume_2:
+        pytest.skip("Test requires two different volumes")
+    
+    hosts = ansible_zos_module
+    dataset = get_tmp_ds_name(2, 2)
+    
+    try:
+        # First create the dataset on volume_1
+        create_results = hosts.all.zos_data_set(
+            name=dataset,
+            state="present",
+            type="seq",
+            volumes=volume_1
+        )
+        
+        for result in create_results.contacted.values():
+            assert result.get("changed") is True
+        
+        # Attempt to create the same dataset on volume_2 (should fail)
+        results = hosts.all.zos_data_set(
+            name=dataset,
+            state="present",
+            type="seq",
+            volumes=volume_2
+        )
+        
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "DatasetCatalogedOnDifferentVolumeError" in result.get("msg")
+
+    finally:
+        # Cleanup
+        hosts.all.zos_data_set(name=dataset, state="absent", volumes=[volume_1, volume_2])
 
 def test_data_set_temp_data_set_name(ansible_zos_module):
     try:

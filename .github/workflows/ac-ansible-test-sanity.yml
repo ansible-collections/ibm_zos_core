@@ -19,7 +19,7 @@ on:
       - '.pytest_cache/**'
       - '.vscode/**'
       - 'Jenkinsfile'
-      - 'ac'
+      # - 'ac'
       - 'ansible.cfg'
       - 'changelogs/**'
       - 'collections/**'
@@ -63,7 +63,7 @@ jobs:
       run: |
         source venv/bin/activate
         python -m pip install --upgrade pip
-        pip install ansible-core==2.17.7
+        pip install "ansible-core>=2.18,<2.19"
 
     - name: Run ac-sanity
       run: |

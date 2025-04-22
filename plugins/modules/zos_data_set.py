@@ -1914,7 +1914,8 @@ def run_module():
                 )
                 result["changed"] = result["changed"] or current_changed
         except Exception as e:
-            module.fail_json(msg=str(e), **result)
+            #module.fail_json(msg=str(e), **result)
+            module.fail_json(msg=repr(e), **result)
     if module.params.get("replace"):
         result["changed"] = True
     module.exit_json(**result)

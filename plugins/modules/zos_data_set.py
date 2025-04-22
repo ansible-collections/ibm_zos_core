@@ -106,8 +106,8 @@ options:
         module completes successfully with I(changed=True).
         - >
         If I(state=present), the data set is already cataloged and I(volumes) is provided,
-        the module will compare the volumes where it is cataloged against the provided I(volumes). 
-        If they don't match, the module will fail with an error indicating the data set is cataloged 
+        the module will compare the volumes where it is cataloged against the provided I(volumes).
+        If they don't match, the module will fail with an error indicating the data set is cataloged
         on a different volume.
         To resolve this, you must first uncatalog the data set before creating it on the new volume.
       - >

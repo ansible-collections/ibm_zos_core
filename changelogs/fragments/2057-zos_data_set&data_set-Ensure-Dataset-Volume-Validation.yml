@@ -7,5 +7,9 @@ bugfixes:
      (https://github.com/ansible-collections/ibm_zos_core/pull/2057).
 trivial:     
    - data_set - added validation logic to compare requested volumes against
-     cataloged volumes.  
+     cataloged volumes.
+     Improved error messaging when volume conflicts occur during data set creation on
+     different volume.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2057).
+   - zos_data_set - Added documentation about potential false positive scenarios.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2057).

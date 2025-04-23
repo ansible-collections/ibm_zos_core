@@ -273,28 +273,6 @@ def merge_text(original, replace, begin, end):
         return head_content
 
 
-def open_uss(file, encoding):
-    """Open a uss file on byte mode and decode properly for modifications.
-
-    Args
-    ----------
-        file : str
-            Path to the src of the information
-        encoding : str
-            Encoding to be use on the decode
-
-    Returns
-    ----------
-        list : Full text of src decoded on encoding expected.
-    """
-    lines = []
-    with io.open(file, "rb") as content_file:
-        for byte_line in content_file:
-            line = codecs.decode(byte_line, encoding)
-            lines.append(line)
-    return lines
-
-
 def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", before=""):
     """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
@@ -321,8 +299,9 @@ def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", befo
         list : List with the new text with the replace expected.
     """
     decode_list = []
-    for line in open_uss(file=file, encoding=encoding):
-        decode_list.append(line)
+    with io.open(file, "rb") as content_file:
+        content = codecs.decode(content_file.read(), encoding)
+    decode_list = content.splitlines()
 
     if not bool(after) and not bool(before):
         new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
@@ -355,9 +334,8 @@ def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", befo
             break
         line_counter += 1
 
-    if bool(after) or bool(before):
-        if not match:
-            module.fail_json(msg="Pattern for before/after params did not match the given file.")
+    if not match:
+        module.fail_json(msg="Pattern for before/after params did not match the given file.")
 
     if begin_block_code >= end_block_code:
         module.fail_json(msg="Order of patter is incorrect, after patters was found after the before patter.")
@@ -428,9 +406,8 @@ def replace_ds(ds, regexp, replace, module, encoding="cp1047", after="", before=
             break
         line_counter += 1
 
-    if bool(after) or bool(before):
-        if not match:
-            module.fail_json(msg="Pattern for before/after params did not match the given file.")
+    if not match:
+        module.fail_json(msg="Pattern for before/after params did not match the given file.")
 
     if begin_block_code >= end_block_code:
         module.fail_json(msg="Order of patter is incorrect, after patters was found after the before patter.")
@@ -514,7 +491,7 @@ def run_module():
         try:
             with open(tmp_file, 'w') as f:
                 for line in full_text:
-                    f.write(f"{line}\n")
+                    f.write(f"{line.rstrip()}\n")
         except Exception as e:
             os.remove(tmp_file)
             module.fail_json(

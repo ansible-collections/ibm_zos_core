@@ -196,7 +196,7 @@ Notes
 -----
 
 .. note::
-   When querying data sets, the module will create a temporary data set that requires around 4 kilobytes of available space on the managed node. This data set will be removed before the module finishes execution.
+   When querying data sets, the module will create two temporary data sets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both data sets will be removed before the module finishes execution.
 
    Sometimes, the system could be unable to properly determine the organization or record format of the data set or the space units used to represent its allocation. When this happens, the values for these fields will be null.
 

@@ -64,7 +64,7 @@ jobs:
       run: |
         source venv/venv-2.18/bin/activate
         python -m pip install --upgrade pip
-        pip install ansible-core==2.18
+        pip install "ansible-core>=2.18,<2.19"
 
     - name: Run ac-sanity
       run: |

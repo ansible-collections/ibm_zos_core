@@ -295,7 +295,7 @@ def open_uss(file, encoding):
     return lines
 
 
-def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
+def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", before=""):
     """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
     Args
@@ -325,7 +325,7 @@ def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
         decode_list.append(line)
 
     if not bool(after) and not bool(before):
-        new_full_text, replaced = replace_text(content=decode_list, regex=regexp, replace=replace)
+        new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
         return new_full_text, replaced
 
     pattern_begin = re.compile(after, re.DOTALL) if after else after
@@ -337,10 +337,12 @@ def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
     line_counter = 0
     search_after = bool(after)
     search_before = False if search_after else True
+    match = False
 
     for line in decode_list:
         if search_after and pattern_begin.match(line) is not None:
             begin_block_code = line_counter + 1
+            match = True
             if not before:
                 break
             else:
@@ -349,15 +351,23 @@ def replace_uss(file, regexp, replace, encoding="cp1047", after="", before=""):
 
         if search_before and pattern_end.match(line) is not None:
             end_block_code = line_counter
+            match = True
             break
         line_counter += 1
 
-    new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code], regex=regexp, replace=replace)
+    if bool(after) or bool(before):
+        if not match:
+            module.fail_json(msg="Pattern for before/after params did not match the given file.")
+
+    if begin_block_code >= end_block_code:
+        module.fail_json(msg="Order of patter is incorrect, after patters was found after the before patter.")
+
+    new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code], regexp=regexp, replace=replace)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
     return full_new_text, replaced
 
 
-def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
+def replace_ds(ds, regexp, replace, module, encoding="cp1047", after="", before=""):
     """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
     Args
@@ -388,7 +398,7 @@ def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
     decode_list = [codecs.decode(record, encoding) for record in dataset_content]
 
     if not bool(after) and not bool(before):
-        new_full_text, replaced = replace_text(content=decode_list, regex=regexp, replace=replace)
+        new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
         return new_full_text, replaced
 
     pattern_begin = re.compile(after, re.DOTALL) if after else after
@@ -400,10 +410,12 @@ def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
     line_counter = 0
     search_after = True if after else False
     search_before = False if search_after else True
+    match = False
 
     for line in decode_list:
         if search_after and pattern_begin.match(line) is not None:
             begin_block_code = line_counter + 1
+            match = True
             if not before:
                 break
             else:
@@ -412,10 +424,18 @@ def replace_ds(ds, regexp, replace, encoding="cp1047", after="", before=""):
 
         if search_before and pattern_end.match(line) is not None:
             end_block_code = line_counter
+            match = True
             break
         line_counter += 1
 
-    new_text, replaced = replace_text(content=decode_list[begin_block_code : end_block_code], regex=regexp, replace=replace)
+    if bool(after) or bool(before):
+        if not match:
+            module.fail_json(msg="Pattern for before/after params did not match the given file.")
+
+    if begin_block_code >= end_block_code:
+        module.fail_json(msg="Order of patter is incorrect, after patters was found after the before patter.")
+
+    new_text, replaced = replace_text(content=decode_list[begin_block_code : end_block_code], regexp=regexp, replace=replace)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
     return full_new_text, replaced
 
@@ -427,7 +447,7 @@ def run_module():
             backup=dict(type='bool', default=False, required=False),
             backup_name=dict(type='str', default=None, required=False),
             before=dict(type='str'),
-            encoding=dict(type='str', default='IBM-1047', required=False),
+            encoding=dict(type='str', default='cp1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
             regexp=dict(type="str", required=True),
@@ -488,7 +508,7 @@ def run_module():
             module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}", **result)
 
     if uss:
-        full_text, replaced = replace_uss(file=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
+        full_text, replaced = replace_uss(file=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
         try:
@@ -509,7 +529,7 @@ def run_module():
             os.remove(tmp_file)
 
     else:
-        full_text, replaced = replace_ds(ds=src, regexp=regexp, replace=replace, encoding=encoding, after=after, before=before)
+        full_text, replaced = replace_ds(ds=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
         bk_ds = datasets.tmp_name()
         datasets.create(name=bk_ds, dataset_type="SEQ")
         try:

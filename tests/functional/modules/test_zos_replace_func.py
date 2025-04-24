@@ -26,122 +26,77 @@ from ibm_zos_core.tests.helpers.utils import get_random_file_name
 
 __metaclass__ = type
 
-TEST_CONTENT = """Line 1 This is an example line
-Line 2 Each line is unique in this file
-Line 3 Ansible makes automation easier
-Line 4 Blockinfile module is quite versatile
-Line 5 Heres another distinct line of text
-Line 6 The file will contain over 50 lines
-Line 7 Adding dynamic content to the file
-Line 8 This file resides in tmpexamplefiletxt
-Line 9 Automation is the key to efficiency
-Line 10 Lines continue for completeness
-Line 11 Unique messages for every entry
-Line 12 Building a robust example playbook
-Line 13 Tasks are modular and reusable
-Line 14 Collaboration improves coding
-Line 15 Keep your scripts efficient and clean
-Line 16 Block structure organizes content well
-Line 17 New ideas can be integrated seamlessly
-Line 18 Use variables for greater flexibility
-Line 19 Extend functionality as needed
-Line 20 Write processes optimized for scale
-Line 21 Take care of file permissions carefully
-Line 22 Ansible modules provide many capabilities
-Line 23 This content is for demonstration
-Line 24 Its crucial to check syntax accuracy
-Line 25 Errorhandling ensures smoother workflows
-Line 26 Insert text programmatically via Ansible
-Line 27 Keeping automation fast and reproducible
-Line 28 Advanced configurations are possible
-Line 29 Be methodical while executing changes
-Line 30 Aim for best practices in automation
-Line 31 Documentation is important for sharing knowledge
-Line 32 Placeholder line inserted into this file
-Line 33 Each line is independently structured
-Line 34 Following YAML conventions strictly
-Line 35 Stay open to experimentation with techniques
-Line 36 Streamlined execution enhances performance
-Line 37 Checking logs is vital for debugging
-Line 38 A file with many diverse lines
-Line 39 Files must serve practical purposes always
-Line 40 Diverse content adds complexity intelligently
-Line 41 Build files layer by layer strategically
-Line 42 Start simple and expand logically
-Line 43 Maintain steady practices with configuration
-Line 44 Thoughtful lines reflecting utility often
-Line 45 Programmatically inserted output aligns nicely
-Line 46 Securing automation loop end validation
-Line 47 Ensuring automation processes are stable
-Line 48 Adding clarity to content is key
-Line 49 Debugging is an essential step
-Line 50 Final lines complete the example file"""
+TEST_CONTENT = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
 
-TEST_AFTER = """Line 1 This is an example line
-Line 2 Each line is unique in this file
-Line 3 Ansible makes automation easier
-Line 4 Blockinfile module is quite versatile
-Line 5 Heres another distinct line of text
-Line 6 The file will contain over 50 lines
-Line 7 Adding dynamic content to the file
-Line 8 This file resides in tmpexamplefiletxt
-Line 9 Automation is the key to efficiency
-Line 10 Lines continue for completeness
-"""
+TEST_AFTER = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100"""
 
-TEST_BEFORE = """Line 30 Aim for best practices in automation
-Line 31 Documentation is important for sharing knowledge
-Line 32 Placeholder line inserted into this file
-Line 33 Each line is independently structured
-Line 34 Following YAML conventions strictly
-Line 35 Stay open to experimentation with techniques
-Line 36 Streamlined execution enhances performance
-Line 37 Checking logs is vital for debugging
-Line 38 A file with many diverse lines
-Line 39 Files must serve practical purposes always
-Line 40 Diverse content adds complexity intelligently
-Line 41 Build files layer by layer strategically
-Line 42 Start simple and expand logically
-Line 43 Maintain steady practices with configuration
-Line 44 Thoughtful lines reflecting utility often
-Line 45 Programmatically inserted output aligns nicely
-Line 46 Securing automation loop end validation
-Line 47 Ensuring automation processes are stable
-Line 48 Adding clarity to content is key
-Line 49 Debugging is an essential step
-Line 50 Final lines complete the example file"""
+TEST_AFTER_REPLACE = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export TMP=tmp/etc
+export TMP=tmp/etc"""
 
-TEST_BEFORE_AFTER = """Line 1 This is an example line
-Line 2 Each line is unique in this file
-Line 3 Ansible makes automation easier
-Line 4 Blockinfile module is quite versatile
-Line 5 Heres another distinct line of text
-Line 6 The file will contain over 50 lines
-Line 7 Adding dynamic content to the file
-Line 8 This file resides in tmpexamplefiletxt
-Line 9 Automation is the key to efficiency
-Line 10 Lines continue for completeness
-Line 30 Aim for best practices in automation
-Line 31 Documentation is important for sharing knowledge
-Line 32 Placeholder line inserted into this file
-Line 33 Each line is independently structured
-Line 34 Following YAML conventions strictly
-Line 35 Stay open to experimentation with techniques
-Line 36 Streamlined execution enhances performance
-Line 37 Checking logs is vital for debugging
-Line 38 A file with many diverse lines
-Line 39 Files must serve practical purposes always
-Line 40 Diverse content adds complexity intelligently
-Line 41 Build files layer by layer strategically
-Line 42 Start simple and expand logically
-Line 43 Maintain steady practices with configuration
-Line 44 Thoughtful lines reflecting utility often
-Line 45 Programmatically inserted output aligns nicely
-Line 46 Securing automation loop end validation
-Line 47 Ensuring automation processes are stable
-Line 48 Adding clarity to content is key
-Line 49 Debugging is an essential step
-Line 50 Final lines complete the example file"""
+TEST_BEFORE = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_BEFORE_REPLACE = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_BEFORE_AFTER = """if [ -z STEPLIB ] && tty -s;
+then
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_BEFORE_AFTER_REPLACE = """if [ -z STEPLIB ] && tty -s;
+then
+    export SHELL
+    export SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
 
 #####################
 #  Set up testing
@@ -186,8 +141,8 @@ def remove_ds_environment(ansible_zos_module, ds_name):
 def test_uss_after(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^Line\s\d+\s.+$",
-        "after":"Line 10 Lines continue for completeness",
+        "regexp":"^export \w+",
+        "after":"export PATH",
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
@@ -198,7 +153,7 @@ def test_uss_after(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") == True
             assert result.get("target") == full_path
-            assert result.get("found") == 40
+            assert result.get("found") == 2
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
             result.get("stdout") == TEST_AFTER
@@ -208,9 +163,9 @@ def test_uss_after(ansible_zos_module):
 def test_uss_after_replace(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
-        "regexp":"^Line\s\d+\s.+$",
-        "after":"Line 35 Lines continue for completeness",
-        "replace":"# New empty line",
+        "regexp":"^export \w+",
+        "after":"export PATH",
+        "replace":"export TMP=tmp/etc",
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
@@ -221,58 +176,105 @@ def test_uss_after_replace(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") == True
             assert result.get("target") == full_path
-            assert result.get("found") == 40
+            assert result.get("found") == 2
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            result.get("stdout") == TEST_AFTER
+            result.get("stdout") == TEST_AFTER_REPLACE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
-
 
 def test_uss_before(ansible_zos_module):
-    hosts = ansible_zos_module
-    params = {
-        "regexp":"^Line\s\d+\s.+$",
-        "before":"Line 30 Aim for best practices in automation",
-    }
-    full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_CONTENT
-    try:
-        set_uss_environment(ansible_zos_module, content, full_path)
-        params["target"] = full_path
-        results = hosts.all.zos_replace(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == True
-            assert result.get("target") == full_path
-            assert result.get("found") == 29
-        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
-        for result in results.contacted.values():
-            result.get("stdout") == TEST_BEFORE
-    finally:
-        remove_uss_environment(ansible_zos_module, full_path)
+     hosts = ansible_zos_module
+     params = {
+         "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
+         "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
+     }
+     full_path = get_random_file_name(dir=TMP_DIRECTORY)
+     content = TEST_CONTENT
+     try:
+         set_uss_environment(ansible_zos_module, content, full_path)
+         params["target"] = full_path
+         results = hosts.all.zos_replace(**params)
+         for result in results.contacted.values():
+             assert result.get("changed") == True
+             assert result.get("target") == full_path
+             assert result.get("found") == 1
+         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+         for result in results.contacted.values():
+             result.get("stdout") == TEST_BEFORE
+     finally:
+         remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_before_replace(ansible_zos_module):
+     hosts = ansible_zos_module
+     params = {
+         "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
+         "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
+         "replace":"PATH=/usr/lpp/zoautil/v100/bin",
+     }
+     full_path = get_random_file_name(dir=TMP_DIRECTORY)
+     content = TEST_CONTENT
+     try:
+         set_uss_environment(ansible_zos_module, content, full_path)
+         params["target"] = full_path
+         results = hosts.all.zos_replace(**params)
+         for result in results.contacted.values():
+             assert result.get("changed") == True
+             assert result.get("target") == full_path
+             assert result.get("found") == 1
+         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+         for result in results.contacted.values():
+             result.get("stdout") == TEST_BEFORE_REPLACE
+     finally:
+         remove_uss_environment(ansible_zos_module, full_path)
 
 def test_uss_after_before(ansible_zos_module):
-    hosts = ansible_zos_module
-    params = {
-        "regexp":"^Line\s\d+\s.+$",
-        "after":"Line 10 Lines continue for completeness",
-        "before":"Line 30 Aim for best practices in automation",
-    }
-    full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_CONTENT
-    try:
-        set_uss_environment(ansible_zos_module, content, full_path)
-        params["target"] = full_path
-        results = hosts.all.zos_replace(**params)
-        for result in results.contacted.values():
+     hosts = ansible_zos_module
+     params = {
+         "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
+         "after":"then",
+         "before":"fi",
+         "replace":"export SHELL",
+     }
+     full_path = get_random_file_name(dir=TMP_DIRECTORY)
+     content = TEST_CONTENT
+     try:
+         set_uss_environment(ansible_zos_module, content, full_path)
+         params["target"] = full_path
+         results = hosts.all.zos_replace(**params)
+         for result in results.contacted.values():
             assert result.get("changed") == True
             assert result.get("target") == full_path
-            assert result.get("found") == 19
-        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
-        for result in results.contacted.values():
-            result.get("stdout") == TEST_BEFORE
-    finally:
-        remove_uss_environment(ansible_zos_module, full_path)
+            assert result.get("found") == 2
+         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+         for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE_AFTER
+     finally:
+         remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_after_before_replace(ansible_zos_module):
+     hosts = ansible_zos_module
+     params = {
+         "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
+         "after":"then",
+         "before":"fi",
+         "replace":"export SHELL",
+     }
+     full_path = get_random_file_name(dir=TMP_DIRECTORY)
+     content = TEST_CONTENT
+     try:
+         set_uss_environment(ansible_zos_module, content, full_path)
+         params["target"] = full_path
+         results = hosts.all.zos_replace(**params)
+         for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 2
+         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+         for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE_AFTER_REPLACE
+     finally:
+         remove_uss_environment(ansible_zos_module, full_path)
 
 # @pytest.mark.ds
 # @pytest.mark.parametrize("dstype", DS_TYPE)

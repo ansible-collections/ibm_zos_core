@@ -326,8 +326,15 @@ def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", befo
         new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
         return new_full_text, replaced
 
-    pattern_begin = re.compile(after, re.DOTALL) if after else after
-    pattern_end = re.compile(before, re.DOTALL) if before else before
+    pattern_after = u''
+    pattern_before = u''
+    if bool(after):
+        pattern_after = u'%s(?P<subsection>.*)' % after
+    if bool(before):
+        pattern_before = u'(?P<subsection>.*)%s' % before
+
+    pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
+    pattern_end = re.compile(pattern_before, re.DOTALL) if before else before
 
     begin_block_code = 0
     end_block_code = len(decode_list)

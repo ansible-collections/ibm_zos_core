@@ -252,25 +252,44 @@ def merge_text(original, replace, begin, end):
     ----------
         list : The full text on list mode
     """
-    # Case for after exist and before dont
-    if begin != 0 and end == len(original):
-        head_content = original[:begin]
-        head_content.extend(replace)
-        return head_content
+    replace = [x for x in replace if x.strip()]
+    if len(replace) != 0:
+        # Case for after exist and before dont
+        if begin != 0 and end == len(original):
+            head_content = original[:begin]
+            head_content.extend(replace)
+            return head_content
 
-    # Case for before exist and after dont
-    elif end != len(original) and begin == 0:
-        tail_content = original[end:]
-        replace.extend(tail_content)
-        return replace
+        # Case for before exist and after dont
+        elif end != len(original) and begin == 0:
+            tail_content = original[end:]
+            replace.extend(tail_content)
+            return replace
 
-    # Case before and after exists
+        # Case before and after exists
+        else:
+            head_content = original[:begin]
+            tail_content = original[end:]
+            head_content.extend(replace)
+            head_content.extend(tail_content)
+            return head_content
     else:
-        head_content = original[:begin]
-        tail_content = original[end:]
-        head_content.extend(replace)
-        head_content.extend(tail_content)
-        return head_content
+        # Case for after exist and before dont
+        if begin != 0 and end == len(original):
+            head_content = original[:begin]
+            return head_content
+
+        # Case for before exist and after dont
+        elif end != len(original) and begin == 0:
+            tail_content = original[end:]
+            return tail_content
+
+        # Case before and after exists
+        else:
+            head_content = original[:begin]
+            tail_content = original[end:]
+            head_content.extend(tail_content)
+            return head_content
 
 
 def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", before=""):

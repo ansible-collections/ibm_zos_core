@@ -16,10 +16,10 @@ zos_zfs_resize -- Resize a zfs data set.
 
 Synopsis
 --------
-- The module \ `zos\_zfs\_resize. </zos_zfs_resize.html>`__ can resize a zFS aggregate data set.
-- The :emphasis:`target` data set must be a unique and a Fully Qualified Name (FQN) of a z/OS zFS aggregate data set.
+- The module `zos_zfs_resize. </zos_zfs_resize.html>`_ can resize a zFS aggregate data set.
+- The *target* data set must be a unique and a Fully Qualified Name (FQN) of a z/OS zFS aggregate data set.
 - The data set must be attached as read-write.
-- :emphasis:`size` must be provided.
+- *size* must be provided.
 
 
 
@@ -46,7 +46,7 @@ size
 space_type
   The unit of measurement to use when defining the size.
 
-  Valid units are :literal:`k` (kilobytes), :literal:`m` (megabytes), :literal:`g` (gigabytes), :literal:`cyl` (cylinders), and :literal:`trk` (tracks).
+  Valid units are ``k`` (kilobytes), ``m`` (megabytes), ``g`` (gigabytes), ``cyl`` (cylinders), and ``trk`` (tracks).
 
   | **required**: False
   | **type**: str
@@ -57,7 +57,7 @@ space_type
 no_auto_increase
   Option controls whether the data set size will be automatically increased when performing a shrink operation.
 
-  When set to :literal:`true`\ , during the shrinking of the zFS aggregate, if more space be needed the total size will not be increased and the module will fail.
+  When set to ``true``, during the shrinking of the zFS aggregate, if more space be needed the total size will not be increased and the module will fail.
 
   | **required**: False
   | **type**: bool
@@ -67,7 +67,7 @@ no_auto_increase
 verbose
   Return diagnostic messages that describe the module's execution.
 
-  Verbose includes standard out (stdout) of the module's execution which can be excessive, to avoid writing this to stdout, optionally you can set the :literal:`trace\_destination` instead.
+  Verbose includes standard out (stdout) of the module's execution which can be excessive, to avoid writing this to stdout, optionally you can set the ``trace_destination`` instead.
 
   | **required**: False
   | **type**: bool
@@ -75,13 +75,13 @@ verbose
 
 
 trace_destination
-  Specify a unique USS file name or data set name for :literal:`trace\_destination`.
+  Specify a unique USS file name or data set name for ``trace_destination``.
 
-  If the destination :literal:`trace\_destination` is a USS file or path, the :literal:`trace\_destination` must be an absolute path name.
+  If the destination ``trace_destination`` is a USS file or path, the ``trace_destination`` must be an absolute path name.
 
-  Support MVS data set type PDS, PDS/\ :envvar:`MEMBER`
+  Support MVS data set type PDS, PDS/E(MEMBER)
 
-  If the destination is an MVS data set name, the :literal:`trace\_destination` provided must meet data set naming conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods
+  If the destination is an MVS data set name, the ``trace_destination`` provided must meet data set naming conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods
 
   Recommended characteristics for MVS data set are record length of 200, record format as vb and space primary 42000 kilobytes.
 
@@ -168,7 +168,7 @@ Notes
 .. note::
    If needed, allocate the zFS trace output data set as a PDSE with RECFM=VB, LRECL=133 with a primary allocation of at least 50 cylinders and a secondary allocation of 30 cylinders.
 
-   `zfsadm documentation <https://www.ibm.com/docs/en/zos/latest?topic=commands-zfsadm>`__.
+   `zfsadm documentation <https://www.ibm.com/docs/en/zos/latest?topic=commands-zfsadm>`_.
 
 
 
@@ -202,7 +202,7 @@ mount_target
   | **sample**: /tmp/zfs_agg
 
 size
-  The desired size from option :literal:`size` according to :literal:`space\_type`. The resulting size can vary slightly, the actual space utilization is returned in :literal:`new\_size`.
+  The desired size from option ``size`` according to ``space_type``. The resulting size can vary slightly, the actual space utilization is returned in ``new_size``.
 
   | **returned**: always
   | **type**: int
@@ -215,7 +215,7 @@ rc
   | **type**: int
 
 old_size
-  The original data set size according to :literal:`space\_type` before resizing was performed.
+  The original data set size according to ``space_type`` before resizing was performed.
 
   | **returned**: always
   | **type**: float
@@ -226,7 +226,7 @@ old_size
         3096
 
 old_free_space
-  The original data sets free space according to :literal:`space\_type` before resizing was performed.
+  The original data sets free space according to ``space_type`` before resizing was performed.
 
   | **returned**: always
   | **type**: float
@@ -237,7 +237,7 @@ old_free_space
         2.1
 
 new_size
-  The data set size according to :literal:`space\_type` after resizing was performed.
+  The data set size according to ``space_type`` after resizing was performed.
 
   | **returned**: success
   | **type**: float
@@ -248,7 +248,7 @@ new_size
         4032
 
 new_free_space
-  The data sets free space according to :literal:`space\_type` after resizing was performed.
+  The data sets free space according to ``space_type`` after resizing was performed.
 
   | **returned**: success
   | **type**: float
@@ -306,7 +306,7 @@ stderr_lines
         ]
 
 verbose_output
-  If :literal:`verbose=true`\ , the operation's full traceback will show for this property.
+  If ``verbose=true``, the operation's full traceback will show for this property.
 
   | **returned**: always
   | **type**: str

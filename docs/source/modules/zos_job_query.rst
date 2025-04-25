@@ -17,8 +17,8 @@ zos_job_query -- Query job status
 Synopsis
 --------
 - List z/OS job(s) and the current status of the job(s).
-- Uses job\_name to filter the jobs by the job name.
-- Uses job\_id to filter the jobs by the job identifier.
+- Uses job_name to filter the jobs by the job name.
+- Uses job_id to filter the jobs by the job identifier.
 - Uses owner to filter the jobs by the job owner.
 - Uses system to filter the jobs by system where the job is running (or ran) on.
 
@@ -35,11 +35,11 @@ job_name
 
   A job name can be up to 8 characters long.
 
-  The :emphasis:`job\_name` can contain include multiple wildcards.
+  The *job_name* can contain include multiple wildcards.
 
-  The asterisk (\`\*\`) wildcard will match zero or more specified characters.
+  The asterisk (`*`) wildcard will match zero or more specified characters.
 
-  Note that using this value will query the system for '\*' and then return just matching values.
+  Note that using this value will query the system for '*' and then return just matching values.
 
   This may lead to security issues if there are read-access limitations on some users or jobs.
 
@@ -60,13 +60,13 @@ owner
 job_id
   The job id that has been assigned to the job.
 
-  A job id must begin with \`STC\`, \`JOB\`, \`TSU\` and are followed by up to 5 digits.
+  A job id must begin with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
 
-  When a job id is greater than 99,999, the job id format will begin with \`S\`, \`J\`, \`T\` and are followed by 7 digits.
+  When a job id is greater than 99,999, the job id format will begin with `S`, `J`, `T` and are followed by 7 digits.
 
-  The :emphasis:`job\_id` can contain include multiple wildcards.
+  The *job_id* can contain include multiple wildcards.
 
-  The asterisk (\`\*\`) wildcard will match zero or more specified characters.
+  The asterisk (`*`) wildcard will match zero or more specified characters.
 
   | **required**: False
   | **type**: str
@@ -140,7 +140,7 @@ changed
   | **type**: bool
 
 jobs
-  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret\_code dictionary with parameter msg\_txt = The job could not be found.
+  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret_code dictionary with parameter msg_txt = The job could not be found.
 
   | **returned**: success
   | **type**: list
@@ -216,7 +216,7 @@ jobs
 
     TSU for a Time sharing user.
 
-    \\? for an unknown or pending job.
+    \? for an unknown or pending job.
 
     | **type**: str
     | **sample**: STC
@@ -263,7 +263,7 @@ jobs
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the \`msg\` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
+      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
 
       | **type**: str
       | **sample**: S0C4

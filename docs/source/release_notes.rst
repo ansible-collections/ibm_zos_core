@@ -52,6 +52,7 @@ Bugfixes
    - the carriage return characters were being removed from only first 1024 bytes of a file. Now fixed that issue to support removal of the carriage return characters from the complete file content if the file size is more than 1024 bytes.
 
 - ``zos_data_set``
+
    - Module would fail when trying to delete a non-existent Generation Data Group. Fix now provides a successful response with `changed=false`.
    - Module would fail with TypeError when trying to replace an existing GDG. Fix now allows to replacing a GDG.
 

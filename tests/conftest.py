@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -156,7 +156,6 @@ def volumes_with_vvds(ansible_zos_module, request):
 
     volumes_with_vvds = get_volumes_with_vvds(ansible_zos_module, list_volumes)
     yield volumes_with_vvds
-
 
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

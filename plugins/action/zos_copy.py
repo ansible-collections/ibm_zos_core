@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -284,6 +284,14 @@ class ActionModule(ActionBase):
             task_vars=task_vars,
             wrap_async=self._task.async_val
         )
+
+        # Erasing all rendered Jinja2 templates from the controller.
+        if template_dir:
+            shutil.rmtree(template_dir, ignore_errors=True)
+        # Remove temporary directory from remote
+        if self.tmp_dir is not None:
+            path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
+            self._connection.exec_command(f"rm -rf {path}*")
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")

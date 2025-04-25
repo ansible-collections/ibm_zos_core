@@ -47,38 +47,38 @@ data_sets
 
 
   include
-    When *operation=backup*, specifies a list of data sets or data set patterns to include in the backup.
+    When :emphasis:`operation=backup`\ , specifies a list of data sets or data set patterns to include in the backup.
 
-    When *operation=backup* GDS relative names are supported.
+    When :emphasis:`operation=backup` GDS relative names are supported.
 
-    When *operation=restore*, specifies a list of data sets or data set patterns to include when restoring from a backup.
+    When :emphasis:`operation=restore`\ , specifies a list of data sets or data set patterns to include when restoring from a backup.
 
-    The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate to DFSMSdss that only part of a qualifier has been specified.
+    The single asterisk, :literal:`\*`\ , is used in place of exactly one qualifier. In addition, it can be used to indicate to DFSMSdss that only part of a qualifier has been specified.
 
-    When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
+    When used with other qualifiers, the double asterisk, :literal:`\*\*`\ , indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
 
     Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.
 
-    A question mark ``?`` or percent sign ``%`` matches a single character.
+    A question mark :literal:`?` or percent sign :literal:`%` matches a single character.
 
     | **required**: False
     | **type**: raw
 
 
   exclude
-    When *operation=backup*, specifies a list of data sets or data set patterns to exclude from the backup.
+    When :emphasis:`operation=backup`\ , specifies a list of data sets or data set patterns to exclude from the backup.
 
-    When *operation=backup* GDS relative names are supported.
+    When :emphasis:`operation=backup` GDS relative names are supported.
 
-    When *operation=restore*, specifies a list of data sets or data set patterns to exclude when restoring from a backup.
+    When :emphasis:`operation=restore`\ , specifies a list of data sets or data set patterns to exclude when restoring from a backup.
 
-    The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified."
+    The single asterisk, :literal:`\*`\ , is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified."
 
-    When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
+    When used with other qualifiers, the double asterisk, :literal:`\*\*`\ , indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
 
     Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.
 
-    A question mark ``?`` or percent sign ``%`` matches a single character.
+    A question mark :literal:`?` or percent sign :literal:`%` matches a single character.
 
     | **required**: False
     | **type**: raw
@@ -88,22 +88,22 @@ data_sets
 volume
   This applies to both data set restores and volume restores.
 
-  When *operation=backup* and *data_sets* are provided, specifies the volume that contains the data sets to backup.
+  When :emphasis:`operation=backup` and :emphasis:`data\_sets` are provided, specifies the volume that contains the data sets to backup.
 
-  When *operation=restore*, specifies the volume the backup should be restored to.
+  When :emphasis:`operation=restore`\ , specifies the volume the backup should be restored to.
 
-  *volume* is required when restoring a full volume backup.
+  :emphasis:`volume` is required when restoring a full volume backup.
 
   | **required**: False
   | **type**: str
 
 
 full_volume
-  When *operation=backup* and *full_volume=True*, specifies that the entire volume provided to *volume* should be backed up.
+  When :emphasis:`operation=backup` and :emphasis:`full\_volume=True`\ , specifies that the entire volume provided to :emphasis:`volume` should be backed up.
 
-  When *operation=restore* and *full_volume=True*, specifies that the volume should be restored (default is dataset).
+  When :emphasis:`operation=restore` and :emphasis:`full\_volume=True`\ , specifies that the volume should be restored (default is dataset).
 
-  *volume* must be provided when *full_volume=True*.
+  :emphasis:`volume` must be provided when :emphasis:`full\_volume=True`.
 
   | **required**: False
   | **type**: bool
@@ -113,27 +113,27 @@ full_volume
 temp_volume
   Specifies a particular volume on which the temporary data sets should be created during the backup and restore process.
 
-  When *operation=backup* and *backup_name* is a data set, specifies the volume the backup should be placed in.
+  When :emphasis:`operation=backup` and :emphasis:`backup\_name` is a data set, specifies the volume the backup should be placed in.
 
   | **required**: False
   | **type**: str
 
 
 backup_name
-  When *operation=backup*, the destination data set or UNIX file to hold the backup.
+  When :emphasis:`operation=backup`\ , the destination data set or UNIX file to hold the backup.
 
-  When *operation=restore*, the destination data set or UNIX file backup to restore.
+  When :emphasis:`operation=restore`\ , the destination data set or UNIX file backup to restore.
 
-  There are no enforced conventions for backup names. However, using a common extension like ``.dzp`` for UNIX files and ``.DZP`` for data sets will improve readability.
+  There are no enforced conventions for backup names. However, using a common extension like :literal:`.dzp` for UNIX files and :literal:`.DZP` for data sets will improve readability.
 
-  GDS relative names are supported when *operation=restore*.
+  GDS relative names are supported when :emphasis:`operation=restore`.
 
   | **required**: True
   | **type**: str
 
 
 recover
-  When *recover=true* and *operation=backup* then potentially recoverable errors will be ignored.
+  When :emphasis:`recover=true` and :emphasis:`operation=backup` then potentially recoverable errors will be ignored.
 
   | **required**: False
   | **type**: bool
@@ -141,9 +141,9 @@ recover
 
 
 overwrite
-  When *operation=backup*, specifies if an existing data set or UNIX file matching *backup_name* should be deleted.
+  When :emphasis:`operation=backup`\ , specifies if an existing data set or UNIX file matching :emphasis:`backup\_name` should be deleted.
 
-  When *operation=restore*, specifies if the module should overwrite existing data sets with matching name on the target device.
+  When :emphasis:`operation=restore`\ , specifies if the module should overwrite existing data sets with matching name on the target device.
 
   | **required**: False
   | **type**: bool
@@ -151,35 +151,35 @@ overwrite
 
 
 sms_storage_class
-  When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
+  When :emphasis:`operation=restore`\ , specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
 
-  When *operation=backup*, specifies the storage class to use for temporary data sets created during backup process.
+  When :emphasis:`operation=backup`\ , specifies the storage class to use for temporary data sets created during backup process.
 
-  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+  If neither of :emphasis:`sms\_storage\_class` or :emphasis:`sms\_management\_class` are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
 
   | **required**: False
   | **type**: str
 
 
 sms_management_class
-  When *operation=restore*, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
+  When :emphasis:`operation=restore`\ , specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
 
-  When *operation=backup*, specifies the management class to use for temporary data sets created during backup process.
+  When :emphasis:`operation=backup`\ , specifies the management class to use for temporary data sets created during backup process.
 
-  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+  If neither of :emphasis:`sms\_storage\_class` or :emphasis:`sms\_management\_class` are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
 
   | **required**: False
   | **type**: str
 
 
 space
-  If *operation=backup*, specifies the amount of space to allocate for the backup. Please note that even when backing up to a UNIX file, backup contents will be temporarily held in a data set.
+  If :emphasis:`operation=backup`\ , specifies the amount of space to allocate for the backup. Please note that even when backing up to a UNIX file, backup contents will be temporarily held in a data set.
 
-  If *operation=restore*, specifies the amount of space to allocate for data sets temporarily created during the restore process.
+  If :emphasis:`operation=restore`\ , specifies the amount of space to allocate for data sets temporarily created during the restore process.
 
-  The unit of space used is set using *space_type*.
+  The unit of space used is set using :emphasis:`space\_type`.
 
-  When *full_volume=True*, *space* defaults to ``1``, otherwise default is ``25``
+  When :emphasis:`full\_volume=True`\ , :emphasis:`space` defaults to :literal:`1`\ , otherwise default is :literal:`25`
 
   | **required**: False
   | **type**: int
@@ -188,9 +188,9 @@ space
 space_type
   The unit of measurement to use when defining data set space.
 
-  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
+  Valid units of size are :literal:`k`\ , :literal:`m`\ , :literal:`g`\ , :literal:`cyl`\ , and :literal:`trk`.
 
-  When *full_volume=True*, *space_type* defaults to ``g``, otherwise default is ``m``
+  When :emphasis:`full\_volume=True`\ , :emphasis:`space\_type` defaults to :literal:`g`\ , otherwise default is :literal:`m`
 
   | **required**: False
   | **type**: str
@@ -209,13 +209,27 @@ hlq
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary data sets used in the module's operation.
 
-  If *tmp_hlq* is set, this value will be applied to all temporary data sets.
+  If :emphasis:`tmp\_hlq` is set, this value will be applied to all temporary data sets.
 
-  If *tmp_hlq* is not set, the value will be the username who submits the ansible task, this is the default behavior. If the username can not be identified, the value ``TMPHLQ`` is used.
+  If :emphasis:`tmp\_hlq` is not set, the value will be the username who submits the ansible task, this is the default behavior. If the username can not be identified, the value :literal:`TMPHLQ` is used.
 
   | **required**: False
   | **type**: str
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: none
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 
@@ -355,7 +369,7 @@ Notes
 .. note::
    It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured to run either the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
 
-   When using this module, if the RACF FACILITY class profile **STGADMIN.ADR.DUMP.TOLERATE.ENQF** is active, you must have READ access authority to use the module option *recover=true*. If the RACF FACILITY class checking is not set up, any user can use the module option without access to the class.
+   When using this module, if the RACF FACILITY class profile :strong:`STGADMIN.ADR.DUMP.TOLERATE.ENQF` is active, you must have READ access authority to use the module option :emphasis:`recover=true`. If the RACF FACILITY class checking is not set up, any user can use the module option without access to the class.
 
    If your system uses a different security product, consult that product's documentation to configure the required security classes.
 

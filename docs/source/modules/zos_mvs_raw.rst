@@ -45,9 +45,9 @@ parm
 auth
   Determines whether this program should run with authorized privileges.
 
-  If *auth=true*, the program runs as APF authorized.
+  If :emphasis:`auth=true`\ , the program runs as APF authorized.
 
-  If *auth=false*, the program runs as unauthorized.
+  If :emphasis:`auth=false`\ , the program runs as unauthorized.
 
   | **required**: False
   | **type**: bool
@@ -57,7 +57,7 @@ auth
 verbose
   Determines if verbose output should be returned from the underlying utility used by this module.
 
-  When *verbose=true* verbose output is returned on module failure.
+  When :emphasis:`verbose=true` verbose output is returned on module failure.
 
   | **required**: False
   | **type**: bool
@@ -75,19 +75,19 @@ max_rc
 dds
   The input data source.
 
-  *dds* supports 6 types of sources
+  :emphasis:`dds` supports 6 types of sources
 
-  1. *dd_data_set* for data set files.
+  1. :emphasis:`dd\_data\_set` for data set files.
 
-  2. *dd_unix* for UNIX files.
+  2. :emphasis:`dd\_unix` for UNIX files.
 
-  3. *dd_input* for in-stream data set.
+  3. :emphasis:`dd\_input` for in-stream data set.
 
-  4. *dd_dummy* for no content input.
+  4. :emphasis:`dd\_dummy` for no content input.
 
-  5. *dd_concat* for a data set concatenation.
+  5. :emphasis:`dd\_concat` for a data set concatenation.
 
-  6. *dds* supports any combination of source types.
+  6. :emphasis:`dds` supports any combination of source types.
 
   | **required**: False
   | **type**: list
@@ -97,7 +97,7 @@ dds
   dd_data_set
     Specify a data set.
 
-    *dd_data_set* can reference an existing data set or be used to define a new data set to be created during execution.
+    :emphasis:`dd\_data\_set` can reference an existing data set or be used to define a new data set to be created during execution.
 
     | **required**: False
     | **type**: dict
@@ -115,14 +115,14 @@ dds
 
       A data set name can be a GDS relative name.
 
-      When using GDS relative name and it is a positive generation, *disposition=new* must be used.
+      When using GDS relative name and it is a positive generation, :emphasis:`disposition=new` must be used.
 
       | **required**: False
       | **type**: str
 
 
     type
-      The data set type. Only required when *disposition=new*.
+      The data set type. Only required when :emphasis:`disposition=new`.
 
       Maps to DSNTYPE on z/OS.
 
@@ -132,7 +132,7 @@ dds
 
 
     disposition
-      *disposition* indicates the status of a data set.
+      :emphasis:`disposition` indicates the status of a data set.
 
       Defaults to shr.
 
@@ -142,7 +142,7 @@ dds
 
 
     disposition_normal
-      *disposition_normal* indicates what to do with the data set after a normal termination of the program.
+      :emphasis:`disposition\_normal` indicates what to do with the data set after a normal termination of the program.
 
       | **required**: False
       | **type**: str
@@ -150,7 +150,7 @@ dds
 
 
     disposition_abnormal
-      *disposition_abnormal* indicates what to do with the data set after an abnormal termination of the program.
+      :emphasis:`disposition\_abnormal` indicates what to do with the data set after an abnormal termination of the program.
 
       | **required**: False
       | **type**: str
@@ -158,15 +158,15 @@ dds
 
 
     reuse
-      Determines if a data set should be reused if *disposition=new* and if a data set with a matching name already exists.
+      Determines if a data set should be reused if :emphasis:`disposition=new` and if a data set with a matching name already exists.
 
-      If *reuse=true*, *disposition* will be automatically switched to ``SHR``.
+      If :emphasis:`reuse=true`\ , :emphasis:`disposition` will be automatically switched to :literal:`SHR`.
 
-      If *reuse=false*, and a data set with a matching name already exists, allocation will fail.
+      If :emphasis:`reuse=false`\ , and a data set with a matching name already exists, allocation will fail.
 
-      Mutually exclusive with *replace*.
+      Mutually exclusive with :emphasis:`replace`.
 
-      *reuse* is only considered when *disposition=new*
+      :emphasis:`reuse` is only considered when :emphasis:`disposition=new`
 
       | **required**: False
       | **type**: bool
@@ -174,17 +174,17 @@ dds
 
 
     replace
-      Determines if a data set should be replaced if *disposition=new* and a data set with a matching name already exists.
+      Determines if a data set should be replaced if :emphasis:`disposition=new` and a data set with a matching name already exists.
 
-      If *replace=true*, the original data set will be deleted, and a new data set created.
+      If :emphasis:`replace=true`\ , the original data set will be deleted, and a new data set created.
 
-      If *replace=false*, and a data set with a matching name already exists, allocation will fail.
+      If :emphasis:`replace=false`\ , and a data set with a matching name already exists, allocation will fail.
 
-      Mutually exclusive with *reuse*.
+      Mutually exclusive with :emphasis:`reuse`.
 
-      *replace* is only considered when *disposition=new*
+      :emphasis:`replace` is only considered when :emphasis:`disposition=new`
 
-      *replace* will result in loss of all data in the original data set unless *backup* is specified.
+      :emphasis:`replace` will result in loss of all data in the original data set unless :emphasis:`backup` is specified.
 
       | **required**: False
       | **type**: bool
@@ -192,9 +192,9 @@ dds
 
 
     backup
-      Determines if a backup should be made of an existing data set when *disposition=new*, *replace=true*, and a data set with the desired name is found.
+      Determines if a backup should be made of an existing data set when :emphasis:`disposition=new`\ , :emphasis:`replace=true`\ , and a data set with the desired name is found.
 
-      *backup* is only used when *replace=true*.
+      :emphasis:`backup` is only used when :emphasis:`replace=true`.
 
       | **required**: False
       | **type**: bool
@@ -202,7 +202,7 @@ dds
 
 
     space_type
-      The unit of measurement to use when allocating space for a new data set using *space_primary* and *space_secondary*.
+      The unit of measurement to use when allocating space for a new data set using :emphasis:`space\_primary` and :emphasis:`space\_secondary`.
 
       | **required**: False
       | **type**: str
@@ -212,9 +212,9 @@ dds
     space_primary
       The primary amount of space to allocate for a new data set.
 
-      The value provided to *space_type* is used as the unit of space for the allocation.
+      The value provided to :emphasis:`space\_type` is used as the unit of space for the allocation.
 
-      Not applicable when *space_type=blklgth* or *space_type=reclgth*.
+      Not applicable when :emphasis:`space\_type=blklgth` or :emphasis:`space\_type=reclgth`.
 
       | **required**: False
       | **type**: int
@@ -223,9 +223,9 @@ dds
     space_secondary
       When primary allocation of space is filled, secondary space will be allocated with the provided size as needed.
 
-      The value provided to *space_type* is used as the unit of space for the allocation.
+      The value provided to :emphasis:`space\_type` is used as the unit of space for the allocation.
 
-      Not applicable when *space_type=blklgth* or *space_type=reclgth*.
+      Not applicable when :emphasis:`space\_type=blklgth` or :emphasis:`space\_type=reclgth`.
 
       | **required**: False
       | **type**: int
@@ -243,7 +243,7 @@ dds
     sms_management_class
       The desired management class for a new SMS-managed data set.
 
-      *sms_management_class* is ignored if specified for an existing data set.
+      :emphasis:`sms\_management\_class` is ignored if specified for an existing data set.
 
       All values must be between 1-8 alpha-numeric characters.
 
@@ -254,7 +254,7 @@ dds
     sms_storage_class
       The desired storage class for a new SMS-managed data set.
 
-      *sms_storage_class* is ignored if specified for an existing data set.
+      :emphasis:`sms\_storage\_class` is ignored if specified for an existing data set.
 
       All values must be between 1-8 alpha-numeric characters.
 
@@ -265,7 +265,7 @@ dds
     sms_data_class
       The desired data class for a new SMS-managed data set.
 
-      *sms_data_class* is ignored if specified for an existing data set.
+      :emphasis:`sms\_data\_class` is ignored if specified for an existing data set.
 
       All values must be between 1-8 alpha-numeric characters.
 
@@ -276,7 +276,7 @@ dds
     block_size
       The maximum length of a block in bytes.
 
-      Default is dependent on *record_format*
+      Default is dependent on :emphasis:`record\_format`
 
       | **required**: False
       | **type**: int
@@ -292,9 +292,9 @@ dds
     key_label
       The label for the encryption key used by the system to encrypt the data set.
 
-      *key_label* is the public name of a protected encryption key in the ICSF key repository.
+      :emphasis:`key\_label` is the public name of a protected encryption key in the ICSF key repository.
 
-      *key_label* should only be provided when creating an extended format data set.
+      :emphasis:`key\_label` should only be provided when creating an extended format data set.
 
       Maps to DSKEYLBL on z/OS.
 
@@ -316,7 +316,7 @@ dds
 
         Key label must have a private key associated with it.
 
-        *label* can be a maximum of 64 characters.
+        :emphasis:`label` can be a maximum of 64 characters.
 
         Maps to KEYLAB1 on z/OS.
 
@@ -325,9 +325,9 @@ dds
 
 
       encoding
-        How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
+        How the label for the key encrypting key specified by :emphasis:`label` is encoded by the Encryption Key Manager.
 
-        *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
+        :emphasis:`encoding` can either be set to :literal:`l` for label encoding, or :literal:`h` for hash encoding.
 
         Maps to KEYCD1 on z/OS.
 
@@ -351,7 +351,7 @@ dds
 
         Key label must have a private key associated with it.
 
-        *label* can be a maximum of 64 characters.
+        :emphasis:`label` can be a maximum of 64 characters.
 
         Maps to KEYLAB2 on z/OS.
 
@@ -360,9 +360,9 @@ dds
 
 
       encoding
-        How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
+        How the label for the key encrypting key specified by :emphasis:`label` is encoded by the Encryption Key Manager.
 
-        *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
+        :emphasis:`encoding` can either be set to :literal:`l` for label encoding, or :literal:`h` for hash encoding.
 
         Maps to KEYCD2 on z/OS.
 
@@ -375,7 +375,7 @@ dds
     key_length
       The length of the keys used in a new data set.
 
-      If using SMS, setting *key_length* overrides the key length defined in the SMS data class of the data set.
+      If using SMS, setting :emphasis:`key\_length` overrides the key length defined in the SMS data class of the data set.
 
       Valid values are (0-255 non-vsam), (1-255 vsam).
 
@@ -388,14 +388,14 @@ dds
 
       The first byte of a logical record is position 0.
 
-      Provide *key_offset* only for VSAM key-sequenced data sets.
+      Provide :emphasis:`key\_offset` only for VSAM key-sequenced data sets.
 
       | **required**: False
       | **type**: int
 
 
     record_length
-      The logical record length. (e.g ``80``).
+      The logical record length. (e.g :literal:`80`\ ).
 
       For variable data sets, the length must include the 4-byte prefix area.
 
@@ -429,11 +429,11 @@ dds
       type
         The type of the content to be returned.
 
-        ``text`` means return content in encoding specified by *response_encoding*.
+        :literal:`text` means return content in encoding specified by :emphasis:`response\_encoding`.
 
-        *src_encoding* and *response_encoding* are only used when *type=text*.
+        :emphasis:`src\_encoding` and :emphasis:`response\_encoding` are only used when :emphasis:`type=text`.
 
-        ``base64`` means return content as base64 encoded in binary.
+        :literal:`base64` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -475,7 +475,7 @@ dds
     path
       The path to an existing UNIX file.
 
-      Or provide the path to an new created UNIX file when *status_group=OCREAT*.
+      Or provide the path to an new created UNIX file when :emphasis:`status\_group=OCREAT`.
 
       The provided path must be absolute.
 
@@ -500,7 +500,7 @@ dds
 
 
     mode
-      The file access attributes when the UNIX file is created specified in *path*.
+      The file access attributes when the UNIX file is created specified in :emphasis:`path`.
 
       Specify the mode as an octal number similarly to chmod.
 
@@ -511,47 +511,47 @@ dds
 
 
     status_group
-      The status for the UNIX file specified in *path*.
+      The status for the UNIX file specified in :emphasis:`path`.
 
-      If you do not specify a value for the *status_group* parameter, the module assumes that the pathname exists, searches for it, and fails the module if the pathname does not exist.
+      If you do not specify a value for the :emphasis:`status\_group` parameter, the module assumes that the pathname exists, searches for it, and fails the module if the pathname does not exist.
 
       Maps to PATHOPTS status group file options on z/OS.
 
       You can specify up to 6 choices.
 
-      *oappend* sets the file offset to the end of the file before each write, so that data is written at the end of the file.
+      :emphasis:`oappend` sets the file offset to the end of the file before each write, so that data is written at the end of the file.
 
-      *ocreat* specifies that if the file does not exist, the system is to create it. If a directory specified in the pathname does not exist, a new directory and a new file are not created. If the file already exists and *oexcl* was not specified, the system allows the program to use the existing file. If the file already exists and *oexcl* was specified, the system fails the allocation and the job step.
+      :emphasis:`ocreat` specifies that if the file does not exist, the system is to create it. If a directory specified in the pathname does not exist, a new directory and a new file are not created. If the file already exists and :emphasis:`oexcl` was not specified, the system allows the program to use the existing file. If the file already exists and :emphasis:`oexcl` was specified, the system fails the allocation and the job step.
 
-      *oexcl* specifies that if the file does not exist, the system is to create it. If the file already exists, the system fails the allocation and the job step. The system ignores *oexcl* if *ocreat* is not also specified.
+      :emphasis:`oexcl` specifies that if the file does not exist, the system is to create it. If the file already exists, the system fails the allocation and the job step. The system ignores :emphasis:`oexcl` if :emphasis:`ocreat` is not also specified.
 
-      *onoctty* specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.
+      :emphasis:`onoctty` specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.
 
-      *ononblock* specifies the following, depending on the type of file
+      :emphasis:`ononblock` specifies the following, depending on the type of file
 
       For a FIFO special file
 
-      1. With *ononblock* specified and *ordonly* access, an open function for reading-only returns without delay.
+      1. With :emphasis:`ononblock` specified and :emphasis:`ordonly` access, an open function for reading-only returns without delay.
 
-      2. With *ononblock* not specified and *ordonly* access, an open function for reading-only blocks (waits) until a process opens the file for writing.
+      2. With :emphasis:`ononblock` not specified and :emphasis:`ordonly` access, an open function for reading-only blocks (waits) until a process opens the file for writing.
 
-      3. With *ononblock* specified and *owronly* access, an open function for writing-only returns an error if no process currently has the file open for reading.
+      3. With :emphasis:`ononblock` specified and :emphasis:`owronly` access, an open function for writing-only returns an error if no process currently has the file open for reading.
 
-      4. With *ononblock* not specified and *owronly* access, an open function for writing-only blocks (waits) until a process opens the file for reading.
+      4. With :emphasis:`ononblock` not specified and :emphasis:`owronly` access, an open function for writing-only blocks (waits) until a process opens the file for reading.
 
       5. For a character special file that supports nonblocking open
 
-      6. If *ononblock* is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
+      6. If :emphasis:`ononblock` is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
 
-      7. If *ononblock* is not specified, an open function blocks (waits) until the device is ready or available.
+      7. If :emphasis:`ononblock` is not specified, an open function blocks (waits) until the device is ready or available.
 
-      *ononblock* has no effect on other file types.
+      :emphasis:`ononblock` has no effect on other file types.
 
-      *osync* specifies that the system is to move data from buffer storage to permanent storage before returning control from a callable service that performs a write.
+      :emphasis:`osync` specifies that the system is to move data from buffer storage to permanent storage before returning control from a callable service that performs a write.
 
-      *otrunc* specifies that the system is to truncate the file length to zero if all the following are true: the file specified exists, the file is a regular file, and the file successfully opened with *ordwr* or *owronly*.
+      :emphasis:`otrunc` specifies that the system is to truncate the file length to zero if all the following are true: the file specified exists, the file is a regular file, and the file successfully opened with :emphasis:`ordwr` or :emphasis:`owronly`.
 
-      When *otrunc* is specified, the system does not change the mode and owner. *otrunc* has no effect on FIFO special files or character special files.
+      When :emphasis:`otrunc` is specified, the system does not change the mode and owner. :emphasis:`otrunc` has no effect on FIFO special files or character special files.
 
       | **required**: False
       | **type**: list
@@ -560,7 +560,7 @@ dds
 
 
     access_group
-      The kind of access to request for the UNIX file specified in *path*.
+      The kind of access to request for the UNIX file specified in :emphasis:`path`.
 
       | **required**: False
       | **type**: str
@@ -568,7 +568,7 @@ dds
 
 
     file_data_type
-      The type of data that is (or will be) stored in the file specified in *path*.
+      The type of data that is (or will be) stored in the file specified in :emphasis:`path`.
 
       Maps to FILEDATA on z/OS.
 
@@ -581,7 +581,7 @@ dds
     block_size
       The block size, in bytes, for the UNIX file.
 
-      Default is dependent on *record_format*
+      Default is dependent on :emphasis:`record\_format`
 
       | **required**: False
       | **type**: int
@@ -590,7 +590,7 @@ dds
     record_length
       The logical record length for the UNIX file.
 
-      *record_length* is required in situations where the data will be processed as records and therefore, *record_length*, *block_size* and *record_format* need to be supplied since a UNIX file would normally be treated as a stream of bytes.
+      :emphasis:`record\_length` is required in situations where the data will be processed as records and therefore, :emphasis:`record\_length`\ , :emphasis:`block\_size` and :emphasis:`record\_format` need to be supplied since a UNIX file would normally be treated as a stream of bytes.
 
       Maps to LRECL on z/OS.
 
@@ -601,7 +601,7 @@ dds
     record_format
       The record format for the UNIX file.
 
-      *record_format* is required in situations where the data will be processed as records and therefore, *record_length*, *block_size* and *record_format* need to be supplied since a UNIX file would normally be treated as a stream of bytes.
+      :emphasis:`record\_format` is required in situations where the data will be processed as records and therefore, :emphasis:`record\_length`\ , :emphasis:`block\_size` and :emphasis:`record\_format` need to be supplied since a UNIX file would normally be treated as a stream of bytes.
 
       | **required**: False
       | **type**: str
@@ -620,11 +620,11 @@ dds
       type
         The type of the content to be returned.
 
-        ``text`` means return content in encoding specified by *response_encoding*.
+        :literal:`text` means return content in encoding specified by :emphasis:`response\_encoding`.
 
-        *src_encoding* and *response_encoding* are only used when *type=text*.
+        :emphasis:`src\_encoding` and :emphasis:`response\_encoding` are only used when :emphasis:`type=text`.
 
-        ``base64`` means return content as base64 encoded in binary.
+        :literal:`base64` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -650,7 +650,7 @@ dds
 
 
   dd_input
-    *dd_input* is used to specify an in-stream data set.
+    :emphasis:`dd\_input` is used to specify an in-stream data set.
 
     Input will be saved to a temporary data set with a record length of 80.
 
@@ -668,15 +668,15 @@ dds
     content
       The input contents for the DD.
 
-      *dd_input* supports single or multiple lines of input.
+      :emphasis:`dd\_input` supports single or multiple lines of input.
 
       Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
       If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-      If a multi-line string is provided, use the proper block scalar style. YAML supports both `literal <https://yaml.org/spec/1.2.2/#literal-style>`_ and `folded <https://yaml.org/spec/1.2.2/#line-folding>`_ scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; *content: | 2* is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`_ indicators  "+" and "-" as well.
+      If a multi-line string is provided, use the proper block scalar style. YAML supports both \ `literal <https://yaml.org/spec/1.2.2/#literal-style>`__ and \ `folded <https://yaml.org/spec/1.2.2/#line-folding>`__ scalars. It is recommended to use the literal style indicator "\|" with a block indentation indicator, for example; :emphasis:`content: \| 2` is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block \ `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`__ indicators  "+" and "-" as well.
 
-      When using the *content* option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all *content* types; string, list of strings and when using a YAML block indicator.
+      When using the :emphasis:`content` option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all :emphasis:`content` types; string, list of strings and when using a YAML block indicator.
 
       | **required**: True
       | **type**: raw
@@ -694,11 +694,11 @@ dds
       type
         The type of the content to be returned.
 
-        ``text`` means return content in encoding specified by *response_encoding*.
+        :literal:`text` means return content in encoding specified by :emphasis:`response\_encoding`.
 
-        *src_encoding* and *response_encoding* are only used when *type=text*.
+        :emphasis:`src\_encoding` and :emphasis:`response\_encoding` are only used when :emphasis:`type=text`.
 
-        ``base64`` means return content as base64 encoded in binary.
+        :literal:`base64` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -708,7 +708,7 @@ dds
       src_encoding
         The encoding of the data set on the z/OS system.
 
-        for *dd_input*, *src_encoding* should generally not need to be changed.
+        for :emphasis:`dd\_input`\ , :emphasis:`src\_encoding` should generally not need to be changed.
 
         | **required**: False
         | **type**: str
@@ -726,7 +726,7 @@ dds
 
 
   dd_output
-    Use *dd_output* to specify - Content sent to the DD should be returned to the user.
+    Use :emphasis:`dd\_output` to specify - Content sent to the DD should be returned to the user.
 
     | **required**: False
     | **type**: dict
@@ -751,11 +751,11 @@ dds
       type
         The type of the content to be returned.
 
-        ``text`` means return content in encoding specified by *response_encoding*.
+        :literal:`text` means return content in encoding specified by :emphasis:`response\_encoding`.
 
-        *src_encoding* and *response_encoding* are only used when *type=text*.
+        :emphasis:`src\_encoding` and :emphasis:`response\_encoding` are only used when :emphasis:`type=text`.
 
-        ``base64`` means return content as base64 encoded in binary.
+        :literal:`base64` means return content as base64 encoded in binary.
 
         | **required**: True
         | **type**: str
@@ -765,7 +765,7 @@ dds
       src_encoding
         The encoding of the data set on the z/OS system.
 
-        for *dd_input*, *src_encoding* should generally not need to be changed.
+        for :emphasis:`dd\_input`\ , :emphasis:`src\_encoding` should generally not need to be changed.
 
         | **required**: False
         | **type**: str
@@ -783,9 +783,9 @@ dds
 
 
   dd_dummy
-    Use *dd_dummy* to specify - No device or external storage space is to be allocated to the data set. - No disposition processing is to be performed on the data set.
+    Use :emphasis:`dd\_dummy` to specify - No device or external storage space is to be allocated to the data set. - No disposition processing is to be performed on the data set.
 
-    *dd_dummy* accepts no content input.
+    :emphasis:`dd\_dummy` accepts no content input.
 
     | **required**: False
     | **type**: dict
@@ -800,7 +800,7 @@ dds
 
 
   dd_vio
-    *dd_vio* is used to handle temporary data sets.
+    :emphasis:`dd\_vio` is used to handle temporary data sets.
 
     VIO data sets reside in the paging space; but, to the problem program and the access method, the data sets appear to reside on a direct access storage device.
 
@@ -819,7 +819,7 @@ dds
 
 
   dd_concat
-    *dd_concat* is used to specify a data set concatenation.
+    :emphasis:`dd\_concat` is used to specify a data set concatenation.
 
     | **required**: False
     | **type**: dict
@@ -833,7 +833,7 @@ dds
 
 
     dds
-      A list of DD statements, which can contain any of the following types: *dd_data_set*, *dd_unix*, and *dd_input*.
+      A list of DD statements, which can contain any of the following types: :emphasis:`dd\_data\_set`\ , :emphasis:`dd\_unix`\ , and :emphasis:`dd\_input`.
 
       | **required**: False
       | **type**: list
@@ -843,7 +843,7 @@ dds
       dd_data_set
         Specify a data set.
 
-        *dd_data_set* can reference an existing data set. The data set referenced with ``data_set_name`` must be allocated before the module `zos_mvs_raw <./zos_mvs_raw.html>`_ is run, you can use `zos_data_set <./zos_data_set.html>`_ to allocate a data set.
+        :emphasis:`dd\_data\_set` can reference an existing data set. The data set referenced with :literal:`data\_set\_name` must be allocated before the module \ `zos\_mvs\_raw <./zos_mvs_raw.html>`__ is run, you can use \ `zos\_data\_set <./zos_data_set.html>`__ to allocate a data set.
 
         | **required**: False
         | **type**: dict
@@ -854,14 +854,14 @@ dds
 
           A data set name can be a GDS relative name.
 
-          When using GDS relative name and it is a positive generation, *disposition=new* must be used.
+          When using GDS relative name and it is a positive generation, :emphasis:`disposition=new` must be used.
 
           | **required**: False
           | **type**: str
 
 
         type
-          The data set type. Only required when *disposition=new*.
+          The data set type. Only required when :emphasis:`disposition=new`.
 
           Maps to DSNTYPE on z/OS.
 
@@ -871,7 +871,7 @@ dds
 
 
         disposition
-          *disposition* indicates the status of a data set.
+          :emphasis:`disposition` indicates the status of a data set.
 
           Defaults to shr.
 
@@ -881,7 +881,7 @@ dds
 
 
         disposition_normal
-          *disposition_normal* indicates what to do with the data set after normal termination of the program.
+          :emphasis:`disposition\_normal` indicates what to do with the data set after normal termination of the program.
 
           | **required**: False
           | **type**: str
@@ -889,7 +889,7 @@ dds
 
 
         disposition_abnormal
-          *disposition_abnormal* indicates what to do with the data set after abnormal termination of the program.
+          :emphasis:`disposition\_abnormal` indicates what to do with the data set after abnormal termination of the program.
 
           | **required**: False
           | **type**: str
@@ -897,15 +897,15 @@ dds
 
 
         reuse
-          Determines if data set should be reused if *disposition=new* and a data set with matching name already exists.
+          Determines if data set should be reused if :emphasis:`disposition=new` and a data set with matching name already exists.
 
-          If *reuse=true*, *disposition* will be automatically switched to ``SHR``.
+          If :emphasis:`reuse=true`\ , :emphasis:`disposition` will be automatically switched to :literal:`SHR`.
 
-          If *reuse=false*, and a data set with a matching name already exists, allocation will fail.
+          If :emphasis:`reuse=false`\ , and a data set with a matching name already exists, allocation will fail.
 
-          Mutually exclusive with *replace*.
+          Mutually exclusive with :emphasis:`replace`.
 
-          *reuse* is only considered when *disposition=new*
+          :emphasis:`reuse` is only considered when :emphasis:`disposition=new`
 
           | **required**: False
           | **type**: bool
@@ -913,17 +913,17 @@ dds
 
 
         replace
-          Determines if data set should be replaced if *disposition=new* and a data set with matching name already exists.
+          Determines if data set should be replaced if :emphasis:`disposition=new` and a data set with matching name already exists.
 
-          If *replace=true*, the original data set will be deleted, and a new data set created.
+          If :emphasis:`replace=true`\ , the original data set will be deleted, and a new data set created.
 
-          If *replace=false*, and a data set with a matching name already exists, allocation will fail.
+          If :emphasis:`replace=false`\ , and a data set with a matching name already exists, allocation will fail.
 
-          Mutually exclusive with *reuse*.
+          Mutually exclusive with :emphasis:`reuse`.
 
-          *replace* is only considered when *disposition=new*
+          :emphasis:`replace` is only considered when :emphasis:`disposition=new`
 
-          *replace* will result in loss of all data in the original data set unless *backup* is specified.
+          :emphasis:`replace` will result in loss of all data in the original data set unless :emphasis:`backup` is specified.
 
           | **required**: False
           | **type**: bool
@@ -931,9 +931,9 @@ dds
 
 
         backup
-          Determines if a backup should be made of existing data set when *disposition=new*, *replace=true*, and a data set with the desired name is found.
+          Determines if a backup should be made of existing data set when :emphasis:`disposition=new`\ , :emphasis:`replace=true`\ , and a data set with the desired name is found.
 
-          *backup* is only used when *replace=true*.
+          :emphasis:`backup` is only used when :emphasis:`replace=true`.
 
           | **required**: False
           | **type**: bool
@@ -941,7 +941,7 @@ dds
 
 
         space_type
-          The unit of measurement to use when allocating space for a new data set using *space_primary* and *space_secondary*.
+          The unit of measurement to use when allocating space for a new data set using :emphasis:`space\_primary` and :emphasis:`space\_secondary`.
 
           | **required**: False
           | **type**: str
@@ -951,9 +951,9 @@ dds
         space_primary
           The primary amount of space to allocate for a new data set.
 
-          The value provided to *space_type* is used as the unit of space for the allocation.
+          The value provided to :emphasis:`space\_type` is used as the unit of space for the allocation.
 
-          Not applicable when *space_type=blklgth* or *space_type=reclgth*.
+          Not applicable when :emphasis:`space\_type=blklgth` or :emphasis:`space\_type=reclgth`.
 
           | **required**: False
           | **type**: int
@@ -962,9 +962,9 @@ dds
         space_secondary
           When primary allocation of space is filled, secondary space will be allocated with the provided size as needed.
 
-          The value provided to *space_type* is used as the unit of space for the allocation.
+          The value provided to :emphasis:`space\_type` is used as the unit of space for the allocation.
 
-          Not applicable when *space_type=blklgth* or *space_type=reclgth*.
+          Not applicable when :emphasis:`space\_type=blklgth` or :emphasis:`space\_type=reclgth`.
 
           | **required**: False
           | **type**: int
@@ -982,7 +982,7 @@ dds
         sms_management_class
           The desired management class for a new SMS-managed data set.
 
-          *sms_management_class* is ignored if specified for an existing data set.
+          :emphasis:`sms\_management\_class` is ignored if specified for an existing data set.
 
           All values must be between 1-8 alpha-numeric characters.
 
@@ -993,7 +993,7 @@ dds
         sms_storage_class
           The desired storage class for a new SMS-managed data set.
 
-          *sms_storage_class* is ignored if specified for an existing data set.
+          :emphasis:`sms\_storage\_class` is ignored if specified for an existing data set.
 
           All values must be between 1-8 alpha-numeric characters.
 
@@ -1004,7 +1004,7 @@ dds
         sms_data_class
           The desired data class for a new SMS-managed data set.
 
-          *sms_data_class* is ignored if specified for an existing data set.
+          :emphasis:`sms\_data\_class` is ignored if specified for an existing data set.
 
           All values must be between 1-8 alpha-numeric characters.
 
@@ -1015,7 +1015,7 @@ dds
         block_size
           The maximum length of a block in bytes.
 
-          Default is dependent on *record_format*
+          Default is dependent on :emphasis:`record\_format`
 
           | **required**: False
           | **type**: int
@@ -1031,9 +1031,9 @@ dds
         key_label
           The label for the encryption key used by the system to encrypt the data set.
 
-          *key_label* is the public name of a protected encryption key in the ICSF key repository.
+          :emphasis:`key\_label` is the public name of a protected encryption key in the ICSF key repository.
 
-          *key_label* should only be provided when creating an extended format data set.
+          :emphasis:`key\_label` should only be provided when creating an extended format data set.
 
           Maps to DSKEYLBL on z/OS.
 
@@ -1055,7 +1055,7 @@ dds
 
             Key label must have a private key associated with it.
 
-            *label* can be a maximum of 64 characters.
+            :emphasis:`label` can be a maximum of 64 characters.
 
             Maps to KEYLAB1 on z/OS.
 
@@ -1064,9 +1064,9 @@ dds
 
 
           encoding
-            How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
+            How the label for the key encrypting key specified by :emphasis:`label` is encoded by the Encryption Key Manager.
 
-            *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
+            :emphasis:`encoding` can either be set to :literal:`l` for label encoding, or :literal:`h` for hash encoding.
 
             Maps to KEYCD1 on z/OS.
 
@@ -1090,7 +1090,7 @@ dds
 
             Key label must have a private key associated with it.
 
-            *label* can be a maximum of 64 characters.
+            :emphasis:`label` can be a maximum of 64 characters.
 
             Maps to KEYLAB2 on z/OS.
 
@@ -1099,9 +1099,9 @@ dds
 
 
           encoding
-            How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
+            How the label for the key encrypting key specified by :emphasis:`label` is encoded by the Encryption Key Manager.
 
-            *encoding* can either be set to ``l`` for label encoding, or ``h`` for hash encoding.
+            :emphasis:`encoding` can either be set to :literal:`l` for label encoding, or :literal:`h` for hash encoding.
 
             Maps to KEYCD2 on z/OS.
 
@@ -1114,7 +1114,7 @@ dds
         key_length
           The length of the keys used in a new data set.
 
-          If using SMS, setting *key_length* overrides the key length defined in the SMS data class of the data set.
+          If using SMS, setting :emphasis:`key\_length` overrides the key length defined in the SMS data class of the data set.
 
           Valid values are (0-255 non-vsam), (1-255 vsam).
 
@@ -1127,14 +1127,14 @@ dds
 
           The first byte of a logical record is position 0.
 
-          Provide *key_offset* only for VSAM key-sequenced data sets.
+          Provide :emphasis:`key\_offset` only for VSAM key-sequenced data sets.
 
           | **required**: False
           | **type**: int
 
 
         record_length
-          The logical record length. (e.g ``80``).
+          The logical record length. (e.g :literal:`80`\ ).
 
           For variable data sets, the length must include the 4-byte prefix area.
 
@@ -1168,11 +1168,11 @@ dds
           type
             The type of the content to be returned.
 
-            ``text`` means return content in encoding specified by *response_encoding*.
+            :literal:`text` means return content in encoding specified by :emphasis:`response\_encoding`.
 
-            *src_encoding* and *response_encoding* are only used when *type=text*.
+            :emphasis:`src\_encoding` and :emphasis:`response\_encoding` are only used when :emphasis:`type=text`.
 
-            ``base64`` means return content as base64 encoded in binary.
+            :literal:`base64` means return content as base64 encoded in binary.
 
             | **required**: True
             | **type**: str
@@ -1207,7 +1207,7 @@ dds
         path
           The path to an existing UNIX file.
 
-          Or provide the path to an new created UNIX file when *status_group=ocreat*.
+          Or provide the path to an new created UNIX file when :emphasis:`status\_group=ocreat`.
 
           The provided path must be absolute.
 
@@ -1232,7 +1232,7 @@ dds
 
 
         mode
-          The file access attributes when the UNIX file is created specified in *path*.
+          The file access attributes when the UNIX file is created specified in :emphasis:`path`.
 
           Specify the mode as an octal number similar to chmod.
 
@@ -1243,47 +1243,47 @@ dds
 
 
         status_group
-          The status for the UNIX file specified in *path*.
+          The status for the UNIX file specified in :emphasis:`path`.
 
-          If you do not specify a value for the *status_group* parameter the module assumes that the pathname exists, searches for it, and fails the module if the pathname does not exist.
+          If you do not specify a value for the :emphasis:`status\_group` parameter the module assumes that the pathname exists, searches for it, and fails the module if the pathname does not exist.
 
           Maps to PATHOPTS status group file options on z/OS.
 
           You can specify up to 6 choices.
 
-          *oappend* sets the file offset to the end of the file before each write, so that data is written at the end of the file.
+          :emphasis:`oappend` sets the file offset to the end of the file before each write, so that data is written at the end of the file.
 
-          *ocreat* specifies that if the file does not exist, the system is to create it. If a directory specified in the pathname does not exist, one is not created, and the new file is not created. If the file already exists and *oexcl* was not specified, the system allows the program to use the existing file. If the file already exists and *oexcl* was specified, the system fails the allocation and the job step.
+          :emphasis:`ocreat` specifies that if the file does not exist, the system is to create it. If a directory specified in the pathname does not exist, one is not created, and the new file is not created. If the file already exists and :emphasis:`oexcl` was not specified, the system allows the program to use the existing file. If the file already exists and :emphasis:`oexcl` was specified, the system fails the allocation and the job step.
 
-          *oexcl* specifies that if the file does not exist, the system is to create it. If the file already exists, the system fails the allocation and the job step. The system ignores *oexcl* if *ocreat* is not also specified.
+          :emphasis:`oexcl` specifies that if the file does not exist, the system is to create it. If the file already exists, the system fails the allocation and the job step. The system ignores :emphasis:`oexcl` if :emphasis:`ocreat` is not also specified.
 
-          *onoctty* specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.
+          :emphasis:`onoctty` specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.
 
-          *ononblock* specifies the following, depending on the type of file
+          :emphasis:`ononblock` specifies the following, depending on the type of file
 
           For a FIFO special file
 
-          1. With *ononblock* specified and *ordonly* access, an open function for reading-only returns without delay.
+          1. With :emphasis:`ononblock` specified and :emphasis:`ordonly` access, an open function for reading-only returns without delay.
 
-          2. With *ononblock* not specified and *ordonly* access, an open function for reading-only blocks (waits) until a process opens the file for writing.
+          2. With :emphasis:`ononblock` not specified and :emphasis:`ordonly` access, an open function for reading-only blocks (waits) until a process opens the file for writing.
 
-          3. With *ononblock* specified and *owronly* access, an open function for writing-only returns an error if no process currently has the file open for reading.
+          3. With :emphasis:`ononblock` specified and :emphasis:`owronly` access, an open function for writing-only returns an error if no process currently has the file open for reading.
 
-          4. With *ononblock* not specified and *owronly* access, an open function for writing-only blocks (waits) until a process opens the file for reading.
+          4. With :emphasis:`ononblock` not specified and :emphasis:`owronly` access, an open function for writing-only blocks (waits) until a process opens the file for reading.
 
           5. For a character special file that supports nonblocking open
 
-          6. If *ononblock* is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
+          6. If :emphasis:`ononblock` is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
 
-          7. If *ononblock* is not specified, an open function blocks (waits) until the device is ready or available.
+          7. If :emphasis:`ononblock` is not specified, an open function blocks (waits) until the device is ready or available.
 
-          *ononblock* has no effect on other file types.
+          :emphasis:`ononblock` has no effect on other file types.
 
-          *osync* specifies that the system is to move data from buffer storage to permanent storage before returning control from a callable service that performs a write.
+          :emphasis:`osync` specifies that the system is to move data from buffer storage to permanent storage before returning control from a callable service that performs a write.
 
-          *otrunc* specifies that the system is to truncate the file length to zero if all the following are true: the file specified exists, the file is a regular file, and the file successfully opened with *ordwr* or *owronly*.
+          :emphasis:`otrunc` specifies that the system is to truncate the file length to zero if all the following are true: the file specified exists, the file is a regular file, and the file successfully opened with :emphasis:`ordwr` or :emphasis:`owronly`.
 
-          When *otrunc* is specified, the system does not change the mode and owner. *otrunc* has no effect on FIFO special files or character special files.
+          When :emphasis:`otrunc` is specified, the system does not change the mode and owner. :emphasis:`otrunc` has no effect on FIFO special files or character special files.
 
           | **required**: False
           | **type**: list
@@ -1292,7 +1292,7 @@ dds
 
 
         access_group
-          The kind of access to request for the UNIX file specified in *path*.
+          The kind of access to request for the UNIX file specified in :emphasis:`path`.
 
           | **required**: False
           | **type**: str
@@ -1300,7 +1300,7 @@ dds
 
 
         file_data_type
-          The type of data that is (or will be) stored in the file specified in *path*.
+          The type of data that is (or will be) stored in the file specified in :emphasis:`path`.
 
           Maps to FILEDATA on z/OS.
 
@@ -1313,7 +1313,7 @@ dds
         block_size
           The block size, in bytes, for the UNIX file.
 
-          Default is dependent on *record_format*
+          Default is dependent on :emphasis:`record\_format`
 
           | **required**: False
           | **type**: int
@@ -1322,7 +1322,7 @@ dds
         record_length
           The logical record length for the UNIX file.
 
-          *record_length* is required in situations where the data will be processed as records and therefore, *record_length*, *block_size* and *record_format* need to be supplied since a UNIX file would normally be treated as a stream of bytes.
+          :emphasis:`record\_length` is required in situations where the data will be processed as records and therefore, :emphasis:`record\_length`\ , :emphasis:`block\_size` and :emphasis:`record\_format` need to be supplied since a UNIX file would normally be treated as a stream of bytes.
 
           Maps to LRECL on z/OS.
 
@@ -1333,7 +1333,7 @@ dds
         record_format
           The record format for the UNIX file.
 
-          *record_format* is required in situations where the data will be processed as records and therefore, *record_length*, *block_size* and *record_format* need to be supplied since a UNIX file would normally be treated as a stream of bytes.
+          :emphasis:`record\_format` is required in situations where the data will be processed as records and therefore, :emphasis:`record\_length`\ , :emphasis:`block\_size` and :emphasis:`record\_format` need to be supplied since a UNIX file would normally be treated as a stream of bytes.
 
           | **required**: False
           | **type**: str
@@ -1352,11 +1352,11 @@ dds
           type
             The type of the content to be returned.
 
-            ``text`` means return content in encoding specified by *response_encoding*.
+            :literal:`text` means return content in encoding specified by :emphasis:`response\_encoding`.
 
-            *src_encoding* and *response_encoding* are only used when *type=text*.
+            :emphasis:`src\_encoding` and :emphasis:`response\_encoding` are only used when :emphasis:`type=text`.
 
-            ``base64`` means return content as base64 encoded in binary.
+            :literal:`base64` means return content as base64 encoded in binary.
 
             | **required**: True
             | **type**: str
@@ -1382,7 +1382,7 @@ dds
 
 
       dd_input
-        *dd_input* is used to specify an in-stream data set.
+        :emphasis:`dd\_input` is used to specify an in-stream data set.
 
         Input will be saved to a temporary data set with a record length of 80.
 
@@ -1393,15 +1393,15 @@ dds
         content
           The input contents for the DD.
 
-          *dd_input* supports single or multiple lines of input.
+          :emphasis:`dd\_input` supports single or multiple lines of input.
 
           Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
           If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-          If a multi-line string is provided, use the proper block scalar style. YAML supports both `literal <https://yaml.org/spec/1.2.2/#literal-style>`_ and `folded <https://yaml.org/spec/1.2.2/#line-folding>`_ scalars. It is recommended to use the literal style indicator "|" with a block indentation indicator, for example; *content: | 2* is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`_ indicators  "+" and "-" as well.
+          If a multi-line string is provided, use the proper block scalar style. YAML supports both \ `literal <https://yaml.org/spec/1.2.2/#literal-style>`__ and \ `folded <https://yaml.org/spec/1.2.2/#line-folding>`__ scalars. It is recommended to use the literal style indicator "\|" with a block indentation indicator, for example; :emphasis:`content: \| 2` is a literal block style indicator with a 2 space indentation, the entire block will be indented and newlines preserved. The block indentation range is 1 - 9. While generally unnecessary, YAML does support block \ `chomping <https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator>`__ indicators  "+" and "-" as well.
 
-          When using the *content* option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all *content* types; string, list of strings and when using a YAML block indicator.
+          When using the :emphasis:`content` option for instream-data, the module will ensure that all lines contain a blank in columns 1 and 2 and add blanks when not present while retaining a maximum length of 80 columns for any line. This is true for all :emphasis:`content` types; string, list of strings and when using a YAML block indicator.
 
           | **required**: True
           | **type**: raw
@@ -1419,11 +1419,11 @@ dds
           type
             The type of the content to be returned.
 
-            ``text`` means return content in encoding specified by *response_encoding*.
+            :literal:`text` means return content in encoding specified by :emphasis:`response\_encoding`.
 
-            *src_encoding* and *response_encoding* are only used when *type=text*.
+            :emphasis:`src\_encoding` and :emphasis:`response\_encoding` are only used when :emphasis:`type=text`.
 
-            ``base64`` means return content as base64 encoded in binary.
+            :literal:`base64` means return content as base64 encoded in binary.
 
             | **required**: True
             | **type**: str
@@ -1433,7 +1433,7 @@ dds
           src_encoding
             The encoding of the data set on the z/OS system.
 
-            for *dd_input*, *src_encoding* should generally not need to be changed.
+            for :emphasis:`dd\_input`\ , :emphasis:`src\_encoding` should generally not need to be changed.
 
             | **required**: False
             | **type**: str
@@ -1456,11 +1456,25 @@ dds
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup datasets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value :literal:`TMPHLQ` is used.
 
   | **required**: False
   | **type**: str
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 
@@ -1802,11 +1816,11 @@ Notes
 -----
 
 .. note::
-   When executing programs using `zos_mvs_raw <./zos_mvs_raw.html>`_, you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.
+   When executing programs using \ `zos\_mvs\_raw <./zos_mvs_raw.html>`__\ , you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.
 
-   1. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
+   1. \ `zos\_mvs\_raw <./zos_mvs_raw.html>`__ module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
 
-   2. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
+   2. \ `zos\_mvs\_raw <./zos_mvs_raw.html>`__ module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
 
    3. When executing a program, refer to the programs documentation as each programs requirments can vary fom DDs, instream-data indentation and continuation characters.
 
@@ -1884,7 +1898,7 @@ backups
     | **type**: str
 
   backup_name
-    The name of the data set containing the backup of content from data set in original_name.
+    The name of the data set containing the backup of content from data set in original\_name.
 
     | **type**: str
 

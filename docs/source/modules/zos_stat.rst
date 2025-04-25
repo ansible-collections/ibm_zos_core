@@ -16,7 +16,7 @@ zos_stat -- Retrieve facts from MVS data sets, USS files, aggregates and generat
 
 Synopsis
 --------
-- The `zos_stat <./zos_stat.html>`_ module retrieves facts from resources stored in a z/OS system.
+- The \ `zos\_stat <./zos_stat.html>`__ module retrieves facts from resources stored in a z/OS system.
 - Resources that can be queried are UNIX System Services files, data sets, generation data groups and aggregates.
 
 
@@ -74,7 +74,7 @@ sms_managed
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary data sets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value ``TMPHLQ`` is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value :literal:`TMPHLQ` is used.
 
   | **required**: False
   | **type**: str
@@ -238,7 +238,7 @@ stat
     | **sample**: USER.SEQ.DATA.SET
 
   resource_type
-    One of 'data_set', 'gdg', 'file' or 'aggregate'.
+    One of 'data\_set', 'gdg', 'file' or 'aggregate'.
 
     | **returned**: success
     | **type**: str
@@ -394,7 +394,7 @@ stat
             ]
 
     missing_volumes
-      When using the ``volumes`` option, this field will contain every volume specified in a task where the data set was missing. Will be an empty list in any other case.
+      When using the :literal:`volumes` option, this field will contain every volume specified in a task where the data set was missing. Will be an empty list in any other case.
 
       | **returned**: success
       | **type**: list
@@ -425,7 +425,7 @@ stat
     primary_space
       Primary allocation.
 
-      Uses the space units defined in space_units.
+      Uses the space units defined in space\_units.
 
       | **returned**: success
       | **type**: int
@@ -434,7 +434,7 @@ stat
     secondary_space
       Secondary allocation.
 
-      Uses the space units defined in space_units.
+      Uses the space units defined in space\_units.
 
       | **returned**: success
       | **type**: int
@@ -443,7 +443,7 @@ stat
     allocation_available
       Total allocation of the data set.
 
-      Uses the space units defined in space_units.
+      Uses the space units defined in space\_units.
 
       | **returned**: success
       | **type**: int
@@ -452,7 +452,7 @@ stat
     allocation_used
       Total allocation used by the data set.
 
-      Uses the space units defined in space_units.
+      Uses the space units defined in space\_units.
 
       | **returned**: success
       | **type**: int
@@ -467,21 +467,21 @@ stat
     extents_used
       Number of extents used by the data set.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value will be null. See instead pages\_used and perc\_pages\_used.
 
       | **returned**: success
       | **type**: int
       | **sample**: 1
 
     blocks_per_track
-      Blocks per track for the unit contained in space_units.
+      Blocks per track for the unit contained in space\_units.
 
       | **returned**: success
       | **type**: int
       | **sample**: 2
 
     tracks_per_cylinder
-      Tracks per cylinder for the unit contained in space_units.
+      Tracks per cylinder for the unit contained in space\_units.
 
       | **returned**: success
       | **type**: int
@@ -490,7 +490,7 @@ stat
     sms_data_class
       The SMS data class name.
 
-      Only returned when the data set is managed by SMS and sms_managed is set to true.
+      Only returned when the data set is managed by SMS and sms\_managed is set to true.
 
       | **returned**: success
       | **type**: str
@@ -499,7 +499,7 @@ stat
     sms_mgmt_class
       The SMS management class name.
 
-      Only returned when the data set is managed by SMS and sms_managed is set to true.
+      Only returned when the data set is managed by SMS and sms\_managed is set to true.
 
       | **returned**: success
       | **type**: str
@@ -508,7 +508,7 @@ stat
     sms_storage_class
       The SMS storage class name.
 
-      Only returned when the data set is managed by SMS and sms_managed is set to true.
+      Only returned when the data set is managed by SMS and sms\_managed is set to true.
 
       | **returned**: success
       | **type**: str
@@ -520,7 +520,7 @@ stat
       | **returned**: success
       | **type**: bool
 
-    password
+    key_status
       Whether the data set has a password set to read/write.
 
       Value can be either one of 'none', 'read' or 'write'.
@@ -552,7 +552,7 @@ stat
     dir_blocks_allocated
       Number of directory blocks allocated for a PDS.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value will be null. See instead pages\_used and perc\_pages\_used.
 
       | **returned**: success
       | **type**: int
@@ -561,7 +561,7 @@ stat
     dir_blocks_used
       Number of directory blocks used by a PDS.
 
-      For PDSEs, this value will be null. See instead pages_used and perc_pages_used.
+      For PDSEs, this value will be null. See instead pages\_used and perc\_pages\_used.
 
       | **returned**: success
       | **type**: int
@@ -863,7 +863,7 @@ stat
       | **sample**: 112
 
     sysplex_aware
-      Value of the sysplex_aware flag of an aggregate.
+      Value of the sysplex\_aware flag of an aggregate.
 
       | **returned**: success
       | **type**: bool
@@ -944,9 +944,9 @@ stat
       | **sample**: 2025-02-23T13:03:45
 
     checksum
-      Checksum of the file computed by the hashing algorithm specified in ``checksum_algorithm``.
+      Checksum of the file computed by the hashing algorithm specified in :literal:`checksum\_algorithm`.
 
-      Will be null if ``get_checksum=false``.
+      Will be null if :literal:`get\_checksum=false`.
 
       | **returned**: success
       | **type**: str
@@ -1211,7 +1211,7 @@ stat
     mimetype
       Output from the file utility describing the content.
 
-      Will be null if ``get_mime=false``.
+      Will be null if :literal:`get\_mime=false`.
 
       | **returned**: success
       | **type**: str

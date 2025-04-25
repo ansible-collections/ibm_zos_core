@@ -28,11 +28,11 @@ Parameters
 
 
 name
-  The name of the data set being managed. (e.g ``USER.TEST``)
+  The name of the data set being managed. (e.g :literal:`USER.TEST`\ )
 
-  If *name* is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
+  If :emphasis:`name` is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
 
-  Required if *type=member* or *state!=present* and not using *batch*.
+  Required if :emphasis:`type=member` or :emphasis:`state!=present` and not using :emphasis:`batch`.
 
   | **required**: False
   | **type**: str
@@ -41,53 +41,37 @@ name
 state
   The final state desired for specified data set.
 
-  If *state=absent* and the data set does not exist on the managed node, no action taken, module completes successfully with *changed=False*.
+  If :emphasis:`state=absent` and the data set does not exist on the managed node, no action taken, module completes successfully with :emphasis:`changed=False`.
 
+  If :emphasis:`state=absent` and the data set does exist on the managed node, remove the data set, module completes successfully with :emphasis:`changed=True`.
 
-  If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
+  If :emphasis:`state=absent` and :emphasis:`type=member` and :emphasis:`force=True`\ , the data set will be opened with :emphasis:`DISP=SHR` such that the entire data set can be accessed by other processes while the specified member is deleted.
 
+  If :emphasis:`state=absent` and :emphasis:`volumes` is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with :emphasis:`changed=True`.
 
-  If *state=absent* and *type=member* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
+  If :emphasis:`state=absent` and :emphasis:`volumes` is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog fails, then no action is taken. Module completes successfully with :emphasis:`changed=False`.
 
+  If :emphasis:`state=absent` and :emphasis:`volumes` is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided :emphasis:`volumes`. If the volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with :emphasis:`changed=False`.
 
-  If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
+  If :emphasis:`state=absent` and :emphasis:`type=gdg` and the GDG base has active generations the module will complete successfully with :emphasis:`changed=False`. To remove it option :emphasis:`force` needs to be used. If the GDG base does not have active generations the module will complete successfully with :emphasis:`changed=True`.
 
+  If :emphasis:`state=present` and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with :emphasis:`changed=True`.
 
-  If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, then no action is taken. Module completes successfully with *changed=False*.
+  If :emphasis:`state=present` and :emphasis:`replace=True` and the data set is present on the managed node the existing data set is deleted, and a new data set is created and cataloged with the desired attributes, module completes successfully with :emphasis:`changed=True`.
 
+  If :emphasis:`state=present` and :emphasis:`replace=False` and the data set is present on the managed node, no action taken, module completes successfully with :emphasis:`changed=False`.
 
-  If *state=absent* and *volumes* is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided *volumes*. If the volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with *changed=False*.
+  If :emphasis:`state=present` and :emphasis:`type=member` and the member does not exist in the data set, create a member formatted to store data, module completes successfully with :emphasis:`changed=True`. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
 
+  If :emphasis:`state=cataloged` and :emphasis:`volumes` is provided and the data set is already cataloged, no action taken, module completes successfully with :emphasis:`changed=False`.
 
-  If *state=absent* and *type=gdg* and the GDG base has active generations the module will complete successfully with *changed=False*. To remove it option *force* needs to be used. If the GDG base does not have active generations the module will complete successfully with *changed=True*.
+  If :emphasis:`state=cataloged` and :emphasis:`volumes` is provided and the data set is not cataloged, module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog is successful, module completes successfully with :emphasis:`changed=True`.
 
+  If :emphasis:`state=cataloged` and :emphasis:`volumes` is provided and the data set is not cataloged, module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog fails, returns failure with :emphasis:`changed=False`.
 
-  If *state=present* and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with *changed=True*.
+  If :emphasis:`state=uncataloged` and the data set is not found, no action taken, module completes successfully with :emphasis:`changed=False`.
 
-
-  If *state=present* and *replace=True* and the data set is present on the managed node the existing data set is deleted, and a new data set is created and cataloged with the desired attributes, module completes successfully with *changed=True*.
-
-
-  If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
-
-
-  If *state=present* and *type=member* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
-
-
-  If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
-
-
-  If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, module completes successfully with *changed=True*.
-
-
-  If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, returns failure with *changed=False*.
-
-
-  If *state=uncataloged* and the data set is not found, no action taken, module completes successfully with *changed=False*.
-
-
-  If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
-
+  If :emphasis:`state=uncataloged` and the data set is found, the data set is uncataloged, module completes successfully with :emphasis:`changed=True`.
 
   | **required**: False
   | **type**: str
@@ -96,9 +80,9 @@ state
 
 
 type
-  The data set type to be used when creating a data set. (e.g ``pdse``).
+  The data set type to be used when creating a data set. (e.g :literal:`pdse`\ ).
 
-  ``member`` expects to be used with an existing partitioned data set.
+  :literal:`member` expects to be used with an existing partitioned data set.
 
   Choices are case-sensitive.
 
@@ -111,7 +95,7 @@ type
 space_primary
   The amount of primary space to allocate for the dataset.
 
-  The unit of space used is set using *space_type*.
+  The unit of space used is set using :emphasis:`space\_type`.
 
   | **required**: False
   | **type**: int
@@ -121,7 +105,7 @@ space_primary
 space_secondary
   The amount of secondary space to allocate for the dataset.
 
-  The unit of space used is set using *space_type*.
+  The unit of space used is set using :emphasis:`space\_type`.
 
   | **required**: False
   | **type**: int
@@ -131,7 +115,7 @@ space_secondary
 space_type
   The unit of measurement to use when defining primary and secondary space.
 
-  Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
+  Valid units of size are :literal:`k`\ , :literal:`m`\ , :literal:`g`\ , :literal:`cyl`\ , and :literal:`trk`.
 
   | **required**: False
   | **type**: str
@@ -140,11 +124,11 @@ space_type
 
 
 record_format
-  The format of the data set. (e.g ``FB``)
+  The format of the data set. (e.g :literal:`FB`\ )
 
   Choices are case-sensitive.
 
-  When *type=ksds*, *type=esds*, *type=rrds*, *type=lds* or *type=zfs* then *record_format=None*, these types do not have a default *record_format*.
+  When :emphasis:`type=ksds`\ , :emphasis:`type=esds`\ , :emphasis:`type=rrds`\ , :emphasis:`type=lds` or :emphasis:`type=zfs` then :emphasis:`record\_format=None`\ , these types do not have a default :emphasis:`record\_format`.
 
   | **required**: False
   | **type**: str
@@ -219,9 +203,9 @@ directory_blocks
 key_offset
   The key offset to use when creating a KSDS data set.
 
-  *key_offset* is required when *type=ksds*.
+  :emphasis:`key\_offset` is required when :emphasis:`type=ksds`.
 
-  *key_offset* should only be provided when *type=ksds*
+  :emphasis:`key\_offset` should only be provided when :emphasis:`type=ksds`
 
   | **required**: False
   | **type**: int
@@ -230,96 +214,91 @@ key_offset
 key_length
   The key length to use when creating a KSDS data set.
 
-  *key_length* is required when *type=ksds*.
+  :emphasis:`key\_length` is required when :emphasis:`type=ksds`.
 
-  *key_length* should only be provided when *type=ksds*
+  :emphasis:`key\_length` should only be provided when :emphasis:`type=ksds`
 
   | **required**: False
   | **type**: int
 
 
 empty
-  Sets the *empty* attribute for Generation Data Groups.
+  Sets the :emphasis:`empty` attribute for Generation Data Groups.
 
   If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
 
   If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
 
-  Default is false.
-
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 extended
-  Sets the *extended* attribute for Generation Data Groups.
+  Sets the :emphasis:`extended` attribute for Generation Data Groups.
 
   If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
 
   If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
 
-  Default is false.
-
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 fifo
-  Sets the *fifo* attribute for Generation Data Groups.
+  Sets the :emphasis:`fifo` attribute for Generation Data Groups.
 
   If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
 
   If true, the order is the oldest GDS defined to the newest GDS.
 
-  Default is false.
-
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 limit
-  Sets the *limit* attribute for Generation Data Groups.
+  Sets the :emphasis:`limit` attribute for Generation Data Groups.
 
   Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
 
-  *limit* is required when *type=gdg*.
+  :emphasis:`limit` is required when :emphasis:`type=gdg`.
 
   | **required**: False
   | **type**: int
 
 
 purge
-  Sets the *purge* attribute for Generation Data Groups.
+  Sets the :emphasis:`purge` attribute for Generation Data Groups.
 
-  Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
+  Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the :literal:`scratch` option is set.
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 scratch
-  Sets the *scratch* attribute for Generation Data Groups.
+  Sets the :emphasis:`scratch` attribute for Generation Data Groups.
 
   Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 volumes
-  If cataloging a data set, *volumes* specifies the name of the volume(s) where the data set is located.
+  If cataloging a data set, :emphasis:`volumes` specifies the name of the volume(s) where the data set is located.
 
+  If creating a data set, :emphasis:`volumes` specifies the volume(s) where the data set should be created.
 
-  If creating a data set, *volumes* specifies the volume(s) where the data set should be created.
+  If :emphasis:`volumes` is provided when :emphasis:`state=present`\ , and the data set is not found in the catalog, \ `zos\_data\_set <./zos_data_set.html>`__ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
 
+  If :emphasis:`volumes` is provided when :emphasis:`state=absent` and the data set is not found in the catalog, \ `zos\_data\_set <./zos_data_set.html>`__ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
 
-  If *volumes* is provided when *state=present*, and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
-
-
-  If *volumes* is provided when *state=absent* and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
-
-
-  *volumes* is required when *state=cataloged*.
+  :emphasis:`volumes` is required when :emphasis:`state=cataloged`.
 
   Accepts a string when using a single volume and a list of strings when using multiple.
 
@@ -328,12 +307,11 @@ volumes
 
 
 replace
-  When *replace=True*, and *state=present*, existing data set matching *name* will be replaced.
+  When :emphasis:`replace=True`\ , and :emphasis:`state=present`\ , existing data set matching :emphasis:`name` will be replaced.
 
   Replacement is performed by deleting the existing data set and creating a new data set with the same name and desired attributes. Since the existing data set will be deleted prior to creating the new data set, no data set will exist if creation of the new data set fails.
 
-
-  If *replace=True*, all data in the original data set will be lost.
+  If :emphasis:`replace=True`\ , all data in the original data set will be lost.
 
   | **required**: False
   | **type**: bool
@@ -343,7 +321,7 @@ replace
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary and backup datasets.
 
-  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value :literal:`TMPHLQ` is used.
 
   | **required**: False
   | **type**: str
@@ -354,11 +332,11 @@ force
 
   This is helpful when a data set is being used in a long running process such as a started task and you are wanting to delete a member.
 
-  The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
+  The :emphasis:`force=True` option enables sharing of data sets through the disposition :emphasis:`DISP=SHR`.
 
-  The *force=True* only applies to data set members when *state=absent* and *type=member* and when removing a GDG base with active generations.
+  The :emphasis:`force=True` only applies to data set members when :emphasis:`state=absent` and :emphasis:`type=member` and when removing a GDG base with active generations.
 
-  If *force=True*, *type=gdg* and *state=absent* it will force remove a GDG base with active generations.
+  If :emphasis:`force=True`\ , :emphasis:`type=gdg` and :emphasis:`state=absent` it will force remove a GDG base with active generations.
 
   | **required**: False
   | **type**: bool
@@ -374,11 +352,11 @@ batch
 
 
   name
-    The name of the data set being managed. (e.g ``USER.TEST``)
+    The name of the data set being managed. (e.g :literal:`USER.TEST`\ )
 
-    If *name* is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
+    If :emphasis:`name` is not provided, a randomized data set name will be generated with the HLQ matching the module-runners username.
 
-    Required if *type=member* or *state!=present*
+    Required if :emphasis:`type=member` or :emphasis:`state!=present`
 
     | **required**: False
     | **type**: str
@@ -387,50 +365,35 @@ batch
   state
     The final state desired for specified data set.
 
-    If *state=absent* and the data set does not exist on the managed node, no action taken, module completes successfully with *changed=False*.
+    If :emphasis:`state=absent` and the data set does not exist on the managed node, no action taken, module completes successfully with :emphasis:`changed=False`.
 
+    If :emphasis:`state=absent` and the data set does exist on the managed node, remove the data set, module completes successfully with :emphasis:`changed=True`.
 
-    If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
+    If :emphasis:`state=absent` and :emphasis:`type=member` and :emphasis:`force=True`\ , the data set will be opened with :emphasis:`DISP=SHR` such that the entire data set can be accessed by other processes while the specified member is deleted.
 
+    If :emphasis:`state=absent` and :emphasis:`volumes` is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with :emphasis:`changed=True`.
 
-    If *state=absent* and *type=member* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
+    If :emphasis:`state=absent` and :emphasis:`volumes` is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog fails, then no action is taken. Module completes successfully with :emphasis:`changed=False`.
 
+    If :emphasis:`state=absent` and :emphasis:`volumes` is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided :emphasis:`volumes`. If they volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with :emphasis:`changed=False`.
 
-    If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
+    If :emphasis:`state=present` and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with :emphasis:`changed=True`.
 
+    If :emphasis:`state=present` and :emphasis:`replace=True` and the data set is present on the managed node the existing data set is deleted, and a new data set is created and cataloged with the desired attributes, module completes successfully with :emphasis:`changed=True`.
 
-    If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, then no action is taken. Module completes successfully with *changed=False*.
+    If :emphasis:`state=present` and :emphasis:`replace=False` and the data set is present on the managed node, no action taken, module completes successfully with :emphasis:`changed=False`.
 
+    If :emphasis:`state=present` and :emphasis:`type=member` and the member does not exist in the data set, create a member formatted to store data, module completes successfully with :emphasis:`changed=True`. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
 
-    If *state=absent* and *volumes* is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided *volumes*. If they volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with *changed=False*.
+    If :emphasis:`state=cataloged` and :emphasis:`volumes` is provided and the data set is already cataloged, no action taken, module completes successfully with :emphasis:`changed=False`.
 
+    If :emphasis:`state=cataloged` and :emphasis:`volumes` is provided and the data set is not cataloged, module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog is successful, module completes successfully with :emphasis:`changed=True`.
 
-    If *state=present* and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with *changed=True*.
+    If :emphasis:`state=cataloged` and :emphasis:`volumes` is provided and the data set is not cataloged, module attempts to perform catalog using supplied :emphasis:`name` and :emphasis:`volumes`. If the attempt to catalog the data set catalog fails, returns failure with :emphasis:`changed=False`.
 
+    If :emphasis:`state=uncataloged` and the data set is not found, no action taken, module completes successfully with :emphasis:`changed=False`.
 
-    If *state=present* and *replace=True* and the data set is present on the managed node the existing data set is deleted, and a new data set is created and cataloged with the desired attributes, module completes successfully with *changed=True*.
-
-
-    If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
-
-
-    If *state=present* and *type=member* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
-
-
-    If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
-
-
-    If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, module completes successfully with *changed=True*.
-
-
-    If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, returns failure with *changed=False*.
-
-
-    If *state=uncataloged* and the data set is not found, no action taken, module completes successfully with *changed=False*.
-
-
-    If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
-
+    If :emphasis:`state=uncataloged` and the data set is found, the data set is uncataloged, module completes successfully with :emphasis:`changed=True`.
 
     | **required**: False
     | **type**: str
@@ -439,9 +402,9 @@ batch
 
 
   type
-    The data set type to be used when creating a data set. (e.g ``pdse``)
+    The data set type to be used when creating a data set. (e.g :literal:`pdse`\ )
 
-    ``member`` expects to be used with an existing partitioned data set.
+    :literal:`member` expects to be used with an existing partitioned data set.
 
     Choices are case-sensitive.
 
@@ -454,7 +417,7 @@ batch
   space_primary
     The amount of primary space to allocate for the dataset.
 
-    The unit of space used is set using *space_type*.
+    The unit of space used is set using :emphasis:`space\_type`.
 
     | **required**: False
     | **type**: int
@@ -464,7 +427,7 @@ batch
   space_secondary
     The amount of secondary space to allocate for the dataset.
 
-    The unit of space used is set using *space_type*.
+    The unit of space used is set using :emphasis:`space\_type`.
 
     | **required**: False
     | **type**: int
@@ -474,7 +437,7 @@ batch
   space_type
     The unit of measurement to use when defining primary and secondary space.
 
-    Valid units of size are ``k``, ``m``, ``g``, ``cyl``, and ``trk``.
+    Valid units of size are :literal:`k`\ , :literal:`m`\ , :literal:`g`\ , :literal:`cyl`\ , and :literal:`trk`.
 
     | **required**: False
     | **type**: str
@@ -483,11 +446,11 @@ batch
 
 
   record_format
-    The format of the data set. (e.g ``FB``)
+    The format of the data set. (e.g :literal:`FB`\ )
 
     Choices are case-sensitive.
 
-    When *type=ksds*, *type=esds*, *type=rrds*, *type=lds* or *type=zfs* then *record_format=None*, these types do not have a default *record_format*.
+    When :emphasis:`type=ksds`\ , :emphasis:`type=esds`\ , :emphasis:`type=rrds`\ , :emphasis:`type=lds` or :emphasis:`type=zfs` then :emphasis:`record\_format=None`\ , these types do not have a default :emphasis:`record\_format`.
 
     | **required**: False
     | **type**: str
@@ -562,9 +525,9 @@ batch
   key_offset
     The key offset to use when creating a KSDS data set.
 
-    *key_offset* is required when *type=ksds*.
+    :emphasis:`key\_offset` is required when :emphasis:`type=ksds`.
 
-    *key_offset* should only be provided when *type=ksds*
+    :emphasis:`key\_offset` should only be provided when :emphasis:`type=ksds`
 
     | **required**: False
     | **type**: int
@@ -573,96 +536,91 @@ batch
   key_length
     The key length to use when creating a KSDS data set.
 
-    *key_length* is required when *type=ksds*.
+    :emphasis:`key\_length` is required when :emphasis:`type=ksds`.
 
-    *key_length* should only be provided when *type=ksds*
+    :emphasis:`key\_length` should only be provided when :emphasis:`type=ksds`
 
     | **required**: False
     | **type**: int
 
 
   empty
-    Sets the *empty* attribute for Generation Data Groups.
+    Sets the :emphasis:`empty` attribute for Generation Data Groups.
 
     If false, removes only the oldest GDS entry when a new GDS is created that causes GDG limit to be exceeded.
 
     If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
 
-    Default is false.
-
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   extended
-    Sets the *extended* attribute for Generation Data Groups.
+    Sets the :emphasis:`extended` attribute for Generation Data Groups.
 
     If false, allow up to 255 generation data sets (GDSs) to be associated with the GDG.
 
     If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
 
-    Default is false.
-
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   fifo
-    Sets the *fifo* attribute for Generation Data Groups.
+    Sets the :emphasis:`fifo` attribute for Generation Data Groups.
 
     If false, the order is the newest GDS defined to the oldest GDS. This is the default value.
 
     If true, the order is the oldest GDS defined to the newest GDS.
 
-    Default is false.
-
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   limit
-    Sets the *limit* attribute for Generation Data Groups.
+    Sets the :emphasis:`limit` attribute for Generation Data Groups.
 
     Specifies the maximum number, from 1 to 255(up to 999 if extended), of GDS that can be associated with the GDG being defined.
 
-    *limit* is required when *type=gdg*.
+    :emphasis:`limit` is required when :emphasis:`type=gdg`.
 
     | **required**: False
     | **type**: int
 
 
   purge
-    Sets the *purge* attribute for Generation Data Groups.
+    Sets the :emphasis:`purge` attribute for Generation Data Groups.
 
-    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the ``scratch`` option is set.
+    Specifies whether to override expiration dates when a generation data set (GDS) is rolled off and the :literal:`scratch` option is set.
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   scratch
-    Sets the *scratch* attribute for Generation Data Groups.
+    Sets the :emphasis:`scratch` attribute for Generation Data Groups.
 
     Specifies what action is to be taken for a generation data set located on disk volumes when the data set is uncataloged from the GDG base as a result of EMPTY/NOEMPTY processing.
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   volumes
-    If cataloging a data set, *volumes* specifies the name of the volume(s) where the data set is located.
+    If cataloging a data set, :emphasis:`volumes` specifies the name of the volume(s) where the data set is located.
 
+    If creating a data set, :emphasis:`volumes` specifies the volume(s) where the data set should be created.
 
-    If creating a data set, *volumes* specifies the volume(s) where the data set should be created.
+    If :emphasis:`volumes` is provided when :emphasis:`state=present`\ , and the data set is not found in the catalog, \ `zos\_data\_set <./zos_data_set.html>`__ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
 
+    If :emphasis:`volumes` is provided when :emphasis:`state=absent` and the data set is not found in the catalog, \ `zos\_data\_set <./zos_data_set.html>`__ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
 
-    If *volumes* is provided when *state=present*, and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
-
-
-    If *volumes* is provided when *state=absent* and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
-
-
-    *volumes* is required when *state=cataloged*.
+    :emphasis:`volumes` is required when :emphasis:`state=cataloged`.
 
     Accepts a string when using a single volume and a list of strings when using multiple.
 
@@ -671,12 +629,11 @@ batch
 
 
   replace
-    When *replace=True*, and *state=present*, existing data set matching *name* will be replaced.
+    When :emphasis:`replace=True`\ , and :emphasis:`state=present`\ , existing data set matching :emphasis:`name` will be replaced.
 
     Replacement is performed by deleting the existing data set and creating a new data set with the same name and desired attributes. Since the existing data set will be deleted prior to creating the new data set, no data set will exist if creation of the new data set fails.
 
-
-    If *replace=True*, all data in the original data set will be lost.
+    If :emphasis:`replace=True`\ , all data in the original data set will be lost.
 
     | **required**: False
     | **type**: bool
@@ -688,15 +645,29 @@ batch
 
     This is helpful when a data set is being used in a long running process such as a started task and you are wanting to delete a member.
 
-    The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
+    The :emphasis:`force=True` option enables sharing of data sets through the disposition :emphasis:`DISP=SHR`.
 
-    The *force=True* only applies to data set members when *state=absent* and *type=member*.
+    The :emphasis:`force=True` only applies to data set members when :emphasis:`state=absent` and :emphasis:`type=member`.
 
     | **required**: False
     | **type**: bool
     | **default**: False
 
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 

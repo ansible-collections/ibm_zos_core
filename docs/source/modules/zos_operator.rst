@@ -33,11 +33,11 @@ cmd
 
   For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
 
-  If the command contains any special characters ($, &, etc), they must be escaped using double backslashes like \\\\\\$.
+  If the command contains any special characters ($, &, etc), they must be escaped using double backslashes like \\\\\\\\\\\\$.
 
-  For example, to display job by job name the command would be ``cmd:"\\$dj''HELLO''"``
+  For example, to display job by job name the command would be :literal:`cmd:"\\\\$dj''HELLO''"`
 
-  By default, the command will be converted to uppercase before execution, to control this behavior, see the *case_sensitive* option below.
+  By default, the command will be converted to uppercase before execution, to control this behavior, see the :emphasis:`case\_sensitive` option below.
 
   | **required**: True
   | **type**: str
@@ -58,7 +58,7 @@ wait_time_s
 
   This option is helpful on a busy system requiring more time to execute commands.
 
-  Setting *wait* can instruct if execution should wait the full *wait_time_s*.
+  Setting :emphasis:`wait` can instruct if execution should wait the full :emphasis:`wait\_time\_s`.
 
   | **required**: False
   | **type**: int
@@ -66,12 +66,26 @@ wait_time_s
 
 
 case_sensitive
-  If ``true``, the command will not be converted to uppercase before execution. Instead, the casing will be preserved just as it was written in a task.
+  If :literal:`true`\ , the command will not be converted to uppercase before execution. Instead, the casing will be preserved just as it was written in a task.
 
   | **required**: False
   | **type**: bool
   | **default**: False
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: none
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 
@@ -110,7 +124,7 @@ Notes
 -----
 
 .. note::
-   Commands may need to use specific prefixes like $, they can be discovered by issuing the following command ``D OPDATA,PREFIX``.
+   Commands may need to use specific prefixes like $, they can be discovered by issuing the following command :literal:`D OPDATA,PREFIX`.
 
 
 

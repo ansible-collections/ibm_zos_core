@@ -18,9 +18,9 @@ Synopsis
 --------
 - Display the z/OS job output for a given criteria (Job id/Job name/owner) with/without a data definition name as a filter.
 - At least provide a job id/job name/owner.
-- The job id can be specific such as "STC02560", or one that uses a pattern such as "STC*" or "*".
-- The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP*" or "*".
-- The owner can be specific such as "IBMUSER", or one that uses a pattern like "*".
+- The job id can be specific such as "STC02560", or one that uses a pattern such as "STC\*" or "\*".
+- The job name can be specific such as "TCPIP", or one that uses a pattern such as "TCP\*" or "\*".
+- The owner can be specific such as "IBMUSER", or one that uses a pattern like "\*".
 - If there is no ddname, or if ddname="?", output of all the ddnames under the given job will be displayed.
 
 
@@ -32,21 +32,21 @@ Parameters
 
 
 job_id
-  The z/OS job ID of the job containing the spool file. (e.g "STC02560", "STC*")
+  The z/OS job ID of the job containing the spool file. (e.g "STC02560", "STC\*")
 
   | **required**: False
   | **type**: str
 
 
 job_name
-  The name of the batch job. (e.g "TCPIP", "C*")
+  The name of the batch job. (e.g "TCPIP", "C\*")
 
   | **required**: False
   | **type**: str
 
 
 owner
-  The owner who ran the job. (e.g "IBMUSER", "*")
+  The owner who ran the job. (e.g "IBMUSER", "\*")
 
   | **required**: False
   | **type**: str
@@ -58,6 +58,20 @@ ddname
   | **required**: False
   | **type**: str
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 
@@ -97,7 +111,7 @@ Return Values
 
 
 jobs
-  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret_code dictionary with parameter msg_txt = The job could not be found.
+  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret\_code dictionary with parameter msg\_txt = The job could not be found.
 
   | **returned**: success
   | **type**: list
@@ -218,6 +232,7 @@ jobs
                     }
                 ],
                 "duration": 0,
+                "execution_time": "00:00:03",
                 "job_class": "R",
                 "job_id": "JOB00134",
                 "job_name": "HELLO",
@@ -265,7 +280,7 @@ jobs
     | **type**: str
 
   content_type
-    Type of address space used by the job, can be one of the following types. - APPC for an APPC Initiator. - JGRP for a JOBGROUP. - JOB for a Batch job. - STC for a Started task. - TSU for a Time sharing user. - \? for an unknown or pending job.
+    Type of address space used by the job, can be one of the following types. - APPC for an APPC Initiator. - JGRP for a JOBGROUP. - JOB for a Batch job. - STC for a Started task. - TSU for a Time sharing user. - \\? for an unknown or pending job.
 
     | **type**: str
     | **sample**: JOB
@@ -281,6 +296,12 @@ jobs
 
     | **type**: str
     | **sample**: 14:15:00
+
+  execution_time
+    Total duration time of the job execution, if it has finished. If the job is still running, it represents the time elapsed from the job execution start and current time.
+
+    | **type**: str
+    | **sample**: 00:00:10
 
   ddnames
     Data definition names.
@@ -381,7 +402,7 @@ jobs
     | **sample**: 3
 
   program_name
-    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+    The name of the program found in the job's last completed step found in the PGM parameter.
 
     | **type**: str
     | **sample**: IEBGENER
@@ -416,7 +437,7 @@ jobs
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
+      Return code extracted from the \`msg\` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
 
       | **type**: str
       | **sample**: S0C4

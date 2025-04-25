@@ -40,12 +40,26 @@ commands
 max_rc
   Specifies the maximum return code allowed for a TSO command.
 
-  If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+  If more than one TSO command is submitted, the :emphasis:`max\_rc` applies to all TSO commands.
 
   | **required**: False
   | **type**: int
   | **default**: 0
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 
@@ -119,7 +133,7 @@ output
   max_rc
     Specifies the maximum return code allowed for a TSO command.
 
-    If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+    If more than one TSO command is submitted, the :emphasis:`max\_rc` applies to all TSO commands.
 
     | **returned**: always
     | **type**: int

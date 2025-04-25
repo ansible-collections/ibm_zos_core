@@ -17,8 +17,8 @@ zos_job_query -- Query job status
 Synopsis
 --------
 - List z/OS job(s) and the current status of the job(s).
-- Uses job_name to filter the jobs by the job name.
-- Uses job_id to filter the jobs by the job identifier.
+- Uses job\_name to filter the jobs by the job name.
+- Uses job\_id to filter the jobs by the job identifier.
 - Uses owner to filter the jobs by the job owner.
 - Uses system to filter the jobs by system where the job is running (or ran) on.
 
@@ -35,9 +35,13 @@ job_name
 
   A job name can be up to 8 characters long.
 
-  The *job_name* can contain include multiple wildcards.
+  The :emphasis:`job\_name` can contain include multiple wildcards.
 
-  The asterisk (`*`) wildcard will match zero or more specified characters.
+  The asterisk (\`\*\`) wildcard will match zero or more specified characters.
+
+  Note that using this value will query the system for '\*' and then return just matching values.
+
+  This may lead to security issues if there are read-access limitations on some users or jobs.
 
   | **required**: False
   | **type**: str
@@ -56,17 +60,31 @@ owner
 job_id
   The job id that has been assigned to the job.
 
-  A job id must begin with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
+  A job id must begin with \`STC\`, \`JOB\`, \`TSU\` and are followed by up to 5 digits.
 
-  When a job id is greater than 99,999, the job id format will begin with `S`, `J`, `T` and are followed by 7 digits.
+  When a job id is greater than 99,999, the job id format will begin with \`S\`, \`J\`, \`T\` and are followed by 7 digits.
 
-  The *job_id* can contain include multiple wildcards.
+  The :emphasis:`job\_id` can contain include multiple wildcards.
 
-  The asterisk (`*`) wildcard will match zero or more specified characters.
+  The asterisk (\`\*\`) wildcard will match zero or more specified characters.
 
   | **required**: False
   | **type**: str
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 
@@ -122,7 +140,7 @@ changed
   | **type**: bool
 
 jobs
-  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret_code dictionary with parameter msg_txt = The job could not be found.
+  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret\_code dictionary with parameter msg\_txt = The job could not be found.
 
   | **returned**: success
   | **type**: list
@@ -137,6 +155,7 @@ jobs
                 "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
+                "execution_time": "00:00:02",
                 "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
@@ -151,6 +170,7 @@ jobs
                 "content_type": "JOB",
                 "creation_date": "2023-05-03",
                 "creation_time": "12:14:00",
+                "execution_time": "00:00:03",
                 "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
@@ -196,7 +216,7 @@ jobs
 
     TSU for a Time sharing user.
 
-    \? for an unknown or pending job.
+    \\? for an unknown or pending job.
 
     | **type**: str
     | **sample**: STC
@@ -243,7 +263,7 @@ jobs
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
+      Return code extracted from the \`msg\` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
 
       | **type**: str
       | **sample**: S0C4
@@ -320,10 +340,16 @@ jobs
     | **sample**: 3
 
   program_name
-    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+    The name of the program found in the job's last completed step found in the PGM parameter.
 
     | **type**: str
     | **sample**: IEBGENER
+
+  execution_time
+    Total duration time of the job execution, if it has finished. If the job is still running, it represents the time elapsed from the job execution start and current time.
+
+    | **type**: str
+    | **sample**: 00:00:10
 
 
 message

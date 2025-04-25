@@ -44,9 +44,31 @@ then
 fi
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
-ZOAU_ROOT=/usr/lpp/zoautil/v100"""
+=/usr/lpp/zoautil/v100
+export
+export _BPXK_AUTOCVT"""
 
 TEST_AFTER_REPLACE = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+HOME_ROOT=/usr/lpp/zoautil/v100
+export HOME_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_AFTER_LINE = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100"""
+
+TEST_AFTER_REPLACE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -57,7 +79,29 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export TMP=tmp/etc
 export TMP=tmp/etc"""
 
-TEST_BEFORE = """if [ -z STEPLIB ] && tty -s;
+TEST_BEFORE = """if [ -z ] && tty -s;
+then
+    export =none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_BEFORE_REPLACE = """if [ -z STAND ] && tty -s;
+then
+    export STAND=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_BEFORE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -67,7 +111,7 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_BEFORE_REPLACE = """if [ -z STEPLIB ] && tty -s;
+TEST_BEFORE_REPLACE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -80,6 +124,8 @@ export _BPXK_AUTOCVT"""
 
 TEST_BEFORE_AFTER = """if [ -z STEPLIB ] && tty -s;
 then
+    port STEPLIB=none
+    ec -a 0 SHELL
 fi
 PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
@@ -88,6 +134,26 @@ export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
 TEST_BEFORE_AFTER_REPLACE = """if [ -z STEPLIB ] && tty -s;
+then
+    ixport STEPLIB=none
+    ixec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_BEFORE_AFTER_LINE = """if [ -z STEPLIB ] && tty -s;
+then
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT"""
+
+TEST_BEFORE_AFTER_REPLACE_LINE = """if [ -z STEPLIB ] && tty -s;
 then
     export SHELL
     export SHELL
@@ -141,6 +207,55 @@ def remove_ds_environment(ansible_zos_module, ds_name):
 def test_uss_after(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
+        "regexp":"ZOAU_ROOT",
+        "after":"export PATH",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            #assert result.get("found") == 2
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            print(result)
+            result.get("stdout") == TEST_AFTER
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_after_replace(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"ZOAU_ROOT",
+        "after":"export PATH",
+        "replace":"HOME_ROOT",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            #assert result.get("found") == 2
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            print(result)
+            result.get("stdout") == TEST_AFTER_REPLACE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_after_line(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
         "regexp":"^export \w+",
         "after":"export PATH",
     }
@@ -156,11 +271,11 @@ def test_uss_after(ansible_zos_module):
             assert result.get("found") == 2
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            result.get("stdout") == TEST_AFTER
+            result.get("stdout") == TEST_AFTER_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_after_replace(ansible_zos_module):
+def test_uss_after_replace_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
         "regexp":"^export \w+",
@@ -179,124 +294,218 @@ def test_uss_after_replace(ansible_zos_module):
             assert result.get("found") == 2
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            result.get("stdout") == TEST_AFTER_REPLACE
+            result.get("stdout") == TEST_AFTER_REPLACE_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
 def test_uss_before(ansible_zos_module):
-     hosts = ansible_zos_module
-     params = {
-         "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
-         "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
-     }
-     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-     content = TEST_CONTENT
-     try:
-         set_uss_environment(ansible_zos_module, content, full_path)
-         params["target"] = full_path
-         results = hosts.all.zos_replace(**params)
-         for result in results.contacted.values():
-             assert result.get("changed") == True
-             assert result.get("target") == full_path
-             assert result.get("found") == 1
-         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
-         for result in results.contacted.values():
-             result.get("stdout") == TEST_BEFORE
-     finally:
-         remove_uss_environment(ansible_zos_module, full_path)
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"STEPLIB",
+        "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
 
 def test_uss_before_replace(ansible_zos_module):
-     hosts = ansible_zos_module
-     params = {
-         "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
-         "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
-         "replace":"PATH=/usr/lpp/zoautil/v100/bin",
-     }
-     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-     content = TEST_CONTENT
-     try:
-         set_uss_environment(ansible_zos_module, content, full_path)
-         params["target"] = full_path
-         results = hosts.all.zos_replace(**params)
-         for result in results.contacted.values():
-             assert result.get("changed") == True
-             assert result.get("target") == full_path
-             assert result.get("found") == 1
-         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
-         for result in results.contacted.values():
-             result.get("stdout") == TEST_BEFORE_REPLACE
-     finally:
-         remove_uss_environment(ansible_zos_module, full_path)
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"STEPLIB",
+        "replace":"STAND",
+        "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE_REPLACE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_before_line(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
+        "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE_LINE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_before_replace_line(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"^PATH=\/[\w\/]+(:\/[\w\/]+)*",
+        "before":"ZOAU_ROOT=/usr/lpp/zoautil/v100",
+        "replace":"PATH=/usr/lpp/zoautil/v100/bin",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE_REPLACE_LINE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
 
 def test_uss_after_before(ansible_zos_module):
-     hosts = ansible_zos_module
-     params = {
-         "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
-         "after":"then",
-         "before":"fi",
-         "replace":"export SHELL",
-     }
-     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-     content = TEST_CONTENT
-     try:
-         set_uss_environment(ansible_zos_module, content, full_path)
-         params["target"] = full_path
-         results = hosts.all.zos_replace(**params)
-         for result in results.contacted.values():
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"ex",
+        "after":"then",
+        "before":"fi",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
-         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
-         for result in results.contacted.values():
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
             result.get("stdout") == TEST_BEFORE_AFTER
-     finally:
-         remove_uss_environment(ansible_zos_module, full_path)
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
 
 def test_uss_after_before_replace(ansible_zos_module):
-     hosts = ansible_zos_module
-     params = {
-         "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
-         "after":"then",
-         "before":"fi",
-         "replace":"export SHELL",
-     }
-     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-     content = TEST_CONTENT
-     try:
-         set_uss_environment(ansible_zos_module, content, full_path)
-         params["target"] = full_path
-         results = hosts.all.zos_replace(**params)
-         for result in results.contacted.values():
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"ex",
+        "after":"then",
+        "before":"fi",
+        "replace":"ix",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
-         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
-         for result in results.contacted.values():
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
             result.get("stdout") == TEST_BEFORE_AFTER_REPLACE
-     finally:
-         remove_uss_environment(ansible_zos_module, full_path)
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
 
-# @pytest.mark.ds
-# @pytest.mark.parametrize("dstype", DS_TYPE)
-# def test_ds_file(ansible_zos_module, dstype):
-#     hosts = ansible_zos_module
-#     ds_type = dstype
-#     params = {
-#         "regexp":"^Line\s\d+\s.+$",
-#         "after":"Line 18 Use variables for greater flexibility",
-#         "before":"Line 38 A file with many diverse lines",
-#     }
-#     ds_name = get_tmp_ds_name()
-#     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-#     content = TEST_CONTENT
-#     try:
-#         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
-#         params["target"] = ds_full_name
-#         results = hosts.all.zos_replace(**params)
-#         for result in results.contacted.values():
-#             print(result)
-#         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
-#         for result in results.contacted.values():
-#             print(result)
-#     finally:
-#         remove_ds_environment(ansible_zos_module, ds_name)
+def test_uss_after_before_line(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
+        "after":"then",
+        "before":"fi",
+        "replace":"export SHELL",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 2
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE_AFTER_LINE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_after_before_replace_line(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"^\s*(export \w+=\w+|exec -a \d+ \w+)",
+        "after":"then",
+        "before":"fi",
+        "replace":"export SHELL",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 2
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_BEFORE_AFTER_REPLACE_LINE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_after(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = {
+        "regexp":"ZOAU_ROOT",
+        "after":"export PATH",
+    }
+    ds_name = get_tmp_ds_name()
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["target"] = ds_full_name
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == ds_full_name
+            #assert result.get("found") == 2
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_AFTER
+            print(result)
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)

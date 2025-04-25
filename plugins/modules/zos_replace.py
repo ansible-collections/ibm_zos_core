@@ -252,7 +252,7 @@ def merge_text(original, replace, begin, end):
     ----------
         list : The full text on list mode
     """
-    replace = [x for x in replace if x.strip()]
+    replace = [x for x in replace if x.strip() or not x.isspace()]
     if len(replace) != 0:
         # Case for after exist and before dont
         if begin != 0 and end == len(original):

@@ -6,6 +6,72 @@
 Releases
 ========
 
+Version 1.14.0-beta.1
+=====================
+
+Minor Changes
+-------------
+
+- ``zos_copy``
+
+   - Adds ``large`` as a choice for ``type`` in ``dest_data_set``.    - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
+   - Adds support for copying in asynchronous mode inside playbooks.
+   - Removes the need to allow READ access to MVS.MCSOPER.ZOAU to execute the module by changing how the module checks if a data set is locked.
+
+- ``zos_job_output`` - Add execution_time return value in the modules response.
+- ``zos_job_query``
+
+   - Add execution_time return value in the modules response.
+   - Loads correct bytes size value for dds when using zoau 1.3.4 or later
+   - System and Subsystem are now retrieved from JES.
+
+- ``zos_job_submit``
+
+   - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
+   - Add execution_time return value in the modules response.
+   - Loads correct bytes size value for dds when using zoau 1.3.4 or later.
+
+- ``zos_script``
+
+   - Adds error message for when remote source does not exist.
+   - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
+   - Adds support for running local and remote scripts in asynchronous mode inside playbooks.
+   - Support automatic removal of carriage return line breaks [CR, CRLF] when copying local files to USS.
+
+- ``zos_stat`` - Adds support to query data sets using their aliases.
+- ``zos_unarchive`` - Adds support for unarchiving files in asynchronous mode inside playbooks.
+- ``zos_zfs_resize`` - Adds validations for trace destination dataset used for trace verbose.
+
+Bugfixes
+--------
+
+- ``zos_apf`` - When trying to add a library into the APF list that was already added, the module would fail. Fix now will not fail the module, and will inform the user that the library is already on the APF list.
+- ``zos_copy``
+
+   - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false.    - When ``asa_text`` was set to true at the same time as ``force_lock``, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true.
+   - the carriage return characters were being removed from only first 1024 bytes of a file. Now fixed that issue to support removal of the carriage return characters from the complete file content if the file size is more than 1024 bytes.
+
+- ``zos_data_set``
+   - Module would fail when trying to delete a non-existent Generation Data Group. Fix now provides a successful response with `changed=false`.
+   - Module would fail with TypeError when trying to replace an existing GDG. Fix now allows to replacing a GDG.
+
+- ``zos_job_output`` - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise.
+- ``zos_job_query`` - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise.
+- ``zos_job_submit`` - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise.
+- ``zos_mount`` - Module failed when using persistent option with a data set that contains non UTF-8 characters. Fix now can use a data set with non UTF-8 characters as data_store.
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_stat - Retrieve facts from MVS data sets, USS files, aggregates and generation data groups.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+
 Version 1.13.0
 ==============
 

@@ -1,3 +1,0 @@
-trivial:
-  - zos_data_set - Updated documentation on zos_data_set and enabled the default value to be false for GDG attributes.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/1992).

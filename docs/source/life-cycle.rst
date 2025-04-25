@@ -27,6 +27,8 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | Version    | Status         | Changelogs            | GA Date          | EOL Date          | Life Cycle Phase        |
 +============+================+=======================+==================+===================+=========================+
+| 1.14.x     | In preview     | `1.14.x changelogs`_  | TBD              | TBD               |  Beta phase             |
++------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.13.x     | Released       | `1.13.x changelogs`_  | 31 March 2025    | 31 March 2026     | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.12.x     | Released       | `1.12.x changelogs`_  | 06 December 2024 | 06 December 2026  | `Full support`_         |
@@ -35,16 +37,6 @@ its critical dates, and which type of support it's currently eligible for.
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 | 1.10.x     | Released       | `1.10.x changelogs`_  | 21 June 2024     | 21 June 2026      | `Full support`_         |
 +------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.9.x      | Released       | `1.9.x changelogs`_   | 05 Feb 2024      | 30 April 2025     | `Full support`_         |
-+------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.8.x      | Released       | `1.8.x changelogs`_   | 13 Dec 2023      | 30 April 2025     | `Maintenance support`_  |
-+------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.7.x      | Released       | `1.7.x changelogs`_   | 10 Oct 2023      | 30 April 2025     | `Maintenance support`_  |
-+------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.6.x      | Released       | `1.6.x changelogs`_   | 28 June 2023     | 30 April 2025     | `Maintenance support`_  |
-+------------+----------------+-----------------------+------------------+-------------------+-------------------------+
-| 1.5.x      | Released       | `1.5.x changelogs`_   | 25 April 2023    | 30 April 2025     | `Maintenance support`_  |
-+------------+----------------+-----------------------+------------------+-------------------+-------------------------+
 
 .. .............................................................................
 .. Global Links
@@ -52,21 +44,11 @@ its critical dates, and which type of support it's currently eligible for.
 .. _1.13.x changelogs:
     https://github.com/ansible-collections/ibm_zos_core/blob/v1.13.0/CHANGELOG.rst
 .. _1.12.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.12.0/CHANGELOG.rst
+    https://github.com/ansible-collections/ibm_zos_core/blob/v1.12.1/CHANGELOG.rst
 .. _1.11.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.11.0/CHANGELOG.rst
+    https://github.com/ansible-collections/ibm_zos_core/blob/v1.11.1/CHANGELOG.rst
 .. _1.10.x changelogs:
     https://github.com/ansible-collections/ibm_zos_core/blob/v1.10.0/CHANGELOG.rst
-.. _1.9.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.9.0/CHANGELOG.rst
-.. _1.8.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.8.0/CHANGELOG.rst
-.. _1.7.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.7.0/CHANGELOG.rst
-.. _1.6.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.6.0/CHANGELOG.rst
-.. _1.5.x changelogs:
-    https://github.com/ansible-collections/ibm_zos_core/blob/v1.5.0/CHANGELOG.rst
 .. _Full support:
     ../../../collections_content/collection-life-cycles.html#life-cycle-phase
 .. _Maintenance support:

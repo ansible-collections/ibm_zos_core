@@ -319,10 +319,8 @@ import traceback
 
 try:
     from zoautil_py import zsystem
-    from zoautil_py import ztypes
 except Exception:
     zsystem = ZOAUImportError(traceback.format_exc())
-    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 # supported data set types
@@ -388,119 +386,6 @@ def backupOper(module, src, backup, tmphlq=None):
         )
 
     return backup_name
-
-
-def make_apf_command(library, opt, volume=None, sms=None, force_dynamic=None, persistent=None):
-    """Returns a string that can run an APF command in a shell.
-
-    Parameters
-    ----------
-    library : str
-        Name of the data set that will be operated on.
-    opt : str
-        APF operation (either add or del)
-    volume : str
-        Volume of library.
-    sms : bool
-        Whether library is managed by SMS.
-    force_dynamic : bool
-        Whether the APF list format should be dynamic.
-    persistent : dict
-        Options for persistent entries that should be modified by APF.
-
-    Returns
-    -------
-    str
-        APF command.
-    """
-    # -i is  available in ZOAU version 1.3.4
-    # before that all versions will not be able to use -i
-    if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
-        operation = "-i -A" if opt == "add" else "-i -D"
-
-    else:
-        operation = "-A" if opt == "add" else "-D"
-
-    operation_args = library
-
-    if volume:
-        operation_args = f"{operation_args},{volume}"
-    elif sms:
-        operation_args = f"{operation_args},SMS"
-
-    command = f"apfadm {operation} '{operation_args}'"
-
-    if force_dynamic:
-        command = f"{command} -f"
-
-    if persistent:
-        if opt == "add":
-            persistent_args = f""" -P '{persistent.get("addDataset")}' """
-        else:
-            persistent_args = f""" -R '{persistent.get("delDataset")}' """
-
-        if persistent.get("marker"):
-            persistent_args = f""" {persistent_args} -M '{persistent.get("marker")}' """
-
-        command = f"{command} {persistent_args}"
-
-    return command
-
-
-def make_apf_batch_command(batch, force_dynamic=None, persistent=None):
-    """Returns a string that can run an APF command for multiple operations
-    in a shell.
-
-    Parameters
-    ----------
-    batch : list
-        List of dicts containing different APF add/del operations.
-    force_dynamic : bool
-        Whether the APF list format should be dynamic.
-    persistent : dict
-        Options for persistent entries that should be modified by APF.
-
-    Returns
-    -------
-    str
-        APF command.
-    """
-    command = "apfadm"
-
-    for item in batch:
-        if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
-            operation = "-i -A" if item["opt"] == "add" else "-i -D"
-
-        else:
-            operation = "-A" if item["opt"] == "add" else "-D"
-
-        operation_args = item["dsname"]
-
-        volume = item.get("volume")
-        sms = item.get("sms")
-
-        if volume:
-            operation_args = f"{operation_args},{volume}"
-        elif sms:
-            operation_args = f"{operation_args},SMS"
-
-        command = f"{command} {operation} '{operation_args}'"
-
-    if force_dynamic:
-        command = f"{command} -f"
-
-    if persistent:
-        if persistent.get("addDataset"):
-            persistent_args = f""" -P '{persistent.get("addDataset")}' """
-        else:
-            persistent_args = f""" -R '{persistent.get("delDataset")}' """
-
-        if persistent.get("marker"):
-            persistent_args = f""" {persistent_args} -M '{persistent.get("marker")}' """
-
-        command = f"{command} {persistent_args}"
-
-    return command
 
 
 def main():
@@ -693,21 +578,21 @@ def main():
                 item['opt'] = opt
                 item['dsname'] = item.get('library')
                 del item['library']
-            # Commenting this line to implement a workaround for names with '$'. ZOAU should
-            # release a fix soon so we can uncomment this Python API call.
-            # ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
-            apf_command = make_apf_batch_command(batch, force_dynamic=force_dynamic, persistent=persistent)
-            rc, out, err = module.run_command(apf_command)
-            ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
+            # ignore=true is added so that it's ignoring in case of addition if already present
+            # ignore=true is added so that it's ignoring in case the file is not in apf list while deletion
+            if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+                ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
+            else:
+                ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
         else:
             if not library:
                 module.fail_json(msg='library is required')
-            # Commenting this line to implement a workaround for names with '$'. ZOAU should
-            # release a fix soon so we can uncomment this Python API call.
-            # ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
-            apf_command = make_apf_command(library, opt, volume=volume, sms=sms, force_dynamic=force_dynamic, persistent=persistent)
-            rc, out, err = module.run_command(apf_command)
-            ret = ztypes.ZOAUResponse(rc, out, err, apf_command, 'utf-8')
+            # ignore=true is added so that it's ignoring in case of addition if already present
+            # ignore=true is added so that it's ignoring in case the file is not in apf list while deletion
+            if zoau_version_checker.is_zoau_version_higher_than("1.3.4"):
+                ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent, ignore=True)
+            else:
+                ret = zsystem.apf(opt=opt, dsname=library, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response

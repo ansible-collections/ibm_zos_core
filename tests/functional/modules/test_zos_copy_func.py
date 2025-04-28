@@ -4961,7 +4961,6 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
         )
         verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
 
-            assert result.get("msg") is None
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None
             dd_names = result.get("dd_names")

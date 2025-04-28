@@ -465,12 +465,12 @@ unmount_opts:
     description: Describes how the unmount is to be performed.
     returned: changed and if state=unmounted
     type: str
-    sample: DRAIN
+    sample: drain
 mount_opts:
     description: Options available to the mount.
     returned: whenever non-None
     type: str
-    sample: RW,NOSECURITY
+    sample: rw,nosecurity
 src_params:
     description: Specifies a parameter string to be passed to the file system type.
     returned: whenever non-None
@@ -503,7 +503,7 @@ automove:
           a shutdown, PFS termination, dead system takeover, or when file system move occurs.
     returned: if Non-None
     type: str
-    sample: AUTOMOVE
+    sample: automove
 automove_list:
     description: This specifies the list of servers to include or exclude as destinations.
     returned: if Non-None

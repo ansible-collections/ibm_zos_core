@@ -1,4 +1,4 @@
-name: AC Galaxy Importer
+name: Galaxy Importer Check
 
 on:
   pull_request:
@@ -49,18 +49,17 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.11
+        python-version: 3.12
 
     - name: Set up venv
       run: |
         python -m pip install --upgrade pip
         pip install virtualenv
-        mkdir venv
-        virtualenv venv/venv-2.16
+        virtualenv venv
 
     - name: Install dependencies
       run: |
-        source venv/venv-2.16/bin/activate
+        source venv/bin/activate
         python -m pip install --upgrade pip
         pip install ansible
         pip install ansible-importer
@@ -68,5 +67,14 @@ jobs:
 
     - name: Run ac-galaxy-importer
       run: |
-        source venv/venv-2.16/bin/activate
-        ./ac --ac-galaxy-importer
+        source venv/bin/activate
+        export FLAKE8_IGNORE=`cat ${GALAXY_IMPORTER_CONFIG} | grep -i "ignore = " | cut -d "=" -f 2 | tr -d ' '`
+        cp $ORIGINAL_CONSTANTS_DIR/constants.py /tmp/
+        sed "s/E402/$FLAKE8_IGNORE/" ${ORIGINAL_CONSTANTS_DIR}/constants.py > ${ORIGINAL_CONSTANTS_DIR}/constants.py.tmp
+        mv ${ORIGINAL_CONSTANTS_DIR}/constants.py.tmp ${ORIGINAL_CONSTANTS_DIR}/constants.py
+        rm -rf ibm-ibm_zos_core-*.tar.gz
+        ansible-galaxy collection build --force
+        python3 -m galaxy_importer.main ibm-ibm_zos_core-*.tar.gz
+      env:
+        ORIGINAL_CONSTANTS_DIR: venv/lib/python3.12/site-packages/galaxy_importer
+        GALAXY_IMPORTER_CONFIG: .github/workflows/galaxy-importer.cfg

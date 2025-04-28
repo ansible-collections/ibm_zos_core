@@ -81,7 +81,7 @@ def create_sourcefile(hosts, volume):
     mount_result = hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
-        + " -volumes {0} -cylinders 200 1".format(volume),
+        + " -volumes {0} -cylinders 10 1".format(volume),
         executable=SHELL_EXECUTABLE,
         stdin="",
     )

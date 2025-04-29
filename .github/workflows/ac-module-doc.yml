@@ -1,4 +1,4 @@
-name: AC Module Doc
+name: Module Doc Check
 
 on:
   pull_request:
@@ -19,24 +19,25 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.12
 
       - name: Set up venv
         run: |
           python -m pip install --upgrade pip
           pip install virtualenv
-          mkdir venv
-          virtualenv venv/venv-2.16
+          virtualenv venv
 
       - name: Install dependencies
         run: |
-          source venv/venv-2.16/bin/activate
+          source venv/bin/activate
           pip install ansible
           pip install ansible-doc-extractor
 
       - name: Run ac-module-doc
         run: |
-          source venv/venv-2.16/bin/activate
+          source venv/bin/activate
           export ANSIBLE_LIBRARY=/home/runner/work/ibm_zos_core/ibm_zos_core/plugins/modules/
-          ./ac --ac-build
-          ./ac --ac-module-doc
+          rm -rf ibm-ibm_zos_core-*.tar.gz
+          ansible-galaxy collection build
+          ansible-galaxy collection install -f ibm-ibm_zos_core-*
+          cd docs && make clean && make module-doc

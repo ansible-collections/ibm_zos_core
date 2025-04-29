@@ -201,11 +201,16 @@ def resolve_src_name(module, name, results):
             messageDict = dict(msg="Unable to resolve name of data set {name}.")
             module.fail_json(**messageDict, **results)
 
+        name = dataset.name
+
+        if data_set.DataSet.is_gds_relative_name(name):
+            module.fail_json(msg="{0} does not exist".format(name))
+
         ds_utils = data_set.DataSetUtils(name)
         if not ds_utils.exists():
             module.fail_json(msg=f"{name} does NOT exist.", **results)
 
-        return dataset.name
+        return name
 
 
 def replace_text(content, regexp, replace):
@@ -552,7 +557,7 @@ def run_module():
         finally:
             datasets.delete(dataset=bk_ds)
 
-    changed = True
+    changed = True if replaced > 0 else False
     result["found"] = replaced
     result["changed"] = changed
 

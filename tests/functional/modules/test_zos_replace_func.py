@@ -170,6 +170,8 @@ export _BPXK_AUTOCVT"""
 
 TMP_DIRECTORY = "/tmp/"
 
+ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
+
 DS_TYPE = ['seq', 'pds', 'pdse']
 
 def set_uss_environment(ansible_zos_module, content, file):
@@ -482,6 +484,65 @@ def test_uss_after_before_replace_line(ansible_zos_module):
             result.get("stdout") == TEST_BEFORE_AFTER_REPLACE_LINE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_backup_no_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"ZOAU_ROOT",
+        "after":"export PATH",
+        "backup":True,
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 2
+            backup_name = result.get("backup_name")
+            assert result.get("backup_name") is not None
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_AFTER
+        results = hosts.all.shell(cmd="cat {0}".format(backup_name))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_CONTENT
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+        remove_uss_environment(ansible_zos_module, backup_name)
+
+def test_uss_backup_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    uss_backup_file = get_random_file_name(dir=TMP_DIRECTORY, suffix=".tmp")
+    params = {
+        "regexp":"ZOAU_ROOT",
+        "after":"export PATH",
+        "backup":True,
+        "backup_name":uss_backup_file
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 2
+            assert result.get("backup_name") == uss_backup_file
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_AFTER
+        results = hosts.all.shell(cmd="cat {0}".format(uss_backup_file))
+        for result in results.contacted.values():
+            result.get("stdout") == TEST_CONTENT
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+        remove_uss_environment(ansible_zos_module, uss_backup_file)
 
 #########################
 # Dataset test cases
@@ -809,6 +870,81 @@ def test_ds_after_before_replace_line(ansible_zos_module, dstype):
             result.get("stdout") == TEST_BEFORE_AFTER_REPLACE_LINE
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
+
+@pytest.mark.ds
+def test_gdg_ds(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"ZOAU_ROOT",
+        "after":"export PATH",
+    }
+    ds_name = get_tmp_ds_name(3, 2)
+    try:
+        # Set environment
+        temp_file = get_random_file_name(dir=TMP_DIRECTORY)
+        hosts.all.shell(cmd="dtouch -tGDG -L3 {0}".format(ds_name))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(ds_name))
+        hosts.all.shell(cmd="""dtouch -tseq "{0}(+1)" """.format(ds_name))
+        hosts.all.shell(cmd=f"echo \"{TEST_CONTENT}\" > {temp_file}")
+        ds_full_name = ds_name + "(0)"
+        cmd_str = f"cp -CM {quote(temp_file)} \"//'{ds_full_name}'\""
+        hosts.all.shell(cmd=cmd_str)
+        ds_full_name = ds_name + "(-1)"
+        cmd_str = f"cp -CM {quote(temp_file)} \"//'{ds_full_name}'\""
+        hosts.all.shell(cmd=cmd_str)
+        hosts.all.shell(cmd="rm -rf " + temp_file)
+
+        params["target"] = ds_name + "(0)"
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == ds_name + "(0)"
+            assert result.get("found") == 2
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
+        for result in results.contacted.values():
+
+            assert result.get("stdout") == TEST_AFTER
+
+        params["target"] = ds_name + "(-1)"
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == ds_name + "(-1)"
+            assert result.get("found") == 2
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_AFTER
+
+        params_w_bck = {
+            "regexp":"ZOAU_ROOT",
+            "after":"export PATH",
+            "backup":True,
+            "backup_name": ds_name + "(+1)",
+        }
+        params_w_bck["target"] = ds_name + "(-1)"
+        backup = ds_name + "(0)"
+        results = hosts.all.zos_replace(**params_w_bck)
+        for result in results.contacted.values():
+            assert result.get("found") == 0
+            assert result.get("changed") == False
+            assert result.get("target") == ds_name + "(-1)"
+            assert result.get("backup_name") == ds_name + "(+1)"
+        backup = ds_name + "(0)"
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_AFTER
+
+        params["target"] = ds_name + "(-3)"
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("failed") == True
+            assert result.get("changed") == False
+    finally:
+        hosts.all.shell(cmd="""drm "ANSIBLE.*" """)
+
+#########################
+# Encoding test cases
+#########################
 
 #########################
 # Negative test cases

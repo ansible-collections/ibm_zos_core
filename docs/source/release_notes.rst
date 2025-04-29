@@ -14,7 +14,8 @@ Minor Changes
 
 - ``zos_copy``
 
-   - Adds ``large`` as a choice for ``type`` in ``dest_data_set``.    - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
+   - Adds ``large`` as a choice for ``type`` in ``dest_data_set``.
+   - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
    - Adds support for copying in asynchronous mode inside playbooks.
    - Removes the need to allow READ access to MVS.MCSOPER.ZOAU to execute the module by changing how the module checks if a data set is locked.
 
@@ -71,6 +72,11 @@ Availability
 
 * `Galaxy`_
 * `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
 
 
 Version 1.13.0

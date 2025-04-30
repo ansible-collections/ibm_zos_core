@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -125,6 +125,12 @@ class ActionModule(ActionBase):
                     return result
 
                 source_full = rendered_file
+                if os.path.exists(rendered_file):
+                    with open(rendered_file, 'r') as file:
+                        rendered_content = file.read()
+                        display.vvv(u"Template Content {0}:\n{1}".format(os.path.basename(source), rendered_content), host=self._play_context.remote_addr)
+                else:
+                    display.vvv(u"Template file {0} does not exist.".format(rendered_file))
 
             result = {}
             copy_module_args = {}

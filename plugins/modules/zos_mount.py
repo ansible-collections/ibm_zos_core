@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -304,6 +304,18 @@ options:
               that is not available, then the value C(TMPHLQ) is used.
         required: false
         type: str
+
+attributes:
+  action:
+    support: none
+    description: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+  async:
+    support: full
+    description: Supports being used with the ``async`` keyword.
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
 notes:
     - All data sets are always assumed to be cataloged.
     - If an uncataloged data set needs to be fetched, it should be cataloged first.
@@ -326,8 +338,8 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: unmounted
-    unmount_opts: REMOUNT
-    opts: same
+    unmount_opts: remount
+    mount_opts: same
 
 - name: Mount a filesystem readonly.
   zos_mount:
@@ -335,7 +347,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    mount_opts: RO
+    mount_opts: ro
 
 - name: Mount a filesystem and record change in BPXPRMAA.
   zos_mount:
@@ -373,7 +385,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    opts: nowait
+    mount_opts: nowait
 
 - name: Mount a filesystem with no security checks.
   zos_mount:
@@ -381,7 +393,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    mount_opts: NOSECURITY
+    mount_opts: nosecurity
 
 - name: Mount a filesystem, limiting automove to 4 devices.
   zos_mount:
@@ -389,7 +401,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    automove: AUTOMOVE
+    automove: automove
     automove_list: I,DEV1,DEV2,DEV3,DEV9
 
 - name: Mount a filesystem, limiting automove to all except 4 devices.
@@ -398,7 +410,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    automove: AUTOMOVE
+    automove: automove
     automove_list: EXCLUDE,DEV4,DEV5,DEV6,DEV7
 """
 
@@ -453,12 +465,12 @@ unmount_opts:
     description: Describes how the unmount is to be performed.
     returned: changed and if state=unmounted
     type: str
-    sample: DRAIN
+    sample: drain
 mount_opts:
     description: Options available to the mount.
     returned: whenever non-None
     type: str
-    sample: RW,NOSECURITY
+    sample: rw,nosecurity
 src_params:
     description: Specifies a parameter string to be passed to the file system type.
     returned: whenever non-None
@@ -491,7 +503,7 @@ automove:
           a shutdown, PFS termination, dead system takeover, or when file system move occurs.
     returned: if Non-None
     type: str
-    sample: AUTOMOVE
+    sample: automove
 automove_list:
     description: This specifies the list of servers to include or exclude as destinations.
     returned: if Non-None
@@ -537,7 +549,8 @@ rc:
 
 import os
 import re
-import tempfile
+import traceback
+import codecs
 
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
@@ -547,9 +560,15 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
     backup as Backup,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
-    copy_uss_mvs
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    ZOAUImportError,
 )
+
+try:
+    from zoautil_py import datasets, zoau_io
+except Exception:
+    datasets = ZOAUImportError(traceback.format_exc())
+    zoau_io = ZOAUImportError(traceback.format_exc())
 
 
 # This is a duplicate of backupOper found in zos_apf.py of this collection
@@ -610,80 +629,57 @@ def mt_backupOper(module, src, backup, tmphlq=None):
     return backup_name
 
 
-def swap_text(original, adding, removing):
-    """swap_text returns original after removing blocks matching removing,
-    and adding the adding param.
-    original now should be a list of lines without newlines.
-    return is the consolidated file value.
+def get_str_to_keep(dataset, src):
+    """Get the content of previous statements by the module to remove it.
 
     Parameters
     ----------
-    original : str
-        Text to modify.
-    adding : str
-        Lines to add.
-    removing : str
-        Lines to delete if matched.
+    dataset : str
+        Dataset for persistent.
+    src : str
+        Name of zfs dataset.
 
     Returns
     -------
-    str
-        The consolidated file value.
+    list
+        head_content.
+    list
+        tail_content.
     """
-    content_lines = original
+    with zoau_io.RecordIO(f"//'{dataset}'") as dataset_read:
+        dataset_content = dataset_read.readrecords()
 
-    remove_starting_at_index = None
-    remove_ending_at_index = None
+    line_counter = 0
+    pattern = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + src.upper() + r"'\s*\)")
 
-    ms = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + removing.upper() + r"'\s*\)")
-    removable = dict()
+    decode_list = [codecs.decode(record, "cp1047") for record in dataset_content]
 
-    for index, line in enumerate(content_lines):
-        if remove_starting_at_index is None:
-            if ms.match(line) is not None:
-                remove_starting_at_index = index
-                # Check for comments above the match line
-                if index > 0:
-                    for tmpindex in range(index - 1, 0, -1):
-                        tmpline = content_lines[tmpindex]
-                        if len(tmpline) > 0:
-                            # Added the second test to handle adjacent entries
-                            if tmpline[0:2] != "/*" or tmpline[0:6] == "/* BEG":
-                                remove_starting_at_index = tmpindex
-                                break
-                        else:
-                            remove_starting_at_index = tmpindex
-                            break
-                remove_ending_at_index = index
-                continue
-        if remove_starting_at_index is not None:
-            remove_ending_at_index = index
-            doit = False
-            if len(line) > 0:
-                if line[0] != " " and line[0] != "\t" and line[0:2] != "/*":
-                    doit = True
-                elif line[0:6] == "/* END":
-                    doit = True
-            else:
-                doit = True
-            if doit:
-                removable[remove_starting_at_index] = remove_ending_at_index
-                remove_starting_at_index = None
-                remove_ending_at_index = None
+    for record in decode_list:
+        if pattern.match(record) is not None:
+            line_counter += 1
+            break
+        line_counter += 1
 
-    if remove_starting_at_index is not None:
-        if remove_ending_at_index is not None:
-            if remove_starting_at_index != remove_ending_at_index:
-                removable[remove_starting_at_index] = remove_ending_at_index
+    begin_block_code = line_counter
+    for line in reversed(decode_list[:line_counter]):
+        if "/* BEGIN ANSIBLE MANAGED" in line:
+            begin_block_code -= 1
+            break
+        begin_block_code -= 1
 
-    for startidx in reversed(removable.keys()):
-        endidx = removable[startidx]
-        del content_lines[startidx: endidx + 1]
+    end_block_code = line_counter
+    for line in decode_list[line_counter:]:
+        if "/* END ANSIBLE MANAGED" in line:
+            end_block_code += 1
+            break
+        end_block_code += 1
 
-    if len(adding) > 0:
-        content_lines.extend(adding.split("\n"))
+    head_content = decode_list[:begin_block_code]
+    tail_content = decode_list[end_block_code + 1:]
 
-    return "\n".join(content_lines)
+    head_content.extend(tail_content)
+
+    return head_content
 
 
 # #############################################################################
@@ -863,10 +859,7 @@ def run_module(module, arg_def):
     # ##########################################
     # Assemble the mount command
 
-    d = datetime.today()
-    dtstr = d.strftime("%Y%m%d-%H%M%S")
-    parmtext = "/* BEGIN ANSIBLE MANAGED BLOCK " + dtstr + " */\n"
-    parmtail = "\n" + parmtext.replace("BEGIN", "END")
+    parmtext = ""
 
     if comment is not None:
         extra = ""
@@ -975,7 +968,7 @@ def run_module(module, arg_def):
                     if len(automove_list) > 1:
                         fullcmd = fullcmd + "(" + automove_list + ")"
                         parmtext = parmtext + "(" + automove_list + ")"
-        parmtext = parmtext + parmtail
+
     else:
         parmtext = ""
 
@@ -1040,45 +1033,38 @@ def run_module(module, arg_def):
                 stderr=str(res_args),
             )
 
-        tmp_file = tempfile.NamedTemporaryFile(delete=True)
-        tmp_file_filename = tmp_file.name
-        tmp_file.close()
+        bk_ds = datasets.tmp_name(high_level_qualifier=tmphlq)
+        datasets.create(name=bk_ds, dataset_type="SEQ")
 
-        copy_uss_mvs(data_store, tmp_file_filename, is_binary=False)
+        new_str = get_str_to_keep(dataset=data_store, src=src)
 
-        module.run_command(
-            "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False, errors='replace'
-        )
+        rc_write = 0
 
-        with open(tmp_file_filename, "r") as fh:
-            content = fh.read().splitlines()
-
-        cont = list()
-
-        if stdout is None:
-            stdout = " "
-
-        # removing null entries
-        for line in content:
-            if line is not None:
-                if len(line) > 0:
-                    if (line[0:1] is not None) and (line[0:1] != "\u0000"):
-                        cont.append(line)
-
-        stdout += "\n"
-        newtext = swap_text(cont, parmtext, src)
-        if newtext != cont or cont != content:
-            fh = open(tmp_file_filename, "w")
-            fh.write(newtext)
-            fh.close()
-            # pre-clear to prevent caching behavior on the copy-back
-            module.run_command(
-                "mrm " + data_store, use_unsafe_shell=False, errors='replace'
+        try:
+            for line in new_str:
+                rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
+                if rc_write != 0:
+                    raise Exception("Non zero return code from datasets.write.")
+        except Exception as e:
+            datasets.delete(dataset=bk_ds)
+            module.fail_json(
+                msg="Unable to write on persistent data set {0}. {1}".format(data_store, e),
+                stderr=str(res_args),
             )
-            copy_uss_mvs(tmp_file_filename, data_store, is_binary=True)
 
-        if os.path.isfile(tmp_file_filename):
-            os.unlink(tmp_file_filename)
+        try:
+            datasets.delete(dataset=data_store)
+            datasets.copy(source=bk_ds, target=data_store)
+        finally:
+            datasets.delete(dataset=bk_ds)
+
+        if will_mount:
+            d = datetime.today()
+            dtstr = d.strftime("%Y%m%d-%H%M%S")
+            marker = '/* {mark} ANSIBLE MANAGED BLOCK ' + dtstr + " */"
+            marker = "{0}\\n{1}\\n{2}".format("BEGIN", "END", marker)
+
+            datasets.blockinfile(dataset=data_store, state=True, block=parmtext, marker=marker, insert_after="EOF")
 
     if rc == 0:
         if stdout is None:

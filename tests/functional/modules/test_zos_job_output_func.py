@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -77,8 +77,8 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(owner="INVALID")
     for result in results.contacted.values():
-        assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg_txt") is not None
+        assert result.get("failed") is True
+        assert result.get("stderr") is not None
 
 
 def test_zos_job_output_reject(ansible_zos_module):
@@ -116,6 +116,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("steps") is not None
             assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001"
             assert result.get("jobs")[0].get("content_type") == "JOB"
+            assert result.get("jobs")[0].get("execution_time") is not None
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 

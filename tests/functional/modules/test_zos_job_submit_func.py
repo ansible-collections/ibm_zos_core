@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -410,6 +410,7 @@ PLAYBOOK_ASYNC_TEST = """- hosts: zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
 
   tasks:
     - name: Submit async job.
@@ -504,7 +505,7 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
         )
         hosts.all.shell(
             cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
-                temp_path, data_set_name_special_chars.replace('$', '\$')
+                temp_path, data_set_name_special_chars.replace('$', '\\$')
             )
         )
         results = hosts.all.zos_job_submit(
@@ -557,6 +558,7 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             assert len(result.get("jobs")) == 0
             assert result.get("job_name") is None
             assert result.get("duration") is None
+            assert result.get("execution_time") is None
             assert result.get("ddnames") is not None
             assert result.get("ddnames").get("ddname") is None
             assert result.get("ddnames").get("record_count") is None
@@ -689,6 +691,7 @@ def test_job_submit_pds_5_sec_job_wait_15(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get('changed') is True
             assert result.get('duration') <= wait_time_s
+            assert result.get('execution_time') is not None
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")
@@ -723,6 +726,7 @@ def test_job_submit_pds_30_sec_job_wait_60(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get('changed') is True
             assert result.get('duration') <= wait_time_s
+            assert result.get('execution_time') is not None
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")
@@ -758,6 +762,7 @@ def test_job_submit_pds_30_sec_job_wait_10_negative(ansible_zos_module):
             assert result.get('duration') >= wait_time_s
             # expecting at least "long running job that exceeded its maximum wait"
             assert re.search(r'exceeded', repr(result.get("msg")))
+            assert result.get('execution_time') is not None
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=data_set_name, state="absent")

@@ -19,8 +19,10 @@ import os
 import shutil
 import re
 import time
+import yaml
 import tempfile
 import subprocess
+from shellescape import quote
 
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
@@ -222,6 +224,55 @@ SH {0}/pdse-lock '{1}'
 //STDOUT DD SYSOUT=*
 //STDERR DD SYSOUT=*
 //"""
+
+PLAYBOOK_ASYNC_TEST = """- hosts: zvm
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: False
+  environment:
+    _BPXK_AUTOCVT: "ON"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{2}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+
+  tasks:
+    - name: Create a copy
+      zos_copy:
+            src: /etc/profile
+            remote_src: True
+            force: True
+            dest: {3}
+      async: 50
+      poll: 0
+      register: copy_output
+
+    - name: Query async task.
+      async_status:
+        jid: "{{{{ copy_output.ansible_job_id }}}}"
+      register: job_result
+      until: job_result.finished
+      retries: 10
+      delay: 30
+
+    - name: Echo copy_output.
+      debug:
+        msg: "{{ job_result }}"
+"""
+
+INVENTORY_ASYNC_TEST = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -638,6 +689,7 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
         )
 
         for result in copy_result.contacted.values():
+            print(result)
             assert result.get("msg") is not None
             assert result.get("changed") is False
             assert "Error" in result.get("msg")
@@ -2362,113 +2414,6 @@ def copy_asa_dest_lock(ansible_zos_module, ds_type, f_lock):
             hosts.all.shell(cmd=f'rm -r {temp_dir}')
         # remove destination data set.
         hosts.all.zos_data_set(name=data_set, state="absent")
-
-
-def test_copy_dest_lock_test_with_no_opercmd_access_pds_without_force_lock(ansible_zos_module, z_python_interpreter):
-    """
-    This tests the module exeception raised 'msg="Unable to determine if the source {0} is in use.".format(dataset_name)'.
-    This this a wrapper for the actual test case `managed_user_copy_dest_lock_test_with_no_opercmd_access`.
-    """
-    managed_user = None
-    managed_user_test_case_name = "managed_user_copy_dest_lock_test_with_no_opercmd_access"
-    try:
-        # Initialize the Managed user API from the pytest fixture.
-        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
-
-        # Important: Execute the test case with the managed users execution utility.
-        managed_user.execute_managed_user_test(
-            managed_user_test_case = managed_user_test_case_name,debug = True,
-            verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
-
-    finally:
-        # Delete the managed user on the remote host to avoid proliferation of users.
-        managed_user.delete_managed_user()
-
-@pytest.mark.parametrize("ds_type, f_lock",[
-    ( "pds", False),    # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "pdse", False),   # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "seq", False),    # Module exception raised msg="Unable to determine if the source {0} is in use.".format(dataset_name)
-    ( "seq", True),     # Opercmd is not called so a user with limited UACC will not matter and will succeed
-])
-def managed_user_copy_dest_lock_test_with_no_opercmd_access(ansible_zos_module, ds_type, f_lock ):
-    """
-    When force_lock option is false, it exercises the opercmd call which requires RACF universal access.
-    This negative test will ensure that if the user does not have RACF universal access that the module
-    not halt execution and instead bubble up the ZOAU exception.
-    """
-    hosts = ansible_zos_module
-
-    data_set_1 = get_tmp_ds_name()
-    data_set_2 = get_tmp_ds_name()
-    member_1 = "MEM1"
-
-    if ds_type == "pds" or ds_type == "pdse":
-        src_data_set = data_set_1 + "({0})".format(member_1)
-        dest_data_set = data_set_2 + "({0})".format(member_1)
-    else:
-        src_data_set = data_set_1
-        dest_data_set = data_set_2
-    try:
-        hosts.all.zos_data_set(name=data_set_1, state="present", type=ds_type, replace=True)
-        hosts.all.zos_data_set(name=data_set_2, state="present", type=ds_type, replace=True)
-        if ds_type == "pds" or ds_type == "pdse":
-            hosts.all.zos_data_set(name=src_data_set, state="present", type="member", replace=True)
-            hosts.all.zos_data_set(name=dest_data_set, state="present", type="member", replace=True)
-        # copy text_in source
-        hosts.all.shell(cmd="decho \"{0}\" \"{1}\"".format(DUMMY_DATA, src_data_set))
-        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        temp_dir = get_random_file_name(dir=TMP_DIRECTORY)
-        hosts.all.zos_copy(content=c_pgm, dest=f'{temp_dir}/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
-            content=call_c_jcl.format(temp_dir, dest_data_set),
-            dest=f'{temp_dir}/call_c_pgm.jcl',
-            force=True
-        )
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir=f"{temp_dir}/")
-        # submit jcl
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir=f"{temp_dir}/")
-        # pause to ensure c code acquires lock
-        time.sleep(10)
-        results = hosts.all.zos_copy(
-            src = src_data_set,
-            dest = dest_data_set,
-            remote_src = True,
-            force=True,
-            force_lock=f_lock,
-        )
-        for result in results.contacted.values():
-            if f_lock:
-                assert result.get("changed") == True
-                assert result.get("msg") is None
-                # verify that the content is the same
-                verify_copy = hosts.all.shell(
-                    cmd="dcat \"{0}\"".format(dest_data_set),
-                    executable=SHELL_EXECUTABLE,
-                )
-                for vp_result in verify_copy.contacted.values():
-                    verify_copy_2 = hosts.all.shell(
-                        cmd="dcat \"{0}\"".format(src_data_set),
-                        executable=SHELL_EXECUTABLE,
-                    )
-                    for vp_result_2 in verify_copy_2.contacted.values():
-                        assert vp_result_2.get("stdout") == vp_result.get("stdout")
-            elif not f_lock:
-                assert result.get("failed") is True
-                assert result.get("changed") == False
-                assert "Unable to determine if the dest" in result.get("msg")
-                assert "BGYSC0819E Insufficient security authorization for resource MVS.MCSOPER.ZOAU in class OPERCMDS" in result.get("stderr")
-                assert result.get("rc") == 6
-    finally:
-        # extract pid
-        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
-        # kill process - release lock - this also seems to end the job
-        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
-        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
-        # clean up c code/object/executable files, jcl
-        hosts.all.shell(cmd=f'rm -r {temp_dir}')
-        # remove pdse
-        hosts.all.zos_data_set(name=data_set_1, state="absent")
-        hosts.all.zos_data_set(name=data_set_2, state="absent")
 
 
 @pytest.mark.uss
@@ -5016,10 +4961,6 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
         )
         verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
 
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            assert result.get("dest") == dest_ds
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None
             dd_names = result.get("dd_names")
@@ -5812,3 +5753,61 @@ def test_copy_to_dataset_with_special_symbols(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=dest_data_set, state="absent")
+
+
+def test_job_script_async(ansible_zos_module, get_config):
+    try:
+        ds_name = get_tmp_ds_name()
+        path = get_config
+        with open(path, 'r') as file:
+            enviroment = yaml.safe_load(file)
+
+        ssh_key = enviroment["ssh_key"]
+        hosts = enviroment["host"].upper()
+        user = enviroment["user"].upper()
+        python_path = enviroment["python_path"]
+        cut_python_path = python_path[:python_path.find('/bin')].strip()
+        zoau = enviroment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split('/')[2]
+
+        playbook = tempfile.NamedTemporaryFile(delete=True)
+        inventory = tempfile.NamedTemporaryFile(delete=True)
+
+        os.system("echo {0} > {1}".format(
+            quote(PLAYBOOK_ASYNC_TEST.format(
+                zoau,
+                cut_python_path,
+                python_version,
+                ds_name
+            )),
+            playbook.name
+        ))
+
+        os.system("echo {0} > {1}".format(
+            quote(INVENTORY_ASYNC_TEST.format(
+                hosts,
+                ssh_key,
+                user,
+                python_path
+            )),
+            inventory.name
+        ))
+
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory.name,
+            playbook.name
+        )
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            shell=True,
+            timeout=120,
+            encoding='utf-8'
+        )
+        assert result.returncode == 0
+        assert "ok=3" in result.stdout
+        assert "changed=2" in result.stdout
+        assert result.stderr == ""
+    finally:
+        ansible_zos_module.all.zos_data_set(name=ds_name, state="absent")

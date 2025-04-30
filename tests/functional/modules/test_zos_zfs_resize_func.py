@@ -43,6 +43,7 @@ NO_AUTO_INCREMENT= """- hosts : zvm
     _TAG_REDIR_IN: "txt"
     _TAG_REDIR_OUT: "txt"
     LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
   tasks:
     - name: Create ZFS.
       block:
@@ -131,7 +132,7 @@ INVENTORY = """all:
       ansible_host: {0}
       ansible_ssh_private_key_file: {1}
       ansible_user: {2}
-      ansible_python_interpreter: {3}/bin/python{4}"""
+      ansible_python_interpreter: {3}"""
 
 def make_temp_folder(hosts):
     """Create a temporary file on a z/OS system and return its path."""
@@ -616,7 +617,7 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
         hosts.all.shell(cmd="rm {0}".format(trace_destination_file_s))
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-@pytest.mark.parametrize("trace_destination", ["seq", "pds", "pdse"])
+@pytest.mark.parametrize("trace_destination", ["pds", "pdse"])
 def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination):
     hosts = ansible_zos_module
     ds_name = get_tmp_ds_name()
@@ -627,12 +628,10 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
     trace_destination_ds = get_tmp_ds_name()
     trace_destination_ds_s= get_tmp_ds_name()
     try:
-        if trace_destination == "seq":
-            hosts.all.zos_data_set(name=trace_destination_ds, type=trace_destination, record_length=400)
-        else:
-            hosts.all.zos_data_set(name=trace_destination_ds, type=trace_destination, record_length=400)
-            trace_destination_ds = trace_destination_ds + "(MEM)"
-            hosts.all.zos_data_set(name=trace_destination_ds, state="present", type="member")
+        hosts.all.zos_data_set(name=trace_destination_ds, type=trace_destination, record_length=400, record_format="vb",
+                               space_type="k", space_primary="42000")
+        trace_destination_ds = trace_destination_ds + "(MEM)"
+        hosts.all.zos_data_set(name=trace_destination_ds, state="present", type="member")
 
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
@@ -656,19 +655,18 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
-            cmd = "cat \"//'{0}'\" ".format(trace_destination_ds)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
 
-        if trace_destination == "seq":
-            hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=400)
-        else:
-            hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=400)
-            trace_destination_ds_s = trace_destination_ds_s + "(MEM)"
-            hosts.all.zos_data_set(name=trace_destination_ds_s, state="present", type="member")
+
+        hosts.all.zos_data_set(name=trace_destination_ds_s, type=trace_destination, record_length=400, record_format="vb",
+                               space_type="k", space_primary="42000")
+        trace_destination_ds_s = trace_destination_ds_s + "(MEM)"
+        hosts.all.zos_data_set(name=trace_destination_ds_s, state="present", type="member")
 
         results = hosts.all.zos_zfs_resize(target=ds_name,
                                             size=shrink_size,
@@ -689,7 +687,7 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
-            cmd = "cat \"//'{0}'\" ".format(trace_destination_ds_s)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
@@ -698,9 +696,8 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
-        if trace_destination == "pds" or trace_destination == "pdse":
-            trace_destination_ds = trace_destination_ds.split("(")[0]
-            trace_destination_ds_s = trace_destination_ds_s.split("(")[0]
+        trace_destination_ds = trace_destination_ds.split("(")[0]
+        trace_destination_ds_s = trace_destination_ds_s.split("(")[0]
         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
         hosts.all.zos_data_set(name=trace_destination_ds_s, state="absent")
 
@@ -714,7 +711,7 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
 
     trace_destination_ds = get_tmp_ds_name()
     trace_destination_ds = trace_destination_ds if trace_destination == "pds" else trace_destination_ds + "(MEM)"
-    trace_destination_ds_s= get_tmp_ds_name()
+    trace_destination_ds_s = get_tmp_ds_name()
     trace_destination_ds_s = trace_destination_ds_s if trace_destination == "pds" else trace_destination_ds_s + "(MEM)"
     try:
         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
@@ -739,7 +736,7 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('new_free_space') >= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "Printing contents of table at address" in result.get("stdout")
-            cmd = "cat \"//'{0}'\" ".format(trace_destination_ds)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
@@ -765,7 +762,7 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
             assert result.get('new_free_space') <= result.get('old_free_space')
             assert result.get('space_type') == "k"
             assert "print of in-memory trace table has completed" in result.get('stdout')
-            cmd = "cat \"//'{0}'\" ".format(trace_destination_ds_s)
+            cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
                 assert out.get("stdout") is not None
@@ -774,7 +771,7 @@ def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace
 
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
-        if trace_destination == "pds" or trace_destination == "pdse":
+        if trace_destination != "pds":
             trace_destination_ds = trace_destination_ds.split("(")[0]
             trace_destination_ds_s = trace_destination_ds_s.split("(")[0]
         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
@@ -828,6 +825,123 @@ def test_mount_point_does_not_exist(ansible_zos_module):
             assert  "No mount points were found in the following output:" in result.get('msg')
     finally:
         hosts.all.zos_data_set(name=ds_name, state="absent")
+
+def test_trace_destination_bad_data_set_type(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    grow_size = 1800
+
+    trace_destination_ds = get_tmp_ds_name()
+
+    try:
+        results = hosts.all.zos_data_set(name=trace_destination_ds, type="seq")
+
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=grow_size,
+                                            trace_destination=trace_destination_ds)
+
+        for result in results.contacted.values():
+            assert result.get("failed") == True
+            assert result.get('changed') == False
+            assert result.get('rc') == 1
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
+
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+        hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
+
+def test_trace_destination_bad_record_length(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    grow_size = 1800
+
+    trace_destination_ds = get_tmp_ds_name()
+
+    try:
+        results = hosts.all.zos_data_set(name=trace_destination_ds, type="pds", record_length=30)
+
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=grow_size,
+                                            trace_destination=trace_destination_ds)
+
+        for result in results.contacted.values():
+            assert result.get("failed") == True
+            assert result.get('changed') == False
+            assert result.get('rc') == 1
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
+
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+        hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
+
+def test_trace_destination_bad_record_format(ansible_zos_module, ):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    grow_size = 1800
+
+    trace_destination_ds = get_tmp_ds_name()
+
+    try:
+        results = hosts.all.zos_data_set(name=trace_destination_ds, type="pds", record_length=200, record_format="fb")
+
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=grow_size,
+                                            trace_destination=trace_destination_ds)
+
+        for result in results.contacted.values():
+            assert result.get("failed") == True
+            assert result.get('changed') == False
+            assert result.get('rc') == 1
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
+
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+        hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
+
+
+def test_trace_destination_bad_space(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    grow_size = 1800
+
+    trace_destination_ds = get_tmp_ds_name()
+
+    try:
+        results = hosts.all.zos_data_set(name=trace_destination_ds, type="pds", record_length=200, space_primary=200)
+
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=grow_size,
+                                            trace_destination=trace_destination_ds)
+
+        for result in results.contacted.values():
+            assert result.get("failed") == True
+            assert result.get('changed') == False
+            assert result.get('rc') == 1
+            assert f"Trace destination {trace_destination_ds} does not meet minimal criteria" in result.get("msg")
+            assert result.get('stderr') == ""
+            assert result.get('stderr_lines') == []
+
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+        hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
 
 def test_no_operation_executed(ansible_zos_module):
     hosts = ansible_zos_module
@@ -918,8 +1032,7 @@ def test_no_auto_increase(get_config):
             hosts,
             ssh_key,
             user,
-            cut_python_path,
-            python_version
+            python_path
         )), inventory))
         command = "ansible-playbook -i {0} {1}".format(
             inventory,
@@ -960,8 +1073,7 @@ def test_no_auto_increase_accept(get_config):
             hosts,
             ssh_key,
             user,
-            cut_python_path,
-            python_version
+            python_path
         )), inventory))
         command = "ansible-playbook -i {0} {1}".format(
             inventory,

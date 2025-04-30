@@ -13,21 +13,49 @@
 
 from __future__ import absolute_import, division, print_function
 
-# import subprocess
-
-try:
-    from zoautil_py import ZOAU_API_VERSION
-except Exception:
-    ZOAU_API_VERSION = "1.2.0"
+import re
 
 __metaclass__ = type
 
 
-def is_zoau_version_higher_than(min_version_str):
-    """Reports back if ZOAU version is high enough.
+def get_zoau_version(ansible_zos_module):
+    """
+    Fetches the current ZOAU version from the z/OS system using the `zoaversion` command.
+
+    This function runs the `zoaversion` command on the z/OS system and parses the output 
+    to extract the version number in the format `vX.Y.Z.W`, where X, Y, Z, and W are numerical digits.
 
     Parameters
     ----------
+    ansible_zos_module : ansible.module_utils.basic.AnsibleModule
+        The Ansible z/OS module that provides the `all.shell()` method to run shell commands.
+
+    Returns
+    -------
+    str
+        The ZOAU version number (e.g., "1.2.3.4") extracted from the command output.
+        Returns `"1.2.0"` if no valid version is found.
+    """
+    cmd_str = "zoaversion"
+    version_results = ansible_zos_module.all.shell(cmd=cmd_str)
+    zoa_version = "0.0.0"  # Default version if not found
+
+    # Iterate through all contacted hosts and check the result output
+    for result in version_results.contacted.values():
+        output = result.get("stdout")
+        if output:
+            # Search for the version in the format "vX.Y.Z.W"
+            match = re.search(r'v?(\d+\.\d+\.\d+(?:\.\d+)?)', output)
+            if match:
+                zoa_version = match.group(1)
+
+    return zoa_version
+
+def is_zoau_version_higher_than(ansible_zos_module,min_version_str):
+    """Reports back if ZOAU version is high enough.
+
+    Parameters
+    ---------- 
     min_version_str : str
         The minimal desired ZOAU version '#.#.#'.
 
@@ -38,7 +66,7 @@ def is_zoau_version_higher_than(min_version_str):
     """
     if is_valid_version_string(min_version_str):
         # check zoau version on system (already a list)
-        system_version_list = get_zoau_version_str()
+        system_version_list = get_zoau_version_str(ansible_zos_module)
 
         # convert input to list format
         min_version_list = min_version_str.split('.')
@@ -106,8 +134,7 @@ def is_valid_version_string(version_str):
 
     return True
 
-
-def get_zoau_version_str():
+def get_zoau_version_str(ansible_zos_module):
     """Attempts to call zoaversion on target and parses out version string.
 
     Returns
@@ -116,6 +143,7 @@ def get_zoau_version_str():
         ZOAU version found in format [#,#,#]. There is a
         provision for a 4th level eg "v1.2.0.1".
     """
+    ZOAU_API_VERSION = get_zoau_version(ansible_zos_module)
     version_list = (
         ZOAU_API_VERSION.split('.')
     )

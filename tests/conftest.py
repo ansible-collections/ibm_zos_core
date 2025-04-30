@@ -40,11 +40,6 @@ def pytest_addoption(parser):
     Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
     will always return true because a default will be returned.
     """
-    """
-    Add CLI options and modify options for pytest-ansible where needed.
-    Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
-    will always return true because a default will be returned.
-    """
     parser.addoption(
         "--zinventory",
         "-Z",
@@ -123,8 +118,8 @@ def ansible_zos_module(request, z_python_interpreter):
     except Exception:
         pass
 
-# Call of the class by the class ls_Volume (volumes.py file) as many times needed
-# one time the array is filled
+    # Call of the class by the class ls_Volume (volumes.py file) as many times needed
+    # one time the array is filled
 @pytest.fixture(scope="session")
 def volumes_on_systems(ansible_zos_module, request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""

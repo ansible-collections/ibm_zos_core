@@ -79,13 +79,29 @@ trace_destination
 
   If the destination ``trace_destination`` is a USS file or path, the ``trace_destination`` must be an absolute path name.
 
-  Support MVS data set type SEQ, PDS, PDS/E(MEMBER)
+  Support MVS data set type PDS, PDS/E(MEMBER)
 
-  If the destination is an MVS data set name, the ``trace_destination`` provided must meet data set naming conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods.
+  If the destination is an MVS data set name, the ``trace_destination`` provided must meet data set naming conventions of one or more qualifiers, each from one to eight characters long, that are delimited by periods
+
+  Recommended characteristics for MVS data set are record length of 200, record format as vb and space primary 42000 kilobytes.
 
   | **required**: False
   | **type**: str
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: none
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 

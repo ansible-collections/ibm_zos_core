@@ -209,13 +209,13 @@ is_binary
 executable
   If set to ``true``, indicates that the file or library to be copied is an executable.
 
-  If the ``src`` executable has an alias, the alias information is also copied. If the ``dest`` is Unix, the alias is not visible in Unix, even though the information is there and will be visible if copied to a library.
-
   If *executable=true*, and ``dest`` is a data set, it must be a PDS or PDSE (library).
 
   If ``dest`` is a nonexistent data set, the library attributes assigned will be Undefined (U) record format with a record length of 0, block size of 32760 and the remaining attributes will be computed.
 
   If ``dest`` is a file, execute permission for the user will be added to the file (``u+x``).
+
+  If the ``src`` executable has an alias, the alias will not be copied unless ``aliases=true``.
 
   | **required**: False
   | **type**: bool
@@ -228,6 +228,8 @@ aliases
   Aliases are implicitly preserved when libraries are copied over to USS destinations. That is, when ``executable=True`` and ``dest`` is a USS file or directory, this option will be ignored.
 
   Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
+
+  If the ``dest`` is Unix, the alias is not visible in Unix, even though the information is there and will be visible if copied to a library.
 
   | **required**: False
   | **type**: bool
@@ -310,7 +312,7 @@ src
 
   If ``src`` is a generation data group (GDG), ``dest`` can be another GDG or a USS directory.
 
-  Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+  Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE. i.e. Using SOME.TEST.PDS(*) will copy all members from one PDS/E to another without removing the destination PDS/E.
 
   Required unless using ``content``.
 
@@ -357,7 +359,7 @@ dest_data_set
 
     | **required**: True
     | **type**: str
-    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, library, gdg
+    | **choices**: ksds, esds, rrds, lds, seq, pds, pdse, member, basic, large, library, gdg
 
 
   space_primary
@@ -685,6 +687,20 @@ template_parameters
     | **default**: True
 
 
+
+
+
+Attributes
+----------
+action
+  | **support**: full
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: none
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 

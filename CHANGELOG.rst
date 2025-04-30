@@ -4,6 +4,59 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.14.0-beta.1
+==============
+
+Release Summary
+---------------
+
+Release Date: '2025-04-30'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_copy - Adds ``large`` as a choice for ``type`` in ``dest_data_set``. (https://github.com/ansible-collections/ibm_zos_core/pull/1938)
+- zos_copy - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used. (https://github.com/ansible-collections/ibm_zos_core/pull/1968).
+- zos_copy - Adds support for copying in asynchronous mode inside playbooks. (https://github.com/ansible-collections/ibm_zos_core/pull/1953).
+- zos_copy - Removes the need to allow READ access to MVS.MCSOPER.ZOAU to execute the module by changing how the module checks if a data set is locked. (https://github.com/ansible-collections/ibm_zos_core/pull/1917).
+- zos_job_output - Add execution_time return value in the modules response. (https://github.com/ansible-collections/ibm_zos_core/pull/1891).
+- zos_job_query - Add execution_time return value in the modules response. (https://github.com/ansible-collections/ibm_zos_core/pull/1891).
+- zos_job_query - Loads correct bytes size value for dds when using zoau 1.3.4 or later (https://github.com/ansible-collections/ibm_zos_core/pull/1868).
+- zos_job_query - System and Subsystem are now retrieved from JES. (https://github.com/ansible-collections/ibm_zos_core/pull/1900).
+- zos_job_submit -  Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used. (https://github.com/ansible-collections/ibm_zos_core/pull/1962).
+- zos_job_submit - Add execution_time return value in the modules response. (https://github.com/ansible-collections/ibm_zos_core/pull/1891).
+- zos_job_submit - Loads correct bytes size value for dds when using zoau 1.3.4 or later (https://github.com/ansible-collections/ibm_zos_core/pull/1868).
+- zos_script - Adds error message for when remote source does not exist. (https://github.com/ansible-collections/ibm_zos_core/pull/1894).
+- zos_script - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used. (https://github.com/ansible-collections/ibm_zos_core/pull/1968).
+- zos_script - Adds support for running local and remote scripts in asynchronous mode inside playbooks. (https://github.com/ansible-collections/ibm_zos_core/pull/1934).
+- zos_script - Support automatic removal of carriage return line breaks [CR, CRLF] when copying local files to USS. (https://github.com/ansible-collections/ibm_zos_core/pull/1954).
+- zos_stat - Adds support to query data sets using their aliases. (https://github.com/ansible-collections/ibm_zos_core/pull/2048)
+- zos_unarchive - Adds support for unarchiving files in asynchronous mode inside playbooks. (https://github.com/ansible-collections/ibm_zos_core/pull/2020).
+- zos_zfs_resize - Adds validations for trace destination dataset used for trace verbose. (https://github.com/ansible-collections/ibm_zos_core/pull/1897).
+
+Bugfixes
+--------
+
+- zos_apf - When trying to add a library into the APF list that was already added, the module would fail. Fix now will not fail the module, and will inform the user that the library is already on the APF list. (https://github.com/ansible-collections/ibm_zos_core/pull/1893)
+- zos_copy - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false. (https://github.com/ansible-collections/ibm_zos_core/pull/1908)
+- zos_copy - When ``asa_text`` was set to true at the same time as ``force_lock``, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true. (https://github.com/ansible-collections/ibm_zos_core/pull/1941).
+- zos_copy - the carriage return characters were being removed from only first 1024 bytes of a file. Now fixed that issue to support removal of the carriage return characters from the complete file content if the file size is more than 1024 bytes. (https://github.com/ansible-collections/ibm_zos_core/pull/1954).
+- zos_data_set - Module would fail when trying to delete a non-existent Generation Data Group. Fix now provides a successful response with `changed=false`. (https://github.com/ansible-collections/ibm_zos_core/pull/1971).
+- zos_data_set - Module would fail with TypeError when trying to replace an existing GDG. Fix now allows to replacing a GDG. (https://github.com/ansible-collections/ibm_zos_core/pull/1964).
+- zos_job_output - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise. (https://github.com/ansible-collections/ibm_zos_core/pull/1916).
+- zos_job_query - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise. (https://github.com/ansible-collections/ibm_zos_core/pull/1916).
+- zos_job_submit - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise. (https://github.com/ansible-collections/ibm_zos_core/pull/1916).
+- zos_mount - Module failed when using persistent option with a data set that contains non UTF-8 characters. Fix now can use a data set with non UTF-8 characters as data_store. (https://github.com/ansible-collections/ibm_zos_core/pull/1871).
+
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_stat - Retrieve facts from MVS data sets, USS files, aggregates and generation data groups
+
 v1.13.0
 =======
 

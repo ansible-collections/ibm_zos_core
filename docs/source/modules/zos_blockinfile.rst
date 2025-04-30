@@ -193,6 +193,20 @@ indentation
 
 
 
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: none
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
+
+
 Examples
 --------
 
@@ -319,6 +333,8 @@ Notes
    When using ``with_*`` loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
 
    When more then one block should be handled in a file you must change the *marker* per task.
+
+   When working with a backup of a sequential dataset, the backup name should also be a sequential dataset. This will avoid the false positive and error condition during backup.
 
 
 

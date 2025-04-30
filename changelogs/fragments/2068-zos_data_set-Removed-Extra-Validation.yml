@@ -1,4 +1,4 @@
 minor_changes:
    - zos_data_set - Removed Extra Validation step Error for multi volume cases because its being handled
-     by ZOAU
+     by ZOAU 
      (https://github.com/ansible-collections/ibm_zos_core/pull/2068).

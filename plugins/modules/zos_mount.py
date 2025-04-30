@@ -338,8 +338,8 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: unmounted
-    unmount_opts: REMOUNT
-    opts: same
+    unmount_opts: remount
+    mount_opts: same
 
 - name: Mount a filesystem readonly.
   zos_mount:
@@ -347,7 +347,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    mount_opts: RO
+    mount_opts: ro
 
 - name: Mount a filesystem and record change in BPXPRMAA.
   zos_mount:
@@ -385,7 +385,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    opts: nowait
+    mount_opts: nowait
 
 - name: Mount a filesystem with no security checks.
   zos_mount:
@@ -393,7 +393,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    mount_opts: NOSECURITY
+    mount_opts: nosecurity
 
 - name: Mount a filesystem, limiting automove to 4 devices.
   zos_mount:
@@ -401,7 +401,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    automove: AUTOMOVE
+    automove: automove
     automove_list: I,DEV1,DEV2,DEV3,DEV9
 
 - name: Mount a filesystem, limiting automove to all except 4 devices.
@@ -410,7 +410,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: zfs
     state: mounted
-    automove: AUTOMOVE
+    automove: automove
     automove_list: EXCLUDE,DEV4,DEV5,DEV6,DEV7
 """
 
@@ -465,12 +465,12 @@ unmount_opts:
     description: Describes how the unmount is to be performed.
     returned: changed and if state=unmounted
     type: str
-    sample: DRAIN
+    sample: drain
 mount_opts:
     description: Options available to the mount.
     returned: whenever non-None
     type: str
-    sample: RW,NOSECURITY
+    sample: rw,nosecurity
 src_params:
     description: Specifies a parameter string to be passed to the file system type.
     returned: whenever non-None
@@ -503,7 +503,7 @@ automove:
           a shutdown, PFS termination, dead system takeover, or when file system move occurs.
     returned: if Non-None
     type: str
-    sample: AUTOMOVE
+    sample: automove
 automove_list:
     description: This specifies the list of servers to include or exclude as destinations.
     returned: if Non-None

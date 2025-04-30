@@ -16,7 +16,7 @@ __metaclass__ = type
 import re
 import tempfile
 import traceback
-from os import path, walk
+from os import path, walk, environ
 from random import sample
 from string import ascii_uppercase, digits
 
@@ -35,12 +35,13 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, exceptions, gdgs
+    from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
     gdgs = ZOAUImportError(traceback.format_exc())
-    Dataset = ZOAUImportError(traceback.format_exc())
+    mvscmd = ZOAUImportError(traceback.format_exc())
+    ztypes = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):
@@ -223,7 +224,7 @@ class DataSet(object):
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
-                if "Error Code: 0x4704" in e.msg:
+                if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
                         name, volumes, tmphlq=tmp_hlq
                     )
@@ -2104,6 +2105,119 @@ class DataSet(object):
             else:
                 volume_string += single_volume_string + ")\n"
         return volume_string
+
+    @staticmethod
+    def get_name_if_data_set_is_alias(name, tmp_hlq=None):
+        """Checks the catalog to see if 'name' corresponds to a data set
+        alias and returns the original data set name in case it is.
+        Creates a temp data set to hold the IDCAMS command.
+
+        Parameters
+        ----------
+        name : str
+            Name of a data set or alias.
+
+        Keyword Parameters
+        ------------------
+        tmp_hlq : str
+            Temp HLQ to use with mvscmdauth.
+
+        Returns
+        -------
+        tuple(bool, str)
+            A tuple containing whether name corresponds to a data
+            set alias and the name of the data set that the alias
+            points to.
+        """
+        # We need to unescape because this call to the system can handle
+        # special characters just fine.
+        name = name.upper().replace("\\", '')
+        idcams_cmd = f" LISTCAT ENTRIES('{name}') ALL"
+        response = DataSet._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
+
+        if response.rc > 0 or response.stderr_response != '':
+            raise MVSCmdExecError(
+                rc=response.rc,
+                stdout=response.stdout_response,
+                stderr=response.stderr_response
+            )
+
+        if re.search(r'(ALIAS -+)(1)', response.stdout_response):
+            base_name = re.search(
+                r'(ASSOCIATIONS\s*\n\s*[0-9a-zA-Z]+-+)([0-9a-zA-Z\.@\$#-]+)',
+                response.stdout_response
+            ).group(2)
+            return True, base_name
+        else:
+            return False, name
+
+    @staticmethod
+    def _execute_idcams_cmd(
+        cmd,
+        tmp_hlq=None,
+        space_primary=1,
+        space_type='k',
+        record_format='fb',
+        record_length=120
+    ):
+        """Runs an IDCAMS command using mvscmdauth's Python API.
+
+        Parameters
+        ----------
+            cmd : str
+                IDCAMS command to run.
+
+        Keyword Parameters
+        ------------------
+            tmp_hlq : str
+                Temp HLQ to use with mvscmdauth.
+            space_primary : int
+                Units of primary space for the input data set for IDCAMS.
+            space_type : str
+                Unit of data set space.
+            record_format : str
+                Record format for the input data set.
+            record_length : int
+                Record length for the input data set.
+
+        Returns
+        -------
+        ztypes.ZOAUResponse
+            Response object returned by mvscmd.execute_authorized.
+        """
+        temp_dd_location = None
+
+        try:
+            temp_dd_location = DataSet.create_temp(
+                hlq=tmp_hlq,
+                type='SEQ',
+                record_format=record_format,
+                space_primary=space_primary,
+                space_secondary=0,
+                space_type=space_type,
+                record_length=record_length
+            )
+
+            datasets.write(temp_dd_location, cmd)
+            cmd_dd = ztypes.DatasetDefinition(temp_dd_location, disposition='SHR')
+
+            dds = [
+                ztypes.DDStatement('SYSPRINT', '*'),
+                ztypes.DDStatement('SYSIN', cmd_dd)
+            ]
+
+            if tmp_hlq:
+                environ['TMPHLQ'] = tmp_hlq
+
+            response = mvscmd.execute_authorized('IDCAMS', dds=dds)
+
+            if tmp_hlq:
+                del environ['TMPHLQ']
+
+            return response
+        finally:
+            if temp_dd_location:
+                datasets.delete(temp_dd_location)
 
 
 class DataSetUtils(object):

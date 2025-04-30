@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: "1.13.0"
+version: "1.14.0-beta.1"
 
 # Collection README file
 readme: README.md
@@ -19,6 +19,9 @@ authors:
   - Ivan Moreno <ivan.moreno.soto@ibm.com>
   - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
   - Marcel Gutierrez <andre.marcel.gutierrez@ibm.com>
+  - Surendra Ravella <surendra.ravella@ibm.com>
+  - Rohitash Goyal <rohitash.goyal@ibm.com>
+  - Mayank Mani <mayank.mani@ibm.com>
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.

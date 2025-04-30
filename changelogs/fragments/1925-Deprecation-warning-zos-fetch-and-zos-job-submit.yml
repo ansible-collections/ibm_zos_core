@@ -1,5 +1,0 @@
-trivial:
-  - tests/functional/modules/test_zos_fetch_func.py- Fixed deprecation warning invalid escape sequence using '\\c\' instead of '\c\'.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1925).
-  - tests/functional/modules/test_zos_job_submit_func.py- Fixed deprecation warning invalid escape sequence using '\\$' instead of '\$'.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1925).

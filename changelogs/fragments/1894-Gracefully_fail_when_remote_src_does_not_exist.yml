@@ -1,3 +1,0 @@
-minor_changes:
-  - zos_script - Adds error message for when remote source does not exist.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1894).

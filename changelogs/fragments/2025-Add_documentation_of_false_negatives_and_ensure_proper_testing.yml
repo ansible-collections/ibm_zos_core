@@ -1,4 +1,0 @@
-trivial:
-  - zos_blockinfile - Updated documentation on zos_blockinfile to notify about false positive
-    and add test cases to avoid extra cases of false positives.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/2025).

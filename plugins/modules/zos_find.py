@@ -110,7 +110,7 @@ options:
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
       - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
-      - C(migrated) referes to listing migrated datasets. Only excludes option can be used along 
+      - C(migrated) referes to listing migrated datasets. Only excludes option can be used along
         with this option. The module searches based on only dataset patterns.
     choices:
       - nonvsam
@@ -663,6 +663,7 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
 
         return filtered_data_sets
 
+
 # TODO:
 # Use dls -m command output only when ZOAU adds volser/volume information also for datasets
 def migrated_filter(module, data_sets, excludes):
@@ -695,7 +696,7 @@ def migrated_filter(module, data_sets, excludes):
                 rc=rc, stdout=out, stderr=err
             )
         try:
-            #Fetch only active datasets
+            # Fetch only active datasets
             init_filtered_data_sets = data_set_filter(
                 module,
                 None,
@@ -703,9 +704,8 @@ def migrated_filter(module, data_sets, excludes):
             )
             active_datasets = \
                 init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
-            
-            #Create a result list of datasets which are existing in migrated datasets list and 
-            #not existed in active datasets list
+            # Create a result list of datasets which are existing in migrated datasets list and
+            # not existed in active datasets list
             for line in out.splitlines():
                 ds = line.strip()
                 if ds not in active_datasets:
@@ -1152,9 +1152,7 @@ def run_module(module):
         else:
             module.fail_json(size=size, msg="failed to process size")
     if resource_type == "MIGRATED":
-        filtered_data_sets = migrated_filter(
-                module, patterns, excludes
-            )
+        filtered_data_sets = migrated_filter(module, patterns, excludes)
     if resource_type == "NONVSAM":
         if contains:
             init_filtered_data_sets = content_filter(

@@ -636,5 +636,4 @@ def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
         excludes='.*F4'
     )
     for val in find_res.contacted.values():
-        print(val)
         assert len(val.get('data_sets')) != 0

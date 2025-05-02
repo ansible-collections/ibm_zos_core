@@ -164,6 +164,27 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
+SRC_INVALID_UTF8 = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
+MOUNTPOINT('/tmp/src/somedirectory') 0xC1
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+MOUNTPOINT('/tmp/zfs_aggr1')
+TYPE('ZFS')
+SECURITY
+"""
+
+SRC_INVALID_UTF8_REPLACE = """MOUNT FILESYSTEM('TEST.ZFS.DATA.USER')
+MOUNTPOINT('/tmp/src/somedirectory') 0xC1
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+('/tmp/zfs_aggr1')
+TYPE('ZFS')
+SECURITY"""
+
 #####################
 #  Set up testing
 #####################
@@ -945,6 +966,58 @@ def test_gdg_ds(ansible_zos_module):
 #########################
 # Encoding test cases
 #########################
+
+#########################
+# No UTF-8 Characters
+#########################
+
+def test_uss_after_no_utf_8_char(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"MOUNTPOINT",
+        "after":"export PATH",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = SRC_INVALID_UTF8
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == SRC_INVALID_UTF8_REPLACE
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_after_no_utf_8_char(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = {
+        "regexp":"MOUNTPOINT",
+        "after":"export PATH",
+    }
+    ds_name = get_tmp_ds_name()
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
+    content = SRC_INVALID_UTF8
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["target"] = ds_full_name
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == ds_full_name
+            assert result.get("found") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == SRC_INVALID_UTF8_REPLACE
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 #########################
 # Negative test cases

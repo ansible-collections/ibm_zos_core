@@ -1722,7 +1722,8 @@ return 0"""
         ds_type,
         tmp_hlq=None,
         missing_volumes=None,
-        alias=None
+        alias=None,
+        migrated=False
     ):
         """Create a new handler that will handle the query of a sequential or
         partitioned data set. This subclass should only be instantiated by
@@ -1739,6 +1740,7 @@ return 0"""
             missing_volumes (list, optional) -- List of volumes where a data set was searched
                 but not found.
             alias (str, optional) -- Alias of the data set that the user provided.
+            migrated (bool, optional) -- Whether it is a migrated data set.
         """
         super().__init__(
             name,
@@ -1751,6 +1753,7 @@ return 0"""
             alias=alias
         )
         self.missing_volumes = missing_volumes
+        self.migrated = migrated
 
     def query(self):
         """Uses LISTDSI to query facts about a data set, while also handling
@@ -1767,6 +1770,14 @@ return 0"""
         """
         data = super().query()
         attributes = {}
+
+        if self.migrated:
+            data['attributes'] = fill_missing_attrs(
+                self._parse_attributes(attributes),
+                self.expected_attrs
+            )
+
+            return data
 
         try:
             # First creating a temp data set to hold the LISTDSI script.
@@ -2337,22 +2348,24 @@ def get_data_set_handler(
 
     alias_name = None
 
-    # TODO: check what happens when not recalling a migrated data set.
     has_been_migrated = DataSet.check_if_data_set_migrated(name)
-    if has_been_migrated and recall and not module.check_mode:
-        rc, stdout, stderr = DataSet.recall_migrated_data_set(
-            name,
-            module,
-            tmp_hlq=tmp_hlq
-        )
-
-        if rc != 0 or stderr != '':
-            raise QueryException(
-                'An error ocurred while recalling a migrated data set.',
-                rc,
-                stdout,
-                stderr
+    if has_been_migrated:
+        if recall and not module.check_mode:
+            rc, stdout, stderr = DataSet.recall_migrated_data_set(
+                name,
+                module,
+                tmp_hlq=tmp_hlq
             )
+
+            if rc != 0 or stderr != '':
+                raise QueryException(
+                    'An error ocurred while recalling a migrated data set.',
+                    rc,
+                    stdout,
+                    stderr
+                )
+        else:
+            return NonVSAMDataSetHandler(name, 'MIGRAT', module, sms_managed, None, migrated=True)
 
     try:
         is_an_alias, base_name = DataSet.get_name_if_data_set_is_alias(

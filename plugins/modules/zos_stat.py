@@ -1722,7 +1722,7 @@ return 0"""
         ds_type,
         tmp_hlq=None,
         missing_volumes=None,
-        alias=None,
+        alias=None
     ):
         """Create a new handler that will handle the query of a sequential or
         partitioned data set. This subclass should only be instantiated by

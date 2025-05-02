@@ -1406,10 +1406,6 @@ class DataSet(object):
                 create_exception.response.stdout_response + "\n" + create_exception.response.stderr_response
             )
         except exceptions.DatasetVerificationError:
-            # verification of a data set spanning multiple volumes is currently broken in ZOAU v.1.3.0
-            if volumes and len(volumes) > 1:
-                if DataSet.data_set_cataloged(name, volumes, tmphlq=tmp_hlq):
-                    return 0
             raise DatasetCreateError(
                 raw_name if raw_name else name,
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",

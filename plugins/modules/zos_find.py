@@ -110,12 +110,15 @@ options:
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
       - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
+      - C(migrated) referes to listing migrated datasets. Only excludes option can be used along 
+        with this option. The module searches based on only dataset patterns.
     choices:
       - nonvsam
       - cluster
       - data
       - index
       - gdg
+      - migrated
     type: str
     required: false
     default: "nonvsam"
@@ -189,6 +192,9 @@ notes:
   - The time taken to execute the module is proportional to the number of data
     sets present on the system and how large the data sets are.
   - When searching for content within data sets, only non-binary content is considered.
+  - When searching for migrated datasets, output retreived by comparing results of dls -m and dls -l commands.
+    As migrated dataset information can't be retrived without recalling, other options like age, contains ..etc are not
+    supported. Only excludes option is supported.
 seealso:
 - module: zos_data_set
 """
@@ -213,7 +219,7 @@ EXAMPLES = r"""
   zos_find:
     patterns: 'IMS.LIB.*'
     contains: 'hello'
-    excludes: '*.TEST'
+    excludes: '.*TEST'
 
 - name: Find all members starting with characters 'TE' in a given list of PDS patterns
   zos_find:
@@ -245,6 +251,12 @@ EXAMPLES = r"""
     limit: 30
     scratch: true
     purge: true
+
+- name: Find all Migrated Datasets starting with the word 'USER'
+  zos_find:
+    patterns:
+      - USER.*
+    resource_type: migrated
 """
 
 
@@ -650,6 +662,64 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
             module.fail_json(repr(e))
 
         return filtered_data_sets
+
+# TODO:
+# Use dls -m command output only when ZOAU adds volser/volume information also for datasets
+def migrated_filter(module, data_sets, excludes):
+    """ Filter Migrated Datasets by comparing results of dls -m and dls -l commands.
+
+    Parameters
+    ----------
+    module : AnsibleModule
+        The Ansible module object being used.
+    data_sets : set[str]
+        A set of data set names.
+
+    Returns
+    -------
+    set[str]
+        Matched Migrated datasets base names.
+
+    Raises
+    ------
+    fail_json
+        Non-zero return code received while executing ZOAU shell command 'dls'.
+    """
+    filtered_data_sets = set()
+    for ds in data_sets:
+        # Fetch active and migrated datasets
+        rc, out, err = _dls_wrapper(ds, migrated=True, list_details=True)
+        if rc != 0:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'dls'",
+                rc=rc, stdout=out, stderr=err
+            )
+        try:
+            #Fetch only active datasets
+            init_filtered_data_sets = data_set_filter(
+                module,
+                None,
+                [ds]
+            )
+            active_datasets = \
+                init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
+            
+            #Create a result list of datasets which are existing in migrated datasets list and 
+            #not existed in active datasets list
+            for line in out.splitlines():
+                ds = line.strip()
+                if ds not in active_datasets:
+                    if excludes is not None:
+                        for ex_pat in excludes:
+                            if not _match_regex(module, ex_pat, ds):
+                                filtered_data_sets.add(ds)
+                                break
+                    else:
+                        filtered_data_sets.add(ds)
+        except Exception as e:
+            module.fail_json(repr(e))
+
+    return filtered_data_sets
 
 
 # TODO:
@@ -1081,6 +1151,10 @@ def run_module(module):
             size = int(m.group(1)) * bytes_per_unit.get(m.group(2), 1)
         else:
             module.fail_json(size=size, msg="failed to process size")
+    if resource_type == "MIGRATED":
+        filtered_data_sets = migrated_filter(
+                module, patterns, excludes
+            )
     if resource_type == "NONVSAM":
         if contains:
             init_filtered_data_sets = content_filter(
@@ -1179,7 +1253,7 @@ def main():
             ),
             resource_type=dict(
                 type="str", required=False, default="nonvsam",
-                choices=["cluster", "data", "index", "nonvsam", "gdg"]
+                choices=["cluster", "data", "index", "nonvsam", "gdg", "migrated"]
             ),
             volume=dict(
                 type="list",
@@ -1217,7 +1291,7 @@ def main():
             arg_type="str",
             required=False,
             default="nonvsam",
-            choices=["cluster", "data", "index", "nonvsam", "gdg"]
+            choices=["cluster", "data", "index", "nonvsam", "gdg", "migrated"]
         ),
         volume=dict(arg_type="list", required=False, aliases=["volumes"]),
         limit=dict(type="int", required=False),

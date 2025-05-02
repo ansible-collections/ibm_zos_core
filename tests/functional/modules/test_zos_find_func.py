@@ -617,3 +617,24 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
     finally:
         for ds in special_names:
             hosts.all.shell(cmd=f"drm '{ds}'")
+
+
+def test_find_migrated_data_sets(ansible_zos_module):
+    hosts = ansible_zos_module
+    find_res = hosts.all.zos_find(
+        patterns=['IMSBLD.I15STSMM.*','IMSBLD.DCC71QPP.*'],
+        resource_type='migrated'
+    )
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) != 0
+
+def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
+    hosts = ansible_zos_module
+    find_res = hosts.all.zos_find(
+        patterns=['IMSBLD.I15STSMM.*','IMSBLD.DCC71QPP.*'],
+        resource_type='migrated',
+        excludes='.*F4'
+    )
+    for val in find_res.contacted.values():
+        print(val)
+        assert len(val.get('data_sets')) != 0

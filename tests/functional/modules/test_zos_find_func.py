@@ -18,7 +18,7 @@ from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
-
+import re
 import pytest
 
 # hlq used across the test suite.
@@ -627,6 +627,8 @@ def test_find_migrated_data_sets(ansible_zos_module):
     )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) != 0
+        for ds in val.get('data_sets'):
+            assert ds.get("type") == "MIGRATED"
 
 def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
     hosts = ansible_zos_module
@@ -637,3 +639,5 @@ def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
     )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) != 0
+        for ds in val.get('data_sets'):
+            assert not re.fullmatch(r".*F4", ds.get("name"))

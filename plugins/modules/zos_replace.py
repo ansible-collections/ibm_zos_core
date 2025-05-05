@@ -236,7 +236,10 @@ def replace_text(content, regexp, replace):
     pattern = re.compile(regexp, re.MULTILINE)
     modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
 
-    return modified_text.split("\n"), times_replaced
+    modified_list = modified_text.split("\n")
+    modified_list = [x for x in modified_list if x.strip() or x.lstrip()]
+
+    return modified_list, times_replaced
 
 
 def merge_text(original, replace, begin, end):
@@ -257,7 +260,7 @@ def merge_text(original, replace, begin, end):
     ----------
         list : The full text on list mode
     """
-    replace = [x for x in replace if x.strip() or not x.isspace()]
+    replace = [x for x in replace if x.strip() or x.lstrip()]
     if len(replace) != 0:
         # Case for after exist and before dont
         if begin != 0 and end == len(original):

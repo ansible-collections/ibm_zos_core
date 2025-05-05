@@ -111,7 +111,7 @@ options:
         components of a VSAM cluster.
       - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
       - C(migrated) refers to listing migrated datasets. Only excludes option can be used along
-        with this option. The module searches based on only dataset patterns.
+        with this option. The module searches based only on dataset patterns.
     choices:
       - nonvsam
       - cluster

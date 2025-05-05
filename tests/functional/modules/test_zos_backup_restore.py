@@ -243,6 +243,9 @@ def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover)
             recover=recover,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in output"
         assert_data_set_or_file_exists(hosts, backup_name)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
@@ -282,6 +285,9 @@ def test_backup_of_data_set_when_backup_dest_exists(
         )
         if overwrite:
             assert_module_did_not_fail(results)
+            for result in results.contacted.values():
+                assert result.get("backup_name") == backup_name, \
+                    f"Backup name '{backup_name}' not found in output"
         else:
             assert_module_failed(results)
         assert_data_set_or_file_exists(hosts, backup_name)
@@ -329,6 +335,13 @@ def test_backup_and_restore_of_data_set(
             overwrite=overwrite,
             recover=recover,
         )
+        assert_module_did_not_fail(results)
+        # NEW: Assert backup_name appears in output
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in output"
+        # Verify backup file/dataset exists
+        assert_data_set_or_file_exists(hosts, backup_name)
         if not overwrite:
             new_hlq = "N" + get_random_q(4)
             hlqs.append(new_hlq)
@@ -341,6 +354,9 @@ def test_backup_and_restore_of_data_set(
             overwrite=overwrite,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                "Backup name '{backup_name}' not found in restore output"
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -391,6 +407,9 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
             args["space_type"] = space_type
         results = hosts.all.zos_backup_restore(**args)
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in backup output"
         assert_data_set_or_file_exists(hosts, backup_name)
         args = dict(
             operation="restore",
@@ -403,6 +422,9 @@ def test_backup_and_restore_of_data_set_various_space_measurements(
             args["space_type"] = space_type
         results = hosts.all.zos_backup_restore(**args)
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in restore output"
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -442,6 +464,9 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
             backup_name=backup_name,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in backup output"
         assert_data_set_or_file_exists(hosts, backup_name)
         results = hosts.all.zos_backup_restore(
             operation="restore",
@@ -449,6 +474,9 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
             hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in restore output"
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=backup_name,
@@ -457,6 +485,9 @@ def test_backup_and_restore_of_data_set_when_restore_location_exists(
         )
         if overwrite:
             assert_module_did_not_fail(results)
+            for result in results.contacted.values():
+                assert result.get("backup_name") == backup_name, \
+                f"Backup name '{backup_name}' not found in restore output"
         else:
             assert_module_failed(results)
     finally:
@@ -490,6 +521,9 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
             backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in backup output"
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
@@ -499,6 +533,9 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module):
             hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in restore output"
     finally:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, data_set_name2)
@@ -531,6 +568,9 @@ def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
             backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in backup output"
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
@@ -540,6 +580,9 @@ def test_backup_and_restore_of_multiple_data_sets_by_hlq(ansible_zos_module):
             hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in restore output"
         assert_data_set_exists(hosts, data_set_backup_location)
     finally:
         delete_data_set_or_file(hosts, data_set_name)
@@ -574,6 +617,9 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
             backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in backup output"
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
@@ -583,6 +629,9 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
             hlq=new_hlq,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in restore output"
         assert_data_set_exists(hosts, data_set_backup_location)
         assert_data_set_does_not_exist(hosts, data_set_restore_location2)
     finally:
@@ -706,6 +755,9 @@ def test_restore_of_data_set_when_volume_does_not_exist(ansible_zos_module):
             backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in backup output"
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
@@ -738,12 +790,19 @@ def test_backup_and_restore_a_data_set_with_same_hlq(ansible_zos_module):
         )
         delete_data_set_or_file(hosts, data_set_name)
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in restore output"
         assert_data_set_or_file_exists(hosts, data_set_backup_location)
         results = hosts.all.zos_backup_restore(
             operation="restore",
             backup_name=data_set_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_set_backup_location, \
+                f"Backup name '{data_set_backup_location}' not found in restore output"
+        assert_data_set_or_file_exists(hosts, data_set_backup_location)
         # Check the HLQ in the response
         assert_data_set_or_file_exists(hosts, data_set_name)
     finally:
@@ -858,6 +917,8 @@ def test_backup_gds(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+            assert result.get("backup_name") == backup_dest, \
+                f"Backup_name '{backup_dest}' not found in backup output"
     finally:
         hosts.all.shell(cmd=f"drm ANSIBLE.* ")
 
@@ -889,26 +950,33 @@ def test_backup_into_gds(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+        backup_target = f"{data_set_name}.G0002V00"
         results = hosts.all.zos_backup_restore(
             operation="backup",
             data_sets=dict(include=[ds_name]),
-            backup_name=f"{data_set_name}.G0002V00",
+            backup_name=backup_target,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+            assert result.get("backup_name") == backup_target, \
+                f"Expected backup_name '{backup_target}' not found in backup output"
         escaped_ds_name = ds_name.replace('$', '\$')
         results = hosts.all.shell(cmd=f"drm \"{escaped_ds_name}\"")
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+        restore_source = f"{data_set_name}(0)"
         results = hosts.all.zos_backup_restore(
             operation="restore",
-            backup_name=f"{data_set_name}(0)",
+            backup_name=restore_source,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
+            assert result.get("backup_name") == restore_source, \
+                f"Backup_name '{restore_source}' not found in output"
+
     finally:
         hosts.all.shell(cmd=f"drm ANSIBLE.* ; drm OMVSADM.*")
 
@@ -940,6 +1008,9 @@ def test_backup_tolerate_enqueue(ansible_zos_module):
             backup_name=data_sets_backup_location,
         )
         assert_module_did_not_fail(results)
+        for result in results.contacted.values():
+            assert result.get("backup_name") == data_sets_backup_location, \
+                f"Backup name '{data_sets_backup_location}' not found in backup output"
         assert_data_set_or_file_exists(hosts, data_sets_backup_location)
     finally:
         hosts.all.shell(cmd="rm -rf " + temp_file)

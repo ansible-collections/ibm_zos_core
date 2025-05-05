@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
@@ -81,7 +81,7 @@ def create_sourcefile(hosts, volume):
     mount_result = hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
-        + " -volumes {0} -cylinders 200 1".format(volume),
+        + " -volumes {0} -cylinders 10 1".format(volume),
         executable=SHELL_EXECUTABLE,
         stdin="",
     )

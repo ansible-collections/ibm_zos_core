@@ -2149,7 +2149,7 @@ class DataSet(object):
             Return code, standard output and standard error from
             the HRECALL call.
         """
-        name = name.replace('$', '\$')
+        name = name.replace('$', '\\$')
         recall_cmd = f"""tsocmd "HRECALL '{name}'" """
         rc, stdout, stderr = module.run_command(recall_cmd)
 

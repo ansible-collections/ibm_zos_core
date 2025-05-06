@@ -163,9 +163,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import datasets, zoau_io
+    from zoautil_py import zoau_io
 except Exception:
-    datasets = ZOAUImportError(traceback.format_exc())
     zoau_io = ZOAUImportError(traceback.format_exc())
 
 
@@ -332,7 +331,7 @@ def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", befo
 
     if not bool(after) and not bool(before):
         new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
-        return new_full_text, replaced
+        return new_full_text, replaced, new_full_text
 
     pattern_after = u''
     pattern_before = u''
@@ -376,7 +375,7 @@ def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", befo
 
     new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code], regexp=regexp, replace=replace)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
-    return full_new_text, replaced
+    return full_new_text, replaced, new_text
 
 
 def replace_ds(ds, regexp, replace, module, encoding="cp1047", after="", before=""):
@@ -411,7 +410,7 @@ def replace_ds(ds, regexp, replace, module, encoding="cp1047", after="", before=
 
     if not bool(after) and not bool(before):
         new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
-        return new_full_text, replaced
+        return new_full_text, replaced, new_full_text
 
     pattern_begin = re.compile(after, re.DOTALL) if after else after
     pattern_end = re.compile(before, re.DOTALL) if before else before
@@ -448,7 +447,7 @@ def replace_ds(ds, regexp, replace, module, encoding="cp1047", after="", before=
 
     new_text, replaced = replace_text(content=decode_list[begin_block_code : end_block_code], regexp=regexp, replace=replace)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
-    return full_new_text, replaced
+    return full_new_text, replaced, new_text
 
 
 def run_module():
@@ -514,12 +513,13 @@ def run_module():
             if uss:
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+                backup_ds = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+                result['backup_name'] = resolve_src_name(module=module, name=backup_ds, results=result)
         except Exception as err:
             module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}", **result)
 
     if uss:
-        full_text, replaced = replace_uss(file=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
+        full_text, replaced, fragment = replace_uss(file=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
         try:
@@ -540,27 +540,20 @@ def run_module():
             os.remove(tmp_file)
 
     else:
-        full_text, replaced = replace_ds(ds=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
-        bk_ds = datasets.tmp_name()
-        datasets.create(name=bk_ds, dataset_type="SEQ")
+        full_text, replaced, fragment = replace_ds(ds=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
         try:
-            for line in full_text:
-                rc_write = datasets.write(dataset_name=bk_ds, content=line.rstrip(), append=True)
-                if rc_write != 0:
-                    raise Exception("Non zero return code from datasets.write.")
+            # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
+            with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as dataset_write:
+                for line in full_text:
+                    dataset_write.write(line.rstrip())
         except Exception as e:
-            datasets.delete(dataset=bk_ds)
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",
                 **result
             )
 
-        try:
-            datasets.copy(source=bk_ds, target=src)
-        finally:
-            datasets.delete(dataset=bk_ds)
-
     changed = True if replaced > 0 else False
+    result["replaced"] = fragment
     result["found"] = replaced
     result["changed"] = changed
 

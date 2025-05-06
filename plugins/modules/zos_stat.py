@@ -2357,7 +2357,9 @@ def get_data_set_handler(
                 tmp_hlq=tmp_hlq
             )
 
-            if rc != 0 or stderr != '':
+            # Ignoring whatever comes out of stderr because tsocmd decides
+            # to pollute it even when the command runs fine.
+            if rc != 0:
                 raise QueryException(
                     'An error ocurred while recalling a migrated data set.',
                     rc,

@@ -71,6 +71,24 @@ sms_managed
   | **default**: False
 
 
+recall
+  Whether to recall a migrated data set to fully query its attributes.
+
+  If set to ``false``, the module will return a limited amount of information for a migrated data set.
+
+  Recalling a data set will make the module take longer to execute.
+
+  Ignored when the data set is not found to be migrated.
+
+  The data set will not be migrated again afterwards.
+
+  The data set will not get recalled when running the module in check mode.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
 tmp_hlq
   Override the default high level qualifier (HLQ) for temporary data sets.
 
@@ -520,7 +538,7 @@ stat
       | **returned**: success
       | **type**: bool
 
-    password
+    key_status
       Whether the data set has a password set to read/write.
 
       Value can be either one of 'none', 'read' or 'write'.

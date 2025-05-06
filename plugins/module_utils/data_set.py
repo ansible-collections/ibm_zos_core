@@ -2123,7 +2123,7 @@ class DataSet(object):
         migrated_list = datasets.list_dataset_names(name, migrated=True)
 
         if name in migrated_list and name not in non_migrated_list:
-            has_been_migrated =  True
+            has_been_migrated = True
 
         return has_been_migrated
 

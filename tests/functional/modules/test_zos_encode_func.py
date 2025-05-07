@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -76,7 +76,6 @@ VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
 """
-
 
 def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, key_offset=None):
     """Creates a new VSAM on the system.

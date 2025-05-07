@@ -224,7 +224,7 @@ class DataSet(object):
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
-                if "Error Code: 0x4704" in e.msg:
+                if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
                         name, volumes, tmphlq=tmp_hlq
                     )

@@ -520,7 +520,7 @@ stat
       | **returned**: success
       | **type**: bool
 
-    password
+    key_status
       Whether the data set has a password set to read/write.
 
       Value can be either one of 'none', 'read' or 'write'.

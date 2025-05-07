@@ -245,10 +245,9 @@ empty
 
   If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
 
-  Default is false.
-
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 extended
@@ -258,10 +257,9 @@ extended
 
   If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
 
-  Default is false.
-
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 fifo
@@ -271,10 +269,9 @@ fifo
 
   If true, the order is the oldest GDS defined to the newest GDS.
 
-  Default is false.
-
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 limit
@@ -295,6 +292,7 @@ purge
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 scratch
@@ -304,6 +302,7 @@ scratch
 
   | **required**: False
   | **type**: bool
+  | **default**: False
 
 
 volumes
@@ -588,10 +587,9 @@ batch
 
     If true, removes all GDS entries from a GDG base when a new GDS is created that causes the GDG limit to be exceeded.
 
-    Default is false.
-
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   extended
@@ -601,10 +599,9 @@ batch
 
     If true, allow up to 999 generation data sets (GDS) to be associated with the GDG.
 
-    Default is false.
-
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   fifo
@@ -614,10 +611,9 @@ batch
 
     If true, the order is the oldest GDS defined to the newest GDS.
 
-    Default is false.
-
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   limit
@@ -638,6 +634,7 @@ batch
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   scratch
@@ -647,6 +644,7 @@ batch
 
     | **required**: False
     | **type**: bool
+    | **default**: False
 
 
   volumes
@@ -697,6 +695,20 @@ batch
     | **default**: False
 
 
+
+
+
+Attributes
+----------
+action
+  | **support**: none
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 
 

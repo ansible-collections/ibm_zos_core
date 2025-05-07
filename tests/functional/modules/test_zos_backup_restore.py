@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -161,6 +161,7 @@ def assert_data_set_or_file_does_not_exist(hosts, name):
 def assert_data_set_exists(hosts, data_set_name):
     results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
+        print(result)
         found = search(
             "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )
@@ -707,7 +708,6 @@ def test_backup_of_data_set_when_data_set_does_not_exist(
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
         delete_remnants(hosts)
-
 
 def test_backup_of_data_set_when_volume_does_not_exist(ansible_zos_module):
     hosts = ansible_zos_module

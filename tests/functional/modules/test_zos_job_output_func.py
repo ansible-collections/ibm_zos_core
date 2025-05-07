@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2024
+# Copyright (c) IBM Corporation 2019, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -102,6 +102,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
             src=f"{TEMP_PATH}/SAMPLE", location="uss", volume=None
         )
         for job in jobs.contacted.values():
+            print(job)
             assert job.get("jobs") is not None
 
         for job in jobs.contacted.values():

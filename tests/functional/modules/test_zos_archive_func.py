@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023, 2024
+# Copyright (c) IBM Corporation 2023, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1046,7 +1046,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
             cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
-  
+
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 

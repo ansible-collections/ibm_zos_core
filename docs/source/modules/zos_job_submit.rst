@@ -273,6 +273,20 @@ template_parameters
 
 
 
+Attributes
+----------
+action
+  | **support**: full
+  | **description**: Indicates this has a corresponding action plugin so some parts of the options can be executed on the controller.
+async
+  | **support**: full
+  | **description**: Supports being used with the ``async`` keyword.
+check_mode
+  | **support**: full
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
+
+
+
 Examples
 --------
 
@@ -565,6 +579,7 @@ jobs
                         "stepname": "DLORD6"
                     }
                 ],
+                "execution_time": "00:00:10",
                 "job_class": "K",
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
@@ -624,6 +639,12 @@ jobs
     The total lapsed time the JCL ran for.
 
     | **type**: int
+
+  execution_time
+    Total duration time of the job execution, if it has finished.
+
+    | **type**: str
+    | **sample**: 00:00:10
 
   ddnames
     Data definition names.
@@ -832,7 +853,7 @@ jobs
     | **sample**: 3
 
   program_name
-    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
+    The name of the program found in the job's last completed step found in the PGM parameter.
 
     | **type**: str
     | **sample**: IEBGENER

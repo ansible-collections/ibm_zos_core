@@ -32,6 +32,8 @@ name
 
   Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
 
+  This option doesn't accept the use of wilcards (? and *).
+
   | **required**: True
   | **type**: str
 

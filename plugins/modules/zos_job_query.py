@@ -160,7 +160,7 @@ jobs:
       sample: 5
     execution_node:
       description:
-        Execution node.
+        The system where the job is actually executed.
       type: str
       sample: "STL1"
     origin_node:

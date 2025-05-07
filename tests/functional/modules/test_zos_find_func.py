@@ -18,7 +18,7 @@ from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 
-
+import re
 import pytest
 
 # hlq used across the test suite.
@@ -617,3 +617,27 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
     finally:
         for ds in special_names:
             hosts.all.shell(cmd=f"drm '{ds}'")
+
+
+def test_find_migrated_data_sets(ansible_zos_module):
+    hosts = ansible_zos_module
+    find_res = hosts.all.zos_find(
+        patterns=['IMSBLD.I15STSMM.*','IMSBLD.DCC71QPP.*'],
+        resource_type='migrated'
+    )
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) != 0
+        for ds in val.get('data_sets'):
+            assert ds.get("type") == "MIGRATED"
+
+def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
+    hosts = ansible_zos_module
+    find_res = hosts.all.zos_find(
+        patterns=['IMSBLD.I15STSMM.*','IMSBLD.DCC71QPP.*'],
+        resource_type='migrated',
+        excludes='.*F4'
+    )
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) != 0
+        for ds in val.get('data_sets'):
+            assert not re.fullmatch(r".*F4", ds.get("name"))

@@ -177,7 +177,6 @@ replaced:
     returned: always
     type: str
     sample: IEE134I TRACE DISABLED - MONITORING STOPPED
-            "$DEALLOC SYSRES
 target:
     description: The data set name or USS name.
     returned: always
@@ -458,7 +457,7 @@ def open_file(file, encoding, uss):
     return decode_list
 
 
-def replace_func(file, regexp, replace, module, uss, encoding="cp1047", after="", before="", literal=[]):
+def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047", after="", before=""):
     """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
     Args
@@ -473,6 +472,8 @@ def replace_func(file, regexp, replace, module, uss, encoding="cp1047", after=""
             Object of Ansible to access to the facilities
         uss : bool
             Variable to indicate the type of open for the module
+        literal : list
+            List of values to be used as string disabling regex option.
         encoding : str, optional
             Encoding to use en decoding content.
             Defaults to "cp1047".
@@ -482,8 +483,6 @@ def replace_func(file, regexp, replace, module, uss, encoding="cp1047", after=""
         before : str, optional
             Str or regex to search where to end the section to replace on the text.
             Defaults to "".
-        literal : list, optional
-            List of values to be used as string disabling regex option.
 
     Returns
     ----------
@@ -494,7 +493,7 @@ def replace_func(file, regexp, replace, module, uss, encoding="cp1047", after=""
     lit_rex = False
 
     if len(literal) > 0:
-        lit_rex =  True if "regexp" in literal else False
+        lit_rex = True if "regexp" in literal else False
 
     if not bool(after) and not bool(before):
         new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace, literal=lit_rex)
@@ -524,7 +523,7 @@ def run_module():
             encoding=dict(type='str', default='cp1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
-            literal=dict(type="list",  elements="str", required=False, default=[], options=["after", "before", "regexp"]),
+            literal=dict(type="list", elements="str", required=False, default=[], options=["after", "before", "regexp"]),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
@@ -538,7 +537,7 @@ def run_module():
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
-        literal=dict(type="list",  elements="str", required=False, default=[], option=["after", "before", "regexp"]),
+        literal=dict(type="list", elements="str", required=False, default=[], option=["after", "before", "regexp"]),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -577,9 +576,9 @@ def run_module():
 
     if len(literal) > 0:
         if "after" in literal and not after:
-            module.fail_json(msg=f"To use the option literal required the after parameter.", **result)
+            module.fail_json(msg="To use the option literal required the after parameter.", **result)
         if "before" in literal and not before:
-            module.fail_json(msg=f"To use the option literal required the before parameter.", **result)
+            module.fail_json(msg="To use the option literal required the before parameter.", **result)
 
     if backup:
         if isinstance(backup, bool):
@@ -597,7 +596,7 @@ def run_module():
 
     if uss:
         full_text, replaced, fragment = replace_func(file=src, regexp=regexp, replace=replace, module=module, uss=uss,
-                                                    encoding=encoding, after=after, before=before, literal=literal)
+                                                     encoding=encoding, after=after, before=before, literal=literal)
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
         try:
@@ -619,7 +618,7 @@ def run_module():
 
     else:
         full_text, replaced, fragment = replace_func(file=src, regexp=regexp, replace=replace, module=module, uss=uss,
-                                                   encoding=encoding, after=after, before=before, literal=literal)
+                                                     encoding=encoding, after=after, before=before, literal=literal)
         try:
             # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
             with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as dataset_write:

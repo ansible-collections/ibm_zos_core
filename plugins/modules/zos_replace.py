@@ -79,13 +79,9 @@ options:
     default: IBM-1047
   literal:
     description:
-      - A list to allow the user to use I(before), I(after) or I(regexp) as regular str not regex.
-    type: list
-    default: []
-    choices:
-      - after
-      - before
-      - regexp
+      - A list or string that allows the user to specify "before," "after," or "regexp" as regular strings instead of regex patterns.
+    required: false
+    type: raw
   target:
     description:
       - The location can be a UNIX System Services (USS) file,
@@ -234,14 +230,15 @@ def resolve_src_name(module, name, results, tmphlq):
             module.fail_json(rc=257, msg=f"File {name} uss does not exists.", **results)
     else:
         try:
-            is_an_alias, base_name = data_set.DataSet.get_name_if_data_set_is_alias(name=name, tmp_hlq=tmphlq)
-            if is_an_alias:
-                name = base_name
+            if not data_set.DataSet.is_gds_relative_name(name):
+                is_an_alias, base_name = data_set.DataSet.get_name_if_data_set_is_alias(name=name, tmp_hlq=tmphlq)
+                if is_an_alias:
+                    name = base_name
             dataset = data_set.MVSDataSet(
                 name=name
             )
         except Exception:
-            messageDict = dict(msg="Unable to resolve name of data set {name}.")
+            messageDict = dict(msg=f"Unable to resolve name of data set {name}.")
             module.fail_json(**messageDict, **results)
 
         name = dataset.name
@@ -370,7 +367,7 @@ def search_bf_af(text, literal, before, after):
     lit_af = False
     lit_bf = False
 
-    if len(literal) > 0:
+    if literal:
         lit_af = True if "after" in literal else False
         lit_bf = True if "before" in literal else False
 
@@ -492,7 +489,7 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
 
     lit_rex = False
 
-    if len(literal) > 0:
+    if literal:
         lit_rex = True if "regexp" in literal else False
 
     if not bool(after) and not bool(before):
@@ -520,10 +517,10 @@ def run_module():
             backup=dict(type='bool', default=False, required=False),
             backup_name=dict(type='str', default=None, required=False),
             before=dict(type='str'),
-            encoding=dict(type='str', default='cp1047', required=False),
+            encoding=dict(type='str', default='IBM-1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
-            literal=dict(type="list", elements="str", required=False, default=[], options=["after", "before", "regexp"]),
+            literal=dict(type="raw", required=False, default=None),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
@@ -537,7 +534,7 @@ def run_module():
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
-        literal=dict(type="list", elements="str", required=False, default=[], option=["after", "before", "regexp"]),
+        literal=dict(type=literals, required=False, default=None),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -567,6 +564,8 @@ def run_module():
     regexp = module.params.get("regexp")
     replace = module.params.get("replace")
     encoding = module.params.get("encoding")
+    if not encoding or encoding == "IBM-1047":
+        encoding = "cp1047"
     backup = module.params.get("backup")
     if parsed_args.get('backup_name') and backup:
         backup = parsed_args.get('backup_name')
@@ -574,7 +573,7 @@ def run_module():
 
     result["target"] = src
 
-    if len(literal) > 0:
+    if literal:
         if "after" in literal and not after:
             module.fail_json(msg="To use the option literal required the after parameter.", **result)
         if "before" in literal and not before:
@@ -590,7 +589,7 @@ def run_module():
                 backup_ds = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
                 if "(+1)" in backup_ds:
                     backup_ds = backup_ds.replace("(+1)", "(0)")
-                result['backup_name'] = resolve_src_name(module=module, name=backup_ds, results=result)
+                result['backup_name'] = resolve_src_name(module=module, name=backup_ds, results=result, tmphlq=tmphlq)
         except Exception as err:
             module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}", **result)
 
@@ -636,6 +635,37 @@ def run_module():
     result["changed"] = changed
 
     module.exit_json(**result)
+
+
+def literals(contents, dependencies):
+    """Validate literal arguments.
+
+    Parameters
+    ----------
+        contents : Union[str, list[str]]
+                 The contents provided for the literal argument.
+        dependencies : dict
+                     Any arguments this argument is dependent on.
+
+    Raises
+    -------
+        ValueError : str
+                   When invalid argument provided.
+
+    Returns
+    -------
+        contents : list[str]
+                 The contents returned as a list of not required
+    """
+    allowed_values = {"after", "before", "regexp"}
+    if not contents:
+        return None
+    if not isinstance(contents, list):
+        contents = [contents]
+    for val in contents:
+        if val not in allowed_values:
+            raise ValueError(f'Invalid argument "{val}" for type "literal".')
+    return contents
 
 
 def main():

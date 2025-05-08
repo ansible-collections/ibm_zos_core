@@ -20,7 +20,7 @@ module: zos_replace
 version_added: '1.15.0'
 short_description: Replace all instances of a pattern within a file or data set.
 description:
-  - The module L(zos_replace.,/zos_replace.html) can replace all instances of a pattern data set.
+  - The module L(zos_replace.,/zos_replace.html) can replace all instances of a pattern in the contents of a data set.
 author:
   - "Marcel Gutierrez (@AndreMarcel99)"
 options:

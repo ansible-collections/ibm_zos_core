@@ -32,7 +32,7 @@ options:
     type: str
   backup:
     description:
-      - Specifies whether a backup of destination should be created before
+      - Specifies whether a backup of the destination should be created before
         editing the source I(target).
       - When set to C(true), the module creates a backup file or data set.
       - The backup file name will be returned on either success or failure of

@@ -77,6 +77,15 @@ options:
     required: false
     type: str
     default: IBM-1047
+  literal:
+    description:
+      - A list to allow the user to use I(before), I(after) or I(regexp) as regular str not regex.
+    type: list
+    default: []
+    choices:
+      - after
+      - before
+      - regexp
   target:
     description:
       - The location can be a UNIX System Services (USS) file,
@@ -110,7 +119,34 @@ options:
 """
 
 EXAMPLES = r"""
+- name: Replace lines on gdg and generate backup on gdg
+  zos_replace:
+    target: SOURCE.GDG(0)
+    regexp: ^(IEE132I|IEA989I|IEA888I|IEF196I|IEA000I)\s.*
+    after: ^IEE133I PENDING *
+    before: ^IEE252I DEVICE *
+    backup: True
+    backup_name: "SOURCE.GDG(+1)"
 
+- name: Replace words with backref on PDSE to delete some calls of SYSTEM
+  zos_replace:
+    target: PDS.SOURCE(MEM)
+    regexp: '^(.*?SYSTEM.*?)SYSTEM(.*)'
+    replace: '\1\2'
+    after: IEE133I PENDING *
+    before: IEF456I JOB12345 *
+
+- name: Replace using after on USS with no utf-8 characters
+  zos_replace:
+    target: "/tmp/source"
+    regexp: '^MOUNTPOINT*'
+    after: export ZOAU_ROOT
+
+- name: Replace on SEQ full text
+  zos_replace:
+    target: "SEQ.SOURCE"
+    regexp: '^MOUNTPOINT*'
+    register: output
 """
 
 RETURN = r"""
@@ -136,6 +172,12 @@ msg:
     returned: failure
     type: str
     sample: Parameter verification failed
+replaced:
+    description: Fragment of the file that was changed
+    returned: always
+    type: str
+    sample: IEE134I TRACE DISABLED - MONITORING STOPPED
+            "$DEALLOC SYSRES
 target:
     description: The data set name or USS name.
     returned: always
@@ -212,7 +254,7 @@ def resolve_src_name(module, name, results):
         return name
 
 
-def replace_text(content, regexp, replace):
+def replace_text(content, regexp, replace, literal=False):
     """Function received the test to work on it to find the regexp
     expected to be replaced.
 
@@ -232,8 +274,12 @@ def replace_text(content, regexp, replace):
     """
     full_text = "\n".join(content)
 
-    pattern = re.compile(regexp, re.MULTILINE)
-    modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
+    if literal:
+        times_replaced = full_text.count(regexp)
+        modified_text = full_text.replace(regexp, replace)
+    else:
+        pattern = re.compile(regexp, re.MULTILINE)
+        modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
 
     modified_list = modified_text.split("\n")
     modified_list = [x for x in modified_list if x.strip() or x.lstrip()]
@@ -299,7 +345,117 @@ def merge_text(original, replace, begin, end):
             return head_content
 
 
-def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", before=""):
+def search_bf_af(text, literal, before, after):
+    """Function to get the limits of the text for search a replace
+
+    Args
+    ----------
+        text : list
+            Text of the file on list format.
+        literal : list
+            List of values of before or after to use as literal.
+        before : str
+            Str or regex to search where to end the section to replace the text
+        after : str
+            Str or regex to search where to begin the section to replace the text
+
+    Returns
+    ----------
+        begin_block_code: Position of the list where to start search
+        end_block_code: Position of the list where to end search
+        match: If there were a match of any value of before or after
+    """
+    lit_af = False
+    lit_bf = False
+
+    if len(literal) > 0:
+        lit_af = True if "after" in literal else False
+        lit_bf = True if "before" in literal else False
+
+    if not lit_bf:
+        pattern_before = u''
+        if bool(before):
+            pattern_before = u'(?P<subsection>.*)%s' % before
+        pattern_end = re.compile(pattern_before, re.DOTALL) if before else before
+
+    if not lit_af:
+        pattern_after = u''
+        if bool(after):
+            pattern_after = u'%s(?P<subsection>.*)' % after
+        pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
+
+    begin_block_code = 0
+    end_block_code = len(text)
+
+    line_counter = 0
+    search_after = bool(after)
+    search_before = False if search_after else True
+    match = False
+
+    for line in text:
+        if search_after:
+            if lit_af:
+                if line.find(after) > -1:
+                    begin_block_code = line_counter + 1
+                    match = True
+                    if not before:
+                        break
+                    else:
+                        search_before = True
+                        search_after = False
+
+            elif pattern_begin.match(line) is not None:
+                begin_block_code = line_counter + 1
+                match = True
+                if not before:
+                    break
+                else:
+                    search_before = True
+                    search_after = False
+
+        if search_before:
+            if lit_bf:
+                if line.find(before) > -1:
+                    end_block_code = line_counter
+                    match = True
+                    break
+            elif pattern_end.match(line) is not None:
+                end_block_code = line_counter
+                match = True
+                break
+
+        line_counter += 1
+
+    return begin_block_code, end_block_code, match
+
+
+def open_file(file, encoding, uss):
+    """
+    Args
+    ----------
+        file (_type_): _description_
+        encoding (_type_): _description_
+        uss (_type_): _description_
+
+    Returns
+    ----------
+        _type_: _description_
+    """
+    decode_list = []
+
+    if uss:
+        with io.open(file, "rb") as content_file:
+            content = codecs.decode(content_file.read(), encoding)
+        decode_list = content.splitlines()
+    else:
+        with zoau_io.RecordIO(f"//'{file}'") as dataset_read:
+            dataset_content = dataset_read.readrecords()
+        decode_list = [codecs.decode(record, encoding) for record in dataset_content]
+
+    return decode_list
+
+
+def replace_func(file, regexp, replace, module, uss, encoding="cp1047", after="", before="", literal=[]):
     """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
     Args
@@ -310,62 +466,38 @@ def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", befo
             Regex expression to search.
         replace : str
             Regex expression or text to replace.
+        module : obj
+            Object of Ansible to access to the facilities
+        uss : bool
+            Variable to indicate the type of open for the module
         encoding : str, optional
             Encoding to use en decoding content.
             Defaults to "cp1047".
         after : str, optional
             Str or regex to search where to start the section to replace on the text.
             Defaults to "".
-        before :str, optional
+        before : str, optional
             Str or regex to search where to end the section to replace on the text.
             Defaults to "".
+        literal : list, optional
+            List of values to be used as string disabling regex option.
 
     Returns
     ----------
         list : List with the new text with the replace expected.
     """
-    decode_list = []
-    with io.open(file, "rb") as content_file:
-        content = codecs.decode(content_file.read(), encoding)
-    decode_list = content.splitlines()
+    decode_list = open_file(file, encoding, uss)
+
+    lit_rex = False
+
+    if len(literal) > 0:
+        lit_rex =  True if "regexp" in literal else False
 
     if not bool(after) and not bool(before):
-        new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
+        new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace, literal=lit_rex)
         return new_full_text, replaced, new_full_text
 
-    pattern_after = u''
-    pattern_before = u''
-    if bool(after):
-        pattern_after = u'%s(?P<subsection>.*)' % after
-    if bool(before):
-        pattern_before = u'(?P<subsection>.*)%s' % before
-
-    pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
-    pattern_end = re.compile(pattern_before, re.DOTALL) if before else before
-
-    begin_block_code = 0
-    end_block_code = len(decode_list)
-
-    line_counter = 0
-    search_after = bool(after)
-    search_before = False if search_after else True
-    match = False
-
-    for line in decode_list:
-        if search_after and pattern_begin.match(line) is not None:
-            begin_block_code = line_counter + 1
-            match = True
-            if not before:
-                break
-            else:
-                search_before = True
-                search_after = False
-
-        if search_before and pattern_end.match(line) is not None:
-            end_block_code = line_counter
-            match = True
-            break
-        line_counter += 1
+    begin_block_code, end_block_code, match = search_bf_af(text=decode_list, literal=literal, before=before, after=after)
 
     if not match:
         module.fail_json(msg="Pattern for before/after params did not match the given file.")
@@ -373,79 +505,8 @@ def replace_uss(file, regexp, replace, module, encoding="cp1047", after="", befo
     if begin_block_code >= end_block_code:
         module.fail_json(msg="Order of patter is incorrect, after patters was found after the before patter.")
 
-    new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code], regexp=regexp, replace=replace)
-    full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
-    return full_new_text, replaced, new_text
-
-
-def replace_ds(ds, regexp, replace, module, encoding="cp1047", after="", before=""):
-    """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
-
-    Args
-    ----------
-        ds : str
-            data set name.
-        regexp : str
-            Regex expression to search.
-        replace : str
-            Regex expression or text to replace.
-        encoding : str, optional
-            Encoding to use en decoding content.
-            Defaults to "cp1047".
-        after : str, optional
-            Str or regex to search where to start the section to replace on the text.
-            Defaults to "".
-        before :str, optional
-            Str or regex to search where to end the section to replace on the text.
-            Defaults to "".
-
-    Returns
-    ----------
-        list : List with the new text with the replace expected.
-    """
-    with zoau_io.RecordIO(f"//'{ds}'") as dataset_read:
-        dataset_content = dataset_read.readrecords()
-
-    decode_list = [codecs.decode(record, encoding) for record in dataset_content]
-
-    if not bool(after) and not bool(before):
-        new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace)
-        return new_full_text, replaced, new_full_text
-
-    pattern_begin = re.compile(after, re.DOTALL) if after else after
-    pattern_end = re.compile(before, re.DOTALL) if before else before
-
-    begin_block_code = 0
-    end_block_code = len(decode_list)
-
-    line_counter = 0
-    search_after = True if after else False
-    search_before = False if search_after else True
-    match = False
-
-    for line in decode_list:
-        if search_after and pattern_begin.match(line) is not None:
-            begin_block_code = line_counter + 1
-            match = True
-            if not before:
-                break
-            else:
-                search_before = True
-                search_after = False
-
-        if search_before and pattern_end.match(line) is not None:
-            end_block_code = line_counter
-            match = True
-            break
-        line_counter += 1
-
-    if not match:
-        module.fail_json(msg="Pattern for before/after params did not match the given file.")
-
-    if begin_block_code >= end_block_code:
-        module.fail_json(msg="Order of patter is incorrect, after patters was found after the before patter.")
-
-    new_text, replaced = replace_text(content=decode_list[begin_block_code : end_block_code], regexp=regexp, replace=replace)
+    new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code],
+                                      regexp=regexp, replace=replace, literal=lit_rex)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
     return full_new_text, replaced, new_text
 
@@ -460,6 +521,7 @@ def run_module():
             encoding=dict(type='str', default='cp1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
+            literal=dict(type="list",  elements="str", required=False, default=[], options=["after", "before", "regexp"]),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
@@ -473,6 +535,7 @@ def run_module():
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
+        literal=dict(type="list",  elements="str", required=False, default=[], option=["after", "before", "regexp"]),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -505,6 +568,15 @@ def run_module():
     tmphlq = parsed_args.get('tmp_hlq')
     if parsed_args.get('backup_name') and backup:
         backup = parsed_args.get('backup_name')
+    literal = module.params.get("literal")
+
+    result["target"] = src
+
+    if len(literal) > 0:
+        if "after" in literal and not after:
+            module.fail_json(msg=f"To use the option literal required the after parameter.", **result)
+        if "before" in literal and not before:
+            module.fail_json(msg=f"To use the option literal required the before parameter.", **result)
 
     if backup:
         if isinstance(backup, bool):
@@ -514,12 +586,15 @@ def run_module():
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
                 backup_ds = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+                if "(+1)" in backup_ds:
+                    backup_ds = backup_ds.replace("(+1)", "(0)")
                 result['backup_name'] = resolve_src_name(module=module, name=backup_ds, results=result)
         except Exception as err:
             module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}", **result)
 
     if uss:
-        full_text, replaced, fragment = replace_uss(file=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
+        full_text, replaced, fragment = replace_func(file=src, regexp=regexp, replace=replace, module=module, uss=uss,
+                                                    encoding=encoding, after=after, before=before, literal=literal)
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
         try:
@@ -540,7 +615,8 @@ def run_module():
             os.remove(tmp_file)
 
     else:
-        full_text, replaced, fragment = replace_ds(ds=src, regexp=regexp, replace=replace, module=module, encoding=encoding, after=after, before=before)
+        full_text, replaced, fragment = replace_func(file=src, regexp=regexp, replace=replace, module=module, uss=uss,
+                                                   encoding=encoding, after=after, before=before, literal=literal)
         try:
             # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
             with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as dataset_write:

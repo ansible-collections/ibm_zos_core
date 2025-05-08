@@ -1,0 +1,3 @@
+minor_changes:
+  - zos_stat - Adds support to query data sets using their aliases.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2061)

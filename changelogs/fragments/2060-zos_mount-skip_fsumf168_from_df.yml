@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_mount - FSUMF168 return in stderror means that the mount dataset wouldn't resolve.
+    While this shows a catalog or volume issue, it should not impact our search for an existing mount.
+    Added handling to the df call, so that FSUMF168 are ignored.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2060).

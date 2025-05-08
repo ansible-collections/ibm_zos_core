@@ -32,6 +32,8 @@ name
 
   Data sets can be sequential, partitioned (PDS), partitioned extended (PDSE), VSAMs or generation data sets (GDS).
 
+  This option doesn't accept the use of wilcards (? and *).
+
   | **required**: True
   | **type**: str
 
@@ -65,6 +67,24 @@ sms_managed
   If the data set is a PDSE and the Ansible user has RACF READ authority on it, retrieving SMS information will update the last referenced date of the data set.
 
   If the system finds the data set is not actually managed by SMS, the rest of the attributes will still be queried and this will be noted in the output from the task.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
+recall
+  Whether to recall a migrated data set to fully query its attributes.
+
+  If set to ``false``, the module will return a limited amount of information for a migrated data set.
+
+  Recalling a data set will make the module take longer to execute.
+
+  Ignored when the data set is not found to be migrated.
+
+  The data set will not be migrated again afterwards.
+
+  The data set will not get recalled when running the module in check mode.
 
   | **required**: False
   | **type**: bool
@@ -196,7 +216,7 @@ Notes
 -----
 
 .. note::
-   When querying data sets, the module will create a temporary data set that requires around 4 kilobytes of available space on the managed node. This data set will be removed before the module finishes execution.
+   When querying data sets, the module will create two temporary data sets. One requires around 4 kilobytes of available space on the managed node. The second one, around 1 kilobyte of available space. Both data sets will be removed before the module finishes execution.
 
    Sometimes, the system could be unable to properly determine the organization or record format of the data set or the space units used to represent its allocation. When this happens, the values for these fields will be null.
 
@@ -520,7 +540,7 @@ stat
       | **returned**: success
       | **type**: bool
 
-    password
+    key_status
       Whether the data set has a password set to read/write.
 
       Value can be either one of 'none', 'read' or 'write'.

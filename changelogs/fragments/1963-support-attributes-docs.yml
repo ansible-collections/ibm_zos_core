@@ -1,3 +1,0 @@
-trivial:
-  - docs/templates/module.rst.j2 - Adds support for including `attributes` keyword inside module's documentation.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1963).

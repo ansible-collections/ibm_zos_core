@@ -1,3 +1,0 @@
-trivial:
-  - zos_copy - Document copy behavior of 'SOME.TEST.PDS(*)' in zos_copy.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/1970).

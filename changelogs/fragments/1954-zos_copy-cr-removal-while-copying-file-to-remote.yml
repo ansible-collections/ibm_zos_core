@@ -1,7 +1,0 @@
-minor_changes:
-   - zos_script - Support automatic removal of carriage return line breaks [CR, CRLF] when copying local files to USS.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/1954).
-bugfixes:
-   - zos_copy - the carriage return characters were being removed from only first 1024 bytes of a file. Now fixed that issue to support 
-     removal of the carriage return characters from the complete file content if the file size is more than 1024 bytes.
-      (https://github.com/ansible-collections/ibm_zos_core/pull/1954).

@@ -35,6 +35,7 @@ options:
           or a UNIX System Services file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs or generation data sets (GDS).
+        - This option doesn't accept the use of wilcards (? and *).
     type: str
     required: true
     aliases:
@@ -74,6 +75,20 @@ options:
         - If the system finds the data set is not actually managed by SMS, the
           rest of the attributes will still be queried and this will be noted
           in the output from the task.
+    type: bool
+    required: false
+    default: false
+  recall:
+    description:
+      - Whether to recall a migrated data set to fully query its
+        attributes.
+      - If set to C(false), the module will return a limited amount of
+        information for a migrated data set.
+      - Recalling a data set will make the module take longer to execute.
+      - Ignored when the data set is not found to be migrated.
+      - The data set will not be migrated again afterwards.
+      - The data set will not get recalled when running the module in
+        check mode.
     type: bool
     required: false
     default: false
@@ -133,9 +148,10 @@ attributes:
     description: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 
 notes:
-  - When querying data sets, the module will create a temporary data set
-    that requires around 4 kilobytes of available space on the managed node.
-    This data set will be removed before the module finishes execution.
+  - When querying data sets, the module will create two temporary data sets.
+    One requires around 4 kilobytes of available space on the managed node.
+    The second one, around 1 kilobyte of available space. Both data sets will
+    be removed before the module finishes execution.
   - Sometimes, the system could be unable to properly determine the
     organization or record format of the data set or the space units used
     to represent its allocation. When this happens, the values for these
@@ -1004,7 +1020,8 @@ class FactsHandler():
         """Setting up the three common attributes for each handler (resource name,
         module and extra_data.
 
-        Arguments:
+        Arguments
+        ---------
             name (str) -- Resource name.
             module (AnsibleModule, optional) -- Ansible object with the task's context.
         """
@@ -1025,7 +1042,8 @@ class FactsHandler():
         """Extra data will be treated as any information that should be returned
         to the user as part of the 'notes' section of the final JSON object.
 
-        Returns:
+        Returns
+        -------
             str -- Any extra data found while querying.
         """
         return self.extra_data
@@ -1057,7 +1075,8 @@ class AggregateHandler(FactsHandler):
     def __init__(self, name, module=None):
         """Creates a new handler.
 
-        Arguments:
+        Arguments
+        ---------
             name (str) -- Aggregate's name.
             module (AnsibleModule, optional) -- Ansible object with the task's context.
         """
@@ -1191,7 +1210,8 @@ class FileHandler(FactsHandler):
     def __init__(self, name, module=None, file_args=None):
         """Creates a new handler.
 
-        Arguments:
+        Arguments
+        ---------
             name (str) -- File path.
             module (AnsibleModule, optional) -- Ansible object with the task's context.
             file_args (dict, optional) -- Dictionary containing whether to follow symlinks,
@@ -1357,7 +1377,8 @@ class FileHandler(FactsHandler):
     def _parse_datetimes(self, attrs, keys):
         """Converts timestamps to date times (YYYY-MM-DDTHH:MM:SS).
 
-        Arguments:
+        Arguments
+        ---------
             attrs (dict) -- Raw dictionary gotten from a stat call.
             keys (list) -- List of keys from attrs to convert.
         """
@@ -1394,14 +1415,16 @@ class DataSetHandler(FactsHandler):
         tmp_hlq=None,
         sms_managed=False,
         exists=False,
-        ds_type=None
+        ds_type=None,
+        alias=None
     ):
         """Create a new handler that will handle the query of an MVS data set.
         Creating this object directly should only be used when wanting to represent
         a non-existent data set. All subclasses should be preferred in every
         other case.
 
-        Arguments:
+        Arguments
+        ---------
             name (str) -- Name of the data set.
             volumes (list, optional) -- Volumes where the data set is allocated.
             module (AnsibleModule, optional) -- Ansible object with the task's context.
@@ -1409,6 +1432,7 @@ class DataSetHandler(FactsHandler):
             sms_managed (bool, optional) -- Whether the data set is managed by SMS.
             exists (bool, optional) -- Whether the data set is present on the given volume.
             ds_type (str, optional) -- Type of the data set.
+            alias (str, optional) -- Alias of the data set that the user provided.
         """
         super().__init__(name, module)
         self.volumes = volumes
@@ -1416,6 +1440,7 @@ class DataSetHandler(FactsHandler):
         self.sms_managed = sms_managed
         self.data_set_exists = exists
         self.data_set_type = ds_type
+        self.alias = alias
 
     def exists(self):
         """Returns whether the given data set was found on the system.
@@ -1425,12 +1450,13 @@ class DataSetHandler(FactsHandler):
     def query(self):
         """Return a minimal attributes dictionary.
 
-        Returns:
+        Returns
+        -------
             dict -- Skeleton of the attributes dictionary for a data set.
         """
         data = {
             'resource_type': 'data_set',
-            'name': self.name
+            'name': self.alias if self.alias else self.name
         }
         return data
 
@@ -1440,10 +1466,12 @@ class DataSetHandler(FactsHandler):
         It also makes sure datetimes are better formatted and replaces '?', 'N/A',
         'NO_LIM', with more user-friendly values.
 
-        Arguments:
+        Arguments
+        ---------
             attrs (dict) -- Raw dictionary processed from a command call.
 
-        Returns:
+        Returns
+        -------
             dict -- Attributes dictionary with parsed values.
         """
         attrs = {
@@ -1470,10 +1498,12 @@ class DataSetHandler(FactsHandler):
     def _is_value_valid(self, value):
         """Returns whether the value should be replaced for None.
 
-        Arguments:
+        Arguments
+        ---------
             value (str) -- Raw value of an attribute for a data set.
 
-        Returns:
+        Returns
+        -------
             bool -- Whether the value should stay as is or be replace with None.
         """
         # Getting rid of values that basically say the value doesn't matter in
@@ -1486,12 +1516,14 @@ class DataSetHandler(FactsHandler):
     def _parse_values(self, attrs, keys, true_function):
         """Tries to parse attributes with a given function.
 
-        Arguments:
+        Arguments
+        ---------
             attrs (dict) -- Raw dictionary processed from a LISTDSI script.
             keys (list) -- List of keys from attrs to parse.
             true_function (function) -- Parsing function to use (like 'int').
 
-        Returns:
+        Returns
+        -------
             dict -- Updated attributes with parsed values.
         """
         for key in keys:
@@ -1509,14 +1541,16 @@ class DataSetHandler(FactsHandler):
         """Replace strings for the given values depending on the result of a
         condition.
 
-        Arguments:
+        Arguments
+        ---------
             attrs (dict) -- Raw dictionary processed from a LISTDSI script.
             keys (list) -- List of keys from attrs to test and replace.
             true_value (any) -- Value to use when condition is true (like True).
             false_value (any) -- Value to use when condition is false (like False).
             condition (any) -- Value to compare each attribute against.
 
-        Returns:
+        Returns
+        -------
             dict -- Updated attributes with replaced values.
         """
         for key in keys:
@@ -1528,7 +1562,8 @@ class DataSetHandler(FactsHandler):
     def _parse_datetimes(self, attrs, keys):
         """Converts ordinal dates (YYYY/DDD) to more common ones (YYYY-MM-DD).
 
-        Arguments:
+        Arguments
+        ---------
             attrs (dict) -- Raw dictionary processed from a LISTDSI script.
             keys (list) -- List of keys from attrs to convert.
         """
@@ -1680,20 +1715,23 @@ else
 return 0"""
 
     def __init__(
-            self,
-            name,
-            volumes,
-            module,
-            sms_managed,
-            ds_type,
-            tmp_hlq=None,
-            missing_volumes=None
+        self,
+        name,
+        volumes,
+        module,
+        sms_managed,
+        ds_type,
+        tmp_hlq=None,
+        missing_volumes=None,
+        alias=None,
+        migrated=False
     ):
         """Create a new handler that will handle the query of a sequential or
         partitioned data set. This subclass should only be instantiated by
         get_data_set_handler.
 
-        Arguments:
+        Arguments
+        ---------
             name (str) -- Name of the data set.
             volumes (list) -- Volumes where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
@@ -1702,6 +1740,8 @@ return 0"""
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
             missing_volumes (list, optional) -- List of volumes where a data set was searched
                 but not found.
+            alias (str, optional) -- Alias of the data set that the user provided.
+            migrated (bool, optional) -- Whether it is a migrated data set.
         """
         super().__init__(
             name,
@@ -1710,23 +1750,35 @@ return 0"""
             tmp_hlq=tmp_hlq,
             sms_managed=sms_managed,
             exists=True,
-            ds_type=ds_type
+            ds_type=ds_type,
+            alias=alias
         )
         self.missing_volumes = missing_volumes
+        self.migrated = migrated
 
     def query(self):
         """Uses LISTDSI to query facts about a data set, while also handling
         specific arguments needed depending on data set type.
 
-        Returns:
+        Returns
+        -------
             dict -- Data set attributes.
 
-        Raises:
+        Raises
+        ------
             QueryException: When the script's data set's allocation fails.
             QueryException: When ZOAU fails to write the script to its data set.
         """
         data = super().query()
         attributes = {}
+
+        if self.migrated:
+            data['attributes'] = fill_missing_attrs(
+                self._parse_attributes(attributes),
+                self.expected_attrs
+            )
+
+            return data
 
         try:
             # First creating a temp data set to hold the LISTDSI script.
@@ -1776,14 +1828,17 @@ return 0"""
         """Runs the LISTDSI script defined in this class and checks for errors
         when requesting SMS information that doesn't exist.
 
-        Arguments:
+        Arguments
+        ---------
             temp_script_location (str) -- Name of the script's temporary data set.
 
-        Returns:
+        Returns
+        -------
             tuple -- Tuple containing the RC, standard out and standard err of the
                      query script.
 
-        Raises:
+        Raises
+        ------
             QueryException: When the script fails for any reason other than requesting
                             SMS information from a data set not managed by SMS.
         """
@@ -1827,10 +1882,12 @@ return 0"""
         """Calls the generic _parse_attributes method and then handles the JCL
         attributes nested dictionary.
 
-        Arguments:
+        Arguments
+        ---------
             attrs (dict) -- Raw dictionary processed from a LISTDSI call.
 
-        Returns:
+        Returns
+        -------
             dict -- Attributes dictionary with parsed values.
         """
         attrs = super()._parse_attributes(attrs)
@@ -1902,24 +1959,27 @@ class VSAMDataSetHandler(DataSetHandler):
         '78048083': '3590-1'
     }
 
-    def __init__(self, name, module, ds_type, tmp_hlq=None):
+    def __init__(self, name, module, ds_type, tmp_hlq=None, alias=None):
         """Create a new handler that will handle the query of a VSAM.
         This subclass should only be instantiated by get_data_set_handler.
 
-        Arguments:
+        Arguments
+        ---------
             name (str) -- Name of the data set.
             volumes (list) -- Volumes where the data set is allocated.
             module (AnsibleModule) -- Ansible object with the task's context.
             sms_managed (bool) -- Whether the data set is managed by SMS.
             ds_type (str) -- Type of the data set.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
+            alias (str, optional) -- Alias of the data set the user provided.
         """
         super().__init__(
             name,
             module=module,
             tmp_hlq=tmp_hlq,
             exists=True,
-            ds_type=ds_type
+            ds_type=ds_type,
+            alias=alias
         )
 
     def query(self):
@@ -2053,10 +2113,12 @@ class VSAMDataSetHandler(DataSetHandler):
         """Calls the generic _parse_attributes method and then handles the data and
         index attributes dictionaries.
 
-        Arguments:
+        Arguments
+        ---------
             attrs (dict) -- Raw dictionary processed from a LISTCAT call.
 
-        Returns:
+        Returns
+        -------
             dict -- Attributes dictionary with parsed values.
         """
         attrs = super()._parse_attributes(attrs)
@@ -2094,7 +2156,8 @@ class GenerationDataGroupHandler(DataSetHandler):
     ):
         """Create a new handler that will handle the query of a GDG.
 
-        Arguments:
+        Arguments
+        ---------
             name (str) -- Name of the data set.
             module (AnsibleModule) -- Ansible object with the task's context.
             tmp_hlq (str, optional) -- Temporary HLQ to be used in some operations.
@@ -2170,7 +2233,8 @@ class QueryException(Exception):
         """Initialized a new QueryException with relevant context for a failure
         JSON.
 
-        Arguments:
+        Arguments
+        ---------
             msg (str) -- Message describing the failure.
             rc (int, optional) -- RC from the command that failed (when available).
             stdout (int, optional) -- Standard out from the command that failed (when available).
@@ -2190,12 +2254,14 @@ def fill_missing_attrs(current_attrs, expected_attrs):
     """Takes attrs and adds all missing attributes to it by iterating over
     expected_attrs.
 
-    Arguments:
+    Arguments
+    ---------
         current_attrs (dict) -- Dictionary containing attributes of a resource.
         expected_attrs (dict) -- Dictionary containing all keys that should be available
             in current_attrs.
 
-    Returns:
+    Returns
+    -------
         dict -- Updated dictionary containing missing values (all new ones equal to None).
     """
     for attr in expected_attrs['flat']:
@@ -2213,10 +2279,12 @@ def fill_return_json(attrs):
     """Completes the return JSON for this module by adding all missing keys
     that are documented.
 
-    Arguments:
+    Arguments
+    ---------
         attrs (dict) -- Output from one of the handlers of this module.
 
-    Returns:
+    Returns
+    -------
         dict -- Dictionary containing all documented keys (new ones equal None).
     """
     handlers = {
@@ -2251,20 +2319,24 @@ def get_data_set_handler(
     volumes,
     module,
     tmp_hlq=None,
-    sms_managed=False
+    sms_managed=False,
+    recall=False
 ):
     """Returns the correct handler needed depending on the type of data set
     we will query.
 
-    Arguments:
+    Arguments
+    ---------
         name (str) -- Name of the data set.
         volume (list) -- Volumes where the data set is allocated.
         module (AnsibleModule) -- Ansible object with the task's context.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
         sms_managed (bool, optional) -- Whether the data set is managed by SMS.
+        recall (bool, optional) -- Whether a migrated data set should be recalled.
 
-    Returns:
-        DataSetHandler: Handler for data sets.
+    Returns
+    -------
+        DataSetHandler -- Handler for data sets.
     """
     try:
         if DataSet.is_gds_relative_name(name):
@@ -2275,6 +2347,41 @@ def get_data_set_handler(
     except (GDSNameResolveError, Exception):
         return DataSetHandler(name, exists=False)
 
+    alias_name = None
+
+    has_been_migrated = DataSet.check_if_data_set_migrated(name)
+    if has_been_migrated:
+        if recall and not module.check_mode:
+            rc, stdout, stderr = DataSet.recall_migrated_data_set(
+                name,
+                module,
+                tmp_hlq=tmp_hlq
+            )
+
+            # Ignoring whatever comes out of stderr because tsocmd decides
+            # to pollute it even when the command runs fine.
+            if rc != 0:
+                raise QueryException(
+                    'An error ocurred while recalling a migrated data set.',
+                    rc,
+                    stdout,
+                    stderr
+                )
+        else:
+            return NonVSAMDataSetHandler(name, 'MIGRAT', module, sms_managed, None, migrated=True)
+
+    try:
+        is_an_alias, base_name = DataSet.get_name_if_data_set_is_alias(
+            name,
+            tmp_hlq=tmp_hlq
+        )
+    except Exception:
+        return DataSetHandler(name, exists=False)
+
+    if is_an_alias:
+        alias_name = name
+        name = base_name
+
     # If the data set doesn't exist, the return value will be None.
     # We search in all volumes first in case we're dealing with a VSAM.
     ds_type = DataSet.data_set_type(name, tmphlq=tmp_hlq)
@@ -2284,7 +2391,7 @@ def get_data_set_handler(
     if not ds_type or ds_type == 'GDG':
         return DataSetHandler(name, exists=False)
     elif ds_type in DataSet.MVS_VSAM:
-        return VSAMDataSetHandler(name, module, ds_type, tmp_hlq)
+        return VSAMDataSetHandler(name, module, ds_type, tmp_hlq, alias=alias_name)
 
     # Finding all the volumes where the data set is allocated.
     cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
@@ -2311,7 +2418,8 @@ def get_data_set_handler(
             sms_managed,
             ds_type,
             tmp_hlq,
-            missing_volumes
+            missing_volumes,
+            alias=alias_name
         )
 
         return handler
@@ -2326,25 +2434,29 @@ def get_facts_handler(
     volumes=None,
     tmp_hlq=None,
     sms_managed=False,
+    recall=False,
     file_args=None
 ):
     """Returns the correct handler needed depending on the type of resource
     we will query.
 
-    Arguments:
+    Arguments
+    ---------
         name (str) -- Name of the resource.
         resource_type (str) -- One of 'data_set', 'gdg', 'aggregate' or 'file'.
         module (AnsibleModule) -- Ansible object with the task's context.
         volumes (list, optional) -- Volumes where a data set is allocated.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
         sms_managed (bool, optional) -- Whether a data set is managed by SMS.
+        recall (bool, optional) -- Whether migrated data sets should be recalled.
         file_args (dict, optional) -- Options affecting how a file is query.
 
-    Returns:
-        FactsHandler: Handler for data sets/GDGs/aggregates/files.
+    Returns
+    -------
+        FactsHandler -- Handler for data sets/GDGs/aggregates/files.
     """
     if resource_type == 'data_set':
-        return get_data_set_handler(name, volumes, module, tmp_hlq, sms_managed)
+        return get_data_set_handler(name, volumes, module, tmp_hlq, sms_managed, recall)
     elif resource_type == 'gdg':
         return GenerationDataGroupHandler(name, module, tmp_hlq)
     elif resource_type == 'file':
@@ -2376,6 +2488,11 @@ def run_module():
                 'choices': ['data_set', 'gdg', 'file', 'aggregate']
             },
             'sms_managed': {
+                'type': 'bool',
+                'required': False,
+                'default': False
+            },
+            'recall': {
                 'type': 'bool',
                 'required': False,
                 'default': False
@@ -2429,6 +2546,10 @@ def run_module():
             'arg_type': 'bool',
             'required': False
         },
+        'recall': {
+            'arg_type': 'bool',
+            'required': False
+        },
         'tmp_hlq': {
             'arg_type': 'str',
             'required': False
@@ -2466,6 +2587,7 @@ def run_module():
     resource_type = module.params.get('type')
     tmp_hlq = module.params.get('tmp_hlq')
     sms_managed = module.params.get('sms_managed')
+    recall = module.params.get('recall')
     file_args = {
         'follow': module.params.get('follow'),
         'get_mime': module.params.get('get_mime'),
@@ -2481,6 +2603,7 @@ def run_module():
             volumes,
             tmp_hlq,
             sms_managed,
+            recall,
             file_args
         )
     except QueryException as err:

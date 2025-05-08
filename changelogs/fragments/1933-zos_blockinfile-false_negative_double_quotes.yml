@@ -1,4 +1,0 @@
-trivial:
-   - zos_blockinfile - Previously, double quotes were being handled separately as it was not supported by ZOAU.
-     Fix now removes the redundant code as ZOAU handles double quotes as expected now.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/1933).

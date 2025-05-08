@@ -253,7 +253,7 @@ async
   | **description**: Supports being used with the ``async`` keyword.
 check_mode
   | **support**: none
-  | **description**: Can run in check_mode and return changed status prediction without modifying target, if not supported the action will be skipped.
+  | **description**: Can run in check_mode and return changed status prediction without modifying target. If not supported, the action will be skipped.
 diff_mode
   | **support**: none
   | **description**: Will return details on what has changed (or possibly needs changing in check_mode), when in diff mode.

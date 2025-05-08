@@ -385,12 +385,12 @@ jobs:
       sample: 5
     execution_node:
       description:
-        The system where the job is actually executed.
+        Execution node that picked the job and executed it.
       type: str
       sample: "STL1"
     origin_node:
       description:
-        Origin node (node of submittal).
+        Origin node that submitted the job.
       type: str
       sample: "STL1"
 

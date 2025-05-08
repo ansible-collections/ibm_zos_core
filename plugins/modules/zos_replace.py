@@ -210,7 +210,7 @@ except Exception:
     zoau_io = ZOAUImportError(traceback.format_exc())
 
 
-def resolve_src_name(module, name, results):
+def resolve_src_name(module, name, results, tmphlq):
     """Function to solve and validate the exist of the dataset or uss file.
 
     Parameters
@@ -235,6 +235,9 @@ def resolve_src_name(module, name, results):
             module.fail_json(rc=257, msg=f"File {name} uss does not exists.", **results)
     else:
         try:
+            is_an_alias, base_name = data_set.DataSet.get_name_if_data_set_is_alias(name=name, tmp_hlq=tmphlq)
+            if is_an_alias:
+                name = base_name
             dataset = data_set.MVSDataSet(
                 name=name
             )
@@ -557,7 +560,8 @@ def run_module():
     result["target"] = src
     result["changed"] = changed
 
-    src = resolve_src_name(module=module, name=src, results=result)
+    tmphlq = parsed_args.get('tmp_hlq')
+    src = resolve_src_name(module=module, name=src, results=result, tmphlq=tmphlq)
     uss = True if "/" in src else False
     after = module.params.get("after")
     before = module.params.get("before")
@@ -565,7 +569,6 @@ def run_module():
     replace = module.params.get("replace")
     encoding = module.params.get("encoding")
     backup = module.params.get("backup")
-    tmphlq = parsed_args.get('tmp_hlq')
     if parsed_args.get('backup_name') and backup:
         backup = parsed_args.get('backup_name')
     literal = module.params.get("literal")

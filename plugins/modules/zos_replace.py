@@ -202,7 +202,7 @@ except Exception:
 
 
 def resolve_src_name(module, name, results, tmphlq):
-    """Function to solve and validate the exist of the dataset or uss file.
+    """Function to resolve and validate the existence of the dataset or uss file.
 
     Parameters
     ----------
@@ -210,6 +210,10 @@ def resolve_src_name(module, name, results, tmphlq):
             Ansible object to execute commands.
         name : str
             Name of the src
+        results : object
+            Group of vars to display on module fail.
+        tmphlq : str
+            String to resolve data source name.
 
     Returns
     ----------
@@ -221,9 +225,9 @@ def resolve_src_name(module, name, results, tmphlq):
             if os.path.isfile(name):
                 return name
             else:
-                module.fail_json(rc=256, msg=f"Path {name} is a directory.", **results)
+                module.fail_json(rc=256, msg=f"Path {name} is a directory, please specify a file path.", **results)
         else:
-            module.fail_json(rc=257, msg=f"File {name} uss does not exists.", **results)
+            module.fail_json(rc=257, msg=f"USS path {name} does not exist.", **results)
     else:
         try:
             if not data_set.DataSet.is_gds_relative_name(name):
@@ -234,8 +238,8 @@ def resolve_src_name(module, name, results, tmphlq):
                 name=name
             )
         except Exception:
-            messageDict = dict(msg=f"Unable to resolve name of data set {name}.")
-            module.fail_json(**messageDict, **results)
+            message_dict = dict(msg=f"Unable to resolve name of data set {name}.")
+            module.fail_json(**message_dict, **results)
 
         name = dataset.name
 
@@ -250,18 +254,19 @@ def resolve_src_name(module, name, results, tmphlq):
 
 
 def replace_text(content, regexp, replace, literal=False):
-    """Function received the test to work on it to find the regexp
+    """Function received the text to work on it to find the regexp
     expected to be replaced.
 
     Parameters
     ----------
         content : list
-            The part or full text to be modified
+            The partial or complete text to be modified.
         regexp : str
-            The str that will be search to be replaced
+            The str that will be search to be replaced.
         replace : str
-            The str to replace on the text
-
+            The str to replace on the text.
+        literal : bool
+            Variable to know if is a regex or not.
     Returns
     ----------
         list: the new array of lines with the content replaced
@@ -283,14 +288,14 @@ def replace_text(content, regexp, replace, literal=False):
 
 
 def merge_text(original, replace, begin, end):
-    """Function to generate the new full text with the replace
+    """Function to generate the new full text with the replaced
         text inside of it.
     Args
     ----------
         original : list
             Tue full original text on list
         replace : list
-            The fraction of text that was replace
+            The fraction of text that was replaced
         begin : int
             Position of the list where start the replace of array
         end : int
@@ -300,7 +305,7 @@ def merge_text(original, replace, begin, end):
     ----------
         list : The full text on list mode
     """
-    replace = [x for x in replace if x.strip() or x.lstrip()]
+    replace = [line for line in replace if line.strip() or line.lstrip()]
     if len(replace) != 0:
         # Case for after exist and before dont
         if begin != 0 and end == len(original):
@@ -341,14 +346,14 @@ def merge_text(original, replace, begin, end):
 
 
 def search_bf_af(text, literal, before, after):
-    """Function to get the limits of the text for search a replace
+    """Function to get the boundaries of the text that should be searched and replaced.
 
     Args
     ----------
         text : list
-            Text of the file on list format.
+            Text of the file as a list.
         literal : list
-            List of values of before or after to use as literal.
+            List of values ('before' or 'after') that indicate when to disable regexes.
         before : str
             Str or regex to search where to end the section to replace the text
         after : str
@@ -369,13 +374,13 @@ def search_bf_af(text, literal, before, after):
 
     if not lit_bf:
         pattern_before = u''
-        if bool(before):
+        if before:
             pattern_before = u'(?P<subsection>.*)%s' % before
         pattern_end = re.compile(pattern_before, re.DOTALL) if before else before
 
     if not lit_af:
         pattern_after = u''
-        if bool(after):
+        if after:
             pattern_after = u'%s(?P<subsection>.*)' % after
         pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
 
@@ -428,13 +433,16 @@ def open_file(file, encoding, uss):
     """
     Args
     ----------
-        file (_type_): _description_
-        encoding (_type_): _description_
-        uss (_type_): _description_
+        file : str
+            Name of the file to extract the text.
+        encoding : str
+            Type of encoding to decode the text.
+        uss : bool
+            How to open the file to extract the text.
 
     Returns
     ----------
-        _type_: _description_
+        list : The list with the content of the file.
     """
     decode_list = []
 
@@ -450,7 +458,7 @@ def open_file(file, encoding, uss):
     return decode_list
 
 
-def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047", after="", before=""):
+def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047", after=None, before=None):
     """Function to extract from the uss a fragment or the full text to be replaced and replace the content.
 
     Args
@@ -488,7 +496,7 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
     if literal:
         lit_rex = True if "regexp" in literal else False
 
-    if not bool(after) and not bool(before):
+    if not after and not before:
         new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace, literal=lit_rex)
         return new_full_text, replaced, new_full_text
 
@@ -498,7 +506,7 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
         module.fail_json(msg="Pattern for before/after params did not match the given file.")
 
     if begin_block_code >= end_block_code:
-        module.fail_json(msg="Order of patter is incorrect, after patters was found after the before patter.")
+        module.fail_json(msg="Patterns are in incorrect order, the after pattern was found later than the before pattern.")
 
     new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code],
                                       regexp=regexp, replace=replace, literal=lit_rex)
@@ -571,9 +579,9 @@ def run_module():
 
     if literal:
         if "after" in literal and not after:
-            module.fail_json(msg="To use the option literal required the after parameter.", **result)
+            module.fail_json(msg="Use of literal requires the use of the after option too.", **result)
         if "before" in literal and not before:
-            module.fail_json(msg="To use the option literal required the before parameter.", **result)
+            module.fail_json(msg="Use of literal requires the use of the before option too.", **result)
 
     if backup:
         if isinstance(backup, bool):

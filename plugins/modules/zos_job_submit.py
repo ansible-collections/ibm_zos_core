@@ -1124,10 +1124,10 @@ def run_module():
                 _msg = ("The JCL submitted with job id {0} but appears to be a long "
                         "running job that exceeded its maximum wait time of {1} "
                         "second(s). Consider using module zos_job_query to poll for "
-                        "a long running job or increase option 'wait_times_s' to a value "
+                        "a long running job or increase option 'wait_time_s' to a value "
                         "greater than {2}.".format(str(job_submitted_id), str(wait_time_s), str(duration)))
                 _msg_suffix = ("Consider using module zos_job_query to poll for "
-                               "a long running job or increase option 'wait_times_s' to a value "
+                               "a long running job or increase option 'wait_time_s' to a value "
                                "greater than {0}.".format(str(duration)))
 
                 if job_output_txt is not None:

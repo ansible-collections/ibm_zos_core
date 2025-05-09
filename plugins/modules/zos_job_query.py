@@ -153,6 +153,21 @@ jobs:
          The job entry subsystem that MVS uses to do work.
       type: str
       sample: STL1
+    cpu_time:
+      description:
+        Sum of the CPU time used by each job step, in microseconds.
+      type: int
+      sample: 5
+    execution_node:
+      description:
+        Execution node that picked the job and executed it.
+      type: str
+      sample: "STL1"
+    origin_node:
+      description:
+        Origin node that submitted the job.
+      type: str
+      sample: "STL1"
     ret_code:
       description:
          Return code output collected from job log.
@@ -271,7 +286,12 @@ jobs:
             "creation_date": "2023-05-03",
             "creation_time": "12:13:00",
             "queue_position": 3,
-            "execution_time": "00:00:02"
+            "execution_time": "00:00:02",
+            "system": "STL1",
+            "subsystem": "STL1",
+            "cpu_time": 1414,
+            "execution_node": "STL1",
+            "origin_node": "STL1"
         },
         {
             "job_name": "LINKCBL",
@@ -286,7 +306,12 @@ jobs:
             "creation_date": "2023-05-03",
             "creation_time": "12:14:00",
             "queue_position": 0,
-            "execution_time": "00:00:03"
+            "execution_time": "00:00:03",
+            "system": "STL1",
+            "subsystem": "STL1",
+            "cpu_time": 1414,
+            "execution_node": "STL1",
+            "origin_node": "STL1"
         },
     ]
 message:
@@ -456,6 +481,9 @@ def parsing_jobs(jobs_raw):
             "content_type": job.get("content_type"),
             "system": job.get("system"),
             "subsystem": job.get("subsystem"),
+            "cpu_time": job.get("cpu_time"),
+            "execution_node": job.get("execution_node"),
+            "origin_node": job.get("origin_node"),
             "ret_code": ret_code,
             "job_class": job.get("job_class"),
             "svc_class": job.get("svc_class"),

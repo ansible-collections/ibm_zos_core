@@ -367,6 +367,31 @@ jobs:
         The name of the program found in the job's last completed step found in the PGM parameter.
       type: str
       sample: "IEBGENER"
+    system:
+      description:
+         The job entry system that MVS uses to do work.
+      type: str
+      sample: STL1
+    subsystem:
+      description:
+         The job entry subsystem that MVS uses to do work.
+      type: str
+      sample: STL1
+    cpu_time:
+      description:
+        Sum of the CPU time used by each job step, in microseconds.
+      type: int
+      sample: 5
+    execution_node:
+      description:
+        Execution node that picked the job and executed it.
+      type: str
+      sample: "STL1"
+    origin_node:
+      description:
+        Origin node that submitted the job.
+      type: str
+      sample: "STL1"
 
   sample:
      [
@@ -591,7 +616,10 @@ jobs:
               "creation_time": "12:13:00",
               "queue_position": 3,
               "subsystem": "STL1",
-              "system": "STL1"
+              "system": "STL1",
+              "cpu_time": 1,
+              "execution_node": "STL1",
+              "origin_node": "STL1"
           }
      ]
 """
@@ -1095,10 +1123,10 @@ def run_module():
                 _msg = ("The JCL submitted with job id {0} but appears to be a long "
                         "running job that exceeded its maximum wait time of {1} "
                         "second(s). Consider using module zos_job_query to poll for "
-                        "a long running job or increase option 'wait_times_s' to a value "
+                        "a long running job or increase option 'wait_time_s' to a value "
                         "greater than {2}.".format(str(job_submitted_id), str(wait_time_s), str(duration)))
                 _msg_suffix = ("Consider using module zos_job_query to poll for "
-                               "a long running job or increase option 'wait_times_s' to a value "
+                               "a long running job or increase option 'wait_time_s' to a value "
                                "greater than {0}.".format(str(duration)))
 
                 if job_output_txt is not None:

@@ -1,0 +1,9 @@
+minor_changes:
+   - zos_job_submit - Adds new fields cpu_time, origin_node and execution_node to response.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+
+   - zos_job_query - Adds new fields cpu_time, origin_node and execution_node to response.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+
+   - zos_job_output - Adds new fields cpu_time, origin_node and execution_node to response.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2056).

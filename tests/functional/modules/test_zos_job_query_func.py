@@ -98,6 +98,9 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
                 assert qresult.get("jobs")[0].get("execution_time") is not None
                 assert qresult.get("jobs")[0].get("system") is not None
                 assert qresult.get("jobs")[0].get("subsystem") is not None
+                assert "cpu_time" in result.get("jobs")[0]
+                assert "execution_node" in result.get("jobs")[0]
+                assert "origin_node" in result.get("jobs")[0]
 
     finally:
         hosts.all.file(path=temp_path, state="absent")

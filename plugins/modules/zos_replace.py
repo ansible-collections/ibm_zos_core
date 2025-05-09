@@ -282,7 +282,7 @@ def replace_text(content, regexp, replace, literal=False):
         modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
 
     modified_list = modified_text.split("\n")
-    modified_list = [x for x in modified_list if x.strip() or x.lstrip()]
+    modified_list = [line for line in modified_list if line.strip() or line.lstrip()]
 
     return modified_list, times_replaced
 
@@ -403,15 +403,15 @@ def search_bf_af(text, literal, before, after):
                     else:
                         search_before = True
                         search_after = False
-
-            elif pattern_begin.match(line) is not None:
-                begin_block_code = line_counter + 1
-                match = True
-                if not before:
-                    break
-                else:
-                    search_before = True
-                    search_after = False
+            else:
+                if pattern_begin.match(line) is not None:
+                    begin_block_code = line_counter + 1
+                    match = True
+                    if not before:
+                        break
+                    else:
+                        search_before = True
+                        search_after = False
 
         if search_before:
             if lit_bf:
@@ -419,10 +419,11 @@ def search_bf_af(text, literal, before, after):
                     end_block_code = line_counter
                     match = True
                     break
-            elif pattern_end.match(line) is not None:
-                end_block_code = line_counter
-                match = True
-                break
+            else:
+                if pattern_end.match(line) is not None:
+                    end_block_code = line_counter
+                    match = True
+                    break
 
         line_counter += 1
 
@@ -505,9 +506,6 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
     if not match:
         module.fail_json(msg="Pattern for before/after params did not match the given file.")
 
-    if begin_block_code >= end_block_code:
-        module.fail_json(msg="Patterns are in incorrect order, the after pattern was found later than the before pattern.")
-
     new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code],
                                       regexp=regexp, replace=replace, literal=lit_rex)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
@@ -575,8 +573,6 @@ def run_module():
         backup = parsed_args.get('backup_name')
     literal = module.params.get("literal")
 
-    result["target"] = src
-
     if literal:
         if "after" in literal and not after:
             module.fail_json(msg="Use of literal requires the use of the after option too.", **result)
@@ -633,8 +629,9 @@ def run_module():
                 **result
             )
 
-    changed = True if replaced > 0 else False
-    result["replaced"] = fragment
+    if replaced > 0:
+        changed = True
+        result["replaced"] = fragment
     result["found"] = replaced
     result["changed"] = changed
 

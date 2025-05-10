@@ -363,6 +363,7 @@ class ActionModule(ActionBase):
         sftp_transfer_method = "sftp"
         user_ssh_transfer_method = None
         is_ssh_transfer_method_updated = False
+        was_user_updated = False
 
         try:
             if version_major == 2 and version_minor >= 11:
@@ -383,7 +384,17 @@ class ActionModule(ActionBase):
                 display.vvv(u"ibm_zos_fetch SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
                             sftp_transfer_method), host=self._play_context.remote_addr)
 
+            # TODO: check that this is indeed None when become_user is not present in the task.
+            if self._play_context._become_user:
+                was_user_updated = True
+                self._connection.set_option('remote_user', self._play_context._become_user)
+                display.vvv(
+                    u"ibm_zos_fetch SSH transfer user updated to {0}".format(self._play_context._become_user),
+                    host=self._play_context.remote_addr
+                )
+
             display.vvv(u"{0} {1} TO {2}".format(_sftp_action, remote_path, dest), host=self._play_context.remote_addr)
+            display.vvv(u"{0}, {1}".format(vars(self._connection), vars(self._play_context)))
             (returncode, stdout, stderr) = self._connection._file_transport_command(remote_path, dest, _sftp_action)
 
             display.vvv(u"ibm_zos_fetch return code: {0}".format(returncode), host=self._play_context.remote_addr)
@@ -424,6 +435,13 @@ class ActionModule(ActionBase):
                 result["failed"] = True
 
         finally:
+            if was_user_updated:
+                self._connection.set_option('remote_user', self._play_context._remote_user)
+                display.vvv(
+                    u"ibm_zos_fetch SSH transfer user restored to {0}".format(self._play_context._remote_user),
+                    host=self._play_context.remote_addr
+                )
+
             # Restore the users defined option `ssh_transfer_method` if it was overridden
 
             if is_ssh_transfer_method_updated:

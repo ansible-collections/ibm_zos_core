@@ -1,0 +1,5 @@
+bugfixes:
+  - zos_lineinfile - Fixed a bug where malformed escape sequences in `zoau` command output 
+    caused JSON parsing to fail the task even when updates had been successfully made. 
+    Added handling to clean escape sequences before parsing to prevent unnecessary task failures.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2080)

@@ -560,8 +560,7 @@ def run_module():
     if not encoding or encoding == "IBM-1047":
         encoding = "cp1047"
     backup = module.params.get("backup")
-    if parsed_args.get('backup_name') and backup:
-        backup_name = parsed_args.get('backup_name')
+    backup_name = parsed_args.get('backup_name')
     literal = module.params.get("literal")
 
     if literal:

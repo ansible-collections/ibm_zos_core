@@ -1396,10 +1396,10 @@ def test_ds_backup_name(ansible_zos_module, dstype, backup_name):
             assert result.get("target") == ds_full_name
             assert result.get("found") == 2
             assert result.get("backup_name") == ds_backup_file
-        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd="cat {0}".format(ds_backup_file))
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(ds_backup_file))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
     finally:

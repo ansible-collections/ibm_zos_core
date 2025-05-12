@@ -765,7 +765,7 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended, 
                 ):
                     if excludes is not None:
                         for ex_pat in excludes:
-                            if not _match_regex(module, ex_pat, vsam_name):
+                            if not _match_regex(module, ex_pat, gdg['base']):
                                 filtered_data_sets.append({"name": gdg['base'], "type": "GDG"})
                     else:
                         filtered_data_sets.append({"name": gdg['base'], "type": "GDG"})

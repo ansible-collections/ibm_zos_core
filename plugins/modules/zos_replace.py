@@ -576,9 +576,10 @@ def run_module():
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup_name, compress=False)
             else:
                 backup_ds = Backup.mvs_file_backup(dsn=src, bk_dsn=backup_name, tmphlq=tmp_hlq)
-                if "(+1)" in backup_ds:
-                    backup_ds = backup_ds.replace("(+1)", "(0)")
-                result['backup_name'] = resolve_src_name(module=module, name=backup_ds, result=result, tmp_hlq=tmp_hlq)
+                result['backup_name'] = backup_ds
+                if data_set.DataSet.is_gds_relative_name(backup_ds):
+                    bk_up_obj = data_set.MVSDataSet(name=backup_ds)
+                    result['backup_name'] = bk_up_obj.name
         except Exception as err:
             module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}.", **result)
 

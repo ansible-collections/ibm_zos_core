@@ -571,9 +571,9 @@ def vsam_filter(module, patterns, vsam_types, age=None, excludes=None):
                         if _match_resource_type(type, vsam_type):
                             if age:
                                 if _age_filter(vsam_props[1], now, age):
-                                    filtered_data_sets.append({"name": vsam_name, "type": "VSAM", "subtype": type})
+                                    filtered_data_sets.append({"name": vsam_name, "type": type})
                             else:
-                                filtered_data_sets.append({"name": vsam_name, "type": "VSAM", "subtype": type})
+                                filtered_data_sets.append({"name": vsam_name, "type": type})
                             break
     return filtered_data_sets, examined
 
@@ -643,7 +643,7 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
                             if vsam_type not in ("DATA", "INDEX"):
                                 examined = examined + 1
                             if _match_resource_type(type, vsam_type):
-                                filtered_data_sets.append({"name": vsam_name, "type": "MIGRATED", "subtype": type})
+                                filtered_data_sets.append({"name": vsam_name, "type": "MIGRATED", "migrated_resource_type": type})
     return filtered_data_sets, examined
 
 
@@ -826,10 +826,10 @@ def migrated_nonvsam_filter(module, data_sets, excludes):
                     if excludes is not None:
                         for ex_pat in excludes:
                             if not _match_regex(module, ex_pat, ds):
-                                filtered_data_sets.append({"name": ds, "type": "MIGRATED", "subtype": "NONVSAM"})
+                                filtered_data_sets.append({"name": ds, "type": "MIGRATED", "migrated_resource_type": "NONVSAM"})
                                 break
                     else:
-                        filtered_data_sets.append({"name": ds, "type": "MIGRATED", "subtype": "NONVSAM"})
+                        filtered_data_sets.append({"name": ds, "type": "MIGRATED", "migrated_resource_type": "NONVSAM"})
         except Exception as e:
             module.fail_json(repr(e))
 

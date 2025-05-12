@@ -1287,6 +1287,7 @@ def run_module(module):
             else:
                 filtered_data_sets = \
                     list(init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys())))
+            if excludes:
                 filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
             # Filter data sets by age or size
             if size or age:

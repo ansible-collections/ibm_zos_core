@@ -453,6 +453,7 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             assert val.get('matched') == len(val.get('data_sets'))
+            assert val.get('examined') == 1
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -813,4 +814,3 @@ def test_find_migrated_and_gdg_data_sets(ansible_zos_module):
     finally:
         # Remove GDG.
         hosts.all.shell(cmd=f"drm {gdg_a}")
-        

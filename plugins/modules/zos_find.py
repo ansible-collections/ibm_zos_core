@@ -512,7 +512,7 @@ def pds_filter(module, pds_dict, member_patterns, excludes=None):
     return filtered_pds
 
 
-def vsam_filter(module, patterns, resource_type, age=None):
+def vsam_filter(module, patterns, vsam_types, age=None, excludes=None):
     """ Return all VSAM data sets that match any of the patterns
     in the given list of patterns.
 
@@ -533,8 +533,10 @@ def vsam_filter(module, patterns, resource_type, age=None):
     fail_json
         Non-zero return code received while executing ZOAU shell command 'vls'.
     """
-    filtered_data_sets = set()
+
+    filtered_data_sets = list()
     now = time.time()
+    examined = 0
     for pattern in patterns:
         request_details = age is not None
         rc, out, err = _vls_wrapper(pattern, details=request_details)
@@ -547,20 +549,28 @@ def vsam_filter(module, patterns, resource_type, age=None):
             if entry:
                 vsam_props = entry.split()
                 vsam_name = vsam_props[0]
-                if resource_type == "all":
-                    filtered_data_sets.add(vsam_name)
-                else:
-                    vsam_type = vsam_name.split('.')[-1]
-                    if _match_resource_type(resource_type, vsam_type):
-                        if age:
-                            if _age_filter(vsam_props[1], now, age):
-                                filtered_data_sets.add(vsam_name)
-                        else:
-                            filtered_data_sets.add(vsam_name)
-    return filtered_data_sets
+                vsam_ignore = False
+                if excludes is not None:
+                    for ex_pat in excludes:
+                        if _match_regex(module, ex_pat, vsam_name):
+                            vsam_ignore = True
+                            break
+                if not vsam_ignore:
+                    for type in vsam_types:
+                        vsam_type = vsam_name.split('.')[-1]
+                        if vsam_type not in ("DATA", "INDEX"):
+                            examined += 1
+                        if _match_resource_type(type, vsam_type):
+                            if age:
+                                if _age_filter(vsam_props[1], now, age):
+                                    filtered_data_sets.append({"name": vsam_name, "type": "VSAM", "subtype": type})
+                            else:
+                                filtered_data_sets.append({"name": vsam_name, "type": "VSAM", "subtype": type})
+                            break
+    return filtered_data_sets, examined
 
 
-def migrated_vsam_filter(module, patterns, resource_type, age=None):
+def migrated_vsam_filter(module, patterns, vsam_types, excludes):
     """ Return all migrated VSAM data sets that match any of the patterns
     in the given list of patterns.
 
@@ -581,10 +591,9 @@ def migrated_vsam_filter(module, patterns, resource_type, age=None):
     fail_json
         Non-zero return code received while executing ZOAU shell command 'vls'.
     """
-    filtered_data_sets = set()
-    now = time.time()
+    filtered_data_sets = list()
+    examined = 0
     for pattern in patterns:
-        request_details = age is not None
         rc, out, err = _vls_wrapper(pattern, migrated=True)
         if rc > 4:
             module.fail_json(
@@ -595,8 +604,20 @@ def migrated_vsam_filter(module, patterns, resource_type, age=None):
             if entry:
                 vsam_props = entry.split()
                 vsam_name = vsam_props[0]
-                filtered_data_sets.add(vsam_name)
-    return filtered_data_sets
+                vsam_ignore = False
+                if excludes is not None:
+                    for ex_pat in excludes:
+                        if _match_regex(module, ex_pat, vsam_name):
+                            vsam_ignore = True
+                            break
+                if not vsam_ignore:
+                    for type in vsam_types:
+                        vsam_type = vsam_name.split('.')[-1]
+                        if vsam_type not in ("DATA", "INDEX"):
+                            examined += 1
+                        if _match_resource_type(type, vsam_type):
+                            filtered_data_sets.append({"name": vsam_name, "type": "MIGRATED", "subtype": type})
+    return filtered_data_sets, examined
 
 
 def data_set_attribute_filter(
@@ -625,7 +646,7 @@ def data_set_attribute_filter(
     fail_json
         Non-zero return code received while executing ZOAU shell command 'dls'.
     """
-    filtered_data_sets = set()
+    filtered_data_sets = list()
     now = time.time()
     for ds in data_sets:
         rc, out, err = _dls_wrapper(
@@ -652,7 +673,7 @@ def data_set_attribute_filter(
                 size and not age and _size_filter(int(out[6]), size)
             )
         ):
-            filtered_data_sets.add(ds)
+            filtered_data_sets.append(ds)
     return filtered_data_sets
 
 
@@ -688,7 +709,7 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
     fail_json
         Non-zero return code received while executing ZOAU shell command 'dls'.
     """
-    filtered_data_sets = set()
+    filtered_data_sets = list()
     for ds in data_sets:
         rc, out, err = _dls_wrapper(ds, data_set_type='gdg', list_details=True, json=True)
 
@@ -709,7 +730,12 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
                     gdg['scratch'] == (gdg['scratch'] if scratch is None else scratch) and
                     gdg['extended'] == (gdg['extended'] if extended is None else extended)
                 ):
-                    filtered_data_sets.add(gdg['base'])
+                    if excludes is not None:
+                        for ex_pat in excludes:
+                            if not _match_regex(module, ex_pat, vsam_name):
+                                filtered_data_sets.append({"name": gdg['base'], "type": "GDG"})
+                    else:
+                        filtered_data_sets.append({"name": gdg['base'], "type": "GDG"})
         except Exception as e:
             module.fail_json(repr(e))
 
@@ -738,10 +764,10 @@ def migrated_nonvsam_filter(module, data_sets, excludes):
     fail_json
         Non-zero return code received while executing ZOAU shell command 'dls'.
     """
-    filtered_data_sets = set()
+    filtered_data_sets = list()
     for ds in data_sets:
         # Fetch active and migrated datasets
-        rc, out, err = _dls_wrapper(ds, migrated=True, list_details=True)
+        rc, out, err = _dls_wrapper(ds, migrated=True)
         if rc != 0:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
@@ -764,66 +790,10 @@ def migrated_nonvsam_filter(module, data_sets, excludes):
                     if excludes is not None:
                         for ex_pat in excludes:
                             if not _match_regex(module, ex_pat, ds):
-                                filtered_data_sets.add(ds)
+                                filtered_data_sets.append({"name": ds, "type": "MIGRATED", "subtype": "NONVSAM"})
                                 break
                     else:
-                        filtered_data_sets.add(ds)
-        except Exception as e:
-            module.fail_json(repr(e))
-
-    return filtered_data_sets
-
-
-# TODO:
-# Use dls -m command output only when ZOAU adds volser/volume information also for datasets
-def migrated_vsam_filter(module, data_sets, excludes):
-    """ Filter Migrated Datasets by comparing results of dls -m and dls -l commands.
-
-    Parameters
-    ----------
-    module : AnsibleModule
-        The Ansible module object being used.
-    data_sets : set[str]
-        A set of data set names.
-
-    Returns
-    -------
-    set[str]
-        Matched Migrated datasets base names.
-
-    Raises
-    ------
-    fail_json
-        Non-zero return code received while executing ZOAU shell command 'dls'.
-    """
-    filtered_data_sets = set()
-    for ds in data_sets:
-        # Fetch active and migrated datasets
-        rc, out, err = _vls_wrapper(ds, migrated=True)
-        if rc != 0:
-            module.fail_json(
-                msg="Non-zero return code received while executing ZOAU shell command 'dls'",
-                rc=rc, stdout=out, stderr=err
-            )
-        try:
-            # Fetch only active datasets
-            active_datasets = vsam_filter(
-                module,
-                [ds],
-                resource_type="all"
-            )
-            # Create a result list of datasets which are existing in migrated datasets list and
-            # not existed in active datasets list
-            for line in out.splitlines():
-                ds = line.strip()
-                if ds not in active_datasets:
-                    if excludes is not None:
-                        for ex_pat in excludes:
-                            if not _match_regex(module, ex_pat, ds):
-                                filtered_data_sets.add(ds)
-                                break
-                    else:
-                        filtered_data_sets.add(ds)
+                        filtered_data_sets.append({"name": ds, "type": "MIGRATED", "subtype": "NONVSAM"})
         except Exception as e:
             module.fail_json(repr(e))
 
@@ -856,13 +826,13 @@ def volume_filter(module, data_sets, volumes):
     fail_json
         Unable to retrieve VTOC information.
     """
-    filtered_data_sets = set()
+    filtered_data_sets = list()
     for volume in volumes:
         vtoc_entry = vtoc.get_volume_entry(volume)
         if vtoc_entry:
             for ds in vtoc_entry:
                 if ds.get('data_set_name') in data_sets:
-                    filtered_data_sets.add(ds.get('data_set_name'))
+                    filtered_data_sets.append(ds.get('data_set_name'))
         else:
             module.fail_json(
                 msg="Unable to retrieve VTOC information for volume {0}".format(volume)
@@ -888,7 +858,7 @@ def exclude_data_sets(module, data_set_list, excludes):
     set[str]
         The remaining data sets that have not been excluded.
     """
-    for ds in set(data_set_list):
+    for ds in list(data_set_list):
         for ex_pat in excludes:
             if _match_regex(module, ex_pat, ds):
                 data_set_list.remove(ds)
@@ -1233,6 +1203,7 @@ def run_module(module):
         or module.params.get('pds_pattern')
     )
     resource_type = module.params.get('resource_type') or module.params.get('resource_types')
+    resource_type = [type.upper() for type in resource_type]
     volume = module.params.get('volume') or module.params.get('volumes')
     limit = module.params.get('limit')
     empty = module.params.get('empty')
@@ -1241,9 +1212,31 @@ def run_module(module):
     extended = module.params.get('extended')
     migrated_type = module.params.get('migrated_type') or module.params.get('migrated_types')
     fifo = module.params.get('fifo')
-
+    vsam_types = {"CLUSTER", "DATA", "INDEX"}
     res_args = dict(data_sets=[])
-    # result_data_sets = set()
+    examined = 0
+    filtered_resource_types = set()
+    vsam_resource_types = set()
+    filtered_migrated_types = set()
+    vsam_migrated_types = set()
+    for type in resource_type:
+        if type in vsam_types:
+            filtered_resource_types.add("VSAM")
+            vsam_resource_types.add(type)
+        else:
+            filtered_resource_types.add(type)
+    if "MIGRATED" in resource_type:
+        if migrated_type:
+            migrated_type = [type.upper() for type in migrated_type]
+            for type in migrated_type:
+                if type in vsam_types:
+                    filtered_migrated_types.add("VSAM")
+                    vsam_migrated_types.add(type)
+                else:
+                    filtered_migrated_types.add(type)
+        else:
+            filtered_migrated_types = {"VSAM", "NONVSAM"}
+            vsam_migrated_types = vsam_types
     if age:
         # convert age to days:
         m = re.match(r"^(-?\d+)(d|w|m|y)?$", age.lower())
@@ -1261,20 +1254,17 @@ def run_module(module):
             size = int(m.group(1)) * bytes_per_unit.get(m.group(2), 1)
         else:
             module.fail_json(size=size, msg="failed to process size")
-    for type in resource_type:
-        filtered_data_sets = set()
+    for res_type in filtered_resource_types:
+        filtered_data_sets = list()
         init_filtered_data_sets = filtered_pds = dict()
-        res_type=type.upper()
         if res_type == "MIGRATED":
-            migrated_data_sets = set()
-            if migrated_type is None:
-                migrated_type = ["nonvsam", "vsam"]
-            for mtype in migrated_type:
-                if mtype == "nonvsam":
+            migrated_data_sets = list()
+            for mtype in filtered_migrated_types:
+                if mtype == "NONVSAM":
                     migrated_data_sets = migrated_nonvsam_filter(module, patterns, excludes)
-                elif mtype == "vsam":
-                    migrated_data_sets = migrated_vsam_filter(module, patterns, excludes)
-                filtered_data_sets = filtered_data_sets.union(migrated_data_sets)
+                elif mtype == "VSAM":
+                    migrated_data_sets, examined = migrated_vsam_filter(module, patterns, vsam_migrated_types, excludes)
+                filtered_data_sets = filtered_data_sets + migrated_data_sets
         if res_type == "NONVSAM":
             if contains:
                 init_filtered_data_sets = content_filter(
@@ -1292,11 +1282,11 @@ def run_module(module):
                 filtered_pds = pds_filter(
                     module, init_filtered_data_sets.get("pds"), patterns, excludes=excludes
                 )
-                filtered_data_sets = set(filtered_pds.keys())
+                filtered_data_sets = list(filtered_pds.keys())
             else:
                 filtered_data_sets = \
-                    init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
-
+                    list(init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys())))
+                filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
             # Filter data sets by age or size
             if size or age:
                 filtered_data_sets = data_set_attribute_filter(
@@ -1307,30 +1297,30 @@ def run_module(module):
             if volume:
                 filtered_data_sets = volume_filter(module, filtered_data_sets, volume)
 
-            res_args['examined'] = init_filtered_data_sets.get("searched")
+            examined = init_filtered_data_sets.get("searched")
 
-        elif res_type in ["CLUSTER", "DATA", "INDEX"]:
-            filtered_data_sets = vsam_filter(module, patterns, res_type, age=age)
-            res_args['examined'] = len(filtered_data_sets)
+        elif res_type == "VSAM":
+            filtered_data_sets, examined = vsam_filter(module, patterns, res_type, vsam_resource_types, age=age, excludes=excludes)
         elif res_type == "GDG":
-            filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended)
+            filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended, excludes)
 
-        # Filter out data sets that match one of the patterns in 'excludes'
-        if excludes and not pds_paths:
-            filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
-
-        for ds in filtered_data_sets:
-            if res_type == "NONVSAM":
-                members = filtered_pds.get(ds) or init_filtered_data_sets['pds'].get(ds)
-                if members:
-                    res_args['data_sets'].append(
-                        dict(name=ds, members=members, type=res_type)
-                    )
-                else:
-                    res_args['data_sets'].append(dict(name=ds, type=res_type))
-            else:
-                res_args['data_sets'].append(dict(name=ds, type=res_type))
-
+        # # Filter out data sets that match one of the patterns in 'excludes'
+        # if excludes and not pds_paths:
+        #     filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
+        if filtered_data_sets:
+            for ds in filtered_data_sets:
+                if ds:
+                    if res_type == "NONVSAM":
+                        members = filtered_pds.get(ds) or init_filtered_data_sets['pds'].get(ds)
+                        if members:
+                            res_args['data_sets'].append(
+                                dict(name=ds, members=members, type=res_type)
+                            )
+                        else:
+                            res_args['data_sets'].append(dict(name=ds, type=res_type))
+                    else:
+                        res_args['data_sets'].append(ds)
+    res_args['examined'] = examined
     res_args['matched'] = len(res_args['data_sets'])
     return res_args
 
@@ -1383,7 +1373,7 @@ def main():
                 type="list",
                 required=False,
                 elements="str",
-                choices=["vsam", "nonvsam"],
+                choices=["cluster", "data", "index", "nonvsam"],
                 aliases=["migrated_types"]
             ),
             volume=dict(

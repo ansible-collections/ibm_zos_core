@@ -564,10 +564,10 @@ def vsam_filter(module, patterns, vsam_types, age=None, excludes=None):
                             vsam_ignore = True
                             break
                 if not vsam_ignore:
+                    vsam_type = vsam_name.split('.')[-1]
+                    if vsam_type not in {"DATA", "INDEX"}:
+                        examined = examined + 1
                     for type in vsam_types:
-                        vsam_type = vsam_name.split('.')[-1]
-                        if vsam_type not in ("DATA", "INDEX"):
-                            examined = examined + 1
                         if _match_resource_type(type, vsam_type):
                             if age:
                                 if _age_filter(vsam_props[1], now, age):
@@ -602,13 +602,6 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
     filtered_data_sets = list()
     examined = 0
     for pattern in patterns:
-        # Fetch migrated datasets
-        rc, out, err = _vls_wrapper(pattern, migrated=True)
-        if rc > 4:
-            module.fail_json(
-                msg="Non-zero return code received while executing ZOAU shell command 'vls'",
-                rc=rc, stdout=out, stderr=err
-            )
         # Fetch non-migrtated datasets
         nonmigrated_data_sets = set()
         nmrc, nmout, nmerr = _vls_wrapper(pattern)
@@ -625,6 +618,13 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
                     vsam_type = vsam_name.split('.')[-1]
                     if _match_resource_type(type, vsam_type):
                         nonmigrated_data_sets.add(vsam_name)
+        # Fetch migrated datasets
+        rc, out, err = _vls_wrapper(pattern, migrated=True)
+        if rc > 4:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'vls'",
+                rc=rc, stdout=out, stderr=err
+            )
         # Compare migrated and non-migrated datasets and create list of only migrated datasets
         for entry in out.splitlines():
             if entry:
@@ -638,10 +638,10 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
                             break
                 if not vsam_ignore:
                     if vsam_name not in nonmigrated_data_sets:
+                        vsam_type = vsam_name.split('.')[-1]
+                        if vsam_type not in {"DATA", "INDEX"}:
+                            examined = examined + 1
                         for type in vsam_types:
-                            vsam_type = vsam_name.split('.')[-1]
-                            if vsam_type not in ("DATA", "INDEX"):
-                                examined = examined + 1
                             if _match_resource_type(type, vsam_type):
                                 filtered_data_sets.append({"name": vsam_name, "type": "MIGRATED", "migrated_resource_type": type})
     return filtered_data_sets, examined

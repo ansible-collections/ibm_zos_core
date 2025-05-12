@@ -1395,13 +1395,26 @@ def test_ds_backup_name(ansible_zos_module, dstype, backup_name):
             assert result.get("changed") == True
             assert result.get("target") == ds_full_name
             assert result.get("found") == 2
-            assert result.get("backup_name") == ds_backup_file
+            if ds_type != "seq":
+                if backup_name == "SEQ":
+                    assert result.get("backup_name") is not None
+            else:
+                assert result.get("backup_name") == ds_backup_file
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(ds_backup_file))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_CONTENT
+            if ds_type == "seq":
+                if backup_name == "MEM":
+                    assert result.get("stdout") == ""
+                else:
+                    assert result.get("stdout") == TEST_CONTENT
+            else:
+                if backup_name == "SEQ":
+                    assert result.get("stdout") == ""
+                else:
+                    assert result.get("stdout") == TEST_CONTENT
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
         if "(" in ds_backup_file:

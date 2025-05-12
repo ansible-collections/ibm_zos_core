@@ -306,7 +306,27 @@ options:
     type: bool
     default: false
     required: false
-
+  encoding:
+    description:
+      - Specifies which encodings the source file should be converted
+        from and to before archiving it.
+      - Supported character sets rely on the charset conversion utility
+        C(iconv) version; the most common character sets are supported.
+      - After conversion the files are stored in same location and name
+        as src and the same src is taken in consideration for archive.
+    type: dict
+    required: false
+    suboptions:
+      from:
+        description:
+          - The character set of the source I(src).
+        required: false
+        type: str
+      to:
+        description:
+          - The destination I(dest) character set for the output to be written as.
+        required: false
+        type: str
 attributes:
   action:
     support: none
@@ -404,6 +424,17 @@ EXAMPLES = r'''
       name: terse
       format_options:
         use_adrdssu: true
+
+# Use encoding to convert file encoding from one type to another
+- name: Archive data set into a terse after encoding Latin-1
+  zos_archive:
+    src: "USER.ARCHIVE.TEST"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 '''
 
 RETURN = r'''
@@ -461,11 +492,12 @@ import tarfile
 import traceback
 import zipfile
 from hashlib import sha256
+from os import path
 
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, mvs_cmd, validation)
+    better_arg_parser, data_set, mvs_cmd, validation, encode)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
 
@@ -564,6 +596,115 @@ def is_archive(path):
         If is archive.
     """
     return re.search(r'\.(tar|tar\.(gz|bz2|xz)|tgz|tbz2|zip|gz|bz2|xz|pax)$', os.path.basename(path), re.IGNORECASE)
+
+
+def encode_source(src, from_encoding, to_encoding, tmphlq):
+    """Convert encoding for given src
+
+    Parameters
+    ----------
+    src : str
+        Path to the USS source file or directory.
+    from_encoding : str
+        Charset to convert from.
+    to_encoding : str
+        Charset to convert to.
+    tmphlq : str
+        High level qualifier for temporary datasets.
+    """
+    try:
+        # idefining the required variables
+        is_uss_src = False
+        ds_type_src = None
+        src_data_set = None
+
+        # identifying the file type and choosing the right function to run
+        if path.sep in src:
+            is_uss_src = True
+        else:
+            src_data_set = data_set.MVSDataSet(src)
+            is_name_member = data_set.is_member(src_data_set.name)
+            dest_exists = False
+
+            if not is_name_member:
+                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
+            else:
+                dest_exists = data_set.DataSet.data_set_exists(
+                    data_set.extract_dsname(src_data_set.name),
+                    tmphlq=tmphlq
+                )
+            if not dest_exists:
+                raise EncodeError(
+                    "Data set {0} is not cataloged, please check data set provided in "
+                    "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
+                )
+            if is_name_member:
+                if not data_set.DataSet.data_set_member_exists(src_data_set.name):
+                    raise EncodeError("Cannot find member {0} in {1}".format(
+                        data_set.extract_member(src_data_set.raw_name),
+                        data_set.extract_dsname(src_data_set.raw_name)
+                    ))
+                ds_type_src = "PS"
+            else:
+                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name, tmphlq=tmphlq)
+
+            if not ds_type_src:
+                raise EncodeError(
+                    "Determinig data set type"
+                    "Failed {0}".format(src_data_set.raw_name)
+                )
+
+        # as dest is not defined and is expected to be the same src
+        if src_data_set:
+            dest = src_data_set.name
+        else:
+            dest = src
+        is_uss_dest = is_uss_src
+        ds_type_dest = ds_type_src
+
+        if ds_type_dest == "GDG":
+            raise EncodeError("Encoding of a whole generation data group is not supported.")
+
+        new_src = src_data_set.name if src_data_set else src
+
+        enc_utils = encode.EncodeUtils()
+        code_set = enc_utils.get_codeset()
+        enc_utils.tmphlq = tmphlq
+
+        if from_encoding not in code_set:
+            raise EncodeError(
+                "Invalid codeset: Please check the value of the from_encoding!"
+            )
+        if to_encoding not in code_set:
+            raise EncodeError(
+                "Invalid codeset: Please check the value of the to_encoding!"
+            )
+        if from_encoding == to_encoding:
+            raise EncodeError(
+                "The value of the from and to are the same, no need to do the conversion!"
+            )
+
+        if is_uss_src and is_uss_dest:
+            convert_rc = enc_utils.uss_convert_encoding_prev(
+                new_src, dest, from_encoding, to_encoding
+            )
+        else:
+            convert_rc = enc_utils.mvs_convert_encoding(
+                new_src,
+                dest,
+                from_encoding,
+                to_encoding,
+                src_type=ds_type_src,
+                dest_type=ds_type_dest,
+                tmphlq=tmphlq
+            )
+
+        if convert_rc:
+            if is_uss_dest:
+                enc_utils.uss_tag_encoding(dest, to_encoding)
+
+    except Exception as e:
+        raise EncodeError("Failed to encode in the required codeset!") from e
 
 
 class Archive():
@@ -1604,6 +1745,24 @@ class XMITArchive(MVSArchive):
         return msg.format(sys_abend, reason_code, error_hint)
 
 
+class EncodeError(Exception):
+    def __init__(self, message):
+        """Error during encoding.
+
+        Parameters
+        ----------
+        message : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
+        self.msg = 'An error occurred during encoding: "{0}"'.format(message)
+        super(EncodeError, self).__init__(self.msg)
+
+
 def run_module():
     """Initialize module.
 
@@ -1686,7 +1845,21 @@ def run_module():
                 )
             ),
             tmp_hlq=dict(type='str'),
-            force=dict(type='bool', default=False)
+            force=dict(type='bool', default=False),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(
+                        type='str',
+                        required=False,
+                    ),
+                    "to": dict(
+                        type='str',
+                        required=False,
+                    )
+                }
+            )
         ),
         supports_check_mode=True,
     )
@@ -1761,7 +1934,14 @@ def run_module():
             )
         ),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
-        force=dict(type='bool', default=False)
+        force=dict(type='bool', default=False),
+        encoding=dict(
+            type='dict',
+            options={
+                'from' : dict(type='str'),
+                "to" : dict(type='str')
+            }
+        )
     )
 
     result = dict(
@@ -1778,6 +1958,22 @@ def run_module():
         module.params = parsed_args
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
+
+    encoding = parsed_args.get("encoding")
+    src = parsed_args.get("src")
+    tmphlq = module.params.get('tmp_hlq')
+
+    if encoding:
+        from_encoding = parsed_args.get("encoding").get("from").upper()
+        to_encoding = parsed_args.get("encoding").get("to").upper()
+
+        if isinstance(src, list):
+            for src_item in src:
+                encode_source(src_item, from_encoding, to_encoding, tmphlq)
+        elif isinstance(src, str):
+            encode_source(src, from_encoding, to_encoding, tmphlq)
+    else:
+        module.params["encoding"] = None
 
     archive = get_archive_handler(module)
 

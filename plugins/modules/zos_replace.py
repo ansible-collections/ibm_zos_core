@@ -134,12 +134,6 @@ EXAMPLES = r"""
     target: "/tmp/source"
     regexp: '^MOUNTPOINT*'
     after: export ZOAU_ROOT
-
-- name: Remove all matches found in a sequential data set
-  zos_replace:
-    target: "SEQ.SOURCE"
-    regexp: '^MOUNTPOINT*'
-    register: output
 """
 
 RETURN = r"""
@@ -201,7 +195,7 @@ except Exception:
     zoau_io = ZOAUImportError(traceback.format_exc())
 
 
-def resolve_src_name(module, name, results, tmphlq):
+def resolve_src_name(module, name, result, tmp_hlq):
     """Function to resolve and validate the existence of the dataset or uss file.
 
     Parameters
@@ -210,9 +204,9 @@ def resolve_src_name(module, name, results, tmphlq):
             Ansible object to execute commands.
         name : str
             Name of the src
-        results : object
+        result : object
             Group of vars to display on module fail.
-        tmphlq : str
+        tmp_hlq : str
             String to resolve data source name.
 
     Returns
@@ -225,30 +219,27 @@ def resolve_src_name(module, name, results, tmphlq):
             if os.path.isfile(name):
                 return name
             else:
-                module.fail_json(rc=256, msg=f"Path {name} is a directory, please specify a file path.", **results)
+                module.fail_json(rc=256, msg=f"Path {name} is a directory, please specify a file path.", **result)
         else:
-            module.fail_json(rc=257, msg=f"USS path {name} does not exist.", **results)
+            module.fail_json(rc=257, msg=f"USS path {name} does not exist.", **result)
     else:
         try:
-            if not data_set.DataSet.is_gds_relative_name(name):
-                is_an_alias, base_name = data_set.DataSet.get_name_if_data_set_is_alias(name=name, tmp_hlq=tmphlq)
+            data_set_obj = data_set.MVSDataSet(name=name)
+            name = data_set_obj.name
+            if not data_set_obj.is_gds_active:
+                is_an_alias, base_name = data_set.DataSet.get_name_if_data_set_is_alias(name=name, tmp_hlq=tmp_hlq)
                 if is_an_alias:
                     name = base_name
-            dataset = data_set.MVSDataSet(
-                name=name
-            )
         except Exception:
             message_dict = dict(msg=f"Unable to resolve name of data set {name}.")
-            module.fail_json(**message_dict, **results)
-
-        name = dataset.name
+            module.fail_json(**message_dict, **result)
 
         if data_set.DataSet.is_gds_relative_name(name):
-            module.fail_json(msg="{0} does not exist".format(name))
+            module.fail_json(msg="{0} does not exist".format(name), **result)
 
         ds_utils = data_set.DataSetUtils(name)
         if not ds_utils.exists():
-            module.fail_json(msg=f"{name} does NOT exist.", **results)
+            module.fail_json(msg=f"{name} does NOT exist.", **result)
 
         return name
 
@@ -492,13 +483,13 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
     """
     decode_list = open_file(file, encoding, uss)
 
-    lit_rex = False
+    is_regex = False
 
     if literal:
-        lit_rex = True if "regexp" in literal else False
+        is_regex = True if "regexp" in literal else False
 
     if not after and not before:
-        new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace, literal=lit_rex)
+        new_full_text, replaced = replace_text(content=decode_list, regexp=regexp, replace=replace, literal=is_regex)
         return new_full_text, replaced, new_full_text
 
     begin_block_code, end_block_code, match = search_bf_af(text=decode_list, literal=literal, before=before, after=after)
@@ -507,7 +498,7 @@ def replace_func(file, regexp, replace, module, uss, literal, encoding="cp1047",
         module.fail_json(msg="Pattern for before/after params did not match the given file.")
 
     new_text, replaced = replace_text(content=decode_list[begin_block_code:end_block_code],
-                                      regexp=regexp, replace=replace, literal=lit_rex)
+                                      regexp=regexp, replace=replace, literal=is_regex)
     full_new_text = merge_text(original=decode_list, replace=new_text, begin=begin_block_code, end=end_block_code)
     return full_new_text, replaced, new_text
 
@@ -558,8 +549,8 @@ def run_module():
     result["target"] = src
     result["changed"] = changed
 
-    tmphlq = parsed_args.get('tmp_hlq')
-    src = resolve_src_name(module=module, name=src, results=result, tmphlq=tmphlq)
+    tmp_hlq = parsed_args.get('tmp_hlq')
+    src = resolve_src_name(module=module, name=src, result=result, tmp_hlq=tmp_hlq)
     uss = True if "/" in src else False
     after = module.params.get("after")
     before = module.params.get("before")
@@ -570,7 +561,7 @@ def run_module():
         encoding = "cp1047"
     backup = module.params.get("backup")
     if parsed_args.get('backup_name') and backup:
-        backup = parsed_args.get('backup_name')
+        backup_name = parsed_args.get('backup_name')
     literal = module.params.get("literal")
 
     if literal:
@@ -580,18 +571,16 @@ def run_module():
             module.fail_json(msg="Use of literal requires the use of the before option too.", **result)
 
     if backup:
-        if isinstance(backup, bool):
-            backup = None
         try:
             if uss:
-                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
+                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup_name, compress=False)
             else:
-                backup_ds = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
+                backup_ds = Backup.mvs_file_backup(dsn=src, bk_dsn=backup_name, tmphlq=tmp_hlq)
                 if "(+1)" in backup_ds:
                     backup_ds = backup_ds.replace("(+1)", "(0)")
-                result['backup_name'] = resolve_src_name(module=module, name=backup_ds, results=result, tmphlq=tmphlq)
+                result['backup_name'] = resolve_src_name(module=module, name=backup_ds, result=result, tmp_hlq=tmp_hlq)
         except Exception as err:
-            module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}", **result)
+            module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}.", **result)
 
     if uss:
         full_text, replaced, fragment = replace_func(file=src, regexp=regexp, replace=replace, module=module, uss=uss,

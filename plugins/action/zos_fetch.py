@@ -384,8 +384,7 @@ class ActionModule(ActionBase):
                 display.vvv(u"ibm_zos_fetch SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
                             sftp_transfer_method), host=self._play_context.remote_addr)
 
-            # TODO: check that this is indeed None when become_user is not present in the task.
-            if self._play_context._become_user:
+            if self._connection.become:
                 was_user_updated = True
                 self._connection.set_option('remote_user', self._play_context._become_user)
                 display.vvv(

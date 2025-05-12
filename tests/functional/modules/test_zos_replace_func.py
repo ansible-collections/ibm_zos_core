@@ -1357,10 +1357,10 @@ def test_ds_backup_no_name(ansible_zos_module, dstype):
             assert result.get("found") == 2
             backup_name = result.get("backup_name")
             assert result.get("backup_name") is not None
-        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd="cat {0}".format(backup_name))
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup_name))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
     finally:

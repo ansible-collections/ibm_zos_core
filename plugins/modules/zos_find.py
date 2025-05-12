@@ -105,7 +105,7 @@ options:
     required: false
   resource_type:
     description:
-      - The type of resource to search.
+      - The types of resource to search.
       - C(nonvsam) refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
@@ -119,19 +119,23 @@ options:
       - index
       - gdg
       - migrated
-    type: str
+    type: list
+    elements: str
     required: false
     default: "nonvsam"
   migrated_type:
     description:
       - A Migrated dataset related attribute, only valid when C(resource_type=migrated).
-      - If provided, will search for only that type of migrated datasets.
+      - If provided, will search for only those types of migrated datasets.
     choices:
       - nonvsam
-      - vsam
-    type: str
+      - cluster
+      - data
+      - index
+    type: list
+    elements: str
     required: false
-    default: "vsam and nonvsam"
+    default: ["vsam", "nonvsam"]
   volume:
     description:
       - If provided, only the data sets allocated in the specified list of
@@ -249,22 +253,27 @@ EXAMPLES = r"""
   zos_find:
     patterns:
       - USER.*
-    resource_type: cluster
+    resource_type: 
+      - 'cluster'
 
 - name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
   zos_find:
     patterns:
       - USER.*
-    resource_type: gdg
+    resource_type: 
+      - 'gdg'
     limit: 30
     scratch: true
     purge: true
 
-- name: Find all migrated data sets starting with the word 'USER'
+- name: Find all migrated and nonvsam data sets starting with the word 'USER'
   zos_find:
     patterns:
       - USER.*
-    resource_type: migrated
+    resource_type: 
+      - 'migrated'
+    migrated_type:
+      - 'nonvsam'
 """
 
 
@@ -1245,6 +1254,7 @@ def run_module(module):
     vsam_resource_types = set()
     filtered_migrated_types = set()
     vsam_migrated_types = set()
+
     for type in resource_type:
         if type in vsam_types:
             filtered_resource_types.add("VSAM")
@@ -1320,13 +1330,10 @@ def run_module(module):
                 filtered_data_sets = data_set_attribute_filter(
                     module, filtered_data_sets, size=size, age=age, age_stamp=age_stamp
                 )
-
             # Filter data sets by volume
             if volume:
                 filtered_data_sets = volume_filter(module, filtered_data_sets, volume)
-
             examined = init_filtered_data_sets.get("searched")
-
         elif res_type == "VSAM":
             filtered_data_sets, examined = vsam_filter(module, patterns, vsam_resource_types, age=age, excludes=excludes)
         elif res_type == "GDG":

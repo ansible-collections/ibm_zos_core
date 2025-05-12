@@ -650,7 +650,6 @@ def test_find_vsam_and_gdg_data_sets(ansible_zos_module, volumes_on_systems):
             patterns=[f'{TEST_SUITE_HLQ}.*'],
             resource_type=['cluster', 'gdg']
         )
-        print(find_res.contacted.values())
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             assert val.get('matched') == len(val.get('data_sets'))
@@ -800,13 +799,13 @@ def test_find_migrated_and_gdg_data_sets(ansible_zos_module):
         gdg_a = get_tmp_ds_name()
         # Create GDG with limit 3
         hosts.all.shell(cmd=f"dtouch -tgdg -L3 {gdg_a}")
+        MIGRATED_DATASETS_PATTERNS.append(gdg_a)
         find_res = hosts.all.zos_find(
             patterns = MIGRATED_DATASETS_PATTERNS,
             resource_type = ['migrated', 'gdg'],
             migrated_type = ['nonvsam']
         )
         for val in find_res.contacted.values():
-            print(val)
             assert len(val.get('data_sets')) != 0
             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
             for ds in val.get('data_sets'):

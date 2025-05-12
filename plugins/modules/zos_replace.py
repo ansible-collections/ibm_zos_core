@@ -190,9 +190,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import zoau_io
+    from zoautil_py import zoau_io, datasets
 except Exception:
     zoau_io = ZOAUImportError(traceback.format_exc())
+    datasets = ZOAUImportError(traceback.format_exc())
 
 
 def resolve_src_name(module, name, result, tmp_hlq):
@@ -608,9 +609,12 @@ def run_module():
                                                      encoding=encoding, after=after, before=before, literal=literal)
         try:
             # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
-            with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as dataset_write:
-                for line in full_text:
-                    dataset_write.write(line.rstrip())
+            with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as _:
+                pass
+            for line in full_text:
+                rc_write = datasets.write(dataset_name=src, content=line.rstrip(), append=True)
+                if rc_write != 0:
+                    raise Exception("Non zero return code from datasets.write.")
         except Exception as e:
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",

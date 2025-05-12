@@ -559,7 +559,7 @@ def vsam_filter(module, patterns, vsam_types, age=None, excludes=None):
                     for type in vsam_types:
                         vsam_type = vsam_name.split('.')[-1]
                         if vsam_type not in ("DATA", "INDEX"):
-                            examined += 1
+                            examined = examined + 1
                         if _match_resource_type(type, vsam_type):
                             if age:
                                 if _age_filter(vsam_props[1], now, age):
@@ -614,7 +614,7 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
                     for type in vsam_types:
                         vsam_type = vsam_name.split('.')[-1]
                         if vsam_type not in ("DATA", "INDEX"):
-                            examined += 1
+                            examined = examined + 1
                         if _match_resource_type(type, vsam_type):
                             filtered_data_sets.append({"name": vsam_name, "type": "MIGRATED", "subtype": type})
     return filtered_data_sets, examined
@@ -1214,7 +1214,7 @@ def run_module(module):
     fifo = module.params.get('fifo')
     vsam_types = {"CLUSTER", "DATA", "INDEX"}
     res_args = dict(data_sets=[])
-    examined = 0
+    examined_ds = 0
     filtered_resource_types = set()
     vsam_resource_types = set()
     filtered_migrated_types = set()
@@ -1255,6 +1255,7 @@ def run_module(module):
         else:
             module.fail_json(size=size, msg="failed to process size")
     for res_type in filtered_resource_types:
+        examined = 0
         filtered_data_sets = list()
         init_filtered_data_sets = filtered_pds = dict()
         if res_type == "MIGRATED":
@@ -1300,7 +1301,7 @@ def run_module(module):
             examined = init_filtered_data_sets.get("searched")
 
         elif res_type == "VSAM":
-            filtered_data_sets, examined = vsam_filter(module, patterns, res_type, vsam_resource_types, age=age, excludes=excludes)
+            filtered_data_sets, examined = vsam_filter(module, patterns, vsam_resource_types, age=age, excludes=excludes)
         elif res_type == "GDG":
             filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended, excludes)
 
@@ -1320,7 +1321,8 @@ def run_module(module):
                             res_args['data_sets'].append(dict(name=ds, type=res_type))
                     else:
                         res_args['data_sets'].append(ds)
-    res_args['examined'] = examined
+        examined_ds = examined_ds + examined
+    res_args['examined'] = examined_ds
     res_args['matched'] = len(res_args['data_sets'])
     return res_args
 

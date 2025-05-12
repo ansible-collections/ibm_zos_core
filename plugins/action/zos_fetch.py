@@ -463,4 +463,21 @@ class ActionModule(ActionBase):
             rm_cmd = "rm -r {0}".format(remote_path)
             if src_type != "PO" and src_type != "GDG":
                 rm_cmd = rm_cmd.replace(" -r", "")
+
+            # If another user created the temporary files, we'll need to run rm
+            # with it too, lest we get a permissions issue.
+            if self._connection.become:
+                self._connection.set_option('remote_user', self._play_context._become_user)
+                display.vvv(
+                    u"ibm_zos_fetch SSH cleanup user updated to {0}".format(self._play_context._become_user),
+                    host=self._play_context.remote_addr
+                )
+
             self._connection.exec_command(rm_cmd)
+
+            if self._connection.become:
+                self._connection.set_option('remote_user', self._play_context._remote_user)
+                display.vvv(
+                    u"ibm_zos_fetch SSH cleanup user restored to {0}".format(self._play_context._remote_user),
+                    host=self._play_context.remote_addr
+                )

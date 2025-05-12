@@ -127,10 +127,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             except exceptions.ZOAUException as copy_exception:
                 cp_rc = copy_exception.response.rc
         else:
-            if DataSet.is_gds_positive_relative_name(bk_dsn):
-                cp_rc = datasets.copy(dsn, bk_dsn)
-            else:
-                cp_rc = _copy_ds(dsn, bk_dsn, tmphlq=tmphlq)
+            cp_rc = datasets.copy(dsn, bk_dsn)
 
         if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()

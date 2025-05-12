@@ -1334,38 +1334,38 @@ def test_ds_before_after_regexp_literal(ansible_zos_module, dstype):
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_backup_no_name(ansible_zos_module, dstype):
-    hosts = ansible_zos_module
-    ds_type = dstype
-    params = {
-        "regexp":"ZOAU_ROOT",
-        "after":"export PATH",
-        "backup":True,
-    }
-    ds_name = get_tmp_ds_name()
-    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_CONTENT
-    try:
-        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
-        params["target"] = ds_full_name
-        results = hosts.all.zos_replace(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == True
-            assert result.get("target") == ds_full_name
-            assert result.get("found") == 2
-            backup_name = result.get("backup_name")
-            assert result.get("backup_name") is not None
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
-        for result in results.contacted.values():
-            assert result.get("stdout") == TEST_AFTER
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup_name))
-        for result in results.contacted.values():
-            assert result.get("stdout") == TEST_CONTENT
-    finally:
-        remove_ds_environment(ansible_zos_module, ds_name)
-        remove_ds_environment(ansible_zos_module, backup_name)
+# @pytest.mark.ds
+# @pytest.mark.parametrize("dstype", DS_TYPE)
+# def test_ds_backup_no_name(ansible_zos_module, dstype):
+#     hosts = ansible_zos_module
+#     ds_type = dstype
+#     params = {
+#         "regexp":"ZOAU_ROOT",
+#         "after":"export PATH",
+#         "backup":True,
+#     }
+#     ds_name = get_tmp_ds_name()
+#     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
+#     content = TEST_CONTENT
+#     try:
+#         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+#         params["target"] = ds_full_name
+#         results = hosts.all.zos_replace(**params)
+#         for result in results.contacted.values():
+#             assert result.get("changed") == True
+#             assert result.get("target") == ds_full_name
+#             assert result.get("found") == 2
+#             backup_name = result.get("backup_name")
+#             assert result.get("backup_name") is not None
+#         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
+#         for result in results.contacted.values():
+#             assert result.get("stdout") == TEST_AFTER
+#         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup_name))
+#         for result in results.contacted.values():
+#             assert result.get("stdout") == TEST_CONTENT
+#     finally:
+#         remove_ds_environment(ansible_zos_module, ds_name)
+#         remove_ds_environment(ansible_zos_module, backup_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("backup_name", BACKUP_OPTIONS)

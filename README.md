@@ -135,7 +135,7 @@ All releases will meet the following test criteria.
 * ansible-core v2.15.x
 * Python 3.11.x
 * IBM Open Enterprise SDK for Python 3.12.x
-* IBM Z Open Automation Utilities (ZOAU) 1.3.3.x
+* IBM Z Open Automation Utilities (ZOAU) 1.3.4.x
 * z/OS V2R5
 
 ## Contributing

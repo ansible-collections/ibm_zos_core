@@ -115,6 +115,12 @@ plugins:
       name: zos_script
       namespace: ''
       version_added: 1.8.0
+    zos_stat:
+      description: Retrieve facts from MVS data sets, USS files, aggregates and generation
+        data groups
+      name: zos_stat
+      namespace: ''
+      version_added: 1.14.0
     zos_tso_command:
       description: Execute TSO commands
       name: zos_tso_command
@@ -130,9 +136,14 @@ plugins:
       name: zos_volume_init
       namespace: ''
       version_added: 1.6.0
+    zos_zfs_resize:
+      description: Resize a zfs data set.
+      name: zos_zfs_resize
+      namespace: ''
+      version_added: 1.13.0
   netconf: {}
   shell: {}
   strategy: {}
   test: {}
   vars: {}
-version: 1.12.0-beta.1
+version: 1.14.0-beta.1

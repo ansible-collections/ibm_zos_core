@@ -1,5 +1,0 @@
-minor_changes:
-   - zos_copy - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/1968).
-   - zos_script - Adds logging of Jinja rendered template content when `use_template` is true and verbosity level `-vvv` is used.
-     (https://github.com/ansible-collections/ibm_zos_core/pull/1968).

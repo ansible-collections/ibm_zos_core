@@ -1084,7 +1084,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, ds_format, da
             assert result.get("dest") == archive_data_set
             assert src_data_set in result.get("archived")
             cmd_result = hosts.all.shell(cmd = f"dls {hlq}.*")
-  
+
             for c_result in cmd_result.contacted.values():
                 assert archive_data_set in c_result.get("stdout")
 

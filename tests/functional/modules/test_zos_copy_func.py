@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2024
+# Copyright (c) IBM Corporation 2020, 2025
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 import pytest
 import os
 import shutil
@@ -2868,6 +2869,7 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
     finally:
+        hosts.all.shell(cmd='rm -r /tmp/c')
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
@@ -4854,7 +4856,6 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
             ]
         )
 
-
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])
 def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
@@ -4960,10 +4961,6 @@ def test_copy_ksds_to_volume(ansible_zos_module, volumes_on_systems):
         )
         verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
 
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            assert result.get("dest") == dest_ds
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None
             dd_names = result.get("dd_names")

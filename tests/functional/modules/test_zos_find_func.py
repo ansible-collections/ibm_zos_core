@@ -488,6 +488,7 @@ def test_find_vsam_pattern_disp_old(ansible_zos_module, volumes_on_systems):
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
+        hosts.all.shell(cmd=f"drm '{jcl_ds}'")
         hosts.all.zos_data_set(
             batch=[
                 {
@@ -654,7 +655,7 @@ def test_find_vsam_and_gdg_data_sets(ansible_zos_module, volumes_on_systems):
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             assert val.get('matched') == len(val.get('data_sets'))
-            assert val.get('data_sets')[0].get("name", None) == VSAM_NAMES[0]
+            assert {"name":VSAM_NAMES[0], "type": "CLUSTER"} in val.get('data_sets')
             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
     finally:
         hosts.all.zos_data_set(
@@ -791,7 +792,7 @@ def test_find_migrated_data_sets_with_migrated_type(ansible_zos_module):
         assert len(val.get('data_sets')) != 0
         for ds in val.get('data_sets'):
             assert ds.get("type") == "MIGRATED"
-            assert ds.get("subtype") == "NONVSAM"
+            assert ds.get("migrated_resource_type") == "NONVSAM"
 
 
 def test_find_migrated_and_gdg_data_sets(ansible_zos_module):

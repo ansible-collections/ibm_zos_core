@@ -1,4 +1,4 @@
 minor_changes:
-  - zos_find - Adds feature to find migrated datasets.
+  - zos_find - Adds features to find migrated datasets and also allows to find different types of data sets at the same time.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2073).
     

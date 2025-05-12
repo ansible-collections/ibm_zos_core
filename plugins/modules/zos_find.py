@@ -110,7 +110,7 @@ options:
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
       - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
-      - C(migrated) refers to listing migrated datasets. Only the C(excludes) option can be used along
+      - C(migrated) refers to listing migrated datasets. Only C(excludes) and C(migrated_type) options can be used along
         with this option. The module only searches based on dataset patterns.
     choices:
       - nonvsam
@@ -206,7 +206,8 @@ notes:
   - The time taken to execute the module is proportional to the number of data
     sets present on the system and how large the data sets are.
   - When searching for content within data sets, only non-binary content is considered.
-  - As a migrated dataset's information can't be retrieved without recalling it first, other options besides C(excludes) are not supported.
+  - As a migrated dataset's information can't be retrieved without recalling it first, other options
+    besides C(excludes) and C(migrated_type) are not supported.
 seealso:
 - module: zos_data_set
 """

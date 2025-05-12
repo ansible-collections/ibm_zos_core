@@ -40,6 +40,8 @@ VSAM_NAMES = [
     f"{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
+MIGRATED_DATASETS_PATTERNS = ['IMSBLD.I15STSMM.*','IMSBLD.DCC71QPP.*']
+
 DATASET_TYPES = ['seq', 'pds', 'pdse']
 
 LOCK_VSAM_JCL = """//SLEEP    JOB (T043JM,JM00,1,0,0,0),'SLEEP - JRM',CLASS=R,
@@ -91,7 +93,7 @@ def test_find_gdg_data_sets(ansible_zos_module):
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
-            resource_type="gdg",
+            resource_type=["gdg"],
             limit=3,
         )
 
@@ -103,7 +105,7 @@ def test_find_gdg_data_sets(ansible_zos_module):
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
-            resource_type="gdg",
+            resource_type=["gdg"],
             extended=True,
         )
 
@@ -115,7 +117,7 @@ def test_find_gdg_data_sets(ansible_zos_module):
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
-            resource_type="gdg",
+            resource_type=["gdg"],
             purge=True,
             scratch=True,
         )
@@ -411,7 +413,7 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
         # This test should find all three
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
-            resource_type='cluster'
+            resource_type=['cluster']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -420,7 +422,7 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
-            resource_type='data'
+            resource_type=['data']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -429,12 +431,28 @@ def test_find_vsam_pattern(ansible_zos_module, volumes_on_systems):
 
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
-            resource_type='index'
+            resource_type=['data', 'cluster']
+        )
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 2
+            assert val.get('matched') == len(val.get('data_sets'))
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
+            resource_type=['index']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
             assert val.get('matched') == len(val.get('data_sets'))
             assert val.get('data_sets')[0].get("name", None) == f"{VSAM_NAMES[0]}.INDEX"
+
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
+            resource_type=['cluster', 'data', 'index']
+        )
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 3
+            assert val.get('matched') == len(val.get('data_sets'))
     finally:
         hosts.all.zos_data_set(
             batch=[
@@ -463,7 +481,7 @@ def test_find_vsam_pattern_disp_old(ansible_zos_module, volumes_on_systems):
         hosts.all.shell(cmd=f"decho \"{LOCK_VSAM_JCL.format(VSAM_NAMES[0])}\" '{jcl_ds}'; jsub '{jcl_ds}'")
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.FUNCTEST.*'],
-            resource_type='cluster'
+            resource_type=['cluster']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -491,7 +509,7 @@ def test_find_vsam_in_volume(ansible_zos_module, volumes_on_systems):
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.FIND.VSAM.*.*'],
             volumes=[volume_1],
-            resource_type='cluster'
+            resource_type=['cluster']
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1
@@ -593,17 +611,14 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
     hosts = ansible_zos_module
     search_string = "hello"
     try:
-
         special_chars = ["$", "-", "@", "#"]
         special_names = [ "".join([get_tmp_ds_name(mlq_size=7, llq_size=6, symbols=True), special_chars[i]]) for i in range(4)]
         # Creates a command like  dtouch dsname &&  dtouch dsname && dtouch dsname to avoid multiple ssh calls and improve test performance
         dtouch_command = " && ".join([f"dtouch -tseq '{item}'" for item in special_names])
         hosts.all.shell(cmd=dtouch_command)
-
         # Creates a command like decho dsname && decho dsname && decho dsname to avoid multiple ssh calls and improve test performance
         decho_command = " && ".join([f"decho '{search_string}' '{item}'" for item in special_names])
         hosts.all.shell(cmd=decho_command)
-
         find_res = hosts.all.zos_find(
             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
             contains=search_string
@@ -619,23 +634,145 @@ def test_find_sequential_special_data_sets_containing_single_string(ansible_zos_
             hosts.all.shell(cmd=f"drm '{ds}'")
 
 
+def test_find_vsam_and_gdg_data_sets(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    try:
+        # Create GDG
+        gdg_a = get_tmp_ds_name()
+        hosts.all.shell(cmd=f"dtouch -tgdg -L3 {gdg_a}")
+        # Create VSAM Dataset
+        volumes = Volume_Handler(volumes_on_systems)
+        for vsam in VSAM_NAMES:
+            volume = volumes.get_available_vol()
+            create_vsam_ksds(vsam, hosts, volume)
+        # This test should cluster and gdg datasets
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*'],
+            resource_type=['cluster', 'gdg']
+        )
+        print(find_res.contacted.values())
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 2
+            assert val.get('matched') == len(val.get('data_sets'))
+            assert val.get('data_sets')[0].get("name", None) == VSAM_NAMES[0]
+            assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
+    finally:
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name":i,
+                    "state":'absent'
+                } for i in VSAM_NAMES
+            ]
+        )
+        hosts.all.shell(cmd=f"drm {gdg_a}")
+
+
+def test_find_gdg_and_nonvsam_data_sets(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        gdg_b = get_tmp_ds_name()
+        # one with EXTENDED flag -X
+        hosts.all.shell(cmd=f"dtouch -tgdg -L1 -X {gdg_b}")
+        # Create 3 sequential datasets
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name":i,
+                    "type":'seq',
+                    "state":'present'
+                } for i in SEQ_NAMES
+            ]
+        )
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            resource_type=["gdg", "nonvsam"],
+        )
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) == 4
+            assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        # Remove GDG.
+        hosts.all.shell(cmd=f"drm {gdg_b}")
+        # Remove SEQ Datasets
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name":i,
+                    "state":'absent'
+                } for i in SEQ_NAMES
+            ]
+        )
+
+
+def test_find_vsam_and_nonvsam_data_sets(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    try:
+        # Create VSAM Dataset
+        volumes = Volume_Handler(volumes_on_systems)
+        for vsam in VSAM_NAMES:
+            volume = volumes.get_available_vol()
+            create_vsam_ksds(vsam, hosts, volume)
+        # Create 3 sequential datasets
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name":i,
+                    "type":'seq',
+                    "state":'present'
+                } for i in SEQ_NAMES
+            ]
+        )
+        find_res = hosts.all.zos_find(
+            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+            resource_type=["data", "nonvsam"],
+        )
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) == 4
+            assert f'{VSAM_NAMES[0]}.DATA' in val.get('data_sets')[0].get("name", None)
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        # Remove VSAM.
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name":i,
+                    "state":'absent'
+                } for i in VSAM_NAMES
+            ]
+        )
+        # Remove SEQ Datasets
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name":i,
+                    "state":'absent'
+                } for i in SEQ_NAMES
+            ]
+        )
+
+
 def test_find_migrated_data_sets(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(
-        patterns=['IMSBLD.I15STSMM.*','IMSBLD.DCC71QPP.*'],
-        resource_type='migrated'
+        patterns = MIGRATED_DATASETS_PATTERNS,
+        resource_type = ['migrated']
     )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) != 0
         for ds in val.get('data_sets'):
             assert ds.get("type") == "MIGRATED"
 
+
 def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(
-        patterns=['IMSBLD.I15STSMM.*','IMSBLD.DCC71QPP.*'],
-        resource_type='migrated',
-        excludes='.*F4'
+        patterns = MIGRATED_DATASETS_PATTERNS,
+        resource_type = ['migrated'],
+        excludes = '.*F4'
     )
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) != 0

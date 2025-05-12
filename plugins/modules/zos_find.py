@@ -594,12 +594,30 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
     filtered_data_sets = list()
     examined = 0
     for pattern in patterns:
+        # Fetch migrated datasets
         rc, out, err = _vls_wrapper(pattern, migrated=True)
         if rc > 4:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
                 rc=rc, stdout=out, stderr=err
             )
+        # Fetch non-migrtated datasets
+        nonmigrated_data_sets = set()
+        nmrc, nmout, nmerr = _vls_wrapper(pattern)
+        if nmrc > 4:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'vls'",
+                rc=nmrc, stdout=nmout, stderr=nmerr
+            )
+        for entry in nmout.splitlines():
+            if entry:
+                vsam_props = entry.split()
+                vsam_name = vsam_props[0]
+                for type in vsam_types:
+                    vsam_type = vsam_name.split('.')[-1]
+                    if _match_resource_type(type, vsam_type):
+                        nonmigrated_data_sets.add(vsam_name)
+        # Compare migrated and non-migrated datasets and create list of only migrated datasets
         for entry in out.splitlines():
             if entry:
                 vsam_props = entry.split()
@@ -611,12 +629,13 @@ def migrated_vsam_filter(module, patterns, vsam_types, excludes):
                             vsam_ignore = True
                             break
                 if not vsam_ignore:
-                    for type in vsam_types:
-                        vsam_type = vsam_name.split('.')[-1]
-                        if vsam_type not in ("DATA", "INDEX"):
-                            examined = examined + 1
-                        if _match_resource_type(type, vsam_type):
-                            filtered_data_sets.append({"name": vsam_name, "type": "MIGRATED", "subtype": type})
+                    if vsam_name not in nonmigrated_data_sets:
+                        for type in vsam_types:
+                            vsam_type = vsam_name.split('.')[-1]
+                            if vsam_type not in ("DATA", "INDEX"):
+                                examined = examined + 1
+                            if _match_resource_type(type, vsam_type):
+                                filtered_data_sets.append({"name": vsam_name, "type": "MIGRATED", "subtype": type})
     return filtered_data_sets, examined
 
 

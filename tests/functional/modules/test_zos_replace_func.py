@@ -1336,7 +1336,7 @@ def test_ds_before_after_regexp_literal(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_backup_no_name(ansible_zos_module, dstype, backup_name):
+def test_ds_backup_no_name(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = {

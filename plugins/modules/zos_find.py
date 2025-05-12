@@ -677,7 +677,7 @@ def data_set_attribute_filter(
     return filtered_data_sets
 
 
-def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended):
+def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended, excludes):
     """ Filter Generation Data Groups based on their attributes.
 
     Parameters

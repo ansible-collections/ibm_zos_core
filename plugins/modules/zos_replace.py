@@ -610,7 +610,7 @@ def run_module():
                                                      encoding=encoding, after=after, before=before, literal=literal)
         try:
             # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
-            with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as _:
+            with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as ds:
                 pass
             for line in full_text:
                 rc_write = datasets.write(dataset_name=src, content=line.rstrip(), append=True)

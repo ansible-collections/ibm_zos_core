@@ -778,3 +778,39 @@ def test_find_migrated_data_sets_with_excludes(ansible_zos_module):
         assert len(val.get('data_sets')) != 0
         for ds in val.get('data_sets'):
             assert not re.fullmatch(r".*F4", ds.get("name"))
+
+
+def test_find_migrated_data_sets_with_migrated_type(ansible_zos_module):
+    hosts = ansible_zos_module
+    find_res = hosts.all.zos_find(
+        patterns = MIGRATED_DATASETS_PATTERNS,
+        resource_type = ['migrated'],
+        migrated_type = ['nonvsam']
+    )
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) != 0
+        for ds in val.get('data_sets'):
+            assert ds.get("type") == "MIGRATED"
+            assert ds.get("subtype") == "NONVSAM"
+
+
+def test_find_migrated_and_gdg_data_sets(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        gdg_a = get_tmp_ds_name()
+        # Create GDG with limit 3
+        hosts.all.shell(cmd=f"dtouch -tgdg -L3 {gdg_a}")
+        find_res = hosts.all.zos_find(
+            patterns = MIGRATED_DATASETS_PATTERNS,
+            resource_type = ['migrated', 'gdg'],
+            migrated_type = ['nonvsam']
+        )
+        for val in find_res.contacted.values():
+            print(val)
+            assert len(val.get('data_sets')) != 0
+            assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
+            for ds in val.get('data_sets'):
+                assert ds.get("type") in ["MIGRATED", "GDG"]
+    finally:
+        # Remove GDG.
+        hosts.all.shell(cmd=f"drm {gdg_a}")

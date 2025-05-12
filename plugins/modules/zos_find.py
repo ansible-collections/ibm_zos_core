@@ -672,6 +672,9 @@ def data_set_attribute_filter(
             ds, u_time=age is not None, size=size is not None
         )
         if rc != 0:
+            # Continue when no matching datasets are found
+            if "BGYSC1103E" in err:
+                continue
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
                 rc=rc, stdout=out, stderr=err
@@ -733,6 +736,9 @@ def gdg_filter(module, data_sets, limit, empty, fifo, purge, scratch, extended, 
         rc, out, err = _dls_wrapper(ds, data_set_type='gdg', list_details=True, json=True)
 
         if rc != 0:
+            # Continue when no matching datasets are found
+            if "BGYSC1103E" in err:
+                continue
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
                 rc=rc, stdout=out, stderr=err
@@ -788,6 +794,9 @@ def migrated_nonvsam_filter(module, data_sets, excludes):
         # Fetch active and migrated datasets
         rc, out, err = _dls_wrapper(ds, migrated=True)
         if rc != 0:
+            # Continue when no matching datasets are found
+            if "BGYSC1103E" in err:
+                continue
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
                 rc=rc, stdout=out, stderr=err

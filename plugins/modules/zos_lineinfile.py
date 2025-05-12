@@ -757,16 +757,39 @@ def main():
         if ins_bef:
             stdout = stdout.replace(ins_bef, quotedString(ins_bef))
         try:
+          # Attempt to parse stdout content directly as JSON
             ret = json.loads(stdout)
-        except Exception:
-            messageDict = dict(msg="dsed return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-            if result.get('backup_name'):
-                messageDict['backup_name'] = result['backup_name']
-            module.fail_json(**messageDict)
-
-        result['cmd'] = ret['cmd']
-        result['changed'] = ret['changed']
-        result['found'] = ret['found']
+        except json.JSONDecodeError:
+            try:
+                # If parsing fails, clean up possible wrapping quotes
+                if (stdout.startswith("'") and stdout.endswith("'")) or (stdout.startswith('"') and stdout.endswith('"')):
+                    cleaned_stdout = stdout[1:-1]
+                else:
+                    cleaned_stdout = stdout
+                # Replace escaped backslashes with single backslashes
+                cleaned_stdout = cleaned_stdout.replace('\\\\', '\\')
+                # Further clean up: escape any single backslashes not followed by a valid JSON escape character
+                import re
+                cleaned_stdout = re.sub(r'\\([^"\\/bfnrtu])', r'\\\\\1', cleaned_stdout)
+                # Try parsing the cleaned string as JSON
+                ret = json.loads(cleaned_stdout)
+            except Exception:
+                # If still failing, report failure with useful debug info
+                messageDict = dict(
+                    msg="dsed return content is NOT in json format",
+                    stdout=str(stdout),
+                    stderr=str(stderr),
+                    rc=rc
+                )
+                if result.get('backup_name'):
+                    messageDict['backup_name'] = result['backup_name']
+                module.fail_json(**messageDict)
+        # If the parsed JSON has a 'cmd' key, clean its string for safe use
+        if 'cmd' in ret:
+            ret['cmd'] = ret['cmd'].replace('\\"', '"').replace('\\\\', '\\')
+            result['cmd'] = ret['cmd']
+        result['changed'] = ret.get('changed', False)
+        result['found'] = ret.get('found', None)
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
     if len(stderr):

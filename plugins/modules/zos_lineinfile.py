@@ -757,7 +757,7 @@ def main():
         if ins_bef:
             stdout = stdout.replace(ins_bef, quotedString(ins_bef))
         try:
-          # Attempt to parse stdout content directly as JSON
+            # Attempt to parse stdout content directly as JSON
             ret = json.loads(stdout)
         except json.JSONDecodeError:
             try:

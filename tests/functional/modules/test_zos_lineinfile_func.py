@@ -61,6 +61,18 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
+TEST_PARSING_CONTENT = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export ZOAU_ROOT
+export _BPXK_AUTOCVT
+/*  End Ansible Block Insert */"""
+
 TEST_CONTENT_ADVANCED_REGULAR_EXPRESSION="""if [ -z STEPLIB ] && tty -s;
 then
     D160882
@@ -681,6 +693,32 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", ds_type)
+def test_ds_line_insert_before_ansible_block(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+
+    params = {
+        "insertbefore": "/\*  End Ansible Block Insert \*/",
+        "line": "SYMDEF(&IPVSRV1='IPL')",
+        "state": "present"
+    }
+
+    ds_name = get_tmp_ds_name()
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_PARSING_CONTENT
+
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+    
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ds_type)

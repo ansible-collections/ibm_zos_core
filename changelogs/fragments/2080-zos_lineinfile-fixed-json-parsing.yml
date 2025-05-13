@@ -3,3 +3,6 @@ bugfixes:
     when using `zoau` commands, even if the updates were successfully applied. The output is now
     cleaned before parsing, ensuring that tasks only fail when there's an actual problem.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2080)
+trivial:
+  - test_zos_lineinfile_func - added test case to verify insertbefore functionality with regex pattern before Ansible block line.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2080

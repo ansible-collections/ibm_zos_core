@@ -789,7 +789,7 @@ def main():
             ret['cmd'] = ret['cmd'].replace('\\"', '"').replace('\\\\', '\\')
             result['cmd'] = ret['cmd']
         result['changed'] = ret.get('changed', False)
-        result['found'] = ret.get('found', None)
+        result['found'] = ret.get('found', 0)
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
     if len(stderr):

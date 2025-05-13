@@ -105,7 +105,7 @@ options:
     required: false
   resource_type:
     description:
-      - The types of resource to search.
+      - The types of resources to search.
       - C(nonvsam) refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.

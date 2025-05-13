@@ -667,6 +667,8 @@ def run_module():
 
 def literals(contents, dependencies):
     """Validate literal arguments.
+        This was created for the disable_regex option type of data to accept any
+        given combination of arguments because choices only allows one.
 
     Parameters
     ----------

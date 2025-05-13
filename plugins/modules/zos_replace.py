@@ -74,7 +74,7 @@ options:
     required: false
     type: str
     default: IBM-1047
-  literal:
+  disable_regex:
     description:
       - A list or string that allows the user to specify "before," "after," or "regexp" as regular strings instead of regex patterns.
     required: false
@@ -112,6 +112,46 @@ options:
 """
 
 EXAMPLES = r"""
+- name: Replace with blank space on a USS file any occurrences of the regex
+  zos_replace:
+    target: /tmp/src/somefile
+    regexp: 'profile\/'
+
+- name: Replace using after on USS file
+  zos_replace:
+    target: "/tmp/source"
+    regexp: '^MOUNTPOINT*'
+    after: export ZOAU_ROOT
+
+- name: Replace a specific line with special character on a dataset after a line
+  zos_replace:
+    target: SAMPLE.SOURCE
+    regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv
+    replace:  //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
+    after: '^\$source base \([^\s]+\)'
+    disable_regex: regexp
+
+- name: Replace a specific line before a specific sentence with backup
+  zos_replace:
+    target: SAMPLE.SOURCE
+    backup: True
+    regexp: //SYSPRINT DD SYSOUT=*
+    before: SAMPLES OUTPUT SYSIN *=$DSN
+    disable_regex:
+        - regexp
+        - before
+
+- name: Replace some words between two lines with a backup with tmp_hlq
+  zos_replace:
+    target: SAMPLE.DATASET
+    tmp_hlq: ANSIBLE
+    backup: True
+    backup_name: BACKUP.DATASET
+    regexp: var
+    replace: vars
+    after: ^/tmp/source*
+    before: ^   if*
+
 - name: Replace lines on a GDS and generate a backup on the same GDG
   zos_replace:
     target: SOURCE.GDG(0)
@@ -128,12 +168,6 @@ EXAMPLES = r"""
     replace: '\1\2'
     after: IEE133I PENDING *
     before: IEF456I JOB12345 *
-
-- name: Replace using after on USS file
-  zos_replace:
-    target: "/tmp/source"
-    regexp: '^MOUNTPOINT*'
-    after: export ZOAU_ROOT
 """
 
 RETURN = r"""
@@ -514,7 +548,7 @@ def run_module():
             encoding=dict(type='str', default='IBM-1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
-            literal=dict(type="raw", required=False, default=None),
+            disable_regex=dict(type="raw", required=False, default=None),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
@@ -528,7 +562,7 @@ def run_module():
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
-        literal=dict(type=literals, required=False, default=None),
+        disable_regex=dict(type=literals, required=False, default=None),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -562,13 +596,13 @@ def run_module():
         encoding = "cp1047"
     backup = module.params.get("backup")
     backup_name = parsed_args.get('backup_name')
-    literal = module.params.get("literal")
+    literal = module.params.get("disable_regex")
 
     if literal:
         if "after" in literal and not after:
-            module.fail_json(msg="Use of literal requires the use of the after option too.", **result)
+            module.fail_json(msg="Use of disable_regex requires the use of the after option too.", **result)
         if "before" in literal and not before:
-            module.fail_json(msg="Use of literal requires the use of the before option too.", **result)
+            module.fail_json(msg="Use of disable_regex requires the use of the before option too.", **result)
 
     if backup:
         try:

@@ -706,7 +706,6 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
-import re
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ds_type)
 def test_ds_line_insert_before_ansible_block(ansible_zos_module, dstype):

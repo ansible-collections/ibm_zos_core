@@ -112,6 +112,8 @@ options:
       - C(gdg) refers to Generation Data Groups. The module searches based on the GDG base name.
       - C(migrated) refers to listing migrated datasets. Only C(excludes) and C(migrated_type) options can be used along
         with this option. The module only searches based on dataset patterns.
+    aliases:
+      - resource_types
     choices:
       - nonvsam
       - cluster
@@ -127,6 +129,8 @@ options:
     description:
       - A Migrated dataset related attribute, only valid when C(resource_type=migrated).
       - If provided, will search for only those types of migrated datasets.
+    aliases:
+      - migrated_types
     choices:
       - nonvsam
       - cluster
@@ -135,7 +139,7 @@ options:
     type: list
     elements: str
     required: false
-    default: ["vsam", "nonvsam"]
+    default: ["cluster", "data", "index", "nonvsam"]
   volume:
     description:
       - If provided, only the data sets allocated in the specified list of
@@ -1263,17 +1267,13 @@ def run_module(module):
         else:
             filtered_resource_types.add(type)
     if "MIGRATED" in resource_type:
-        if migrated_type:
-            migrated_type = [type.upper() for type in migrated_type]
-            for type in migrated_type:
-                if type in vsam_types:
-                    filtered_migrated_types.add("VSAM")
-                    vsam_migrated_types.add(type)
-                else:
-                    filtered_migrated_types.add(type)
-        else:
-            filtered_migrated_types = {"VSAM", "NONVSAM"}
-            vsam_migrated_types = vsam_types
+        migrated_type = [type.upper() for type in migrated_type]
+        for type in migrated_type:
+            if type in vsam_types:
+                filtered_migrated_types.add("VSAM")
+                vsam_migrated_types.add(type)
+            else:
+                filtered_migrated_types.add(type)
     if age:
         # convert age to days:
         m = re.match(r"^(-?\d+)(d|w|m|y)?$", age.lower())
@@ -1340,9 +1340,6 @@ def run_module(module):
         elif res_type == "GDG":
             filtered_data_sets = gdg_filter(module, patterns, limit, empty, fifo, purge, scratch, extended, excludes)
 
-        # # Filter out data sets that match one of the patterns in 'excludes'
-        # if excludes and not pds_paths:
-        #     filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
         if filtered_data_sets:
             for ds in filtered_data_sets:
                 if ds:
@@ -1410,6 +1407,7 @@ def main():
                 type="list",
                 required=False,
                 elements="str",
+                default=["cluster", "data", "index", "nonvsam"],
                 choices=["cluster", "data", "index", "nonvsam"],
                 aliases=["migrated_types"]
             ),
@@ -1454,6 +1452,7 @@ def main():
         migrated_type=dict(
             arg_type="list",
             required=False,
+            default=["cluster", "data", "index", "nonvsam"],
             aliases=["migrated_types"]
         ),
         volume=dict(arg_type="list", required=False, aliases=["volumes"]),

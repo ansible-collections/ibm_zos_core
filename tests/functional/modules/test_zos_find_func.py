@@ -733,7 +733,7 @@ def test_find_vsam_and_nonvsam_data_sets(ansible_zos_module, volumes_on_systems)
         for val in find_res.contacted.values():
             assert val.get('msg') is None
             assert len(val.get('data_sets')) == 4
-            assert f'{VSAM_NAMES[0]}.DATA' in val.get('data_sets')[0].get("name", None)
+            assert {"name":f'{VSAM_NAMES[0]}.DATA', "type": "DATA"} in val.get('data_sets')
             assert val.get('matched') == len(val.get('data_sets'))
     finally:
         # Remove VSAM.

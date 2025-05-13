@@ -773,10 +773,10 @@ def main():
                 cleaned_stdout = re.sub(r'\\([^"\\/bfnrtu])', r'\\\\\1', cleaned_stdout)
                 # Try parsing the cleaned string as JSON
                 ret = json.loads(cleaned_stdout)
-            except Exception:
+            except Exception as e:
                 # If still failing, report failure with useful debug info
                 messageDict = dict(
-                    msg="dsed return content is NOT in json format",
+                    msg=f"Failed while parsing command output {str(e)} ",
                     stdout=str(stdout),
                     stderr=str(stderr),
                     rc=rc

@@ -693,6 +693,7 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
+import re
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ds_type)
 def test_ds_line_insert_before_ansible_block(ansible_zos_module, dstype):
@@ -716,6 +717,20 @@ def test_ds_line_insert_before_ansible_block(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+        read_results = hosts.all.zos_fetch(src=ds_full_name, dest=temp_file, flat=True)
+        for fetch_result in read_results.contacted.values():
+            with open(temp_file, "r") as f:
+                file_content = f.read()
+                assert params["line"] in file_content, f"Expected line '{params['line']}' not found."
+
+                #  Verify it appears before the marker
+                insert_pos = file_content.find(params["line"])
+                marker_pos = file_content.find("/*  End Ansible Block Insert */")
+                assert 0 <= insert_pos < marker_pos, "Inserted line not before 'End Ansible Block Insert' marker."
+
+                #  Verify proper escaping via regex match
+                escaped_line = re.escape(params["line"])
+                assert re.search(escaped_line, file_content), f"Escaped line pattern '{escaped_line}' not matched."
     
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)

@@ -258,14 +258,14 @@ EXAMPLES = r"""
   zos_find:
     patterns:
       - USER.*
-    resource_type: 
+    resource_type:
       - 'cluster'
 
 - name: Find all Generation Data Groups starting with the word 'USER' and specific GDG attributes.
   zos_find:
     patterns:
       - USER.*
-    resource_type: 
+    resource_type:
       - 'gdg'
     limit: 30
     scratch: true
@@ -275,7 +275,7 @@ EXAMPLES = r"""
   zos_find:
     patterns:
       - USER.*
-    resource_type: 
+    resource_type:
       - 'migrated'
     migrated_type:
       - 'nonvsam'

@@ -743,7 +743,7 @@ def test_uss_after_regexp_disable_regex(ansible_zos_module):
     disable_regex = ["after", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
-        "after":"STEP3 - CPU TIME 5.4 SEC",
+        "after":"   STEP3 - CPU TIME 5.4 SEC",
         "disable_regex":disable_regex,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
@@ -1257,7 +1257,7 @@ def test_ds_after_regexp_disable_regex(ansible_zos_module, dstype):
     disable_regex = ["after", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
-        "after":"STEP3 - CPU TIME 5.4 SEC",
+        "after":"   STEP3 - CPU TIME 5.4 SEC",
         "disable_regex":disable_regex,
     }
     ds_name = get_tmp_ds_name()

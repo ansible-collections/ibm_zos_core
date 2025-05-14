@@ -1771,6 +1771,7 @@ def run_module():
 
     dd_input_base = dict(
         content=dict(type="raw", required=True),
+        spaces=dict(type=int, required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2032,6 +2033,7 @@ def parse_and_validate_args(params):
 
     dd_input_base = dict(
         content=dict(type=dd_content, required=True),
+        spaces=dict(type=int, required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2285,17 +2287,18 @@ def dd_content(contents, dependencies):
     """
     if contents is None:
         return None
+    spaces = dependencies.get("spaces")
     if contents is not None:
         # Empty string can be passed for content but not modify to ensure proper entry
         if len(contents) > 0:
-            contents = modify_contents(contents)
+            contents = modify_contents(contents, spaces)
         return contents
     if isinstance(contents, list):
         return "\n".join(contents)
     return contents
 
 
-def modify_contents(contents):
+def modify_contents(contents, spaces):
     """Return the content of dd_input to a valid form for a JCL program.
 
     Parameters
@@ -2310,18 +2313,20 @@ def modify_contents(contents):
     """
     if not isinstance(contents, list):
         contents = list(contents.split("\n"))
-    contents = prepend_spaces(contents)
+    contents = prepend_spaces(contents, spaces)
     contents = "\n".join(contents)
     return contents
 
 
-def prepend_spaces(lines):
+def prepend_spaces(lines, spaces=2):
     """Return the array with two spaces at the beggining.
 
     Parameters
     ----------
         lines : list
               The list with a line of a program.
+        spaces : int
+              The number of columns to move.
 
     Raises
     -------
@@ -2337,17 +2342,14 @@ def prepend_spaces(lines):
     for index, line in enumerate(lines):
         if len(line) > 0:
             if len(line) > 80:
-                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. """
                 module.fail_json(msg=msg.format(line))
             else:
-                if len(line) > 1 and line[0] != " " and line[1] != " ":
-                    if len(line) > 78:
-                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
-                        module.fail_json(msg=msg.format(line))
-                    else:
-                        lines[index] = "  {0}".format(line)
+                len_line = len(line)
+                lines[index] = line.rjust(len_line + spaces, " ")
+                if len(lines[index] > 80):
+                    msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. Including the spaces at the beginning."""
+                    module.fail_json(msg=msg.format(line))
     return lines
 
 

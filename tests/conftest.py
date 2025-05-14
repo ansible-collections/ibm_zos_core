@@ -204,3 +204,19 @@ def get_config(request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
     path = request.config.getoption("--zinventory")
     yield path
+
+
+@pytest.fixture(scope="session")
+def volumes_unit_on_systems(ansible_zos_module, request):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    path = request.config.getoption("--zinventory")
+    list_volumes = None
+
+    if path is None:
+        src = request.config.getoption("--zinventory-raw")
+        helper = ZTestHelper.from_args(src)
+        list_volumes = helper.get_volume_and_unit()
+    else:
+        list_volumes = get_volume_and_unit(ansible_zos_module, path)
+
+    yield list_volumes

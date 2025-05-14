@@ -43,6 +43,7 @@ def test_guard_rail_and_setup(ansible_zos_module, volumes_unit_on_systems):
     hosts = ansible_zos_module
     volumes = Volume_Handler(volumes_unit_on_systems)
     volume, address = volumes.get_available_vol_addr()
+    # volume, address = 'SCR03', '04AF'1
     # remove all data sets from target volume. Expected to be the following 3
     clear_volume(hosts, volume)
 

@@ -187,7 +187,10 @@ def get_volume_and_unit(ansible_zos_module, path):
     priv_online = []
     flag = False
     iteration = 5
+<<<<<<< HEAD
     volumes_datasets = []
+=======
+>>>>>>> 953850426882e3c96e413d1989a437c00d2d95f7
     # The first run of the command d u,dasd,online,,n in the system can conclude with empty data
     # to ensure get volumes is why require not more 5 runs and lastly one second of wait.
     while not flag and iteration > 0:
@@ -205,6 +208,7 @@ def get_volume_and_unit(ansible_zos_module, path):
         if "ACTIVATED" in info or "-D U," in info or "UNIT" in info:
             continue
         vol_w_info = info.split()
+<<<<<<< HEAD
 
         if len(vol_w_info)>3:
             if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
@@ -232,3 +236,13 @@ def get_volume_and_unit(ansible_zos_module, path):
     list_volumes = [[x[1], x[2]] for x in sorted_volumes]
 
     return list_volumes
+=======
+        if len(vol_w_info)>3:
+            if vol_w_info[2] == 'O' and "USER" in vol_w_info[3] and vol_w_info[4] == "PRIV/RSDNT":
+                priv_online.append([vol_w_info[3], vol_w_info[0]])
+    # Insert a volumes for the class ls_Volumes to give flag of in_use and correct manage
+    for vol in priv_online:
+        list_volumes.append(vol)
+
+    return list_volumes
+>>>>>>> 953850426882e3c96e413d1989a437c00d2d95f7

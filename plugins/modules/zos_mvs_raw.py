@@ -1771,7 +1771,7 @@ def run_module():
 
     dd_input_base = dict(
         content=dict(type="raw", required=True),
-        spaces=dict(type=int, required=False, default=2),
+        reserved_cols=dict(type=int, required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2033,7 +2033,7 @@ def parse_and_validate_args(params):
 
     dd_input_base = dict(
         content=dict(type=dd_content, required=True),
-        spaces=dict(type=int, required=False, default=2),
+        reserved_cols=dict(type=int, required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(

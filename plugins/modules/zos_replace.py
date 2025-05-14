@@ -301,12 +301,12 @@ def replace_text(content, regexp, replace, literal=False):
     full_text = "\n".join(content)
 
     if literal:
-        times_replaced = full_text.count(regexp)
-        modified_text = full_text.replace(regexp, replace)
+        regexp = re.escape(regexp)
+        pattern = re.compile(regexp)
     else:
         pattern = re.compile(regexp, re.MULTILINE)
-        modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
 
+    modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
     modified_list = modified_text.split("\n")
     modified_list = [line for line in modified_list if line.strip() or line.lstrip()]
 
@@ -398,17 +398,23 @@ def search_bf_af(text, literal, before, after):
         lit_af = True if "after" in literal else False
         lit_bf = True if "before" in literal else False
 
-    if not lit_bf:
-        pattern_before = u''
-        if before:
+    if bool(before):
+        if lit_bf:
+            pattern_before = re.escape(before)
+            pattern_end = re.compile(pattern_before) if before else before
+        else:
+            pattern_before = u''
             pattern_before = u'(?P<subsection>.*)%s' % before
-        pattern_end = re.compile(pattern_before, re.DOTALL) if before else before
+            pattern_end = re.compile(pattern_before, re.DOTALL)
 
-    if not lit_af:
-        pattern_after = u''
-        if after:
+    if bool(after):
+        if lit_af:
+            pattern_after = re.escape(after)
+            pattern_begin = re.compile(pattern_after) if after else after
+        else:
+            pattern_after = u''
             pattern_after = u'%s(?P<subsection>.*)' % after
-        pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
+            pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
 
     begin_block_code = 0
     end_block_code = len(text)
@@ -420,36 +426,20 @@ def search_bf_af(text, literal, before, after):
 
     for line in text:
         if search_after:
-            if lit_af:
-                if line.find(after) > -1:
-                    begin_block_code = line_counter + 1
-                    match = True
-                    if not before:
-                        break
-                    else:
-                        search_before = True
-                        search_after = False
-            else:
-                if pattern_begin.match(line) is not None:
-                    begin_block_code = line_counter + 1
-                    match = True
-                    if not before:
-                        break
-                    else:
-                        search_before = True
-                        search_after = False
+            if pattern_begin.match(line) is not None:
+                begin_block_code = line_counter + 1
+                match = True
+                if not before:
+                    break
+                else:
+                    search_before = True
+                    search_after = False
 
         if search_before:
-            if lit_bf:
-                if line.find(before) > -1:
-                    end_block_code = line_counter
-                    match = True
-                    break
-            else:
-                if pattern_end.match(line) is not None:
-                    end_block_code = line_counter
-                    match = True
-                    break
+            if pattern_end.match(line) is not None:
+                end_block_code = line_counter
+                match = True
+                break
 
         line_counter += 1
 

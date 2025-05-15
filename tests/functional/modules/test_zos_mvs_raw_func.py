@@ -110,6 +110,59 @@ def test_disposition_new(ansible_zos_module, verbose):
             hosts.all.zos_data_set(name=idcams_dataset, state="absent")
 
 @pytest.mark.parametrize(
+        # Added this verbose to test issue https://github.com/ansible-collections/ibm_zos_core/issues/1359
+        # Where a program will fail if rc != 0 only if verbose was True.
+        "columns",
+        [0, 2],
+)
+def test_dd_content_reserved_columns(ansible_zos_module, columns):
+    idcams_dataset = None
+    try:
+        hosts = ansible_zos_module
+        default_data_set = get_tmp_ds_name()
+        idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
+        idcams_listcat_dataset_cmd = idcams_listcat_dataset_cmd.lstrip()
+
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                {
+                    "dd_data_set":{
+                        "dd_name":SYSPRINT_DD,
+                        "data_set_name":default_data_set,
+                        "disposition":"new",
+                        "type":"seq",
+                        "return_content":{
+                            "type":"text"
+                        },
+                    },
+                },
+                {
+                    "dd_input":{
+                        "dd_name":SYSIN_DD,
+                        "reserved_cols": columns,
+                        "content":idcams_listcat_dataset_cmd
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            if columns > 0:
+                assert result.get("ret_code", {}).get("code", -1) == 0
+                assert len(result.get("dd_names", [])) > 0
+                assert result.get("failed", False) is False
+            else:
+                assert result.get("ret_code", {}).get("code", -1) == 12
+                assert len(result.get("dd_names", [])) > 0
+                assert result.get("failed", False) is True
+    finally:
+        hosts.all.zos_data_set(name=default_data_set, state="absent")
+        if idcams_dataset:
+            hosts.all.zos_data_set(name=idcams_dataset, state="absent")
+
+@pytest.mark.parametrize(
     "disposition",
     ["shr", "mod", "old"],
 )

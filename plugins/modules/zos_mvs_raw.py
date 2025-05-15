@@ -587,9 +587,9 @@ options:
             description:
               - Determines how many columns at the beginning of the file are using with
                 empty spaces.
-              type: int
-              required: false
-              default: 2
+            type: int
+            required: false
+            default: 2
           return_content:
             description:
               - Determines how content should be returned to the user.

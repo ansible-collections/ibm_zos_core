@@ -672,8 +672,9 @@ class Archive():
         self.dest_state = STATE_ABSENT
         self.state = STATE_PRESENT
         self.xmit_log_data_set = ""
-        self.from_encoding = module.params.get("encoding").get("from")
-        self.to_encoding = module.params.get("encoding").get("to")
+        encoding_param = module.params.get("encoding") or {}
+        self.from_encoding = encoding_param.get("from")
+        self.to_encoding = encoding_param.get("to")
 
     def targets_exist(self):
         """Returns if there are targets or not.

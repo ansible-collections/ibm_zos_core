@@ -3374,6 +3374,15 @@ def run_module(module, arg_def):
     raw_src = src
     raw_dest = dest
 
+    if is_mvs_src or is_src_gds:
+        is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
+        if is_src_alias:
+            src = src_base_name
+    if is_mvs_dest or is_dest_gds:
+        is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
+        if is_dest_alias:
+            dest = dest_base_name
+
     # Validation for copy from a member
     if src_member:
         if not (data_set.DataSet.data_set_member_exists(src)):

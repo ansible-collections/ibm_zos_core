@@ -1251,7 +1251,7 @@ def test_input_provided_as_list(ansible_zos_module):
         ("text", "LISTCAT ENTRIES"),
         (
             "base64",
-            "QNPJ4uPDweNAxdXj2cnF4k1",
+            "QEBA08ni48PB40DF1ePZycX",
             # the above corresponds to the following bytes:
             # 40 d3 c9 e2 e3 c3 c1 e3 40 c5 d5 e3 d9 c9 c5 e2
             # which translate in ebdic to: " LISTCAT ENTRIES"

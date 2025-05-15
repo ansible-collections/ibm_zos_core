@@ -658,6 +658,9 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             cmd = "dcat \"{0}\" ".format(trace_destination_ds)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
+                print("This is the output of trace file in grow operation")
+                print(out)
+                print("------------------------------\n")
                 assert out.get("stdout") is not None
             assert result.get('stderr') == ""
             assert result.get('stderr_lines') == []
@@ -690,7 +693,7 @@ def test_grow_n_shrink_operations_trace_ds(ansible_zos_module, trace_destination
             cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
             output_of_trace_file = hosts.all.shell(cmd=cmd)
             for out in output_of_trace_file.contacted.values():
-                print("This is the output of trace file")
+                print("This is the output of trace file in shrink operation")
                 print(out)
                 print("------------------------------\n")
                 assert out.get("stdout") is not None

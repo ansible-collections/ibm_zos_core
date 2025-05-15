@@ -1,0 +1,4 @@
+minor_change:
+  - zos_mvs_raw  - Add reserved_cols option and validate that the module get access to modify dd_content option
+    base on the value, if not retain the previous behavior or work.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2086)

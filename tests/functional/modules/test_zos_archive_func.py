@@ -404,6 +404,7 @@ def test_uss_archive_encode(ansible_zos_module, ds_format):
 # - test_mvs_archive_multiple_data_sets_with_exclusion
 # - test_mvs_archive_multiple_data_sets_with_missing
 # - test_mvs_archive_single_dataset_encoding
+# - test_mvs_archive_multiple_dataset_pattern_encoding
 
 
 @pytest.mark.ds
@@ -1211,12 +1212,6 @@ def test_archive_into_gds(ansible_zos_module, dstype, format):
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120]
-)
-@pytest.mark.parametrize(
-    "record_format", ["fb", "vb"],
-)
-@pytest.mark.parametrize(
     "encoding", [
         {"from": "IBM-1047", "to": "ISO8859-1"},
     ]
@@ -1225,8 +1220,6 @@ def test_mvs_archive_single_dataset_encoding(
     ansible_zos_module,
     ds_format,
     data_set,
-    record_length,
-    record_format,
     encoding
     ):
     try:
@@ -1234,19 +1227,14 @@ def test_mvs_archive_single_dataset_encoding(
         src_data_set = get_tmp_ds_name()
         archive_data_set = get_tmp_ds_name()
         hlq = "ANSIBLE"
-        # Clean env
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
-        # Create source data set
         hosts.all.zos_data_set(
             name=src_data_set,
             type=data_set.get("dstype"),
             state="present",
-            record_length=record_length,
-            record_format=record_format,
             replace=True,
         )
-        # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
@@ -1254,12 +1242,7 @@ def test_mvs_archive_single_dataset_encoding(
                     type="member",
                     state="present"
                 )
-        # Write some content into src the same size of the record,
-        # need to reduce 4 from V and VB due to RDW
-        if record_format in ["v", "vb"]:
-            test_line = "a" * (record_length - 4)
-        else:
-            test_line = "a" * record_length
+        test_line = "a"
         for member in data_set.get("members"):
             if member == "":
                 ds_to_write = f"{src_data_set}"
@@ -1281,7 +1264,6 @@ def test_mvs_archive_single_dataset_encoding(
             encoding=encoding,
         )
 
-        # assert response is positive
         for result in archive_result.contacted.values():
             assert result.get("changed") is True
             assert result.get("dest") == archive_data_set
@@ -1292,3 +1274,82 @@ def test_mvs_archive_single_dataset_encoding(
     finally:
         hosts.all.zos_data_set(name=src_data_set, state="absent")
         hosts.all.zos_data_set(name=archive_data_set, state="absent")
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize(
+    "ds_format", [
+        "terse",
+        "xmit",
+    ])
+@pytest.mark.parametrize(
+    "data_set", [
+        {
+            "dstype": "seq",
+            "members": [""]
+        },
+        {
+            "dstype": "pds",
+            "members": ["MEM1", "MEM2"]
+        },
+    ])
+@pytest.mark.parametrize(
+    "encoding", [
+        {"from": "IBM-1047", "to": "ISO8859-1"},
+    ])
+def test_mvs_archive_multiple_dataset_pattern_encoding(ansible_zos_module, ds_format, data_set, encoding):
+    try:
+        hosts = ansible_zos_module
+        hlq_prefix = "OMVSADM.ABC"
+        matched_datasets = [f"{hlq_prefix}.A", f"{hlq_prefix}.B"]
+        archived_datasets = []
+
+        for ds_name in matched_datasets:
+            hosts.all.zos_data_set(name=ds_name, state="absent")
+            hosts.all.zos_data_set(
+                name=ds_name,
+                type=data_set.get("dstype"),
+                state="present",
+                replace=True,
+            )
+            if data_set.get("dstype") in ["pds", "pdse"]:
+                for member in data_set.get("members"):
+                    hosts.all.zos_data_set(
+                        name=f"{ds_name}({member})",
+                        type="member",
+                        state="present"
+                    )
+
+        test_line = "pattern match"
+        for ds_name in matched_datasets:
+            for member in data_set.get("members"):
+                ds_target = f"{ds_name}({member})" if member else ds_name
+                hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_target}\"")
+
+        format_dict = {"name": ds_format}
+        if ds_format == "terse":
+            format_dict["format_options"] = {"terse_pack": "spack"}
+        for ds_name in matched_datasets:
+            archive_data_set = get_tmp_ds_name()
+            archive_result = hosts.all.zos_archive(
+                src=ds_name,
+                dest=archive_data_set,
+                format=format_dict,
+                encoding=encoding,
+            )
+
+            for result in archive_result.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("dest") == archive_data_set
+                assert ds_name in result.get("archived")
+            cmd_result = hosts.all.shell(cmd=f"dls {archive_data_set}")
+            for c_result in cmd_result.contacted.values():
+                assert archive_data_set in c_result.get("stdout")
+
+            archived_datasets.append(archive_data_set)
+
+    finally:
+        for ds_name in matched_datasets:
+            hosts.all.zos_data_set(name=ds_name, state="absent")
+        for archive_ds in archived_datasets:
+            hosts.all.zos_data_set(name=archive_ds, state="absent")

@@ -308,12 +308,16 @@ options:
     required: false
   encoding:
     description:
-      - Specifies which encodings the source file should be converted
-        from and to before archiving it.
+      - Specifies the character encoding conversion to be applied to the
+        source files before archiving.
       - Supported character sets rely on the charset conversion utility
-        C(iconv) version; the most common character sets are supported.
+        C(iconv) version the most common character sets are supported.
       - After conversion the files are stored in same location and name
         as src and the same src is taken in consideration for archive.
+      - Source files will be converted to the new encoding and will not
+        be restored to their original encoding.
+      - If encoding fails for any file in a set of multiple files, an
+        exception will be raised and archiving will be skipped.
     type: dict
     required: false
     suboptions:
@@ -324,7 +328,7 @@ options:
         type: str
       to:
         description:
-          - The destination I(dest) character set for the output to be written as.
+          - The destination I(dest) character set for the files to be written as.
         required: false
         type: str
 attributes:
@@ -425,8 +429,7 @@ EXAMPLES = r'''
       format_options:
         use_adrdssu: true
 
-# Use encoding to convert file encoding from one type to another
-- name: Archive data set into a terse after encoding Latin-1
+- name: Encode the source data set into Latin-1 before archiving into a terse data set
   zos_archive:
     src: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
@@ -492,7 +495,6 @@ import tarfile
 import traceback
 import zipfile
 from hashlib import sha256
-from os import path
 
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.basic import AnsibleModule
@@ -598,115 +600,6 @@ def is_archive(path):
     return re.search(r'\.(tar|tar\.(gz|bz2|xz)|tgz|tbz2|zip|gz|bz2|xz|pax)$', os.path.basename(path), re.IGNORECASE)
 
 
-def encode_source(src, from_encoding, to_encoding, tmphlq):
-    """Convert encoding for given src
-
-    Parameters
-    ----------
-    src : str
-        Path to the USS source file or directory.
-    from_encoding : str
-        Charset to convert from.
-    to_encoding : str
-        Charset to convert to.
-    tmphlq : str
-        High level qualifier for temporary datasets.
-    """
-    try:
-        # idefining the required variables
-        is_uss_src = False
-        ds_type_src = None
-        src_data_set = None
-
-        # identifying the file type and choosing the right function to run
-        if path.sep in src:
-            is_uss_src = True
-        else:
-            src_data_set = data_set.MVSDataSet(src)
-            is_name_member = data_set.is_member(src_data_set.name)
-            dest_exists = False
-
-            if not is_name_member:
-                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
-            else:
-                dest_exists = data_set.DataSet.data_set_exists(
-                    data_set.extract_dsname(src_data_set.name),
-                    tmphlq=tmphlq
-                )
-            if not dest_exists:
-                raise EncodeError(
-                    "Data set {0} is not cataloged, please check data set provided in "
-                    "the src option.".format(data_set.extract_dsname(src_data_set.raw_name))
-                )
-            if is_name_member:
-                if not data_set.DataSet.data_set_member_exists(src_data_set.name):
-                    raise EncodeError("Cannot find member {0} in {1}".format(
-                        data_set.extract_member(src_data_set.raw_name),
-                        data_set.extract_dsname(src_data_set.raw_name)
-                    ))
-                ds_type_src = "PS"
-            else:
-                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name, tmphlq=tmphlq)
-
-            if not ds_type_src:
-                raise EncodeError(
-                    "Determinig data set type"
-                    "Failed {0}".format(src_data_set.raw_name)
-                )
-
-        # as dest is not defined and is expected to be the same src
-        if src_data_set:
-            dest = src_data_set.name
-        else:
-            dest = src
-        is_uss_dest = is_uss_src
-        ds_type_dest = ds_type_src
-
-        if ds_type_dest == "GDG":
-            raise EncodeError("Encoding of a whole generation data group is not supported.")
-
-        new_src = src_data_set.name if src_data_set else src
-
-        enc_utils = encode.EncodeUtils()
-        code_set = enc_utils.get_codeset()
-        enc_utils.tmphlq = tmphlq
-
-        if from_encoding not in code_set:
-            raise EncodeError(
-                "Invalid codeset: Please check the value of the from_encoding!"
-            )
-        if to_encoding not in code_set:
-            raise EncodeError(
-                "Invalid codeset: Please check the value of the to_encoding!"
-            )
-        if from_encoding == to_encoding:
-            raise EncodeError(
-                "The value of the from and to are the same, no need to do the conversion!"
-            )
-
-        if is_uss_src and is_uss_dest:
-            convert_rc = enc_utils.uss_convert_encoding_prev(
-                new_src, dest, from_encoding, to_encoding
-            )
-        else:
-            convert_rc = enc_utils.mvs_convert_encoding(
-                new_src,
-                dest,
-                from_encoding,
-                to_encoding,
-                src_type=ds_type_src,
-                dest_type=ds_type_dest,
-                tmphlq=tmphlq
-            )
-
-        if convert_rc:
-            if is_uss_dest:
-                enc_utils.uss_tag_encoding(dest, to_encoding)
-
-    except Exception as e:
-        raise EncodeError("Failed to encode in the required codeset!") from e
-
-
 class Archive():
     def __init__(self, module):
         """Handles archive operations.
@@ -759,6 +652,7 @@ class Archive():
             The state of the input C(src).
         xmit_log_data_set : str
             The name of the data set to store xmit log output.
+
         """
         self.module = module
         self.dest = module.params['dest']
@@ -778,6 +672,8 @@ class Archive():
         self.dest_state = STATE_ABSENT
         self.state = STATE_PRESENT
         self.xmit_log_data_set = ""
+        self.from_encoding = module.params.get("encoding").get("from")
+        self.to_encoding = module.params.get("encoding").get("to")
 
     def targets_exist(self):
         """Returns if there are targets or not.
@@ -823,6 +719,10 @@ class Archive():
 
     @abc.abstractmethod
     def compute_dest_size(self):
+        pass
+
+    @abc.abstractmethod
+    def encode_source(self):
         pass
 
     @property
@@ -1046,6 +946,32 @@ class USSArchive(Archive):
                 self.dest_state = STATE_ARCHIVE
             if bool(self.not_found):
                 self.dest_state = STATE_INCOMPLETE
+
+    def encode_source(self):
+        """Convert encoding for given src
+
+        Parameters
+        ----------
+        src : str
+            Path to the USS source file or directory.
+        from_encoding : str
+            Charset to convert from.
+        to_encoding : str
+            Charset to convert to.
+        tmphlq : str
+            High level qualifier for temporary datasets.
+        """
+        enc_utils = encode.EncodeUtils()
+        try:
+            for target in self.targets:
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    target, target, self.from_encoding, self.to_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(target, self.to_encoding)
+
+        except Exception as e:
+            raise EncodeError("Failed to encode in the required codeset.") from e
 
 
 class TarArchive(USSArchive):
@@ -1513,6 +1439,39 @@ class MVSArchive(Archive):
             dest_space = math.ceil(dest_space / 1024)
             self.dest_data_set.update(space_primary=dest_space, space_type="k")
 
+    def encode_source(self):
+        """Convert encoding for given src
+
+        Parameters
+        ----------
+        target : str
+            Path to the USS source file or directory (src) value. src and dest same.
+        from_encoding : str
+            Charset to convert from.
+        to_encoding : str
+            Charset to convert to.
+        tmphlq : str
+            High level qualifier for temporary datasets.
+        """
+        enc_utils = encode.EncodeUtils()
+
+        try:
+            for target in self.targets:
+                ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
+                if not ds_type:
+                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                enc_utils.mvs_convert_encoding(
+                    target,
+                    target,
+                    self.from_encoding,
+                    self.to_encoding,
+                    src_type=ds_type,
+                    dest_type=ds_type,
+                    tmphlq=self.tmphlq
+                )
+        except Exception as e:
+            raise EncodeError("Failed to encode in the required codeset.") from e
+
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
@@ -1960,21 +1919,6 @@ def run_module():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
     encoding = parsed_args.get("encoding")
-    src = parsed_args.get("src")
-    tmphlq = module.params.get('tmp_hlq')
-
-    if encoding:
-        from_encoding = parsed_args.get("encoding").get("from").upper()
-        to_encoding = parsed_args.get("encoding").get("to").upper()
-
-        if isinstance(src, list):
-            for src_item in src:
-                encode_source(src_item, from_encoding, to_encoding, tmphlq)
-        elif isinstance(src, str):
-            encode_source(src, from_encoding, to_encoding, tmphlq)
-    else:
-        module.params["encoding"] = None
-
     archive = get_archive_handler(module)
 
     if archive.dest_exists() and not archive.force:
@@ -1982,6 +1926,8 @@ def run_module():
 
     archive.find_targets()
     if archive.targets_exist():
+        if encoding:
+            archive.encode_source()
         archive.compute_dest_size()
         archive.archive_targets()
         if archive.remove:

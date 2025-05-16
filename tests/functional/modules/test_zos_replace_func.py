@@ -1441,7 +1441,7 @@ def test_ds_backref(ansible_zos_module, dstype):
             assert result.get("changed") == True
             assert result.get("target") == ds_full_name
             assert result.get("found") == 3
-        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_BACKREF
     finally:

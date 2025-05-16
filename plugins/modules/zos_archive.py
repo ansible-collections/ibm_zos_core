@@ -961,7 +961,7 @@ class USSArchive(Archive):
                     enc_utils.uss_tag_encoding(target, self.to_encoding)
 
         except Exception as e:
-            raise EncodeError("Failed to encode in the required codeset.") from e
+            raise EncodeError("Failed to encode in the required codeset: {e}") from e
 
 
 class TarArchive(USSArchive):

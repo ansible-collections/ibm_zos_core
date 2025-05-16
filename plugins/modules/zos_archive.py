@@ -950,17 +950,6 @@ class USSArchive(Archive):
 
     def encode_source(self):
         """Convert encoding for given src
-
-        Parameters
-        ----------
-        src : str
-            Path to the USS source file or directory.
-        from_encoding : str
-            Charset to convert from.
-        to_encoding : str
-            Charset to convert to.
-        tmphlq : str
-            High level qualifier for temporary datasets.
         """
         enc_utils = encode.EncodeUtils()
         try:
@@ -1442,17 +1431,6 @@ class MVSArchive(Archive):
 
     def encode_source(self):
         """Convert encoding for given src
-
-        Parameters
-        ----------
-        target : str
-            Path to the USS source file or directory (src) value. src and dest same.
-        from_encoding : str
-            Charset to convert from.
-        to_encoding : str
-            Charset to convert to.
-        tmphlq : str
-            High level qualifier for temporary datasets.
         """
         enc_utils = encode.EncodeUtils()
 
@@ -1471,7 +1449,7 @@ class MVSArchive(Archive):
                     tmphlq=self.tmphlq
                 )
         except Exception as e:
-            raise EncodeError("Failed to encode in the required codeset.") from e
+            raise EncodeError(f"Failed to encode in the required codeset: {e}") from e
 
 
 class AMATerseArchive(MVSArchive):

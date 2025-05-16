@@ -261,6 +261,25 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
 IEF456I JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
+TEST_MULTIPLE_LINES = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+ZOAU_ROOT=/usr/lpp/zoautil/v100"""
+
+TEST_BACKREF = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export NEW_PATH
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+export NEW_ZOAU_ROOT
+export NEW__BPXK_AUTOCVT"""
+
 #####################
 #  Set up testing
 #####################
@@ -811,6 +830,49 @@ def test_uss_before_after_regexp_disable_regex(ansible_zos_module):
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
+def test_uss_remove_multiple_lines(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"^export\s+(ZOAU_ROOT|_BPXK_AUTOCVT|PATH)*",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 3
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_MULTIPLE_LINES
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
+def test_uss_backref(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = {
+        "regexp":"^(export\s+)(PATH|ZOAU_ROOT|_BPXK_AUTOCVT)*",
+        "replace": r"\1NEW_\2",
+    }
+    full_path = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        set_uss_environment(ansible_zos_module, content, full_path)
+        params["target"] = full_path
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == full_path
+            assert result.get("found") == 3
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_BACKREF
+    finally:
+        remove_uss_environment(ansible_zos_module, full_path)
+
 #########################
 # Dataset test cases
 #########################
@@ -1331,6 +1393,57 @@ def test_ds_before_after_regexp_disable_regex(ansible_zos_module, dstype):
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_remove_multiple_lines(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = {
+        "regexp":"^export\s+(ZOAU_ROOT|_BPXK_AUTOCVT|PATH)*",
+    }
+    ds_name = get_tmp_ds_name()
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["target"] = ds_full_name
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == ds_full_name
+            assert result.get("found") == 3
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_MULTIPLE_LINES
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_backref(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    params = {
+        "regexp":"^(export\s+)(PATH|ZOAU_ROOT|_BPXK_AUTOCVT)*",
+        "replace": r"\1NEW_\2",
+    }
+    ds_name = get_tmp_ds_name()
+    temp_file = get_random_file_name(dir=TMP_DIRECTORY)
+    content = TEST_CONTENT
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["target"] = ds_full_name
+        results = hosts.all.zos_replace(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
+            assert result.get("target") == ds_full_name
+            assert result.get("found") == 3
+        results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == TEST_BACKREF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 

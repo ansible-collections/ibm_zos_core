@@ -43,7 +43,7 @@ options:
   backup_name:
     description:
       - Specify the USS file name or data set name for the destination backup.
-      - If I(src) is a USS file or path, the backup_name name must be a file
+      - If I(src) is a USS file or path, backup_name must be a file
         or path name, and it must be an absolute path name.
       - If the source is an MVS data set, I(backup_name) must be an MVS
         data set name, and the data set must not be preallocated.

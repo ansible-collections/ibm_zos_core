@@ -222,6 +222,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     ZOAUImportError,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 
 try:
     from zoautil_py import zoau_io, datasets
@@ -298,15 +301,23 @@ def replace_text(content, regexp, replace, literal=False):
         list: the new array of lines with the content replaced
         times_replaced : the number of substitutions made
     """
+    module = AnsibleModuleHelper(argument_spec={})
     full_text = "\n".join(content)
 
     if literal:
         regexp = re.escape(regexp)
         pattern = re.compile(regexp)
     else:
-        pattern = re.compile(regexp, re.MULTILINE)
+        try:
+            pattern = re.compile(regexp, re.MULTILINE)
+        except Exception as e:
+            module.fail_json(msg=f"Unable to compile regex {regexp}. {e}")
 
-    modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
+    try:
+        modified_text, times_replaced = re.subn(pattern, replace, full_text, 0)
+    except Exception as e:
+        module.fail_json(msg=f"Bad use of regex {pattern} with replace {replace}. {e}")
+
     modified_list = modified_text.split("\n")
     modified_list = [line for line in modified_list if line.strip() or line.lstrip()]
 
@@ -391,6 +402,7 @@ def search_bf_af(text, literal, before, after):
         end_block_code: Position of the list where to end search
         match: If there were a match of any value of before or after
     """
+    module = AnsibleModuleHelper(argument_spec={})
     lit_af = False
     lit_bf = False
 
@@ -405,7 +417,10 @@ def search_bf_af(text, literal, before, after):
         else:
             pattern_before = u''
             pattern_before = u'(?P<subsection>.*)%s' % before
-            pattern_end = re.compile(pattern_before, re.DOTALL)
+            try:
+                pattern_end = re.compile(pattern_before, re.DOTALL)
+            except Exception as e:
+                module.fail_json(msg=f"Unable to compile regex {before}. {e}")
 
     if bool(after):
         if lit_af:
@@ -414,7 +429,10 @@ def search_bf_af(text, literal, before, after):
         else:
             pattern_after = u''
             pattern_after = u'%s(?P<subsection>.*)' % after
-            pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
+            try:
+                pattern_begin = re.compile(pattern_after, re.DOTALL) if after else after
+            except Exception as e:
+                module.fail_json(msg=f"Unable to compile regex {after}. {e}")
 
     begin_block_code = 0
     end_block_code = len(text)

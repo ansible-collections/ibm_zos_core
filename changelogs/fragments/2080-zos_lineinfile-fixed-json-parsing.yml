@@ -1,0 +1,7 @@
+bugfixes:
+  - zos_lineinfile - The module would report a false negative when certain special characters 
+    where present in the `line` option. Fix now reports the successful operation.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2080).
+trivial:
+  - test_zos_lineinfile_func - added test case to verify insertbefore functionality with regex pattern before Ansible block line.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2080).

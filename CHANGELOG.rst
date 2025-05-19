@@ -57,6 +57,37 @@ New Modules
 
 - ibm.ibm_zos_core.zos_stat - Retrieve facts from MVS data sets, USS files, aggregates and generation data groups
 
+v1.13.1
+=======
+
+Release Summary
+---------------
+
+Release Date: '2025-05-16'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Minor Changes
+-------------
+
+- zos_fetch - Updated the documentation to correctly state what the default behavior of the module is. (https://github.com/ansible-collections/ibm_zos_core/pull/2047).
+- zos_job_output - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_job_query - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_job_submit - Adds new fields cpu_time, origin_node and execution_node to response. (https://github.com/ansible-collections/ibm_zos_core/pull/2056).
+- zos_stat - Added support to recall migrated data sets and return its attributes. (https://github.com/ansible-collections/ibm_zos_core/pull/2075)
+- zos_stat - Adds support to query data sets using their aliases. (https://github.com/ansible-collections/ibm_zos_core/pull/2061)
+
+Bugfixes
+--------
+
+- zos_backup_restore - Return value `backup_name` was empty upon successful result. Fix now returns `backup_name` populated. (https://github.com/ansible-collections/ibm_zos_core/pull/2040).
+- zos_data_set - Attempting to create a data set with the same name on a different volume did not work, nor did it report a failure. The fix now informs the user that if the data set is cataloged on a different volume, it needs to be uncataloged before using the data set module to create a new data set on a different volume. (https://github.com/ansible-collections/ibm_zos_core/pull/2057).
+- zos_data_set - Module would fail when trying to delete a non-existent Generation Data Group. Fix now provides a successful response with `changed=false`. (https://github.com/ansible-collections/ibm_zos_core/pull/2035)
+- zos_data_set - Module would fail with TypeError when trying to replace an existing GDG. Fix now allows the replacement of an existing GDG. (https://github.com/ansible-collections/ibm_zos_core/pull/2035)
+- zos_mount - FSUMF168 return in stderror means that the mount dataset wouldn't resolve. While this shows a catalog or volume issue, it should not impact our search for an existing mount. Added handling to the df call, so that FSUMF168 are ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/2060).
+
 v1.13.0
 =======
 

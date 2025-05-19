@@ -679,6 +679,26 @@ releases:
       name: zos_zfs_resize
       namespace: ''
     release_date: '2025-01-30'
+  1.13.1:
+    changes:
+      bugfixes:
+      - zos_data_set - Module would fail when trying to delete a non-existent Generation
+        Data Group. Fix now provides a successful response with `changed=false`. (https://github.com/ansible-collections/ibm_zos_core/pull/2035)
+      - zos_data_set - Module would fail with TypeError when trying to replace an
+        existing GDG. Fix now allows the replacement of an existing GDG. (https://github.com/ansible-collections/ibm_zos_core/pull/2035)
+      release_summary: 'Release Date: ''2025-05-19''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - 2035-zos_data_set-fixing-gdg-replace-and-empty-gdg-removal-issues.yaml
+    - v1.13.1-summary.yml
+    release_date: '2025-05-19'
   1.2.1:
     changes:
       bugfixes:
@@ -748,21 +768,20 @@ releases:
       - zos_operator supports new options **wait** and **wait_time_s** such that you
         can specify that zos_operator wait the full **wait_time_s** or return as soon
         as the first operator command executes.
-      release_summary: "Release Date: '2021-19-04'\nThis changlelog describes all\
-        \ changes made to the modules and plugins included\nin this collection.\n\
-        For additional details such as required dependencies and availablity review\n\
-        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__\
-        \ \n\n`New Playbooks <https://github.com/IBM/z_ansible_collections_samples>`__\n\
-        \  - Authorize and synchronize APF authorized libraries on z/OS from a configuration\
-        \ file cloned from GitHub\n  - Automate program execution with copy, sort\
-        \ and fetch data sets on z/OS playbook.\n  - Automate user management with\
-        \ add, remove, grant permission, generate\n    passwords, create zFS, mount\
-        \ zFS and send email notifications when deployed\n    to Ansible Tower or\
-        \ AWX with the manage z/OS Users Using Ansible playbook.\n  - Use the configure\
-        \ Python and ZOAU Installation playbook to scan the\n    **z/OS** target to\
-        \ find the latest supported configuration and generate\n    inventory and\
-        \ a variables configuration.\n  - Automate software management with SMP/E\
-        \ Playbooks\n"
+      release_summary: "Release Date: '2021-19-04'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n\n`New Playbooks <https://github.com/IBM/z_ansible_collections_samples>`__\n
+        \ - Authorize and synchronize APF authorized libraries on z/OS from a configuration
+        file cloned from GitHub\n  - Automate program execution with copy, sort and
+        fetch data sets on z/OS playbook.\n  - Automate user management with add,
+        remove, grant permission, generate\n    passwords, create zFS, mount zFS and
+        send email notifications when deployed\n    to Ansible Tower or AWX with the
+        manage z/OS Users Using Ansible playbook.\n  - Use the configure Python and
+        ZOAU Installation playbook to scan the\n    **z/OS** target to find the latest
+        supported configuration and generate\n    inventory and a variables configuration.\n
+        \ - Automate software management with SMP/E Playbooks\n"
     fragments:
     - v1.3.0_summary.yml
     - v1.3.0_summary_bugs.yml
@@ -799,11 +818,11 @@ releases:
         in conjunction with FlashCopy or Fast Replication. - zos_mvs_raw module execution
         fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP".
         This issue is addressed by APAR PH28089.
-      release_summary: "Release Date: '2022-27-04'\nThis changlelog describes all\
-        \ changes made to the modules and plugins included\nin this collection.\n\
-        For additional details such as required dependencies and availablity review\n\
-        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__\
-        \ \n"
+      release_summary: "Release Date: '2022-27-04'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
     fragments:
     - v1.3.1_summary.yml
     - v1.3.1_summary_bugs.yml
@@ -825,11 +844,11 @@ releases:
       - zos_job_query was updated to correct a boolean condition that always evaluated
         to "CANCELLED". - When querying jobs that are either **CANCELLED** or have
         **FAILED**, they were always treated as **CANCELLED**.
-      release_summary: "Release Date: '2022-26-04'\nThis changlelog describes all\
-        \ changes made to the modules and plugins included\nin this collection.\n\
-        For additional details such as required dependencies and availablity review\n\
-        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__\
-        \ \n"
+      release_summary: "Release Date: '2022-26-04'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
     fragments:
     - v1.3.3_summary.yml
     - v1.3.3_summary_bugs.yml
@@ -837,18 +856,18 @@ releases:
   1.3.5:
     changes:
       bugfixes:
-      - "zos_ssh - connection plugin was updated to correct a bug in Ansible that\n\
-        \  would result in playbook task retries overriding the SSH connection\n \
-        \ retries. This is resolved by renaming the zos_ssh option\n  retries to reconnection_retries.\
-        \ The update addresses users of\n  ansible-core v2.9 which continues to use\
-        \ retries and users of\n  ansible-core v2.11 or later which uses reconnection_retries.\n\
-        \  This also resolves a bug in the connection that referenced a deprecated\n\
-        \  constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)\n"
-      release_summary: "Release Date: '2022-03-06'\nThis changlelog describes all\
-        \ changes made to the modules and plugins included\nin this collection.\n\
-        For additional details such as required dependencies and availablity review\n\
-        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__\
-        \ \n"
+      - "zos_ssh - connection plugin was updated to correct a bug in Ansible that\n
+        \ would result in playbook task retries overriding the SSH connection\n  retries.
+        This is resolved by renaming the zos_ssh option\n  retries to reconnection_retries.
+        The update addresses users of\n  ansible-core v2.9 which continues to use
+        retries and users of\n  ansible-core v2.11 or later which uses reconnection_retries.\n
+        \ This also resolves a bug in the connection that referenced a deprecated\n
+        \ constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)\n"
+      release_summary: "Release Date: '2022-03-06'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
     fragments:
     - 328-rename-retries-to-reconnection_retries.yml
     - v1.3.4_summary.yml
@@ -882,12 +901,12 @@ releases:
       - zos_copy - was enhanced for when `src` is a directory and ends with "/", the
         contents of it will be copied into the root of `dest`. If it doesn't end with
         "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/515)
-      release_summary: "Release Date: '2022-10-07'\nThis changelog describes all changes\
-        \ made to the modules and plugins included\nin this collection. The release\
-        \ date is the date the changelog is created.\nFor additional details such\
-        \ as required dependencies and availability review\nthe collections `release\
-        \ notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__\
-        \ \n"
+      release_summary: "Release Date: '2022-10-07'\nThis changelog describes all changes
+        made to the modules and plugins included\nin this collection. The release
+        date is the date the changelog is created.\nFor additional details such as
+        required dependencies and availability review\nthe collections `release notes
+        <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
     fragments:
     - 462-copy-fetch-submit-utils.yml
     - 513-zos_ssh-support-ansible-2.11.yml
@@ -904,12 +923,12 @@ releases:
         exist in the `dest` path. Prior to this change, if a parent directory anywhere
         in the path did not exist the task would fail as it was stated in documentation.
         (https://github.com/ansible-collections/ibm_zos_core/pull/561)
-      - "zos_copy - enhanced to support system symbols in PARMLIB. System symbols\
-        \ are elements that allow different z/OS\xAE systems to share PARMLIB definitions\
-        \ while retaining unique values in those definitions. This was fixed in a\
-        \ future release through the use of one of the ZOAU dependency but this version\
-        \ of `ibm_zos_core` does not support that dependency version so this support\
-        \ was added. (https://github.com/ansible-collections/ibm_zos_core/pull/566)"
+      - "zos_copy - enhanced to support system symbols in PARMLIB. System symbols
+        are elements that allow different z/OS\xAE systems to share PARMLIB definitions
+        while retaining unique values in those definitions. This was fixed in a future
+        release through the use of one of the ZOAU dependency but this version of
+        `ibm_zos_core` does not support that dependency version so this support was
+        added. (https://github.com/ansible-collections/ibm_zos_core/pull/566)"
       release_summary: 'Release Date: ''2022-12-07''
 
         This changelog describes all changes made to the modules and plugins included
@@ -932,13 +951,13 @@ releases:
       - zos_job_output was updated to correct possible truncated responses for the
         ddname content. This would occur for jobs with very large amounts of content
         from a ddname.
-      - "zos_ssh - connection plugin was updated to correct a bug in Ansible that\n\
-        \  would result in playbook task retries overriding the SSH connection\n \
-        \ retries. This is resolved by renaming the zos_ssh option\n  retries to reconnection_retries.\
-        \ The update addresses users of\n  ansible-core v2.9 which continues to use\
-        \ retries and users of\n  ansible-core v2.11 or later which uses reconnection_retries.\n\
-        \  This also resolves a bug in the connection that referenced a deprecated\n\
-        \  constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)\n"
+      - "zos_ssh - connection plugin was updated to correct a bug in Ansible that\n
+        \ would result in playbook task retries overriding the SSH connection\n  retries.
+        This is resolved by renaming the zos_ssh option\n  retries to reconnection_retries.
+        The update addresses users of\n  ansible-core v2.9 which continues to use
+        retries and users of\n  ansible-core v2.11 or later which uses reconnection_retries.\n
+        \ This also resolves a bug in the connection that referenced a deprecated\n
+        \ constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)\n"
       deprecated_features:
       - zos_copy and zos_fetch option sftp_port has been deprecated. To set the SFTP
         port, use the supported options in the ansible.builtin.ssh plugin. Refer to
@@ -976,11 +995,11 @@ releases:
         information in the event an error is encountered.
       - zos_ping was updated to remove the need for the zos_ssh connection plugin
         dependency.
-      release_summary: "Release Date: '2021-06-23'\nThis changlelog describes all\
-        \ changes made to the modules and plugins included\nin this collection.\n\
-        For additional details such as required dependencies and availablity review\n\
-        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__\
-        \ \n"
+      release_summary: "Release Date: '2021-06-23'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
     fragments:
     - v1.4.0-beta.1_summary.yml
     - v1.4.0-beta.1_summary_bugs.yml

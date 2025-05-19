@@ -4,6 +4,24 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
+v1.13.1
+=======
+
+Release Summary
+---------------
+
+Release Date: '2025-05-19'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+Bugfixes
+--------
+
+- zos_data_set - Module would fail when trying to delete a non-existent Generation Data Group. Fix now provides a successful response with `changed=false`. (https://github.com/ansible-collections/ibm_zos_core/pull/2035)
+- zos_data_set - Module would fail with TypeError when trying to replace an existing GDG. Fix now allows the replacement of an existing GDG. (https://github.com/ansible-collections/ibm_zos_core/pull/2035)
+
 v1.13.0
 =======
 

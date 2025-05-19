@@ -6,6 +6,28 @@
 Releases
 ========
 
+Version 1.13.1
+==============
+
+Bugfixes
+--------
+
+- ``zos_data_set``
+   - Module would fail with TypeError when trying to replace an existing GDG.
+   - Fix now allows the replacement of an existing GDG.
+
+- ``zos_data_set``
+   - Module would fail when trying to delete a non-existent Generation Data Group.
+   - Fix now provides a successful response with `changed=false`.
+
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
 Version 1.13.0
 ==============
 

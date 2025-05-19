@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2024, 2025
 ################################################################################
 # For additonal doc, see https://ansible.readthedocs.io/projects/lint/configuring/
 exclude_paths:
@@ -37,6 +37,10 @@ exclude_paths:
   - tests/sanity/ignore-2.12.txt
   - tests/sanity/ignore-2.13.txt
   - tests/sanity/ignore-2.14.txt
+  - tests/sanity/ignore-2.15.txt
+  - tests/sanity/ignore-2.16.txt
+  - tests/sanity/ignore-2.17.txt
+  - tests/sanity/ignore-2.18.txt
   - venv*
   - ansible_collections/
   - ./*.log

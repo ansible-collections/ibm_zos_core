@@ -124,36 +124,6 @@ Dependency Matrix
    |         |                            |- IBM `Open Enterprise SDK for Python`_            |
    |         |                            |- IBM `Z Open Automation Utilities`_ >=1.3.0       |
    +---------+----------------------------+---------------------------------------------------+
-   | 1.9.x   |- `ansible-core`_ >=2.14    |- `z/OS`_ V2R4 - V2Rx                              |
-   |         |- `Ansible`_ >=7.0.x        |- `z/OS shell`_                                    |
-   |         |- `AAP`_ >=2.3              |- `z/OS OpenSSH`_                                  |
-   |         |                            |- IBM `Open Enterprise SDK for Python`_            |
-   |         |                            |- IBM `Z Open Automation Utilities`_ 1.2.5 - 1.2.x |
-   +---------+----------------------------+---------------------------------------------------+
-   | 1.8.x   |- `ansible-core`_ >=2.14    |- `z/OS`_ V2R4 - V2Rx                              |
-   |         |- `Ansible`_ >=7.0.x        |- `z/OS shell`_                                    |
-   |         |- `AAP`_ >=2.3              |- `z/OS OpenSSH`_                                  |
-   |         |                            |- IBM `Open Enterprise SDK for Python`_            |
-   |         |                            |- IBM `Z Open Automation Utilities`_ 1.2.4 - 1.2.x |
-   +---------+----------------------------+---------------------------------------------------+
-   | 1.7.x   |- `ansible-core`_ >=2.14    |- `z/OS`_ V2R4 - V2Rx                              |
-   |         |- `Ansible`_ >=7.0.x        |- `z/OS shell`_                                    |
-   |         |- `AAP`_ >=2.3              |- `z/OS OpenSSH`_                                  |
-   |         |                            |- IBM `Open Enterprise SDK for Python`_            |
-   |         |                            |- IBM `Z Open Automation Utilities`_ 1.2.3 - 1.2.x |
-   +---------+----------------------------+---------------------------------------------------+
-   | 1.6.x   |- `ansible-core`_ >=2.9.x   |- `z/OS`_ V2R3 - V2Rx                              |
-   |         |- `Ansible`_ >=2.9.x        |- `z/OS shell`_                                    |
-   |         |- `AAP`_ >=1.2              |- `z/OS OpenSSH`_                                  |
-   |         |                            |- IBM `Open Enterprise SDK for Python`_            |
-   |         |                            |- IBM `Z Open Automation Utilities`_ 1.2.2 - 1.2.x |
-   +---------+----------------------------+---------------------------------------------------+
-   | 1.5.x   |- `ansible-core`_ >=2.9.x   |- `z/OS`_ V2R3 - V2Rx                              |
-   |         |- `Ansible`_ >=2.9.x        |- `z/OS shell`_                                    |
-   |         |- `AAP`_ >=1.2              |- `z/OS OpenSSH`_                                  |
-   |         |                            |- IBM `Open Enterprise SDK for Python`_            |
-   |         |                            |- IBM `Z Open Automation Utilities`_ 1.2.2 - 1.2.x |
-   +---------+----------------------------+---------------------------------------------------+
 
 .. .............................................................................
 .. Global Links

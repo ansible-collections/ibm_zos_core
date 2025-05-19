@@ -432,6 +432,8 @@ class EncodeUtils(object):
                     "Directory {0} is empty. Please check the path.".format(src)
                 )
             elif len(file_list) == 1:
+                dest_f = dest
+                src_f = src
                 if path.isdir(dest):
                     file_name = path.basename(file_list[0])
                     src_f = path.join(validation.validate_safe_path(src), validation.validate_safe_path(file_name))

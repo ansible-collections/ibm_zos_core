@@ -2103,6 +2103,59 @@ class DataSet(object):
         return volume_string
 
     @staticmethod
+    def check_if_data_set_migrated(name):
+        """Compares the output of datasets.list_dataset_names with and
+        without migrated data set names to check if name has been migrated.
+
+        Parameters
+        ----------
+        name : str
+            Name of a data set.
+
+        Returns
+        -------
+        bool
+            Whether the data set has been migrated.
+        """
+        has_been_migrated = False
+
+        non_migrated_list = datasets.list_dataset_names(name, migrated=False)
+        migrated_list = datasets.list_dataset_names(name, migrated=True)
+
+        if name in migrated_list and name not in non_migrated_list:
+            has_been_migrated = True
+
+        return has_been_migrated
+
+    @staticmethod
+    def recall_migrated_data_set(name, module, tmp_hlq=None):
+        """Recalls a data set using HRECALL.
+
+        Parameters
+        ----------
+        name : str
+            Name of a data set.
+        module : AnsibleModuleHelper
+            Ansible object capable of executing commands.
+
+        Keyword Parameters
+        ------------------
+        tmp_hlq : str
+            Temp HLQ to use with mvscmdauth.
+
+        Returns
+        -------
+        tuple(int, str, str)
+            Return code, standard output and standard error from
+            the HRECALL call.
+        """
+        name = name.replace('$', '\\$')
+        recall_cmd = f"""tsocmd "HRECALL '{name}'" """
+        rc, stdout, stderr = module.run_command(recall_cmd)
+
+        return rc, stdout, stderr
+
+    @staticmethod
     def get_name_if_data_set_is_alias(name, tmp_hlq=None):
         """Checks the catalog to see if 'name' corresponds to a data set
         alias and returns the original data set name in case it is.

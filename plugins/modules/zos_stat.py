@@ -35,6 +35,7 @@ options:
           or a UNIX System Services file path, to query.
         - Data sets can be sequential, partitioned (PDS), partitioned
           extended (PDSE), VSAMs or generation data sets (GDS).
+        - This option doesn't accept the use of wilcards (? and *).
     type: str
     required: true
     aliases:
@@ -74,6 +75,20 @@ options:
         - If the system finds the data set is not actually managed by SMS, the
           rest of the attributes will still be queried and this will be noted
           in the output from the task.
+    type: bool
+    required: false
+    default: false
+  recall:
+    description:
+      - Whether to recall a migrated data set to fully query its
+        attributes.
+      - If set to C(false), the module will return a limited amount of
+        information for a migrated data set.
+      - Recalling a data set will make the module take longer to execute.
+      - Ignored when the data set is not found to be migrated.
+      - The data set will not be migrated again afterwards.
+      - The data set will not get recalled when running the module in
+        check mode.
     type: bool
     required: false
     default: false
@@ -1708,7 +1723,8 @@ return 0"""
         ds_type,
         tmp_hlq=None,
         missing_volumes=None,
-        alias=None
+        alias=None,
+        migrated=False
     ):
         """Create a new handler that will handle the query of a sequential or
         partitioned data set. This subclass should only be instantiated by
@@ -1725,6 +1741,7 @@ return 0"""
             missing_volumes (list, optional) -- List of volumes where a data set was searched
                 but not found.
             alias (str, optional) -- Alias of the data set that the user provided.
+            migrated (bool, optional) -- Whether it is a migrated data set.
         """
         super().__init__(
             name,
@@ -1737,6 +1754,7 @@ return 0"""
             alias=alias
         )
         self.missing_volumes = missing_volumes
+        self.migrated = migrated
 
     def query(self):
         """Uses LISTDSI to query facts about a data set, while also handling
@@ -1753,6 +1771,14 @@ return 0"""
         """
         data = super().query()
         attributes = {}
+
+        if self.migrated:
+            data['attributes'] = fill_missing_attrs(
+                self._parse_attributes(attributes),
+                self.expected_attrs
+            )
+
+            return data
 
         try:
             # First creating a temp data set to hold the LISTDSI script.
@@ -2293,7 +2319,8 @@ def get_data_set_handler(
     volumes,
     module,
     tmp_hlq=None,
-    sms_managed=False
+    sms_managed=False,
+    recall=False
 ):
     """Returns the correct handler needed depending on the type of data set
     we will query.
@@ -2305,6 +2332,7 @@ def get_data_set_handler(
         module (AnsibleModule) -- Ansible object with the task's context.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
         sms_managed (bool, optional) -- Whether the data set is managed by SMS.
+        recall (bool, optional) -- Whether a migrated data set should be recalled.
 
     Returns
     -------
@@ -2320,6 +2348,27 @@ def get_data_set_handler(
         return DataSetHandler(name, exists=False)
 
     alias_name = None
+
+    has_been_migrated = DataSet.check_if_data_set_migrated(name)
+    if has_been_migrated:
+        if recall and not module.check_mode:
+            rc, stdout, stderr = DataSet.recall_migrated_data_set(
+                name,
+                module,
+                tmp_hlq=tmp_hlq
+            )
+
+            # Ignoring whatever comes out of stderr because tsocmd decides
+            # to pollute it even when the command runs fine.
+            if rc != 0:
+                raise QueryException(
+                    'An error ocurred while recalling a migrated data set.',
+                    rc,
+                    stdout,
+                    stderr
+                )
+        else:
+            return NonVSAMDataSetHandler(name, 'MIGRAT', module, sms_managed, None, migrated=True)
 
     try:
         is_an_alias, base_name = DataSet.get_name_if_data_set_is_alias(
@@ -2385,6 +2434,7 @@ def get_facts_handler(
     volumes=None,
     tmp_hlq=None,
     sms_managed=False,
+    recall=False,
     file_args=None
 ):
     """Returns the correct handler needed depending on the type of resource
@@ -2398,6 +2448,7 @@ def get_facts_handler(
         volumes (list, optional) -- Volumes where a data set is allocated.
         tmp_hlq (str, optional) -- Temp HLQ for certain data set operations.
         sms_managed (bool, optional) -- Whether a data set is managed by SMS.
+        recall (bool, optional) -- Whether migrated data sets should be recalled.
         file_args (dict, optional) -- Options affecting how a file is query.
 
     Returns
@@ -2405,7 +2456,7 @@ def get_facts_handler(
         FactsHandler -- Handler for data sets/GDGs/aggregates/files.
     """
     if resource_type == 'data_set':
-        return get_data_set_handler(name, volumes, module, tmp_hlq, sms_managed)
+        return get_data_set_handler(name, volumes, module, tmp_hlq, sms_managed, recall)
     elif resource_type == 'gdg':
         return GenerationDataGroupHandler(name, module, tmp_hlq)
     elif resource_type == 'file':
@@ -2437,6 +2488,11 @@ def run_module():
                 'choices': ['data_set', 'gdg', 'file', 'aggregate']
             },
             'sms_managed': {
+                'type': 'bool',
+                'required': False,
+                'default': False
+            },
+            'recall': {
                 'type': 'bool',
                 'required': False,
                 'default': False
@@ -2490,6 +2546,10 @@ def run_module():
             'arg_type': 'bool',
             'required': False
         },
+        'recall': {
+            'arg_type': 'bool',
+            'required': False
+        },
         'tmp_hlq': {
             'arg_type': 'str',
             'required': False
@@ -2527,6 +2587,7 @@ def run_module():
     resource_type = module.params.get('type')
     tmp_hlq = module.params.get('tmp_hlq')
     sms_managed = module.params.get('sms_managed')
+    recall = module.params.get('recall')
     file_args = {
         'follow': module.params.get('follow'),
         'get_mime': module.params.get('get_mime'),
@@ -2542,6 +2603,7 @@ def run_module():
             volumes,
             tmp_hlq,
             sms_managed,
+            recall,
             file_args
         )
     except QueryException as err:

@@ -172,6 +172,9 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["subsystem"] = None
     job["system"] = None
     job["owner"] = owner
+    job["cpu_time"] = None
+    job["execution_node"] = None
+    job["origin_node"] = None
 
     job["ret_code"] = {}
     job["ret_code"]["msg"] = None
@@ -351,6 +354,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["subsystem"] = ""
             job["system"] = ""
             job["owner"] = entry.owner
+            job["cpu_time"] = None
+            job["execution_node"] = None
+            job["origin_node"] = None
             # Sometimes, with job type STC, the first entry will have an extra
             # space at the end of it.
             job["content_type"] = entry.job_type.strip()
@@ -384,6 +390,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                 job["system"] = entry.system
             if hasattr(entry, "subsystem"):
                 job["subsystem"] = entry.subsystem
+            if hasattr(entry, "cpu_time"):
+                job["cpu_time"] = entry.cpu_time
+            if hasattr(entry, "execution_node"):
+                job["execution_node"] = entry.execution_node
+            if hasattr(entry, "origin_node"):
+                job["origin_node"] = entry.origin_node
 
             if dd_scan:
                 # If true, it means the job is not ready for DD queries and the duration and

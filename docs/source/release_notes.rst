@@ -6,6 +6,33 @@
 Releases
 ========
 
+Version 1.13.1
+==============
+
+Bugfixes
+--------
+
+- ``zos_data_set``
+
+   - Module would fail with TypeError when trying to replace an existing GDG. Fix now allows the replacement of an existing GDG.
+   - Module would fail when trying to delete a non-existent Generation Data Group. Fix now provides a successful response with `changed=false`.
+
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_job_submit`` - when setting 'location' to 'local' and not specifying the from and to encoding, the modules defaults are not read leaving the file in its original encoding; explicitly set the encodings instead of relying on the default.
+- ``zos_job_submit`` - when submitting JCL, the response value returned for **byte_count** is incorrect.
+- ``zos_apf`` - When trying to remove a library that contains the '$' character in the name for an APF(authorized program facility), the operation might fail.
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
+
 Version 1.13.0
 ==============
 

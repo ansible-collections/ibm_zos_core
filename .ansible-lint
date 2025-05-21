@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (c) IBM Corporation 2025
+# Copyright (c) IBM Corporation 2024, 2025
 ################################################################################
 # For additonal doc, see https://ansible.readthedocs.io/projects/lint/configuring/
 exclude_paths:

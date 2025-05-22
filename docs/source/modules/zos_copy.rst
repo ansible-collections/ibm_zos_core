@@ -930,7 +930,7 @@ Notes
 
    It is the playbook author or user's responsibility to ensure they have appropriate authority to the RACF FACILITY resource class. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
 
-   To use this module, you must define the RACF FACILITY class profile and allow READ access to RACF FACILITY profile MVS.MCSOPER.ZOAU. If your system uses a different security product, consult that product's documentation to configure the required security classes.
+   If trying to copy a migrated data set, first recall it before executing this module. This module does not perform recalls automatically. See modules `zos_mvs_raw <./zos_mvs_raw.html>`_ and `zos_tso_cmd <./zos_tso_cmd.html>`_ for examples of how to recall migrated data sets using this collection.
 
 
 
@@ -941,6 +941,8 @@ See Also
 
    - :ref:`zos_fetch_module`
    - :ref:`zos_data_set_module`
+   - :ref:`zos_mvs_raw_module`
+   - :ref:`zos_tso_cmd_module`
 
 
 

@@ -1809,6 +1809,20 @@ Examples
              dd_name: sysin
              content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
+   - name: Recall a migrated data set.
+     zos_mvs_raw:
+       program_name: ikjeft01
+       auth: true
+       dds:
+         - dd_output:
+             dd_name: systsprt
+             return_content:
+               type: text
+         - dd_input:
+             dd_name: systsin
+             content:
+               - "HRECALL 'MY.DATASET' WAIT"
+
 
 
 

@@ -3374,11 +3374,11 @@ def run_module(module, arg_def):
     raw_src = src
     raw_dest = dest
 
-    if is_mvs_src or is_src_gds:
+    if is_mvs_src:
         is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
         if is_src_alias:
             src = src_base_name
-    if is_mvs_dest or is_dest_gds:
+    if is_mvs_dest:
         is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
         if is_dest_alias:
             dest = dest_base_name

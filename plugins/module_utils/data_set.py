@@ -2181,24 +2181,24 @@ class DataSet(object):
         # We need to unescape because this call to the system can handle
         # special characters just fine.
         name = name.upper().replace("\\", '')
-        idcams_cmd = f" LISTCAT ENTRIES('{name}') ALL"
+        idcams_cmd = f" LISTCAT ALIAS ENTRIES('{name}') ALL"
         response = DataSet._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
 
-        if response.rc > 0 or response.stderr_response != '':
-            raise MVSCmdExecError(
-                rc=response.rc,
-                stdout=response.stdout_response,
-                stderr=response.stderr_response
-            )
-
-        if re.search(r'(ALIAS -+)(1)', response.stdout_response):
+        if response.rc == 0:
             base_name = re.search(
                 r'(ASSOCIATIONS\s*\n\s*[0-9a-zA-Z]+-+)([0-9a-zA-Z\.@\$#-]+)',
                 response.stdout_response
             ).group(2)
             return True, base_name
-        else:
+        elif response.rc == 4:
             return False, name
+        elif response.rc != 0 or response.stderr_response != '':
+            raise MVSCmdExecError(
+                rc=response.rc,
+                out=response.stdout_response,
+                err=response.stderr_response
+            )
+
 
     @staticmethod
     def _execute_idcams_cmd(

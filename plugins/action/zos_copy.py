@@ -157,7 +157,7 @@ class ActionModule(ActionBase):
                 try:
                     local_content = _write_content_to_temp_file(content)
                     transfer_res = self._copy_to_remote(
-                        local_content, ignore_stderr=ignore_sftp_stderr
+                        local_content, ignore_stderr=ignore_sftp_stderr, task_vars=task_vars
                     )
                 finally:
                     os.remove(local_content)
@@ -238,11 +238,12 @@ class ActionModule(ActionBase):
 
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
-                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr, task_vars=task_vars
                 )
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
+                print(f"transfer res: {transfer_res}")
                 return transfer_res
             display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host=self._play_context.remote_addr)
 
@@ -309,18 +310,22 @@ class ActionModule(ActionBase):
 
         return _update_result(is_binary, copy_res, self._task.args, original_src)
 
-    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
+    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False, task_vars=None):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
-        rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(self.tmp_dir))
-        if rc > 0:
-            msg = f"Failed to resolve remote temporary directory {self.tmp_dir}. Ensure that the directory exists and user has proper access."
-            return self._exit_action({}, msg, failed=True)
-        self.tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
-        temp_path = os.path.join(self.tmp_dir, _create_temp_path_name(), os.path.basename(src))
-        self._connection.exec_command("mkdir -p {0}".format(os.path.dirname(temp_path)))
-        _src = src.replace("#", "\\#")
+        from os import path
+        temp_path = path.join(self.tmp_dir, _create_temp_path_name())
+        tempfile_args = {"path": temp_path, "state": "directory"}
+        tempfile = self._execute_module(
+            module_name="file", module_args=tempfile_args, task_vars=task_vars,
+        )
         _sftp_action = 'put'
+
+        if is_dir:
+            _sftp_action += ' -r'    # add '-r` to clone the source trees
+        temp_path = path.join(tempfile.get("path"), os.path.basename(src))
+        print(f"This is the temporary dir: {temp_path}")
+        _src = src.replace("#", "\\#")
         full_temp_path = temp_path
 
         if is_dir:

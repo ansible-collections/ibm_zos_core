@@ -77,16 +77,16 @@ class ActionModule(ActionBase):
                 return result
 
             tmp_dir = self._connection._shell._options.get("remote_tmp")
-            rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_dir))
-            if rc > 0:
-                msg = f"Failed to resolve remote temporary directory {tmp_dir}. Ensure that the directory exists and user has proper access."
-                return self._exit_action({}, msg, failed=True)
-
-            tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
             temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
-            dest_path = path.join(tmp_dir, temp_file_dir, path.basename(source))
-            # Creating the name for the temp file needed.
-            self._connection.exec_command("mkdir -p {0}".format(path.dirname(dest_path)))
+            dest_path = path.join(tmp_dir, temp_file_dir)
+            print(f"This is the preliminary dest path {dest_path}")
+            tempfile_args = {"path": dest_path, "state": "directory"}
+            tempfile = self._execute_module(
+                module_name="file", module_args=tempfile_args, task_vars=task_vars,
+            )
+            dest_path = tempfile.get("path")
+            print(f"This is the temporary dir: {dest_path}")
+            dest_file = path.join(dest_path, path.basename(source))
 
             source_full = None
             try:
@@ -130,11 +130,13 @@ class ActionModule(ActionBase):
             copy_module_args = {}
             module_args = self._task.args.copy()
 
+            print(f"this is dest file {dest_file}")
+            print(f"is source dir ?  {os.path.isdir(source_full)}")
             copy_module_args.update(
                 dict(
                     src=source_full,
-                    dest=dest_path,
-                    mode="0600",
+                    dest=dest_file,
+                    mode="0777",
                     force=True,
                     encoding=module_args.get('encoding'),
                     remote_src=False,
@@ -154,10 +156,10 @@ class ActionModule(ActionBase):
                 templar=self._templar,
                 shared_loader_obj=self._shared_loader_obj
             )
-
             result.update(copy_action.run(task_vars=task_vars))
+            print(f"this is copy action result {result}")
             if result.get("msg") is None:
-                module_args["src"] = dest_path
+                module_args["src"] = dest_file
                 result.update(
                     self._execute_module(
                         module_name="ibm.ibm_zos_core.zos_job_submit",

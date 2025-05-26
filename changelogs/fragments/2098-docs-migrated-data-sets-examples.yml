@@ -1,4 +1,4 @@
-minor_changes:
+trivial:
   - zos_copy - Added a note to the documentation redirecting users to other
     modules to see how to recall migrated data sets before trying to copy
     them.

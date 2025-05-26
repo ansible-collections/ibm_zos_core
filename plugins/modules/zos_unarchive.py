@@ -78,7 +78,7 @@ options:
             type: str
           use_adrdssu:
             description:
-              - If set to true, the C(zos_archive) module will use Data
+              - If set to true, the C(zos_unarchive) module will use Data
                 Facility Storage Management Subsystem data set services
                 (DFSMSdss) program ADRDSSU to uncompress data sets from
                 a portable format after using C(xmit) or C(terse).
@@ -312,7 +312,34 @@ options:
     type: bool
     required: false
     default: false
-
+  encoding:
+    description:
+      - Specifies the character encoding conversion to be applied to the
+        destination files after unarchiving.
+      - Supported character sets rely on the charset conversion utility
+        C(iconv) version the most common character sets are supported.
+      - After conversion the files are stored in same location as they 
+        were unarchived to under the same original name. No backup of the
+        original unconverted files is there as for that unarchive can be
+        executed again without encoding params on same source archive files.
+      - Destination files will be converted to the new encoding and will not
+        be restored to their original encoding.
+      - If encoding fails for any file in a set of multiple files, an
+        exception will be raised and the name of the file skipped will be
+        provided completing the task successfully with rc code 0.
+    type: dict
+    required: false
+    suboptions:
+      from:
+        description:
+          - The character set of the source I(src).
+        required: false
+        type: str
+      to:
+        description:
+          - The destination I(dest) character set for the files to be written as.
+        required: false
+        type: str
 attributes:
   action:
     support: full
@@ -380,6 +407,16 @@ EXAMPLES = r'''
       format_options:
         use_adrdssu: true
     list: true
+
+# Encoding example
+- name: Encode the destination data set into Latin-1 after unarchiving.
+  zos_unarchive:
+    src: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 '''
 
 RETURN = r'''
@@ -412,7 +449,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     validation,
-    mvs_cmd)
+    mvs_cmd,
+    encode)
 import re
 import os
 import zipfile
@@ -470,6 +508,10 @@ class Unarchive():
             Paths that were on include, but are missing from the files in archive.
         remote_src : bool
             If the source is remote or not.
+        from_encoding: str
+            The encoding of the source file.
+        to_encoding: str
+            The required encoding of the destination file.
         """
         self.module = module
         self.src = module.params.get("src")
@@ -485,6 +527,9 @@ class Unarchive():
         self.changed = False
         self.missing = list()
         self.remote_src = module.params.get("remote_src")
+        encoding_param = module.params.get("encoding") or {}
+        self.from_encoding = encoding_param.get("from")
+        self.to_encoding = encoding_param.get("to")
         if self.dest == '':
             self.dest = os.path.dirname(self.src)
 
@@ -494,6 +539,10 @@ class Unarchive():
 
     @abc.abstractmethod
     def _list_content(self):
+        pass
+
+    @abc.abstractmethod
+    def encode_source(self):
         pass
 
     def src_exists(self):
@@ -647,6 +696,21 @@ class TarUnarchive(Unarchive):
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
         self.changed = bool(self.targets)
+    
+    def encode_destination(self):
+        """Convert encoding for given destination
+        """
+        enc_utils = encode.EncodeUtils()
+        try:
+            for target in self.targets:
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    target, target, self.from_encoding, self.to_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(target, self.to_encoding)
+
+        except Exception as e:
+            raise EncodeError("Failed to encode in the required codeset: {e}") from e
 
 
 class ZipUnarchive(Unarchive):
@@ -746,6 +810,21 @@ class ZipUnarchive(Unarchive):
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
         self.changed = bool(self.targets)
+    
+    def encode_destination(self):
+        """Convert encoding for given destination
+        """
+        enc_utils = encode.EncodeUtils()
+        try:
+            for target in self.targets:
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    target, target, self.from_encoding, self.to_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(target, self.to_encoding)
+
+        except Exception as e:
+            raise EncodeError("Failed to encode in the required codeset: {e}") from e
 
 
 class MVSUnarchive(Unarchive):
@@ -1107,7 +1186,28 @@ class MVSUnarchive(Unarchive):
         if remove_targets:
             for target in self.targets:
                 data_set.DataSet.ensure_absent(target)
+  
+    def encode_destination(self):
+        """Convert encoding for given destination
+        """
+        enc_utils = encode.EncodeUtils()
 
+        try:
+            for target in self.targets:
+                ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
+                if not ds_type:
+                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                enc_utils.mvs_convert_encoding(
+                    target,
+                    target,
+                    self.from_encoding,
+                    self.to_encoding,
+                    src_type=ds_type,
+                    dest_type=ds_type,
+                    tmphlq=self.tmphlq
+                )
+        except Exception as e:
+            raise EncodeError(f"Failed to encode in the required codeset: {e}") from e
 
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
@@ -1378,6 +1478,23 @@ class LinkOutsideDestinationError(Exception):
         self.msg = 'Unable to extract {0} it would link to {1}, which is outside the designated destination'.format(tarinfo.name, path)
         super().__init__()
 
+class EncodeError(Exception):
+    def __init__(self, message):
+        """Error during encoding.
+
+        Parameters
+        ----------
+        message : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
+        self.msg = 'An error occurred during encoding: "{0}"'.format(message)
+        super(EncodeError, self).__init__(self.msg)
+
 
 def run_module():
     """Initialize module.
@@ -1467,6 +1584,20 @@ def run_module():
             tmp_hlq=dict(type='str'),
             force=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(
+                        type='str',
+                        required=False,
+                    ),
+                    "to": dict(
+                        type='str',
+                        required=False,
+                    )
+                }
+            ),
         ),
         mutually_exclusive=[
             ['include', 'exclude'],
@@ -1543,6 +1674,13 @@ def run_module():
         mutually_exclusive=[
             ['include', 'exclude'],
         ],
+        encoding=dict(
+            type='dict',
+            options={
+                'from' : dict(type='str'),
+                "to" : dict(type='str')
+            }
+        ),
     )
 
     try:
@@ -1564,6 +1702,10 @@ def run_module():
 
     if unarchive.dest_unarchived() and unarchive.dest_type() == "USS":
         unarchive.update_permissions()
+    
+    encoding = parsed_args.get("encoding")
+    if unarchive.dest_unarchived() and encoding:
+        unarchive.encode_destination()
 
     module.exit_json(**unarchive.result)
 

@@ -3591,12 +3591,9 @@ def run_module(module, arg_def):
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
-
     except Exception as err:
         module.fail_json(msg=str(err))
-    
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
-
     if identical_gdg_copy:
     # Validate destination isn't a generation pattern
         if is_member(dest):
@@ -3604,7 +3601,6 @@ def run_module(module, arg_def):
                 msg=f"Destination must be a GDG base (e.g., 'DEST.GDG'), not {raw_dest} when identical_gdg_copy=True",
                 changed=False
             )
-    
     # Validate destination GDG doesn't exist
         if dest_exists:
             module.fail_json(

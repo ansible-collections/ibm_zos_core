@@ -3913,8 +3913,8 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=src,
-            dest=dest,
+            src=module.params.get('src'),
+            dest=module.params.get('dest'),
             ds_type=dest_ds_type,
             dest_exists=dest_exists,
             backup_name=backup_name,

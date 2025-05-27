@@ -2340,7 +2340,7 @@ def prepend_spaces(lines, spaces=2):
         lines : list
               The list with a line of a program.
         spaces : int
-              The number of columns to move.
+              The number of columns to add as left padding to the content.
 
     Raises
     -------

@@ -49,6 +49,15 @@ options:
     type: bool
     default: false
     required: false
+  identical_gdg_copy:
+    description:
+      - If set to C(true) and the destination GDG does not exist, the module 
+        will copy the source GDG to the destination GDG with identical GDS names.
+      - If set to C(false), the copy will be done as a normal copy, without
+        preserving the GDG base.
+    type: bool
+    default: False
+    required: false
   backup:
     description:
       - Specifies whether a backup of the destination should be created before
@@ -58,15 +67,6 @@ options:
         module execution such that data can be retrieved.
     type: bool
     default: false
-    required: false
-  identical_gdg_copy:
-    description:
-      - If set to C(true) and the destination GDG does not exist, the module 
-        will copy the source GDG to the destination GDG with identical GDS names.
-      - If set to C(false), the copy will be done as a normal copy, without
-        preserving the GDG base.
-    type: bool
-    default: False
     required: false
   backup_name:
     description:

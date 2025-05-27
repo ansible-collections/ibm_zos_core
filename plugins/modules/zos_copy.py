@@ -1186,7 +1186,7 @@ class CopyHandler(object):
 
         success = True
         for gds in generations:
-        # If identical_gdg_copy is True, use exact source generation name in destination
+            # If identical_gdg_copy is True, use exact source generation name in destination
             if self.identical_gdg_copy:
                 src_gen_absolute = gds.name
                 parts = src_gen_absolute.split('.')
@@ -3606,9 +3606,7 @@ def run_module(module, arg_def):
                     "Destination must be a non-existent GDG base."
                 ),
                 changed=False
-            ) 
-
-
+            )
     # Checking that we're dealing with a positive generation when dest does not
     # exist.
     if is_dest_gds and not is_dest_gds_active:
@@ -4307,5 +4305,7 @@ class CopyOperationError(Exception):
         self.overwritten_members = overwritten_members
         self.new_members = new_members
         super().__init__(msg)
+
+
 if __name__ == "__main__":
     main()

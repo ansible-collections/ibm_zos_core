@@ -4,7 +4,7 @@ minor_changes:
     while preserving generation data set absolute names when the destination base does not exist prior to the copy.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2100).
 trivial:
-  - test_zos_copy_func - added test case to verify the gds names are preserved with destination base does not 
-    existing prior to the copy.
+  - test_zos_copy_func - Added a test case to ensure GDG generation names are preserved
+    when copying with identical_gdg_copy is true and the destination base is non-existent.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2100).
 

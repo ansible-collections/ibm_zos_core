@@ -51,12 +51,12 @@ options:
     required: false
   identical_gdg_copy:
     description:
-      - If set to C(true) and the destination GDG does not exist, the module 
+      - If set to C(true), and the destination GDG does not exist, the module
         will copy the source GDG to the destination GDG with identical GDS names.
       - If set to C(false), the copy will be done as a normal copy, without
         preserving the GDG base.
     type: bool
-    default: False
+    default: false
     required: false
   backup:
     description:
@@ -1178,11 +1178,9 @@ class CopyHandler(object):
         """
         src_view = gdgs.GenerationDataGroupView(src)
         generations = src_view.generations()
-
         copy_args = {
             "options": ""
         }
-
         if self.is_binary or self.asa_text:
             copy_args["options"] = "-B"
 
@@ -1192,20 +1190,19 @@ class CopyHandler(object):
             if self.identical_gdg_copy:
                 src_gen_absolute = gds.name
                 parts = src_gen_absolute.split('.')
-                generation_part = parts[-1]  # Extract generation number
+                # Extract generation number
+                generation_part = parts[-1]
                 dest_gen_name = f"{dest}.{generation_part}"
             else:
-            # If identical_gdg_copy is False, use the default next generation
+                # If identical_gdg_copy is False, use the default next generation
                 dest_gen_name = f"{dest}(+1)"
-
             try:
-            # Perform the copy operation
+                # Perform the copy operation
                 rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
                 if rc != 0:
                     success = False
             except zoau_exceptions.ZOAUException as e:
                 success = False
-
         return success
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
@@ -3595,17 +3592,17 @@ def run_module(module, arg_def):
         module.fail_json(msg=str(err))
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
     if identical_gdg_copy:
-    # Validate destination isn't a generation pattern
+        # Validate destination isn't a generation pattern
         if is_member(dest):
             module.fail_json(
-                msg=f"Destination must be a GDG base (e.g., 'DEST.GDG'), not {raw_dest} when identical_gdg_copy=True",
+                msg=f"Destination must be a GDG base not {raw_dest} when identical_gdg_copy=True",
                 changed=False
             )
     # Validate destination GDG doesn't exist
         if dest_exists:
             module.fail_json(
                 msg=(
-                    f"Identical GDG copy failed: {raw_dest} already exists. "
+                    f"Identical GDG copy failed: {raw_dest} already exists."
                     "Destination must be a non-existent GDG base."
                 ),
                 changed=False
@@ -4310,7 +4307,5 @@ class CopyOperationError(Exception):
         self.overwritten_members = overwritten_members
         self.new_members = new_members
         super().__init__(msg)
-
-
 if __name__ == "__main__":
     main()

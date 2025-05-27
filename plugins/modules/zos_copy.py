@@ -66,7 +66,7 @@ options:
       - If set to C(false), the copy will be done as a normal copy, without
         preserving the GDG base.
     type: bool
-    default: true
+    default: False
     required: false
   backup_name:
     description:

@@ -1,0 +1,5 @@
+minor_changes:
+  - zos_copy - Added support for `identical_gdg_copy` parameter in the module.
+    This allows copying GDG generations from a source base to a destination base
+    while preserving generation names.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2100)

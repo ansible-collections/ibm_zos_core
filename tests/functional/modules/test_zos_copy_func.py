@@ -5871,7 +5871,7 @@ def test_copy_data_set_seq_with_aliases(ansible_zos_module, volumes_on_systems):
         hosts.all.shell(cmd=f'drm {src}')
         hosts.all.shell(cmd=f'drm {dest}')
 
-def test_copy_pds_to_pds_using_aliases(ansible_zos_module):
+def test_copy_pds_to_pds_using_dest_alias(ansible_zos_module):
     hosts = ansible_zos_module
 
     try:
@@ -5991,7 +5991,7 @@ def test_copy_pdse_loadlib_to_pdse_loadlib_using_aliases(ansible_zos_module):
 
         # copy src loadlib to dest library pds w aliases
         copy_res_aliases = hosts.all.zos_copy(
-                src="{0}".format(src_lib),
+                src="{0}".format(src_lib_aliases),
                 dest="{0}".format(dest_lib_aliases),
                 remote_src=True,
                 executable=True,
@@ -6012,7 +6012,7 @@ def test_copy_pdse_loadlib_to_pdse_loadlib_using_aliases(ansible_zos_module):
             assert result.get("dest") == "{0}".format(dest_lib_aliases)
 
         verify_copy_mls_aliases = hosts.all.shell(
-            cmd="mls {0}".format(dest_lib_aliases),
+            cmd="mls {0}".format(dest_lib),
             executable=SHELL_EXECUTABLE
         )
 
@@ -6037,5 +6037,6 @@ def test_copy_pdse_loadlib_to_pdse_loadlib_using_aliases(ansible_zos_module):
         hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
         hosts.all.zos_data_set(name=src_lib, state="absent")
         hosts.all.zos_data_set(name=dest_lib, state="absent")
+        hosts.all.zos_data_set(name=src_lib_aliases, state="absent")
         hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
 

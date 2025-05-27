@@ -94,6 +94,7 @@ options:
     description:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, directory or MVS data set name.
+      - C(dest) can be a alias name of a PS, PDS or PDSE data set.
       - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a new USS file or replacement, the file will be appropriately tagged with
@@ -304,6 +305,7 @@ options:
     description:
       - Path to a file/directory or name of a data set to copy to remote
         z/OS system.
+      - C(src) can be a alias name of a PS, PDS or PDSE data set.
       - If C(remote_src) is true, then C(src) must be the path to a Unix
         System Services (USS) file, name of a data set, or data set member.
       - If C(src) is a local path or a USS path, it can be absolute or relative.
@@ -3373,12 +3375,14 @@ def run_module(module, arg_def):
     src_member = is_member(src)
     raw_src = src
     raw_dest = dest
+    is_src_alias = False
+    is_dest_alias = False
 
-    if is_mvs_src:
+    if is_mvs_src and not src_member and not is_src_gds:
         is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
         if is_src_alias:
             src = src_base_name
-    if is_mvs_dest:
+    if is_mvs_dest and not copy_member and not is_dest_gds:
         is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
         if is_dest_alias:
             dest = dest_base_name
@@ -3913,8 +3917,8 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=module.params.get('src'),
-            dest=module.params.get('dest'),
+            src=module.params.get('src') if is_src_alias else src,
+            dest=module.params.get('dest') if is_dest_alias else dest,
             ds_type=dest_ds_type,
             dest_exists=dest_exists,
             backup_name=backup_name,

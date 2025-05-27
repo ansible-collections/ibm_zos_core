@@ -291,14 +291,14 @@ class ActionModule(ActionBase):
             if self._connection.become:
                 self._connection.set_option('remote_user', self._play_context._become_user)
                 display.vvv(
-                    u"ibm_zos_fetch SSH cleanup user updated to {0}".format(self._play_context._become_user),
+                    u"ibm_zos_copy SSH cleanup user updated to {0}".format(self._play_context._become_user),
                     host=self._play_context.remote_addr
                 )
             self._connection.exec_command(f"rm -rf {path}*")
             if self._connection.become:
                 self._connection.set_option('remote_user', self._play_context._remote_user)
                 display.vvv(
-                    u"ibm_zos_fetch SSH cleanup user restored to {0}".format(self._play_context._remote_user),
+                    u"ibm_zos_copy SSH cleanup user restored to {0}".format(self._play_context._remote_user),
                     host=self._play_context.remote_addr
                 )
 
@@ -385,7 +385,7 @@ class ActionModule(ActionBase):
                 was_user_updated = True
                 self._connection.set_option('remote_user', self._play_context._become_user)
                 display.vvv(
-                    u"ibm_zos_fetch SSH transfer user updated to {0}".format(self._play_context._become_user),
+                    u"ibm_zos_copy SSH transfer user updated to {0}".format(self._play_context._become_user),
                     host=self._play_context.remote_addr
                 )
             (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
@@ -430,7 +430,7 @@ class ActionModule(ActionBase):
             if was_user_updated:
                 self._connection.set_option('remote_user', self._play_context._remote_user)
                 display.vvv(
-                    u"ibm_zos_fetch SSH transfer user restored to {0}".format(self._play_context._remote_user),
+                    u"ibm_zos_copy SSH transfer user restored to {0}".format(self._play_context._remote_user),
                     host=self._play_context.remote_addr
                 )
 

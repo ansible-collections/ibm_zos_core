@@ -306,7 +306,31 @@ options:
     type: bool
     default: false
     required: false
-
+  encoding:
+    description:
+      - Specifies the character encoding conversion to be applied to the
+        source files before archiving.
+      - Supported character sets rely on the charset conversion utility
+        C(iconv) version the most common character sets are supported.
+      - After conversion the files are stored in same location and name
+        as src and the same src is taken in consideration for archive.
+      - Source files will be converted to the new encoding and will not
+        be restored to their original encoding.
+      - If encoding fails for any file in a set of multiple files, an
+        exception will be raised and archiving will be skipped.
+    type: dict
+    required: false
+    suboptions:
+      from:
+        description:
+          - The character set of the source I(src).
+        required: false
+        type: str
+      to:
+        description:
+          - The destination I(dest) character set for the files to be written as.
+        required: false
+        type: str
 attributes:
   action:
     support: none
@@ -404,6 +428,16 @@ EXAMPLES = r'''
       name: terse
       format_options:
         use_adrdssu: true
+
+- name: Encode the source data set into Latin-1 before archiving into a terse data set
+  zos_archive:
+    src: "USER.ARCHIVE.TEST"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 '''
 
 RETURN = r'''
@@ -465,7 +499,7 @@ from hashlib import sha256
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, mvs_cmd, validation)
+    better_arg_parser, data_set, mvs_cmd, validation, encode)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
 
@@ -618,6 +652,7 @@ class Archive():
             The state of the input C(src).
         xmit_log_data_set : str
             The name of the data set to store xmit log output.
+
         """
         self.module = module
         self.dest = module.params['dest']
@@ -637,6 +672,9 @@ class Archive():
         self.dest_state = STATE_ABSENT
         self.state = STATE_PRESENT
         self.xmit_log_data_set = ""
+        encoding_param = module.params.get("encoding") or {}
+        self.from_encoding = encoding_param.get("from")
+        self.to_encoding = encoding_param.get("to")
 
     def targets_exist(self):
         """Returns if there are targets or not.
@@ -682,6 +720,10 @@ class Archive():
 
     @abc.abstractmethod
     def compute_dest_size(self):
+        pass
+
+    @abc.abstractmethod
+    def encode_source(self):
         pass
 
     @property
@@ -905,6 +947,21 @@ class USSArchive(Archive):
                 self.dest_state = STATE_ARCHIVE
             if bool(self.not_found):
                 self.dest_state = STATE_INCOMPLETE
+
+    def encode_source(self):
+        """Convert encoding for given src
+        """
+        enc_utils = encode.EncodeUtils()
+        try:
+            for target in self.targets:
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    target, target, self.from_encoding, self.to_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(target, self.to_encoding)
+
+        except Exception as e:
+            raise EncodeError("Failed to encode in the required codeset: {e}") from e
 
 
 class TarArchive(USSArchive):
@@ -1372,6 +1429,28 @@ class MVSArchive(Archive):
             dest_space = math.ceil(dest_space / 1024)
             self.dest_data_set.update(space_primary=dest_space, space_type="k")
 
+    def encode_source(self):
+        """Convert encoding for given src
+        """
+        enc_utils = encode.EncodeUtils()
+
+        try:
+            for target in self.targets:
+                ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
+                if not ds_type:
+                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                enc_utils.mvs_convert_encoding(
+                    target,
+                    target,
+                    self.from_encoding,
+                    self.to_encoding,
+                    src_type=ds_type,
+                    dest_type=ds_type,
+                    tmphlq=self.tmphlq
+                )
+        except Exception as e:
+            raise EncodeError(f"Failed to encode in the required codeset: {e}") from e
+
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
@@ -1604,6 +1683,24 @@ class XMITArchive(MVSArchive):
         return msg.format(sys_abend, reason_code, error_hint)
 
 
+class EncodeError(Exception):
+    def __init__(self, message):
+        """Error during encoding.
+
+        Parameters
+        ----------
+        message : str
+            Human readable string describing the exception.
+
+        Attributes
+        ----------
+        msg : str
+            Human readable string describing the exception.
+        """
+        self.msg = 'An error occurred during encoding: "{0}"'.format(message)
+        super(EncodeError, self).__init__(self.msg)
+
+
 def run_module():
     """Initialize module.
 
@@ -1686,7 +1783,21 @@ def run_module():
                 )
             ),
             tmp_hlq=dict(type='str'),
-            force=dict(type='bool', default=False)
+            force=dict(type='bool', default=False),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(
+                        type='str',
+                        required=False,
+                    ),
+                    "to": dict(
+                        type='str',
+                        required=False,
+                    )
+                }
+            )
         ),
         supports_check_mode=True,
     )
@@ -1761,7 +1872,14 @@ def run_module():
             )
         ),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
-        force=dict(type='bool', default=False)
+        force=dict(type='bool', default=False),
+        encoding=dict(
+            type='dict',
+            options={
+                'from' : dict(type='str'),
+                "to" : dict(type='str')
+            }
+        )
     )
 
     result = dict(
@@ -1779,6 +1897,7 @@ def run_module():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
+    encoding = parsed_args.get("encoding")
     archive = get_archive_handler(module)
 
     if archive.dest_exists() and not archive.force:
@@ -1786,6 +1905,8 @@ def run_module():
 
     archive.find_targets()
     if archive.targets_exist():
+        if encoding:
+            archive.encode_source()
         archive.compute_dest_size()
         archive.archive_targets()
         if archive.remove:

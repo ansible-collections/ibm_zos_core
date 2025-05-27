@@ -585,7 +585,7 @@ options:
             type: raw
           reserved_cols:
             description:
-              - Determines how many columns at the beginning of the file are using with
+              - Determines how many columns at the beginning of the content are reserved with
                 empty spaces.
             type: int
             required: false

@@ -5606,6 +5606,45 @@ def test_copy_gdg_to_gdg(ansible_zos_module, new_gdg):
         hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
+def test_identical_gdg_copy(ansible_zos_module):
+   hosts = ansible_zos_module
+   try:
+       src_data_set = get_tmp_ds_name()
+       dest_data_set = get_tmp_ds_name()
+       # Create source GDG base
+       hosts.all.shell(cmd=f"dtouch -tGDG -L5 {src_data_set}")
+       # Create 5 generations in source GDG
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       
+       # Delete first two generations: (-4) and (-3)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-4)" """)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-3)" """)
+       # Copy with identical_gdg_copy: true
+       copy_results = hosts.all.zos_copy(
+           src=src_data_set,
+           dest=dest_data_set,
+           remote_src=True,
+           identical_gdg_copy=True
+       )
+       for result in copy_results.contacted.values():
+           assert result.get("msg") is None
+           assert result.get("changed") is True
+   finally:
+       # Clean up both source and destination
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-2)" """)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-1)" """)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
+       hosts.all.shell(cmd=f"drm {src_data_set}")
+
+       hosts.all.shell(cmd=f"""drm "{dest_data_set}(-2)" """)
+       hosts.all.shell(cmd=f"""drm "{dest_data_set}(-1)" """)
+       hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+       hosts.all.shell(cmd=f"drm {dest_data_set}")
+
 
 def test_copy_gdg_to_gdg_dest_attributes(ansible_zos_module):
     hosts = ansible_zos_module

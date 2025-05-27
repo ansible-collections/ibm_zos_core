@@ -2,7 +2,7 @@ minor_changes:
   - zos_copy - Adds new option `identical_gdg_copy` in the module.
     This allows copying GDG generations from a source base to a destination base
     while preserving generation data set absolute names when the destination base does not exist prior to the copy.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/2100)
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2100).
 trivial:
   - test_zos_copy_func - added test case to verify the gds names are preserved with destination base does not 
     existing prior to the copy.

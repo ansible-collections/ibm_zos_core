@@ -2362,7 +2362,8 @@ def prepend_spaces(lines, spaces=2):
                 len_line = len(line)
                 lines[index] = line.rjust(len_line + spaces, " ")
                 if len(lines[index]) > 80:
-                    msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. Including the spaces at the beginning. Be aware that the module has reserved {1} columns to the left for JCL processing, this value can be modified if the program allows for it."""
+                    msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. Including the spaces at the beginning.
+                    Be aware that the module has reserved {1} columns to the left for JCL processing this value can be modified if the program allows for it."""
                     module.fail_json(msg=msg.format(line, spaces))
     return lines
 

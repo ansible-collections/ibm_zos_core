@@ -563,9 +563,15 @@ notes:
       described as the remote user, configured either for the playbook or
       playbook tasks, who can also obtain escalated privileges to execute as
       root or another user.
+    - If trying to copy a migrated data set, first recall it before executing this module.
+      This module does not perform recalls automatically. See modules L(zos_mvs_raw,./zos_mvs_raw.html)
+      and L(zos_tso_cmd,./zos_tso_cmd.html) for examples of how to recall migrated data sets
+      using this collection.
 seealso:
 - module: zos_fetch
 - module: zos_data_set
+- module: zos_mvs_raw
+- module: zos_tso_cmd
 """
 
 EXAMPLES = r"""

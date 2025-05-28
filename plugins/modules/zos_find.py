@@ -127,7 +127,7 @@ options:
     default: "nonvsam"
   migrated_type:
     description:
-      - A Migrated dataset related attribute, only valid when C(resource_type=migrated).
+      - A migrated data set related attribute, only valid when C(resource_type=migrated).
       - If provided, will search for only those types of migrated datasets.
     aliases:
       - migrated_types

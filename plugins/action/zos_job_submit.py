@@ -79,13 +79,13 @@ class ActionModule(ActionBase):
             tmp_dir = self._connection._shell._options.get("remote_tmp")
             temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
             dest_path = path.join(tmp_dir, temp_file_dir)
-            print(f"This is the preliminary dest path {dest_path}")
             tempfile_args = {"path": dest_path, "state": "directory"}
+            # Reverted this back to using file ansible module so ansible would handle all temporary dirs
+            # creation with correct permissions.
             tempfile = self._execute_module(
                 module_name="file", module_args=tempfile_args, task_vars=task_vars,
             )
             dest_path = tempfile.get("path")
-            print(f"This is the temporary dir: {dest_path}")
             dest_file = path.join(dest_path, path.basename(source))
 
             source_full = None
@@ -130,8 +130,6 @@ class ActionModule(ActionBase):
             copy_module_args = {}
             module_args = self._task.args.copy()
 
-            print(f"this is dest file {dest_file}")
-            print(f"is source dir ?  {os.path.isdir(source_full)}")
             copy_module_args.update(
                 dict(
                     src=source_full,
@@ -157,7 +155,6 @@ class ActionModule(ActionBase):
                 shared_loader_obj=self._shared_loader_obj
             )
             result.update(copy_action.run(task_vars=task_vars))
-            print(f"this is copy action result {result}")
             if result.get("msg") is None:
                 module_args["src"] = dest_file
                 result.update(

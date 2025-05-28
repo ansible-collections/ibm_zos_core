@@ -341,8 +341,6 @@ class ActionModule(ActionBase):
         _sftp_action = 'put'
         was_user_updated = False
 
-        if is_dir:
-            _sftp_action += ' -r'    # add '-r` to clone the source trees
         temp_path = os.path.join(tempfile.get("path"), os.path.basename(src))
         _src = src.replace("#", "\\#")
         full_temp_path = temp_path

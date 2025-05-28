@@ -210,7 +210,7 @@ notes:
   - The time taken to execute the module is proportional to the number of data
     sets present on the system and how large the data sets are.
   - When searching for content within data sets, only non-binary content is considered.
-  - As a migrated dataset's information can't be retrieved without recalling it first, other options
+  - As a migrated data set's information can't be retrieved without recalling it first, other options
     besides C(excludes) and C(migrated_type) are not supported.
 seealso:
 - module: zos_data_set

@@ -243,7 +243,6 @@ class ActionModule(ActionBase):
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
-                print(f"transfer res: {transfer_res}")
                 return transfer_res
             display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host=self._play_context.remote_addr)
 
@@ -284,17 +283,17 @@ class ActionModule(ActionBase):
             shutil.rmtree(template_dir, ignore_errors=True)
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
-            print("Removing temp dir")
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
             # If another user created the temporary files, we'll need to run rm
             # with it too, lest we get a permissions issue.
             if self._connection.become:
+                path = os.path.dirname(temp_path)
                 self._connection.set_option('remote_user', self._play_context._become_user)
                 display.vvv(
                     u"ibm_zos_copy SSH cleanup user updated to {0}".format(self._play_context._become_user),
                     host=self._play_context.remote_addr
                 )
-            self._connection.exec_command(f"rm -rf {path}*")
+            rm_res = self._connection.exec_command(f"rm -rf {path}*")
             if self._connection.become:
                 self._connection.set_option('remote_user', self._play_context._remote_user)
                 display.vvv(
@@ -340,7 +339,6 @@ class ActionModule(ActionBase):
         if is_dir:
             _sftp_action += ' -r'    # add '-r` to clone the source trees
         temp_path = path.join(tempfile.get("path"), os.path.basename(src))
-        print(f"This is the temporary dir: {temp_path}")
         _src = src.replace("#", "\\#")
         full_temp_path = temp_path
 

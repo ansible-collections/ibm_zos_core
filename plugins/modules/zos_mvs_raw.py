@@ -1621,6 +1621,28 @@ EXAMPLES = r"""
                       VOLUMES(222222) -
                       UNIQUE)
 
+- name: Simple FTP connection using frist and second columns.
+  zos_mvs_raw:
+    program_name: AMAPDUPL
+    auth: true
+    dds:
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
+      - dd_data_set:
+          dd_name: SYSUT1
+          data_set_name: myhlq.ds1.output
+          disposition: shr
+      - dd_input:
+          dd_name: sysin
+          reserved_cols: 0
+          content: |
+            USERID=anonymous
+            PASSWORD=anonymous
+            TARGET_SYS=testcase.boulder.ibm.com
+            TARGET_DSN=wessamp.bigfile
+
 - name: List data sets matching pattern in catalog,
     save output to a new generation of gdgs.
   zos_mvs_raw:

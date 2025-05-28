@@ -654,10 +654,11 @@ def run_module():
             # zoau_io.zopen on mode w allow delete all the content inside the dataset allowing to write the new one
             with zoau_io.zopen(f"//'{src}'", "w", encoding, recfm="*") as ds:
                 pass
-            for line in full_text:
-                rc_write = datasets.write(dataset_name=src, content=line.rstrip(), append=True)
-                if rc_write != 0:
-                    raise Exception("Non zero return code from datasets.write.")
+            content = [line.rstrip() for line in full_text]
+            full_text = "\n".join(content)
+            rc_write = datasets.write(dataset_name=src, content=full_text, append=True, force=True)
+            if rc_write != 0:
+                raise Exception("Non zero return code from datasets.write.")
         except Exception as e:
             module.fail_json(
                 msg=f"Unable to write on data set {src}. {e}",

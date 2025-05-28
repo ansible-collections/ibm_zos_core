@@ -280,7 +280,10 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export NEW_ZOAU_ROOT
 export NEW__BPXK_AUTOCVT"""
 
-TEST_MATCH_MULTIPLE_LINES = """PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+TEST_MATCH_MULTIPLE_LINES = """### REPLACED MULTILINE TEXT ###
+export STEPLIB=custom
+exec -a 0 /bin/bash
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
@@ -879,10 +882,14 @@ def test_uss_backref(ansible_zos_module):
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_match_multiple_lines(ansible_zos_module):
+def test_uss_match_replace_multiple_lines(ansible_zos_module):
     hosts = ansible_zos_module
     params = {
         "regexp":"(?s)^(if .*?\nthen\n.*?\n.*?\n.*?\n)",
+        "replace":"""### REPLACED MULTILINE TEXT ###
+export STEPLIB=custom
+exec -a 0 /bin/bash
+""",
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
@@ -1476,11 +1483,15 @@ def test_ds_backref(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_match_multiple_lines(ansible_zos_module, dstype):
+def test_ds_match_replace_multiple_lines(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
     params = {
         "regexp":"(?s)^(if .*?\nthen\n.*?\n.*?\n.*?\n)",
+        "replace":"""### REPLACED MULTILINE TEXT ###
+export STEPLIB=custom
+exec -a 0 /bin/bash
+""",
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)

@@ -76,7 +76,7 @@ options:
     default: IBM-1047
   disable_regex:
     description:
-      - A list or string that allows the user to specify "before," "after," or "regexp" as regular strings instead of regex patterns.
+      - A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
     required: false
     type: raw
   target:

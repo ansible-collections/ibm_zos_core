@@ -54,7 +54,7 @@ options:
       - If set to C(true), and the destination GDG does not exist, the module
         will copy the source GDG to the destination GDG with identical GDS absolute names.
       - If set to C(false), the copy will be done as a normal copy, without
-        preserving the GDG base.
+        preserving the source GDG absolute names.
     type: bool
     default: false
     required: false

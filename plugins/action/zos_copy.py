@@ -287,6 +287,10 @@ class ActionModule(ActionBase):
             # If another user created the temporary files, we'll need to run rm
             # with it too, lest we get a permissions issue.
             if self._connection.become:
+                # We get the dirname from temp_path and not path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
+                # because if default is ~/.ansible/tmp/ when using become it would be similar to /root/.ansible/tmp
+                # but the original tmp directory was resolved when user is non escalated yet. Meaning, the original
+                # tmp directory is similar to /u/usrt001/.ansible/tmp.
                 path = os.path.dirname(temp_path)
                 self._connection.set_option('remote_user', self._play_context._become_user)
                 display.vvv(
@@ -327,9 +331,10 @@ class ActionModule(ActionBase):
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False, task_vars=None):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
-        from os import path
-        temp_path = path.join(self.tmp_dir, _create_temp_path_name())
+        temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
         tempfile_args = {"path": temp_path, "state": "directory"}
+        # Reverted this back to using file ansible module so ansible would handle all temporary dirs
+        # creation with correct permissions.
         tempfile = self._execute_module(
             module_name="file", module_args=tempfile_args, task_vars=task_vars,
         )
@@ -338,7 +343,7 @@ class ActionModule(ActionBase):
 
         if is_dir:
             _sftp_action += ' -r'    # add '-r` to clone the source trees
-        temp_path = path.join(tempfile.get("path"), os.path.basename(src))
+        temp_path = os.path.join(tempfile.get("path"), os.path.basename(src))
         _src = src.replace("#", "\\#")
         full_temp_path = temp_path
 
@@ -416,7 +421,7 @@ class ActionModule(ActionBase):
 
             if returncode != 0 or (err and not ignore_stderr):
                 return dict(
-                    msg="Error transfering source '{0}' to remote z/OS system".format(src),
+                    msg="Error transferring source '{0}' to remote z/OS system".format(src),
                     rc=returncode,
                     stderr=err,
                     stderr_lines=err.splitlines(),

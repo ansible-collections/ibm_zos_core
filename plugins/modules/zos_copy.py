@@ -3592,7 +3592,7 @@ def run_module(module, arg_def):
         module.fail_json(msg=str(err))
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
     if identical_gdg_copy:
-    # Validate destination GDG doesn't exist
+        # Validate destination GDG doesn't exist
         if dest_exists:
             module.fail_json(
                 msg=(
@@ -4303,4 +4303,3 @@ class CopyOperationError(Exception):
 
 if __name__ == "__main__":
     main()
-

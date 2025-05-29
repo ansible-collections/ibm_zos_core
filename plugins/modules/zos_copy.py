@@ -1183,7 +1183,6 @@ class CopyHandler(object):
         }
         if self.is_binary or self.asa_text:
             copy_args["options"] = "-B"
-
         for gds in generations:
             # If identical_gdg_copy is True, use exact source generation name in destination
             if self.identical_gdg_copy:
@@ -1198,9 +1197,9 @@ class CopyHandler(object):
                 # Perform the copy operation
                 rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
                 if rc != 0:
-                    return False  
+                    return False
         return True
-
+      
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
         """Recursively copy USS directory to another USS directory.
         This function was created to circumvent using shutil.copytree

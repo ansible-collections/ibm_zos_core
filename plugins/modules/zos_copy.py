@@ -52,7 +52,7 @@ options:
   identical_gdg_copy:
     description:
       - If set to C(true), and the destination GDG does not exist, the module
-        will copy the source GDG to the destination GDG with identical GDS absolute names.
+         will copy the source GDG to the destination GDG with identical GDS absolute names.
       - If set to C(false), the copy will be done as a normal copy, without
         preserving the source GDG absolute names.
     type: bool
@@ -1183,6 +1183,8 @@ class CopyHandler(object):
         }
         if self.is_binary or self.asa_text:
             copy_args["options"] = "-B"
+
+        success = True
         for gds in generations:
             # If identical_gdg_copy is True, use exact source generation name in destination
             if self.identical_gdg_copy:
@@ -1194,12 +1196,15 @@ class CopyHandler(object):
             else:
                 # If identical_gdg_copy is False, use the default next generation
                 dest_gen_name = f"{dest}(+1)"
+            try:
                 # Perform the copy operation
                 rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
                 if rc != 0:
-                    return False
-        return True
-      
+                    success = False
+            except zoau_exceptions.ZOAUException as e:
+                success = False
+        return success
+
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
         """Recursively copy USS directory to another USS directory.
         This function was created to circumvent using shutil.copytree
@@ -4298,3 +4303,4 @@ class CopyOperationError(Exception):
 
 if __name__ == "__main__":
     main()
+

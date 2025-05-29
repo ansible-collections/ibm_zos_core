@@ -1196,12 +1196,9 @@ class CopyHandler(object):
             else:
                 # If identical_gdg_copy is False, use the default next generation
                 dest_gen_name = f"{dest}(+1)"
-            try:
                 # Perform the copy operation
-                rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
-                if rc != 0:
-                    success = False
-            except zoau_exceptions.ZOAUException as e:
+            rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
+            if rc != 0:
                 success = False
         return success
 

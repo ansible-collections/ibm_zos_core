@@ -3588,9 +3588,9 @@ def run_module(module, arg_def):
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
     if identical_gdg_copy:
         # Validate destination isn't a generation pattern
-        if is_member(dest):
+        if dest_ds_type != "GDG"
             module.fail_json(
-                msg=f"Destination must be a GDG base not {raw_dest} when identical_gdg_copy=True",
+                msg=f"Destination must be a GDG base not {dest_ds_type} when identical_gdg_copy=True",
                 changed=False
             )
     # Validate destination GDG doesn't exist
@@ -3598,7 +3598,7 @@ def run_module(module, arg_def):
             module.fail_json(
                 msg=(
                     f"Identical GDG copy failed: {raw_dest} already exists."
-                    "Destination must be a non-existent GDG base."
+                    "When using option identical_gdg_copy the destination GDG should not exist."
                 ),
                 changed=False
             )

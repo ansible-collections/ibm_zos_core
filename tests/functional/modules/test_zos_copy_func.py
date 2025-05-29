@@ -23,7 +23,6 @@ import yaml
 import tempfile
 import subprocess
 from shellescape import quote
-import datetime
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name

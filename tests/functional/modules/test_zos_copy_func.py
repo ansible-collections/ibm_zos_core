@@ -5634,6 +5634,22 @@ def test_identical_gdg_copy(ansible_zos_module):
            assert result.get("msg") is None
            assert result.get("changed") is True
    finally:
+       src_gdg_result = hosts.all.shell(cmd=f"dls {src_data_set}.*")
+       src_gdgs = []
+       for result in src_gdg_result.contacted.values():
+           src_gdgs.extend(result.get("stdout_lines", []))
+       # List destination generations
+       dest_gdg_result = hosts.all.shell(cmd=f"dls {dest_data_set}.*")
+       dest_gdgs = []
+       for result in dest_gdg_result.contacted.values():
+           dest_gdgs.extend(result.get("stdout_lines", []))
+           expected_dest_gdgs = [
+               ds_name.replace(src_data_set,dest_data_set) for ds_name in src_gdgs
+           ]
+           assert sorted(dest_gdgs) == sorted(expected_dest_gdgs), f"Absolute names mismatch.\nExpected: {expected_dest_gdgs}\nFound: {dest_gdgs}"
+           print("Abssolute GDG names copied correctly.")
+           for name in dest_gdgs:
+               print(name)
        # Clean up both source and destination
        hosts.all.shell(cmd=f"drm {src_data_set}*")
        hosts.all.shell(cmd=f"drm {dest_data_set}*")

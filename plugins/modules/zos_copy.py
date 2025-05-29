@@ -1198,7 +1198,7 @@ class CopyHandler(object):
                 # Perform the copy operation
                 rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
                 if rc != 0:
-                    return False       
+                    return False  
         return True
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):

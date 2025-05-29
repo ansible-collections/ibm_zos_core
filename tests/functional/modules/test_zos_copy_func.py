@@ -5635,15 +5635,8 @@ def test_identical_gdg_copy(ansible_zos_module):
            assert result.get("changed") is True
    finally:
        # Clean up both source and destination
-       hosts.all.shell(cmd=f"""drm "{src_data_set}(-2)" """)
-       hosts.all.shell(cmd=f"""drm "{src_data_set}(-1)" """)
-       hosts.all.shell(cmd=f"""drm "{src_data_set}(0)" """)
-       hosts.all.shell(cmd=f"drm {src_data_set}")
-
-       hosts.all.shell(cmd=f"""drm "{dest_data_set}(-2)" """)
-       hosts.all.shell(cmd=f"""drm "{dest_data_set}(-1)" """)
-       hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
-       hosts.all.shell(cmd=f"drm {dest_data_set}")
+       hosts.all.shell(cmd=f"drm {src_data_set}*")
+       hosts.all.shell(cmd=f"drm {dest_data_set}*")
 
 
 def test_copy_gdg_to_gdg_dest_attributes(ansible_zos_module):

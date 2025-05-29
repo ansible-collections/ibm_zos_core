@@ -3588,7 +3588,7 @@ def run_module(module, arg_def):
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
     if identical_gdg_copy:
         # Validate destination isn't a generation pattern
-        if dest_ds_type != "GDG"
+        if dest_ds_type != "GDG":
             module.fail_json(
                 msg=f"Destination must be a GDG base not {dest_ds_type} when identical_gdg_copy=True",
                 changed=False

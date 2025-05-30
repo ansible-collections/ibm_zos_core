@@ -5605,6 +5605,54 @@ def test_copy_gdg_to_gdg(ansible_zos_module, new_gdg):
         hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
+def test_identical_gdg_copy(ansible_zos_module):
+   hosts = ansible_zos_module
+   try:
+       src_data_set = get_tmp_ds_name()
+       dest_data_set = get_tmp_ds_name()
+       # Create source GDG base
+       hosts.all.shell(cmd=f"dtouch -tGDG -L5 {src_data_set}")
+       # Create 5 generations in source GDG
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       
+       # Delete first two generations: (-4) and (-3)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-4)" """)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-3)" """)
+       # Copy with identical_gdg_copy: true
+       copy_results = hosts.all.zos_copy(
+           src=src_data_set,
+           dest=dest_data_set,
+           remote_src=True,
+           identical_gdg_copy=True
+       )
+       for result in copy_results.contacted.values():
+           assert result.get("msg") is None
+           assert result.get("changed") is True
+   finally:
+       src_gdg_result = hosts.all.shell(cmd=f"dls {src_data_set}.*")
+       src_gdgs = []
+       for result in src_gdg_result.contacted.values():
+           src_gdgs.extend(result.get("stdout_lines", []))
+       # List destination generations
+       dest_gdg_result = hosts.all.shell(cmd=f"dls {dest_data_set}.*")
+       dest_gdgs = []
+       for result in dest_gdg_result.contacted.values():
+           dest_gdgs.extend(result.get("stdout_lines", []))
+           expected_dest_gdgs = [
+               ds_name.replace(src_data_set,dest_data_set) for ds_name in src_gdgs
+           ]
+           assert sorted(dest_gdgs) == sorted(expected_dest_gdgs), f"Absolute names mismatch.\nExpected: {expected_dest_gdgs}\nFound: {dest_gdgs}"
+           print("Abssolute GDG names copied correctly.")
+           for name in dest_gdgs:
+               print(name)
+       # Clean up both source and destination
+       hosts.all.shell(cmd=f"drm {src_data_set}*")
+       hosts.all.shell(cmd=f"drm {dest_data_set}*")
+
 
 def test_copy_gdg_to_gdg_dest_attributes(ansible_zos_module):
     hosts = ansible_zos_module

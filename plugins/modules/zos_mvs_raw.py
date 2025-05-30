@@ -583,6 +583,13 @@ options:
                 string, list of strings and when using a YAML block indicator.
             required: true
             type: raw
+          reserved_cols:
+            description:
+              - Determines how many columns at the beginning of the content are reserved with
+                empty spaces.
+            type: int
+            required: false
+            default: 2
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -1195,6 +1202,13 @@ options:
                         string, list of strings and when using a YAML block indicator.
                     required: true
                     type: raw
+                  reserved_cols:
+                    description:
+                      - Determines how many columns at the beginning of the content are reserved with
+                        empty spaces.
+                    type: int
+                    required: false
+                    default: 2
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1607,6 +1621,28 @@ EXAMPLES = r"""
                       VOLUMES(222222) -
                       UNIQUE)
 
+- name: Simple FTP connection using frist and second columns.
+  zos_mvs_raw:
+    program_name: AMAPDUPL
+    auth: true
+    dds:
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
+      - dd_data_set:
+          dd_name: SYSUT1
+          data_set_name: myhlq.ds1.output
+          disposition: shr
+      - dd_input:
+          dd_name: sysin
+          reserved_cols: 0
+          content: |
+            USERID=anonymous
+            PASSWORD=anonymous
+            TARGET_SYS=testcase.boulder.ibm.com
+            TARGET_DSN=wessamp.bigfile
+
 - name: List data sets matching pattern in catalog,
     save output to a new generation of gdgs.
   zos_mvs_raw:
@@ -1785,6 +1821,7 @@ def run_module():
 
     dd_input_base = dict(
         content=dict(type="raw", required=True),
+        reserved_cols=dict(type="int", required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2045,7 +2082,8 @@ def parse_and_validate_args(params):
     )
 
     dd_input_base = dict(
-        content=dict(type=dd_content, required=True),
+        content=dict(type=dd_content, required=True, dependencies=["reserved_cols"]),
+        reserved_cols=dict(type="int", required=False, default=2),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2301,15 +2339,16 @@ def dd_content(contents, dependencies):
         return None
     if contents is not None:
         # Empty string can be passed for content but not modify to ensure proper entry
+        spaces = dependencies.get("reserved_cols")
         if len(contents) > 0:
-            contents = modify_contents(contents)
+            contents = modify_contents(contents, spaces)
         return contents
     if isinstance(contents, list):
         return "\n".join(contents)
     return contents
 
 
-def modify_contents(contents):
+def modify_contents(contents, spaces):
     """Return the content of dd_input to a valid form for a JCL program.
 
     Parameters
@@ -2324,18 +2363,20 @@ def modify_contents(contents):
     """
     if not isinstance(contents, list):
         contents = list(contents.split("\n"))
-    contents = prepend_spaces(contents)
+    contents = prepend_spaces(contents, spaces)
     contents = "\n".join(contents)
     return contents
 
 
-def prepend_spaces(lines):
+def prepend_spaces(lines, spaces=2):
     """Return the array with two spaces at the beggining.
 
     Parameters
     ----------
         lines : list
               The list with a line of a program.
+        spaces : int
+              The number of columns to add as left padding to the content.
 
     Raises
     -------
@@ -2351,17 +2392,15 @@ def prepend_spaces(lines):
     for index, line in enumerate(lines):
         if len(line) > 0:
             if len(line) > 80:
-                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                 If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
+                msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. """
                 module.fail_json(msg=msg.format(line))
             else:
-                if len(line) > 1 and line[0] != " " and line[1] != " ":
-                    if len(line) > 78:
-                        msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters, including 2 spaces at the beginning.
-                                         If the two spaces are not present, the module will add them to ensure columns 1 and 2 are blank. """
-                        module.fail_json(msg=msg.format(line))
-                    else:
-                        lines[index] = "  {0}".format(line)
+                len_line = len(line)
+                lines[index] = line.rjust(len_line + spaces, " ")
+                if len(lines[index]) > 80:
+                    msg = """Length of line {0} is over 80 characters. The maximum length allowed is 80 characters. Including the spaces at the beginning.
+                    Be aware that the module has reserved {1} columns to the left for JCL processing this value can be modified if the program allows for it."""
+                    module.fail_json(msg=msg.format(line, spaces))
     return lines
 
 

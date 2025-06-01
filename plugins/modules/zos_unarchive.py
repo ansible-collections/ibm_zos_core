@@ -318,7 +318,7 @@ options:
         destination files after unarchiving.
       - Supported character sets rely on the charset conversion utility
         C(iconv) version the most common character sets are supported.
-      - After conversion the files are stored in same location as they 
+      - After conversion the files are stored in same location as they
         were unarchived to under the same original name. No backup of the
         original unconverted files is there as for that unarchive can be
         executed again without encoding params on same source archive files.
@@ -534,6 +534,8 @@ class Unarchive():
         self.to_encoding = encoding_param.get("to")
         if self.dest == '':
             self.dest = os.path.dirname(self.src)
+        self.encoded = list()
+        self.failed_on_encoding = list()
 
     @abc.abstractmethod
     def extract_src(self):
@@ -544,7 +546,7 @@ class Unarchive():
         pass
 
     @abc.abstractmethod
-    def encode_source(self):
+    def encode_destination(self):
         pass
 
     def src_exists(self):
@@ -596,6 +598,8 @@ class Unarchive():
             'changed': self.changed,
             'targets': self.targets,
             'missing': self.missing,
+            'encoded': getattr(self, 'encoded', []),
+            'failed_on_encoding': getattr(self, 'failed_on_encoding', []),
         }
 
     def extract_all(self, members):
@@ -698,22 +702,32 @@ class TarUnarchive(Unarchive):
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
         self.changed = bool(self.targets)
-    
+
     def encode_destination(self):
         """Convert encoding for given destination
         """
         enc_utils = encode.EncodeUtils()
-        try:
-            for target in self.targets:
+        self.encoded = []
+        self.failed_on_encoding = []
+
+        for target in self.targets:
+            try:
                 file_path = os.path.normpath(os.path.join(self.dest, target))
                 convert_rc = enc_utils.uss_convert_encoding_prev(
                     file_path, file_path, self.from_encoding, self.to_encoding
                 )
                 if convert_rc:
                     enc_utils.uss_tag_encoding(file_path, self.to_encoding)
+                self.encoded.append(os.path.abspath(target))
 
-        except Exception as e:
-            raise EncodeError("Failed to encode in the required codeset: {e}") from e
+            except Exception:
+                self.failed_on_encoding.append(os.path.abspath(target))
+
+        return {
+            "encoded": self.encoded,
+            "failed_on_encoding": self.failed_on_encoding
+        }
+
 
 class ZipUnarchive(Unarchive):
     def __init__(self, module):
@@ -812,22 +826,29 @@ class ZipUnarchive(Unarchive):
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
         self.changed = bool(self.targets)
-    
+
     def encode_destination(self):
         """Convert encoding for given destination
         """
         enc_utils = encode.EncodeUtils()
-        try:
-            for target in self.targets:
+        self.encoded = []
+        self.failed_on_encoding = []
+        for target in self.targets:
+            try:
                 file_path = os.path.normpath(os.path.join(self.dest, target))
                 convert_rc = enc_utils.uss_convert_encoding_prev(
                     file_path, file_path, self.from_encoding, self.to_encoding
                 )
                 if convert_rc:
                     enc_utils.uss_tag_encoding(file_path, self.to_encoding)
+                self.encoded.append(os.path.abspath(target))
+            except Exception:
+                self.failed_on_encoding.append(os.path.abspath(target))
 
-        except Exception as e:
-            raise EncodeError("Failed to encode in the required codeset: {e}") from e
+        return {
+            "encoded": self.encoded,
+            "failed_on_encoding": self.failed_on_encoding
+        }
 
 
 class MVSUnarchive(Unarchive):
@@ -1191,21 +1212,20 @@ class MVSUnarchive(Unarchive):
         if remove_targets:
             for target in self.targets:
                 data_set.DataSet.ensure_absent(target)
-  
+
     def encode_destination(self):
         """Convert encoding for given destination
         """
-        if not self.targets:
-            raise EncodeError("No available Datasets for encoding.")
-        
         enc_utils = encode.EncodeUtils()
+        self.encoded = []
+        self.failed_on_encoding = []
 
-        try:
-            for target in self.targets:
+        for target in self.targets:
+            try:
                 ds_utils = data_set.DataSetUtils(target, tmphlq=self.tmphlq)
                 ds_type = ds_utils.ds_type()
                 if not ds_type:
-                    ds_type = "PS"                    
+                    ds_type = "PS"
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,
@@ -1215,8 +1235,14 @@ class MVSUnarchive(Unarchive):
                     dest_type=ds_type,
                     tmphlq=self.tmphlq
                 )
-        except Exception as e:
-            raise EncodeError(f"Failed to encode in the required codeset: {e}") from e
+                self.encoded.append(os.path.abspath(target))
+            except Exception:
+                self.failed_on_encoding.append(os.path.abspath(target))
+        return {
+            "encoded": self.encoded,
+            "failed_on_encoding": self.failed_on_encoding
+        }
+
 
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
@@ -1487,6 +1513,7 @@ class LinkOutsideDestinationError(Exception):
         self.msg = 'Unable to extract {0} it would link to {1}, which is outside the designated destination'.format(tarinfo.name, path)
         super().__init__()
 
+
 class EncodeError(Exception):
     def __init__(self, message):
         """Error during encoding.
@@ -1711,10 +1738,14 @@ def run_module():
 
     if unarchive.dest_unarchived() and unarchive.dest_type() == "USS":
         unarchive.update_permissions()
-    
+
     encoding = parsed_args.get("encoding")
     if unarchive.dest_unarchived() and encoding:
-        unarchive.encode_destination()
+        encoding_result = unarchive.encode_destination()
+        unarchive.result.update({
+            "encoded": encoding_result.get("encoded", []),
+            "failed_on_encoding": encoding_result.get("failed_on_encoding", [])
+        })
 
     module.exit_json(**unarchive.result)
 

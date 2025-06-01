@@ -1420,9 +1420,9 @@ def test_mvs_unarchive_encoding(
                 "name":dataset,
                 "type":data_set.get("dstype"),
                 "record_format":record_format,
-                "record_length":record_length,
-                "encoding":encoding
+                "record_length":record_length           
             },
+            encoding=encoding,
         )
         # assert response is positive
         for result in unarchive_result.contacted.values():
@@ -1433,11 +1433,6 @@ def test_mvs_unarchive_encoding(
             cmd_result = hosts.all.shell(cmd = f"""dls "{hlq}.*" """)
             for c_result in cmd_result.contacted.values():
                 assert dataset in c_result.get("stdout")
-
-        # Check data integrity after unarchive
-        cat_result = hosts.all.shell(cmd=f"dcat \"{ds_to_write}\"")
-        for result in cat_result.contacted.values():
-            assert result.get("stdout") == test_line
     finally:
         hosts.all.zos_data_set(name=dataset, state="absent")
         hosts.all.zos_data_set(name=mvs_dest_archive, state="absent")

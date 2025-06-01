@@ -48,7 +48,7 @@ options:
     suboptions:
       name:
         description:
-          - The compression format to use.
+          - The compression format used while archiving.
         type: str
         required: true
         choices:
@@ -327,6 +327,8 @@ options:
       - If encoding fails for any file in a set of multiple files, an
         exception will be raised and the name of the file skipped will be
         provided completing the task successfully with rc code 0.
+      - Encoding does not check if the file is already present or not.
+        It works on the file/files successfully unarchived.
     type: dict
     required: false
     suboptions:
@@ -703,15 +705,15 @@ class TarUnarchive(Unarchive):
         enc_utils = encode.EncodeUtils()
         try:
             for target in self.targets:
+                file_path = os.path.normpath(os.path.join(self.dest, target))
                 convert_rc = enc_utils.uss_convert_encoding_prev(
-                    target, target, self.from_encoding, self.to_encoding
+                    file_path, file_path, self.from_encoding, self.to_encoding
                 )
                 if convert_rc:
-                    enc_utils.uss_tag_encoding(target, self.to_encoding)
+                    enc_utils.uss_tag_encoding(file_path, self.to_encoding)
 
         except Exception as e:
             raise EncodeError("Failed to encode in the required codeset: {e}") from e
-
 
 class ZipUnarchive(Unarchive):
     def __init__(self, module):
@@ -817,11 +819,12 @@ class ZipUnarchive(Unarchive):
         enc_utils = encode.EncodeUtils()
         try:
             for target in self.targets:
+                file_path = os.path.normpath(os.path.join(self.dest, target))
                 convert_rc = enc_utils.uss_convert_encoding_prev(
-                    target, target, self.from_encoding, self.to_encoding
+                    file_path, file_path, self.from_encoding, self.to_encoding
                 )
                 if convert_rc:
-                    enc_utils.uss_tag_encoding(target, self.to_encoding)
+                    enc_utils.uss_tag_encoding(file_path, self.to_encoding)
 
         except Exception as e:
             raise EncodeError("Failed to encode in the required codeset: {e}") from e
@@ -1129,6 +1132,8 @@ class MVSUnarchive(Unarchive):
         if not self.use_adrdssu:
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.src, temp_ds)
+            self.targets = [temp_ds]
+
         else:
             temp_ds, rc = self._create_dest_data_set(type="seq",
                                                      record_format="u",
@@ -1190,13 +1195,17 @@ class MVSUnarchive(Unarchive):
     def encode_destination(self):
         """Convert encoding for given destination
         """
+        if not self.targets:
+            raise EncodeError("No available Datasets for encoding.")
+        
         enc_utils = encode.EncodeUtils()
 
         try:
             for target in self.targets:
-                ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
+                ds_utils = data_set.DataSetUtils(target, tmphlq=self.tmphlq)
+                ds_type = ds_utils.ds_type()
                 if not ds_type:
-                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                    ds_type = "PS"                    
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,

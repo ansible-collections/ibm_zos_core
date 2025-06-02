@@ -322,15 +322,18 @@ class ActionModule(ActionBase):
     def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
-        rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(self.tmp_dir))
-        if rc > 0:
-            msg = f"Failed to resolve remote temporary directory {self.tmp_dir}. Ensure that the directory exists and user has proper access."
-            return self._exit_action({}, msg, failed=True)
-        self.tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
-        temp_path = os.path.join(self.tmp_dir, _create_temp_path_name(), os.path.basename(src))
-        self._connection.exec_command("mkdir -p {0}".format(os.path.dirname(temp_path)))
-        _src = src.replace("#", "\\#")
+        temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
+        tempfile_args = {"path": temp_path, "state": "directory"}
+        # Reverted this back to using file ansible module so ansible would handle all temporary dirs
+        # creation with correct permissions.
+        tempfile = self._execute_module(
+            module_name="file", module_args=tempfile_args, task_vars=task_vars,
+        )
         _sftp_action = 'put'
+        was_user_updated = False
+
+        temp_path = os.path.join(tempfile.get("path"), os.path.basename(src))
+        _src = src.replace("#", "\\#")
         full_temp_path = temp_path
 
         if is_dir:
@@ -370,6 +373,13 @@ class ActionModule(ActionBase):
                             sftp_transfer_method), host=self._play_context.remote_addr)
 
             display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
+            if self._connection.become:
+                was_user_updated = True
+                self._connection.set_option('remote_user', self._play_context._become_user)
+                display.vvv(
+                    u"ibm_zos_copy SSH transfer user updated to {0}".format(self._play_context._become_user),
+                    host=self._play_context.remote_addr
+                )
             (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
 
             display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
@@ -400,7 +410,7 @@ class ActionModule(ActionBase):
 
             if returncode != 0 or (err and not ignore_stderr):
                 return dict(
-                    msg="Error transfering source '{0}' to remote z/OS system".format(src),
+                    msg="Error transferring source '{0}' to remote z/OS system".format(src),
                     rc=returncode,
                     stderr=err,
                     stderr_lines=err.splitlines(),
@@ -409,6 +419,12 @@ class ActionModule(ActionBase):
 
         finally:
             # Restore the users defined option `ssh_transfer_method` if it was overridden
+            if was_user_updated:
+                self._connection.set_option('remote_user', self._play_context._remote_user)
+                display.vvv(
+                    u"ibm_zos_copy SSH transfer user restored to {0}".format(self._play_context._remote_user),
+                    host=self._play_context.remote_addr
+                )
 
             if is_ssh_transfer_method_updated:
                 if version_major == 2 and version_minor >= 11:

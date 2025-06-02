@@ -631,9 +631,10 @@ def run_module():
         tmp_file = tempfile.NamedTemporaryFile(delete=False)
         tmp_file = tmp_file.name
         try:
+            content = [line.rstrip() for line in full_text]
+            full_text = "\n".join(content)
             with open(tmp_file, 'w') as f:
-                for line in full_text:
-                    f.write(f"{line.rstrip()}\n")
+                f.write(full_text)
         except Exception as e:
             os.remove(tmp_file)
             module.fail_json(

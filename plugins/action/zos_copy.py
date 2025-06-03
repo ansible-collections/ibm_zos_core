@@ -155,7 +155,7 @@ class ActionModule(ActionBase):
                 try:
                     local_content = _write_content_to_temp_file(content)
                     transfer_res = self._copy_to_remote(
-                        local_content, ignore_stderr=ignore_sftp_stderr
+                        local_content, ignore_stderr=ignore_sftp_stderr, task_vars=task_vars
                     )
                 finally:
                     os.remove(local_content)
@@ -243,7 +243,7 @@ class ActionModule(ActionBase):
 
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
-                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr, task_vars=task_vars
                 )
 
             temp_path = transfer_res.get("temp_path")
@@ -319,7 +319,7 @@ class ActionModule(ActionBase):
 
         return copy_res
 
-    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
+    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False, task_vars=None):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
         temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
@@ -327,7 +327,7 @@ class ActionModule(ActionBase):
         # Reverted this back to using file ansible module so ansible would handle all temporary dirs
         # creation with correct permissions.
         tempfile = self._execute_module(
-            module_name="file", module_args=tempfile_args, task_vars=task_vars,
+            module_name="file", module_args=tempfile_args, task_vars=task_vars, wrap_async=self._task.async_val
         )
         _sftp_action = 'put'
         was_user_updated = False

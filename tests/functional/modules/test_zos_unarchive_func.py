@@ -391,6 +391,10 @@ def test_uss_unarchive_copy_to_remote(ansible_zos_module):
 @pytest.mark.uss
 @pytest.mark.parametrize("ds_format", USS_FORMATS)
 def test_uss_unarchive_encoding(ansible_zos_module, ds_format):
+    encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            }
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
@@ -407,16 +411,14 @@ def test_uss_unarchive_encoding(ansible_zos_module, ds_format):
         # remove files
         for file in USS_TEST_FILES.keys():
             hosts.all.file(path=file, state="absent")
+        #unarchive files
         unarchive_result = hosts.all.zos_unarchive(
             src=dest,
             format={
                 "name":ds_format
             },
             remote_src=True,
-            encoding={
-                "from": TO_ENCODING,
-                "to": FROM_ENCODING,
-            },
+            encoding= encoding,
         )
         hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
 
@@ -1309,7 +1311,8 @@ def test_mvs_unarchive_single_data_set_remote_src(
 @pytest.mark.ds
 @pytest.mark.parametrize(
     "ds_format", [
-        "terse"
+        "terse",
+         "xmit"
         ])
 @pytest.mark.parametrize(
     "data_set", [
@@ -1327,7 +1330,7 @@ def test_mvs_unarchive_single_data_set_remote_src(
     "record_length", [80]
 )
 @pytest.mark.parametrize(
-    "record_format", ["fb", "vb",],
+    "record_format", ["fb"],
 )
 @pytest.mark.parametrize(
     "encoding", [

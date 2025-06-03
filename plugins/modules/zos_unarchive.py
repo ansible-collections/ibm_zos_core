@@ -443,6 +443,17 @@ missing:
     Any files or data sets not found during extraction.
   type: str
   returned: success
+encoded:
+    description:
+      List of files or data sets that were successfully encoded.
+    type: list
+    returned: success
+failed_on_encoding:
+    description:
+      List of files or data sets that were failed while encoding.
+    type: list
+    returned: success
+
 '''
 
 import abc
@@ -545,10 +556,6 @@ class Unarchive():
     def _list_content(self):
         pass
 
-    @abc.abstractmethod
-    def encode_destination(self):
-        pass
-
     def src_exists(self):
         """If USS source exists.
         Returns
@@ -583,6 +590,35 @@ class Unarchive():
             file_name = os.path.join(validation.validate_safe_path(self.dest), validation.validate_safe_path(target))
             file_args = self.module.load_file_common_arguments(self.module.params, path=file_name)
             self.module.set_fs_attributes_if_different(file_args, self.changed)
+
+    def encode_destination(self):
+        """Convert encoding for given destination
+        Returns
+        -------
+        Union
+            encoded or failed_on_encoding list
+        """
+        enc_utils = encode.EncodeUtils()
+        self.encoded = []
+        self.failed_on_encoding = []
+
+        for target in self.targets:
+            try:
+                file_path = os.path.normpath(os.path.join(self.dest, target))
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    file_path, file_path, self.from_encoding, self.to_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(file_path, self.to_encoding)
+                self.encoded.append(os.path.abspath(target))
+
+            except Exception:
+                self.failed_on_encoding.append(os.path.abspath(target))
+
+        return {
+            "encoded": self.encoded,
+            "failed_on_encoding": self.failed_on_encoding
+        }
 
     @property
     def result(self):
@@ -703,31 +739,6 @@ class TarUnarchive(Unarchive):
         os.chdir(original_working_dir)
         self.changed = bool(self.targets)
 
-    def encode_destination(self):
-        """Convert encoding for given destination
-        """
-        enc_utils = encode.EncodeUtils()
-        self.encoded = []
-        self.failed_on_encoding = []
-
-        for target in self.targets:
-            try:
-                file_path = os.path.normpath(os.path.join(self.dest, target))
-                convert_rc = enc_utils.uss_convert_encoding_prev(
-                    file_path, file_path, self.from_encoding, self.to_encoding
-                )
-                if convert_rc:
-                    enc_utils.uss_tag_encoding(file_path, self.to_encoding)
-                self.encoded.append(os.path.abspath(target))
-
-            except Exception:
-                self.failed_on_encoding.append(os.path.abspath(target))
-
-        return {
-            "encoded": self.encoded,
-            "failed_on_encoding": self.failed_on_encoding
-        }
-
 
 class ZipUnarchive(Unarchive):
     def __init__(self, module):
@@ -826,29 +837,6 @@ class ZipUnarchive(Unarchive):
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
         self.changed = bool(self.targets)
-
-    def encode_destination(self):
-        """Convert encoding for given destination
-        """
-        enc_utils = encode.EncodeUtils()
-        self.encoded = []
-        self.failed_on_encoding = []
-        for target in self.targets:
-            try:
-                file_path = os.path.normpath(os.path.join(self.dest, target))
-                convert_rc = enc_utils.uss_convert_encoding_prev(
-                    file_path, file_path, self.from_encoding, self.to_encoding
-                )
-                if convert_rc:
-                    enc_utils.uss_tag_encoding(file_path, self.to_encoding)
-                self.encoded.append(os.path.abspath(target))
-            except Exception:
-                self.failed_on_encoding.append(os.path.abspath(target))
-
-        return {
-            "encoded": self.encoded,
-            "failed_on_encoding": self.failed_on_encoding
-        }
 
 
 class MVSUnarchive(Unarchive):
@@ -1215,6 +1203,10 @@ class MVSUnarchive(Unarchive):
 
     def encode_destination(self):
         """Convert encoding for given destination
+        Returns
+        -------
+        Union
+            encoded or failed_on_encoding list
         """
         enc_utils = encode.EncodeUtils()
         self.encoded = []

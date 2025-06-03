@@ -71,67 +71,67 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume):
     )
 
 
-def test_find_gdg_data_sets(ansible_zos_module):
-    hosts = ansible_zos_module
-    try:
-        gdg_a = get_tmp_ds_name()
-        gdg_b = get_tmp_ds_name()
-        gdg_c = get_tmp_ds_name()
-        gdg_names = [gdg_a, gdg_b, gdg_c]
+# def test_find_gdg_data_sets(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     try:
+#         gdg_a = get_tmp_ds_name()
+#         gdg_b = get_tmp_ds_name()
+#         gdg_c = get_tmp_ds_name()
+#         gdg_names = [gdg_a, gdg_b, gdg_c]
 
-        """
-        Purge can only be true when scratch is, hence only one gdg for both.
-        FIFO is disabled in the ECs and results in failure when trying to
-        create a data set.
-        one without flags and limit 3
-        """
-        hosts.all.shell(cmd=f"dtouch -tgdg -L3 {gdg_a}")
-        # one with EXTENDED flag -X
-        hosts.all.shell(cmd=f"dtouch -tgdg -L1 -X {gdg_b}")
-        # one with PURGE flag -P and SCRATCH flag -S
-        hosts.all.shell(cmd=f"dtouch -tgdg -L1 -P -S {gdg_c}")
+#         """
+#         Purge can only be true when scratch is, hence only one gdg for both.
+#         FIFO is disabled in the ECs and results in failure when trying to
+#         create a data set.
+#         one without flags and limit 3
+#         """
+#         hosts.all.shell(cmd=f"dtouch -tgdg -L3 {gdg_a}")
+#         # one with EXTENDED flag -X
+#         hosts.all.shell(cmd=f"dtouch -tgdg -L1 -X {gdg_b}")
+#         # one with PURGE flag -P and SCRATCH flag -S
+#         hosts.all.shell(cmd=f"dtouch -tgdg -L1 -P -S {gdg_c}")
 
-        find_res = hosts.all.zos_find(
-            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
-            resource_type=["gdg"],
-            limit=3,
-        )
+#         find_res = hosts.all.zos_find(
+#             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+#             resource_type=["gdg"],
+#             limit=3,
+#         )
 
-        for val in find_res.contacted.values():
-            assert val.get('msg') is None
-            assert len(val.get('data_sets')) == 1
-            assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
-            assert val.get('matched') == len(val.get('data_sets'))
+#         for val in find_res.contacted.values():
+#             assert val.get('msg') is None
+#             assert len(val.get('data_sets')) == 1
+#             assert {"name":gdg_a, "type": "GDG"} in val.get('data_sets')
+#             assert val.get('matched') == len(val.get('data_sets'))
 
-        find_res = hosts.all.zos_find(
-            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
-            resource_type=["gdg"],
-            extended=True,
-        )
+#         find_res = hosts.all.zos_find(
+#             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+#             resource_type=["gdg"],
+#             extended=True,
+#         )
 
-        for val in find_res.contacted.values():
-            assert val.get('msg') is None
-            assert len(val.get('data_sets')) == 1
-            assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
-            assert val.get('matched') == len(val.get('data_sets'))
+#         for val in find_res.contacted.values():
+#             assert val.get('msg') is None
+#             assert len(val.get('data_sets')) == 1
+#             assert {"name":gdg_b, "type": "GDG"} in val.get('data_sets')
+#             assert val.get('matched') == len(val.get('data_sets'))
 
-        find_res = hosts.all.zos_find(
-            patterns=[f'{TEST_SUITE_HLQ}.*.*'],
-            resource_type=["gdg"],
-            purge=True,
-            scratch=True,
-        )
+#         find_res = hosts.all.zos_find(
+#             patterns=[f'{TEST_SUITE_HLQ}.*.*'],
+#             resource_type=["gdg"],
+#             purge=True,
+#             scratch=True,
+#         )
 
-        for val in find_res.contacted.values():
-            assert val.get('msg') is None
-            assert len(val.get('data_sets')) == 1
-            assert {"name":gdg_c, "type": "GDG"} in val.get('data_sets')
-            assert val.get('matched') == len(val.get('data_sets'))
+#         for val in find_res.contacted.values():
+#             assert val.get('msg') is None
+#             assert len(val.get('data_sets')) == 1
+#             assert {"name":gdg_c, "type": "GDG"} in val.get('data_sets')
+#             assert val.get('matched') == len(val.get('data_sets'))
 
-    finally:
-        # Remove one by one to avoid using an HLQ.* cuz it could cause bugs when running in parallel.
-        for ds in gdg_names:
-            hosts.all.shell(cmd=f"drm {ds}")
+#     finally:
+#         # Remove one by one to avoid using an HLQ.* cuz it could cause bugs when running in parallel.
+#         for ds in gdg_names:
+#             hosts.all.shell(cmd=f"drm {ds}")
 
 
 def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):

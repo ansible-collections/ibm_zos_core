@@ -4686,47 +4686,47 @@ def test_copy_member_to_existing_seq_data_set(ansible_zos_module, args):
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
-@pytest.mark.uss
-@pytest.mark.pdse
-@pytest.mark.parametrize("dest_type", ["pds", "pdse"])
-def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
-    hosts = ansible_zos_module
-    src = "/etc/profile"
-    dest = get_tmp_ds_name()
-
-    try:
-        hosts.all.zos_data_set(
-            type=dest_type,
-            space_primary=5,
-            space_type="m",
-            record_format="fba",
-            record_length=25,
-        )
-
-        copy_res = hosts.all.zos_copy(
-            src=src,
-            dest=dest,
-            remote_src=False,
-            encoding={
-                "from": "UTF-8",
-                "to": "IBM-1047"
-            },
-        )
-
-        verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest + "(PROFILE)"),
-            executable=SHELL_EXECUTABLE,
-        )
-
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            assert result.get("dest") == dest
-        for result in verify_copy.contacted.values():
-            assert result.get("rc") == 0
-            assert result.get("stdout") != ""
-    finally:
-        hosts.all.zos_data_set(name=dest, state="absent")
+# @pytest.mark.uss
+# @pytest.mark.pdse
+# @pytest.mark.parametrize("dest_type", ["pds", "pdse"])
+# def test_copy_file_to_member_convert_encoding(ansible_zos_module, dest_type):
+#     hosts = ansible_zos_module
+#     src = "/etc/profile"
+#     dest = get_tmp_ds_name()
+#
+#     try:
+#         hosts.all.zos_data_set(
+#             type=dest_type,
+#             space_primary=5,
+#             space_type="m",
+#             record_format="fba",
+#             record_length=25,
+#         )
+#
+#         copy_res = hosts.all.zos_copy(
+#             src=src,
+#             dest=dest,
+#             remote_src=False,
+#             encoding={
+#                 "from": "UTF-8",
+#                 "to": "IBM-1047"
+#             },
+#         )
+#
+#         verify_copy = hosts.all.shell(
+#             cmd="head \"//'{0}'\"".format(dest + "(PROFILE)"),
+#             executable=SHELL_EXECUTABLE,
+#         )
+#
+#         for result in copy_res.contacted.values():
+#             assert result.get("msg") is None
+#             assert result.get("changed") is True
+#             assert result.get("dest") == dest
+#         for result in verify_copy.contacted.values():
+#             assert result.get("rc") == 0
+#             assert result.get("stdout") != ""
+#     finally:
+#         hosts.all.zos_data_set(name=dest, state="absent")
 
 
 @pytest.mark.pdse

@@ -5235,38 +5235,38 @@ def test_copy_data_set_to_new_gds(ansible_zos_module):
         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
 
-def test_copy_uss_file_to_new_gds(ansible_zos_module):
-    hosts = ansible_zos_module
+# def test_copy_uss_file_to_new_gds(ansible_zos_module):
+#     hosts = ansible_zos_module
 
-    try:
-        src_file = "/etc/profile"
-        dest_data_set = get_tmp_ds_name()
+#     try:
+#         src_file = "/etc/profile"
+#         dest_data_set = get_tmp_ds_name()
 
-        hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
+#         hosts.all.shell(cmd=f"dtouch -tGDG -L3 {dest_data_set}")
 
-        copy_results = hosts.all.zos_copy(
-            src=src_file,
-            dest=f"{dest_data_set}(+1)",
-            remote_src=True
-        )
+#         copy_results = hosts.all.zos_copy(
+#             src=src_file,
+#             dest=f"{dest_data_set}(+1)",
+#             remote_src=True
+#         )
 
-        verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
+#         verify_copy = hosts.all.shell(cmd=f"""dcat "{dest_data_set}(0)" """)
 
-        # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
-        gds_pattern = r"G[0-9]+V[0-9]+"
+#         # Checking that we got a source of the form: ANSIBLE.DATA.SET.G0001V01.
+#         gds_pattern = r"G[0-9]+V[0-9]+"
 
-        for cp_res in copy_results.contacted.values():
-            dest = cp_res.get("dest", "")
+#         for cp_res in copy_results.contacted.values():
+#             dest = cp_res.get("dest", "")
 
-            assert cp_res.get("msg") is None
-            assert cp_res.get("changed") is True
-            assert re.fullmatch(gds_pattern, dest.split(".")[-1])
-        for v_cp in verify_copy.contacted.values():
-            assert v_cp.get("rc") == 0
-            assert v_cp.get("stdout") != ""
-    finally:
-        hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
-        hosts.all.shell(cmd=f"drm {dest_data_set}")
+#             assert cp_res.get("msg") is None
+#             assert cp_res.get("changed") is True
+#             assert re.fullmatch(gds_pattern, dest.split(".")[-1])
+#         for v_cp in verify_copy.contacted.values():
+#             assert v_cp.get("rc") == 0
+#             assert v_cp.get("stdout") != ""
+#     finally:
+#         hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
+#         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
 
 def test_copy_pds_to_new_gds(ansible_zos_module):

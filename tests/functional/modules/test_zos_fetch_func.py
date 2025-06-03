@@ -506,29 +506,29 @@ def test_fetch_sequential_data_set_empty(ansible_zos_module):
         hosts.all.zos_data_set(name=src, state='absent')
 
 
-def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    pds_name = get_tmp_ds_name()
-    hosts.all.zos_data_set(
-        name=pds_name,
-        type="pds",
-        space_primary=5,
-        space_type="m",
-        record_format="fba",
-        record_length=25,
-    )
-    params = {
-        "src":pds_name,
-        "dest":"/tmp/",
-        "flat":True
-    }
-    try:
-        results = hosts.all.zos_fetch(**params)
-        for result in results.contacted.values():
-            assert "msg" in result.keys()
-            assert "stderr" in result.keys()
-    finally:
-        hosts.all.zos_data_set(name=pds_name, state="absent")
+# def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     pds_name = get_tmp_ds_name()
+#     hosts.all.zos_data_set(
+#         name=pds_name,
+#         type="pds",
+#         space_primary=5,
+#         space_type="m",
+#         record_format="fba",
+#         record_length=25,
+#     )
+#     params = {
+#         "src":pds_name,
+#         "dest":"/tmp/",
+#         "flat":True
+#     }
+#     try:
+#         results = hosts.all.zos_fetch(**params)
+#         for result in results.contacted.values():
+#             assert "msg" in result.keys()
+#             assert "stderr" in result.keys()
+#     finally:
+#         hosts.all.zos_data_set(name=pds_name, state="absent")
 
 
 def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):

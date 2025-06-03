@@ -5104,14 +5104,14 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
 
 
 
-@pytest.mark.parametrize("options", [
-    dict(src="/etc/profile",
-         force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
-    dict(src="/etc/profile", force=True,
-         is_remote=False, verbosity="-vvvv", verbosity_level=4),
-    dict(src="/etc/profile",
-         force=True, is_remote=False, verbosity="", verbosity_level=0),
-])
+# @pytest.mark.parametrize("options", [
+#     dict(src="/etc/profile",
+#          force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
+#     dict(src="/etc/profile", force=True,
+#          is_remote=False, verbosity="-vvvv", verbosity_level=4),
+#     dict(src="/etc/profile",
+#          force=True, is_remote=False, verbosity="", verbosity_level=0),
+# ])
 # def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
 #     """Test the display verbosity, ensure it matches the verbosity_level.
 #      This test requires access to verbosity and pytest-ansbile provides no

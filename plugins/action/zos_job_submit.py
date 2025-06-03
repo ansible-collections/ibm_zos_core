@@ -77,6 +77,7 @@ class ActionModule(ActionBase):
                 return result
 
             tmp_dir = self._connection._shell._options.get("remote_tmp")
+            temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
             dest_path = path.join(tmp_dir, temp_file_dir)
             tempfile_args = {"path": dest_path, "state": "directory"}
             # Reverted this back to using file ansible module so ansible would handle all temporary dirs
@@ -162,7 +163,7 @@ class ActionModule(ActionBase):
 
             result.update(copy_action.run(task_vars=task_vars))
             if result.get("msg") is None:
-                module_args["src"] = dest_path
+                module_args["src"] = dest_file
                 result.update(
                     self._execute_module(
                         module_name="ibm.ibm_zos_core.zos_job_submit",

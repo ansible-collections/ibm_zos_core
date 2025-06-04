@@ -65,10 +65,10 @@ options:
     type: str
   encoding:
     description:
-      - The character set of the source I(target). L(zos_replace,./zos_replace.html)
-        requires it to be provided with correct encoding to read the content
-        of a USS file or data set. If this parameter is not provided, this
-        module assumes that USS file or data set is encoded in IBM-1047.
+      - The character set for data in the I(target). Module L(zos_replace,./zos_replace.html)
+         requires the encoding to correctly read the content
+         of a USS file or data set. If this parameter is not provided, this
+         module assumes that USS file or data set is encoded in IBM-1047.
       - Supported character sets rely on the charset conversion utility (iconv)
         version; the most common character sets are supported.
     required: false

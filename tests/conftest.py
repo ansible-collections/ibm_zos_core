@@ -54,6 +54,30 @@ def pytest_addoption(parser):
         default=None,
         help="Str - dictionary with values {'host': 'ibm.com', 'user': 'root', 'zoau': '/usr/lpp/zoau', 'pyz': '/usr/lpp/IBM/pyz'}",
     )
+    parser.addoption(
+        "--user_adm",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--user_method",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--ansible_promp",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--ansible_user",
+        action="store",
+        default=None,
+        help="Str "
+    )
 
 
 @pytest.fixture(scope="session")
@@ -204,3 +228,11 @@ def get_config(request):
     """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
     path = request.config.getoption("--zinventory")
     yield path
+
+@pytest.fixture(scope='session')
+def get_config_for_become(request):
+    user_value = request.config.option.user_adm
+    user_method = request.config.option.user_method
+    ansible_promp = request.config.option.ansible_promp
+    ansible_user = request.config.option.ansible_user
+    return user_value, user_method, ansible_promp, ansible_user

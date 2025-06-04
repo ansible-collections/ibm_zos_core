@@ -20,11 +20,14 @@ import re
 import pytest
 import string
 import random
+import yaml
+import subprocess
 import tempfile
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
 from datetime import datetime
+from shellescape import quote
 
 from shellescape import quote
 
@@ -85,6 +88,46 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
 VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
+"""
+
+INVENTORY = """all:
+  hosts:
+    zvm:
+      ansible_host: {0}
+      ansible_ssh_private_key_file: {1}
+      ansible_user: {2}
+      ansible_python_interpreter: {3}"""
+
+BECOME_USER="""- hosts: zvm
+  collections :
+    - ibm.ibm_zos_core
+  gather_facts: False
+  ignore_errors: True
+  vars:
+    ZOAU: "{0}"
+    PYZ: "{1}"
+    ansible_become_user: {2}
+    ansible_become_method: {3}
+    ansible_su_prompt_l10n: {4}
+  environment:
+    _BPXK_AUTOCVT: "ALL"
+    ZOAU_HOME: "{0}"
+    PYTHONPATH: "{0}/lib/{5}"
+    LIBPATH: "{0}/lib:{1}/lib:/lib:/usr/lib:."
+    PATH: "{0}/bin:/bin:/usr/lpp/rsusr/ported/bin:/var/bin:/usr/lpp/rsusr/ported/bin:/usr/lpp/java/java180/J8.0_64/bin:{1}/bin:"
+    _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+    _TAG_REDIR_ERR: "txt"
+    _TAG_REDIR_IN: "txt"
+    _TAG_REDIR_OUT: "txt"
+    LANG: "C"
+    PYTHONSTDINENCODING: "cp1047"
+  tasks:
+    - name: Fetch PDSE member while escalating privileges.
+      ibm.ibm_zos_core.zos_fetch:
+        src: {6}
+        dest: /tmp/
+        flat: true
+      become: true
 """
 
 
@@ -985,3 +1028,63 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
     finally:
         if os.path.exists(dest):
             os.remove(dest)
+
+
+def test_extra_parameters(get_config_for_become, get_config, capsys):
+    with capsys.disabled():
+        adm_user, method, promp, ansible_us = get_config_for_become
+        promp = promp + f" {adm_user}"
+
+        ds_name = get_tmp_ds_name()
+        ds_name = ds_name + "(MEMBER)"
+
+        path = get_config
+        with open(path, 'r') as file:
+            enviroment = yaml.safe_load(file)
+
+        ssh_key = enviroment["ssh_key"]
+        hosts = enviroment["host"].upper()
+        user = enviroment["user"].upper()
+        python_path = enviroment["python_path"]
+        cut_python_path = python_path[:python_path.find('/bin')].strip()
+        zoau = enviroment["environment"]["ZOAU_ROOT"]
+        python_version = cut_python_path.split('/')[2]
+
+        try:
+            playbook = "playbook.yml"
+            inventory = "inventory.yml"
+
+            os.system("echo {0} > {1}".format(quote(BECOME_USER.format(
+                zoau,
+                cut_python_path,
+                adm_user,
+                method,
+                promp,
+                python_version,
+                ds_name,
+            )), playbook))
+
+            os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+                hosts,
+                ssh_key,
+                user,
+                python_path
+            )), inventory))
+
+            command = "ansible-playbook -i -vvv {0} {1}".format(
+                inventory,
+                playbook
+            )
+
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                shell=True,
+                timeout=120,
+                encoding='utf-8'
+            )
+
+            assert result.returncode == 0
+        finally:
+            os.remove("inventory.yml")
+            os.remove("playbook.yml")

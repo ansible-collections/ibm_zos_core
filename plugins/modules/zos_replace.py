@@ -46,7 +46,7 @@ options:
       - If I(src) is a USS file or path, backup_name must be a file
         or path name, and it must be an absolute path name.
       - If the source is an MVS data set, I(backup_name) must be an MVS
-        data set name, and the data set must not be preallocated.
+        data set name, and the data set must B(not) be preallocated.
       - If I(backup_name) is not provided, a default name will
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a

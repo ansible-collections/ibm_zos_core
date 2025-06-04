@@ -291,7 +291,26 @@ class ActionModule(ActionBase):
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            self._connection.exec_command(f"rm -rf {path}*")
+            # If another user created the temporary files, we'll need to run rm
+            # with it too, lest we get a permissions issue.
+            if self._connection.become:
+                # We get the dirname from temp_path and not path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
+                # because if default is ~/.ansible/tmp/ when using become it would be similar to /root/.ansible/tmp
+                # but the original tmp directory was resolved when user is non escalated yet. Meaning, the original
+                # tmp directory is similar to /u/usrt001/.ansible/tmp.
+                path = os.path.dirname(temp_path)
+                self._connection.set_option('remote_user', self._play_context._become_user)
+                display.vvv(
+                    u"ibm_zos_copy SSH cleanup user updated to {0}".format(self._play_context._become_user),
+                    host=self._play_context.remote_addr
+                )
+            rm_res = self._connection.exec_command(f"rm -rf {path}*")
+            if self._connection.become:
+                self._connection.set_option('remote_user', self._play_context._remote_user)
+                display.vvv(
+                    u"ibm_zos_copy SSH cleanup user restored to {0}".format(self._play_context._remote_user),
+                    host=self._play_context.remote_addr
+                )
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")

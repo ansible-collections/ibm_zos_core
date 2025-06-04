@@ -35,8 +35,8 @@ options:
       - Specifies whether a backup of the destination should be created before
         editing the source I(target).
       - When set to C(true), the module creates a backup file or data set.
-      - The backup file name will be returned on either success or failure of
-        module execution such that data can be retrieved.
+      - The backup file name will be returned if I(backup) is C(true)
+        on either success or failure of module execution such that data can be retrieved.
     required: false
     type: bool
     default: false
@@ -52,9 +52,13 @@ options:
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
         timestamp, e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
+      - If I(src) is a seq data set and backup_name is not provided, the data set
+        will be backed up to seq data set with a randomly generated name.
       - If I(src) is a data set member and backup_name is not provided, the data set
         member will be backed up to the same partitioned data set with a randomly generated
         member name.
+      - If I(src) is a Generation Data Set (GDS) and backup_name is not provided, the backup
+        name will function as a data set member and backup_name.
     required: false
     type: str
   before:
@@ -66,9 +70,9 @@ options:
   encoding:
     description:
       - The character set for data in the I(target). Module L(zos_replace,./zos_replace.html)
-         requires the encoding to correctly read the content
-         of a USS file or data set. If this parameter is not provided, this
-         module assumes that USS file or data set is encoded in IBM-1047.
+        requires the encoding to correctly read the content
+        of a USS file or data set. If this parameter is not provided, this
+        module assumes that USS file or data set is encoded in IBM-1047.
       - Supported character sets rely on the charset conversion utility (iconv)
         version; the most common character sets are supported.
     required: false
@@ -109,6 +113,10 @@ options:
     required: false
     type: str
     default: ""
+
+notes:
+  - For supported character sets used to encode data, refer to the
+    L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
 """
 
 EXAMPLES = r"""

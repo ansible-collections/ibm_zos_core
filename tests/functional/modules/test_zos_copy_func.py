@@ -23,7 +23,6 @@ import yaml
 import tempfile
 import subprocess
 from shellescape import quote
-
 from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
@@ -5606,6 +5605,54 @@ def test_copy_gdg_to_gdg(ansible_zos_module, new_gdg):
         hosts.all.shell(cmd=f"""drm "{dest_data_set}(0)" """)
         hosts.all.shell(cmd=f"drm {dest_data_set}")
 
+def test_identical_gdg_copy(ansible_zos_module):
+   hosts = ansible_zos_module
+   try:
+       src_data_set = get_tmp_ds_name()
+       dest_data_set = get_tmp_ds_name()
+       # Create source GDG base
+       hosts.all.shell(cmd=f"dtouch -tGDG -L5 {src_data_set}")
+       # Create 5 generations in source GDG
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       hosts.all.shell(cmd=f"""dtouch -tSEQ "{src_data_set}(+1)" """)
+       
+       # Delete first two generations: (-4) and (-3)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-4)" """)
+       hosts.all.shell(cmd=f"""drm "{src_data_set}(-3)" """)
+       # Copy with identical_gdg_copy: true
+       copy_results = hosts.all.zos_copy(
+           src=src_data_set,
+           dest=dest_data_set,
+           remote_src=True,
+           identical_gdg_copy=True
+       )
+       for result in copy_results.contacted.values():
+           assert result.get("msg") is None
+           assert result.get("changed") is True
+   finally:
+       src_gdg_result = hosts.all.shell(cmd=f"dls {src_data_set}.*")
+       src_gdgs = []
+       for result in src_gdg_result.contacted.values():
+           src_gdgs.extend(result.get("stdout_lines", []))
+       # List destination generations
+       dest_gdg_result = hosts.all.shell(cmd=f"dls {dest_data_set}.*")
+       dest_gdgs = []
+       for result in dest_gdg_result.contacted.values():
+           dest_gdgs.extend(result.get("stdout_lines", []))
+           expected_dest_gdgs = [
+               ds_name.replace(src_data_set,dest_data_set) for ds_name in src_gdgs
+           ]
+           assert sorted(dest_gdgs) == sorted(expected_dest_gdgs), f"Absolute names mismatch.\nExpected: {expected_dest_gdgs}\nFound: {dest_gdgs}"
+           print("Abssolute GDG names copied correctly.")
+           for name in dest_gdgs:
+               print(name)
+       # Clean up both source and destination
+       hosts.all.shell(cmd=f"drm {src_data_set}*")
+       hosts.all.shell(cmd=f"drm {dest_data_set}*")
+
 
 def test_copy_gdg_to_gdg_dest_attributes(ansible_zos_module):
     hosts = ansible_zos_module
@@ -5811,3 +5858,232 @@ def test_job_script_async(ansible_zos_module, get_config):
         assert result.stderr == ""
     finally:
         ansible_zos_module.all.zos_data_set(name=ds_name, state="absent")
+
+def test_copy_data_set_seq_with_aliases(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    src = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    src_alias = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    src = f'{src[:7]}.{src[13:]}'
+    src_alias = f'{src_alias[:7]}.{src_alias[13:]}'
+    dest = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    dest_alias = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    dest = f'{dest[:7]}.{dest[13:]}'
+    dest_alias = f'{dest_alias[:7]}.{dest_alias[13:]}'
+    volumes = Volume_Handler(volumes_on_systems)
+    available_vol = volumes.get_available_vol()
+    try:
+        data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -tseq -V{available_vol} {src}'
+        )
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src}" """)
+        for result in data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+        dest_data_set_creation_result = hosts.all.shell(
+            cmd=f'dtouch -tseq {dest}'
+        )
+        for result in dest_data_set_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+        alias_creation_result = hosts.all.shell(
+            cmd=f'echo "  DEFINE ALIAS (NAME({src_alias}) RELATE({src}))" | mvscmdauth --pgm=idcams --sysin=stdin --sysprint=*'
+        )
+        for result in alias_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+        dest_alias_creation_result = hosts.all.shell(
+            cmd=f'echo "  DEFINE ALIAS (NAME({dest_alias}) RELATE({dest}))" | mvscmdauth --pgm=idcams --sysin=stdin --sysprint=*'
+        )
+        for result in dest_alias_creation_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+        zos_copy_result = hosts.all.zos_copy(
+            src=src_alias,
+            dest=dest_alias,
+            remote_src=True
+        )
+        for result in zos_copy_result.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed', False) is False
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert v_cp.get("stdout") == DUMMY_DATA
+    finally:
+        hosts.all.shell(cmd=f'drm {src_alias}')
+        hosts.all.shell(cmd=f'drm {dest_alias}')
+        hosts.all.shell(cmd=f'drm {src}')
+        hosts.all.shell(cmd=f'drm {dest}')
+
+def test_copy_pds_to_pds_using_dest_alias(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    try:
+        src_pds = get_tmp_ds_name(mlq_size=3, llq_size=3)
+        src_pds = f'{src_pds[:7]}.{src_pds[13:]}'
+        dest_pds = get_tmp_ds_name(mlq_size=3, llq_size=3)
+        dest_pds = f'{dest_pds[:7]}.{dest_pds[13:]}'
+        dest_pds_alias = get_tmp_ds_name(mlq_size=3, llq_size=3)
+        dest_pds_alias = f'{dest_pds_alias[:7]}.{dest_pds_alias[13:]}'
+
+        hosts.all.shell(cmd=f"dtouch -tPDS {src_pds}")
+        hosts.all.shell(cmd=f"""decho "{DUMMY_DATA}" "{src_pds}(MEMBER)" """)
+        hosts.all.shell(cmd=f"dtouch -tPDS {dest_pds}")
+        hosts.all.shell(
+            cmd=f'echo "  DEFINE ALIAS (NAME({dest_pds_alias}) RELATE({dest_pds}))" | mvscmdauth --pgm=idcams --sysin=stdin --sysprint=*'
+        )
+
+        copy_results = hosts.all.zos_copy(
+            src=src_pds,
+            dest=dest_pds_alias,
+            remote_src=True
+        )
+
+        for cp_res in copy_results.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+
+        verify_dest = hosts.all.shell(
+            cmd=f"""dcat "{dest_pds}(MEMBER)" """,
+            executable=SHELL_EXECUTABLE,
+        )
+        for v_res in verify_dest.contacted.values():
+            assert v_res.get("rc") == 0
+            assert len(v_res.get("stdout_lines")) > 0
+    finally:
+        hosts.all.shell(cmd=f"drm {src_pds}")
+        hosts.all.shell(cmd=f"drm {dest_pds}")
+        hosts.all.shell(cmd=f"drm {dest_pds_alias}")
+
+
+@pytest.mark.pdse
+@pytest.mark.loadlib
+@pytest.mark.aliases
+def test_copy_pdse_loadlib_to_pdse_loadlib_using_aliases(ansible_zos_module):
+
+    hosts = ansible_zos_module
+    mlq_size = 3
+    cobol_src_pds = get_tmp_ds_name(mlq_size)
+    cobol_src_mem = "HELLOCBL"
+    cobol_src_mem2 = "HICBL2"
+    src_lib = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    src_lib = f'{src_lib[:7]}.{src_lib[13:]}'
+    src_lib_aliases = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    src_lib_aliases = f'{src_lib_aliases[:7]}.{src_lib_aliases[13:]}'
+    dest_lib = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    dest_lib = f'{dest_lib[:7]}.{dest_lib[13:]}'
+    dest_lib_aliases = get_tmp_ds_name(mlq_size=3, llq_size=3)
+    dest_lib_aliases = f'{dest_lib_aliases[:7]}.{dest_lib_aliases[13:]}'
+    pgm_mem = "HELLO"
+    pgm2_mem = "HELLO2"
+    pgm_mem_alias = "ALIAS1"
+    pgm2_mem_alias = "ALIAS2"
+    try:
+        # allocate pds for cobol src code
+        hosts.all.zos_data_set(
+            name=cobol_src_pds,
+            state="present",
+            type="pds",
+            space_primary=2,
+            record_format="fb",
+            record_length=80,
+            block_size=3120,
+            replace=True,
+        )
+        # allocate pds for src loadlib
+        hosts.all.zos_data_set(
+            name=src_lib,
+            state="present",
+            type="pdse",
+            record_format="u",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="m",
+            replace=True
+        )
+
+        hosts.all.zos_data_set(
+                name=dest_lib,
+                state="present",
+                type="pdse",
+                record_format="u",
+                record_length=0,
+                block_size=32760,
+                space_primary=2,
+                space_type="m",
+                replace=True
+        )
+
+        # generate loadlib w 2 members w 1 alias each
+        generate_loadlib(
+            hosts=hosts,
+            cobol_src_pds=cobol_src_pds,
+            cobol_src_mems=[cobol_src_mem, cobol_src_mem2],
+            loadlib_pds=src_lib,
+            loadlib_mems=[pgm_mem, pgm2_mem],
+            loadlib_alias_mems=[pgm_mem_alias, pgm2_mem_alias]
+        )
+
+        hosts.all.shell(
+            cmd=f'echo "  DEFINE ALIAS (NAME({src_lib_aliases}) RELATE({src_lib}))" | mvscmdauth --pgm=idcams --sysin=stdin --sysprint=*'
+        )
+
+        hosts.all.shell(
+            cmd=f'echo "  DEFINE ALIAS (NAME({dest_lib_aliases}) RELATE({dest_lib}))" | mvscmdauth --pgm=idcams --sysin=stdin --sysprint=*'
+        )
+
+        # copy src loadlib to dest library pds w aliases
+        copy_res_aliases = hosts.all.zos_copy(
+                src="{0}".format(src_lib_aliases),
+                dest="{0}".format(dest_lib_aliases),
+                remote_src=True,
+                executable=True,
+                aliases=True,
+                dest_data_set={
+                    'type': "library",
+                    'record_format': "u",
+                    'record_length': 0,
+                    'block_size': 32760,
+                    'space_primary': 2,
+                    'space_type': "m",
+                }
+        )
+
+        for result in copy_res_aliases.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}".format(dest_lib_aliases)
+
+        verify_copy_mls_aliases = hosts.all.shell(
+            cmd="mls {0}".format(dest_lib),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for v_cp in verify_copy_mls_aliases.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            expected_mls_str = "{0} ALIAS({1})".format(pgm_mem, pgm_mem_alias)
+            expected_mls_str2 = "{0} ALIAS({1})".format(pgm2_mem, pgm2_mem_alias)
+            assert expected_mls_str in stdout
+            assert expected_mls_str2 in stdout
+
+        # verify pgms remain executable
+        pgm_output_map = {
+            (dest_lib, pgm_mem, COBOL_PRINT_STR),
+            (dest_lib, pgm2_mem, COBOL_PRINT_STR2)
+        }
+        for steplib, pgm, output in pgm_output_map:
+            validate_loadlib_pgm(hosts, steplib=steplib, pgm_name=pgm, expected_output_str=output)
+
+    finally:
+        hosts.all.zos_data_set(name=cobol_src_pds, state="absent")
+        hosts.all.zos_data_set(name=src_lib, state="absent")
+        hosts.all.zos_data_set(name=dest_lib, state="absent")
+        hosts.all.zos_data_set(name=src_lib_aliases, state="absent")
+        hosts.all.zos_data_set(name=dest_lib_aliases, state="absent")
+

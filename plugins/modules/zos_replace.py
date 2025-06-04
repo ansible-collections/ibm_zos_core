@@ -84,7 +84,7 @@ options:
       - The location can be a UNIX System Services (USS) file,
         PS (sequential data set), PDS, PDSE, member of a PDS or PDSE.
       - The USS file must be an absolute pathname.
-      - It is possible to use a generation data set (GDS) relative name of generation already.
+      - It is possible to use a generation data set (GDS) relative name of generation already
         created. e.g. I(SOME.CREATION(-1)).
     required: true
     type: str

@@ -47,6 +47,7 @@ options:
         or path name, and it must be an absolute path name.
       - If the source is an MVS data set, I(backup_name) must be an MVS
         data set name, and the data set must B(not) be preallocated.
+      - If it is a Generation Data Set (GDS), use a relative positive name, e.g., I(SOME.CREATION(+1)).
       - If I(backup_name) is not provided, a default name will
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
@@ -54,7 +55,6 @@ options:
       - If I(src) is a data set member and backup_name is not provided, the data set
         member will be backed up to the same partitioned data set with a randomly generated
         member name.
-      - If it is a Generation Data Set (GDS), use a relative positive name, e.g., I(SOME.CREATION(+1)).
     required: false
     type: str
   before:
@@ -127,25 +127,25 @@ EXAMPLES = r"""
   zos_replace:
     target: SAMPLE.SOURCE
     regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv
-    replace:  //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
+    replace: //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
     after: '^\$source base \([^\s]+\)'
     disable_regex: regexp
 
 - name: Replace a specific line before a specific sentence with backup
   zos_replace:
     target: SAMPLE.SOURCE
-    backup: True
+    backup: true
     regexp: //SYSPRINT DD SYSOUT=*
     before: SAMPLES OUTPUT SYSIN *=$DSN
     disable_regex:
-        - regexp
-        - before
+      - regexp
+      - before
 
 - name: Replace some words between two lines with a backup with tmp_hlq
   zos_replace:
     target: SAMPLE.DATASET
     tmp_hlq: ANSIBLE
-    backup: True
+    backup: true
     backup_name: BACKUP.DATASET
     regexp: var
     replace: vars
@@ -158,7 +158,7 @@ EXAMPLES = r"""
     regexp: ^(IEE132I|IEA989I|IEA888I|IEF196I|IEA000I)\s.*
     after: ^IEE133I PENDING *
     before: ^IEE252I DEVICE *
-    backup: True
+    backup: true
     backup_name: "SOURCE.GDG(+1)"
 
 - name: Delete some calls to SYSTEM on a member using a backref
@@ -188,7 +188,7 @@ found:
     type: int
     sample: 5
 msg:
-    description: Error messages from the module
+    description: A string with a generic or error message relayed to the user.
     returned: failure
     type: str
     sample: Parameter verification failed

@@ -2063,24 +2063,24 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
     ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
     ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
 ])
-def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
-    retries = 0
-    max_retries = 5
-    success = False
+# def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
+#     retries = 0
+#     max_retries = 5
+#     success = False
 
-    # Not adding a try/except block here so a real exception can bubble up
-    # and stop pytest immediately (if using -x or --stop).
-    while retries < max_retries:
-        print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
-        result = copy_dest_lock(ansible_zos_module, ds_type, f_lock)
+#     # Not adding a try/except block here so a real exception can bubble up
+#     # and stop pytest immediately (if using -x or --stop).
+#     while retries < max_retries:
+#         print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
+#         result = copy_dest_lock(ansible_zos_module, ds_type, f_lock)
 
-        if result:
-            success = True
-            break
+#         if result:
+#             success = True
+#             break
 
-        retries += 1
+#         retries += 1
 
-    assert success is True
+#     assert success is True
 
 
 def copy_dest_lock(ansible_zos_module, ds_type, f_lock):

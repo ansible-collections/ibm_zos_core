@@ -2054,15 +2054,15 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
         hosts.all.file(path=dest_path, state="absent")
 
 
-@pytest.mark.seq
-@pytest.mark.parametrize("ds_type, f_lock",[
-    ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
-    ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
-    ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
-    ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-    ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-])
+# @pytest.mark.seq
+# @pytest.mark.parametrize("ds_type, f_lock",[
+#     ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+#     ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+#     ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+#     ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+#     ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+#     ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+# ])
 # def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
 #     retries = 0
 #     max_retries = 5

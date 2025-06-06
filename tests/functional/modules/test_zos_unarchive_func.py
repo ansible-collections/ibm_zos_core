@@ -449,6 +449,7 @@ def test_uss_unarchive_encoding(ansible_zos_module, ds_format):
 # - test_mvs_unarchive_force
 # - test_mvs_unarchive_remote_src
 # - test_mvs_unarchive_encoding
+# - test_mvs_unarchive_multiple_data_set_use_adrdssu_encoding
 
 
 @pytest.mark.ds
@@ -1330,9 +1331,6 @@ def test_mvs_unarchive_single_data_set_remote_src(
     "record_length", [80]
 )
 @pytest.mark.parametrize(
-    "record_format", ["fb"],
-)
-@pytest.mark.parametrize(
     "encoding", [
         {"from": "IBM-1047", "to": "ISO8859-1"},
     ]
@@ -1342,7 +1340,6 @@ def test_mvs_unarchive_encoding(
     ds_format,
     data_set,
     record_length,
-    record_format,
     encoding
 ):
     try:
@@ -1350,6 +1347,7 @@ def test_mvs_unarchive_encoding(
         mvs_dest_archive = get_tmp_ds_name()
         dataset = get_tmp_ds_name(3)
         hlq = "ANSIBLE"
+        record_format = "fb"
         # Clean env
         hosts.all.zos_data_set(name=mvs_dest_archive, state="absent")
         # Create source data set
@@ -1370,12 +1368,7 @@ def test_mvs_unarchive_encoding(
                     state="present",
                     replace=True
                 )
-        # Write some content into src the same size of the record,
-        # need to reduce 4 from V and VB due to RDW
-        if record_format in ["v", "vb"]:
-            test_line = "a" * (record_length - 4)
-        else:
-            test_line = "a" * record_length
+        test_line = "a" * record_length
         for member in data_set.get("members"):
             if member == "":
                 ds_to_write = f"{dataset}"
@@ -1438,6 +1431,100 @@ def test_mvs_unarchive_encoding(
                 assert dataset in c_result.get("stdout")
     finally:
         hosts.all.zos_data_set(name=dataset, state="absent")
+        hosts.all.zos_data_set(name=mvs_dest_archive, state="absent")
+
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize(
+    "ds_format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize(
+    "data_set", [
+        {
+            "dstype":"seq"
+        },
+        {
+            "dstype":"pds"
+        },
+        {
+            "dstype":"pdse"
+        },
+        ]
+)
+@pytest.mark.parametrize(
+    "encoding", [
+        {"from": "IBM-1047", "to": "ISO8859-1"},
+    ]
+)
+def test_mvs_unarchive_multiple_data_set_use_adrdssu_encoding(ansible_zos_module, ds_format, data_set,encoding):
+    try:
+        hosts = ansible_zos_module
+        mvs_dest_archive = get_tmp_ds_name()
+        dataset = get_tmp_ds_name(3,3)
+        hlq ="ANSIBLE"
+        target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
+                                    base_name=dataset,
+                                    n=1,
+                                    ds_type=data_set.get("dstype"))
+        ds_to_write = target_ds_list
+        if data_set.get("dstype") in ["pds", "pdse"]:
+            target_member_list = []
+            for ds in target_ds_list:
+                target_member_list.extend(
+                    create_multiple_members(ansible_zos_module=hosts,
+                                        pds_name=ds.get("name"),
+                                        member_base_name="MEM",
+                                        n=3
+                    )
+                )
+            ds_to_write = target_member_list
+        # Write some content into src
+        test_line = "this is a test line"
+        for ds in ds_to_write:
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name").replace('$', '\\$')))
+
+        format_dict = {
+            "name":ds_format,
+            "format_options":{}
+        }
+        if ds_format == "terse":
+            format_dict["format_options"].update(terse_pack="spack")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            src=f"{dataset}*",
+            dest=mvs_dest_archive,
+            format=format_dict,
+        )
+        # remote data_sets from host
+        dataset = dataset.replace("$", "/$")
+        hosts.all.shell(cmd=f"drm {dataset}*")
+
+        if ds_format == "terse":
+            del format_dict["format_options"]["terse_pack"]
+        # Unarchive action
+        unarchive_result = hosts.all.zos_unarchive(
+            src=mvs_dest_archive,
+            format=format_dict,
+            remote_src=True,
+            force=True,
+            encoding=encoding
+        )
+        # assert response is positive
+        for result in unarchive_result.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+            assert result.get("src") == mvs_dest_archive
+
+            cmd_result = hosts.all.shell(cmd=f"""dls "{hlq}.*" """)
+            for c_result in cmd_result.contacted.values():
+                for target_ds in target_ds_list:
+                    assert target_ds.get("name") in result.get("targets")
+                    assert target_ds.get("name") in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd=f""" drm "{dataset}*" """)
         hosts.all.zos_data_set(name=mvs_dest_archive, state="absent")
 
 

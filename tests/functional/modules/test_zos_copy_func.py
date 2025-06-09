@@ -2054,33 +2054,33 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
         hosts.all.file(path=dest_path, state="absent")
 
 
-# @pytest.mark.seq
-# @pytest.mark.parametrize("ds_type, f_lock",[
-#     ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
-#     ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
-#     ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
-#     ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-#     ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-#     ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
-# ])
-# def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
-#     retries = 0
-#     max_retries = 5
-#     success = False
+@pytest.mark.seq
+@pytest.mark.parametrize("ds_type, f_lock",[
+    ("pds", True),   # Success path, pds locked, force_lock enabled and user authorized
+    ("pdse", True),  # Success path, pdse locked, force_lock enabled and user authorized
+    ("seq", True),   # Success path, seq locked, force_lock enabled and user authorized
+    ("pds", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("pdse", False), # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+    ("seq", False),  # Module exits with: Unable to write to dest '{0}' because a task is accessing the data set."
+])
+def test_copy_dest_lock_wrapper(ansible_zos_module, ds_type, f_lock):
+    retries = 0
+    max_retries = 5
+    success = False
 
-#     # Not adding a try/except block here so a real exception can bubble up
-#     # and stop pytest immediately (if using -x or --stop).
-#     while retries < max_retries:
-#         print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
-#         result = copy_dest_lock(ansible_zos_module, ds_type, f_lock)
+    # Not adding a try/except block here so a real exception can bubble up
+    # and stop pytest immediately (if using -x or --stop).
+    while retries < max_retries:
+        print(f'Trying dest lock for {ds_type}. Expecting success? {f_lock}. Retry: {retries}.')
+        result = copy_dest_lock(ansible_zos_module, ds_type, f_lock)
 
-#         if result:
-#             success = True
-#             break
+        if result:
+            success = True
+            break
 
-#         retries += 1
+        retries += 1
 
-#     assert success is True
+    assert success is True
 
 
 def copy_dest_lock(ansible_zos_module, ds_type, f_lock):
@@ -5104,42 +5104,42 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
 
 
 
-# @pytest.mark.parametrize("options", [
-#     dict(src="/etc/profile",
-#          force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
-#     dict(src="/etc/profile", force=True,
-#          is_remote=False, verbosity="-vvvv", verbosity_level=4),
-#     dict(src="/etc/profile",
-#          force=True, is_remote=False, verbosity="", verbosity_level=0),
-# ])
-# def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
-#     """Test the display verbosity, ensure it matches the verbosity_level.
-#      This test requires access to verbosity and pytest-ansbile provides no
-#      reasonable handle for this so for now subprocess is used. This test
-#      results in no actual copy happening, the interest is in the verbosity"""
+@pytest.mark.parametrize("options", [
+    dict(src="/etc/profile",
+         force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
+    dict(src="/etc/profile", force=True,
+         is_remote=False, verbosity="-vvvv", verbosity_level=4),
+    dict(src="/etc/profile",
+         force=True, is_remote=False, verbosity="", verbosity_level=0),
+])
+def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
+    """Test the display verbosity, ensure it matches the verbosity_level.
+     This test requires access to verbosity and pytest-ansbile provides no
+     reasonable handle for this so for now subprocess is used. This test
+     results in no actual copy happening, the interest is in the verbosity"""
 
-#     try:
-#         hosts = ansible_zos_module
-#         user = hosts["options"]["user"]
-#         # Optionally hosts["options"]["inventory_manager"].list_hosts()[0]
-#         node = hosts["options"]["inventory"].rstrip(',')
-#         python_path = hosts["options"]["ansible_python_path"]
+    try:
+        hosts = ansible_zos_module
+        user = hosts["options"]["user"]
+        # Optionally hosts["options"]["inventory_manager"].list_hosts()[0]
+        node = hosts["options"]["inventory"].rstrip(',')
+        python_path = hosts["options"]["ansible_python_path"]
 
-#         dest_path = get_random_file_name(dir=TMP_DIRECTORY)
-#         # This is an adhoc command, because there was no
-#         cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + dest_path + " is_remote=" + str(
-#             options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
+        dest_path = get_random_file_name(dir=TMP_DIRECTORY)
+        # This is an adhoc command, because there was no
+        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + dest_path + " is_remote=" + str(
+            options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
 
-#         result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
-#         output = result.read().decode()
+        result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
+        output = result.read().decode()
 
-#         if options["verbosity_level"] != 0:
-#             assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)
-#         else:
-#             assert ("play context verbosity:" not in output)
+        if options["verbosity_level"] != 0:
+            assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)
+        else:
+            assert ("play context verbosity:" not in output)
 
-#     finally:
-#         hosts.all.file(path=dest_path, state="absent")
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
 
 
 @pytest.mark.parametrize("generation", ["0", "+1"])

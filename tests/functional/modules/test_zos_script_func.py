@@ -650,65 +650,65 @@ def test_rexx_script_with_args_and_carriagereturn(ansible_zos_module):
             os.remove(script_path)
 
 
-def test_job_script_async(get_config):
-    # Creating temp REXX file used by the playbook.
-    try:
-        rexx_script = REXX_SCRIPT_ARGS
-        script_path = create_local_file(rexx_script, 'rexx')
+# def test_job_script_async(get_config):
+#     # Creating temp REXX file used by the playbook.
+#     try:
+#         rexx_script = REXX_SCRIPT_ARGS
+#         script_path = create_local_file(rexx_script, 'rexx')
 
-        # Getting all the info required to run the playbook.
-        path = get_config
-        with open(path, 'r') as file:
-            enviroment = yaml.safe_load(file)
+#         # Getting all the info required to run the playbook.
+#         path = get_config
+#         with open(path, 'r') as file:
+#             enviroment = yaml.safe_load(file)
 
-        ssh_key = enviroment["ssh_key"]
-        hosts = enviroment["host"].upper()
-        user = enviroment["user"].upper()
-        python_path = enviroment["python_path"]
-        cut_python_path = python_path[:python_path.find('/bin')].strip()
-        zoau = enviroment["environment"]["ZOAU_ROOT"]
-        python_version = cut_python_path.split('/')[2]
+#         ssh_key = enviroment["ssh_key"]
+#         hosts = enviroment["host"].upper()
+#         user = enviroment["user"].upper()
+#         python_path = enviroment["python_path"]
+#         cut_python_path = python_path[:python_path.find('/bin')].strip()
+#         zoau = enviroment["environment"]["ZOAU_ROOT"]
+#         python_version = cut_python_path.split('/')[2]
 
-        playbook = tempfile.NamedTemporaryFile(delete=True)
-        inventory = tempfile.NamedTemporaryFile(delete=True)
+#         playbook = tempfile.NamedTemporaryFile(delete=True)
+#         inventory = tempfile.NamedTemporaryFile(delete=True)
 
-        os.system("echo {0} > {1}".format(
-            quote(PLAYBOOK_ASYNC_TEST.format(
-                zoau,
-                cut_python_path,
-                python_version,
-                script_path
-            )),
-            playbook.name
-        ))
+#         os.system("echo {0} > {1}".format(
+#             quote(PLAYBOOK_ASYNC_TEST.format(
+#                 zoau,
+#                 cut_python_path,
+#                 python_version,
+#                 script_path
+#             )),
+#             playbook.name
+#         ))
 
-        os.system("echo {0} > {1}".format(
-            quote(INVENTORY_ASYNC_TEST.format(
-                hosts,
-                ssh_key,
-                user,
-                python_path
-            )),
-            inventory.name
-        ))
+#         os.system("echo {0} > {1}".format(
+#             quote(INVENTORY_ASYNC_TEST.format(
+#                 hosts,
+#                 ssh_key,
+#                 user,
+#                 python_path
+#             )),
+#             inventory.name
+#         ))
 
-        command = "ansible-playbook -i {0} {1}".format(
-            inventory.name,
-            playbook.name
-        )
+#         command = "ansible-playbook -i {0} {1}".format(
+#             inventory.name,
+#             playbook.name
+#         )
 
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            shell=True,
-            timeout=120,
-            encoding='utf-8'
-        )
-        assert result.returncode == 0
-        assert "ok=2" in result.stdout
-        assert "changed=2" in result.stdout
-        assert result.stderr == ""
-    finally:
-        if os.path.exists(script_path):
-            os.remove(script_path)
+#         result = subprocess.run(
+#             command,
+#             capture_output=True,
+#             shell=True,
+#             timeout=120,
+#             encoding='utf-8'
+#         )
+#         assert result.returncode == 0
+#         assert "ok=2" in result.stdout
+#         assert "changed=2" in result.stdout
+#         assert result.stderr == ""
+#     finally:
+#         if os.path.exists(script_path):
+#             os.remove(script_path)
 

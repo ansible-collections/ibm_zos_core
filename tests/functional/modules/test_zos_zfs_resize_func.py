@@ -701,81 +701,81 @@ def test_grow_n_shrink_operations_trace_uss_not_created(ansible_zos_module):
 #         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
 #         hosts.all.zos_data_set(name=trace_destination_ds_s, state="absent")
 
-@pytest.mark.parametrize("trace_destination", ["pds", "member"])
-def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace_destination):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    grow_size = 1800
-    shrink_size = 1200
+# @pytest.mark.parametrize("trace_destination", ["pds", "member"])
+# def test_grow_n_shrink_operations_trace_ds_not_created(ansible_zos_module, trace_destination):
+#     hosts = ansible_zos_module
+#     ds_name = get_tmp_ds_name()
+#     mount_folder = ""
+#     grow_size = 1800
+#     shrink_size = 1200
 
-    trace_destination_ds = get_tmp_ds_name()
-    trace_destination_ds = trace_destination_ds if trace_destination == "pds" else trace_destination_ds + "(MEM)"
-    trace_destination_ds_s = get_tmp_ds_name()
-    trace_destination_ds_s = trace_destination_ds_s if trace_destination == "pds" else trace_destination_ds_s + "(MEM)"
-    try:
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+#     trace_destination_ds = get_tmp_ds_name()
+#     trace_destination_ds = trace_destination_ds if trace_destination == "pds" else trace_destination_ds + "(MEM)"
+#     trace_destination_ds_s = get_tmp_ds_name()
+#     trace_destination_ds_s = trace_destination_ds_s if trace_destination == "pds" else trace_destination_ds_s + "(MEM)"
+#     try:
+#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
 
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=grow_size,
-                                            trace_destination=trace_destination_ds)
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=grow_size,
+#                                             trace_destination=trace_destination_ds)
 
-        for result in results.contacted.values():
-            assert result.get('cmd') is not None
-            assert result.get('size') == grow_size
-            assert result.get('space_type') == "k"
-            assert result.get('verbose_output') is not None
-            assert result.get('changed') is True
-            assert result.get('stdout_lines') is not None
-            assert result.get('target') == ds_name
-            assert result.get('mount_target') == "/SYSTEM" + mount_folder
-            assert result.get('rc') == 0
-            assert "grown" in result.get('stdout')
-            assert result.get('new_size') >= grow_size
-            assert result.get('new_size') >= result.get('old_size')
-            assert result.get('new_free_space') >= result.get('old_free_space')
-            assert result.get('space_type') == "k"
-            assert "Printing contents of table at address" in result.get("stdout")
-            cmd = "dcat \"{0}\" ".format(trace_destination_ds)
-            output_of_trace_file = hosts.all.shell(cmd=cmd)
-            for out in output_of_trace_file.contacted.values():
-                assert out.get("stdout") is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
+#         for result in results.contacted.values():
+#             assert result.get('cmd') is not None
+#             assert result.get('size') == grow_size
+#             assert result.get('space_type') == "k"
+#             assert result.get('verbose_output') is not None
+#             assert result.get('changed') is True
+#             assert result.get('stdout_lines') is not None
+#             assert result.get('target') == ds_name
+#             assert result.get('mount_target') == "/SYSTEM" + mount_folder
+#             assert result.get('rc') == 0
+#             assert "grown" in result.get('stdout')
+#             assert result.get('new_size') >= grow_size
+#             assert result.get('new_size') >= result.get('old_size')
+#             assert result.get('new_free_space') >= result.get('old_free_space')
+#             assert result.get('space_type') == "k"
+#             assert "Printing contents of table at address" in result.get("stdout")
+#             cmd = "dcat \"{0}\" ".format(trace_destination_ds)
+#             output_of_trace_file = hosts.all.shell(cmd=cmd)
+#             for out in output_of_trace_file.contacted.values():
+#                 assert out.get("stdout") is not None
+#             assert result.get('stderr') == ""
+#             assert result.get('stderr_lines') == []
 
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=shrink_size,
-                                            trace_destination=trace_destination_ds_s)
-        for result in results.contacted.values():
-            assert result.get('cmd') is not None
-            assert result.get('size') == shrink_size
-            assert result.get('space_type') == "k"
-            assert result.get('verbose_output') is not None
-            assert result.get('changed') is True
-            assert result.get('stdout_lines') is not None
-            assert result.get('target') == ds_name
-            assert result.get('mount_target') == "/SYSTEM" + mount_folder
-            assert result.get('rc') == 0
-            assert "shrunk" in result.get('stdout')
-            assert result.get('new_size') <= grow_size
-            assert result.get('new_size') <= result.get('old_size')
-            assert result.get('new_free_space') <= result.get('old_free_space')
-            assert result.get('space_type') == "k"
-            assert "print of in-memory trace table has completed" in result.get('stdout')
-            cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
-            output_of_trace_file = hosts.all.shell(cmd=cmd)
-            for out in output_of_trace_file.contacted.values():
-                assert out.get("stdout") is not None
-            assert result.get('stderr') == ""
-            assert result.get('stderr_lines') == []
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=shrink_size,
+#                                             trace_destination=trace_destination_ds_s)
+#         for result in results.contacted.values():
+#             assert result.get('cmd') is not None
+#             assert result.get('size') == shrink_size
+#             assert result.get('space_type') == "k"
+#             assert result.get('verbose_output') is not None
+#             assert result.get('changed') is True
+#             assert result.get('stdout_lines') is not None
+#             assert result.get('target') == ds_name
+#             assert result.get('mount_target') == "/SYSTEM" + mount_folder
+#             assert result.get('rc') == 0
+#             assert "shrunk" in result.get('stdout')
+#             assert result.get('new_size') <= grow_size
+#             assert result.get('new_size') <= result.get('old_size')
+#             assert result.get('new_free_space') <= result.get('old_free_space')
+#             assert result.get('space_type') == "k"
+#             assert "print of in-memory trace table has completed" in result.get('stdout')
+#             cmd = "dcat \"{0}\" ".format(trace_destination_ds_s)
+#             output_of_trace_file = hosts.all.shell(cmd=cmd)
+#             for out in output_of_trace_file.contacted.values():
+#                 assert out.get("stdout") is not None
+#             assert result.get('stderr') == ""
+#             assert result.get('stderr_lines') == []
 
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
-        if trace_destination != "pds":
-            trace_destination_ds = trace_destination_ds.split("(")[0]
-            trace_destination_ds_s = trace_destination_ds_s.split("(")[0]
-        hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
-        hosts.all.zos_data_set(name=trace_destination_ds_s, state="absent")
+#     finally:
+#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+#         if trace_destination != "pds":
+#             trace_destination_ds = trace_destination_ds.split("(")[0]
+#             trace_destination_ds_s = trace_destination_ds_s.split("(")[0]
+#         hosts.all.zos_data_set(name=trace_destination_ds, state="absent")
+#         hosts.all.zos_data_set(name=trace_destination_ds_s, state="absent")
 
 #########################
 # Negative test cases

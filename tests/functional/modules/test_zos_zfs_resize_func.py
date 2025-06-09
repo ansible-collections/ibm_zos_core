@@ -983,21 +983,21 @@ def test_no_space_to_operate(ansible_zos_module):
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-# def test_fail_operation(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     ds_name = get_tmp_ds_name()
-#     mount_folder = ""
-#     size = 200
-#     try:
-#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-#         results = hosts.all.zos_zfs_resize(target=ds_name,
-#                                             size=size,)
-#         for result in results.contacted.values():
-#             assert result.get("failed") == True
-#             assert result.get('changed') == False
-#             assert result.get('rc') == 1
-#     finally:
-#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+def test_fail_operation(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = get_tmp_ds_name()
+    mount_folder = ""
+    size = 200
+    try:
+        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+        results = hosts.all.zos_zfs_resize(target=ds_name,
+                                            size=size,)
+        for result in results.contacted.values():
+            assert result.get("failed") == True
+            assert result.get('changed') == False
+            assert result.get('rc') == 1
+    finally:
+        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
 #############################
 # No auto increment playbook
@@ -1044,43 +1044,43 @@ def test_no_auto_increase(get_config):
         os.remove("inventory.yml")
         os.remove("playbook.yml")
 
-# def test_no_auto_increase_accept(get_config):
-#     ds_name = get_tmp_ds_name()
-#     mount_point = "/" + get_random_file_name(dir="tmp")
-#     path = get_config
-#     with open(path, 'r') as file:
-#         enviroment = yaml.safe_load(file)
-#     ssh_key = enviroment["ssh_key"]
-#     hosts = enviroment["host"].upper()
-#     user = enviroment["user"].upper()
-#     python_path = enviroment["python_path"]
-#     cut_python_path = python_path[:python_path.find('/bin')].strip()
-#     zoau = enviroment["environment"]["ZOAU_ROOT"]
-#     python_version = cut_python_path.split('/')[2]
+def test_no_auto_increase_accept(get_config):
+    ds_name = get_tmp_ds_name()
+    mount_point = "/" + get_random_file_name(dir="tmp")
+    path = get_config
+    with open(path, 'r') as file:
+        enviroment = yaml.safe_load(file)
+    ssh_key = enviroment["ssh_key"]
+    hosts = enviroment["host"].upper()
+    user = enviroment["user"].upper()
+    python_path = enviroment["python_path"]
+    cut_python_path = python_path[:python_path.find('/bin')].strip()
+    zoau = enviroment["environment"]["ZOAU_ROOT"]
+    python_version = cut_python_path.split('/')[2]
 
-#     try:
-#         playbook = "playbook.yml"
-#         inventory = "inventory.yml"
-#         os.system("echo {0} > {1}".format(quote(NO_AUTO_INCREMENT.format(
-#             zoau,
-#             cut_python_path,
-#             python_version,
-#             ds_name,
-#             mount_point,
-#             "False"
-#         )), playbook))
-#         os.system("echo {0} > {1}".format(quote(INVENTORY.format(
-#             hosts,
-#             ssh_key,
-#             user,
-#             python_path
-#         )), inventory))
-#         command = "ansible-playbook -i {0} {1}".format(
-#             inventory,
-#             playbook
-#         )
-#         stdout = os.system(command)
-#         assert stdout == 0
-#     finally:
-#         os.remove("inventory.yml")
-#         os.remove("playbook.yml")
+    try:
+        playbook = "playbook.yml"
+        inventory = "inventory.yml"
+        os.system("echo {0} > {1}".format(quote(NO_AUTO_INCREMENT.format(
+            zoau,
+            cut_python_path,
+            python_version,
+            ds_name,
+            mount_point,
+            "False"
+        )), playbook))
+        os.system("echo {0} > {1}".format(quote(INVENTORY.format(
+            hosts,
+            ssh_key,
+            user,
+            python_path
+        )), inventory))
+        command = "ansible-playbook -i {0} {1}".format(
+            inventory,
+            playbook
+        )
+        stdout = os.system(command)
+        assert stdout == 0
+    finally:
+        os.remove("inventory.yml")
+        os.remove("playbook.yml")

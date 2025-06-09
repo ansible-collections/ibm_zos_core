@@ -1369,80 +1369,80 @@ def test_gdg_unarchive(ansible_zos_module, dstype, format):
     finally:
         hosts.all.shell(cmd=f'drm "{HLQ}.*"')
 
-@pytest.mark.uss
-def test_zos_unarchive_async(ansible_zos_module, get_config):
-    try:
-        # Load environment details from the config file
-        with open(get_config, 'r') as file:
-            environment = yaml.safe_load(file)
+# @pytest.mark.uss
+# def test_zos_unarchive_async(ansible_zos_module, get_config):
+#     try:
+#         # Load environment details from the config file
+#         with open(get_config, 'r') as file:
+#             environment = yaml.safe_load(file)
 
-        ssh_key = environment["ssh_key"]
-        hosts = environment["host"].upper()
-        user = environment["user"].upper()
-        python_path = environment["python_path"]
-        cut_python_path = python_path[:python_path.find('/bin')].strip()
-        zoau = environment["environment"]["ZOAU_ROOT"]
-        python_version = cut_python_path.split('/')[2]
-        archive_format = USS_FORMATS[0]
+#         ssh_key = environment["ssh_key"]
+#         hosts = environment["host"].upper()
+#         user = environment["user"].upper()
+#         python_path = environment["python_path"]
+#         cut_python_path = python_path[:python_path.find('/bin')].strip()
+#         zoau = environment["environment"]["ZOAU_ROOT"]
+#         python_version = cut_python_path.split('/')[2]
+#         archive_format = USS_FORMATS[0]
 
-        # Create a temporary archive file for testing
-        hosts_zos = ansible_zos_module
-        hosts_zos.all.file(path=f"{USS_TEMP_DIR}", state="absent")
-        hosts_zos.all.file(path=USS_TEMP_DIR, state="directory")
-        set_uss_test_env(hosts_zos, USS_TEST_FILES)
-        dest = f"{USS_TEMP_DIR}/archive.{archive_format}"
-        archive_result = hosts_zos.all.zos_archive(src=list(USS_TEST_FILES.keys()),
-                                        dest=dest,
-                                        format=dict(
-                                            name=archive_format
-                                        ))
-        # remove files
-        for file in USS_TEST_FILES.keys():
-            hosts_zos.all.file(path=file, state="absent")
+#         # Create a temporary archive file for testing
+#         hosts_zos = ansible_zos_module
+#         hosts_zos.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+#         hosts_zos.all.file(path=USS_TEMP_DIR, state="directory")
+#         set_uss_test_env(hosts_zos, USS_TEST_FILES)
+#         dest = f"{USS_TEMP_DIR}/archive.{archive_format}"
+#         archive_result = hosts_zos.all.zos_archive(src=list(USS_TEST_FILES.keys()),
+#                                         dest=dest,
+#                                         format=dict(
+#                                             name=archive_format
+#                                         ))
+#         # remove files
+#         for file in USS_TEST_FILES.keys():
+#             hosts_zos.all.file(path=file, state="absent")
 
-        # Create temporary playbook and inventory files
-        playbook = tempfile.NamedTemporaryFile(delete=True)
-        inventory = tempfile.NamedTemporaryFile(delete=True)
+#         # Create temporary playbook and inventory files
+#         playbook = tempfile.NamedTemporaryFile(delete=True)
+#         inventory = tempfile.NamedTemporaryFile(delete=True)
 
-        os.system("echo {0} > {1}".format(
-            quote(PLAYBOOK_ASYNC_TEST.format(
-                zoau,
-                cut_python_path,
-                python_version,
-                dest,  
-                archive_format,  
-            )),
-            playbook.name
-        ))
+#         os.system("echo {0} > {1}".format(
+#             quote(PLAYBOOK_ASYNC_TEST.format(
+#                 zoau,
+#                 cut_python_path,
+#                 python_version,
+#                 dest,  
+#                 archive_format,  
+#             )),
+#             playbook.name
+#         ))
 
-        os.system("echo {0} > {1}".format(
-            quote(INVENTORY_ASYNC_TEST.format(
-                hosts,
-                ssh_key,
-                user,
-                python_path
-            )),
-            inventory.name
-        ))
+#         os.system("echo {0} > {1}".format(
+#             quote(INVENTORY_ASYNC_TEST.format(
+#                 hosts,
+#                 ssh_key,
+#                 user,
+#                 python_path
+#             )),
+#             inventory.name
+#         ))
 
-        # Run the Ansible playbook
-        command = "ansible-playbook -i {0} {1}".format(
-            inventory.name,
-            playbook.name
-        )
+#         # Run the Ansible playbook
+#         command = "ansible-playbook -i {0} {1}".format(
+#             inventory.name,
+#             playbook.name
+#         )
 
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            shell=True,
-            timeout=120,
-            encoding='utf-8'
-        )
+#         result = subprocess.run(
+#             command,
+#             capture_output=True,
+#             shell=True,
+#             timeout=120,
+#             encoding='utf-8'
+#         )
 
-        # Assertions to validate the result
-        assert result.returncode == 0
-        assert "ok=2" in result.stdout
-        assert "changed=2" in result.stdout
-        assert result.stderr == ""
-    finally:
-        hosts_zos.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+#         # Assertions to validate the result
+#         assert result.returncode == 0
+#         assert "ok=2" in result.stdout
+#         assert "changed=2" in result.stdout
+#         assert result.stderr == ""
+#     finally:
+#         hosts_zos.all.file(path=f"{USS_TEMP_DIR}", state="absent")

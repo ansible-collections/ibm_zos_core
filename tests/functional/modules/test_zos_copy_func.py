@@ -648,6 +648,29 @@ def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
 
 
 @pytest.mark.uss
+def test_copy_local_file_to_uss_file_with_absent_remote_tmp_dir(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = get_random_file_name(dir=TMP_DIRECTORY) + "/profile"
+    try:
+        hosts.all.shell(cmd="rm -rf ~/.ansible/tmp")
+        copy_res = hosts.all.zos_copy(
+            src="/etc/profile",
+            dest=dest_path,
+            encoding={"from": "ISO8859-1", "to": "IBM-1047"},
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest_path
+            assert result.get("state") == "file"
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
 def test_copy_inline_content_to_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
     dest = get_random_file_name(dir=TMP_DIRECTORY, suffix='/')

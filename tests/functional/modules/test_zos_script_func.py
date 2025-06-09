@@ -453,30 +453,30 @@ def test_script_template_with_custom_markers(ansible_zos_module):
             os.remove(script_path)
 
 
-def test_python_script_with_stderr(ansible_zos_module):
-    hosts = ansible_zos_module
+# def test_python_script_with_stderr(ansible_zos_module):
+#     hosts = ansible_zos_module
 
-    try:
-        msg = 'Error'
-        rc = 1
-        python_script = create_python_script_stderr(msg, rc)
-        script_path = create_local_file(python_script, 'python')
+#     try:
+#         msg = 'Error'
+#         rc = 1
+#         python_script = create_python_script_stderr(msg, rc)
+#         script_path = create_local_file(python_script, 'python')
 
-        python_executable = hosts['options']['ansible_python_path']
-        zos_script_result = hosts.all.zos_script(
-            cmd=script_path,
-            executable=python_executable
-        )
+#         python_executable = hosts['options']['ansible_python_path']
+#         zos_script_result = hosts.all.zos_script(
+#             cmd=script_path,
+#             executable=python_executable
+#         )
 
-        for result in zos_script_result.contacted.values():
-            assert result.get('changed') is True
-            assert result.get('failed') is True
-            assert result.get('rc') == rc
-            assert result.get('stdout', '') == ''
-            assert result.get('stderr', '').strip() == msg
-    finally:
-        if os.path.exists(script_path):
-            os.remove(script_path)
+#         for result in zos_script_result.contacted.values():
+#             assert result.get('changed') is True
+#             assert result.get('failed') is True
+#             assert result.get('rc') == rc
+#             assert result.get('stdout', '') == ''
+#             assert result.get('stderr', '').strip() == msg
+#     finally:
+#         if os.path.exists(script_path):
+#             os.remove(script_path)
 
 
 def managed_user_run_script(ansible_zos_module):

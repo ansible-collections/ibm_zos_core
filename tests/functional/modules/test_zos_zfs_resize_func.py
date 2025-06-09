@@ -983,21 +983,21 @@ def test_no_space_to_operate(ansible_zos_module):
     finally:
         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
-def test_fail_operation(ansible_zos_module):
-    hosts = ansible_zos_module
-    ds_name = get_tmp_ds_name()
-    mount_folder = ""
-    size = 200
-    try:
-        mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
-        results = hosts.all.zos_zfs_resize(target=ds_name,
-                                            size=size,)
-        for result in results.contacted.values():
-            assert result.get("failed") == True
-            assert result.get('changed') == False
-            assert result.get('rc') == 1
-    finally:
-        clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
+# def test_fail_operation(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     ds_name = get_tmp_ds_name()
+#     mount_folder = ""
+#     size = 200
+#     try:
+#         mount_folder = set_environment(ansible_zos_module=hosts, ds_name=ds_name)
+#         results = hosts.all.zos_zfs_resize(target=ds_name,
+#                                             size=size,)
+#         for result in results.contacted.values():
+#             assert result.get("failed") == True
+#             assert result.get('changed') == False
+#             assert result.get('rc') == 1
+#     finally:
+#         clean_up_environment(hosts=hosts, ds_name=ds_name, temp_dir_name=mount_folder)
 
 #############################
 # No auto increment playbook

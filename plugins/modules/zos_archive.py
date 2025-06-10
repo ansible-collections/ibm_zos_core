@@ -435,7 +435,7 @@ EXAMPLES = r'''
       format_options:
         use_adrdssu: true
 
-# Simple encoding 
+# Simple encoding
 - name: Encode the source data set into Latin-1 before archiving into a terse data set
   zos_archive:
     src: "USER.ARCHIVE.TEST"
@@ -446,10 +446,10 @@ EXAMPLES = r'''
       from: IBM-1047
       to: ISO8859-1
 
-# Skip encoding 
-- name: testing with multiple file locations 
+# Skip encoding
+- name: testing with multiple file locations
   zos_archive:
-    src: 
+    src:
       - "USER.ARCHIVE1.TEST"
       - "USER.ARCHIVE2.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
@@ -459,8 +459,8 @@ EXAMPLES = r'''
         use_adrdssu: true
     encoding:
       from: IBM-1047
-      to: ISO8859-1  
-      skip_encoding: 
+      to: ISO8859-1
+      skip_encoding:
         - "USER.ARCHIVE2.TEST"
 '''
 

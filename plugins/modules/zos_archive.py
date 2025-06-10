@@ -331,6 +331,12 @@ options:
           - The destination I(dest) character set for the files to be written as.
         required: false
         type: str
+      skip_encoding:
+        description:
+          - List of names to skip encoding before archiving. This is only passed if I(Encoding) is set.
+        required: false
+        type: list
+        elements: str
 attributes:
   action:
     support: none
@@ -484,6 +490,21 @@ expanded_exclude_sources:
     description: The list of matching exclude paths from the exclude option.
     type: list
     returned: always
+encoded:
+    description:
+      List of files or data sets that were successfully encoded.
+    type: list
+    returned: success
+failed_on_encoding:
+    description:
+      List of files or data sets that were failed while encoding.
+    type: list
+    returned: success
+skipped_encoding_targets:
+    description:
+      List of files or data sets that were skipped while encoding.
+    type: list
+    returned: success
 '''
 
 import abc
@@ -652,6 +673,14 @@ class Archive():
             The state of the input C(src).
         xmit_log_data_set : str
             The name of the data set to store xmit log output.
+        skip_encoding : list[str]
+            List of paths to exclude in encoding.
+        from_encoding: str
+            The encoding of the source file.
+        to_encoding : str
+            The required encoding of the destination file.
+        skipped_encoding_targets : list[str]
+            List of paths to exclude in encoding return value.
 
         """
         self.module = module
@@ -675,6 +704,11 @@ class Archive():
         encoding_param = module.params.get("encoding") or {}
         self.from_encoding = encoding_param.get("from")
         self.to_encoding = encoding_param.get("to")
+        self.encoded = list()
+        self.failed_on_encoding = list()
+        self.skip_encoding = encoding_param.get("skip_encoding")
+        self.skipped_encoding_targets = ""
+        self.encode_targets = []
 
     def targets_exist(self):
         """Returns if there are targets or not.
@@ -700,6 +734,10 @@ class Archive():
 
     @abc.abstractmethod
     def find_targets(self):
+        pass
+
+    @abc.abstractmethod
+    def encoding_targets(self):
         pass
 
     @abc.abstractmethod
@@ -746,6 +784,9 @@ class Archive():
             'expanded_sources': list(self.expanded_sources),
             'expanded_exclude_sources': list(self.expanded_exclude_sources),
             'xmit_log_data_set': self.xmit_log_data_set,
+            'encoded': getattr(self, 'encoded'),
+            'failed_on_encoding': getattr(self, 'failed_on_encoding'),
+            'skipped_encoding_targets' : getattr(self, 'skipped_encoding_targets'),
         }
 
 
@@ -817,6 +858,17 @@ class USSArchive(Archive):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
+
+    def encoding_targets(self):
+        """Finds encoding target files in host.
+        """
+        if self.skip_encoding:
+            self.encode_targets = [
+                path for path in self.targets if path not in self.skip_encoding
+            ]
+            self.skipped_encoding_targets = self.skip_encoding
+        else:
+            self.encode_targets = self.targets
 
     def _get_checksums(self, src):
         """Calculate SHA256 hash for a given file.
@@ -950,18 +1002,32 @@ class USSArchive(Archive):
 
     def encode_source(self):
         """Convert encoding for given src
+        Returns
+        -------
+        Union
+            encoded, failed_on_encoding or skipped_encoding list
         """
         enc_utils = encode.EncodeUtils()
-        try:
-            for target in self.targets:
+        self.encoded = []
+        self.failed_on_encoding = []
+
+        for target in self.encode_targets:
+            try:
                 convert_rc = enc_utils.uss_convert_encoding_prev(
                     target, target, self.from_encoding, self.to_encoding
                 )
                 if convert_rc:
                     enc_utils.uss_tag_encoding(target, self.to_encoding)
+                self.encoded.append(os.path.abspath(target))
 
-        except Exception as e:
-            raise EncodeError("Failed to encode in the required codeset: {e}") from e
+            except Exception:
+                self.failed_on_encoding.append(os.path.abspath(target))
+
+        return {
+            "encoded": self.encoded,
+            "failed_on_encoding": self.failed_on_encoding,
+            "skipped_encoding_targets": self.skipped_encoding_targets
+        }
 
 
 class TarArchive(USSArchive):
@@ -1113,6 +1179,17 @@ class MVSArchive(Archive):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
+
+    def encoding_targets(self):
+        """Finds encoding target datasets in host.
+        """
+        if self.skip_encoding:
+            self.encode_targets = [
+                path for path in self.targets if path not in self.skip_encoding
+            ]
+            self.skipped_encoding_targets = self.skip_encoding
+        else:
+            self.encode_targets = self.targets
 
     def _create_dest_data_set(
             self,
@@ -1431,11 +1508,16 @@ class MVSArchive(Archive):
 
     def encode_source(self):
         """Convert encoding for given src
+        Returns
+        -------
+        Union
+            encoded, failed_on_encoding or skipped_encoding list
         """
         enc_utils = encode.EncodeUtils()
-
-        try:
-            for target in self.targets:
+        self.encoded = []
+        self.failed_on_encoding = []
+        for target in self.encode_targets:
+            try:
                 ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
                 if not ds_type:
                     raise EncodeError("Unable to determine data set type of {0}".format(target))
@@ -1448,8 +1530,14 @@ class MVSArchive(Archive):
                     dest_type=ds_type,
                     tmphlq=self.tmphlq
                 )
-        except Exception as e:
-            raise EncodeError(f"Failed to encode in the required codeset: {e}") from e
+                self.encoded.append(os.path.abspath(target))
+            except Exception:
+                self.failed_on_encoding.append(os.path.abspath(target))
+        return {
+            "encoded": self.encoded,
+            "failed_on_encoding": self.failed_on_encoding,
+            "skipped_encoding_targets": self.skipped_encoding_targets
+        }
 
 
 class AMATerseArchive(MVSArchive):
@@ -1795,6 +1883,11 @@ def run_module():
                     "to": dict(
                         type='str',
                         required=False,
+                    ),
+                    "skip_encoding": dict(
+                        type='list',
+                        elements='str',
+                        required=False,
                     )
                 }
             )
@@ -1877,7 +1970,8 @@ def run_module():
             type='dict',
             options={
                 'from' : dict(type='str'),
-                "to" : dict(type='str')
+                'to' : dict(type='str'),
+                'skip_encoding' : dict(type='list', elements='str', required=False),
             }
         )
     )
@@ -1906,7 +2000,13 @@ def run_module():
     archive.find_targets()
     if archive.targets_exist():
         if encoding:
-            archive.encode_source()
+            archive.encoding_targets()
+            encoding_result = archive.encode_source()
+            archive.result.update({
+                "encoded": encoding_result.get("encoded", []),
+                "failed_on_encoding": encoding_result.get("failed_on_encoding", []),
+                "skipped_encoding_targets": encoding_result.get("skipped_encoding_targets", [])
+            })
         archive.compute_dest_size()
         archive.archive_targets()
         if archive.remove:

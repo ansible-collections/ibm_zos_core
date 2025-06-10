@@ -30,8 +30,8 @@ USS_DEST_ARCHIVE = "testarchive.dzp"
 
 STATE_ARCHIVED = 'archive'
 STATE_INCOMPLETE = 'incomplete'
-TO_ENCODING = "ISO8859-1"
-FROM_ENCODING = "IBM-1047"
+TO_ENCODING = "IBM-1047"
+FROM_ENCODING = "ISO8859-1"
 
 USS_FORMATS = ['tar', 'zip', 'gz', 'bz2', 'pax']
 
@@ -404,8 +404,8 @@ def test_uss_archive_encode_skip_encoding(ansible_zos_module, ds_format):
                 "name":ds_format
             },
             encoding={
-                "from": TO_ENCODING,
-                "to": FROM_ENCODING,
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
                 "skip_encoding" : first_file_to_skip
             }
         )

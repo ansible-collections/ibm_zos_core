@@ -39,6 +39,7 @@ def pytest_addoption(parser):
     Add CLI options and modify options for pytest-ansible where needed.
     Note: Set the default to to None, otherwise when evaluating with `request.config.getoption("--zinventory"):`
     will always return true because a default will be returned.
+    New option have been added to the execution of the command to allow the become method.
     """
     parser.addoption(
         "--zinventory",
@@ -73,7 +74,13 @@ def pytest_addoption(parser):
         help="Str "
     )
     parser.addoption(
-        "--ansible_user",
+        "--password",
+        action="store",
+        default=None,
+        help="Str "
+    )
+    parser.addoption(
+        "--ssh_key",
         action="store",
         default=None,
         help="Str "
@@ -229,10 +236,20 @@ def get_config(request):
     path = request.config.getoption("--zinventory")
     yield path
 
+@pytest.fixture(scope="function")
+def get_config_raw(request):
+    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    path = request.config.getoption("--zinventory-raw")
+    yield path
+
 @pytest.fixture(scope='session')
 def get_config_for_become(request):
-    user_value = request.config.option.user_adm
-    user_method = request.config.option.user_method
-    ansible_promp = request.config.option.ansible_promp
-    ansible_user = request.config.option.ansible_user
-    return user_value, user_method, ansible_promp, ansible_user
+    """ Return as a dict the values to be used on the test cases for become method"""
+    become_config = {
+        "user" : request.config.option.user_adm,
+        "method" : request.config.option.user_method,
+        "promp" : request.config.option.ansible_promp,
+        "key" : request.config.option.password,
+        "ssh_key" : request.config.option.ssh_key
+    }
+    return become_config

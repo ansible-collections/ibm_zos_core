@@ -21,6 +21,7 @@ import pytest
 import string
 import random
 import yaml
+import json
 import subprocess
 import tempfile
 
@@ -36,6 +37,7 @@ from ibm_zos_core.tests.helpers.volumes import Volume_Handler
 # pylint: disable-next=import-error
 from ibm_zos_core.tests.helpers.dataset import get_tmp_ds_name
 from ibm_zos_core.tests.helpers.utils import get_random_file_name
+from ibm_zos_core.tests.helpers.users import ManagedUserType, ManagedUser
 
 __metaclass__ = type
 
@@ -107,8 +109,9 @@ BECOME_USER="""- hosts: zvm
     ZOAU: "{0}"
     PYZ: "{1}"
     ansible_become_user: {2}
+
     ansible_become_method: {3}
-    ansible_su_prompt_l10n: {4}
+    ansible_su_prompt_l10n: {4} {{ansible_become_user}}
   environment:
     _BPXK_AUTOCVT: "ALL"
     ZOAU_HOME: "{0}"
@@ -123,13 +126,27 @@ BECOME_USER="""- hosts: zvm
     PYTHONSTDINENCODING: "cp1047"
   tasks:
     - name: Fetch PDSE member while escalating privileges.
-      ibm.ibm_zos_core.zos_fetch:
+      zos_fetch:
         src: {6}
         dest: /tmp/
         flat: true
       become: true
 """
 
+ANSIBLE_CFD = """[defaults]
+forks = 25
+become_password_file = ./key.txt
+
+[connection]
+pipelining = True
+
+[ssh_connection]
+pipelining = True
+
+[colors]
+verbose = green"""
+
+KEY = "{0}"
 
 def extract_member_name(data_set):
     start = data_set.find("(")
@@ -1030,29 +1047,55 @@ def test_fetch_uss_file_relative_path_not_present_on_local_machine(ansible_zos_m
             os.remove(dest)
 
 
-def test_extra_parameters(get_config_for_become, get_config, capsys):
+def test_become_option_with_restricted_user(ansible_zos_module, z_python_interpreter, get_config_for_become, capsys):
+    """
+    This tests check the become method it will pass the escalation but fail to execute the module because of lack of
+    permissions on on the system.
+    """
     with capsys.disabled():
-        adm_user, method, promp, ansible_us = get_config_for_become
-        promp = promp + f" {adm_user}"
+        managed_user = None
+        managed_user_test_case_name = "managed_user_limited_become_method"
+        become = get_config_for_become
+        try:
+            # Initialize the Managed user API from the pytest fixture.
+            managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
 
+            # Important: Execute the test case with the managed users execution utility.
+            # For become method is better to have verbose and debug as False only available for debug options.
+            managed_user.execute_managed_user_become_test(
+                managed_user_test_case = managed_user_test_case_name, become_method = become, debug = False,
+                verbose = False, managed_user_type=ManagedUserType.ZOAU_LIMITED_ACCESS_OPERCMD)
+
+        finally:
+            # Delete the managed user on the remote host to avoid proliferation of users.
+            managed_user.delete_managed_user()
+
+def managed_user_limited_become_method(get_config_for_become, get_config_raw, capsys):
+    with capsys.disabled():
         ds_name = get_tmp_ds_name()
         ds_name = ds_name + "(MEMBER)"
 
-        path = get_config
-        with open(path, 'r') as file:
-            enviroment = yaml.safe_load(file)
+        # Get values from the command
+        adm_user = get_config_for_become["user"]
+        method = get_config_for_become["method"]
+        promp = get_config_for_become["promp"]
+        password = get_config_for_become["key"]
+        ssh_key = get_config_for_become["ssh_key"]
 
-        ssh_key = enviroment["ssh_key"]
-        hosts = enviroment["host"].upper()
-        user = enviroment["user"].upper()
-        python_path = enviroment["python_path"]
+        # Get values from the new configuration file
+        configuration = json.loads(get_config_raw)
+        hosts = configuration["host"]
+        user = configuration["user"]
+        python_path = configuration["python_interpreter"]
         cut_python_path = python_path[:python_path.find('/bin')].strip()
-        zoau = enviroment["environment"]["ZOAU_ROOT"]
+        zoau = configuration["zoau"]
         python_version = cut_python_path.split('/')[2]
 
         try:
             playbook = "playbook.yml"
             inventory = "inventory.yml"
+            ansible_cfd = "ansible.cfd"
+            key_file = "key.txt"
 
             os.system("echo {0} > {1}".format(quote(BECOME_USER.format(
                 zoau,
@@ -1071,7 +1114,12 @@ def test_extra_parameters(get_config_for_become, get_config, capsys):
                 python_path
             )), inventory))
 
-            command = "ansible-playbook -i -vvv {0} {1}".format(
+            os.system("echo {0} > {1}".format(quote(ANSIBLE_CFD), ansible_cfd))
+            os.system("echo {0} > {1}".format(quote(KEY.format(
+                password
+            )), key_file))
+
+            command = "ansible-playbook -vvv -i {0} {1}".format(
                 inventory,
                 playbook
             )
@@ -1086,5 +1134,7 @@ def test_extra_parameters(get_config_for_become, get_config, capsys):
 
             assert result.returncode == 0
         finally:
-            os.remove("inventory.yml")
-            os.remove("playbook.yml")
+            os.remove(playbook)
+            os.remove(inventory)
+            os.remove(key_file)
+            os.remove(ansible_cfd)

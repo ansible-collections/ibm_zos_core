@@ -238,7 +238,7 @@ def get_config(request):
 
 @pytest.fixture(scope="function")
 def get_config_raw(request):
-    """ Call the pytest-ansible plugin to check volumes on the system and work properly a list by session."""
+    """ Call the pytest-ansible plugin to check the options on user manager test cases."""
     path = request.config.getoption("--zinventory-raw")
     yield path
 

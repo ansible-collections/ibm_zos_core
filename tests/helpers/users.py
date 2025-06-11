@@ -425,7 +425,7 @@ class ManagedUser:
         inventory.update({'host': self._remote_host})
         inventory.update({'user': self._managed_racf_user})
         inventory.update({'zoau': self._zoau_path})  # get this from fixture
-        inventory.update({'pyz': self._python_path})    # get this from fixture
+        inventory.update({'pyz': self._pyz_path})    # get this from fixture
         inventory.update({'pythonpath': self._pythonpath}) # get this from fixture
         extra_args = {}
         extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}}) # get this from fixture

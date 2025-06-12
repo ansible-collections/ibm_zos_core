@@ -338,6 +338,7 @@ class ActionModule(ActionBase):
         tempfile = self._execute_module(
             module_name="file", module_args=tempfile_args, task_vars=task_vars,
         )
+        print(f"tempfile result {tempfile}")
         _sftp_action = 'put'
         was_user_updated = False
 

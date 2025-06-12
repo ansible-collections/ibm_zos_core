@@ -333,7 +333,7 @@ options:
         type: str
       skip_encoding:
         description:
-          - List of names to skip encoding before archiving. This is only passed if I(Encoding) is set.
+          - List of names to skip encoding before archiving. This is only used if I(Encoding) is set, otherwise is ignored.
         required: false
         type: list
         elements: str
@@ -435,7 +435,6 @@ EXAMPLES = r'''
       format_options:
         use_adrdssu: true
 
-# Simple encoding
 - name: Encode the source data set into Latin-1 before archiving into a terse data set
   zos_archive:
     src: "USER.ARCHIVE.TEST"
@@ -446,8 +445,7 @@ EXAMPLES = r'''
       from: IBM-1047
       to: ISO8859-1
 
-# Skip encoding
-- name: testing with multiple file locations
+- name: Encode and archive multiple data sets but skip encoding for a few.
   zos_archive:
     src:
       - "USER.ARCHIVE1.TEST"

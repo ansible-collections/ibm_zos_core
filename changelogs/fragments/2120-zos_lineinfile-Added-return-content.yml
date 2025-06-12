@@ -1,0 +1,3 @@
+minor_changes:
+  - zos_lineinfile - Added return_content in logs for the zos_lineinfile module.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2054)

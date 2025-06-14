@@ -176,7 +176,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         )
         idcams_dataset, idcams_listcat_dataset_cmd = get_temp_idcams_dataset(hosts)
 
-        results = hosts.all.zos_mvs_raw(
+        results = hosts.all.zos_mvus_raw(
             program_name="idcams",
             auth=True,
             dds=[

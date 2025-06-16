@@ -195,6 +195,7 @@ def test_query_data_set_seq_no_volume(ansible_zos_module, volumes_on_systems):
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -266,6 +267,7 @@ def test_query_data_set_pds_no_volume(ansible_zos_module, volumes_on_systems):
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -338,6 +340,7 @@ def test_query_data_set_pdse_no_volume(ansible_zos_module, volumes_on_systems):
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -406,6 +409,7 @@ def test_query_data_set_vsam_ksds(ansible_zos_module):
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -493,6 +497,7 @@ def test_query_data_set_gds(ansible_zos_module, volumes_on_systems):
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert name in stat.get('name')
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -568,6 +573,7 @@ def test_query_data_set_seq_with_correct_volume(ansible_zos_module, volumes_on_s
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -633,8 +639,9 @@ def test_query_data_set_seq_with_wrong_volume(ansible_zos_module, volumes_on_sys
 
         for result in zos_stat_result.contacted.values():
             assert result.get('changed', False) is False
-            assert result.get('failed') is True
-            assert 'could not be found' in result.get('msg', '')
+            assert result.get('failed', False) is False
+            assert result.get('stat') is not None
+            assert result.get('stat').get('exists') is False
     finally:
         hosts.all.shell(
             cmd=f'drm {escaped_name}'
@@ -683,6 +690,7 @@ def test_query_data_set_seq_multi_volume(ansible_zos_module, volumes_on_systems)
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -761,6 +769,7 @@ def test_query_data_set_seq_multi_volume_missing_one(ansible_zos_module, volumes
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -821,6 +830,7 @@ def test_query_gdg(ansible_zos_module):
             stat = result['stat']
             assert stat.get('resource_type') == 'gdg'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is False
             assert stat.get('isaggregate') is False
@@ -869,6 +879,7 @@ def test_query_aggregate(ansible_zos_module):
         stat = result['stat']
         assert stat.get('resource_type') == 'aggregate'
         assert stat.get('name') == aggregate_name
+        assert stat.get('exists') is True
         assert stat.get('isfile') is False
         assert stat.get('isdataset') is False
         assert stat.get('isaggregate') is True
@@ -911,6 +922,7 @@ def test_query_file_no_symlink(ansible_zos_module):
         stat = result['stat']
         assert stat.get('resource_type') == 'file'
         assert stat.get('name') == test_file
+        assert stat.get('exists') is True
         assert stat.get('isfile') is True
         assert stat.get('isdataset') is False
         assert stat.get('isaggregate') is False
@@ -946,6 +958,7 @@ def test_query_file_no_checksum_no_mime(ansible_zos_module):
         stat = result['stat']
         assert stat.get('resource_type') == 'file'
         assert stat.get('name') == test_file
+        assert stat.get('exists') is True
         assert stat.get('isfile') is True
         assert stat.get('isdataset') is False
         assert stat.get('isaggregate') is False
@@ -997,6 +1010,7 @@ def test_query_file_symlink_follow_on(ansible_zos_module):
             stat = result['stat']
             assert stat.get('resource_type') == 'file'
             assert stat.get('name') == test_file
+            assert stat.get('exists') is True
             assert stat.get('isfile') is True
             assert stat.get('isdataset') is False
             assert stat.get('isaggregate') is False
@@ -1050,6 +1064,7 @@ def test_query_file_symlink_follow_off(ansible_zos_module):
             stat = result['stat']
             assert stat.get('resource_type') == 'file'
             assert stat.get('name') == test_file
+            assert stat.get('exists') is True
             assert stat.get('isfile') is True
             assert stat.get('isdataset') is False
             assert stat.get('isaggregate') is False
@@ -1082,8 +1097,9 @@ def test_query_data_set_non_existent(ansible_zos_module, resource_type):
 
     for result in zos_stat_result.contacted.values():
         assert result.get('changed', False) is False
-        assert result.get('failed') is True
-        assert 'could not be found' in result.get('msg', '')
+        assert result.get('failed', False) is False
+        assert result.get('stat') is not None
+        assert result.get('stat').get('exists') is False
 
 
 def test_query_data_set_tmp_hlq(ansible_zos_module, volumes_on_systems):
@@ -1118,6 +1134,7 @@ def test_query_data_set_tmp_hlq(ansible_zos_module, volumes_on_systems):
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == name
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False
@@ -1179,6 +1196,7 @@ def test_query_data_set_seq_with_alias(ansible_zos_module, volumes_on_systems):
             stat = result['stat']
             assert stat.get('resource_type') == 'data_set'
             assert stat.get('name') == alias
+            assert stat.get('exists') is True
             assert stat.get('isfile') is False
             assert stat.get('isdataset') is True
             assert stat.get('isaggregate') is False

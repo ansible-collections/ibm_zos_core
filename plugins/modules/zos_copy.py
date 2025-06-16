@@ -115,7 +115,7 @@ options:
       - If C(dest) is a nonexistent data set, the attributes assigned will depend on the type of
         C(src). If C(src) is a USS file, C(dest) will have a Fixed Block (FB) record format and the
         remaining attributes will be computed. If I(is_binary=true), C(dest) will have a Fixed Block
-        (FB) record format with a record length of 80, block size of 32760, and the remaining
+        (FB) record format with a record length of 80, block size of 32720, and the remaining
         attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record
         format with a record length of 0, block size of 32760, and the remaining attributes will be
         computed.

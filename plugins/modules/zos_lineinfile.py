@@ -792,14 +792,13 @@ def main():
             result['cmd'] = ret['cmd']
         result['changed'] = ret.get('changed', False)
         result['found'] = ret.get('found', 0)
-        result['rc'] = rc
         result['stdout'] = stdout
         result['return_content'] = stdout
     # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
     # That information will be given with 'changed' and 'found'
-    # if len(stderr):
-    #     result['stderr'] = str(stderr)
-    #     result['rc'] = rc
+    if len(stderr):
+        result['stderr'] = str(stderr)
+        result['rc'] = rc
     if 'backup_name' not in result:
         result['backup_name'] = ""
     module.exit_json(**result)

@@ -1,0 +1,3 @@
+trivial:
+   - zos_unarchive - Adds the skip_encoding parameter to the unarchive module.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2136)

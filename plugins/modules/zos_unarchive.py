@@ -435,6 +435,7 @@ EXAMPLES = r'''
       from: IBM-1047
       to: ISO8859-1
       skip_encoding: 
+        - USER.ARCHIVE.TEST1
 '''
 
 RETURN = r'''

@@ -264,6 +264,50 @@ stat
     | **type**: str
     | **sample**: data_set
 
+  isfile
+    Whether name is a Unix System Services file.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
+  isdataset
+    Whether name is a data set.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
+  isaggregate
+    Whether name is an aggregate.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
+  isgdg
+    Whether name is a Generation Data Group.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
   attributes
     Dictionary containing all the stat data.
 

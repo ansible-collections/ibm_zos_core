@@ -242,6 +242,11 @@ stat:
       returned: success
       type: str
       sample: data_set
+    exists:
+      description: Whether name was found on the managed node.
+      returned: success
+      type: bool
+      sample: true
     isfile:
       description: Whether name is a Unix System Services file.
       returned: success
@@ -2648,8 +2653,13 @@ def run_module():
     result = {}
 
     if not facts_handler.exists():
-        result['msg'] = f'{name} could not be found on the system.'
-        module.fail_json(**result)
+        result['stat'] = {
+            'name': name,
+            'resource_type': resource_type,
+            'exists': False
+        }
+        result['changed'] = False
+        module.exit_json(**result)
 
     try:
         data = facts_handler.query()
@@ -2668,6 +2678,7 @@ def run_module():
 
     result['stat'] = fill_return_json(data)
     result['changed'] = True
+    result['stat']['exists'] = True
     if notes:
         result['notes'] = notes
 

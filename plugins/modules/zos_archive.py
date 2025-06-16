@@ -333,7 +333,7 @@ options:
         type: str
       skip_encoding:
         description:
-          - List of names to skip encoding before archiving. This is only used if I(Encoding) is set, otherwise is ignored.
+          - List of names to skip encoding before archiving. This is only used if I(encoding) is set, otherwise is ignored.
         required: false
         type: list
         elements: str

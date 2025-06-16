@@ -1101,15 +1101,10 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
         # Delete the managed user on the remote host to avoid proliferation of users.
         managed_user.delete_managed_user()
 
-@pytest.mark.parametrize(
-    "backup_name,overwrite,recover",
-    [
-        ("DATA_SET", True, True)
-    ],
-)
-def managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user(
-    ansible_zos_module, backup_name, overwrite, recover
-):
+def managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user(ansible_zos_module):
+    backup_name = "DATA_SET"
+    overwrite = True
+    recover  = True
     hlqs = []
     hosts = ansible_zos_module
     data_set_name = get_tmp_ds_name()

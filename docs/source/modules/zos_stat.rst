@@ -264,6 +264,17 @@ stat
     | **type**: str
     | **sample**: data_set
 
+  exists
+    Whether name was found on the managed node.
+
+    | **returned**: success
+    | **type**: bool
+    | **sample**:
+
+      .. code-block:: json
+
+          true
+
   isfile
     Whether name is a Unix System Services file.
 

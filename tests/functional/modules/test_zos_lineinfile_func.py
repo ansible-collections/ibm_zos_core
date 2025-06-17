@@ -890,7 +890,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
 
 
 @pytest.mark.ds
-def test_gdd_ds_insert_line(ansible_zos_module):
+def test_gds_ds_insert_line(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="eof", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
     ds_name = get_tmp_ds_name(3, 2)
@@ -938,10 +938,11 @@ def test_gdd_ds_insert_line(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("stdout") == "ZOAU_ROOT=/mvsutil-develop_dsed"
 
-        params["src"] = ds_name + "(-3)"
+        params["src"] = ds_name + "(-2)"
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
-            assert result.get("changed") == 0
+            assert result.get("changed") == 1
+            assert "return_content" in result       
     finally:
         hosts.all.shell(cmd="""drm "{0}*" """.format(ds_name))
 
@@ -1138,6 +1139,7 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
         params["path"] = ds_full_name
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
+            assert "return_content" in result
             for key in kwargs:
                 assert kwargs.get(key) in result.get(key)
     finally:

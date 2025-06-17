@@ -177,7 +177,7 @@ class ManagedUser:
         self._create_ssh_config_and_directory()
 
     @classmethod
-    def from_fixture(cls, pytest_module_fixture, pytest_interpreter_fixture):
+    def fefrom_fixture(cls, pytest_module_fixture, pytest_interpreter_fixture):
         remote_host = pytest_module_fixture["options"]["inventory"].replace(",", "")
         model_user = pytest_module_fixture["options"]["user"]
         inventory_hosts = pytest_module_fixture["options"]["inventory_manager"]._inventory.hosts

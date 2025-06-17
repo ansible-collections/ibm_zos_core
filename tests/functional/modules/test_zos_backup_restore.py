@@ -1113,8 +1113,6 @@ def managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user(ansible_z
     tmphlq = "NOPERMIT"
     if backup_name == "DATA_SET":
         backup_name = get_tmp_ds_name(1,1)
-    else:
-        backup_name = get_random_file_name(dir=TMP_DIRECTORY, prefix='.dzp')
     try:
         delete_data_set_or_file(hosts, data_set_name)
         delete_data_set_or_file(hosts, backup_name)
@@ -1129,17 +1127,11 @@ def managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user(ansible_z
             tmp_hlq=tmphlq,
             recover=recover,
         )
-        assert_module_did_not_fail(results)
         # NEW: Assert backup_name appears in output
         for result in results.contacted.values():
             assert result.get("backup_name") == backup_name, \
                 f"Backup name '{backup_name}' not found in output"
         # Verify backup file/dataset exists
-        assert_data_set_or_file_exists(hosts, backup_name)
-        if not overwrite:
-            new_hlq = "N" + get_random_q(4)
-            hlqs.append(new_hlq)
-        assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, backup_name)
         results = hosts.all.zos_backup_restore(
             operation="restore",

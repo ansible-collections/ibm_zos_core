@@ -1390,4 +1390,3 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
-        

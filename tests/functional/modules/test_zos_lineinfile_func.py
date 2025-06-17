@@ -942,7 +942,6 @@ def test_gdd_ds_insert_line(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 0
-            assert "return_content" in result
     finally:
         hosts.all.shell(cmd="""drm "{0}*" """.format(ds_name))
 

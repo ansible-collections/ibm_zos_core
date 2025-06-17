@@ -310,6 +310,7 @@ def test_uss_line_replace(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE
@@ -333,6 +334,7 @@ def test_uss_line_insertafter_regex(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
@@ -356,6 +358,7 @@ def test_uss_line_insertbefore_regex(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
@@ -379,6 +382,7 @@ def test_uss_line_insertafter_eof(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
@@ -402,6 +406,7 @@ def test_uss_line_insertbefore_bof(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
@@ -426,6 +431,7 @@ def test_uss_line_replace_match_insertafter_ignore(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER_IGNORE
@@ -450,6 +456,7 @@ def test_uss_line_replace_match_insertbefore_ignore(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE_IGNORE
@@ -474,6 +481,7 @@ def test_uss_line_replace_nomatch_insertafter_match(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER
@@ -498,6 +506,7 @@ def test_uss_line_replace_nomatch_insertbefore_match(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE
@@ -522,6 +531,7 @@ def test_uss_line_replace_nomatch_insertafter_nomatch(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTAFTER_NOMATCH
@@ -546,6 +556,7 @@ def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_NOMATCH_INSERTBEFORE_NOMATCH
@@ -570,6 +581,7 @@ def test_uss_line_absent(ansible_zos_module):
         for result in results.contacted.values():
             print(result)
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
@@ -592,6 +604,7 @@ def test_uss_advanced_regular_expression_absent(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
@@ -616,6 +629,7 @@ def test_uss_line_replace_quoted_escaped(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_QUOTED
@@ -640,6 +654,7 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_QUOTED
@@ -662,6 +677,7 @@ def test_uss_line_does_not_insert_repeated(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == TEST_CONTENT
@@ -700,6 +716,7 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
@@ -729,6 +746,7 @@ def test_ds_line_insert_before_ansible_block(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_TEST_PARSING_CONTENT
@@ -754,6 +772,7 @@ def test_ds_line_insertbefore_regex(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
@@ -780,6 +799,7 @@ def test_ds_line_insertafter_eof(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
@@ -805,6 +825,7 @@ def test_ds_line_insertbefore_bof(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
@@ -832,6 +853,7 @@ def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER_IGNORE
@@ -859,6 +881,7 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE_IGNORE
@@ -881,6 +904,7 @@ def test_gdd_ds_insert_line(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
             cmd = result.get("cmd").split()
         for cmd_p in cmd:
             if ds_name in cmd_p:
@@ -893,6 +917,7 @@ def test_gdd_ds_insert_line(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
             cmd = result.get("cmd").split()
         for cmd_p in cmd:
             if ds_name in cmd_p:
@@ -907,6 +932,7 @@ def test_gdd_ds_insert_line(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") == 1
             assert result.get("rc") == 0
+            assert "return_content" in result
         backup = ds_name + "(0)"
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
         for result in results.contacted.values():
@@ -916,6 +942,7 @@ def test_gdd_ds_insert_line(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 0
+            assert "return_content" in result
     finally:
         hosts.all.shell(cmd="""drm "{0}*" """.format(ds_name))
 
@@ -934,6 +961,7 @@ def test_special_characters_ds_insert_line(ansible_zos_module):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         src = ds_name.replace('$', "\$")
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(src))
         for result in results.contacted.values():
@@ -946,6 +974,7 @@ def test_special_characters_ds_insert_line(ansible_zos_module):
             print(result)
             assert result.get("changed") == 1
             assert result.get("rc") == 0
+            assert "return_content" in result
         backup = backup.replace('$', "\$")
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(backup))
         for result in results.contacted.values():
@@ -1071,6 +1100,7 @@ def test_ds_line_absent(ansible_zos_module, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ABSENT
@@ -1106,6 +1136,7 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
         results = hosts.all.shell(cmd=f"cat \"//'{ds_full_name}'\" | wc -l ")
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
+            assert "return_content" in result
         params["path"] = ds_full_name
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
@@ -1337,6 +1368,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         results = hosts.all.shell(cmd=f"iconv -f IBM-1047 -t {encoding} {full_path}")
         for result in results.contacted.values():
             assert result.get("stdout") == EXPECTED_ENCODING
@@ -1381,6 +1413,7 @@ def test_ds_encoding(ansible_zos_module, encoding, dstype):
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
+            assert "return_content" in result
         hosts.all.shell(
             cmd=f"iconv -f {encoding} -t IBM-1047 \"{ds_full_name}\" > \"{ds_full_name}\" "
         )

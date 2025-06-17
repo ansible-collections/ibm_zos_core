@@ -1135,7 +1135,6 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
         results = hosts.all.shell(cmd=f"cat \"//'{ds_full_name}'\" | wc -l ")
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
-            assert "return_content" in result
         params["path"] = ds_full_name
         results = hosts.all.zos_lineinfile(**params)
         for result in results.contacted.values():

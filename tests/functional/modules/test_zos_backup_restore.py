@@ -1090,7 +1090,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
     managed_user_test_case_name = "managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user"
     try:
         # Initialize the Managed user API from the pytest fixture.
-        managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
+        managed_user = ManagedUser.fefrom_fixture(ansible_zos_module, z_python_interpreter)
 
         # Important: Execute the test case with the managed users execution utility.
         managed_user.execute_managed_user_test(

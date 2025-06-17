@@ -800,7 +800,7 @@ def main():
         result['stderr'] = str(stderr)
         result['rc'] = rc
     if 'backup_name' not in result:
-        result['backup_name'] = ""
+        result['backup_name'] = "target backup name not specified"
     module.exit_json(**result)
 
 

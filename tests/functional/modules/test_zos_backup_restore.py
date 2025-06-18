@@ -1087,7 +1087,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
     This tests the error message when a user cannot create data sets with a given HLQ.
     """
     managed_user = None
-    managed_user_test_case_name = "managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user"
+    managed_user_test_case_name = "managed_user_backup_of_data_set_tmphlq_restricted_user"
     try:
         # Initialize the Managed user API from the pytest fixture.
         managed_user = ManagedUser.from_fixture(ansible_zos_module, z_python_interpreter)
@@ -1101,7 +1101,7 @@ def test_list_cat_for_existing_data_set_with_tmp_hlq_option_restricted_user(ansi
         # Delete the managed user on the remote host to avoid proliferation of users.
         managed_user.delete_managed_user()
 
-def managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user(ansible_zos_module):
+def managed_user_backup_of_data_set_tmphlq_restricted_user(ansible_zos_module):
     backup_name = "DATA_SET"
     overwrite = True
     recover  = True
@@ -1129,22 +1129,10 @@ def managed_user_backup_and_restore_of_data_set_tmphlq_restricted_user(ansible_z
         )
         # NEW: Assert backup_name appears in output
         for result in results.contacted.values():
-            assert result.get("backup_name") == backup_name, \
-                f"Backup name '{backup_name}' not found in output"
-        # Verify backup file/dataset exists
-        assert_data_set_or_file_exists(hosts, backup_name)
-        results = hosts.all.zos_backup_restore(
-            operation="restore",
-            backup_name=backup_name,
-            hlq=new_hlq,
-            overwrite=overwrite,
-            tmp_hlq=tmphlq,
-        )
-        for result in results.contacted.values():
+            assert result.get("backup_name") == '', \
+                f"Backup name '{backup_name}' is there in output so tmphlq failed."
             print(result)
             assert result.get("ret_code", {}).get("code", -1) == 8
-            assert result.get("backup_name") == backup_name, \
-                "Backup name '{backup_name}' not found in restore output"
             assert result.get("changed", False) is False
             assert result.get("failed", False) is True
             

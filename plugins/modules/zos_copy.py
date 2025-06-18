@@ -3183,8 +3183,8 @@ def allocate_destination_data_set(
 
 
 def normalize_line_endings(src, encoding=None):
-    """Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
-    its line endings to LF.
+    """Normalizes src's encoding to UTF-8, then normalizes
+    its line endings to LF and after encodes back as per encoding param.
 
     Parameters
     ----------
@@ -3201,7 +3201,7 @@ def normalize_line_endings(src, encoding=None):
     # Before copying into a destination dataset, we'll make sure that
     # the source file doesn't contain any carriage returns that would
     # result in empty records in the destination.
-    # Due to the differences between encodings, we'll normalize to IBM-037
+    # Due to the differences between encodings, we'll normalize to UTF-8
     # before checking the EOL sequence.
     enc_utils = encode.EncodeUtils()
     src_tag = enc_utils.uss_file_tag(src)
@@ -3211,10 +3211,11 @@ def normalize_line_endings(src, encoding=None):
         # This should only be true when src is a remote file and no encoding
         # was specified by the user.
         if not encoding:
-            encoding = {"from": encode.Defaults.get_default_system_charset()}
-        src_tag = encoding["from"]
+            src_tag = encode.Defaults.get_default_system_charset()
+        else:
+            src_tag = encoding["to"]
 
-    if src_tag != "IBM-037":
+    if src_tag != "UTF-8":
         fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
         os.close(fd)
 
@@ -3222,13 +3223,26 @@ def normalize_line_endings(src, encoding=None):
             src,
             converted_src,
             src_tag,
-            "IBM-037"
+            "UTF-8"
         )
-        copy_handler._tag_file_encoding(converted_src, "IBM-037")
-        src = converted_src
+        copy_handler._tag_file_encoding(converted_src, "UTF-8")
+        src=converted_src
 
     if copy_handler.file_has_crlf_endings(src):
         src = copy_handler.create_temp_with_lf_endings(src)
+
+    if encoding["to"].upper() != "UTF-8":
+        fd, converted_source = tempfile.mkstemp(dir=os.environ['TMPDIR'])
+        os.close(fd)
+
+        enc_utils.uss_convert_encoding(
+            src,
+            converted_source,
+            "UTF-8",
+            encoding["to"]
+        )
+        copy_handler._tag_file_encoding(converted_src, encoding["to"])
+        src = converted_source
 
     return src
 
@@ -3346,6 +3360,13 @@ def run_module(module, arg_def):
     # Verify the validity of module args. BetterArgParser raises ValueError
     # when a parameter fails its validation check
     # ********************************************************************
+    originalsrc = module.params.get('src')
+    originaldest = module.params.get('dest')
+    # Replacing pound with dollar in src and dest if exists
+    if "£" in module.params["src"]:
+        module.params["src"] = module.params["src"].replace("£", "$")
+    if "£" in module.params["dest"]:
+        module.params["dest"] = module.params["dest"].replace("£", "$")
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
         parser.parse_args(module.params)
@@ -3952,8 +3973,8 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=module.params.get('src') if is_src_alias else src,
-            dest=module.params.get('dest') if is_dest_alias else dest,
+            src=originalsrc,
+            dest=originaldest,
             ds_type=dest_ds_type,
             dest_exists=dest_exists,
             backup_name=backup_name,

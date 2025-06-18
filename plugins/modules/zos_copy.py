@@ -3362,10 +3362,14 @@ def run_module(module, arg_def):
     # ********************************************************************
     originalsrc = module.params.get('src')
     originaldest = module.params.get('dest')
+    issrcpoundexists = False
+    isdestpoundexists = False
     # Replacing pound with dollar in src and dest if exists
     if "£" in module.params["src"]:
+        issrcpoundexists = True
         module.params["src"] = module.params["src"].replace("£", "$")
     if "£" in module.params["dest"]:
+        isdestpoundexists = True
         module.params["dest"] = module.params["dest"].replace("£", "$")
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
@@ -3973,8 +3977,8 @@ def run_module(module, arg_def):
 
     res_args.update(
         dict(
-            src=originalsrc,
-            dest=originaldest,
+            src=originalsrc if issrcpoundexists or is_src_alias else src,
+            dest=originaldest if isdestpoundexists or is_dest_alias else dest,
             ds_type=dest_ds_type,
             dest_exists=dest_exists,
             backup_name=backup_name,

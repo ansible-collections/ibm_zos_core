@@ -3143,8 +3143,12 @@ def temp_member_name():
     first_char_set = ascii_uppercase + "#@$"
     rest_char_set = ascii_uppercase + digits + "#@$"
     # using sample as k=1 and k=7 to avoid using random.choice just for oneline import
-    temp_name = sample(first_char_set, k=1)
-    temp_name += sample(rest_char_set, k=7)
+    # Issue: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
+    # Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+    # Ignoring this bandit blacklisted issue because we are not using this pseudo-random generator for
+    # SECURITY/CRYPTOGRAPHIC purposes but rather a random sample of characters for a random name generator.
+    temp_name = sample(first_char_set, k=1)  # nosec B311
+    temp_name += sample(rest_char_set, k=7)  # nosec B311
     temp_name = "".join(temp_name)
     return temp_name
 

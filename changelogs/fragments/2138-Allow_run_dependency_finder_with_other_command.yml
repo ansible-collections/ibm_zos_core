@@ -1,0 +1,3 @@
+trivial:
+   - test/dependencyfinder.py - Updated use of git command to run a base command of git library.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2138)

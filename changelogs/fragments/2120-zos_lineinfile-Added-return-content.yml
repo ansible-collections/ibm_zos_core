@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_lineinfile - Return values ``return_content`` and ``backup_name`` were not always being returned. 
+    Fix now ensure that these values are always present in the module's response.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2120)

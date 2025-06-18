@@ -3226,7 +3226,7 @@ def normalize_line_endings(src, encoding=None):
             "UTF-8"
         )
         copy_handler._tag_file_encoding(converted_src, "UTF-8")
-        src=converted_src
+        src = converted_src
         is_convertedto_utf8 = True
 
     if copy_handler.file_has_crlf_endings(src):

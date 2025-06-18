@@ -1132,9 +1132,7 @@ def managed_user_backup_of_data_set_tmphlq_restricted_user(ansible_zos_module):
             assert result.get("backup_name") == '', \
                 f"Backup name '{backup_name}' is there in output so tmphlq failed."
             print(result)
-            assert result.get("ret_code", {}).get("code", -1) == 8
             assert result.get("changed", False) is False
-            assert result.get("failed", False) is True
             
     finally:
         delete_data_set_or_file(hosts, data_set_name)

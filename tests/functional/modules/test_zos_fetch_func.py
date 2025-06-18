@@ -1080,10 +1080,10 @@ def managed_user_limited_become_method(get_config_for_become, get_config_raw, ca
         method = get_config_for_become["method"]
         promp = get_config_for_become["promp"]
         password = get_config_for_become["key"]
-        ssh_key = get_config_for_become["ssh_key"]
 
         # Get values from the new configuration file
         configuration = json.loads(get_config_raw)
+        ssh_key = configuration["ssh_key"]
         hosts = configuration["host"]
         user = configuration["user"]
         python_path = configuration["python_interpreter"]

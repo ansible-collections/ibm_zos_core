@@ -192,7 +192,7 @@ class ManagedUser:
 
         # TODO: To make this dynamic, we need to update AC and then also test with the new fixture because
         # the legacy fixture is using a VOLUMES keyword while raw fixture uses extra_args. Best to move
-        # volumes to extra_args. 
+        # volumes to extra_args.
         volumes = "000000,222222"
         hostpattern = pytest_module_fixture["options"]["host_pattern"]
         return cls(model_user, remote_host, zoau_path, pyz_path, pythonpath, volumes, python_interpreter, hostpattern)
@@ -489,12 +489,15 @@ class ManagedUser:
         capture = " -s"
         verbosity = " -vvvv"
 
+        escaped_user = re.escape(self._managed_racf_user)
+
         inventory: dict [str, str] = {}
         inventory.update({'host': self._remote_host})
         inventory.update({'user': self._managed_racf_user})
         inventory.update({'zoau': self._zoau_path})  # get this from fixture
         inventory.update({'pyz': self._pyz_path})    # get this from fixture
         inventory.update({'python_interpreter': self._python_interpreter})    # get this from fixture
+        inventory.update({'ssh_key': f"/tmp/{escaped_user}/id_rsa"})
         extra_args = {}
         extra_args.update({'extra_args':{'volumes':self._volumes.split(",")}}) # get this from fixture
         inventory.update(extra_args)
@@ -506,9 +509,8 @@ class ManagedUser:
         method = become_method["method"]
         promp = become_method["promp"]
         key = become_method["key"]
-        ssh_key = become_method["ssh_key"]
         # Carefully crafted 'pytest' command to be allow for it to be called from anther test driven by pytest and uses the zinventory-raw fixture.
-        pytest_cmd = f"""pytest {testcase} --override-ini "python_functions=managed_user_" --host-pattern={self._hostpattern}{capture if debug else ""}{verbosity if verbose else ""} --zinventory-raw='{node_inventory}' --user_adm {user} --user_method {method} --ansible_promp '{promp}' --password {key} --ssh_key '{ssh_key}'"""
+        pytest_cmd = f"""pytest {testcase} --override-ini "python_functions=managed_user_" --host-pattern={self._hostpattern}{capture if debug else ""}{verbosity if verbose else ""} --zinventory-raw='{node_inventory}' --user_adm {user} --user_method {method} --ansible_promp '{promp}' --password {key}"""
         result = subprocess.run(pytest_cmd, capture_output=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
         if result.returncode != 0:
              raise Exception(result.stdout + result.stderr)

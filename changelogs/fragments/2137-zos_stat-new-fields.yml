@@ -1,0 +1,8 @@
+minor_changes:
+  - zos_stat - Adds new fields that describe the type of the resource
+    that was queried. These new fields are `isfile`, `isdataset`,
+    `isaggregate` and `isgdg`.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2137)
+  - zos_stat - Module now returns whether the resource queried exists
+    on the managed node with the `exists` field inside `stat`.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2137)

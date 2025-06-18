@@ -1471,7 +1471,7 @@ class CopyHandler(object):
             content = src_file.read(1024)
 
             while content:
-                # In EBCDIC, \r is bytes 0d
+                # In UTF-8, \r is bytes 0d
                 if b'\x0d' in content:
                     return True
                 content = src_file.read(1024)

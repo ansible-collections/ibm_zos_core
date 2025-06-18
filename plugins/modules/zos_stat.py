@@ -242,6 +242,31 @@ stat:
       returned: success
       type: str
       sample: data_set
+    exists:
+      description: Whether name was found on the managed node.
+      returned: success
+      type: bool
+      sample: true
+    isfile:
+      description: Whether name is a Unix System Services file.
+      returned: success
+      type: bool
+      sample: true
+    isdataset:
+      description: Whether name is a data set.
+      returned: success
+      type: bool
+      sample: true
+    isaggregate:
+      description: Whether name is an aggregate.
+      returned: success
+      type: bool
+      sample: true
+    isgdg:
+      description: Whether name is a Generation Data Group.
+      returned: success
+      type: bool
+      sample: true
     attributes:
       description: Dictionary containing all the stat data.
       returned: success
@@ -1131,6 +1156,10 @@ class AggregateHandler(FactsHandler):
             attributes = {
                 'name': self.name,
                 'resource_type': 'aggregate',
+                'isfile': False,
+                'isdataset': False,
+                'isaggregate': True,
+                'isgdg': False,
                 'attributes': {
                     'total_size': int(size_search.group(3)),
                     'free': int(size_search.group(1)),
@@ -1253,6 +1282,10 @@ class FileHandler(FactsHandler):
             attributes = {
                 'name': self.name,
                 'resource_type': 'file',
+                'isfile': True,
+                'isdataset': False,
+                'isaggregate': False,
+                'isgdg': False,
                 'attributes': {
                     'mode': "%04o" % stat.S_IMODE(mode),
                     'atime': raw_attributes.st_atime,
@@ -1456,6 +1489,10 @@ class DataSetHandler(FactsHandler):
         """
         data = {
             'resource_type': 'data_set',
+            'isfile': False,
+            'isdataset': True,
+            'isaggregate': False,
+            'isgdg': False,
             'name': self.alias if self.alias else self.name
         }
         return data
@@ -2181,7 +2218,11 @@ class GenerationDataGroupHandler(DataSetHandler):
         a GDG's attributes and current active generations."""
         data = {
             'resource_type': 'gdg',
-            'name': self.name
+            'name': self.name,
+            'isfile': False,
+            'isdataset': False,
+            'isaggregate': False,
+            'isgdg': True
         }
 
         attributes = {
@@ -2612,8 +2653,13 @@ def run_module():
     result = {}
 
     if not facts_handler.exists():
-        result['msg'] = f'{name} could not be found on the system.'
-        module.fail_json(**result)
+        result['stat'] = {
+            'name': name,
+            'resource_type': resource_type,
+            'exists': False
+        }
+        result['changed'] = False
+        module.exit_json(**result)
 
     try:
         data = facts_handler.query()
@@ -2632,6 +2678,7 @@ def run_module():
 
     result['stat'] = fill_return_json(data)
     result['changed'] = True
+    result['stat']['exists'] = True
     if notes:
         result['notes'] = notes
 

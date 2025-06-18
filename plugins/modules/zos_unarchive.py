@@ -342,6 +342,12 @@ options:
           - The destination I(dest) character set for the files to be written as.
         required: false
         type: str
+      skip_encoding:
+        description:
+          - List of names to skip encoding after unarchiving. This is only used if I(encoding) is set, otherwise is ignored.
+        required: false
+        type: list
+        elements: str
 attributes:
   action:
     support: full
@@ -419,6 +425,17 @@ EXAMPLES = r'''
     encoding:
       from: IBM-1047
       to: ISO8859-1
+
+- name: Encode the destination data set into Latin-1 after unarchiving.
+  zos_unarchive:
+    src: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
+      skip_encoding:
+        - USER.ARCHIVE.TEST1
 '''
 
 RETURN = r'''
@@ -453,7 +470,11 @@ failed_on_encoding:
       List of files or data sets that were failed while encoding.
     type: list
     returned: success
-
+skipped_encoding_targets:
+    description:
+      List of files or data sets that were skipped while encoding.
+    type: list
+    returned: success
 '''
 
 import abc
@@ -525,6 +546,8 @@ class Unarchive():
             The encoding of the source file.
         to_encoding: str
             The required encoding of the destination file.
+        skip_encoding : list[str]
+            List of paths to exclude in encoding.
         """
         self.module = module
         self.src = module.params.get("src")
@@ -547,6 +570,8 @@ class Unarchive():
             self.dest = os.path.dirname(self.src)
         self.encoded = list()
         self.failed_on_encoding = list()
+        self.skip_encoding = encoding_param.get("skip_encoding")
+        self.skipped_encoding_targets = list()
 
     @abc.abstractmethod
     def extract_src(self):
@@ -591,6 +616,17 @@ class Unarchive():
             file_args = self.module.load_file_common_arguments(self.module.params, path=file_name)
             self.module.set_fs_attributes_if_different(file_args, self.changed)
 
+    def encoding_targets(self):
+        """Finds encoding target files in host.
+        """
+        if self.skip_encoding:
+            self.encode_targets = [
+                path for path in self.targets if path not in self.skip_encoding
+            ]
+            self.skipped_encoding_targets = self.skip_encoding
+        else:
+            self.encode_targets = self.targets
+
     def encode_destination(self):
         """Convert encoding for given destination
         Returns
@@ -602,7 +638,7 @@ class Unarchive():
         self.encoded = []
         self.failed_on_encoding = []
 
-        for target in self.targets:
+        for target in self.encode_targets:
             try:
                 file_path = os.path.normpath(os.path.join(self.dest, target))
                 convert_rc = enc_utils.uss_convert_encoding_prev(
@@ -617,7 +653,8 @@ class Unarchive():
 
         return {
             "encoded": self.encoded,
-            "failed_on_encoding": self.failed_on_encoding
+            "failed_on_encoding": self.failed_on_encoding,
+            "skipped_encoding_targets": self.skipped_encoding_targets
         }
 
     @property
@@ -636,6 +673,7 @@ class Unarchive():
             'missing': self.missing,
             'encoded': getattr(self, 'encoded', []),
             'failed_on_encoding': getattr(self, 'failed_on_encoding', []),
+            'skipped_encoding_targets' : getattr(self, 'skipped_encoding_targets', []),
         }
 
     def extract_all(self, members):
@@ -1201,6 +1239,17 @@ class MVSUnarchive(Unarchive):
             for target in self.targets:
                 data_set.DataSet.ensure_absent(target)
 
+    def encoding_targets(self):
+        """Finds encoding target datasets in host.
+        """
+        if self.skip_encoding:
+            self.encode_targets = [
+                path for path in self.targets if path not in self.skip_encoding
+            ]
+            self.skipped_encoding_targets = self.skip_encoding
+        else:
+            self.encode_targets = self.targets
+
     def encode_destination(self):
         """Convert encoding for given destination
         Returns
@@ -1212,7 +1261,7 @@ class MVSUnarchive(Unarchive):
         self.encoded = []
         self.failed_on_encoding = []
 
-        for target in self.targets:
+        for target in self.encode_targets:
             try:
                 ds_utils = data_set.DataSetUtils(target, tmphlq=self.tmphlq)
                 ds_type = ds_utils.ds_type()
@@ -1232,7 +1281,8 @@ class MVSUnarchive(Unarchive):
                 self.failed_on_encoding.append(os.path.abspath(target))
         return {
             "encoded": self.encoded,
-            "failed_on_encoding": self.failed_on_encoding
+            "failed_on_encoding": self.failed_on_encoding,
+            "skipped_encoding_targets": self.skipped_encoding_targets
         }
 
 
@@ -1623,6 +1673,11 @@ def run_module():
                     "to": dict(
                         type='str',
                         required=False,
+                    ),
+                    "skip_encoding": dict(
+                        type='list',
+                        elements='str',
+                        required=False,
                     )
                 }
             ),
@@ -1706,7 +1761,8 @@ def run_module():
             type='dict',
             options={
                 'from' : dict(type='str'),
-                "to" : dict(type='str')
+                'to' : dict(type='str'),
+                'skip_encoding' : dict(type='list', elements='str', required=False),
             }
         ),
     )
@@ -1733,10 +1789,12 @@ def run_module():
 
     encoding = parsed_args.get("encoding")
     if unarchive.dest_unarchived() and encoding:
+        unarchive.encoding_targets()
         encoding_result = unarchive.encode_destination()
         unarchive.result.update({
             "encoded": encoding_result.get("encoded", []),
-            "failed_on_encoding": encoding_result.get("failed_on_encoding", [])
+            "failed_on_encoding": encoding_result.get("failed_on_encoding", []),
+            "skipped_encoding_targets": encoding_result.get("skipped_encoding_targets", [])
         })
 
     module.exit_json(**unarchive.result)

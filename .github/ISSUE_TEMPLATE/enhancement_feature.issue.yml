@@ -47,7 +47,9 @@ body:
         - zos_operator
         - zos_operator_action_query
         - zos_ping
+        - zos_replace
         - zos_script
+        - zos_stat
         - zos_tso_command
         - zos_unarchive
         - zos_volume_init

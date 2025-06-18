@@ -545,8 +545,9 @@ def get_changed_plugins(path, branch="origin/dev"):
     current_branch_name = current_branch_name.rstrip()
 
     branch = branch.rstrip()
+    diff_branches = f"{branch}..{current_branch_name}"
     get_diff_pr = subprocess.Popen(
-        ["git", "request-pull", branch, "git@github.com:ansible-collections/ibm_zos_core.git", current_branch_name],
+        ["git", "diff", "--name-status", diff_branches],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=path,

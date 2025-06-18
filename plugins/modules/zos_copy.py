@@ -3214,7 +3214,7 @@ def normalize_line_endings(src, encoding=None):
             src_tag = encode.Defaults.get_default_system_charset()
         else:
             src_tag = encoding["to"]
-
+    is_convertedto_utf8 = False
     if src_tag != "UTF-8":
         fd, converted_src = tempfile.mkstemp(dir=os.environ['TMPDIR'])
         os.close(fd)
@@ -3227,11 +3227,12 @@ def normalize_line_endings(src, encoding=None):
         )
         copy_handler._tag_file_encoding(converted_src, "UTF-8")
         src=converted_src
+        is_convertedto_utf8 = True
 
     if copy_handler.file_has_crlf_endings(src):
         src = copy_handler.create_temp_with_lf_endings(src)
 
-    if encoding["to"].upper() != "UTF-8":
+    if is_convertedto_utf8:
         fd, converted_source = tempfile.mkstemp(dir=os.environ['TMPDIR'])
         os.close(fd)
 
@@ -3239,9 +3240,9 @@ def normalize_line_endings(src, encoding=None):
             src,
             converted_source,
             "UTF-8",
-            encoding["to"]
+            src_tag
         )
-        copy_handler._tag_file_encoding(converted_src, encoding["to"])
+        copy_handler._tag_file_encoding(converted_src, src_tag)
         src = converted_source
 
     return src

@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_archive - Adds support for skipping encoding in archive module.
+    This allows users to skip encoding for certain files before archiving them.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2116)

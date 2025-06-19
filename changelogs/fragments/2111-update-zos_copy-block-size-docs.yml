@@ -1,0 +1,4 @@
+trivial:
+   - zos_copy - Updated module documentation to reflect that binary destination data sets
+     get allocated with a block size of 32720, instead of 32760.
+     (https://github.com/ansible-collections/ibm_zos_core/pull/2111)

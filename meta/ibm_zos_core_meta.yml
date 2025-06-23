@@ -3,7 +3,7 @@ version: "1.14.0"
 managed_requirements:
     -
         name: "IBM Open Enterprise SDK for Python"
-        version: ">=3.11"
+        version: ">=3.12"
     -
         name: "Z Open Automation Utilities"
         version:

@@ -3082,8 +3082,8 @@ def temp_member_name():
     first_char_set = ascii_uppercase + "#@$"
     rest_char_set = ascii_uppercase + digits + "#@$"
     # using sample as k=1 and k=7 to avoid using random.choice just for oneline import
-    temp_name = sample(first_char_set, k=1)
-    temp_name += sample(rest_char_set, k=7)
+    temp_name = sample(first_char_set, k=1)  # nosec B311
+    temp_name += sample(rest_char_set, k=7)  # nosec B311
     temp_name = "".join(temp_name)
     return temp_name
 

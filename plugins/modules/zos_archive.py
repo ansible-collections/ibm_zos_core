@@ -333,7 +333,7 @@ options:
         type: str
       skip_encoding:
         description:
-          - List of names to skip encoding before archiving. This is only used if I(encoding) is set, otherwise is ignored.
+          - List of names to skip encoding before archiving. This is only used if I(Encoding) is set, otherwise is ignored.
         required: false
         type: list
         elements: str
@@ -780,6 +780,10 @@ class Archive():
     def encode_source(self):
         pass
 
+    @abc.abstractmethod
+    def revert_encoding(self):
+        pass
+
     @property
     def result(self):
         """Returns a dict with the results.
@@ -1045,6 +1049,22 @@ class USSArchive(Archive):
             "skipped_encoding_targets": self.skipped_encoding_targets
         }
 
+    def revert_encoding(self):
+        """Revert src encoding to original
+        """
+        enc_utils = encode.EncodeUtils()
+
+        for target in self.encoded:
+            try:
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    target, target, self.to_encoding, self.from_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(target, self.from_encoding)
+
+            except Exception as e:
+                warning_message = f"Failed to revert source file to original encoding for {os.path.abspath(target)}."
+                raise EncodeError(warning_message) from e
 
 class TarArchive(USSArchive):
     def __init__(self, module):
@@ -1555,6 +1575,28 @@ class MVSArchive(Archive):
             "skipped_encoding_targets": self.skipped_encoding_targets
         }
 
+    def revert_encoding(self):
+        """Revert src encoding to original
+        """
+        enc_utils = encode.EncodeUtils()
+
+        for target in self.encoded:
+            try:
+                ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
+                if not ds_type:
+                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                enc_utils.mvs_convert_encoding(
+                    target,
+                    target,
+                    self.to_encoding,
+                    self.from_encoding,
+                    src_type=ds_type,
+                    dest_type=ds_type,
+                    tmphlq=self.tmphlq
+                )
+            except Exception as e:
+                warning_message = f"Failed to revert source file to original encoding for {os.path.abspath(target)}."
+                raise EncodeError(warning_message) from e
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
@@ -2015,6 +2057,7 @@ def run_module():
 
     archive.find_targets()
     if archive.targets_exist():
+        # encoding the source if encoding is provided.
         if encoding:
             archive.encoding_targets()
             encoding_result = archive.encode_source()
@@ -2031,6 +2074,9 @@ def run_module():
         if archive.dest_type() == "USS":
             archive.update_permissions()
         archive.changed = archive.is_different_from_original()
+        # after successful archive revert the source encoding for all the files encoded.
+        if encoding_result:
+            archive.revert_encoding()
     archive.get_state()
 
     module.exit_json(**archive.result)

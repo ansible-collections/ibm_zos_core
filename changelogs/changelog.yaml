@@ -679,6 +679,29 @@ releases:
       name: zos_zfs_resize
       namespace: ''
     release_date: '2025-01-30'
+  1.14.0:
+    changes:
+      bugfixes:
+      - zos_copy - Previously, when trying to copy into remote and ansible's default
+        temporary directory was not created before execution the copy task would fail.
+        Fix now creates the temporary directory if possible. (https://github.com/ansible-collections/ibm_zos_core/pull/2109)
+      - zos_job_submit - Previously, the use of `become` would result in a permissions
+        error while trying to execute a job from a local file. Fix now allows a user
+        to escalate privileges when executing a job transferred from the controller
+        node. (https://github.com/ansible-collections/ibm_zos_core/pull/2109)
+      release_summary: 'Release Date: ''2025-06-30''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__'
+    fragments:
+    - 2109-copy-fix-tmp-dir.yml
+    - v1.14.0_summary.yml
+    release_date: '2025-06-24'
   1.14.0-beta.1:
     changes:
       bugfixes:

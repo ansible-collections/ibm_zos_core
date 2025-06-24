@@ -4,13 +4,13 @@ ibm.ibm\_zos\_core Release Notes
 
 .. contents:: Topics
 
-v1.14.0-beta.1
-==============
+v1.14.0
+=======
 
 Release Summary
 ---------------
 
-Release Date: '2025-04-30'
+Release Date: '2025-06-30'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
@@ -43,12 +43,14 @@ Bugfixes
 
 - zos_apf - When trying to add a library into the APF list that was already added, the module would fail. Fix now will not fail the module, and will inform the user that the library is already on the APF list. (https://github.com/ansible-collections/ibm_zos_core/pull/1893)
 - zos_copy - Previously, if the dataset name included special characters such as $, validation would fail when force_lock was false. This has been changed to allow the use of special characters when force_lock option is false. (https://github.com/ansible-collections/ibm_zos_core/pull/1908)
+- zos_copy - Previously, when trying to copy into remote and ansible's default temporary directory was not created before execution the copy task would fail. Fix now creates the temporary directory if possible. (https://github.com/ansible-collections/ibm_zos_core/pull/2109)
 - zos_copy - When ``asa_text`` was set to true at the same time as ``force_lock``, a copy would fail saying the destination was already in use. Fix now opens destination data sets up with disposition SHR when ``force_lock`` and ``asa_text`` are set to true. (https://github.com/ansible-collections/ibm_zos_core/pull/1941).
 - zos_copy - the carriage return characters were being removed from only first 1024 bytes of a file. Now fixed that issue to support removal of the carriage return characters from the complete file content if the file size is more than 1024 bytes. (https://github.com/ansible-collections/ibm_zos_core/pull/1954).
 - zos_data_set - Module would fail when trying to delete a non-existent Generation Data Group. Fix now provides a successful response with `changed=false`. (https://github.com/ansible-collections/ibm_zos_core/pull/1971).
 - zos_data_set - Module would fail with TypeError when trying to replace an existing GDG. Fix now allows to replacing a GDG. (https://github.com/ansible-collections/ibm_zos_core/pull/1964).
 - zos_job_output - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise. (https://github.com/ansible-collections/ibm_zos_core/pull/1916).
 - zos_job_query - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise. (https://github.com/ansible-collections/ibm_zos_core/pull/1916).
+- zos_job_submit - Previously, the use of `become` would result in a permissions error while trying to execute a job from a local file. Fix now allows a user to escalate privileges when executing a job transferred from the controller node. (https://github.com/ansible-collections/ibm_zos_core/pull/2109)
 - zos_job_submit - When searching for a job name, module performed a '*' (find all), then filtered the results. Fix now asks for specific job name, making the return faster and more precise. (https://github.com/ansible-collections/ibm_zos_core/pull/1916).
 - zos_mount - Module failed when using persistent option with a data set that contains non UTF-8 characters. Fix now can use a data set with non UTF-8 characters as data_store. (https://github.com/ansible-collections/ibm_zos_core/pull/1871).
 

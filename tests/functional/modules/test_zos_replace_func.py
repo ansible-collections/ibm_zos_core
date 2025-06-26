@@ -37,7 +37,7 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
 
-TEST_DISABLE_REGEX_CONTENT = """IEE131I TRACE REPORT:
+TEST_LITERAL_CONTENT = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
    STEP2 - IO UTILIZATION 60%
    STEP3 - CPU TIME 5.4 SEC
@@ -198,7 +198,7 @@ export ZOAU_ROOT
 TYPE('ZFS')
 SECURITY"""
 
-TEST_DISABLE_REGEX_CONTENT_AFTER="""IEE131I TRACE REPORT:
+TEST_LITERAL_CONTENT_AFTER="""IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
    STEP2 - IO UTILIZATION 60%
    STEP3 - CPU TIME 5.4 SEC
@@ -211,7 +211,7 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
  JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_DISABLE_REGEX_CONTENT_BEFORE = """IEE131I TRACE REPORT:
+TEST_LITERAL_CONTENT_BEFORE = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
    STEP2 - IO UTILIZATION 60%
    STEP3 - CPU TIME 5.4 SEC
@@ -224,7 +224,7 @@ IEE134I TRACE DISABLED - MONITORING STOPPED
 IEF456I JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_DISABLE_REGEX_CONTENT_REGEXP = """IEE131I TRACE REPORT:
+TEST_LITERAL_CONTENT_REGEXP = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
    STEP2 - IO UTILIZATION 60%
    STEP3 - CPU TIME 5.4 SEC
@@ -236,7 +236,7 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
 IEF456I JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_DISABLE_REGEX_CONTENT_BEFORE_AFTER="""IEE131I TRACE REPORT:
+TEST_LITERAL_CONTENT_BEFORE_AFTER="""IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
    STEP2 - IO UTILIZATION 60%
    STEP3 - CPU TIME 5.4 SEC
@@ -249,7 +249,7 @@ IEF479I SYSTEM RESOURCES DEALLOCATED - MEMORY FREED
 JOB56789 CANCELLED SUCCESSFULLY - TIME=17.24.12
 IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED"""
 
-TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP = """IEE131I TRACE REPORT:
+TEST_LITERAL_CONTENT_AFTER_REGEXP = """IEE131I TRACE REPORT:
    STEP1 - MEMORY USAGE 85%
    STEP2 - IO UTILIZATION 60%
    STEP3 - CPU TIME 5.4 SEC
@@ -670,16 +670,16 @@ def test_uss_backup_name(ansible_zos_module):
         remove_uss_environment(ansible_zos_module, full_path)
         remove_uss_environment(ansible_zos_module, uss_backup_file)
 
-def test_uss_after_disable_regex(ansible_zos_module):
+def test_uss_after_literal(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = ["after"]
+    literal = ["after"]
     params = {
         "regexp":"IEF456I",
         "after":"IEF479I SYSTEM RESOURCES DEALLOCATED",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
@@ -690,20 +690,20 @@ def test_uss_after_disable_regex(ansible_zos_module):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_before_disable_regex(ansible_zos_module):
+def test_uss_before_literal(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = ["before"]
+    literal = ["before"]
     params = {
         "regexp":"IEF479I",
         "before":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
@@ -714,19 +714,19 @@ def test_uss_before_disable_regex(ansible_zos_module):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_BEFORE
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_regexp_disable_regex(ansible_zos_module):
+def test_uss_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = ["regexp"]
+    literal = ["regexp"]
     params = {
         "regexp":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
@@ -737,21 +737,21 @@ def test_uss_regexp_disable_regex(ansible_zos_module):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_after_before_disable_regex(ansible_zos_module):
+def test_uss_after_before_literal(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = ["after", "before"]
+    literal = ["after", "before"]
     params = {
         "regexp":"^IEF456I *",
         "after":"*CANCEL JOB56789",
         "before":"IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
@@ -762,20 +762,20 @@ def test_uss_after_before_disable_regex(ansible_zos_module):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_BEFORE_AFTER
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE_AFTER
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_after_regexp_disable_regex(ansible_zos_module):
+def test_uss_after_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = ["after", "regexp"]
+    literal = ["after", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
         "after":"   STEP3 - CPU TIME 5.4 SEC",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
@@ -786,20 +786,20 @@ def test_uss_after_regexp_disable_regex(ansible_zos_module):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_before_regexp_disable_regex(ansible_zos_module):
+def test_uss_before_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = ["before", "regexp"]
+    literal = ["before", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
         "before":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
@@ -810,21 +810,21 @@ def test_uss_before_regexp_disable_regex(ansible_zos_module):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_uss_before_after_regexp_disable_regex(ansible_zos_module):
+def test_uss_before_after_regexp_literal(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = ["after", "before", "regexp"]
+    literal = ["after", "before", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
         "before":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
         "after":"*TRACE OFF",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         set_uss_environment(ansible_zos_module, content, full_path)
         params["target"] = full_path
@@ -835,7 +835,7 @@ def test_uss_before_after_regexp_disable_regex(ansible_zos_module):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
@@ -1235,18 +1235,18 @@ def test_ds_after_before_replace_line(ansible_zos_module, dstype):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_after_disable_regex(ansible_zos_module, dstype):
+def test_ds_after_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    disable_regex = ["after"]
+    literal = ["after"]
     params = {
         "regexp":"IEF456I",
         "after":"IEF479I SYSTEM RESOURCES DEALLOCATED",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["target"] = ds_full_name
@@ -1257,24 +1257,24 @@ def test_ds_after_disable_regex(ansible_zos_module, dstype):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_before_disable_regex(ansible_zos_module, dstype):
+def test_ds_before_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    disable_regex = ["before"]
+    literal = ["before"]
     params = {
         "regexp":"IEF479I",
         "before":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["target"] = ds_full_name
@@ -1285,23 +1285,23 @@ def test_ds_before_disable_regex(ansible_zos_module, dstype):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_BEFORE
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_before_disable_regex(ansible_zos_module, dstype):
+def test_ds_before_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    disable_regex = ["regexp"]
+    literal = ["regexp"]
     params = {
         "regexp":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["target"] = ds_full_name
@@ -1312,25 +1312,25 @@ def test_ds_before_disable_regex(ansible_zos_module, dstype):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_REGEXP
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_after_before_disable_regex(ansible_zos_module, dstype):
+def test_ds_after_before_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    disable_regex = ["after", "before"]
+    literal = ["after", "before"]
     params = {
         "regexp":"^IEF456I *",
         "after":"*CANCEL JOB56789",
         "before":"IEA999I SYSTEM IDLE - NO ACTIVE JOBS DETECTED",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["target"] = ds_full_name
@@ -1341,24 +1341,24 @@ def test_ds_after_before_disable_regex(ansible_zos_module, dstype):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_BEFORE_AFTER
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_BEFORE_AFTER
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_after_regexp_disable_regex(ansible_zos_module, dstype):
+def test_ds_after_regexp_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    disable_regex = ["after", "regexp"]
+    literal = ["after", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
         "after":"   STEP3 - CPU TIME 5.4 SEC",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["target"] = ds_full_name
@@ -1369,24 +1369,24 @@ def test_ds_after_regexp_disable_regex(ansible_zos_module, dstype):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_before_regexp_disable_regex(ansible_zos_module, dstype):
+def test_ds_before_regexp_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    disable_regex = ["before", "regexp"]
+    literal = ["before", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
         "before":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["target"] = ds_full_name
@@ -1397,25 +1397,25 @@ def test_ds_before_regexp_disable_regex(ansible_zos_module, dstype):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_before_after_regexp_disable_regex(ansible_zos_module, dstype):
+def test_ds_before_after_regexp_literal(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    disable_regex = ["after", "before", "regexp"]
+    literal = ["after", "before", "regexp"]
     params = {
         "regexp":"*DEALLOC SYSRES",
         "before":"//*SMPTLIB  DD UNIT=SYSALLDA,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv",
         "after":"*TRACE OFF",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     ds_name = get_tmp_ds_name()
     temp_file = get_random_file_name(dir=TMP_DIRECTORY)
-    content = TEST_DISABLE_REGEX_CONTENT
+    content = TEST_LITERAL_CONTENT
     try:
         ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
         params["target"] = ds_full_name
@@ -1426,7 +1426,7 @@ def test_ds_before_after_regexp_disable_regex(ansible_zos_module, dstype):
             assert result.get("found") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["target"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == TEST_DISABLE_REGEX_CONTENT_AFTER_REGEXP
+            assert result.get("stdout") == TEST_LITERAL_CONTENT_AFTER_REGEXP
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1763,12 +1763,12 @@ def test_no_match_found(ansible_zos_module):
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_bad_use_after_disable_regexp(ansible_zos_module):
+def test_bad_use_after_literalp(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = "after"
+    literal = "after"
     params = {
         "regexp":"ZOAU_ROOT",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
@@ -1780,16 +1780,16 @@ def test_bad_use_after_disable_regexp(ansible_zos_module):
             assert result.get("failed") == True
             assert result.get("target") == full_path
             assert result.get("changed") == False
-            assert result.get("msg") == "Use of disable_regex requires the use of the after option too."
+            assert result.get("msg") == "Use of literal requires the use of the after option too."
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
 
-def test_bad_use_before_disable_regexp(ansible_zos_module):
+def test_bad_use_before_literalp(ansible_zos_module):
     hosts = ansible_zos_module
-    disable_regex = "before"
+    literal = "before"
     params = {
         "regexp":"ZOAU_ROOT",
-        "disable_regex":disable_regex,
+        "literal":literal,
     }
     full_path = get_random_file_name(dir=TMP_DIRECTORY)
     content = TEST_CONTENT
@@ -1801,6 +1801,6 @@ def test_bad_use_before_disable_regexp(ansible_zos_module):
             assert result.get("failed") == True
             assert result.get("target") == full_path
             assert result.get("changed") == False
-            assert result.get("msg") == "Use of disable_regex requires the use of the before option too."
+            assert result.get("msg") == "Use of literal requires the use of the before option too."
     finally:
         remove_uss_environment(ansible_zos_module, full_path)

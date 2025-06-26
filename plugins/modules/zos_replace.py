@@ -78,7 +78,7 @@ options:
     required: false
     type: str
     default: IBM-1047
-  disable_regex:
+  literal:
     description:
       - A list or string that allows the user to specify choices "before", "after", or "regexp" as regular strings instead of regex patterns.
     required: false
@@ -137,7 +137,7 @@ EXAMPLES = r"""
     regexp: //*LIB  DD UNIT=SYS,SPACE=(TRK,(1,1)),VOL=SER=vvvvvv
     replace: //*LIB  DD UNIT=SYS,SPACE=(CYL,(1,1))
     after: '^\$source base \([^\s]+\)'
-    disable_regex: regexp
+    literal: regexp
 
 - name: Replace a specific line before a specific sentence with backup
   zos_replace:
@@ -145,7 +145,7 @@ EXAMPLES = r"""
     backup: true
     regexp: //SYSPRINT DD SYSOUT=*
     before: SAMPLES OUTPUT SYSIN *=$DSN
-    disable_regex:
+    literal:
       - regexp
       - before
 
@@ -564,7 +564,7 @@ def run_module():
             encoding=dict(type='str', default='IBM-1047', required=False),
             target=dict(type="str", required=True, aliases=['src', 'path', 'destfile']),
             tmp_hlq=dict(type='str', required=False, default=None),
-            disable_regex=dict(type="raw", required=False, default=None),
+            literal=dict(type="raw", required=False, default=None),
             regexp=dict(type="str", required=True),
             replace=dict(type='str', default=""),
         ),
@@ -578,7 +578,7 @@ def run_module():
         encoding=dict(type='str', default='IBM-1047', required=False),
         target=dict(type="data_set_or_path", required=True, aliases=['src', 'path', 'destfile']),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
-        disable_regex=dict(type=literals, required=False, default=None),
+        literal=dict(type=literals, required=False, default=None),
         regexp=dict(type="str", required=True),
         replace=dict(type='str', default=""),
     )
@@ -612,13 +612,13 @@ def run_module():
         encoding = "cp1047"
     backup = module.params.get("backup")
     backup_name = parsed_args.get('backup_name')
-    literal = module.params.get("disable_regex")
+    literal = module.params.get("literal")
 
     if literal:
         if "after" in literal and not after:
-            module.fail_json(msg="Use of disable_regex requires the use of the after option too.", **result)
+            module.fail_json(msg="Use of literal requires the use of the after option too.", **result)
         if "before" in literal and not before:
-            module.fail_json(msg="Use of disable_regex requires the use of the before option too.", **result)
+            module.fail_json(msg="Use of literal requires the use of the before option too.", **result)
 
     if backup:
         try:
@@ -685,7 +685,7 @@ def run_module():
 
 def literals(contents, dependencies):
     """Validate literal arguments.
-        This was created for the disable_regex option type of data to accept any
+        This was created for the literal option type of data to accept any
         given combination of arguments because choices only allows one.
 
     Parameters

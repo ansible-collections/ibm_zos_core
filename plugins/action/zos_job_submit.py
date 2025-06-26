@@ -77,16 +77,16 @@ class ActionModule(ActionBase):
                 return result
 
             tmp_dir = self._connection._shell._options.get("remote_tmp")
-            rc, stdout, stderr = self._connection.exec_command("cd {0} && pwd".format(tmp_dir))
-            if rc > 0:
-                msg = f"Failed to resolve remote temporary directory {tmp_dir}. Ensure that the directory exists and user has proper access."
-                return self._exit_action({}, msg, failed=True)
-
-            tmp_dir = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
             temp_file_dir = f'zos_job_submit_{datetime.now().strftime("%Y%m%d%S%f")}'
-            dest_path = path.join(tmp_dir, temp_file_dir, path.basename(source))
-            # Creating the name for the temp file needed.
-            self._connection.exec_command("mkdir -p {0}".format(path.dirname(dest_path)))
+            dest_path = path.join(tmp_dir, temp_file_dir)
+            tempfile_args = {"path": dest_path, "state": "directory"}
+            # Reverted this back to using file ansible module so ansible would handle all temporary dirs
+            # creation with correct permissions.
+            tempfile = self._execute_module(
+                module_name="file", module_args=tempfile_args, task_vars=task_vars,
+            )
+            dest_path = tempfile.get("path")
+            dest_file = path.join(dest_path, path.basename(source))
 
             source_full = None
             try:
@@ -139,8 +139,8 @@ class ActionModule(ActionBase):
             copy_module_args.update(
                 dict(
                     src=source_full,
-                    dest=dest_path,
-                    mode="0600",
+                    dest=dest_file,
+                    mode="0666",
                     force=True,
                     encoding=module_args.get('encoding'),
                     remote_src=False,
@@ -163,7 +163,7 @@ class ActionModule(ActionBase):
 
             result.update(copy_action.run(task_vars=task_vars))
             if result.get("msg") is None:
-                module_args["src"] = dest_path
+                module_args["src"] = dest_file
                 result.update(
                     self._execute_module(
                         module_name="ibm.ibm_zos_core.zos_job_submit",

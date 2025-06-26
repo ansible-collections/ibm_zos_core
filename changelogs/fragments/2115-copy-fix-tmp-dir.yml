@@ -1,0 +1,8 @@
+bugfixes:
+  - zos_job_submit - Previously, the use of `become` would result in a permissions error
+    while trying to execute a job from a local file. Fix now allows a user to escalate
+    privileges when executing a job transferred from the controller node.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2115)
+  - zos_copy - Previously, when trying to copy into remote and ansible's default temporary directory
+    was not created before execution the copy task would fail. Fix now creates the temporary directory if possible.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2115)

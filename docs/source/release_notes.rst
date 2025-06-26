@@ -83,6 +83,7 @@ Known Issues
 - ``zos_job_submit`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
 - ``zos_script`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
 - ``zos_unarchive`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_fetch`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
 
 
 

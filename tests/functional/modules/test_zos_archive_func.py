@@ -442,6 +442,7 @@ def test_uss_archive_encode_skip_encoding(ansible_zos_module, ds_format):
 # - test_mvs_archive_single_dataset_encoding
 # - test_mvs_archive_multiple_dataset_pattern_encoding
 # - test_mvs_archive_multiple_dataset_pattern_encoding_skip_encoding
+    # - test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding
 
 
 @pytest.mark.ds
@@ -1455,6 +1456,126 @@ def test_mvs_archive_multiple_dataset_pattern_encoding_skip_encoding(ansible_zos
             )
 
             for result in archive_result.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("dest") == archive_data_set
+                assert ds_name in result.get("archived")
+            cmd_result = hosts.all.shell(cmd=f"dls {archive_data_set}")
+            for c_result in cmd_result.contacted.values():
+                assert archive_data_set in c_result.get("stdout")
+
+            archived_datasets.append(archive_data_set)
+
+    finally:
+        for ds_name in matched_datasets:
+            hosts.all.zos_data_set(name=ds_name, state="absent")
+        for archive_ds in archived_datasets:
+            hosts.all.zos_data_set(name=archive_ds, state="absent")
+
+@pytest.mark.ds
+@pytest.mark.parametrize(
+    "ds_format", [
+        "terse"
+    ])
+@pytest.mark.parametrize(
+    "data_set", [
+        {
+            "dstype": "seq",
+            "members": [""]
+        }
+    ])
+@pytest.mark.parametrize(
+    "encoding", [
+        {"from": "IBM-1047", "to": "ISO8859-1"},
+    ])
+def test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding(ansible_zos_module, ds_format, data_set, encoding):
+    try:
+        hosts = ansible_zos_module
+        hlq_prefix = "OMVSADM.ABC"
+        matched_datasets = [f"{hlq_prefix}.A", f"{hlq_prefix}.B"]
+        archived_datasets = []
+        copy_src_datasets = [f"{hlq_prefix}.C", f"{hlq_prefix}.D"]
+        all_datasets_to_process = matched_datasets + copy_src_datasets
+
+        for ds_name in all_datasets_to_process:
+            hosts.all.zos_data_set(name=ds_name, state="absent")
+            hosts.all.zos_data_set(
+                name=ds_name,
+                type=data_set.get("dstype"),
+                state="present",
+                replace=True,
+            )
+            if data_set.get("dstype") in ["pds", "pdse"]:
+                for member in data_set.get("members"):
+                    hosts.all.zos_data_set(
+                        name=f"{ds_name}({member})",
+                        type="member",
+                        state="present"
+                    )
+        
+        test_line = "pattern match"
+        for ds_name in all_datasets_to_process:
+            for member in data_set.get("members"):
+                ds_target = f"{ds_name}({member})" if member else ds_name
+                hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_target}\"")
+
+        format_dict = {"name": ds_format}
+        if ds_format == "terse":
+            format_dict["format_options"] = {"terse_pack": "spack"}
+        for ds_name in matched_datasets:
+
+            original_hex_result = hosts.all.shell(cmd=f"dcat '{ds_name}' | od -x")
+            host_original_result = None
+            if original_hex_result.contacted:
+                host_original_result = next(iter(original_hex_result.contacted.values()))
+
+            original_hex_output_lines = [line.strip() for line in host_original_result.get("stdout", "").splitlines() if line.strip()]
+            archive_data_set = get_tmp_ds_name()
+            archive_result = hosts.all.zos_archive(
+                src=ds_name,
+                dest=archive_data_set,
+                format=format_dict,
+                encoding=encoding,
+            )
+            reverted_hex_result = hosts.all.shell(cmd=f"dcat '{ds_name}' | od -x")  
+            host_reverted_result = None
+            if reverted_hex_result.contacted:
+                host_reverted_result = next(iter(reverted_hex_result.contacted.values()))
+            reverted_hex_output_lines = [line.strip() for line in host_reverted_result.get("stdout", "").splitlines() if line.strip()]
+
+            original_hex = []
+            for line in original_hex_output_lines:
+                if line == '*':
+                    original_hex.append('*')
+                else:
+                    parts = line.split()
+                    if len(parts) > 1: 
+                        original_hex.extend(parts[1:])
+
+            reverted_hex = []
+            for line in reverted_hex_output_lines:
+                if line == '*':
+                    reverted_hex.append('*')
+                else:
+                    parts = line.split()
+                    if len(parts) > 1:
+                        reverted_hex.extend(parts[1:])
+
+            for result in archive_result.contacted.values():
+                try:
+                    original_first_star_idx = original_hex.index('*')
+                except ValueError:
+                    original_first_star_idx = len(original_hex) 
+
+                try:
+                    reverted_first_star_idx = reverted_hex.index('*')
+                except ValueError:
+                    reverted_first_star_idx = len(reverted_hex)
+                
+                original_hex_to_compare = original_hex[:original_first_star_idx]
+                reverted_hex_to_compare = reverted_hex[:reverted_first_star_idx]
+
+                is_identical = (original_hex_to_compare == reverted_hex_to_compare)
+                assert is_identical is True
                 assert result.get("changed") is True
                 assert result.get("dest") == archive_data_set
                 assert ds_name in result.get("archived")

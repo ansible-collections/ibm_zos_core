@@ -1066,6 +1066,7 @@ class USSArchive(Archive):
                 warning_message = f"Failed to revert source file to original encoding for {os.path.abspath(target)}."
                 raise EncodeError(warning_message) from e
 
+
 class TarArchive(USSArchive):
     def __init__(self, module):
         """Archive for Tar.
@@ -1556,7 +1557,7 @@ class MVSArchive(Archive):
             try:
                 ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
                 if not ds_type:
-                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                    ds_type = "PS"
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,
@@ -1566,7 +1567,7 @@ class MVSArchive(Archive):
                     dest_type=ds_type,
                     tmphlq=self.tmphlq
                 )
-                self.encoded.append(os.path.abspath(target))
+                self.encoded.append(target)
             except Exception:
                 self.failed_on_encoding.append(os.path.abspath(target))
         return {
@@ -1584,7 +1585,7 @@ class MVSArchive(Archive):
             try:
                 ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
                 if not ds_type:
-                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                    ds_type = "PS"
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,
@@ -1597,6 +1598,7 @@ class MVSArchive(Archive):
             except Exception as e:
                 warning_message = f"Failed to revert source file to original encoding for {os.path.abspath(target)}."
                 raise EncodeError(warning_message) from e
+
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):

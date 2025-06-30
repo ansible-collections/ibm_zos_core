@@ -196,7 +196,7 @@ found:
     type: int
     sample: 5
 msg:
-    description: A string with a generic or error message relayed to the user.
+    description: A string with a generic or error message related to the user.
     returned: failure
     type: str
     sample: Parameter verification failed

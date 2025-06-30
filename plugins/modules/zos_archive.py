@@ -318,6 +318,8 @@ options:
         be restored to their original encoding.
       - If encoding fails for any file in a set of multiple files, an
         exception will be raised and archiving will be skipped.
+      - The encoding will be done on the original src files. It reverts
+        the encoding post successful archive but it can change the file.
     type: dict
     required: false
     suboptions:

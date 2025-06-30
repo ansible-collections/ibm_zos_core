@@ -2059,6 +2059,7 @@ def run_module():
     if archive.dest_exists() and not archive.force:
         module.fail_json(msg="%s file exists. Use force flag to replace dest" % archive.dest)
 
+    encoding_result = None
     archive.find_targets()
     if archive.targets_exist():
         # encoding the source if encoding is provided.

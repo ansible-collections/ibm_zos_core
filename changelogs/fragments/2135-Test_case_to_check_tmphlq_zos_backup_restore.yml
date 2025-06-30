@@ -1,0 +1,3 @@
+trivial:
+  - test_zos_backup_restore - Added a test case to ensure tmphlq is tested in the module.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2135).

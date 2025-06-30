@@ -57,8 +57,8 @@ options:
       - If I(src) is a data set member and backup_name is not provided, the data set
         member will be backed up to the same partitioned data set with a randomly generated
         member name.
-      - If I(src) is a Generation Data Set (GDS) and backup_name is not provided, the backup
-        name will function as a sequential data set and backup_name.
+      - If I(src) is a Generation Data Set (GDS) and backup_name is not provided, backup
+        will be a sequential data set.
     required: false
     type: str
   before:

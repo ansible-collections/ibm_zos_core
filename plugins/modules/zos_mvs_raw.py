@@ -747,8 +747,7 @@ options:
                 description:
                   - The encoding to use when returning the contents of the data set.
                 type: str
-                default: iso8859-1  
-
+                default: iso8859-1
       dd_concat:
         description:
           - I(dd_concat) is used to specify a data set concatenation.
@@ -1441,7 +1440,6 @@ EXAMPLES = r"""
       - dd_dummy:
           dd_name: sysprint
 
-      
 - name: List data sets matching patterns in catalog,
     save output to a new sequential data set and return output as text.
   zos_mvs_raw:
@@ -2012,8 +2010,6 @@ def run_module():
             ),
         ),
     )
-
-
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
@@ -2269,7 +2265,6 @@ def parse_and_validate_args(params):
             ),
         ),
     )
-
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))

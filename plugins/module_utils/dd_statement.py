@@ -681,7 +681,6 @@ class VolumeDefinition(DataDefinition):
         str
             ',vol'
         """
-        #return ",vol"
         mvscmd_string = ",vol"
         mvscmd_string = self._append_mvscmd_string(mvscmd_string, "unit", self.unit)
         if self.disposition:

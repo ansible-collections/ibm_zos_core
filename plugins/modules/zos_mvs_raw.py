@@ -2001,8 +2001,8 @@ def run_module():
     )
     dd_volume_base = dict(
         volume=dict(type="str", required=True),
-        unit= dict(type="str", required=False, default=None),
-        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=False),
+        unit= dict(type="str", default=None, required=True),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
         return_content=dict(
             type="dict",
             options=dict(
@@ -2258,8 +2258,8 @@ def parse_and_validate_args(params):
     )
     dd_volume_base = dict(
         volume=dict(type="str", required=True),
-        unit=dict(type="str"),
-        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=False),
+        unit=dict(type="str", required=True ),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
         return_content=dict(
             type="dict",
             options=dict(

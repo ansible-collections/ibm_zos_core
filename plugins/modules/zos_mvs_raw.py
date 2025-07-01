@@ -691,7 +691,7 @@ options:
             required: true
             type: str
       dd_volume:
-        description::
+        description:
           - Defines a DD that specifies a volume or volumes on which a data set resides or will reside.
         required: true
         type: string

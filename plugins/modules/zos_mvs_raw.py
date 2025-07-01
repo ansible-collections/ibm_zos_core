@@ -710,6 +710,11 @@ options:
               - Device type for the volume.
             type: str
             required: true
+            choices:
+              - SYSD
+              - TAPE
+              - DISK
+              - 3390
           disposition:
             description:
               - I(disposition) indicates the status of a data set.
@@ -1999,7 +2004,7 @@ def run_module():
     )
     dd_volume_base = dict(
         volume=dict(type="str", required=True),
-        unit=dict(type="str", required=True),
+        unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
         return_content=dict(
             type="dict",
@@ -2254,7 +2259,7 @@ def parse_and_validate_args(params):
     )
     dd_volume_base = dict(
         volume=dict(type="str", required=True),
-        unit=dict(type="str", required=True),
+        unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
         return_content=dict(
             type="dict",

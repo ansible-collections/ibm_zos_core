@@ -313,14 +313,13 @@ class ActionModule(ActionBase):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
         temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
-        tempfile_args = {"path": temp_path, "state": "directory", "mode": "777"}
-        # Reverted this back to using file ansible module so ansible would handle all temporary dirs
-        # creation with correct permissions.
+
         rc, stdout, stderr = self._connection.exec_command("mkdir -p {0}".format(temp_path))
         display.vvv(f"ibm_zos_copy: remote mkdir result {rc}, {stdout}, {stderr} path {temp_path}")
         if rc > 0:
             msg = f"Failed to create remote temporary directory in {self.tmp_dir}. Ensure that user has proper access."
             return self._exit_action({}, msg, failed=True)
+
         # The temporary dir was created successfully using ssh connection user.
         rc, stdout, stderr = self._connection.exec_command(F"cd {temp_path} && pwd")
         display.vvv(f"ibm_zos_copy: remote pwd result {rc}, {stdout}, {stderr} path {temp_path}")

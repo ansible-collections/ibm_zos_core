@@ -664,6 +664,7 @@ class VolumeDefinition(DataDefinition):
         volume_name : str
             The volume name to associate with the DD statement.
         """
+        
         if isinstance(volume_name, list) and len(volume_name) > 0:
             volume_name = volume_name[0]
         super().__init__(volume_name)

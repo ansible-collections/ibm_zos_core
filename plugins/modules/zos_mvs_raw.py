@@ -1909,7 +1909,7 @@ def run_module():
         )
     )
     dd_volume_base = dict(
-        volser=dict(type="list", elements="str", required=True),
+        volume=dict(type="str", required=True),
         unit= dict(type="str", required=False, default=None),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=False),
         return_content=dict(
@@ -2166,7 +2166,7 @@ def parse_and_validate_args(params):
         )
     )
     dd_volume_base = dict(
-        volser=dict(type="list", elements="str", required=True),
+        volume=dict(type="str", required=True),
         unit=dict(type="str"),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=False),
         return_content=dict(
@@ -2835,7 +2835,7 @@ def build_data_definition(dd):
     elif dd.get("dd_volume"):
         volume_args = dd["dd_volume"]
         data_definition = VolumeDefinition(
-            volser=volume_args.get("volser"),
+            volume=volume_args.get("volume"),
             unit=volume_args.get("unit"),
             disposition=volume_args.get("disposition"),
         )

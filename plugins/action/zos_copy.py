@@ -291,9 +291,6 @@ class ActionModule(ActionBase):
         # Remove temporary directory from remote
         if self.tmp_dir is not None:
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-            # If another user created the temporary files, we'll need to run rm
-            # with it too, lest we get a permissions issue.
-
             rm_res = self._connection.exec_command(f"rm -rf {path}*")
 
 

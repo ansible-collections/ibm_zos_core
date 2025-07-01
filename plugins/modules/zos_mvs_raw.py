@@ -700,13 +700,13 @@ options:
             description: The DD name for the volume.
             type: str
             required: true
-          volume: 
+          volume:
             description:
               - Volume serial number or serial numbers on which a data set resides or will reside.
             type: str
             required: true
           unit:
-            description: 
+            description:
               - Device type for the volume.
             type: str
             required: true

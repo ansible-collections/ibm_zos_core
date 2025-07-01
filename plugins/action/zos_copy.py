@@ -293,24 +293,9 @@ class ActionModule(ActionBase):
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
             # If another user created the temporary files, we'll need to run rm
             # with it too, lest we get a permissions issue.
-            if self._connection.become:
-                # We get the dirname from temp_path and not path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
-                # because if default is ~/.ansible/tmp/ when using become it would be similar to /root/.ansible/tmp
-                # but the original tmp directory was resolved when user is non escalated yet. Meaning, the original
-                # tmp directory is similar to /u/usrt001/.ansible/tmp.
-                path = os.path.dirname(temp_path)
-                self._connection.set_option('remote_user', self._play_context._become_user)
-                display.vvv(
-                    u"ibm_zos_copy SSH cleanup user updated to {0}".format(self._play_context._become_user),
-                    host=self._play_context.remote_addr
-                )
+
             rm_res = self._connection.exec_command(f"rm -rf {path}*")
-            if self._connection.become:
-                self._connection.set_option('remote_user', self._play_context._remote_user)
-                display.vvv(
-                    u"ibm_zos_copy SSH cleanup user restored to {0}".format(self._play_context._remote_user),
-                    host=self._play_context.remote_addr
-                )
+
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
@@ -342,16 +327,24 @@ class ActionModule(ActionBase):
         """Copy a file or directory to the remote z/OS system """
         self.tmp_dir = self._connection._shell._options.get("remote_tmp")
         temp_path = os.path.join(self.tmp_dir, _create_temp_path_name())
-        tempfile_args = {"path": temp_path, "state": "directory", "mode": "666"}
-        # Reverted this back to using file ansible module so ansible would handle all temporary dirs
-        # creation with correct permissions.
-        tempfile = self._execute_module(
-            module_name="file", module_args=tempfile_args, task_vars=task_vars, wrap_async=self._task.async_val
-        )
-        _sftp_action = 'put'
-        was_user_updated = False
 
-        temp_path = os.path.join(tempfile.get("path"), os.path.basename(src))
+        rc, stdout, stderr = self._connection.exec_command("mkdir -p {0}".format(temp_path))
+        display.vvv(f"ibm_zos_copy: remote mkdir result {rc}, {stdout}, {stderr} path {temp_path}")
+        if rc > 0:
+            msg = f"Failed to create remote temporary directory in {self.tmp_dir}. Ensure that user has proper access."
+            return self._exit_action({}, msg, failed=True)
+
+        # The temporary dir was created successfully using ssh connection user.
+        rc, stdout, stderr = self._connection.exec_command(F"cd {temp_path} && pwd")
+        display.vvv(f"ibm_zos_copy: remote pwd result {rc}, {stdout}, {stderr} path {temp_path}")
+        if rc > 0:
+            msg = f"Failed to resolve remote temporary directory {temp_path}. Ensure that user has proper access."
+            return self._exit_action({}, msg, failed=True)
+        temp_path = stdout.decode("utf-8").replace("\r", "").replace("\n", "")
+
+        _sftp_action = 'put'
+
+        temp_path = os.path.join(temp_path, os.path.basename(src))
         _src = src.replace("#", "\\#")
         full_temp_path = temp_path
 
@@ -392,13 +385,7 @@ class ActionModule(ActionBase):
                             sftp_transfer_method), host=self._play_context.remote_addr)
 
             display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
-            if self._connection.become:
-                was_user_updated = True
-                self._connection.set_option('remote_user', self._play_context._become_user)
-                display.vvv(
-                    u"ibm_zos_copy SSH transfer user updated to {0}".format(self._play_context._become_user),
-                    host=self._play_context.remote_addr
-                )
+
             (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
 
             display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
@@ -438,13 +425,6 @@ class ActionModule(ActionBase):
 
         finally:
             # Restore the users defined option `ssh_transfer_method` if it was overridden
-            if was_user_updated:
-                self._connection.set_option('remote_user', self._play_context._remote_user)
-                display.vvv(
-                    u"ibm_zos_copy SSH transfer user restored to {0}".format(self._play_context._remote_user),
-                    host=self._play_context.remote_addr
-                )
-
             if is_ssh_transfer_method_updated:
                 if version_major == 2 and version_minor >= 11:
                     self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)

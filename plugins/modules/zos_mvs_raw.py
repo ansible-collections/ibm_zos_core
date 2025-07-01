@@ -714,7 +714,7 @@ options:
               - SYSD
               - TAPE
               - DISK
-              - 3390
+              - '3390'
           disposition:
             description:
               - I(disposition) indicates the status of a data set.

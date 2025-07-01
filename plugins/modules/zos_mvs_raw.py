@@ -690,6 +690,65 @@ options:
               - The DD name.
             required: true
             type: str
+      dd_volume:
+        description::
+          - Defines a DD that specifies a volume or volumes on which a data set resides or will reside.
+        required: true
+        type: string
+        suboptions:
+          dd_name:
+            description: The DD name for the volume.
+            type: str
+            required: true
+          volume: 
+            description:
+              - Volume serial number or serial numbers on which a data set resides or will reside.
+            type: str
+            required: true
+          unit:
+            description: 
+              - Device type for the volume.
+            type: str
+            required: true
+          disposition:
+            description:
+              - I(disposition) indicates the status of a data set.
+            type: str
+            required: true
+            choices:
+              - new
+              - shr
+              - mod
+              - old
+          return_content:
+            description:
+              - Determines how content should be returned to the user.
+              - If not provided, no content from the DD is returned.
+            type: dict
+            required: false
+              suboptions:
+                type:
+                  description:
+                    - The type of the content to be returned.
+                    - C(text) means return content in encoding specified by I(response_encoding).
+                    - I(src_encoding) and I(response_encoding) are only used when I(type=text).
+                    - C(base64) means return content as base64 encoded in binary.
+                  type: str
+                  choices:
+                    - text
+                    - base64
+                  required: true
+                src_encoding:
+                  description:
+                    - The encoding of the data set on the z/OS system.
+                  type: str
+                  default: ibm-1047
+                response_encoding:
+                  description:
+                    - The encoding to use when returning the contents of the data set.
+                  type: str
+                  default: iso8859-1  
+
       dd_concat:
         description:
           - I(dd_concat) is used to specify a data set concatenation.
@@ -1351,6 +1410,38 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
+- name: Full volumedump using ADDRDSU with volume DD
+  zos_mvs_raw:
+    program_name: adrdssu
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: dumpdd
+          data_set_name: mypgm.output.ds
+          disposition: new
+          disposition_normal: catalog
+          disposition_abnormal: delete
+          space_type: cyl
+          space_primary: 10
+          space_secondary: 10
+          record_format: u
+          record_length: 0
+          block_size: 32760
+          type: seq
+      - dd_volume:
+          dd_name: voldd
+          volume: "000000"
+          unit: "3390"
+          disposition: old
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " VOLDUMP VOL(voldd) DSNAME(dumpdd) FULL"
+      - dd_dummy:
+          dd_name: sysprint
+
+      
 - name: List data sets matching patterns in catalog,
     save output to a new sequential data set and return output as text.
   zos_mvs_raw:

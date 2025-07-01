@@ -693,8 +693,8 @@ options:
       dd_volume:
         description:
           - Defines a DD that specifies a volume or volumes on which a data set resides or will reside.
-        required: true
-        type: string
+        required: false
+        type: dict
         suboptions:
           dd_name:
             description: The DD name for the volume.

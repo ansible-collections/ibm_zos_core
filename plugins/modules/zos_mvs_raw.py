@@ -726,28 +726,28 @@ options:
               - If not provided, no content from the DD is returned.
             type: dict
             required: false
-              suboptions:
-                type:
-                  description:
-                    - The type of the content to be returned.
-                    - C(text) means return content in encoding specified by I(response_encoding).
-                    - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                    - C(base64) means return content as base64 encoded in binary.
-                  type: str
-                  choices:
-                    - text
-                    - base64
-                  required: true
-                src_encoding:
-                  description:
-                    - The encoding of the data set on the z/OS system.
-                  type: str
-                  default: ibm-1047
-                response_encoding:
-                  description:
-                    - The encoding to use when returning the contents of the data set.
-                  type: str
-                  default: iso8859-1  
+            suboptions:
+              type:
+                description:
+                  - The type of the content to be returned.
+                  - C(text) means return content in encoding specified by I(response_encoding).
+                  - I(src_encoding) and I(response_encoding) are only used when I(type=text).
+                  - C(base64) means return content as base64 encoded in binary.
+                type: str
+                choices:
+                  - text
+                  - base64
+                required: true
+              src_encoding:
+                description:
+                  - The encoding of the data set on the z/OS system.
+                type: str
+                default: ibm-1047
+              response_encoding:
+                description:
+                  - The encoding to use when returning the contents of the data set.
+                type: str
+                default: iso8859-1  
 
       dd_concat:
         description:

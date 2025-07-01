@@ -85,7 +85,7 @@ def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_s
                 {
                     "dd_volume": {
                         "dd_name": "VOLDD",
-                        "volser": test_volume,
+                        "volume": test_volume,
                         "unit": "3390",
                         "disposition": "old",
                     }
@@ -108,7 +108,7 @@ def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_s
             assert result.get("changed", False) is True
     finally:
         hosts.all.zos_data_set(name=dump_dataset, state="absent")
-        
+
 def test_failing_name_format(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_mvs_raw(

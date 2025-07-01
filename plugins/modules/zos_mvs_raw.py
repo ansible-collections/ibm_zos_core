@@ -1698,6 +1698,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
     DDStatement,
     DummyDefinition,
     VIODefinition,
+    VolumeDefinition,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw import (
@@ -1907,6 +1908,20 @@ def run_module():
             ),
         )
     )
+    dd_volume_base = dict(
+        volser=dict(type="list", elements="str", required=True),
+        unit= dict(type="str", required=False, default=None),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=False),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(type="str", choices=["text", "base64"], required=True),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
+            ),
+        ),
+    )
+
 
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
@@ -1915,6 +1930,7 @@ def run_module():
     dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
     dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
     dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
+    dd_volume = dict(type="dict", options=combine_dicts(dd_name_base, dd_volume_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -1934,6 +1950,7 @@ def run_module():
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
+                dd_volume=dd_volume,
             ),
         ),
     )
@@ -2148,6 +2165,19 @@ def parse_and_validate_args(params):
             ),
         )
     )
+    dd_volume_base = dict(
+        volser=dict(type="list", elements="str", required=True),
+        unit=dict(type="str"),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=False),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(type="str", choices=["text", "base64"], required=True),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
+            ),
+        ),
+    )
 
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
@@ -2156,6 +2186,7 @@ def parse_and_validate_args(params):
     dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
     dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
     dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
+    dd_volume = dict(type="dict", options=combine_dicts(dd_name_base, dd_volume_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -2176,6 +2207,7 @@ def parse_and_validate_args(params):
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
+                dd_volume=dd_volume,
             ),
         ),
         # verbose=dict(type="bool", required=False),
@@ -2690,6 +2722,9 @@ def get_dd_name_and_key(dd):
     elif dd.get("dd_concat"):
         dd_name = dd.get("dd_concat").get("dd_name")
         key = "dd_concat"
+    elif dd.get("dd_volume"):
+        dd_name = dd.get("dd_volume").get("dd_name")
+        key = "dd_volume"
     return dd_name, key
 
 
@@ -2797,6 +2832,14 @@ def build_data_definition(dd):
             dd.get("dd_vio").get("tmphlq"))
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
+    elif dd.get("dd_volume"):
+        volume_args = dd["dd_volume"]
+        data_definition = VolumeDefinition(
+            volser=volume_args.get("volser"),
+            unit=volume_args.get("unit"),
+            disposition=volume_args.get("disposition"),
+        )
+
     elif dd.get("dd_concat"):
         data_definition = []
         for single_dd in dd.get("dd_concat").get("dds", []):

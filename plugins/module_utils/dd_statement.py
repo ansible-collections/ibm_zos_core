@@ -656,7 +656,7 @@ class DatasetDefinition(DataDefinition):
 
 
 class VolumeDefinition(DataDefinition):
-    def __init__(self, volume_name):
+    def __init__(self, volume_name, unit =None, disposition=None):
         """Volume DD data type to be used in a DDStatement.
 
         Parameters
@@ -664,7 +664,11 @@ class VolumeDefinition(DataDefinition):
         volume_name : str
             The volume name to associate with the DD statement.
         """
+        if isinstance(volume_name, list) and len(volume_name) > 0:
+            volume_name = volume_name[0]
         super().__init__(volume_name)
+        self.unit = unit
+        self.disposition = disposition
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
@@ -675,7 +679,12 @@ class VolumeDefinition(DataDefinition):
         str
             ',vol'
         """
-        return ",vol"
+        #return ",vol"
+        mvscmd_string = ",vol"
+        mvscmd_string = self._append_mvscmd_string(mvscmd_string, "unit", self.unit)
+        if self.disposition:
+            mvscmd_string += f",{self.disposition}"
+        return mvscmd_string
 
 
 class StdoutDefinition(DataDefinition):

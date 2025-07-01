@@ -725,34 +725,6 @@ options:
               - shr
               - mod
               - old
-          return_content:
-            description:
-              - Determines how content should be returned to the user.
-              - If not provided, no content from the DD is returned.
-            type: dict
-            required: false
-            suboptions:
-              type:
-                description:
-                  - The type of the content to be returned.
-                  - C(text) means return content in encoding specified by I(response_encoding).
-                  - I(src_encoding) and I(response_encoding) are only used when I(type=text).
-                  - C(base64) means return content as base64 encoded in binary.
-                type: str
-                choices:
-                  - text
-                  - base64
-                required: true
-              src_encoding:
-                description:
-                  - The encoding of the data set on the z/OS system.
-                type: str
-                default: ibm-1047
-              response_encoding:
-                description:
-                  - The encoding to use when returning the contents of the data set.
-                type: str
-                default: iso8859-1
       dd_concat:
         description:
           - I(dd_concat) is used to specify a data set concatenation.
@@ -1437,8 +1409,6 @@ EXAMPLES = r"""
           volume: "000000"
           unit: "3390"
           disposition: old
-          return_content:
-            type: text
       - dd_input:
           dd_name: sysin
           content: " VOLDUMP VOL(voldd) DSNAME(dumpdd) FULL"
@@ -2006,14 +1976,6 @@ def run_module():
         volume=dict(type="str", required=True),
         unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
-        return_content=dict(
-            type="dict",
-            options=dict(
-                type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type="str", default="ibm-1047"),
-                response_encoding=dict(type="str", default="iso8859-1"),
-            ),
-        ),
     )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
@@ -2261,14 +2223,6 @@ def parse_and_validate_args(params):
         volume=dict(type="str", required=True),
         unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
-        return_content=dict(
-            type="dict",
-            options=dict(
-                type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type="str", default="ibm-1047"),
-                response_encoding=dict(type="str", default="iso8859-1"),
-            ),
-        ),
     )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))

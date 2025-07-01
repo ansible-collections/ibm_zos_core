@@ -87,7 +87,7 @@ class ActionModule(ActionBase):
             # )
             # dest_path = tempfile.get("path")
             rc, stdout, stderr = self._connection.exec_command("mkdir -p {0}".format(dest_path))
-            print(f"mkdir result {rc}, {stdout}, {stderr} dest path {dest_path}")
+            display.vvv(f"zos_job_submit: mkdir result {rc}, {stdout}, {stderr} dest path {dest_path}")
             if rc > 0:
                 result["failed"] = True
                 result["msg"] = f"Failed to create remote temporary directory in {tmp_dir}. Ensure that user has proper access."
@@ -95,7 +95,7 @@ class ActionModule(ActionBase):
 
             # The temporary dir was created successfully using ssh connection user.
             rc, stdout, stderr = self._connection.exec_command(F"cd {dest_path} && pwd")
-            print(f"pwd result {rc}, {stdout}, {stderr} path {dest_path}")
+            display.vvv(f"zos_job_submit: remote pwd result {rc}, {stdout}, {stderr} path {dest_path}")
             if rc > 0:
                 result["failed"] = True
                 result["msg"] = f"Failed to resolve remote temporary directory {dest_path}. Ensure that user has proper access."

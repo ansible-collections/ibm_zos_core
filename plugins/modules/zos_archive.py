@@ -318,8 +318,9 @@ options:
         be restored to their original encoding.
       - If encoding fails for any file in a set of multiple files, an
         exception will be raised and archiving will be skipped.
-      - The encoding will be done on the original src files. It reverts
-        the encoding post successful archive but it can change the file.
+      - The original files in C(src) will be converted. The module will
+        revert the encoding conversion after a successful archive, but
+        it may change the files.
     type: dict
     required: false
     suboptions:
@@ -335,7 +336,7 @@ options:
         type: str
       skip_encoding:
         description:
-          - List of names to skip encoding before archiving. This is only used if I(Encoding) is set, otherwise is ignored.
+          - List of names to skip encoding before archiving. This is only used if I(encoding) is set, otherwise is ignored.
         required: false
         type: list
         elements: str
@@ -1065,7 +1066,7 @@ class USSArchive(Archive):
                     enc_utils.uss_tag_encoding(target, self.from_encoding)
 
             except Exception as e:
-                warning_message = f"Failed to revert source file to original encoding for {os.path.abspath(target)}."
+                warning_message = f"Failed to revert source file {os.path.abspath(target)} to its original encoding."
                 raise EncodeError(warning_message) from e
 
 
@@ -1203,6 +1204,7 @@ class MVSArchive(Archive):
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
+        self.ds_types = {}
 
     def open(self):
         pass
@@ -1560,6 +1562,7 @@ class MVSArchive(Archive):
                 ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
                 if not ds_type:
                     ds_type = "PS"
+                self.ds_types[target] = ds_type
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,
@@ -1585,9 +1588,7 @@ class MVSArchive(Archive):
 
         for target in self.encoded:
             try:
-                ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
-                if not ds_type:
-                    ds_type = "PS"
+                ds_type = self.ds_types.get(target, "PS")
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,
@@ -1598,7 +1599,7 @@ class MVSArchive(Archive):
                     tmphlq=self.tmphlq
                 )
             except Exception as e:
-                warning_message = f"Failed to revert source file to original encoding for {os.path.abspath(target)}."
+                warning_message = f"Failed to revert source file {os.path.abspath(target)} to its original encoding."
                 raise EncodeError(warning_message) from e
 
 

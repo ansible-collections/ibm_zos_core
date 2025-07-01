@@ -442,7 +442,7 @@ def test_uss_archive_encode_skip_encoding(ansible_zos_module, ds_format):
 # - test_mvs_archive_single_dataset_encoding
 # - test_mvs_archive_multiple_dataset_pattern_encoding
 # - test_mvs_archive_multiple_dataset_pattern_encoding_skip_encoding
-    # - test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding
+# - test_mvs_archive_multiple_dataset_pattern_encoding_revert_src_encoding
 
 
 @pytest.mark.ds

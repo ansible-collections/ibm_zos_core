@@ -293,7 +293,6 @@ class ActionModule(ActionBase):
             path = os.path.normpath(f"{self.tmp_dir}/ansible-zos-copy")
             rm_res = self._connection.exec_command(f"rm -rf {path}*")
 
-
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
             return result

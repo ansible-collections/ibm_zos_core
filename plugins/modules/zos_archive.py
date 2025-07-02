@@ -320,7 +320,8 @@ options:
         exception will be raised and archiving will be skipped.
       - The original files in C(src) will be converted. The module will
         revert the encoding conversion after a successful archive, but
-        it may change the files.
+        no backup will be created. If you need to encode using a backup
+        and then archive take a look at L(zos_encode,./zos_encode.html) module.
     type: dict
     required: false
     suboptions:

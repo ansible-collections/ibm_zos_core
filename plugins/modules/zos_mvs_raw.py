@@ -692,7 +692,7 @@ options:
             type: str
       dd_volume:
         description:
-          - Defines a DD that specifies a volume or volumes on which a data set resides or will reside.
+          - Use I(dd_volume) to specify the volume to use in the DD statement.
         required: false
         type: dict
         suboptions:

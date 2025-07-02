@@ -697,24 +697,20 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name for the volume.
-            type: str
+            description: The DD name.
             required: true
+            type: str
           volume_name:
             description:
-              - Volume serial number or serial numbers on which a data set resides or will reside.
+              - The volume serial number.
             type: str
             required: true
           unit:
             description:
               - Device type for the volume.
+              - This option is case sensitive.
             type: str
             required: true
-            choices:
-              - SYSD
-              - TAPE
-              - DISK
-              - '3390'
           disposition:
             description:
               - I(disposition) indicates the status of a data set.
@@ -1386,7 +1382,7 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
-- name: Full volumedump using ADDRDSU with volume DD
+- name: Full volume dump using ADDRDSU.
   zos_mvs_raw:
     program_name: adrdssu
     auth: true
@@ -1974,7 +1970,7 @@ def run_module():
     )
     dd_volume_base = dict(
         volume_name=dict(type="str", required=True),
-        unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
+        unit=dict(type="str", required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
     )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
@@ -2221,7 +2217,7 @@ def parse_and_validate_args(params):
     )
     dd_volume_base = dict(
         volume_name=dict(type="str", required=True),
-        unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
+        unit=dict(type="str", required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
     )
     dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))

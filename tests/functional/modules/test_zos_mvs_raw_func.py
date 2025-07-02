@@ -45,17 +45,7 @@ def get_temp_idcams_dataset(hosts):
 #                               Data set DD tests                              #
 # ---------------------------------------------------------------------------- #
 
-@pytest.mark.parametrize(
-    "block_size",
-    [32760],
-)
-@pytest.mark.parametrize(
-    "space_type,primary,secondary",
-    [
-        ("cyl", 3, 1),
-    ],
-)
-def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_systems, block_size ,space_type,primary,secondary):
+def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_systems):
     hosts = ansible_zos_module
     dump_dataset = get_tmp_ds_name()
     volume_handler = Volume_Handler(volumes_on_systems)
@@ -73,12 +63,12 @@ def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_s
                         "disposition": "new",
                         "disposition_normal": "catalog",
                         "disposition_abnormal": "delete",
-                        "space_type": space_type,
-                        "space_primary": primary,
-                        "space_secondary": secondary,
+                        "space_type": "cyl",
+                        "space_primary": 10,
+                        "space_secondary": 2,
                         "record_format": "u",
                         "record_length": 0,
-                        "block_size": block_size,
+                        "block_size": 32760,
                         "type": "seq",
                     }
                 },

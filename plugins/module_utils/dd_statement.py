@@ -656,19 +656,19 @@ class DatasetDefinition(DataDefinition):
 
 
 class VolumeDefinition(DataDefinition):
-    def __init__(self, volume=None, volume_name=None, unit=None, disposition=None):
+    def __init__(self, volume_name, unit, disposition):
         """
         Parameters
         ----------
-        volume or volume_name : str
-            Volume serial (volser) to use. Either parameter can be provided.
+        volume_name : str
+            The volume name to associate with the DD statement.
+        unit : str
+            The unit of measurement to use when defining the volume.
+        disposition : str
+            The disposition of the volume.
+        
         """
-        # Allow both volume or volume_name, but require at least one
-        volser = volume_name or volume
-        if not volser:
-            raise ValueError("You must provide either 'volume' or 'volume_name'.")
-
-        super().__init__(volser)
+        super().__init__(volume_name)
         self.unit = unit
         self.disposition = disposition
 

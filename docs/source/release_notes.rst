@@ -6,6 +6,34 @@
 Releases
 ========
 
+Version 1.14.1
+==============
+
+Bugfixes
+--------
+
+- zos_copy - Previously, if the ansible user was not a superuser copying a file into the managed node resulted in permission denied error. Fix now sets the correct permissions for the ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
+- zos_job_submit - Previously, if the ansible user was not a superuser copying a file into the managed node resulted in permission denied error. Fix now sets the correct permissions for the ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
+- zos_script - Previously, if the ansible user was not a superuser copying a file into the managed node resulted in permission denied error. Fix now sets the correct permissions for the ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
+- zos_unarchive - Previously, if the ansible user was not a superuser copying a file into the managed node resulted in permission denied error. Fix now sets the correct permissions for the ansible user for copying to the remote. (https://github.com/ansible-collections/ibm_zos_core/pull/2196)
+
+Availability
+------------
+
+* `Ansible Automation Platform`_
+* `Galaxy`_
+* `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+- ``zos_copy`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_job_submit`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_script`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_unarchive`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+- ``zos_fetch`` - When elevating privileges using the `become` keyword, the module would attempt to connect using the elevated user id, if the user cannot connect to the managed node through ssh the module would fail.
+
+
 Version 1.14.0
 ==============
 

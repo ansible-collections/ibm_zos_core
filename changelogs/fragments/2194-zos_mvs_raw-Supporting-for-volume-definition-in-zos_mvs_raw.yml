@@ -1,5 +1,5 @@
 minor_changes:
-   - zos_mvs_raw - Added support for volume definition in zos_mvs_raw module to allow specifying unit and disposition parameters.
+   - zos_mvs_raw - Adds support for volume data definition.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2194)
 
 trivial:

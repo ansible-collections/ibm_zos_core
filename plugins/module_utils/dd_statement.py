@@ -658,6 +658,7 @@ class DatasetDefinition(DataDefinition):
 class VolumeDefinition(DataDefinition):
     def __init__(self, volume_name, unit, disposition):
         """
+        Volume DD data type to be used in a DDStatement.
         Parameters
         ----------
         volume_name : str

@@ -666,7 +666,6 @@ class VolumeDefinition(DataDefinition):
             The unit of measurement to use when defining the volume.
         disposition : str
             The disposition of the volume.
-        
         """
         super().__init__(volume_name)
         self.unit = unit

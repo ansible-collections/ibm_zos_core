@@ -75,7 +75,7 @@ def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_s
                 {
                     "dd_volume": {
                         "dd_name": "VOLDD",
-                        "volume": test_volume,
+                        "volume_name": test_volume,
                         "unit": "3390",
                         "disposition": "old",
                     }

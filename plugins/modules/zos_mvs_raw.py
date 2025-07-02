@@ -700,7 +700,7 @@ options:
             description: The DD name for the volume.
             type: str
             required: true
-          volume:
+          volume_name:
             description:
               - Volume serial number or serial numbers on which a data set resides or will reside.
             type: str
@@ -1406,7 +1406,7 @@ EXAMPLES = r"""
           type: seq
       - dd_volume:
           dd_name: voldd
-          volume: "000000"
+          volume_name: "000000"
           unit: "3390"
           disposition: old
       - dd_input:
@@ -1973,7 +1973,7 @@ def run_module():
         )
     )
     dd_volume_base = dict(
-        volume=dict(type="str", required=True),
+        volume_name=dict(type="str", required=True),
         unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
     )
@@ -2220,7 +2220,7 @@ def parse_and_validate_args(params):
         )
     )
     dd_volume_base = dict(
-        volume=dict(type="str", required=True),
+        volume_name=dict(type="str", required=True),
         unit=dict(type="str", choices=["SYSD", "TAPE", "DISK", "3390"], required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"], required=True),
     )
@@ -2880,7 +2880,7 @@ def build_data_definition(dd):
     elif dd.get("dd_volume"):
         volume_args = dd["dd_volume"]
         data_definition = VolumeDefinition(
-            volume=volume_args.get("volume"),
+            volume_name=volume_args.get("volume_name"),
             unit=volume_args.get("unit"),
             disposition=volume_args.get("disposition"),
         )

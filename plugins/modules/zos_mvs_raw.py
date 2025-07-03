@@ -1408,8 +1408,11 @@ EXAMPLES = r"""
       - dd_input:
           dd_name: sysin
           content: " VOLDUMP VOL(voldd) DSNAME(dumpdd) FULL"
-      - dd_dummy:
+      - dd_output:
           dd_name: sysprint
+          return_content:
+            type: text
+          
 
 - name: List data sets matching patterns in catalog,
     save output to a new sequential data set and return output as text.

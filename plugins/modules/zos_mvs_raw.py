@@ -1412,7 +1412,6 @@ EXAMPLES = r"""
           dd_name: sysprint
           return_content:
             type: text
-          
 
 - name: List data sets matching patterns in catalog,
     save output to a new sequential data set and return output as text.

@@ -87,8 +87,11 @@ def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_s
                     }
                 },
                 {
-                    "dd_dummy": {
-                        "dd_name": "SYSPRINT"
+                    "dd_output":{
+                        "dd_name":"SYSPRINT",
+                        "return_content":{
+                            "type":"text"
+                        }
                     }
                 },
             ],

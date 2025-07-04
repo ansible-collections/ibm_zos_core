@@ -45,6 +45,62 @@ def get_temp_idcams_dataset(hosts):
 #                               Data set DD tests                              #
 # ---------------------------------------------------------------------------- #
 
+def test_full_volume_dump_with_custom_dd_volume(ansible_zos_module, volumes_on_systems):
+    hosts = ansible_zos_module
+    dump_dataset = get_tmp_ds_name()
+    volume_handler = Volume_Handler(volumes_on_systems)
+    test_volume = volume_handler.get_available_vol()
+    try:
+        results = hosts.all.zos_mvs_raw(
+            program_name="ADRDSSU",
+            auth=True,
+            verbose=True,
+            dds=[
+                {
+                    "dd_data_set": {
+                        "dd_name": "DUMPDD",
+                        "data_set_name": dump_dataset,
+                        "disposition": "new",
+                        "disposition_normal": "catalog",
+                        "disposition_abnormal": "delete",
+                        "space_type": "cyl",
+                        "space_primary": 10,
+                        "space_secondary": 2,
+                        "record_format": "u",
+                        "record_length": 0,
+                        "block_size": 32760,
+                        "type": "seq",
+                    }
+                },
+                {
+                    "dd_volume": {
+                        "dd_name": "VOLDD",
+                        "volume_name": test_volume,
+                        "unit": "3390",
+                        "disposition": "old",
+                    }
+                },
+                {
+                    "dd_input": {
+                        "dd_name": "SYSIN",
+                        "content": "  DUMP FULL INDDNAME(VOLDD) OUTDDNAME(DUMPDD)"
+                    }
+                },
+                {
+                    "dd_output":{
+                        "dd_name":"SYSPRINT",
+                        "return_content":{
+                            "type":"text"
+                        }
+                    }
+                },
+            ],
+        )
+        for result in results.contacted.values():
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert result.get("changed", False) is True
+    finally:
+        hosts.all.zos_data_set(name=dump_dataset, state="absent")
 
 def test_failing_name_format(ansible_zos_module):
     hosts = ansible_zos_module

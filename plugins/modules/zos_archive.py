@@ -318,6 +318,10 @@ options:
         be restored to their original encoding.
       - If encoding fails for any file in a set of multiple files, an
         exception will be raised and archiving will be skipped.
+      - The original files in C(src) will be converted. The module will
+        revert the encoding conversion after a successful archive, but
+        no backup will be created. If you need to encode using a backup
+        and then archive take a look at L(zos_encode,./zos_encode.html) module.
     type: dict
     required: false
     suboptions:
@@ -780,6 +784,10 @@ class Archive():
     def encode_source(self):
         pass
 
+    @abc.abstractmethod
+    def revert_encoding(self):
+        pass
+
     @property
     def result(self):
         """Returns a dict with the results.
@@ -1045,6 +1053,23 @@ class USSArchive(Archive):
             "skipped_encoding_targets": self.skipped_encoding_targets
         }
 
+    def revert_encoding(self):
+        """Revert src encoding to original
+        """
+        enc_utils = encode.EncodeUtils()
+
+        for target in self.encoded:
+            try:
+                convert_rc = enc_utils.uss_convert_encoding_prev(
+                    target, target, self.to_encoding, self.from_encoding
+                )
+                if convert_rc:
+                    enc_utils.uss_tag_encoding(target, self.from_encoding)
+
+            except Exception as e:
+                warning_message = f"Failed to revert source file {os.path.abspath(target)} to its original encoding."
+                raise EncodeError(warning_message) from e
+
 
 class TarArchive(USSArchive):
     def __init__(self, module):
@@ -1180,6 +1205,7 @@ class MVSArchive(Archive):
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
+        self.ds_types = {}
 
     def open(self):
         pass
@@ -1536,7 +1562,8 @@ class MVSArchive(Archive):
             try:
                 ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
                 if not ds_type:
-                    raise EncodeError("Unable to determine data set type of {0}".format(target))
+                    ds_type = "PS"
+                self.ds_types[target] = ds_type
                 enc_utils.mvs_convert_encoding(
                     target,
                     target,
@@ -1546,7 +1573,7 @@ class MVSArchive(Archive):
                     dest_type=ds_type,
                     tmphlq=self.tmphlq
                 )
-                self.encoded.append(os.path.abspath(target))
+                self.encoded.append(target)
             except Exception:
                 self.failed_on_encoding.append(os.path.abspath(target))
         return {
@@ -1554,6 +1581,27 @@ class MVSArchive(Archive):
             "failed_on_encoding": self.failed_on_encoding,
             "skipped_encoding_targets": self.skipped_encoding_targets
         }
+
+    def revert_encoding(self):
+        """Revert src encoding to original
+        """
+        enc_utils = encode.EncodeUtils()
+
+        for target in self.encoded:
+            try:
+                ds_type = self.ds_types.get(target, "PS")
+                enc_utils.mvs_convert_encoding(
+                    target,
+                    target,
+                    self.to_encoding,
+                    self.from_encoding,
+                    src_type=ds_type,
+                    dest_type=ds_type,
+                    tmphlq=self.tmphlq
+                )
+            except Exception as e:
+                warning_message = f"Failed to revert source file {os.path.abspath(target)} to its original encoding."
+                raise EncodeError(warning_message) from e
 
 
 class AMATerseArchive(MVSArchive):
@@ -2013,8 +2061,10 @@ def run_module():
     if archive.dest_exists() and not archive.force:
         module.fail_json(msg="%s file exists. Use force flag to replace dest" % archive.dest)
 
+    encoding_result = None
     archive.find_targets()
     if archive.targets_exist():
+        # encoding the source if encoding is provided.
         if encoding:
             archive.encoding_targets()
             encoding_result = archive.encode_source()
@@ -2031,6 +2081,9 @@ def run_module():
         if archive.dest_type() == "USS":
             archive.update_permissions()
         archive.changed = archive.is_different_from_original()
+        # after successful archive revert the source encoding for all the files encoded.
+        if encoding_result:
+            archive.revert_encoding()
     archive.get_state()
 
     module.exit_json(**archive.result)

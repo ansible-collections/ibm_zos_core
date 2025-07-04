@@ -1,0 +1,4 @@
+minor_changes:
+  - zos_archive - Adds support for reverting the encoding of a source's
+    files after archiving them. 
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2192)

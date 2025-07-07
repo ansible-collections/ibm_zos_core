@@ -1043,7 +1043,7 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name,noscratch=noscratch)
+                    DataSet.delete(name, noscratch=noscratch)
                     changed = True
                     present = False
                 else:

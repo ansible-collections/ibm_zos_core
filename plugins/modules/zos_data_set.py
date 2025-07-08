@@ -301,7 +301,7 @@ options:
   noscratch:
     description:
       - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
-      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume. 
+      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
         The Data Set Control Block is not removed from the VTOC.
       - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
     type: bool

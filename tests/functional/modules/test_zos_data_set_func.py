@@ -1190,7 +1190,6 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
             noscratch=True
         )
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         # Assert 1: Verify the data set is GONE from the catalog.
@@ -1200,7 +1199,6 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
             state='absent',
         )
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is False
         # catalog_check = hosts.all.command(f"dls '{dataset}'", failed_when=False)
         # for result in catalog_check.contacted.values():
@@ -1217,8 +1215,7 @@ def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
             volumes=volume
         )
         for result in vtoc_check_and_delete.contacted.values():
-            # This assertion proves the data set existed on the volume's VTOC
-            print(result)
+            # This assertion proves the data set existed on the volume's VTOC.
             assert result.get("changed") is True
     finally:
         # Cleanup: Perform a final, full delete from the volume since it's still there.
@@ -1263,7 +1260,6 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
         )
         # # Assert on the main action results
         for result in act_results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(
@@ -1271,10 +1267,8 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
             state='absent',
         )
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is False
         for result in act_results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(
@@ -1282,7 +1276,6 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
             state='absent',
         )
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is False
         
         # # --- Verification Assertions ---
@@ -1298,7 +1291,6 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
         )
         for result in vtoc_check_and_delete.contacted.values():
             # This assertion proves the data set existed on the volume's VTOC
-            print(result)
             assert result.get("changed") is True
         
         vtoc_check_and_delete = hosts.all.zos_data_set(
@@ -1308,8 +1300,6 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
         )
         for result in vtoc_check_and_delete.contacted.values():
             # This assertion proves the data set existed on the volume's VTOC
-            print(result)
-            
             assert result.get("changed") is True
     finally:
         # --- Cleanup ---

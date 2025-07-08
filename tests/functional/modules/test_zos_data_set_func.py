@@ -1309,6 +1309,7 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
         for result in vtoc_check_and_delete.contacted.values():
             # This assertion proves the data set existed on the volume's VTOC
             print(result)
+            
             assert result.get("changed") is True
     finally:
         # --- Cleanup ---

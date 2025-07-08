@@ -300,8 +300,9 @@ options:
     default: false
   noscratch:
     description:
-      - "For C(state=absent), specifies whether to keep the data set's entry in the VTOC."
-      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume. The DSCB is not removed from the VTOC.
+      - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
+      - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume. 
+        The Data Set Control Block is not removed from the VTOC.
       - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
     type: bool
     required: false
@@ -585,9 +586,9 @@ options:
         default: false
       noscratch:
         description:
-          - "For C(state=absent), specifies whether to keep the data set's entry in the VTOC."
+          - "When C(state=absent), specifies whether to keep the data set's entry in the VTOC."
           - If C(noscratch=True), the data set is uncataloged but not physically removed from the volume.
-            The DSCB is not removed from the VTOC.
+            The Data Set Control Block is not removed from the VTOC.
           - This is the equivalent of using C(NOSCRATCH) in an C(IDCAMS DELETE) command.
         type: bool
         required: false
@@ -751,7 +752,7 @@ EXAMPLES = r"""
     name: someds.name.here
     state: absent
 
-- name: Uncatalog a data set but do not remove it from the volume
+- name: Uncatalog a data set but do not remove it from the volume.
   zos_data_set:
     name: someds.name.here
     state: absent

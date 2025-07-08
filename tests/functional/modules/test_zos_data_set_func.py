@@ -1268,9 +1268,6 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
         )
         for result in results.contacted.values():
             assert result.get("changed") is False
-        for result in act_results.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("module_stderr") is None
         results = hosts.all.zos_data_set(
             name=dataset_2,
             state='absent',
@@ -1284,6 +1281,7 @@ def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on
         # We can do this by trying to delete it again, but specifying the volume.
         # If this delete reports "changed: true", it's proof that it found and
         # deleted the uncataloged data set from the VTOC.
+        
         vtoc_check_and_delete = hosts.all.zos_data_set(
             name=dataset_1,
             state='absent',

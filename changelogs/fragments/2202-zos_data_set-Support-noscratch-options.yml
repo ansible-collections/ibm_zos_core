@@ -1,8 +1,8 @@
-minor_changes:
+trivial:
    - zos_data_set - Adds the `noscratch` option to allow uncataloging
      a data set without deleting it from the volume's VTOC.
      (https://github.com/ansible-collections/ibm_zos_core/pull/2202)
-minor_changes:
+trivial:
    - data_set - Internal updates to support the noscratch option.
      https://github.com/ansible-collections/ibm_zos_core/pull/2202)
 trivial:

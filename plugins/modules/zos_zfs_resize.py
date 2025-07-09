@@ -421,6 +421,16 @@ def create_trace_dataset(name, member=False):
         rc : bool
             Indicates if datasets were made.
     """
+    # Adding new DataSet class in this call.
+    # dataset = data_set.DataSet(
+    #         name=dataset_name,
+    #         data_set_type="PDS",
+    #         record_length=200,
+    #         record_format="VB",
+    #         space_type="K",
+    #         space_primary="42000",
+    #         space_secondary="25000"
+    #     )
     if member:
         dataset_name = data_set.extract_dsname(name)
         data_set.DataSetUtils.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=200, record_format="VB",

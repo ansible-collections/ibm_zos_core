@@ -108,6 +108,7 @@ changed:
     True if the state was changed, otherwise False.
   returned: always
   type: bool
+  sample: True
 jobs:
   description:
     The output information for a list of jobs matching specified criteria.
@@ -277,14 +278,15 @@ jobs:
             "job_name": "LINKJOB",
             "owner": "ADMIN",
             "job_id": "JOB01427",
-            "ret_code": "null",
-            "job_class": "K",
             "content_type": "JOB",
-            "svc_class": "?",
+            "ret_code": { "msg" : "CC", "msg_code" : "0000", "code" : "0", msg_txt : "CC", "steps" : [{"step_name": "STEP0001", 'step_cc': 0}\] },
+            "job_class": "STC",
+            "svc_class": None,
             "priority": 1,
             "asid": 0,
             "creation_date": "2023-05-03",
             "creation_time": "12:13:00",
+            "program_name": "BPXBATCH",
             "queue_position": 3,
             "execution_time": "00:00:02",
             "system": "STL1",
@@ -298,7 +300,7 @@ jobs:
             "owner": "ADMIN",
             "job_id": "JOB16577",
             "content_type": "JOB",
-            "ret_code": { "msg": "CANCELED", "code": "null" },
+            "ret_code": { "msg" : "CANCELED", "msg_code" : None, "code" : None, msg_txt : "CANCELED", "steps" : [\] },
             "job_class": "A",
             "svc_class": "E",
             "priority": 0,
@@ -307,6 +309,7 @@ jobs:
             "creation_time": "12:14:00",
             "queue_position": 0,
             "execution_time": "00:00:03",
+            "program_name": "None",
             "system": "STL1",
             "subsystem": "STL1",
             "cpu_time": 1414,

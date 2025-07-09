@@ -182,10 +182,6 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
                 assert rc.get("msg_txt") == "CC"
                 assert rc.get("steps") is not None
 
-                #step = rc.get("steps")[0]
-                #assert step.get("step_name") is not None
-                #assert step.get("step_cc") is not None
-
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=jdata_set_name, state="absent")

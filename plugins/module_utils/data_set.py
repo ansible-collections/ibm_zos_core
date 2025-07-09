@@ -241,7 +241,7 @@ class DataSet(object):
         return True
 
     @staticmethod
-    def ensure_absent(name, volumes=None, tmphlq=None):
+    def ensure_absent(name, volumes=None, tmphlq=None, noscratch=False):
         """Deletes provided data set if it exists.
 
         Parameters
@@ -252,13 +252,15 @@ class DataSet(object):
             The volumes the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
 
         Returns
         -------
         bool
             Indicates if changes were made.
         """
-        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq)
+        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq, noscratch=noscratch)
         return changed
 
     # ? should we do additional check to ensure member was actually created?
@@ -1003,7 +1005,7 @@ class DataSet(object):
         return present, changed
 
     @staticmethod
-    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None):
+    def attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=None, noscratch=False):
         """Attempts to catalog a data set if not already cataloged, then deletes
            the data set.
            This is helpful when a data set currently cataloged is not the data
@@ -1019,6 +1021,8 @@ class DataSet(object):
             The volumes the data set may reside on.
         tmphlq : str
             High Level Qualifier for temporary datasets.
+        noscratch : bool
+            If True, the data set is uncataloged but not physically removed from the volume.
 
         Returns
         -------
@@ -1039,7 +1043,7 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name)
+                    DataSet.delete(name, noscratch=noscratch)
                     changed = True
                     present = False
                 else:
@@ -1074,7 +1078,7 @@ class DataSet(object):
 
                     if present:
                         try:
-                            DataSet.delete(name)
+                            DataSet.delete(name, noscratch=noscratch)
                         except DatasetDeleteError:
                             try:
                                 DataSet.uncatalog(name, tmphlq=tmphlq)
@@ -1101,14 +1105,14 @@ class DataSet(object):
                 present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name)
+                    DataSet.delete(name, noscratch=noscratch)
                     changed = True
                     present = False
         else:
             present = DataSet.data_set_cataloged(name, None, tmphlq=tmphlq)
             if present:
                 try:
-                    DataSet.delete(name)
+                    DataSet.delete(name, noscratch=noscratch)
                     changed = True
                     present = False
                 except DatasetDeleteError:
@@ -1414,7 +1418,7 @@ class DataSet(object):
         return changed
 
     @staticmethod
-    def delete(name):
+    def delete(name, noscratch=False):
         """A wrapper around zoautil_py
         datasets.delete() to raise exceptions on failure.
 
@@ -1428,7 +1432,7 @@ class DataSet(object):
         DatasetDeleteError
             When data set deletion fails.
         """
-        rc = datasets.delete(name)
+        rc = datasets.delete(name, noscratch=noscratch)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
 
@@ -2721,7 +2725,7 @@ class MVSDataSet():
         self.set_state("present")
         return rc
 
-    def ensure_absent(self, tmp_hlq=None):
+    def ensure_absent(self, tmp_hlq=None, noscratch=False):
         """Removes the data set.
 
         Parameters
@@ -2734,7 +2738,7 @@ class MVSDataSet():
         int
             Indicates if changes were made.
         """
-        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq)
+        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq, noscratch=noscratch)
         if rc == 0:
             self.set_state("absent")
         return rc

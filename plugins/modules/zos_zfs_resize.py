@@ -423,11 +423,11 @@ def create_trace_dataset(name, member=False):
     """
     if member:
         dataset_name = data_set.extract_dsname(name)
-        data_set.DataSet.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=200, record_format="VB",
+        data_set.DataSetUtils.ensure_present(name=dataset_name, replace=False, type="PDSE", record_length=200, record_format="VB",
                                         space_type="K", space_primary="42000", space_secondary="25000")
-        rc = data_set.DataSet.ensure_member_present(name)
+        rc = data_set.DataSetUtils.ensure_member_present(name)
     else:
-        rc = data_set.DataSet.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
+        rc = data_set.DataSetUtils.ensure_present(name=name, replace=False, type="PDS", record_length=200, record_format="VB",
                                              space_type="K", space_primary="42000", space_secondary="25000")
 
     return rc
@@ -448,7 +448,7 @@ def validate_dataset_info(dataset):
     """
     dataset = data_set.extract_dsname(dataset)
 
-    trace_ds = data_set.DataSetUtils(data_set=dataset)
+    trace_ds = data_set.DataSetView(data_set=dataset)
     trace_information = trace_ds._gather_data_set_info()
 
     if trace_information["dsorg"] != "PO":
@@ -541,7 +541,7 @@ def run_module():
         module.exit_json(**result)
 
     # Validate if the target zFS exist
-    if not (data_set.DataSet.data_set_exists(target)):
+    if not (data_set.DataSetUtils.data_set_exists(target)):
         module.fail_json(msg=f"zFS Target {target} does not exist", **result)
 
     # Validation to found target on the system and also get the mount_point
@@ -622,12 +622,12 @@ def run_module():
     if trace_destination is not None:
         if data_set.is_data_set(data_set.extract_dsname(trace_destination)):
             if data_set.is_member(trace_destination):
-                if not data_set.DataSet.data_set_exists(data_set.extract_dsname(trace_destination)):
+                if not data_set.DataSetUtils.data_set_exists(data_set.extract_dsname(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=True)
                 else:
                     is_valid_trace_destination, msg_trace = validate_dataset_info(dataset=trace_destination)
             else:
-                if not (data_set.DataSet.data_set_exists(trace_destination)):
+                if not (data_set.DataSetUtils.data_set_exists(trace_destination)):
                     trace_destination_created = create_trace_dataset(name=trace_destination, member=False)
                 else:
                     is_valid_trace_destination, msg_trace = validate_dataset_info(dataset=trace_destination)

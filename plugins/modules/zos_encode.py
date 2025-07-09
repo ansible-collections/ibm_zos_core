@@ -379,14 +379,14 @@ def check_mvs_dataset(ds, tmphlq=None):
     """
     check_rc = False
     ds_type = None
-    if not data_set.DataSet.data_set_exists(ds, tmphlq=tmphlq):
+    if not data_set.DataSetUtils.data_set_exists(ds, tmphlq=tmphlq):
         raise EncodeError(
             "Data set {0} is not cataloged, please check data set provided in"
             "the src option.".format(ds)
         )
     else:
         check_rc = True
-        ds_type = data_set.DataSetUtils(ds, tmphlq=tmphlq).ds_type()
+        ds_type = data_set.DataSetView(ds, tmphlq=tmphlq).ds_type()
         if not ds_type:
             raise EncodeError("Unable to determine data set type of {0}".format(ds))
     return check_rc, ds_type
@@ -551,14 +551,14 @@ def run_module():
             verify_uss_path_exists(src)  # This can raise an exception.
         else:
             is_mvs_src = True
-            src_data_set = data_set.MVSDataSet(src)
+            src_data_set = data_set.DataSet(src)
             is_name_member = data_set.is_member(src_data_set.name)
             dest_exists = False
 
             if not is_name_member:
-                dest_exists = data_set.DataSet.data_set_exists(src_data_set.name, tmphlq=tmphlq)
+                dest_exists = data_set.DataSetUtils.data_set_exists(src_data_set.name, tmphlq=tmphlq)
             else:
-                dest_exists = data_set.DataSet.data_set_exists(
+                dest_exists = data_set.DataSetUtils.data_set_exists(
                     data_set.extract_dsname(src_data_set.name),
                     tmphlq=tmphlq
                 )
@@ -570,14 +570,14 @@ def run_module():
                 )
 
             if is_name_member:
-                if not data_set.DataSet.data_set_member_exists(src_data_set.name):
+                if not data_set.DataSetUtils.data_set_member_exists(src_data_set.name):
                     raise EncodeError("Cannot find member {0} in {1}".format(
                         data_set.extract_member(src_data_set.raw_name),
                         data_set.extract_dsname(src_data_set.raw_name)
                     ))
                 ds_type_src = "PS"
             else:
-                ds_type_src = data_set.DataSet.data_set_type(src_data_set.name, tmphlq=tmphlq)
+                ds_type_src = data_set.DataSetUtils.data_set_type(src_data_set.name, tmphlq=tmphlq)
 
             if not ds_type_src:
                 raise EncodeError("Unable to determine data set type of {0}".format(src_data_set.raw_name))
@@ -600,13 +600,13 @@ def run_module():
                 is_uss_dest = True
             else:
                 is_mvs_dest = True
-                dest_data_set = data_set.MVSDataSet(dest)
+                dest_data_set = data_set.DataSet(dest)
                 is_name_member = data_set.is_member(dest_data_set.name)
 
                 if not is_name_member:
-                    dest_exists = data_set.DataSet.data_set_exists(dest_data_set.name, tmphlq=tmphlq)
+                    dest_exists = data_set.DataSetUtils.data_set_exists(dest_data_set.name, tmphlq=tmphlq)
                 else:
-                    dest_exists = data_set.DataSet.data_set_exists(
+                    dest_exists = data_set.DataSetUtils.data_set_exists(
                         data_set.extract_dsname(dest_data_set.name),
                         tmphlq=tmphlq
                     )
@@ -620,7 +620,7 @@ def run_module():
                 if is_name_member:
                     ds_type_dest = "PS"
                 else:
-                    ds_type_dest = data_set.DataSet.data_set_type(dest_data_set.name, tmphlq=tmphlq)
+                    ds_type_dest = data_set.DataSetUtils.data_set_type(dest_data_set.name, tmphlq=tmphlq)
 
             if (not is_uss_dest) and (path.sep in dest):
                 try:
@@ -646,7 +646,7 @@ def run_module():
         # Check if the dest is required to be backup before conversion
         if backup:
             if backup_name:
-                backup_data_set = data_set.MVSDataSet(backup_name)
+                backup_data_set = data_set.DataSet(backup_name)
                 if backup_data_set.is_gds_active:
                     raise EncodeError(
                         f"The generation data set {backup_name} cannot be used as backup. "

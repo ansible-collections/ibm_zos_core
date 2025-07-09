@@ -34,7 +34,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
     extract_dsname,
     temp_member_name,
-    DataSet,
+    DataSetUtils,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
@@ -96,7 +96,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
         # added the check for a sub-mmember, just in this case
         if not bk_dsn or "(" not in bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
-        elif DataSet.is_gds_positive_relative_name(bk_dsn):
+        elif DataSetUtils.is_gds_positive_relative_name(bk_dsn):
             bk_dsn = datasets.create(bk_dsn)
 
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
@@ -127,7 +127,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             except exceptions.ZOAUException as copy_exception:
                 cp_rc = copy_exception.response.rc
         else:
-            if DataSet.is_gds_positive_relative_name(bk_dsn):
+            if DataSetUtils.is_gds_positive_relative_name(bk_dsn):
                 cp_rc = datasets.copy(dsn, bk_dsn)
             else:
                 cp_rc = _copy_ds(dsn, bk_dsn, tmphlq=tmphlq)
@@ -268,7 +268,7 @@ def _copy_ds(ds, bk_ds, tmphlq=None):
                 ds, out, err
             )
         )
-    if rc != 0 and DataSet.is_empty(ds, tmphlq=tmphlq):
+    if rc != 0 and DataSetUtils.is_empty(ds, tmphlq=tmphlq):
         rc = 0
     return rc
 

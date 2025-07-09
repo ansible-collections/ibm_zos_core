@@ -696,7 +696,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    DataSet,
+    DataSetUtils,
 )
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
@@ -1067,14 +1067,14 @@ def run_module():
 
     if location == "data_set":
         # Resolving a relative GDS name and escaping special symbols if needed.
-        src_data = data_set.MVSDataSet(src)
+        src_data = data_set.DataSet(src)
 
         # Checking that the source is actually present on the system.
         if volume is not None:
             volumes = [volume]
             # Get the data set name to catalog it.
             src_ds_name = data_set.extract_dsname(src_data.name)
-            present, changed = DataSet.attempt_catalog_if_necessary(src_ds_name, volumes)
+            present, changed = DataSetUtils.attempt_catalog_if_necessary(src_ds_name, volumes)
 
             if not present:
                 module.fail_json(
@@ -1082,10 +1082,10 @@ def run_module():
                          f"not be cataloged on the volume {volume}.")
                 )
         elif data_set.is_member(src_data.name):
-            if not DataSet.data_set_member_exists(src_data.name):
+            if not DataSetUtils.data_set_member_exists(src_data.name):
                 module.fail_json(msg=f"Cannot submit job, the data set member {src_data.raw_name} was not found.")
         else:
-            if not DataSet.data_set_exists(src_data.name):
+            if not DataSetUtils.data_set_exists(src_data.name):
                 module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.")
 
         job_submitted_id, duration = submit_src_jcl(

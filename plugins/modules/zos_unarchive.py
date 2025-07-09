@@ -902,8 +902,8 @@ class MVSUnarchive(Unarchive):
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
         self.source_size = 0
-        if data_set.DataSet.is_gds_relative_name(self.src):
-            self.src = data_set.DataSet.resolve_gds_absolute_name(self.src)
+        if data_set.DataSetUtils.is_gds_relative_name(self.src):
+            self.src = data_set.DataSetUtils.resolve_gds_absolute_name(self.src)
 
     def dest_type(self):
         """Returns the destination type.
@@ -1033,7 +1033,7 @@ class MVSUnarchive(Unarchive):
         if space_primary is None:
             arguments.update(space_primary=self._compute_dest_data_set_size())
         arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+        changed = data_set.DataSetUtils.ensure_present(**arguments)
         return arguments["name"], changed
 
     def _get_include_data_sets_cmd(self):
@@ -1129,7 +1129,7 @@ class MVSUnarchive(Unarchive):
         bool
             If the source exists.
         """
-        return data_set.DataSet.data_set_exists(self.src, tmphlq=self.tmphlq)
+        return data_set.DataSetUtils.data_set_exists(self.src, tmphlq=self.tmphlq)
 
     def _get_restored_datasets(self, output):
         """Gets the datasets that were successfully restored.
@@ -1231,13 +1231,13 @@ class MVSUnarchive(Unarchive):
         """
         if data_set is not None:
             for ds in data_sets:
-                data_set.DataSet.ensure_absent(ds)
+                data_set.DataSetUtils.ensure_absent(ds)
         if uss_files is not None:
             for file in uss_files:
                 os.remove(file)
         if remove_targets:
             for target in self.targets:
-                data_set.DataSet.ensure_absent(target)
+                data_set.DataSetUtils.ensure_absent(target)
 
     def encoding_targets(self):
         """Finds encoding target datasets in host.
@@ -1263,7 +1263,7 @@ class MVSUnarchive(Unarchive):
 
         for target in self.encode_targets:
             try:
-                ds_utils = data_set.DataSetUtils(target, tmphlq=self.tmphlq)
+                ds_utils = data_set.DataSetView(target, tmphlq=self.tmphlq)
                 ds_type = ds_utils.ds_type()
                 if not ds_type:
                     ds_type = "PS"

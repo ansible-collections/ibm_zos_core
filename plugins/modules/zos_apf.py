@@ -324,7 +324,7 @@ except Exception:
 
 
 # supported data set types
-DS_TYPE = data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED)
+DS_TYPE = data_set.DataSetUtils.MVS_SEQ.union(data_set.DataSetUtils.MVS_PARTITIONED)
 
 
 def backupOper(module, src, backup, tmphlq=None):
@@ -354,7 +354,7 @@ def backupOper(module, src, backup, tmphlq=None):
     """
     file_type = None
     if data_set.is_data_set(src):
-        file_type = data_set.DataSet.data_set_type(src, tmphlq=tmphlq)
+        file_type = data_set.DataSetUtils.data_set_type(src, tmphlq=tmphlq)
     else:
         if os.path.exists(src):
             file_type = 'USS'

@@ -44,9 +44,286 @@ except ImportError:
     ztypes = ZOAUImportError(traceback.format_exc())
 
 
-class DataSet(object):
-    """Perform various data set operations such as creation, deletion and cataloging."""
+class DataSet():
+    """
+    This class represents a z/OS data set that can be yet to be created or
+    already created in the system. It encapsulates the data set attributes
+    to easy access and provides operations to perform in the same data set.
 
+    """
+    def __init__(
+        self,
+        name,
+        escape_name=False,
+        data_set_type=None,
+        state=None,
+        organization=None,
+        record_format=None,
+        volumes=None,
+        block_size=None,
+        record_length=None,
+        space_primary=None,
+        space_secondary=None,
+        space_type=None,
+        directory_blocks=None,
+        key_length=None,
+        key_offset=None,
+        sms_storage_class=None,
+        sms_data_class=None,
+        sms_management_class=None,
+        total_space=None,
+        used_space=None,
+        last_referenced=None,
+        is_cataloged=None,
+    ):
+        # Different class variables
+        self.data_set_possible_states = {"unknown", "present", "absent"}
+        self.name = name
+        self.organization = organization
+        self.record_format = record_format
+        self.volumes = volumes
+        self.block_size = block_size
+        self.record_length = record_length
+        self.total_space = total_space
+        self.used_space = used_space
+        self.last_referenced = last_referenced
+        self.raw_name = name
+        self.data_set_type = data_set_type
+        self.state = state
+        self.space_primary = space_primary
+        self.space_secondary = space_secondary
+        self.space_type = space_type
+        self.directory_blocks = directory_blocks
+        self.key_length = key_length
+        self.key_offset = key_offset
+        self.sms_storage_class = sms_storage_class
+        self.sms_data_class = sms_data_class
+        self.sms_management_class = sms_management_class
+        self.volumes = volumes
+        self.is_gds_active = False
+        self.is_cataloged = False
+
+        # If name has escaped chars or is GDS relative name we clean it.
+        if escape_name:
+            self.name = DataSet.escape_data_set_name(self.name)
+        if DataSet.is_gds_relative_name(self.name):
+            try:
+                self.name = DataSet.resolve_gds_absolute_name(self.name)
+                self.is_gds_active = True
+            except Exception:
+                # This means the generation is a positive version so is only used for creation.
+                self.is_gds_active = False
+        if self.data_set_type and (self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs"):
+            # When trying to create a new VSAM with a specified record format will fail
+            # with ZOAU
+            self.record_format = None
+
+    def init_from_zoau_data_set_class(self, zoau_data_set):
+        print(f"zoau data_set_class {zoau_data_set}")
+        data_set = DataSet()
+
+    def create(self, tmp_hlq=None, replace=True, force=False):
+        """Creates the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        arguments = {
+            "name": self.name,
+            "raw_name": self.raw_name,
+            "type": self.data_set_type,
+            "space_primary": self.space_primary,
+            "space_secondary": self.space_secondary,
+            "space_type": self.space_type,
+            "record_format": self.record_format,
+            "record_length": self.record_length,
+            "block_size": self.block_size,
+            "directory_blocks": self.directory_blocks,
+            "key_length": self.key_length,
+            "key_offset": self.key_offset,
+            "sms_storage_class": self.sms_storage_class,
+            "sms_data_class": self.sms_data_class,
+            "sms_management_class": self.sms_management_class,
+            "volumes": self.volumes,
+            "tmp_hlq": tmp_hlq,
+            "force": force,
+        }
+        formatted_args = DataSet._build_zoau_args(**arguments)
+        changed = False
+        if DataSet.data_set_exists(self.name, tmphlq=tmp_hlq):
+            DataSet.delete(self.name)
+            changed = True
+        zoau_data_set = datasets.create(**formatted_args)
+        if zoau_data_set is not None:
+            self.set_state("present")
+            self.name = zoau_data_set.name
+            return True
+        return changed
+
+    def ensure_present(self, tmp_hlq=None, replace=False, force=False):
+        """ Make sure that the data set is created or fail creating it.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+        replace : bool
+            Used to determine behavior when data set already exists.
+        force : bool
+            Used to determine behavior when performing member operations on a pdse.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        arguments = {
+            "name": self.name,
+            "raw_name": self.raw_name,
+            "type": self.data_set_type,
+            "space_primary": self.space_primary,
+            "space_secondary": self.space_secondary,
+            "space_type": self.space_type,
+            "record_format": self.record_format,
+            "record_length": self.record_length,
+            "block_size": self.block_size,
+            "directory_blocks": self.directory_blocks,
+            "key_length": self.key_length,
+            "key_offset": self.key_offset,
+            "sms_storage_class": self.sms_storage_class,
+            "sms_data_class": self.sms_data_class,
+            "sms_management_class": self.sms_management_class,
+            "volumes": self.volumes,
+            "replace": replace,
+            "tmp_hlq": tmp_hlq,
+            "force": force,
+        }
+        rc = DataSetUtils.ensure_present(**arguments)
+        self.set_state("present")
+        return rc
+
+    def ensure_absent(self, tmp_hlq=None):
+        """Removes the data set.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSetUtils.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq)
+        if rc == 0:
+            self.set_state("absent")
+        return rc
+
+    def delete(self):
+        """Deletes the data set in question.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        DataSetUtils.ensure_absent(self.name, self.volumes)
+        self.set_state("absent")
+
+    def ensure_cataloged(self, tmp_hlq=None):
+        """
+        Ensures the data set is cataloged, if not catalogs it.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSetUtils.ensure_cataloged(name=self.name, volumes=self.volumes, tmphlq=tmp_hlq)
+        self.is_cataloged = True
+        return rc
+
+    def catalog(self, tmp_hlq=None):
+        """Catalog the data set in question.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSetUtils.catalog(self.name, self.volumes, tmphlq=tmp_hlq)
+        self.is_cataloged = True
+        return rc
+
+    def ensure_uncataloged(self, tmp_hlq=None):
+        """
+        Ensures the data set is uncataloged, if not catalogs it.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSetUtils.ensure_uncataloged(self.name, tmphlq=tmp_hlq)
+        self.is_cataloged = False
+        return rc
+
+    def uncatalog(self, tmp_hlq=None):
+        """Uncatalog the data set in question.
+
+        Parameters
+        ----------
+        tmp_hlq : str
+            High level qualifier for temporary datasets.
+
+        Returns
+        -------
+        int
+            Indicates if changes were made.
+        """
+        rc = DataSetUtils.uncatalog(self.name, tmphlq=tmp_hlq)
+        self.is_cataloged = False
+        return rc
+
+    def set_state(self, new_state):
+        """Used to set the data set state.
+
+        Parameters
+        ----------
+        new_state : str {unknown, present, absent}
+            New state of the data set.
+
+        Returns
+        -------
+            bool
+                If state was set properly.
+        """
+        if new_state not in self.data_set_possible_states:
+            raise ValueError(f"State {self.state} not supported for Dataset class.")
+        return True
+
+
+
+
+class DataSetUtils():
     # Module args mapped to equivalent ZOAU data set create args
     _ZOAU_DS_CREATE_ARGS = {
         "name": "name",
@@ -87,6 +364,13 @@ class DataSet(object):
     MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
     MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
     MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
+
+    def init(self):
+        """
+        Standard utility that performs multiple data set related operations without the need of instanciating a
+        Data Set object.
+        """
+        self.util = True
 
     @staticmethod
     def ensure_present(
@@ -202,14 +486,14 @@ class DataSet(object):
         arguments.pop("replace", None)
         present = False
         changed = False
-        if DataSet.data_set_cataloged(name, tmphlq=tmp_hlq):
+        if DataSetUtils.data_set_cataloged(name, tmphlq=tmp_hlq):
             present = True
         # Validate volume conflicts when:
         # 1. Dataset exists in catalog (present=True).
         # 2. User hasn't requested replacement (replace=False).
         # 3. Specific volumes were requested (volumes parameter provided).
         if present and not replace and volumes:
-            cataloged_volumes = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
+            cataloged_volumes = DataSetUtils.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
             requested_volumes = [vol.upper() for vol in volumes]
             if not any(vol.upper() in requested_volumes for vol in cataloged_volumes):
                 raise DatasetCatalogedOnDifferentVolumeError(
@@ -220,12 +504,12 @@ class DataSet(object):
 
         if not present:
             try:
-                DataSet.create(**arguments)
+                changed, data_set = DataSetUtils.create(**arguments)
             except DatasetCreateError as e:
                 raise_error = True
                 # data set exists on volume
                 if "DatasetVerificationError" in e.msg or "Error Code: 0x4704" in e.msg:
-                    present, changed = DataSet.attempt_catalog_if_necessary(
+                    present, changed = DataSetUtils.attempt_catalog_if_necessary(
                         name, volumes, tmphlq=tmp_hlq
                     )
                     if present and changed:
@@ -235,10 +519,10 @@ class DataSet(object):
         if present:
             if not replace:
                 return changed
-            DataSet.replace(**arguments)
+            DataSetUtils.replace(**arguments)
         if type.upper() == "ZFS":
-            DataSet.format_zfs(name)
-        return True
+            DataSetUtils.format_zfs(name)
+        return changed
 
     @staticmethod
     def ensure_absent(name, volumes=None, tmphlq=None):
@@ -258,7 +542,7 @@ class DataSet(object):
         bool
             Indicates if changes were made.
         """
-        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq)
+        changed, present = DataSetUtils.attempt_catalog_if_necessary_and_delete(name, volumes, tmphlq=tmphlq)
         return changed
 
     # ? should we do additional check to ensure member was actually created?
@@ -281,11 +565,11 @@ class DataSet(object):
         bool
             Indicates if changes were made.
         """
-        if DataSet.data_set_member_exists(name):
+        if DataSetUtils.data_set_member_exists(name):
             if not replace:
                 return False
-            DataSet.delete_member(name)
-        DataSet.create_member(name, tmphlq=tmphlq)
+            DataSetUtils.delete_member(name)
+        DataSetUtils.create_member(name, tmphlq=tmphlq)
         return True
 
     @staticmethod
@@ -303,8 +587,8 @@ class DataSet(object):
         bool
             True if the data set member exists.
         """
-        if DataSet.data_set_member_exists(name):
-            DataSet.delete_member(name, force)
+        if DataSetUtils.data_set_member_exists(name):
+            DataSetUtils.delete_member(name, force)
             return True
         return False
 
@@ -327,10 +611,10 @@ class DataSet(object):
         bool
             If changes were made.
         """
-        if DataSet.data_set_cataloged(name, None, tmphlq=tmphlq):
+        if DataSetUtils.data_set_cataloged(name, None, tmphlq=tmphlq):
             return False
         try:
-            DataSet.catalog(name, volumes, tmphlq=tmphlq)
+            DataSetUtils.catalog(name, volumes, tmphlq=tmphlq)
         except DatasetCatalogError:
             raise DatasetCatalogError(
                 name, volumes, "-1", "Data set was not found. Unable to catalog."
@@ -354,8 +638,8 @@ class DataSet(object):
         bool
             If changes were made.
         """
-        if DataSet.data_set_cataloged(name, tmphlq=tmphlq):
-            DataSet.uncatalog(name, tmphlq=tmphlq)
+        if DataSetUtils.data_set_cataloged(name, tmphlq=tmphlq):
+            DataSetUtils.uncatalog(name, tmphlq=tmphlq)
             return True
         return False
 
@@ -395,11 +679,11 @@ class DataSet(object):
             data set fails.
 
         """
-        if not DataSet.data_set_exists(model, tmphlq=tmphlq):
+        if not DataSetUtils.data_set_exists(model, tmphlq=tmphlq):
             raise DatasetNotFoundError(model)
 
         ds_name = extract_dsname(ds_name)
-        model_type = DataSet.data_set_type(model, tmphlq=tmphlq)
+        model_type = DataSetUtils.data_set_type(model, tmphlq=tmphlq)
 
         # The break lines are absolutely necessary, a JCL code line can't
         # be longer than 72 characters. The following JCL is compatible with
@@ -409,7 +693,7 @@ class DataSet(object):
 
         # Now adding special parameters for sequential and partitioned
         # data sets.
-        if model_type not in DataSet.MVS_VSAM:
+        if model_type not in DataSetUtils.MVS_VSAM:
             try:
                 data_set = datasets.list_datasets(model)[0]
             except IndexError:
@@ -475,9 +759,9 @@ class DataSet(object):
 
         if executable:
             dataset_type = "library"
-        elif dataset_type in DataSet.MVS_SEQ:
+        elif dataset_type in DataSetUtils.MVS_SEQ:
             dataset_type = "seq"
-        elif dataset_type in DataSet.MVS_PARTITIONED:
+        elif dataset_type in DataSetUtils.MVS_PARTITIONED:
             dataset_type = "pdse"
 
         if asa_text:
@@ -485,7 +769,7 @@ class DataSet(object):
         elif executable:
             record_format = "u"
 
-        data_set_object = MVSDataSet(
+        data_set_object = DataSet(
             name=ds_name,
             data_set_type=dataset_type,
             state="absent",
@@ -525,9 +809,9 @@ class DataSet(object):
         """
 
         # Resolve GDS names before passing it into listcat
-        if DataSet.is_gds_relative_name(name):
+        if DataSetUtils.is_gds_relative_name(name):
             try:
-                name = DataSet.resolve_gds_absolute_name(name)
+                name = DataSetUtils.resolve_gds_absolute_name(name)
             except GDSNameResolveError:
                 # if GDS name cannot be resolved, it's not in the catalog.
                 return False
@@ -557,7 +841,7 @@ class DataSet(object):
             raise MVSCmdExecError(rc, stdout, stderr)
 
         if volumes:
-            cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmphlq) or []
+            cataloged_volume_list = DataSetUtils.data_set_cataloged_volume_list(name, tmphlq=tmphlq) or []
             if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
@@ -634,10 +918,10 @@ class DataSet(object):
         bool
             If data is found.
         """
-        if DataSet.data_set_cataloged(name, tmphlq=tmphlq):
+        if DataSetUtils.data_set_cataloged(name, tmphlq=tmphlq):
             return True
         elif volume is not None:
-            return DataSet._is_in_vtoc(name, volume, tmphlq=tmphlq)
+            return DataSetUtils._is_in_vtoc(name, volume, tmphlq=tmphlq)
         return False
 
     @staticmethod
@@ -681,7 +965,7 @@ class DataSet(object):
         src_members = datasets.list_members(src)
 
         for member in src_members:
-            if DataSet.data_set_member_exists("{0}({1})".format(dest, member)):
+            if DataSetUtils.data_set_member_exists("{0}({1})".format(dest, member)):
                 return True
 
         return False
@@ -731,10 +1015,10 @@ class DataSet(object):
         else:
             dummy_path, dummy_dirs, files = next(walk(src))
 
-        files = [DataSet.get_member_name_from_file(file) for file in files]
+        files = [DataSetUtils.get_member_name_from_file(file) for file in files]
 
         for file in files:
-            if DataSet.data_set_member_exists("{0}({1})".format(dest, file)):
+            if DataSetUtils.data_set_member_exists("{0}({1})".format(dest, file)):
                 return True
 
         return False
@@ -769,7 +1053,7 @@ class DataSet(object):
             return data_set_information[0].volume
 
         # If listing failed to return a data set, then it's probably a VSAM.
-        output = DataSet._get_listcat_data(name, tmphlq=tmphlq)
+        output = DataSetUtils._get_listcat_data(name, tmphlq=tmphlq)
 
         if re.findall(r"NOT FOUND|NOT LISTED", output):
             raise DatasetNotFoundError(name)
@@ -804,7 +1088,7 @@ class DataSet(object):
             the type.
 
         """
-        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
+        if not DataSetUtils.data_set_exists(name, volume, tmphlq=tmphlq):
             return None
 
         data_sets_found = datasets.list_datasets(name)
@@ -821,7 +1105,7 @@ class DataSet(object):
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
-        output = DataSet._get_listcat_data(name, tmphlq=tmphlq)
+        output = DataSetUtils._get_listcat_data(name, tmphlq=tmphlq)
 
         # Filtering all the DATA information to only get the ATTRIBUTES block.
         data_set_attributes = re.findall(
@@ -896,19 +1180,19 @@ class DataSet(object):
         bool
             Whether the data set is empty or not.
         """
-        if not DataSet.data_set_exists(name, volume, tmphlq=tmphlq):
+        if not DataSetUtils.data_set_exists(name, volume, tmphlq=tmphlq):
             raise DatasetNotFoundError(name)
 
-        ds_type = DataSet.data_set_type(name, volume, tmphlq=tmphlq)
+        ds_type = DataSetUtils.data_set_type(name, volume, tmphlq=tmphlq)
 
-        if ds_type in DataSet.MVS_PARTITIONED:
-            return DataSet._pds_empty(name)
-        elif ds_type in DataSet.MVS_SEQ:
+        if ds_type in DataSetUtils.MVS_PARTITIONED:
+            return DataSetUtils._pds_empty(name)
+        elif ds_type in DataSetUtils.MVS_SEQ:
             module = AnsibleModuleHelper(argument_spec={})
             rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name), errors='replace')
             return rc == 0 and len(stdout.strip()) == 0
-        elif ds_type in DataSet.MVS_VSAM:
-            return DataSet._vsam_empty(name, tmphlq=tmphlq)
+        elif ds_type in DataSetUtils.MVS_VSAM:
+            return DataSetUtils._vsam_empty(name, tmphlq=tmphlq)
 
     @staticmethod
     def _pds_empty(name):
@@ -989,12 +1273,12 @@ class DataSet(object):
         """
         changed = False
         present = False
-        if DataSet.data_set_cataloged(name, tmphlq=tmphlq):
+        if DataSetUtils.data_set_cataloged(name, tmphlq=tmphlq):
             present = True
         elif volumes is not None:
             errors = False
             try:
-                DataSet.catalog(name, volumes, tmphlq=tmphlq)
+                DataSetUtils.catalog(name, volumes, tmphlq=tmphlq)
             except DatasetCatalogError:
                 errors = True
             if not errors:
@@ -1031,15 +1315,15 @@ class DataSet(object):
 
         if volumes:
             # Check if the data set is cataloged
-            present = DataSet.data_set_cataloged(name, tmphlq=tmphlq)
+            present = DataSetUtils.data_set_cataloged(name, tmphlq=tmphlq)
 
             if present:
                 # Data set is cataloged, now check it its cataloged on the provided volumes
                 # If it is, we just delete because the DS is the right one wanting deletion.
-                present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
+                present = DataSetUtils.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name)
+                    DataSetUtils.delete(name)
                     changed = True
                     present = False
                 else:
@@ -1051,41 +1335,41 @@ class DataSet(object):
                     # We need to identify the volumes where the current cataloged data set
                     # is located for use later when we recatalog. Code is strategically
                     # placed before the uncatalog.
-                    cataloged_volume_list_original = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmphlq)
+                    cataloged_volume_list_original = DataSetUtils.data_set_cataloged_volume_list(name, tmphlq=tmphlq)
 
                     try:
-                        DataSet.uncatalog(name, tmphlq=tmphlq)
+                        DataSetUtils.uncatalog(name, tmphlq=tmphlq)
                     except DatasetUncatalogError:
                         return changed, present
 
                     # Catalog the data set for the provided volumes
                     try:
-                        DataSet.catalog(name, volumes, tmphlq=tmphlq)
+                        DataSetUtils.catalog(name, volumes, tmphlq=tmphlq)
                     except DatasetCatalogError:
                         try:
                             # A failure, so recatalog the original data set on the original volumes
-                            DataSet.catalog(name, cataloged_volume_list_original, tmphlq=tmphlq)
+                            DataSetUtils.catalog(name, cataloged_volume_list_original, tmphlq=tmphlq)
                         except DatasetCatalogError:
                             pass
                         return changed, present
 
                     # Check the recatalog, ensure it cataloged before we try to remove
-                    present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
+                    present = DataSetUtils.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                     if present:
                         try:
-                            DataSet.delete(name)
+                            DataSetUtils.delete(name)
                         except DatasetDeleteError:
                             try:
-                                DataSet.uncatalog(name, tmphlq=tmphlq)
+                                DataSetUtils.uncatalog(name, tmphlq=tmphlq)
                             except DatasetUncatalogError:
                                 try:
-                                    DataSet.catalog(name, cataloged_volume_list_original, tmphlq=tmphlq)
+                                    DataSetUtils.catalog(name, cataloged_volume_list_original, tmphlq=tmphlq)
                                 except DatasetCatalogError:
                                     pass
                             return changed, present
                         try:
-                            DataSet.catalog(name, cataloged_volume_list_original, tmphlq=tmphlq)
+                            DataSetUtils.catalog(name, cataloged_volume_list_original, tmphlq=tmphlq)
                             changed = True
                             present = False
                         except DatasetCatalogError:
@@ -1094,21 +1378,21 @@ class DataSet(object):
                             return changed, present
             else:
                 try:
-                    DataSet.catalog(name, volumes, tmphlq=tmphlq)
+                    DataSetUtils.catalog(name, volumes, tmphlq=tmphlq)
                 except DatasetCatalogError:
                     return changed, present
 
-                present = DataSet.data_set_cataloged(name, volumes, tmphlq=tmphlq)
+                present = DataSetUtils.data_set_cataloged(name, volumes, tmphlq=tmphlq)
 
                 if present:
-                    DataSet.delete(name)
+                    DataSetUtils.delete(name)
                     changed = True
                     present = False
         else:
-            present = DataSet.data_set_cataloged(name, None, tmphlq=tmphlq)
+            present = DataSetUtils.data_set_cataloged(name, None, tmphlq=tmphlq)
             if present:
                 try:
-                    DataSet.delete(name)
+                    DataSetUtils.delete(name)
                     changed = True
                     present = False
                 except DatasetDeleteError:
@@ -1242,8 +1526,8 @@ class DataSet(object):
             Defaults to None.
         """
         arguments = locals()
-        DataSet.delete(name)
-        DataSet.create(**arguments)
+        DataSetUtils.delete(name)
+        DataSetUtils.create(**arguments)
 
     @staticmethod
     def _build_zoau_args(**kwargs):
@@ -1286,8 +1570,8 @@ class DataSet(object):
         for arg, val in kwargs.items():
             if val is None:
                 continue
-            if DataSet._ZOAU_DS_CREATE_ARGS.get(arg):
-                renamed_args[DataSet._ZOAU_DS_CREATE_ARGS.get(arg)] = val
+            if DataSetUtils._ZOAU_DS_CREATE_ARGS.get(arg):
+                renamed_args[DataSetUtils._ZOAU_DS_CREATE_ARGS.get(arg)] = val
             else:
                 renamed_args[arg] = val
         return renamed_args
@@ -1390,13 +1674,19 @@ class DataSet(object):
         force : bool, optional
             Used to determine behavior when performing member operations on a pdse.
             Defaults to None.
+        Returns
+        -------
+        changed : bool
+            Wether a new data set was created or not.
+        data_set : zoautil_py.datasets.Dataset object
+            Wether a new data set was created or not.
         Raises
         ------
         DatasetCreateError
             When data set creation fails.
         """
         original_args = locals()
-        formatted_args = DataSet._build_zoau_args(**original_args)
+        formatted_args = DataSetUtils._build_zoau_args(**original_args)
         try:
             data_set = datasets.create(**formatted_args)
         except exceptions._ZOAUExtendableException as create_exception:
@@ -1411,7 +1701,7 @@ class DataSet(object):
                 msg="Unable to verify the data set was created. Received DatasetVerificationError from ZOAU.",
             )
         changed = data_set is not None
-        return changed
+        return changed, data_set
 
     @staticmethod
     def delete(name):
@@ -1454,7 +1744,7 @@ class DataSet(object):
         """
         module = AnsibleModuleHelper(argument_spec={})
         base_dsname = name.split("(")[0]
-        if not base_dsname or not DataSet.data_set_cataloged(base_dsname, tmphlq=tmphlq):
+        if not base_dsname or not DataSetUtils.data_set_cataloged(base_dsname, tmphlq=tmphlq):
             raise DatasetNotFoundError(name)
         tmp_file = tempfile.NamedTemporaryFile(delete=True)
         rc, stdout, stderr = module.run_command(
@@ -1495,10 +1785,10 @@ class DataSet(object):
         tmphlq : str
             High Level Qualifier for temporary datasets.
         """
-        if DataSet.is_vsam(name, volumes, tmphlq=tmphlq):
-            DataSet._catalog_vsam(name, volumes, tmphlq=tmphlq)
+        if DataSetUtils.is_vsam(name, volumes, tmphlq=tmphlq):
+            DataSetUtils._catalog_vsam(name, volumes, tmphlq=tmphlq)
         else:
-            DataSet._catalog_non_vsam(name, volumes, tmphlq=tmphlq)
+            DataSetUtils._catalog_non_vsam(name, volumes, tmphlq=tmphlq)
 
     @staticmethod
     # TODO: extend for multi volume data sets
@@ -1520,7 +1810,7 @@ class DataSet(object):
             When attempt at catalog fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        iehprogm_input = DataSet._build_non_vsam_catalog_command(
+        iehprogm_input = DataSetUtils._build_non_vsam_catalog_command(
             name.upper(), volumes)
 
         cmd = "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin"
@@ -1572,15 +1862,15 @@ class DataSet(object):
             data_set_type_vsam = "NONINDEXED"
 
         if data_set_type_vsam != "INDEXED":
-            command = DataSet._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
+            command = DataSetUtils._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
                 data_set_name,
-                DataSet._build_volume_string_idcams(volumes),
+                DataSetUtils._build_volume_string_idcams(volumes),
                 data_set_type_vsam,
             )
         else:
-            command = DataSet._VSAM_CATALOG_COMMAND_INDEXED.format(
+            command = DataSetUtils._VSAM_CATALOG_COMMAND_INDEXED.format(
                 data_set_name,
-                DataSet._build_volume_string_idcams(volumes),
+                DataSetUtils._build_volume_string_idcams(volumes),
                 data_set_type_vsam,
             )
 
@@ -1595,9 +1885,9 @@ class DataSet(object):
 
         if not success:
             # Liberty taken such that here we can assume  its a LINEAR VSAM
-            command = DataSet._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
+            command = DataSetUtils._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
                 data_set_name,
-                DataSet._build_volume_string_idcams(volumes),
+                DataSetUtils._build_volume_string_idcams(volumes),
                 "LINEAR",
             )
 
@@ -1631,10 +1921,10 @@ class DataSet(object):
             High Level Qualifier for temporary datasets.
 
         """
-        if DataSet.is_vsam(name, tmphlq=tmphlq):
-            DataSet._uncatalog_vsam(name, tmphlq=tmphlq)
+        if DataSetUtils.is_vsam(name, tmphlq=tmphlq):
+            DataSetUtils._uncatalog_vsam(name, tmphlq=tmphlq)
         else:
-            DataSet._uncatalog_non_vsam(name, tmphlq=tmphlq)
+            DataSetUtils._uncatalog_non_vsam(name, tmphlq=tmphlq)
 
     @staticmethod
     def _uncatalog_non_vsam(name, tmphlq=None):
@@ -1653,11 +1943,11 @@ class DataSet(object):
             When uncataloging fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        iehprogm_input = DataSet._NON_VSAM_UNCATALOG_COMMAND.format(name)
+        iehprogm_input = DataSetUtils._NON_VSAM_UNCATALOG_COMMAND.format(name)
         temp_name = None
         try:
-            temp_name = DataSet.create_temp(name.split(".")[0])
-            DataSet.write(temp_name, iehprogm_input)
+            temp_name = DataSetUtils.create_temp(name.split(".")[0])
+            DataSetUtils.write(temp_name, iehprogm_input)
 
             cmd = "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(temp_name)
             if tmphlq:
@@ -1690,7 +1980,7 @@ class DataSet(object):
             When uncatalog fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        idcams_input = DataSet._VSAM_UNCATALOG_COMMAND.format(name)
+        idcams_input = DataSetUtils._VSAM_UNCATALOG_COMMAND.format(name)
 
         cmd = "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin"
         if tmphlq:
@@ -1726,9 +2016,9 @@ class DataSet(object):
             If the data set is VSAM.
         """
         if not volumes:
-            return DataSet._is_vsam_from_listcat(name, tmphlq=tmphlq)
+            return DataSetUtils._is_vsam_from_listcat(name, tmphlq=tmphlq)
         # ? will multivolume data set have vtoc info for each volume?
-        return DataSet._is_vsam_from_vtoc(name, volumes[0], tmphlq=tmphlq)
+        return DataSetUtils._is_vsam_from_vtoc(name, volumes[0], tmphlq=tmphlq)
 
     @staticmethod
     def _is_vsam_from_vtoc(name, volume, tmphlq=None):
@@ -1942,8 +2232,8 @@ class DataSet(object):
         str
             The name of the temporary data set.
         """
-        temp_name = DataSet.temp_name(hlq)
-        DataSet.create(
+        temp_name = DataSetUtils.temp_name(hlq)
+        DataSetUtils.create(
             temp_name,
             type=type,
             space_primary=space_primary,
@@ -2022,9 +2312,9 @@ class DataSet(object):
         str
             The command string formatted for use with IEHPROGM.
         """
-        command_part_1 = DataSet._format_jcl_line(
+        command_part_1 = DataSetUtils._format_jcl_line(
             "    CATLG DSNAME={0},".format(name))
-        command_part_2 = DataSet._build_volume_string_iehprogm(volumes)
+        command_part_2 = DataSetUtils._build_volume_string_iehprogm(volumes)
         return command_part_1 + command_part_2
 
     @staticmethod
@@ -2097,7 +2387,7 @@ class DataSet(object):
                     volume.upper())
             if index + 1 != len(volumes):
                 single_volume_string += ","
-                volume_string += DataSet._format_jcl_line(single_volume_string)
+                volume_string += DataSetUtils._format_jcl_line(single_volume_string)
             else:
                 volume_string += single_volume_string + ")\n"
         return volume_string
@@ -2182,7 +2472,7 @@ class DataSet(object):
         # special characters just fine.
         name = name.upper().replace("\\", '')
         idcams_cmd = f" LISTCAT ALIAS ENTRIES('{name}')ALL"
-        response = DataSet._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
+        response = DataSetUtils._execute_idcams_cmd(idcams_cmd, tmp_hlq=tmp_hlq)
 
         if response.rc == 0:
             base_name = re.search(
@@ -2236,7 +2526,7 @@ class DataSet(object):
         temp_dd_location = None
 
         try:
-            temp_dd_location = DataSet.create_temp(
+            temp_dd_location = DataSetUtils.create_temp(
                 hlq=tmp_hlq,
                 type='SEQ',
                 record_format=record_format,
@@ -2268,7 +2558,7 @@ class DataSet(object):
                 datasets.delete(temp_dd_location)
 
 
-class DataSetUtils(object):
+class DataSetView(object):
     def __init__(self, data_set, tmphlq=None):
         """A standard utility to gather information about
         a particular data set. Note that the input data set is assumed
@@ -2564,278 +2854,6 @@ class DataSetUtils(object):
         else:
             return False
 
-
-class MVSDataSet():
-    """
-    This class represents a z/OS data set that can be yet to be created or
-    already created in the system. It encapsulates the data set attributes
-    to easy access and provides operations to perform in the same data set.
-
-    """
-    def __init__(
-        self,
-        name,
-        escape_name=False,
-        data_set_type=None,
-        state=None,
-        organization=None,
-        record_format=None,
-        volumes=None,
-        block_size=None,
-        record_length=None,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
-        directory_blocks=None,
-        key_length=None,
-        key_offset=None,
-        sms_storage_class=None,
-        sms_data_class=None,
-        sms_management_class=None,
-        total_space=None,
-        used_space=None,
-        last_referenced=None,
-        is_cataloged=None,
-    ):
-        # Different class variables
-        self.data_set_possible_states = {"unknown", "present", "absent"}
-        self.name = name
-        self.organization = organization
-        self.record_format = record_format
-        self.volumes = volumes
-        self.block_size = block_size
-        self.record_length = record_length
-        self.total_space = total_space
-        self.used_space = used_space
-        self.last_referenced = last_referenced
-        self.raw_name = name
-        self.data_set_type = data_set_type
-        self.state = state
-        self.space_primary = space_primary
-        self.space_secondary = space_secondary
-        self.space_type = space_type
-        self.directory_blocks = directory_blocks
-        self.key_length = key_length
-        self.key_offset = key_offset
-        self.sms_storage_class = sms_storage_class
-        self.sms_data_class = sms_data_class
-        self.sms_management_class = sms_management_class
-        self.volumes = volumes
-        self.is_gds_active = False
-        self.is_cataloged = False
-
-        # If name has escaped chars or is GDS relative name we clean it.
-        if escape_name:
-            self.name = DataSet.escape_data_set_name(self.name)
-        if DataSet.is_gds_relative_name(self.name):
-            try:
-                self.name = DataSet.resolve_gds_absolute_name(self.name)
-                self.is_gds_active = True
-            except Exception:
-                # This means the generation is a positive version so is only used for creation.
-                self.is_gds_active = False
-        if self.data_set_type and (self.data_set_type.upper() in DataSet.MVS_VSAM or self.data_set_type == "zfs"):
-            # When trying to create a new VSAM with a specified record format will fail
-            # with ZOAU
-            self.record_format = None
-
-    def create(self, tmp_hlq=None, replace=True, force=False):
-        """Creates the data set in question.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        arguments = {
-            "name": self.name,
-            "raw_name": self.raw_name,
-            "type": self.data_set_type,
-            "space_primary": self.space_primary,
-            "space_secondary": self.space_secondary,
-            "space_type": self.space_type,
-            "record_format": self.record_format,
-            "record_length": self.record_length,
-            "block_size": self.block_size,
-            "directory_blocks": self.directory_blocks,
-            "key_length": self.key_length,
-            "key_offset": self.key_offset,
-            "sms_storage_class": self.sms_storage_class,
-            "sms_data_class": self.sms_data_class,
-            "sms_management_class": self.sms_management_class,
-            "volumes": self.volumes,
-            "tmp_hlq": tmp_hlq,
-            "force": force,
-        }
-        formatted_args = DataSet._build_zoau_args(**arguments)
-        changed = False
-        if DataSet.data_set_exists(self.name, tmphlq=tmp_hlq):
-            DataSet.delete(self.name)
-            changed = True
-        zoau_data_set = datasets.create(**formatted_args)
-        if zoau_data_set is not None:
-            self.set_state("present")
-            self.name = zoau_data_set.name
-            return True
-        return changed
-
-    def ensure_present(self, tmp_hlq=None, replace=False, force=False):
-        """ Make sure that the data set is created or fail creating it.
-
-        Parameters
-        ----------
-        tmp_hlq : str
-            High level qualifier for temporary datasets.
-        replace : bool
-            Used to determine behavior when data set already exists.
-        force : bool
-            Used to determine behavior when performing member operations on a pdse.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        arguments = {
-            "name": self.name,
-            "raw_name": self.raw_name,
-            "type": self.data_set_type,
-            "space_primary": self.space_primary,
-            "space_secondary": self.space_secondary,
-            "space_type": self.space_type,
-            "record_format": self.record_format,
-            "record_length": self.record_length,
-            "block_size": self.block_size,
-            "directory_blocks": self.directory_blocks,
-            "key_length": self.key_length,
-            "key_offset": self.key_offset,
-            "sms_storage_class": self.sms_storage_class,
-            "sms_data_class": self.sms_data_class,
-            "sms_management_class": self.sms_management_class,
-            "volumes": self.volumes,
-            "replace": replace,
-            "tmp_hlq": tmp_hlq,
-            "force": force,
-        }
-        rc = DataSet.ensure_present(**arguments)
-        self.set_state("present")
-        return rc
-
-    def ensure_absent(self, tmp_hlq=None):
-        """Removes the data set.
-
-        Parameters
-        ----------
-        tmp_hlq : str
-            High level qualifier for temporary datasets.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        rc = DataSet.ensure_absent(self.name, self.volumes, tmphlq=tmp_hlq)
-        if rc == 0:
-            self.set_state("absent")
-        return rc
-
-    def delete(self):
-        """Deletes the data set in question.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        DataSet.ensure_absent(self.name, self.volumes)
-        self.set_state("absent")
-
-    def ensure_cataloged(self, tmp_hlq=None):
-        """
-        Ensures the data set is cataloged, if not catalogs it.
-
-        Parameters
-        ----------
-        tmp_hlq : str
-            High level qualifier for temporary datasets.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        rc = DataSet.ensure_cataloged(name=self.name, volumes=self.volumes, tmphlq=tmp_hlq)
-        self.is_cataloged = True
-        return rc
-
-    def catalog(self, tmp_hlq=None):
-        """Catalog the data set in question.
-
-        Parameters
-        ----------
-        tmp_hlq : str
-            High level qualifier for temporary datasets.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        rc = DataSet.catalog(self.name, self.volumes, tmphlq=tmp_hlq)
-        self.is_cataloged = True
-        return rc
-
-    def ensure_uncataloged(self, tmp_hlq=None):
-        """
-        Ensures the data set is uncataloged, if not catalogs it.
-
-        Parameters
-        ----------
-        tmp_hlq : str
-            High level qualifier for temporary datasets.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        rc = DataSet.ensure_uncataloged(self.name, tmphlq=tmp_hlq)
-        self.is_cataloged = False
-        return rc
-
-    def uncatalog(self, tmp_hlq=None):
-        """Uncatalog the data set in question.
-
-        Parameters
-        ----------
-        tmp_hlq : str
-            High level qualifier for temporary datasets.
-
-        Returns
-        -------
-        int
-            Indicates if changes were made.
-        """
-        rc = DataSet.uncatalog(self.name, tmphlq=tmp_hlq)
-        self.is_cataloged = False
-        return rc
-
-    def set_state(self, new_state):
-        """Used to set the data set state.
-
-        Parameters
-        ----------
-        new_state : str {unknown, present, absent}
-            New state of the data set.
-
-        Returns
-        -------
-            bool
-                If state was set properly.
-        """
-        if new_state not in self.data_set_possible_states:
-            raise ValueError(f"State {self.state} not supported for MVSDataset class.")
-        return True
 
 
 class Member():

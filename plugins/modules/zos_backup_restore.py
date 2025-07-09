@@ -380,7 +380,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import \
     BetterArgParser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import \
-    DataSet
+    DataSetUtils
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import \
     ZOAUImportError
 
@@ -499,8 +499,8 @@ def resolve_gds_name_if_any(data_set_list):
     """
     if isinstance(data_set_list, list):
         for index, name in enumerate(data_set_list):
-            if DataSet.is_gds_relative_name(name):
-                data_set_list[index] = DataSet.resolve_gds_absolute_name(name)
+            if DataSetUtils.is_gds_relative_name(name):
+                data_set_list[index] = DataSetUtils.resolve_gds_absolute_name(name)
     return data_set_list
 
 

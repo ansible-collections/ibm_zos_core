@@ -929,7 +929,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    DataSet, GenerationDataGroup, MVSDataSet, Member
+    DataSetUtils, GenerationDataGroup, DataSet, Member
 )
 from ansible.module_utils.basic import AnsibleModule
 
@@ -1059,7 +1059,7 @@ def data_set_name(contents, dependencies):
             tmphlq = dependencies.get("tmp_hlq")
             if tmphlq is None:
                 tmphlq = ""
-            contents = DataSet.temp_name(tmphlq)
+            contents = DataSetUtils.temp_name(tmphlq)
         else:
             raise ValueError(
                 'Data set and member name must be provided when "type=member"'
@@ -1485,7 +1485,7 @@ def get_data_set_handler(**params):
 
     Returns
     -------
-    MVSDataSet or GenerationDataGroup or Member object.
+    DataSet or GenerationDataGroup or Member object.
     """
     if params.get("type") == "gdg":
         return GenerationDataGroup(
@@ -1502,7 +1502,7 @@ def get_data_set_handler(**params):
             name=params.get("name")
         )
     else:
-        return MVSDataSet(
+        return DataSet(
             name=params.get("name"),
             record_format=params.get("record_format", None),
             volumes=params.get("volumes", None),
@@ -1527,7 +1527,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
 
     Parameters
     ----------
-    data_set : {object | MVSDataSet | Member | GenerationDataGroup }
+    data_set : {object | DataSet | Member | GenerationDataGroup }
         Data set object to perform operations on.
     state : str
         State of the data sets.
@@ -2078,7 +2078,7 @@ def run_module():
             result["names"] = build_return_schema(data_set_param_list)
 
             for data_set_params in data_set_param_list:
-                # this returns MVSDataSet, Member or GenerationDataGroup
+                # this returns DataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(
                     data_set=data_set,

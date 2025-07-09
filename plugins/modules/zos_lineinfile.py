@@ -677,16 +677,16 @@ def main():
 
     # analysis the file type
     if "/" not in src:
-        dataset = data_set.MVSDataSet(
+        dataset = data_set.DataSet(
             name=src
         )
         src = dataset.name
         is_gds = dataset.is_gds_active
 
-    if data_set.DataSet.is_gds_relative_name(src) and is_gds is False:
+    if data_set.DataSetUtils.is_gds_relative_name(src) and is_gds is False:
         module.fail_json(msg="{0} does not exist".format(src))
 
-    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
+    ds_utils = data_set.DataSetView(src, tmphlq=tmphlq)
 
     # Check if dest/src exists
     if not ds_utils.exists():

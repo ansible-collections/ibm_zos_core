@@ -211,19 +211,35 @@ jobs:
                 The CC returned for this step in the DD section.
               type: int
               sample: 0
-
       sample:
         ret_code: {
          "msg": "CC 0000",
          "msg_code": "0000",
          "msg_txt": "",
-         "code": 0,
-         "steps": [
-            { "step_name": "STEP0001",
-              "step_cc": 0
-            }
-          ]
+         "code": 0
         }
+    steps:
+      description:
+        Series of JCL steps that were executed and their return codes.
+      type: list
+      elements: dict
+      contains:
+        step_name:
+          description:
+            Name of the step shown as "was executed" in the DD section.
+          type: str
+          sample: "STEP0001"
+        step_cc:
+          description:
+            The CC returned for this step in the DD section.
+          type: int
+          sample: 0
+      sample:
+        "steps": [
+          { "step_name": "STEP0001",
+            "step_cc": 0
+          }
+        ]
     job_class:
       description:
         Job class for this job.
@@ -280,7 +296,11 @@ jobs:
             "job_id": "JOB01427",
             "content_type": "JOB",
             "ret_code": { "msg" : "CC", "msg_code" : "0000", "code" : "0", msg_txt : "CC" },
-            "steps": [{"step_name": "STEP0001", 'step_cc': 0}\],
+            "steps": [
+              { "step_name": "STEP0001",
+                "step_cc": 0
+              }
+            ],
             "job_class": "STC",
             "svc_class": None,
             "priority": 1,
@@ -302,7 +322,7 @@ jobs:
             "job_id": "JOB16577",
             "content_type": "JOB",
             "ret_code": { "msg" : "CANCELED", "msg_code" : None, "code" : None, msg_txt : "CANCELED" },
-            "steps" : [\],
+            "steps" : [],
             "job_class": "A",
             "svc_class": "E",
             "priority": 0,

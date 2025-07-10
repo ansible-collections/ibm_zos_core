@@ -381,7 +381,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["queue_position"] = entry.queue_position
             job["program_name"] = entry.program_name
             job["class"] = ""
-            job["ret_code"]["steps"] = []
+            job["steps"] = []
             job["ddnames"] = []
             job["duration"] = duration
             if hasattr(entry, "execution_time"):
@@ -493,7 +493,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                     dd["content"] = tmpcont.split("\n")
 
-                    job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
+                    job["steps"].extend(_parse_steps(tmpcont))
 
                     job["ddnames"].append(dd)
                     if len(job["class"]) < 1:

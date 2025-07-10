@@ -350,7 +350,6 @@ def test_uss_after(ansible_zos_module):
         params["target"] = full_path
         results = hosts.all.zos_replace(**params)
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
@@ -374,6 +373,7 @@ def test_uss_after_replace(ansible_zos_module):
         params["target"] = full_path
         results = hosts.all.zos_replace(**params)
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2

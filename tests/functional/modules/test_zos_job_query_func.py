@@ -71,13 +71,13 @@ def test_zos_job_query_func(ansible_zos_module):
         assert job.get("program_name") is not None
         assert job.get("execution_time") is not None
         assert job.get("svc_class") is None
+        assert job.get("steps") is not None
 
         rc = job.get("ret_code")
         assert rc.get("msg") is not None
         assert rc.get("code") is not None
         assert rc.get("msg_code") is not None
         assert rc.get("msg_txt") is not None
-        assert rc.get("steps") is not None
 
 
 JCLQ_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
@@ -136,17 +136,17 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
             assert job.get("creation_time") is not None
             assert job.get("program_name") is not None
             assert job.get("svc_class") is None
+            assert job.get("steps") is not None
+
+            step = job.get("steps")[0]
+            assert step.get("step_name") is not None
+            assert step.get("step_cc") is not None
 
             rc = job.get("ret_code")
             assert rc.get("msg") is not None
             assert rc.get("msg_code") == "0000"
             assert rc.get("code") == 0
             assert rc.get("msg_txt") == "CC"
-            assert rc.get("steps") is not None
-
-            step = rc.get("steps")[0]
-            assert step.get("step_name") is not None
-            assert step.get("step_cc") is not None
 
             fulljobid = job.get("job_id")
             jobmask = fulljobid[0:3] + '*' + fulljobid[5:6] + '*'
@@ -174,13 +174,13 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
                 assert job.get("program_name") is not None
                 assert job.get("execution_time") is not None
                 assert job.get("svc_class") is None
+                assert job.get("steps") is not None
 
                 rc = job.get("ret_code")
                 assert rc.get("msg") is not None
                 assert rc.get("msg_code") == "0000"
                 assert rc.get("code") == 0
                 assert rc.get("msg_txt") == "CC"
-                assert rc.get("steps") is not None
 
     finally:
         hosts.all.file(path=temp_path, state="absent")
@@ -228,17 +228,17 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
             assert job.get("creation_time") is not None
             assert job.get("program_name") is not None
             assert job.get("svc_class") is None
+            assert job.get("steps") is not None
+
+            step = job.get("steps")[0]
+            assert step.get("step_name") is not None
+            assert step.get("step_cc") is not None
 
             rc = job.get("ret_code")
             assert rc.get("msg") is not None
             assert rc.get("msg_code") == "0000"
             assert rc.get("code") == 0
             assert rc.get("msg_txt") == "CC"
-            assert rc.get("steps") is not None
-
-            step = rc.get("steps")[0]
-            assert step.get("step_name") is not None
-            assert step.get("step_cc") is not None
 
             jobname = "HE*L*"
             qresults = hosts.all.zos_job_query(job_name=jobname, owner="*")
@@ -265,13 +265,13 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
                 assert job.get("program_name") is not None
                 assert job.get("execution_time") is not None
                 assert job.get("svc_class") is None
+                assert job.get("steps") is not None
 
                 rc = job.get("ret_code")
                 assert rc.get("msg") is not None
                 assert rc.get("msg_code") == "0000"
                 assert rc.get("code") == 0
                 assert rc.get("msg_txt") == "CC"
-                assert rc.get("steps") is not None
     finally:
         hosts.all.file(path=temp_path, state="absent")
         hosts.all.zos_data_set(name=ndata_set_name, state="absent")
@@ -304,13 +304,13 @@ def test_zos_job_id_query_short_ids_func(ansible_zos_module):
         assert job.get("creation_time") is not None
         assert job.get("program_name") is not None
         assert job.get("svc_class") is None
+        assert job.get("steps") is not None
 
         rc = job.get("ret_code")
         assert rc.get("msg") is not None
         assert rc.get("msg_code") == "0000"
         assert rc.get("code") == 0
         assert rc.get("msg_txt") == "CC"
-        assert rc.get("steps") is not None
 
 
 def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
@@ -348,10 +348,10 @@ def test_zos_job_id_query_short_ids_with_wilcard_func(ansible_zos_module):
         assert job.get("creation_time") is not None
         assert job.get("program_name") is not None
         assert job.get("svc_class") is None
+        assert job.get("steps") is not None
 
         rc = job.get("ret_code")
         assert rc.get("msg") is not None
         assert rc.get("msg_code") == "0000"
         assert rc.get("code") == 0
         assert rc.get("msg_txt") == "CC"
-        assert rc.get("steps") is not None

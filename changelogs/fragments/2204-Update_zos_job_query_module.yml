@@ -1,3 +1,3 @@
 breaking_changes:
-  - zos_job_query - Return value of message is deprecated. Return value steps is now include under jobs.
+  - zos_job_query - Return value ``message`` is deprecated in favor of ``msg``. Return value ``steps`` are no longer under `` but is now included under jobs.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2204).

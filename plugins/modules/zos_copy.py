@@ -1650,7 +1650,7 @@ class USSCopyHandler(CopyHandler):
         """
         changed_files = None
 
-        if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED) or src_ds_type == "GDG":
+        if src_ds_type in data_set.DataSetUtils.MVS_SEQ.union(data_set.DataSetUtils.MVS_PARTITIONED) or src_ds_type == "GDG":
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
@@ -1942,14 +1942,14 @@ class USSCopyHandler(CopyHandler):
             # the same name as the member.
             dest = "{0}/{1}".format(dest, member_name or src)
 
-            if (src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member) or src_ds_type == "GDG":
+            if (src_ds_type in data_set.DataSetUtils.MVS_PARTITIONED and not src_member) or src_ds_type == "GDG":
                 try:
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
 
         try:
-            if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
+            if src_member or src_ds_type in data_set.DataSetUtils.MVS_SEQ:
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest, tmphlq=self.tmphlq)
                     rc = response.rc
@@ -2113,11 +2113,11 @@ class PDSECopyHandler(CopyHandler):
             ]
             dest_members = [
                 dest_member if dest_member
-                else data_set.DataSet.get_member_name_from_file(file)
+                else data_set.DataSetUtils.get_member_name_from_file(file)
                 for file in files
             ]
 
-        elif src_ds_type in data_set.DataSet.MVS_SEQ:
+        elif src_ds_type in data_set.DataSetUtils.MVS_SEQ:
             src_members = [new_src]
             dest_members = [dest_member]
 
@@ -2365,7 +2365,7 @@ def get_data_set_attributes(
     Returns
     -------
     dict
-        Parameters that can be passed into data_set.DataSet.ensure_present.
+        Parameters that can be passed into data_set.DataSetUtils.ensure_present.
     """
     # Calculating the size needed to allocate.
     space_primary = int(math.ceil((size / 1024)))
@@ -2479,7 +2479,7 @@ def create_seq_dataset_from_file(
         volume=volume
     )
 
-    data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+    data_set.DataSetUtils.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
 
 
 def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
@@ -2578,7 +2578,7 @@ def is_compatible(
     # is incompatible to execute the copy.
     # ********************************************************************
     if executable:
-        if src_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_SEQ:
+        if src_type in data_set.DataSetUtils.MVS_SEQ or dest_type in data_set.DataSetUtils.MVS_SEQ:
             return False
 
     # ********************************************************************
@@ -2592,9 +2592,9 @@ def is_compatible(
     # When either the src or dest are GDSs, the other cannot be a VSAM
     # data set, since GDGs don't support VSAMs.
     # ********************************************************************
-    if is_src_gds and dest_type in data_set.DataSet.MVS_VSAM:
+    if is_src_gds and dest_type in data_set.DataSetUtils.MVS_VSAM:
         return False
-    if is_dest_gds and src_type in data_set.DataSet.MVS_VSAM:
+    if is_dest_gds and src_type in data_set.DataSetUtils.MVS_VSAM:
         return False
 
     # ********************************************************************
@@ -2625,9 +2625,9 @@ def is_compatible(
     # partitioned data set member, other sequential data sets or USS files.
     # Anything else is incompatible.
     # ********************************************************************
-    if src_type in data_set.DataSet.MVS_SEQ:
+    if src_type in data_set.DataSetUtils.MVS_SEQ:
         return not (
-            (dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member) or dest_type == "VSAM"
+            (dest_type in data_set.DataSetUtils.MVS_PARTITIONED and not copy_member) or dest_type == "VSAM"
         )
 
     # ********************************************************************
@@ -2642,11 +2642,11 @@ def is_compatible(
     # In the second case, the possible targets are USS directories and
     # other PDS/PDSE. Anything else is incompatible.
     # ********************************************************************
-    elif src_type in data_set.DataSet.MVS_PARTITIONED:
+    elif src_type in data_set.DataSetUtils.MVS_PARTITIONED:
         if dest_type == "VSAM":
             return False
         if not src_member:
-            return not (copy_member or dest_type in data_set.DataSet.MVS_SEQ)
+            return not (copy_member or dest_type in data_set.DataSetUtils.MVS_SEQ)
         return True
 
     # ********************************************************************
@@ -2659,11 +2659,11 @@ def is_compatible(
     # directory or a partitioned data set.
     # ********************************************************************
     elif src_type == "USS":
-        if dest_type in data_set.DataSet.MVS_SEQ or copy_member:
+        if dest_type in data_set.DataSetUtils.MVS_SEQ or copy_member:
             return not is_src_dir
-        elif dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member and is_src_inline:
+        elif dest_type in data_set.DataSetUtils.MVS_PARTITIONED and not copy_member and is_src_inline:
             return False
-        elif dest_type in data_set.DataSet.MVS_VSAM:
+        elif dest_type in data_set.DataSetUtils.MVS_VSAM:
             return False
         else:
             return True
@@ -2738,14 +2738,14 @@ def does_destination_allow_copy(
 
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
-    if (dest_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_VSAM) and dest_exists:
-        is_dest_empty = data_set.DataSet.is_empty(dest, volume, tmphlq=tmphlq)
+    if (dest_type in data_set.DataSetUtils.MVS_SEQ or dest_type in data_set.DataSetUtils.MVS_VSAM) and dest_exists:
+        is_dest_empty = data_set.DataSetUtils.is_empty(dest, volume, tmphlq=tmphlq)
         if not (is_dest_empty or force):
             return False
 
     # When the destination is a partitioned data set, the module will have to be able to replace
     # existing members inside of it, if needed.
-    if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not force:
+    if dest_type in data_set.DataSetUtils.MVS_PARTITIONED and dest_exists and member_exists and not force:
         return False
 
     # When the destination is an existing GDG, we'll check that we have enough free generations
@@ -2975,7 +2975,7 @@ def allocate_destination_data_set(
         space_type, type.
     """
     src_name = data_set.extract_dsname(src)
-    is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
+    is_dest_empty = data_set.DataSetUtils.is_empty(dest) if dest_exists else True
 
     # Replacing an existing dataset only when it's not empty. We don't know whether that
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
@@ -3018,20 +3018,20 @@ def allocate_destination_data_set(
             del dest_params["purge"]
             del dest_params["extended"]
             del dest_params["fifo"]
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
-    elif dest_ds_type in data_set.DataSet.MVS_SEQ:
+            data_set.DataSetUtils.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+    elif dest_ds_type in data_set.DataSetUtils.MVS_SEQ:
         volumes = [volume] if volume else None
-        data_set.DataSet.ensure_absent(dest, volumes=volumes)
+        data_set.DataSetUtils.ensure_absent(dest, volumes=volumes)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume, tmphlq=tmphlq)
-        elif src_ds_type in data_set.DataSet.MVS_SEQ:
+        elif src_ds_type in data_set.DataSetUtils.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSetUtils.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
+                data_set.DataSetUtils.allocate_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         else:
             temp_dump = None
             try:
@@ -3053,15 +3053,15 @@ def allocate_destination_data_set(
             finally:
                 if temp_dump:
                     os.remove(temp_dump)
-    elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
+    elif dest_ds_type in data_set.DataSetUtils.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
-        if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
+        if src_ds_type in data_set.DataSetUtils.MVS_PARTITIONED:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
-                data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
+                data_set.DataSetUtils.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
-        elif src_ds_type in data_set.DataSet.MVS_SEQ:
+                data_set.DataSetUtils.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
+        elif src_ds_type in data_set.DataSetUtils.MVS_SEQ:
             src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
             size = int(src_attributes.total_space)
@@ -3077,7 +3077,7 @@ def allocate_destination_data_set(
                 type="PDSE",
                 volume=volume
             )
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSetUtils.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
                 # This is almost the same as allocating a sequential dataset.
@@ -3135,13 +3135,13 @@ def allocate_destination_data_set(
                         volume=volume
                     )
 
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
-    elif dest_ds_type in data_set.DataSet.MVS_VSAM:
+            data_set.DataSetUtils.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+    elif dest_ds_type in data_set.DataSetUtils.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
         volumes = [volume] if volume else None
-        data_set.DataSet.ensure_absent(dest, volumes=volumes)
-        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, tmphlq=tmphlq)
+        data_set.DataSetUtils.ensure_absent(dest, volumes=volumes)
+        data_set.DataSetUtils.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, tmphlq=tmphlq)
     elif dest_ds_type == "GDG":
         src_view = gdgs.GenerationDataGroupView(src)
 
@@ -3162,9 +3162,9 @@ def allocate_destination_data_set(
 
     if is_gds and not is_active_gds:
         gdg_name = data_set.extract_dsname(dest)
-        dest = data_set.DataSet.resolve_gds_absolute_name(f"{gdg_name}(0)")
+        dest = data_set.DataSetUtils.resolve_gds_absolute_name(f"{gdg_name}(0)")
 
-    if dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
+    if dest_ds_type not in data_set.DataSetUtils.MVS_VSAM and dest_ds_type != "GDG":
         dest_params = get_attributes_of_any_dataset_created(
             dest,
             src_ds_type,
@@ -3263,7 +3263,7 @@ def remote_cleanup(module):
             shutil.rmtree(dest)
     else:
         dest = data_set.extract_dsname(dest)
-        data_set.DataSet.ensure_absent(name=dest)
+        data_set.DataSetUtils.ensure_absent(name=dest)
 
 
 def update_result(res_args, original_args):
@@ -3418,9 +3418,9 @@ def run_module(module, arg_def):
     is_src_dir = os.path.isdir(src)
     is_uss = "/" in dest
     is_mvs_src = is_data_set(data_set.extract_dsname(src))
-    is_src_gds = data_set.DataSet.is_gds_relative_name(src)
+    is_src_gds = data_set.DataSetUtils.is_gds_relative_name(src)
     is_mvs_dest = is_data_set(data_set.extract_dsname(dest))
-    is_dest_gds = data_set.DataSet.is_gds_relative_name(dest)
+    is_dest_gds = data_set.DataSetUtils.is_gds_relative_name(dest)
     is_dest_gds_active = False
     is_pds = is_src_dir and is_mvs_dest
     src_member = is_member(src)
@@ -3430,30 +3430,30 @@ def run_module(module, arg_def):
     is_dest_alias = False
 
     if is_mvs_src and not src_member and not is_src_gds:
-        is_src_alias, src_base_name = data_set.DataSet.get_name_if_data_set_is_alias(src, tmphlq)
+        is_src_alias, src_base_name = data_set.DataSetUtils.get_name_if_data_set_is_alias(src, tmphlq)
         if is_src_alias:
             src = src_base_name
     if is_mvs_dest and not copy_member and not is_dest_gds:
-        is_dest_alias, dest_base_name = data_set.DataSet.get_name_if_data_set_is_alias(dest, tmphlq)
+        is_dest_alias, dest_base_name = data_set.DataSetUtils.get_name_if_data_set_is_alias(dest, tmphlq)
         if is_dest_alias:
             dest = dest_base_name
 
     # Validation for copy from a member
     if src_member:
-        if not (data_set.DataSet.data_set_member_exists(src)):
+        if not (data_set.DataSetUtils.data_set_member_exists(src)):
             module.fail_json(msg="Unable to copy. Source member {0} does not exist or is not cataloged.".format(
                 data_set.extract_member_name(src)
             ))
 
-    # Implementing the new MVSDataSet class by masking the values of
+    # Implementing the new DataSet class by masking the values of
     # src/raw_src and dest/raw_dest.
     if is_mvs_src:
-        src_data_set_object = data_set.MVSDataSet(src)
+        src_data_set_object = data_set.DataSet(src)
         src = src_data_set_object.name
         raw_src = src_data_set_object.raw_name
 
     if is_mvs_dest:
-        dest_data_set_object = data_set.MVSDataSet(dest)
+        dest_data_set_object = data_set.DataSet(dest)
         dest = dest_data_set_object.name
         raw_dest = dest_data_set_object.raw_name
         is_dest_gds_active = dest_data_set_object.is_gds_active
@@ -3541,13 +3541,13 @@ def run_module(module, arg_def):
                     copy_handler = CopyHandler(module, is_binary=is_binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
-            if (is_src_gds and data_set.DataSet.data_set_exists(src, tmphlq=tmphlq)) or (
-                    not is_src_gds and data_set.DataSet.data_set_exists(src_name, tmphlq=tmphlq)):
-                if src_member and not data_set.DataSet.data_set_member_exists(src):
+            if (is_src_gds and data_set.DataSetUtils.data_set_exists(src, tmphlq=tmphlq)) or (
+                    not is_src_gds and data_set.DataSetUtils.data_set_exists(src_name, tmphlq=tmphlq)):
+                if src_member and not data_set.DataSetUtils.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
-                src_ds_type = data_set.DataSet.data_set_type(src_name, tmphlq=tmphlq)
+                src_ds_type = data_set.DataSetUtils.data_set_type(src_name, tmphlq=tmphlq)
 
-                if src_ds_type not in data_set.DataSet.MVS_VSAM and src_ds_type != "GDG":
+                if src_ds_type not in data_set.DataSetUtils.MVS_VSAM and src_ds_type != "GDG":
                     src_attributes = datasets.list_datasets(src_name)[0]
                     if src_attributes.record_format == 'FBA' or src_attributes.record_format == 'VBA':
                         src_has_asa_chars = True
@@ -3556,7 +3556,7 @@ def run_module(module, arg_def):
 
             # An empty VSAM will throw an error when IDCAMS tries to open it to copy
             # the contents.
-            if src_ds_type in data_set.DataSet.MVS_VSAM and data_set.DataSet.is_empty(src_name):
+            if src_ds_type in data_set.DataSetUtils.MVS_VSAM and data_set.DataSetUtils.is_empty(src_name):
                 module.exit_json(
                     note="The source VSAM {0} is likely empty. No data was copied.".format(src_name),
                     changed=False,
@@ -3584,8 +3584,8 @@ def run_module(module, arg_def):
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(raw_dest))
         else:
-            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, tmphlq=tmphlq)
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, tmphlq=tmphlq)
+            dest_exists = data_set.DataSetUtils.data_set_exists(dest_name, volume, tmphlq=tmphlq)
+            dest_ds_type = data_set.DataSetUtils.data_set_type(dest_name, volume, tmphlq=tmphlq)
 
             # When dealing with a new generation, we'll override its type to None
             # so it will be the same type as the source (or whatever dest_data_set has)
@@ -3600,7 +3600,7 @@ def run_module(module, arg_def):
             elif executable:
                 # When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
                 # so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
-                # Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
+                # Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSetUtils.MVS_PARTITIONED
                 # and LIBRARY is not in MVS_PARTITIONED frozen set.
                 dest_ds_type = "PDSE"
 
@@ -3608,28 +3608,28 @@ def run_module(module, arg_def):
                 dest_has_asa_chars = True
             elif not dest_exists and asa_text:
                 dest_has_asa_chars = True
-            elif dest_exists and dest_ds_type not in data_set.DataSet.MVS_VSAM and dest_ds_type != "GDG":
+            elif dest_exists and dest_ds_type not in data_set.DataSetUtils.MVS_VSAM and dest_ds_type != "GDG":
                 dest_attributes = datasets.list_datasets(dest_name)[0]
                 if dest_attributes.record_format == 'FBA' or dest_attributes.record_format == 'VBA':
                     dest_has_asa_chars = True
 
-            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
+            if dest_ds_type in data_set.DataSetUtils.MVS_PARTITIONED:
                 # Checking if we need to copy a member when the user requests it implicitly.
                 # src is a file and dest was just the PDS/E dataset name.
                 if not copy_member and src_ds_type == "USS" and os.path.isfile(src):
                     copy_member = True
-                    dest_member = data_set.DataSet.get_member_name_from_file(os.path.basename(src))
+                    dest_member = data_set.DataSetUtils.get_member_name_from_file(os.path.basename(src))
                     dest = f"{dest_name}({dest_member})"
 
                 # Checking if the members that would be created from the directory files
                 # are already present on the system.
                 if copy_member:
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
+                    dest_member_exists = dest_exists and data_set.DataSetUtils.data_set_member_exists(dest)
                 elif src_ds_type == "USS":
                     root_dir = src
-                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
-                elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
+                    dest_member_exists = dest_exists and data_set.DataSetUtils.files_in_data_set_members(root_dir, dest)
+                elif src_ds_type in data_set.DataSetUtils.MVS_PARTITIONED:
+                    dest_member_exists = dest_exists and data_set.DataSetUtils.data_set_shared_members(src, dest)
     except Exception as err:
         module.fail_json(msg=str(err))
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
@@ -3689,7 +3689,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
         if not force_lock:
-            is_dest_lock = data_set.DataSetUtils.verify_dataset_disposition(data_set=data_set.extract_dsname(dest_name), disposition="old")
+            is_dest_lock = data_set.DataSetView.verify_dataset_disposition(data_set=data_set.extract_dsname(dest_name), disposition="old")
             if is_dest_lock:
                 module.fail_json(
                     msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(
@@ -3712,7 +3712,7 @@ def run_module(module, arg_def):
     # Attempt to write PDS (not member) to USS file (i.e. a non-directory)
     # ********************************************************************
     if (
-        src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member
+        src_ds_type in data_set.DataSetUtils.MVS_PARTITIONED and not src_member
         and dest_ds_type == 'USS' and not os.path.isdir(dest)
     ):
         module.fail_json(
@@ -3725,12 +3725,12 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists:
         if backup or backup_name:
-            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name):
+            if dest_ds_type in data_set.DataSetUtils.MVS_PARTITIONED and data_set.DataSetUtils.is_empty(dest_name):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 if backup_name:
-                    backup_data_set = data_set.MVSDataSet(backup_name)
+                    backup_data_set = data_set.DataSet(backup_name)
                     if backup_data_set.is_gds_active:
                         module.fail_json(
                             msg=(
@@ -3762,11 +3762,11 @@ def run_module(module, arg_def):
             if (
                 is_pds
                 or copy_member
-                or (src_ds_type in data_set.DataSet.MVS_PARTITIONED and (not src_member) and is_mvs_dest)
+                or (src_ds_type in data_set.DataSetUtils.MVS_PARTITIONED and (not src_member) and is_mvs_dest)
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-            elif src_ds_type in data_set.DataSet.MVS_VSAM or src_ds_type == "GDG":
+            elif src_ds_type in data_set.DataSetUtils.MVS_VSAM or src_ds_type == "GDG":
                 dest_ds_type = src_ds_type
             elif not is_uss:
                 dest_ds_type = "SEQ"
@@ -3916,7 +3916,7 @@ def run_module(module, arg_def):
         # ------------------------------- o -----------------------------------
         # Copy to sequential data set (PS / SEQ)
         # ---------------------------------------------------------------------
-        elif dest_ds_type in data_set.DataSet.MVS_SEQ:
+        elif dest_ds_type in data_set.DataSetUtils.MVS_SEQ:
             # TODO: check how ASA behaves with this
             if src_ds_type == "USS" and not is_binary:
                 new_src = conv_path or src
@@ -3934,7 +3934,7 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         # Copy to PDS/PDSE
         # ---------------------------------------------------------------------
-        elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED or dest_ds_type == "LIBRARY":
+        elif dest_ds_type in data_set.DataSetUtils.MVS_PARTITIONED or dest_ds_type == "LIBRARY":
 
             pdse_copy_handler = PDSECopyHandler(
                 module,

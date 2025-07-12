@@ -459,9 +459,9 @@ class FetchHandler:
         if tmphlq is None:
             tmphlq = "MVSTMP"
         try:
-            sysin = data_set.DataSet.create_temp(tmphlq)
-            sysprint = data_set.DataSet.create_temp(tmphlq)
-            out_ds_name = data_set.DataSet.create_temp(
+            sysin = data_set.DataSetUtils.create_temp(tmphlq)
+            sysprint = data_set.DataSetUtils.create_temp(tmphlq)
+            out_ds_name = data_set.DataSetUtils.create_temp(
                 tmphlq, space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
@@ -723,7 +723,7 @@ class FetchHandler:
 
         data_group = gdgs.GenerationDataGroupView(src)
         for current_gds in data_group.generations():
-            if current_gds.organization in data_set.DataSet.MVS_SEQ:
+            if current_gds.organization in data_set.DataSetUtils.MVS_SEQ:
                 self._fetch_mvs_data(
                     current_gds.name,
                     is_binary,
@@ -731,7 +731,7 @@ class FetchHandler:
                     file_override=current_gds.name,
                     encoding=encoding
                 )
-            elif current_gds.organization in data_set.DataSet.MVS_PARTITIONED:
+            elif current_gds.organization in data_set.DataSetUtils.MVS_PARTITIONED:
                 self._fetch_pdse(
                     current_gds.name,
                     is_binary,
@@ -931,13 +931,13 @@ def run_module():
         if "/" in src:  # USS
             src_exists = os.path.exists(b_src)
         else:  # MVS
-            src_data_set = data_set.MVSDataSet(src)
+            src_data_set = data_set.DataSet(src)
             is_member = data_set.is_member(src_data_set.name)
 
             if is_member:
-                src_exists = data_set.DataSet.data_set_member_exists(src_data_set.name)
+                src_exists = data_set.DataSetUtils.data_set_member_exists(src_data_set.name)
             else:
-                src_exists = data_set.DataSet.data_set_exists(
+                src_exists = data_set.DataSetUtils.data_set_exists(
                     src_data_set.name,
                     tmphlq=tmphlq
                 )
@@ -969,7 +969,7 @@ def run_module():
         if "/" in src:
             ds_type = "USS"
         else:
-            ds_type = data_set.DataSet.data_set_type(
+            ds_type = data_set.DataSetUtils.data_set_type(
                 data_set.extract_dsname(src_data_set.name),
                 tmphlq=tmphlq
             )
@@ -986,7 +986,7 @@ def run_module():
     #                  Fetch a sequential data set               #
     # ********************************************************** #
 
-    if ds_type in data_set.DataSet.MVS_SEQ:
+    if ds_type in data_set.DataSetUtils.MVS_SEQ:
         file_path = fetch_handler._fetch_mvs_data(
             src_data_set.name,
             is_binary,
@@ -998,7 +998,7 @@ def run_module():
     #    Fetch a partitioned data set or one of its members      #
     # ********************************************************** #
 
-    elif ds_type in data_set.DataSet.MVS_PARTITIONED:
+    elif ds_type in data_set.DataSetUtils.MVS_PARTITIONED:
         if is_member:
             file_path = fetch_handler._fetch_mvs_data(
                 src_data_set.name,
@@ -1033,7 +1033,7 @@ def run_module():
     #                  Fetch a VSAM data set                     #
     # ********************************************************** #
 
-    elif ds_type in data_set.DataSet.MVS_VSAM:
+    elif ds_type in data_set.DataSetUtils.MVS_VSAM:
         file_path = fetch_handler._fetch_vsam(
             src_data_set.name,
             is_binary,

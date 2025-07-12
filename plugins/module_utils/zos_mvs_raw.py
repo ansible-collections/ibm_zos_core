@@ -24,7 +24,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
     InputDefinition,
     OutputDefinition,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSetUtils
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as zos_backup,
 )
@@ -250,13 +250,13 @@ class RawDatasetDefinition(DatasetDefinition):
                 key_encoding2 = encryption_key_2.get("encoding")
 
         should_reuse = False
-        if (reuse or replace) and DataSet.data_set_exists(data_set_name, volumes):
+        if (reuse or replace) and DataSetUtils.data_set_exists(data_set_name, volumes):
             if reuse:
                 should_reuse = True
             elif replace:
                 if backup:
                     self.backup = zos_backup.mvs_file_backup(data_set_name, None, tmphlq)
-                DataSet.delete(data_set_name)
+                DataSetUtils.delete(data_set_name)
 
         if not should_reuse:
             super().__init__(

@@ -1217,7 +1217,7 @@ class MVSArchive(Archive):
         """Finds target datasets in host.
         """
         for path in self.sources:
-            if data_set.DataSet.data_set_exists(path, tmphlq=self.tmphlq):
+            if data_set.DataSetUtils.data_set_exists(path, tmphlq=self.tmphlq):
                 self.targets.append(path)
             else:
                 self.not_found.append(path)
@@ -1321,7 +1321,7 @@ class MVSArchive(Archive):
         if space_type is None:
             arguments.update(space_type="m")
         arguments.pop("self")
-        changed = data_set.DataSet.ensure_present(**arguments)
+        changed = data_set.DataSetUtils.ensure_present(**arguments)
         return arguments["name"], changed
 
     def create_dest_ds(self, name):
@@ -1338,8 +1338,8 @@ class MVSArchive(Archive):
             Name of the newly created data set.
         """
         record_length = XMIT_RECORD_LENGTH if self.format == "xmit" else AMATERSE_RECORD_LENGTH
-        data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
-        # changed = data_set.DataSet.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
+        data_set.DataSetUtils.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length, tmphlq=self.tmphlq)
+        # changed = data_set.DataSetUtils.ensure_present(name=name, replace=True, type='seq', record_format='fb', record_length=record_length)
         # cmd = "dtouch -rfb -tseq -l{0} {1}".format(record_length, name)
         # rc, out, err = self.module.run_command(cmd)
 
@@ -1456,7 +1456,7 @@ class MVSArchive(Archive):
         bool
             If destination path exists.
         """
-        return data_set.DataSet.data_set_exists(self.dest, tmphlq=self.tmphlq)
+        return data_set.DataSetUtils.data_set_exists(self.dest, tmphlq=self.tmphlq)
 
     def remove_targets(self):
         """Removes the archived targets and changes the state accordingly.
@@ -1464,7 +1464,7 @@ class MVSArchive(Archive):
         self.state = STATE_ABSENT
         for target in self.archived:
             try:
-                changed = data_set.DataSet.ensure_absent(target)
+                changed = data_set.DataSetUtils.ensure_absent(target)
             except Exception:
                 self.state = STATE_INCOMPLETE
             if not changed:
@@ -1495,8 +1495,8 @@ class MVSArchive(Archive):
 
             # resolve GDS relative names
             for index, e_path in enumerate(e_paths):
-                if data_set.DataSet.is_gds_relative_name(e_path):
-                    e_paths[index] = data_set.DataSet.resolve_gds_absolute_name(e_path)
+                if data_set.DataSetUtils.is_gds_relative_name(e_path):
+                    e_paths[index] = data_set.DataSetUtils.resolve_gds_absolute_name(e_path)
             expanded_path.extend(e_paths)
         return expanded_path
 
@@ -1525,7 +1525,7 @@ class MVSArchive(Archive):
         """
         if data_set is not None:
             for ds in data_sets:
-                data_set.DataSet.ensure_absent(ds)
+                data_set.DataSetUtils.ensure_absent(ds)
         if uss_files is not None:
             for file in uss_files:
                 try:
@@ -1560,7 +1560,7 @@ class MVSArchive(Archive):
         self.failed_on_encoding = []
         for target in self.encode_targets:
             try:
-                ds_type = data_set.DataSetUtils(target, tmphlq=self.tmphlq).ds_type()
+                ds_type = data_set.DataSetView(target, tmphlq=self.tmphlq).ds_type()
                 if not ds_type:
                     ds_type = "PS"
                 self.ds_types[target] = ds_type
@@ -1684,7 +1684,7 @@ class AMATerseArchive(MVSArchive):
                 self.module.fail_json(
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
-        dataset = data_set.MVSDataSet(
+        dataset = data_set.DataSet(
             name=self.dest,
             data_set_type='seq',
             record_format='fb',
@@ -1779,7 +1779,7 @@ class XMITArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
-        dataset = data_set.MVSDataSet(
+        dataset = data_set.DataSet(
             name=self.dest,
             data_set_type='seq',
             record_format='fb',

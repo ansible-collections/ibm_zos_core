@@ -1013,7 +1013,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    DataSet,
+    DataSetUtils,
     DatasetCreateError,
     GDSNameResolveError
 )
@@ -1820,7 +1820,7 @@ return 0"""
         try:
             # First creating a temp data set to hold the LISTDSI script.
             # All options are meant to allocate just enough space for it.
-            temp_script_location = DataSet.create_temp(
+            temp_script_location = DataSetUtils.create_temp(
                 hlq=self.tmp_hlq,
                 type='SEQ',
                 record_format='FB',
@@ -1884,7 +1884,7 @@ return 0"""
         if self.module.check_mode:
             self.extra_data = f'{self.extra_data}Skipping PDS/E directory attributes and SMS information while running in check mode.\n'
 
-        if not self.module.check_mode and self.data_set_type in DataSet.MVS_PARTITIONED:
+        if not self.module.check_mode and self.data_set_type in DataSetUtils.MVS_PARTITIONED:
             extra_args = 'DIRECTORY'
         if not self.module.check_mode and self.sms_managed:
             extra_args = f'{extra_args} SMSINFO'
@@ -2344,7 +2344,7 @@ def fill_return_json(attrs):
             dsorg = attrs['attributes']['dsorg']
             if handler == 'vsam' and dsorg == 'vsam':
                 continue
-            elif handler == 'nonvsam' and dsorg in DataSet.MVS_SEQ.union(DataSet.MVS_PARTITIONED):
+            elif handler == 'nonvsam' and dsorg in DataSetUtils.MVS_SEQ.union(DataSetUtils.MVS_PARTITIONED):
                 continue
 
         attrs['attributes'] = fill_missing_attrs(
@@ -2380,20 +2380,20 @@ def get_data_set_handler(
         DataSetHandler -- Handler for data sets.
     """
     try:
-        if DataSet.is_gds_relative_name(name):
+        if DataSetUtils.is_gds_relative_name(name):
             # Replacing the relative name because data_set_type,
             # data_set_cataloged_volume_list and LISTDSI need the
             # absolute name to locate the data set.
-            name = DataSet.resolve_gds_absolute_name(name)
+            name = DataSetUtils.resolve_gds_absolute_name(name)
     except (GDSNameResolveError, Exception):
         return DataSetHandler(name, exists=False)
 
     alias_name = None
 
-    has_been_migrated = DataSet.check_if_data_set_migrated(name)
+    has_been_migrated = DataSetUtils.check_if_data_set_migrated(name)
     if has_been_migrated:
         if recall and not module.check_mode:
-            rc, stdout, stderr = DataSet.recall_migrated_data_set(
+            rc, stdout, stderr = DataSetUtils.recall_migrated_data_set(
                 name,
                 module,
                 tmp_hlq=tmp_hlq
@@ -2412,7 +2412,7 @@ def get_data_set_handler(
             return NonVSAMDataSetHandler(name, 'MIGRAT', module, sms_managed, None, migrated=True)
 
     try:
-        is_an_alias, base_name = DataSet.get_name_if_data_set_is_alias(
+        is_an_alias, base_name = DataSetUtils.get_name_if_data_set_is_alias(
             name,
             tmp_hlq=tmp_hlq
         )
@@ -2425,17 +2425,17 @@ def get_data_set_handler(
 
     # If the data set doesn't exist, the return value will be None.
     # We search in all volumes first in case we're dealing with a VSAM.
-    ds_type = DataSet.data_set_type(name, tmphlq=tmp_hlq)
+    ds_type = DataSetUtils.data_set_type(name, tmphlq=tmp_hlq)
 
     # If we got a hit for a GDG, we'll stop right now. The user should set
     # type='GDG' in their task.
     if not ds_type or ds_type == 'GDG':
         return DataSetHandler(name, exists=False)
-    elif ds_type in DataSet.MVS_VSAM:
+    elif ds_type in DataSetUtils.MVS_VSAM:
         return VSAMDataSetHandler(name, module, ds_type, tmp_hlq, alias=alias_name)
 
     # Finding all the volumes where the data set is allocated.
-    cataloged_list = DataSet.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
+    cataloged_list = DataSetUtils.data_set_cataloged_volume_list(name, tmphlq=tmp_hlq)
     if volumes and len(volumes) > 0:
         found_volumes = [vol for vol in volumes if vol in cataloged_list]
         missing_volumes = [vol.lower() for vol in volumes if vol not in found_volumes]
@@ -2446,12 +2446,12 @@ def get_data_set_handler(
     # We continue when we find the data set on at least 1 volume.
     # Overwriting the first ds_type just in case.
     if len(found_volumes) >= 1:
-        ds_type = DataSet.data_set_type(name, volume=found_volumes[0], tmphlq=tmp_hlq)
+        ds_type = DataSetUtils.data_set_type(name, volume=found_volumes[0], tmphlq=tmp_hlq)
     else:
         return DataSetHandler(name, exists=False)
 
     # Now instantiating a concrete handler based on the data set's type.
-    if ds_type in DataSet.MVS_SEQ or ds_type in DataSet.MVS_PARTITIONED:
+    if ds_type in DataSetUtils.MVS_SEQ or ds_type in DataSetUtils.MVS_PARTITIONED:
         handler = NonVSAMDataSetHandler(
             name,
             found_volumes,

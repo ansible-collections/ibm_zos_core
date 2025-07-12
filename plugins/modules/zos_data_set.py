@@ -801,18 +801,135 @@ EXAMPLES = r"""
       - "222222"
 """
 RETURN = r"""
-names:
+data_sets:
   description: The data set names, including temporary generated data set names, in the order provided to the module.
   returned: always
   type: list
   elements: str
+  contains:
+    name:
+      description: The data set name.
+      type: str
+      returned: always
+    state:
+      description: The final state desired for specified data set.
+      type: str
+      returned: always
+    type:
+      description: The data set type.
+      type: str
+      returned: always
+    space_primary:
+      description: The amount of primary space allocated for the dataset.
+      type: int
+      returned: always
+    space_secondary:
+      description: The amount of secondary space allocated for the dataset.
+      type: int
+      returned: always
+    space_type:
+      description: The unit of measurement used when defining primary and secondary space.
+      type: str
+      returned: always
+    record_format:
+      description: The format of the data set.
+      type: str
+      sample: fb
+      returned: always
+    sms_storage_class:
+      description:
+        - The storage class for the SMS-managed dataset.
+        - Returned empty if the data set was not specified as SMS-managed dataset.
+      type: str
+      returned: always
+    sms_data_class:
+      description:
+        - The data class for an SMS-managed dataset.
+        - Returned empty if the data set was not specified as SMS-managed dataset.
+      type: str
+      returned: always
+    sms_management_class:
+      description:
+        - The management class for an SMS-managed dataset.
+        - Returned empty if the data set was not specified as SMS-managed dataset.
+      type: str
+      returned: always
+    record_length:
+      description:  The length, in bytes, of each record in the data set.
+      type: int
+      returned: always
+    block_size:
+      description: The block size used for the data set.
+      type: int
+      returned: always
+    directory_blocks:
+      description:
+        - The number of directory blocks to allocate to the data set.
+      type: int
+      required: false
+      returned: always
+    key_offset:
+      description: The key offset used when creating a KSDS data set.
+      type: int
+      returned: always
+    key_length:
+      description: The key length used when creating a KSDS data set.
+      type: int
+      returned: always
+    empty:
+      description:
+        - I(empty) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    extended:
+      description:
+        - I(extended) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    fifo:
+      description:
+        - I(fifo) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    limit:
+      description:
+        - I(limit) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: int
+      returned: always
+    purge:
+      description:
+        - I(purge) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    scratch:
+      description:
+        - I(scratch) attribute for Generation Data Groups.
+        - Returned empty if the data set provided was not defined as a GDG.
+      type: bool
+      returned: always
+    volumes:
+      description:
+        - Specifies the name of the volume(s) where the data set is located.
+        - Returned empty if volume was not provided.
+      type: list
+      returned: always
+msg:
+    description: A string with a generic message relayed to the user.
+    returned: always
+    type: str
+    sample: Error while gathering data set information
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    DataSet, GenerationDataGroup, MVSDataSet, Member
+    DataSetUtils, GenerationDataGroup, DataSet, Member
 )
 from ansible.module_utils.basic import AnsibleModule
 
@@ -942,7 +1059,7 @@ def data_set_name(contents, dependencies):
             tmphlq = dependencies.get("tmp_hlq")
             if tmphlq is None:
                 tmphlq = ""
-            contents = DataSet.temp_name(tmphlq)
+            contents = DataSetUtils.temp_name(tmphlq)
         else:
             raise ValueError(
                 'Data set and member name must be provided when "type=member"'
@@ -1368,7 +1485,7 @@ def get_data_set_handler(**params):
 
     Returns
     -------
-    MVSDataSet or GenerationDataGroup or Member object.
+    DataSet or GenerationDataGroup or Member object.
     """
     if params.get("type") == "gdg":
         return GenerationDataGroup(
@@ -1385,7 +1502,7 @@ def get_data_set_handler(**params):
             name=params.get("name")
         )
     else:
-        return MVSDataSet(
+        return DataSet(
             name=params.get("name"),
             record_format=params.get("record_format", None),
             volumes=params.get("volumes", None),
@@ -1410,7 +1527,7 @@ def perform_data_set_operations(data_set, state, replace, tmp_hlq, force):
 
     Parameters
     ----------
-    data_set : {object | MVSDataSet | Member | GenerationDataGroup }
+    data_set : {object | DataSet | Member | GenerationDataGroup }
         Data set object to perform operations on.
     state : str
         State of the data sets.
@@ -1702,6 +1819,53 @@ def parse_and_validate_args(params):
     }
     return parsed_args
 
+def build_return_schema( data_set_params):
+    """ Builds return values schema with empty values.
+
+        Parameters
+        ----------
+        data_set_params : dict
+            Dictionary containing all params used in data set creation.
+
+        Returns
+        -------
+        dict
+            Dictionary used to return values at execution finalization.
+    """
+    data_set_schema = {
+      "name": "",
+      "state": "",
+      "type": "",
+      "space_primary": "",
+      "space_secondary": "",
+      "space_type": "",
+      "record_format": "",
+      "sms_storage_class": "",
+      "sms_data_class": "",
+      "sms_management_class": "",
+      "record_length": "",
+      "block_size": "",
+      "directory_blocks": "",
+      "key_offset": "",
+      "key_length": "",
+      "empty": "",
+      "extended": "",
+      "fifo": "",
+      "limit": "",
+      "purge": "",
+      "scratch": "",
+      "volumes": [],
+    }
+
+
+    data_sets = [ data_set_schema.copy() | data_set for data_set in data_set_params ]
+    result = {
+      "data_sets": data_sets,
+      "changed": False,
+      "msg": "",
+      "failed": False
+    }
+    return result
 
 def run_module():
     """Runs the module.
@@ -1910,10 +2074,11 @@ def run_module():
             module_args['state']['dependencies'] = ['batch']
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
-            result["names"] = [d.get("name", "") for d in data_set_param_list]
+            # Build return schema from the data set param list
+            result["names"] = build_return_schema(data_set_param_list)
 
             for data_set_params in data_set_param_list:
-                # this returns MVSDataSet, Member or GenerationDataGroup
+                # this returns DataSet, Member or GenerationDataGroup
                 data_set = get_data_set_handler(**data_set_params)
                 current_changed = perform_data_set_operations(
                     data_set=data_set,
@@ -1925,8 +2090,6 @@ def run_module():
                 result["changed"] = result["changed"] or current_changed
         except Exception as e:
             module.fail_json(msg=repr(e), **result)
-    if module.params.get("replace"):
-        result["changed"] = True
     module.exit_json(**result)
 
 

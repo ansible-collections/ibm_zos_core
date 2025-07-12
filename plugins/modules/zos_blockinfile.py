@@ -616,15 +616,15 @@ def main():
     block = transformBlock(block, ' ', indentation)
     # analysis the file type
     if "/" not in src:
-        dataset = data_set.MVSDataSet(
+        dataset = data_set.DataSet(
             name=src
         )
         src = dataset.name
 
-    if data_set.DataSet.is_gds_relative_name(src):
+    if data_set.DataSetUtils.is_gds_relative_name(src):
         module.fail_json(msg="{0} does not exist".format(src))
 
-    ds_utils = data_set.DataSetUtils(src, tmphlq=tmphlq)
+    ds_utils = data_set.DataSetView(src, tmphlq=tmphlq)
     if not ds_utils.exists():
         message = "{0} does NOT exist".format(str(src))
         module.fail_json(msg=message)

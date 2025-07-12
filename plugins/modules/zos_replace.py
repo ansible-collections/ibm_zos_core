@@ -270,20 +270,20 @@ def resolve_src_name(module, name, result, tmp_hlq):
             module.fail_json(rc=257, msg=f"USS path {name} does not exist.", **result)
     else:
         try:
-            data_set_obj = data_set.MVSDataSet(name=name)
+            data_set_obj = data_set.DataSet(name=name)
             name = data_set_obj.name
             if not data_set_obj.is_gds_active:
-                is_an_alias, base_name = data_set.DataSet.get_name_if_data_set_is_alias(name=name, tmp_hlq=tmp_hlq)
+                is_an_alias, base_name = data_set.DataSetUtils.get_name_if_data_set_is_alias(name=name, tmp_hlq=tmp_hlq)
                 if is_an_alias:
                     name = base_name
         except Exception:
             message_dict = dict(msg=f"Unable to resolve name of data set {name}.")
             module.fail_json(**message_dict, **result)
 
-        if data_set.DataSet.is_gds_relative_name(name):
+        if data_set.DataSetUtils.is_gds_relative_name(name):
             module.fail_json(msg="{0} does not exist".format(name), **result)
 
-        ds_utils = data_set.DataSetUtils(name)
+        ds_utils = data_set.DataSetView(name)
         if not ds_utils.exists():
             module.fail_json(msg=f"{name} does NOT exist.", **result)
 
@@ -627,8 +627,8 @@ def run_module():
             else:
                 backup_ds = Backup.mvs_file_backup(dsn=src, bk_dsn=backup_name, tmphlq=tmp_hlq)
                 result['backup_name'] = backup_ds
-                if data_set.DataSet.is_gds_relative_name(backup_ds):
-                    bk_up_obj = data_set.MVSDataSet(name=backup_ds)
+                if data_set.DataSetUtils.is_gds_relative_name(backup_ds):
+                    bk_up_obj = data_set.DataSet(name=backup_ds)
                     result['backup_name'] = bk_up_obj.name
         except Exception as err:
             module.fail_json(msg=f"Unable to allocate backup {backup} destination: {str(err)}.", **result)

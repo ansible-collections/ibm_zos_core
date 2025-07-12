@@ -2816,8 +2816,8 @@ def resolve_data_set_names(dataset, disposition, type):
     else:
         disp = "shr"
 
-    if data_set.DataSet.is_gds_relative_name(dataset):
-        if data_set.DataSet.is_gds_positive_relative_name(dataset):
+    if data_set.DataSetUtils.is_gds_relative_name(dataset):
+        if data_set.DataSetUtils.is_gds_positive_relative_name(dataset):
             if disp == "new":
                 if type:
                     return str(datasets.create(dataset, type).name), "shr"
@@ -2826,7 +2826,7 @@ def resolve_data_set_names(dataset, disposition, type):
             else:
                 raise ("To generate a new GDS as {0} disposition 'new' is required.".format(dataset))
         else:
-            data = data_set.MVSDataSet(
+            data = data_set.DataSet(
                 name=dataset
             )
             src = data.name

@@ -17,7 +17,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     ZOAUImportError,
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSetUtils
 
 try:
     from zoautil_py import datasets
@@ -762,7 +762,7 @@ class StdinDefinition(DataDefinition):
             Defaults to 80.
         """
         self.name = None
-        name = DataSet.create_temp(
+        name = DataSetUtils.create_temp(
             hlq=tmphlq,
             record_format=record_format,
             space_primary=space_primary,
@@ -773,13 +773,13 @@ class StdinDefinition(DataDefinition):
         super().__init__(name)
         if isinstance(content, list):
             content = "\n".join(content)
-        DataSet.write(name, content)
+        DataSetUtils.write(name, content)
 
     def __del__(self):
         """Delete dataset with the name of this object
         """
         if self.name:
-            DataSet.delete(self.name)
+            DataSetUtils.delete(self.name)
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
@@ -860,7 +860,7 @@ class OutputDefinition(DataDefinition):
             Defaults to 80.
         """
         self.name = None
-        name = DataSet.create_temp(
+        name = DataSetUtils.create_temp(
             hlq=tmphlq,
             record_format=record_format,
             space_primary=space_primary,
@@ -874,7 +874,7 @@ class OutputDefinition(DataDefinition):
         """Delete dataset with the name of this object
         """
         if self.name:
-            DataSet.delete(self.name)
+            DataSetUtils.delete(self.name)
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
@@ -912,8 +912,8 @@ class VIODefinition(DataDefinition):
         if VIO wrote to disk during execution.
         """
         try:
-            DataSet.delete(self.name)
-        except DataSet.DatasetDeleteError:
+            DataSetUtils.delete(self.name)
+        except DataSetUtils.DatasetDeleteError:
             pass
 
     def _build_arg_string(self):

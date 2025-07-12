@@ -421,6 +421,8 @@ def create_trace_dataset(name, member=False):
         rc : bool
             Indicates if datasets were made.
     """
+    data_set_name = data_set.extract_dsname(name) if member else name
+
     # Adding new DataSet class in this call.
     # dataset = data_set.DataSet(
     #         name=dataset_name,

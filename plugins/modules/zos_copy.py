@@ -3300,6 +3300,7 @@ def run_module(module, arg_def):
     force = module.params.get('force')
     force_lock = module.params.get('force_lock')
     content = module.params.get('content')
+    log_file = module.params.get('log_file')
 
     # Set temporary directory at os environment level
     os.environ['TMPDIR'] = f"{os.path.realpath(module.tmpdir)}/"
@@ -3325,11 +3326,12 @@ def run_module(module, arg_def):
     raw_dest = dest
 
     # Initialize logger
-
-    temp_file = tempfile.NamedTemporaryFile(delete=False)
-    singleton_logger = SingletonLogger(temp_file.name)
+    if not log_file:
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        log_file = temp_file.name
+    singleton_logger = SingletonLogger(log_file)
     logger = singleton_logger.get_logger()
-    logger.info(f"Logger initialized in {temp_file.name}")
+    logger.info(f"Logger initialized in {log_file}")
 
 
     # Validation for copy from a member
@@ -3886,6 +3888,7 @@ def main():
         argument_spec=dict(
             src=dict(type='str'),
             dest=dict(required=True, type='str'),
+            log_file=dict(type='str'),
             is_binary=dict(type='bool', default=False),
             executable=dict(type='bool', default=False),
             asa_text=dict(type='bool', default=False),
@@ -3990,6 +3993,7 @@ def main():
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
+        log_file=dict(type='data_set_or_path', required=False),
         is_binary=dict(arg_type='bool', required=False, default=False),
         executable=dict(arg_type='bool', required=False, default=False),
         asa_text=dict(arg_type='bool', required=False, default=False),
@@ -4083,7 +4087,6 @@ def main():
     res_args = conv_path = None
     try:
         res_args, conv_path = run_module(module, arg_def)
-        print(f"res_args {res_args}")
         module.exit_json(**res_args)
     except CopyOperationError as err:
         cleanup([])

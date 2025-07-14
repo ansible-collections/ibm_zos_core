@@ -460,6 +460,7 @@ def _update_result(is_binary, copy_res, original_args, original_src):
         is_binary=is_binary,
         changed=copy_res.get("changed"),
         invocation=dict(module_args=original_args),
+        log_file=copy_res.get("log_file"),
     )
     if src:
         updated_result["src"] = original_src

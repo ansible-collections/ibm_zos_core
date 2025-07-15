@@ -191,6 +191,7 @@ def test_zos_job_output_job_exists_with_sysin(ansible_zos_module):
                         sysin_found = True
                         break
                 assert sysin_found
+        hosts.all.zos_data_set(name="TEST.DATASET.JCL", state="absent")
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
 

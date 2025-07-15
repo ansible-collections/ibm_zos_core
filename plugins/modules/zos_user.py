@@ -165,17 +165,17 @@ class RACFHandler():
         """
         if scope == 'group':
             if operation == 'create':
-                self.cmd = self._create_group()
+                rc, stdout, stderr, cmd = self._create_group()
 
-        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{self.cmd}" """)
+        self.cmd = cmd
         return rc, stdout, stderr
 
     def _create_group(self):
-        """Builds an ADDGROUP command.
+        """Builds and execute an ADDGROUP command.
 
         Returns
         -------
-            str: ADDGROUP command.
+            tuple: RC, stdout and stderr from the RACF command, and the ADDGROUP command.
         """
         cmd = f'ADDGROUP ({self.name})'
 
@@ -197,7 +197,13 @@ class RACFHandler():
         if self.ovm is not None:
             cmd = f"{cmd} OVM(GID({self.ovm['uid']}))"
 
-        return cmd
+        rc, stdout, stderr = self.module.run_command(f""" tsocmd "{cmd}" """)
+
+        if rc == 0:
+            self.num_entities_modified = 1
+            self.entities_modified = [self.name]
+
+        return rc, stdout, stderr, cmd
 
     def _make_general_string(self):
         """Creates a string that defines various common parameters of a profile.

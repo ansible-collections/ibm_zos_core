@@ -411,7 +411,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
                 list_of_dds = []
 
                 try:
-                    list_of_dds = jobs.list_dds(entry.job_id,sysin=sysin)
+                    list_of_dds = jobs.list_dds(entry.job_id, sysin=sysin)
                 except exceptions.DDQueryException:
                     is_dd_query_exception = True
 
@@ -430,7 +430,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, sysin=Fal
                     try:
                         # Note, in the event of an exception, eg job has TYPRUN=HOLD
                         # list_of_dds will still be populated with valuable content
-                        list_of_dds = jobs.list_dds(entry.job_id,sysin=sysin)
+                        list_of_dds = jobs.list_dds(entry.job_id, sysin=sysin)
                         is_jesjcl = True if search_dictionaries("dd_name", "JESJCL", list_of_dds) else False
                         is_job_error_status = True if entry.status in JOB_ERROR_STATUSES else False
                     except exceptions.DDQueryException:

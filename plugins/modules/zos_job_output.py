@@ -66,6 +66,7 @@ options:
     description:
       - Input DD SYSIN (show only this DD on a found job).
     type: bool
+    default: false
     required: false
 
 attributes:
@@ -96,6 +97,11 @@ EXAMPLES = r"""
     job_name: "*"
     owner: "IBMUSER"
     ddname: "?"
+
+- name: JES Job output with SYSIN
+  zos_job_output:
+    job_id: "JOB00548"
+    input: True
 """
 
 RETURN = r"""

@@ -1161,3 +1161,151 @@ def test_gdg_deletion_when_absent(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
         assert result.get("failed") is None
+
+def test_data_set_delete_with_noscratch(ansible_zos_module, volumes_on_systems):
+    """
+    Tests that 'state: absent' with 'noscratch: true' correctly uncatalogs
+    a data set but leaves its physical entry in the VTOC.
+    """
+    volumes = Volume_Handler(volumes_on_systems)
+    volume = volumes.get_available_vol()
+    hosts = ansible_zos_module
+    dataset = get_tmp_ds_name(2, 2)
+
+    try:
+        # Arrange: Create the test data set on the specific volume
+        hosts.all.zos_data_set(
+            name=dataset,
+            type='seq',
+            state='present',
+            volumes=[volume],
+            space_primary=1,
+            space_type='m'
+        )
+
+        # Act: Delete the dataset using the noscratch option
+        results = hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+            noscratch=True
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        # Assert 1: Verify the data set is GONE from the catalog.
+        # This is the first part of the test, where we check that the data set
+        results = hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        # catalog_check = hosts.all.command(f"dls '{dataset}'", failed_when=False)
+        # for result in catalog_check.contacted.values():
+        #     # Assert that the command failed (non-zero return code)
+        #     assert result.get("rc") != 0
+        # Assert 2: Verify the data set is STILL on the volume's VTOC.
+        # This is the crucial second half of the test.
+        # We can do this by trying to delete it again, but specifying the volume.
+        # If this delete reports "changed: true", it's proof that it found and
+        # deleted the uncataloged data set from the VTOC.
+        vtoc_check_and_delete = hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+            volumes=volume
+        )
+        for result in vtoc_check_and_delete.contacted.values():
+            # This assertion proves the data set existed on the volume's VTOC.
+            assert result.get("changed") is True
+    finally:
+        # Cleanup: Perform a final, full delete from the volume since it's still there.
+        # We provide the volume to ensure it can be found and deleted.
+        hosts.all.zos_data_set(
+            name=dataset,
+            state='absent',
+            volumes=[volume]
+        )
+
+def test_batch_uncatalog_with_noscratch_suboption(ansible_zos_module, volumes_on_systems):
+    """
+    Tests that the 'noscratch: true' sub-option works correctly when used inside a
+    batch list to uncatalog multiple data sets.
+    """
+    hosts = ansible_zos_module
+    volume = Volume_Handler(volumes_on_systems).get_available_vol()
+    
+    # Define two separate data sets for the batch operation
+    dataset_1 = get_tmp_ds_name()
+    dataset_2 = get_tmp_ds_name()
+
+    try:
+        # --- Arrange ---
+        # Create both data sets in a preliminary batch operation so they exist
+        setup_results = hosts.all.zos_data_set(
+            batch=[
+                {'name': dataset_1, 'type': 'seq', 'state': 'present', 'volumes': volume},
+                {'name': dataset_2, 'type': 'seq', 'state': 'present', 'volumes': volume}
+            ]
+        )
+        for result in setup_results.contacted.values():
+            assert result.get("changed") is True
+
+        # --- Act ---
+        # Run the main test: a batch uncatalog where both items use noscratch
+        act_results = hosts.all.zos_data_set(
+            batch=[
+                {'name': dataset_1, 'state': 'absent', 'noscratch': True},
+                {'name': dataset_2, 'state': 'absent', 'noscratch': True}
+            ]
+        )
+        # # Assert on the main action results
+        for result in act_results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        results = hosts.all.zos_data_set(
+            name=dataset_1,
+            state='absent',
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        results = hosts.all.zos_data_set(
+            name=dataset_2,
+            state='absent',
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        
+        # # --- Verification Assertions ---
+        # Assert 2: Verify the data set is STILL on the volume's VTOC.
+        # This is the crucial second half of the test.
+        # We can do this by trying to delete it again, but specifying the volume.
+        # If this delete reports "changed: true", it's proof that it found and
+        # deleted the uncataloged data set from the VTOC.
+        
+        vtoc_check_and_delete = hosts.all.zos_data_set(
+            name=dataset_1,
+            state='absent',
+            volumes=volume
+        )
+        for result in vtoc_check_and_delete.contacted.values():
+            # This assertion proves the data set existed on the volume's VTOC
+            assert result.get("changed") is True
+        
+        vtoc_check_and_delete = hosts.all.zos_data_set(
+            name=dataset_2,
+            state='absent',
+            volumes=volume
+        )
+        for result in vtoc_check_and_delete.contacted.values():
+            # This assertion proves the data set existed on the volume's VTOC
+            assert result.get("changed") is True
+    finally:
+        # --- Cleanup ---
+        # Ensure both data sets are fully deleted from the volume's VTOC.
+        # This is critical because the test's main action leaves them on disk.
+        hosts.all.zos_data_set(
+            batch=[
+                {'name': dataset_1, 'state': 'absent', 'volumes': [volume]},
+                {'name': dataset_2, 'state': 'absent', 'volumes': [volume]}
+            ]
+        )

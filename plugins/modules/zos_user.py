@@ -84,6 +84,38 @@ def dynamic_dict(contents, dependencies):
     return contents
 
 
+def clean_blocks(module_params, operation, scope):
+    """Deletes unnecessary fields and blocks when an operation doesn't
+    need them.
+
+    Parameters
+    ----------
+        module_params: dict
+            All parameters specified for this task.
+        operation: str
+            One of 'create', 'list', 'update', 'delete', 'purge', 'connect'
+            or 'remove'.
+        scope: str
+            One of 'user' or 'group'.
+    """
+    if scope == 'group':
+        if operation == 'create':
+            # Groups only accept a UID from the OMVS segment.
+            if module_params['omvs'] is not None:
+                omvs = dict()
+                if module_params['omvs'].get('uid') is not None:
+                    omvs['uid'] = module_params['omvs']['uid']
+                if module_params['omvs'].get('custom_uid') is not None:
+                    omvs['custom_uid'] = module_params['omvs']['custom_uid']
+                module_params['omvs'] = omvs if omvs else None
+            # Groups only accept UID from the OVM segment.
+            if module_params['ovm'] is not None:
+                ovm = dict()
+                if module_params['ovm'].get('uid') is not None:
+                    ovm['uid'] = module_params['ovm']['uid']
+                module_params['ovm'] = ovm if ovm else None
+
+
 def are_blocks_defined(module_params):
     """Checks that there's at least one block of information accompanying an operation.
     It's possible to call the module without actually giving it information about what it needs
@@ -516,14 +548,15 @@ def run_module():
         'dump_name': None
     }
 
+    operation = module.params['operation']
+    scope = module.params['scope']
+    clean_blocks(module.params, operation, scope)
+
     if not are_blocks_defined(module.params):
         result['msg'] = 'No profile blocks were provided with this operation, no changes made.'
         module.exit_json(**result)
 
-    operation = module.params['operation']
-    scope = module.params['scope']
     racf_handler = RACFHandler(module, module.params)
-
     rc, stdout, stderr = racf_handler.execute_operation(operation, scope)
     result['rc'] = rc
     result['stdout'] = stdout
@@ -539,7 +572,6 @@ def run_module():
 
     module.exit_json(**result)
 
-    # TODO: check that fields are ignored (deleted from the class object) when needed.
     # TODO: add 'delete_block' to custom_fields
     # TODO: add support for check_mode.
 

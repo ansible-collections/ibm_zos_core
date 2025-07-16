@@ -566,7 +566,7 @@ jobs:
                   "msg_code": "0000",
                   "msg_txt": ""
               },
-              "steps": [ { "step_name": "DLORD6", "step_cc": 0 }]
+              "steps": [{ "step_name": "DLORD6", "step_cc": 0 }]
               "job_class": "K",
               "execution_time": "00:00:10",
               "svc_class": "?",

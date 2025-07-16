@@ -60,7 +60,7 @@ options:
       - Data definition name (show only this DD on a found job).
         (e.g "JESJCL", "?")
     type: str
-    aliases: [ddname]
+    aliases: [ ddname ]
     required: false
 
 attributes:
@@ -309,7 +309,7 @@ jobs:
             The CC returned for this step in the DD section.
           type: int
           sample: 0
-      sample: [ { "step_name": "STEP0001", "step_cc": 0}]
+      sample: [{ "step_name": "STEP0001", "step_cc": 0 }]
   sample:
      [
       {
@@ -437,7 +437,7 @@ jobs:
           "msg_code": "0000",
           "msg_txt": "",
         },
-        "steps": [{ "step_name": "STEP0001","step_cc": 0}]
+        "steps": [{ "step_name": "STEP0001","step_cc": 0 }]
         "system": "STL1",
         "subsystem": "STL1",
         "cpu_time": 1414,

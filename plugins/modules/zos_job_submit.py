@@ -46,35 +46,31 @@ options:
       - When using a generation data set, only already created generations
         are valid. If either the relative name is positive, or negative but
         not found, the module will fail.
-  location:
+  remote_src:
     required: false
-    default: data_set
-    type: str
-    choices:
-      - data_set
-      - uss
-      - local
+    default: true
+    type: bool
     description:
-      - The JCL location. Supported choices are C(data_set), C(uss) or C(local).
-      - C(data_set) can be a PDS, PDSE, sequential data set, or a generation data set.
-      - C(uss) means the JCL location is located in UNIX System Services (USS).
-      - C(local) means locally to the Ansible control node.
-  wait_time_s:
+      - If set to C(false), the module searches for C(src) at the local machine.
+      - If set to C(true), the module goes to the remote/target machine for C(src).
+  wait_time:
     required: false
     default: 10
     type: int
     description:
-      - Option I(wait_time_s) is the total time that module
+      - Option I(wait_time) is the total time that module
         L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job
         to complete. The time begins when the module is executed on the managed
         node.
-      - I(wait_time_s) is measured in seconds and must be a value greater than 0
+      - I(wait_time) is measured in seconds and must be a value greater than 0
         and less than 86400.
-      - The module can submit and forget jobs by setting I(wait_time_s) to 0. This way the
+      - The module can submit and forget jobs by setting I(wait_time) to 0. This way the
         module will not try to retrieve the job details other than job id.
         Job details and contents can be retrieved later by using
         L(zos_job_query,./zos_job_query.html) or L(zos_job_output,./zos_job_output.html)
         if needed.
+      - If I(remote_src=False) and I(wait_time) is 0 the module not gonna clean the copy
+        of the file on remote system, to avoid problems on the submission of the job.
   max_rc:
     required: false
     type: int
@@ -96,12 +92,12 @@ options:
       - When configured, the L(zos_job_submit,./zos_job_submit.html) will try to
         catalog the data set for the volume serial. If it is not able to, the
         module will fail.
-      - Ignored for I(location=uss) and I(location=local).
+      - Ignored for I(remote_src=False).
   encoding:
     description:
       - Specifies which encoding the local JCL file should be converted from
         and to, before submitting the job.
-      - This option is only supported for when I(location=local).
+      - This option is only supported for when I(remote_src=False).
       - If this parameter is not provided, and the z/OS systems default encoding
         can not be identified, the JCL file will be converted from UTF-8 to
         IBM-1047 by default, otherwise the module will detect the z/OS system
@@ -194,13 +190,13 @@ jobs:
       description: Total duration time of the job execution, if it has finished.
       type: str
       sample: 00:00:10
-    ddnames:
+    dds:
       description:
          Data definition names.
       type: list
       elements: dict
       contains:
-        ddname:
+        dd_name:
           description:
              Data definition name.
           type: str
@@ -298,34 +294,31 @@ jobs:
               is the case of a job that errors or is active.
           type: int
           sample: 0
-        steps:
-          description:
-            Series of JCL steps that were executed and their return codes.
-          type: list
-          elements: dict
-          contains:
-            step_name:
-              description:
-                Name of the step shown as "was executed" in the DD section.
-              type: str
-              sample: "STEP0001"
-            step_cc:
-              description:
-                The CC returned for this step in the DD section.
-              type: int
-              sample: 0
       sample:
         ret_code: {
           "code": 0,
           "msg": "CC 0000",
           "msg_code": "0000",
           "msg_txt": "",
-          "steps": [
-            { "step_name": "STEP0001",
-              "step_cc": 0
-            },
-          ]
         }
+    steps:
+      description:
+        Series of JCL steps that were executed and their return codes.
+      type: list
+      elements: dict
+      contains:
+        step_name:
+          description:
+            Name of the step shown as "was executed" in the DD section.
+          type: str
+          sample: "STEP0001"
+        step_cc:
+          description:
+            The CC returned for this step in the DD section.
+          type: int
+              sample: 0
+      sample:
+        "steps": [{ "step_name": "STEP0001", "step_cc": 0 }]
     job_class:
       description:
         Job class for this job.
@@ -367,38 +360,11 @@ jobs:
         The name of the program found in the job's last completed step found in the PGM parameter.
       type: str
       sample: "IEBGENER"
-    system:
-      description:
-         The job entry system that MVS uses to do work.
-      type: str
-      sample: STL1
-    subsystem:
-      description:
-         The job entry subsystem that MVS uses to do work.
-      type: str
-      sample: STL1
-    cpu_time:
-      description:
-        Sum of the CPU time used by each job step, in microseconds.
-      type: int
-      sample: 5
-    execution_node:
-      description:
-        Execution node that picked the job and executed it.
-      type: str
-      sample: "STL1"
-    origin_node:
-      description:
-        Origin node that submitted the job.
-      type: str
-      sample: "STL1"
-
   sample:
      [
           {
-              "class": "K",
               "content_type": "JOB",
-              "ddnames": [
+              "dds": [
                   {
                       "byte_count": "677",
                       "content": [
@@ -419,7 +385,7 @@ jobs:
                           "-           12 SYSOUT SPOOL KBYTES",
                           "-         0.00 MINUTES EXECUTION TIME"
                       ],
-                      "ddname": "JESMSGLG",
+                      "dd_name": "JESMSGLG",
                       "id": "2",
                       "procstep": "",
                       "record_count": "16",
@@ -476,7 +442,7 @@ jobs:
                           "        15 ++SYSPRINT DD SYSOUT=*                                                          ",
                           "           ++*                                                                             "
                       ],
-                      "ddname": "JESJCL",
+                      "dd_name": "JESJCL",
                       "id": "3",
                       "procstep": "",
                       "record_count": "47",
@@ -530,7 +496,7 @@ jobs:
                           " IEF033I  JOB/DBDGEN00/STOP  2020073.1250 ",
                           "         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
                       ],
-                      "ddname": "JESYSMSG",
+                      "dd_name": "JESYSMSG",
                       "id": "4",
                       "procstep": "",
                       "record_count": "44",
@@ -585,7 +551,7 @@ jobs:
                           "  **** END OF MESSAGE SUMMARY REPORT ****                                                                                ",
                           "                                                                                                                         "
                       ],
-                      "ddname": "SYSPRINT",
+                      "dd_name": "SYSPRINT",
                       "id": "102",
                       "procstep": "L",
                       "record_count": "45",
@@ -594,18 +560,13 @@ jobs:
               ],
               "job_id": "JOB00361",
               "job_name": "DBDGEN00",
-              "owner": "OMVSADM",
               "ret_code": {
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": "",
-                  "steps": [
-                    { "step_name": "DLORD6",
-                      "step_cc": 0
-                    }
-                  ]
+                  "msg_txt": ""
               },
+              "steps": [ { "step_name": "DLORD6", "step_cc": 0 }]
               "job_class": "K",
               "execution_time": "00:00:10",
               "svc_class": "?",
@@ -615,11 +576,6 @@ jobs:
               "creation_date": "2023-05-03",
               "creation_time": "12:13:00",
               "queue_position": 3,
-              "subsystem": "STL1",
-              "system": "STL1",
-              "cpu_time": 1,
-              "execution_node": "STL1",
-              "origin_node": "STL1"
           }
      ]
 """
@@ -628,19 +584,19 @@ EXAMPLES = r"""
 - name: Submit JCL in a PDSE member.
   zos_job_submit:
     src: HLQ.DATA.LLQ(SAMPLE)
-    location: data_set
+    remote_src: true
   register: response
 
 - name: Submit JCL in USS with no DDs in the output.
   zos_job_submit:
     src: /u/tester/demo/sample.jcl
-    location: uss
+    remote_src: true
     return_output: false
 
 - name: Convert local JCL to IBM-037 and submit the job.
   zos_job_submit:
     src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-    location: local
+    remote_src: false
     encoding:
       from: ISO8859-1
       to: IBM-037
@@ -648,36 +604,36 @@ EXAMPLES = r"""
 - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
   zos_job_submit:
     src: HLQ.DATA.LLQ(SAMPLE)
-    location: data_set
+    remote_src: true
     volume: P2SS01
 
 - name: Submit a long running PDS job and wait up to 30 seconds for completion.
   zos_job_submit:
     src: HLQ.DATA.LLQ(LONGRUN)
-    location: data_set
-    wait_time_s: 30
+    remote_src: true
+    wait_time: 30
 
 - name: Submit a long running PDS job and wait up to 30 seconds for completion.
   zos_job_submit:
     src: HLQ.DATA.LLQ(LONGRUN)
-    location: data_set
-    wait_time_s: 30
+    remote_src: true
+    wait_time: 30
 
 - name: Submit JCL and set the max return code the module should fail on to 16.
   zos_job_submit:
     src: HLQ.DATA.LLQ
-    location: data_set
+    remote_src: true
     max_rc: 16
 
 - name: Submit JCL from the latest generation data set in a generation data group.
   zos_job_submit:
     src: HLQ.DATA.GDG(0)
-    location: data_set
+    remote_src: true
 
 - name: Submit JCL from a previous generation data set in a generation data group.
   zos_job_submit:
     src: HLQ.DATA.GDG(-2)
-    location: data_set
+    remote_src: true
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
@@ -820,7 +776,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_ti
                         job_fetched = jobs.fetch_multiple(job_submitted.job_id)[0]
                         job_fetch_rc = job_fetched.return_code
                         job_fetch_status = job_fetched.status
-                    # Allow for jobs that need more time to be fectched to run the wait_time_s
+                    # Allow for jobs that need more time to be fectched to run the wait_time
                     except zoau_exceptions.JobFetchException as err:
                         if duration >= timeout:
                             raise err
@@ -885,52 +841,6 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, is_unix=True, start_ti
     return job_submitted.job_id if job_submitted else None, duration
 
 
-def build_return_schema(result):
-    """ Builds return values schema with empty values.
-
-        Parameters
-        ----------
-        result : dict
-            Dictionary used to return values at execution finalization.
-
-        Returns
-        -------
-        dict
-            Dictionary used to return values at execution finalization.
-    """
-    result = {
-        "jobs": [],
-        "job_id": None,
-        "job_name": None,
-        "duration": None,
-        "execution_time": None,
-        "ddnames": {
-            "ddname": None,
-            "record_count": None,
-            "id": None,
-            "stepname": None,
-            "procstep": None,
-            "byte_count": None,
-            "content": [],
-        },
-        "ret_code": {
-            "code": None,
-            "msg": None,
-            "msg_code": None,
-            "msg_txt": None,
-            "steps": [],
-        },
-        "job_class": None,
-        "svc_class": None,
-        "priority": None,
-        "asid": None,
-        "creation_date": None,
-        "queue_position": None,
-        "program_name": None,
-    }
-    return result
-
-
 def run_module():
     """Initialize module.
 
@@ -939,14 +849,14 @@ def run_module():
     fail_json
         Parameter verification failed.
     fail_json
-        The value for option 'wait_time_s' is not valid.
+        The value for option 'wait_time' is not valid.
     """
     module_args = dict(
         src=dict(type="str", required=True),
-        location=dict(
-            type="str",
-            default="data_set",
-            choices=["data_set", "uss", "local"],
+        remote_src=dict(
+            type="bool",
+            default=True,
+            required=False
         ),
         encoding=dict(
             type="dict",
@@ -966,7 +876,7 @@ def run_module():
         ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
-        wait_time_s=dict(type="int", default=10),
+        wait_time=dict(type="int", default=10),
         max_rc=dict(type="int", required=False),
         use_template=dict(type='bool', default=False),
         template_parameters=dict(
@@ -1014,10 +924,10 @@ def run_module():
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
-        location=dict(
-            arg_type="str",
-            default="data_set",
-            choices=["data_set", "uss", "local"],
+        remote_src=dict(
+            arg_type="bool",
+            default=True,
+            required=False
         ),
         from_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
@@ -1026,7 +936,7 @@ def run_module():
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
-        wait_time_s=dict(arg_type="int", required=False, default=10),
+        wait_time=dict(arg_type="int", required=False, default=10),
         max_rc=dict(arg_type="int", required=False),
     )
 
@@ -1042,22 +952,21 @@ def run_module():
             msg="Parameter verification failed", stderr=str(err))
 
     # Extract values from set module options
-    location = parsed_args.get("location")
+    remote_src = parsed_args.get("remote_src")
     volume = parsed_args.get("volume")
     src = parsed_args.get("src")
     return_output = parsed_args.get("return_output")
-    wait_time_s = parsed_args.get("wait_time_s")
+    wait_time = parsed_args.get("wait_time")
     max_rc = parsed_args.get("max_rc")
-    temp_file = parsed_args.get("src") if location == "local" else None
+    temp_file = parsed_args.get("src") if not remote_src else None
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
     # Builds return value schema to make sure we return the return values schema.
-    result = build_return_schema(result)
 
-    if wait_time_s < 0 or wait_time_s > MAX_WAIT_TIME_S:
+    if wait_time < 0 or wait_time > MAX_WAIT_TIME_S:
         result["failed"] = True
-        result["msg"] = ("The value for option 'wait_time_s' is not valid, it must "
+        result["msg"] = ("The value for option 'wait_time' is not valid, it must "
                          "be greater than 0 and less than {0}.".format(str(MAX_WAIT_TIME_S)))
         module.fail_json(**result)
 
@@ -1065,68 +974,72 @@ def run_module():
     duration = 0
     start_time = timer()
 
-    if location == "data_set":
-        # Resolving a relative GDS name and escaping special symbols if needed.
-        src_data = data_set.MVSDataSet(src)
-
-        # Checking that the source is actually present on the system.
-        if volume is not None:
-            volumes = [volume]
-            # Get the data set name to catalog it.
-            src_ds_name = data_set.extract_dsname(src_data.name)
-            present, changed = DataSet.attempt_catalog_if_necessary(src_ds_name, volumes)
-
-            if not present:
-                module.fail_json(
-                    msg=(f"Unable to submit job {src_data.name} because the data set could "
-                         f"not be cataloged on the volume {volume}.")
-                )
-        elif data_set.is_member(src_data.name):
-            if not DataSet.data_set_member_exists(src_data.name):
-                module.fail_json(msg=f"Cannot submit job, the data set member {src_data.raw_name} was not found.")
+    if remote_src:
+        if "/" in src:
+            if path.exists(src):
+                if path.isfile(src):
+                    job_submitted_id, duration = submit_src_jcl(
+                        module, src, src_name=src, timeout=wait_time, is_unix=True)
+                else:
+                    module.fail_json(msg=f"Unable to submit job {src} is a folder, must be a file.", **result)
+            else:
+                module.fail_json(msg=f"Unable to submit job {src} does not exists.", **result)
         else:
-            if not DataSet.data_set_exists(src_data.name):
-                module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.")
+            # Resolving a relative GDS name and escaping special symbols if needed.
+            src_data = data_set.MVSDataSet(src)
 
+            # Checking that the source is actually present on the system.
+            if volume is not None:
+                volumes = [volume]
+                # Get the data set name to catalog it.
+                src_ds_name = data_set.extract_dsname(src_data.name)
+                present, changed = DataSet.attempt_catalog_if_necessary(src_ds_name, volumes)
+
+                if not present:
+                    module.fail_json(
+                        msg=(f"Unable to submit job {src_data.name} because the data set could "
+                            f"not be cataloged on the volume {volume}."), **result
+                    )
+            elif data_set.is_member(src_data.name):
+                if not DataSet.data_set_member_exists(src_data.name):
+                    module.fail_json(msg=f"Cannot submit job, the data set member {src_data.raw_name} was not found.", **result)
+            else:
+                if not DataSet.data_set_exists(src_data.name):
+                    module.fail_json(msg=f"Cannot submit job, the data set {src_data.raw_name} was not found.", **result)
+
+            job_submitted_id, duration = submit_src_jcl(
+                module, src_data.name, src_name=src_data.raw_name, timeout=wait_time, is_unix=False, start_time=start_time)
+    else:
         job_submitted_id, duration = submit_src_jcl(
-            module, src_data.name, src_name=src_data.raw_name, timeout=wait_time_s, is_unix=False, start_time=start_time)
-    elif location == "uss":
-        job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
-    elif location == "local":
-        job_submitted_id, duration = submit_src_jcl(
-            module, src, src_name=src, timeout=wait_time_s, is_unix=True)
+            module, src, src_name=src, timeout=wait_time, is_unix=True)
 
     # Explictly pass None for the unused args else a default of '*' will be
     # used and return undersirable results
     job_output_txt = None
-    result['job_id'] = job_submitted_id
     is_changed = True
     # If wait_time_s is 0, we do a deploy and forget strategy.
-    if wait_time_s != 0:
+    if wait_time != 0:
 
         try:
             job_output_txt = job_output(
                 job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
-                dd_scan=return_output, duration=duration, timeout=wait_time_s, start_time=start_time)
+                dd_scan=return_output, duration=duration, timeout=wait_time, start_time=start_time)
             # This is resolvig a bug where the duration coming from job_output is passed by value, duration
             # being an immutable type can not be changed and must be returned or accessed from the job.py.
-            if job_output is not None:
+            if job_output_txt is not None:
                 duration = job_output_txt[0].get("duration") if not None else duration
-                result["execution_time"] = job_output_txt[0].get("execution_time")
+                job_output_txt = parsing_job_response(job_output_txt, duration)
 
-            result["duration"] = duration
-
-            if duration >= wait_time_s:
+            if duration >= wait_time:
                 result["failed"] = True
                 result["changed"] = False
                 _msg = ("The JCL submitted with job id {0} but appears to be a long "
                         "running job that exceeded its maximum wait time of {1} "
                         "second(s). Consider using module zos_job_query to poll for "
-                        "a long running job or increase option 'wait_time_s' to a value "
-                        "greater than {2}.".format(str(job_submitted_id), str(wait_time_s), str(duration)))
+                        "a long running job or increase option 'wait_time' to a value "
+                        "greater than {2}.".format(str(job_submitted_id), str(wait_time), str(duration)))
                 _msg_suffix = ("Consider using module zos_job_query to poll for "
-                               "a long running job or increase option 'wait_time_s' to a value "
+                               "a long running job or increase option 'wait_time' to a value "
                                "greater than {0}.".format(str(duration)))
 
                 if job_output_txt is not None:
@@ -1142,6 +1055,7 @@ def run_module():
             if job_output_txt:
                 result["jobs"] = job_output_txt
                 job_ret_code = job_output_txt[0].get("ret_code")
+                steps = job_output_txt[0].get("steps")
 
                 if job_ret_code:
                     job_ret_code_msg = job_ret_code.get("msg")
@@ -1149,7 +1063,7 @@ def run_module():
                     job_ret_code_msg_code = job_ret_code.get("msg_code")
 
                     if return_output is True and max_rc is not None:
-                        is_changed = assert_valid_return_code(max_rc, job_ret_code_code, job_ret_code, result)
+                        is_changed = assert_valid_return_code(max_rc, job_ret_code_code, job_ret_code, steps, result)
 
                     if job_ret_code_msg is not None:
                         if re.search("^(?:{0})".format("|".join(JOB_STATUSES)), job_ret_code_msg):
@@ -1162,8 +1076,8 @@ def run_module():
                                 raise Exception(_msg)
 
                     if job_ret_code_code is not None and job_ret_code_msg == 'NOEXEC':
-                        job_dd_names = job_output_txt[0].get("ddnames")
-                        jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
+                        job_dd_names = job_output_txt[0].get("dds")
+                        jes_jcl_dd = search_dictionaries("dd_name", "JESJCL", job_dd_names)
                         # These are the conditions for a job run with TYPRUN=COPY.
                         if not jes_jcl_dd:
                             job_ret_code.update({"msg": "TYPRUN=COPY"})
@@ -1179,8 +1093,8 @@ def run_module():
                         # so further analyze the
                         # JESJCL DD to figure out if its a TYPRUN job
 
-                        job_dd_names = job_output_txt[0].get("ddnames")
-                        jes_jcl_dd = search_dictionaries("ddname", "JESJCL", job_dd_names)
+                        job_dd_names = job_output_txt[0].get("dds")
+                        jes_jcl_dd = search_dictionaries("dd_name", "JESJCL", job_dd_names)
 
                         # Its possible jobs don't have a JESJCL which are active and this would
                         # cause an index out of range error.
@@ -1237,7 +1151,7 @@ def run_module():
             else:
                 _msg = "The job output log is unavailable."
                 result["stderr"] = _msg
-                result["jobs"] = None
+                result["jobs"] = []
                 raise Exception(_msg)
         except Exception as err:
             result["failed"] = True
@@ -1251,14 +1165,15 @@ def run_module():
         finally:
             if temp_file is not None:
                 shutil.rmtree(path.dirname(temp_file))
+    else:
+      result["jobs"] = build_empty_response(job_submitted_id)
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'
     result["changed"] = True if is_changed else False
-    result["failed"] = False
     module.exit_json(**result)
 
 
-def assert_valid_return_code(max_rc, job_rc, ret_code, result):
+def assert_valid_return_code(max_rc, job_rc, ret_code, steps, result):
     """Asserts valid return code.
 
     Parameters
@@ -1301,7 +1216,7 @@ def assert_valid_return_code(max_rc, job_rc, ret_code, result):
         result["stderr"] = _msg
         raise Exception(_msg)
 
-    for step in ret_code["steps"]:
+    for step in steps:
         step_cc_rc = int(step["step_cc"])
         step_name_for_rc = step["step_name"]
         if step_cc_rc > max_rc:
@@ -1324,6 +1239,65 @@ def assert_valid_return_code(max_rc, job_rc, ret_code, result):
 
     return True
 
+
+def parsing_job_response(jobs_raw, duration):
+    """_summary_
+
+    Args:
+        jobs_raw (_type_): _description_
+    """
+    job = jobs_raw[0]
+    jobs = []
+    for job in jobs_raw:
+        job_dict = {
+            "job_id": job.get("job_id"),
+            "job_name": job.get("job_name"),
+            "content_type": job.get("content_type"),
+            "duration": duration,
+            "execution_time": job.get("execution_time"),
+            "dds": job.get("dds"),
+            "ret_code": job.get("ret_code"),
+            "steps": job.get("steps"),
+            "job_class": job.get("job_class"),
+            "svc_class": job.get("svc_class"),
+            "priority": job.get("priority"),
+            "asid": job.get("asid"),
+            "creation_date": job.get("creation_date"),
+            "creation_time": job.get("creation_time"),
+            "queue_position": job.get("queue_position"),
+            "program_name": job.get("program_name"),
+        }
+        jobs.append(job_dict)
+    return jobs
+
+
+def build_empty_response(job_submitted_id):
+    """_summary_
+
+    Args:
+        jobs_raw (_type_): _description_
+    """
+    jobs = []
+    job_dict = {
+        "job_id": job_submitted_id,
+        "job_name": None,
+        "content_type": None,
+        "duration": None,
+        "execution_time": None,
+        "dds": [],
+        "ret_code": {"code": None, "msg": None, "msg_code": None, "msg_txt": None,},
+        "steps": [],
+        "job_class": None,
+        "svc_class": None,
+        "priority": None,
+        "asid": None,
+        "creation_date": None,
+        "creation_time": None,
+        "queue_position": None,
+        "program_name": None,
+    }
+    jobs.append(job_dict)
+    return jobs
 
 def main():
     run_module()

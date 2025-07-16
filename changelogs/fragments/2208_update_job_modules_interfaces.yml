@@ -1,0 +1,13 @@
+breaking_changes:
+  - zos_job_output - Interface value ``ddname`` is substitute for ``dd_name``, but ``ddname`` is an alias. Return value ``changed`` is always retun, ``steps`` are no longer under `ret_code`
+    but is now included under `jobs`. Return value ``ddnames`` replaced by ``dds`` and value ``ddname`` under ``ddnames`` is replace by ``dd_name``.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2208).
+  - zos_job_submit - Interface value ``location`` is replace for ``remote_src`` in a bool value and ``wait_time_s`` ir replace for ``wait_time``. 
+    Return value ``ddnames`` replaced by ``dds`` and value ``ddname`` under ``ddnames`` is replace by ``dd_name``. Return values ``system``, ``subsystem``, ``cpu_time``, ``execution_node``
+    and ``origin node`` is no longer returned. Now all values are retuned under jobs exception for changed.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2208).
+
+trivial:
+  - test/zos_job_query_func.py - Update test validation to new values for job submit. Return value ``steps`` are no longer under `ret_code`
+    but is now included under `jobs`.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/2208).

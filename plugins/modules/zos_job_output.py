@@ -55,11 +55,12 @@ options:
       - The owner who ran the job. (e.g "IBMUSER", "*")
     type: str
     required: false
-  ddname:
+  dd_name:
     description:
       - Data definition name (show only this DD on a found job).
         (e.g "JESJCL", "?")
     type: str
+    aliases: [ddname]
     required: false
 
 attributes:
@@ -75,21 +76,21 @@ attributes:
 """
 
 EXAMPLES = r"""
-- name: Job output with ddname
+- name: Job output with dd_name
   zos_job_output:
     job_id: "STC02560"
-    ddname: "JESMSGLG"
+    dd_name: "JESMSGLG"
 
-- name: JES Job output without ddname
+- name: JES Job output without dd_name
   zos_job_output:
     job_id: "STC02560"
 
-- name: JES Job output with all ddnames
+- name: JES Job output with all dd_name
   zos_job_output:
     job_id: "STC*"
     job_name: "*"
     owner: "IBMUSER"
-    ddname: "?"
+    dd_name: "?"
 """
 
 RETURN = r"""
@@ -169,13 +170,13 @@ jobs:
         it represents the time elapsed from the job execution start and current time.
       type: str
       sample: 00:00:10
-    ddnames:
+    dds:
       description:
          Data definition names.
       type: list
       elements: dict
       contains:
-        ddname:
+        dd_name:
           description:
              Data definition name.
           type: str
@@ -285,34 +286,30 @@ jobs:
              Return code converted to integer value (when possible).
           type: int
           sample: 00
-        steps:
-          description:
-            Series of JCL steps that were executed and their return codes.
-          type: list
-          elements: dict
-          contains:
-            step_name:
-              description:
-                Name of the step shown as "was executed" in the DD section.
-              type: str
-              sample: "STEP0001"
-            step_cc:
-              description:
-                The CC returned for this step in the DD section.
-              type: int
-              sample: 0
       sample:
         ret_code: {
          "code": 0,
          "msg": "CC 0000",
          "msg_code": "0000",
          "msg_txt": "",
-         "steps": [
-           { "step_name": "STEP0001",
-             "step_cc": 0
-           }
-         ]
         }
+    steps:
+      description:
+        Series of JCL steps that were executed and their return codes.
+      type: list
+      elements: dict
+      contains:
+        step_name:
+          description:
+            Name of the step shown as "was executed" in the DD section.
+          type: str
+          sample: "STEP0001"
+        step_cc:
+          description:
+            The CC returned for this step in the DD section.
+          type: int
+          sample: 0
+      sample: [ { "step_name": "STEP0001", "step_cc": 0}]
   sample:
      [
       {
@@ -439,12 +436,8 @@ jobs:
           "msg": "CC 0000",
           "msg_code": "0000",
           "msg_txt": "",
-          "steps": [
-            { "step_name": "STEP0001",
-              "step_cc": 0
-            }
-          ]
         },
+        "steps": [{ "step_name": "STEP0001","step_cc": 0}]
         "system": "STL1",
         "subsystem": "STL1",
         "cpu_time": 1414,
@@ -456,7 +449,7 @@ changed:
     description:
       Indicates if any changes were made during module operation
     type: bool
-    returned: on success
+    returned: always
 """
 
 
@@ -495,7 +488,7 @@ def run_module():
         job_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
-        ddname=dict(type="str", required=False),
+        dd_name=dict(type="str", required=False, aliases=['ddname']),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -504,7 +497,7 @@ def run_module():
         job_id=dict(type="job_identifier", required=False),
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
-        ddname=dict(type="str", required=False),
+        dd_name=dict(type="str", required=False, aliases=['ddname']),
     )
 
     try:
@@ -517,27 +510,34 @@ def run_module():
             stderr=str(err)
         )
 
+    results = {}
+    results["changed"] = False
+
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
-    ddname = module.params.get("ddname")
+    dd_name = module.params.get("dd_name")
 
     if not job_id and not job_name and not owner:
-        module.fail_json(msg="Please provide a job_id or job_name or owner")
+        module.fail_json(msg="Please provide a job_id or job_name or owner", stderr="", **results)
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
-        results["changed"] = False
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+        for job in results["jobs"]:
+            if "job_not_found" in job:
+              results["changed"] = False
+              del job['job_not_found']
+            else:
+              results["changed"] = True
     except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(
-            msg="ZOAU exception",
-            rc=fetch_exception.response.rc,
-            stdout=fetch_exception.response.stdout_response,
+            msg=f"ZOAU exception {fetch_exception.response.stdout_response} rc {fetch_exception.response.rc}",
             stderr=fetch_exception.response.stderr_response,
+            changed=False
         )
     except Exception as e:
-        module.fail_json(msg=repr(e))
+        module.fail_json(msg=repr(e), **results)
 
     module.exit_json(**results)
 

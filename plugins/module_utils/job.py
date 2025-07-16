@@ -167,6 +167,7 @@ def _job_not_found(job_id, owner, job_name, dd_name):
         job_not_found_msg = "with the name {0}".format(job_name.upper())
     job = {}
 
+    job["job_not_found"] = True
     job["job_id"] = job_id
     job["job_name"] = job_name
     job["subsystem"] = None
@@ -175,24 +176,36 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["cpu_time"] = None
     job["execution_node"] = None
     job["origin_node"] = None
+    job["content_type"] = None
+    job["creation_date"] = None
+    job["creation_time"] = None
+    job["execution_time"] = None
+    job["job_class"] = None
+    job["svc_class"] = None
+    job["priority"] = None
+    job["asid"] = None
+    job["queue_position"] = None
+    job["program_name"] = None
 
     job["ret_code"] = {}
     job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
     job["ret_code"]["msg_code"] = None
     job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_not_found_msg)
+    job["steps"] = []
 
-    job["class"] = ""
+    job["class"] = None
 
-    job["ddnames"] = []
+    job["dds"] = []
     dd = {}
-    dd["ddname"] = dd_name
-    dd["record_count"] = "0"
-    dd["id"] = ""
+    dd["dd_name"] = dd_name
+    dd["record_count"] = 0
+    dd["id"] = None
     dd["stepname"] = None
-    dd["procstep"] = ""
-    dd["byte_count"] = "0"
-    job["ddnames"].append(dd)
+    dd["procstep"] = None
+    dd["byte_count"] = 0
+    dd["content"] = None
+    job["dds"].append(dd)
 
     jobs.append(job)
 
@@ -351,8 +364,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job = {}
             job["job_id"] = entry.job_id
             job["job_name"] = entry.name
-            job["subsystem"] = ""
-            job["system"] = ""
+            job["subsystem"] = None
+            job["system"] = None
             job["owner"] = entry.owner
             job["cpu_time"] = None
             job["execution_node"] = None
@@ -380,9 +393,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
             job["creation_time"] = str(entry.creation_datetime)[12:]
             job["queue_position"] = entry.queue_position
             job["program_name"] = entry.program_name
-            job["class"] = ""
+            job["class"] = None
             job["steps"] = []
-            job["ddnames"] = []
+            job["dds"] = []
             job["duration"] = duration
             if hasattr(entry, "execution_time"):
                 job["execution_time"] = entry.execution_time
@@ -444,7 +457,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
                         if dd_name not in single_dd["dd_name"]:
                             continue
                         else:
-                            dd["ddname"] = single_dd["dd_name"]
+                            dd["dd_name"] = single_dd["dd_name"]
 
                     if "records" in single_dd:
                         dd["record_count"] = single_dd["records"]
@@ -495,8 +508,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=T
 
                     job["steps"].extend(_parse_steps(tmpcont))
 
-                    job["ddnames"].append(dd)
-                    if len(job["class"]) < 1:
+                    job["dds"].append(dd)
+                    if job["class"] is None:
                         job["class"] = entry.job_class
 
                     if job["system"] is None:
@@ -545,7 +558,7 @@ def _ddname_pattern(contents, resolve_dependencies):
         re.IGNORECASE,
     ):
         raise ValueError(
-            'Invalid argument type for "{0}". Expected "ddname_pattern"'.format(
+            'Invalid argument type for "{0}". Expected "dd_name_pattern"'.format(
                 contents
             )
         )

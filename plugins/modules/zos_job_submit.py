@@ -318,7 +318,11 @@ jobs:
           type: int
               sample: 0
       sample:
-        "steps": [{ "step_name": "STEP0001", "step_cc": 0 }]
+        "steps": [
+          { "step_name": "STEP0001",
+            "step_cc": 0
+          }
+        ]
     job_class:
       description:
         Job class for this job.
@@ -564,7 +568,7 @@ jobs:
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": ""
+                  "msg_txt": "",
               },
               "steps": [
                 { "step_name": "DLORD6",

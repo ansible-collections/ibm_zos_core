@@ -316,7 +316,7 @@ jobs:
           description:
             The CC returned for this step in the DD section.
           type: int
-              sample: 0
+          sample: 0
       sample:
         "steps": [
           { "step_name": "STEP0001",

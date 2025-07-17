@@ -1174,7 +1174,7 @@ def run_module():
             if temp_file is not None:
                 shutil.rmtree(path.dirname(temp_file))
     else:
-      result["jobs"] = build_empty_response(job_submitted_id)
+        result["jobs"] = build_empty_response(job_submitted_id)
 
     # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'
     result["changed"] = True if is_changed else False
@@ -1293,7 +1293,7 @@ def build_empty_response(job_submitted_id):
         "duration": None,
         "execution_time": None,
         "dds": [],
-        "ret_code": {"code": None, "msg": None, "msg_code": None, "msg_txt": None,},
+        "ret_code": {"code": None, "msg": None, "msg_code": None, "msg_txt": None},
         "steps": [],
         "job_class": None,
         "svc_class": None,
@@ -1306,6 +1306,7 @@ def build_empty_response(job_submitted_id):
     }
     jobs.append(job_dict)
     return jobs
+
 
 def main():
     run_module()

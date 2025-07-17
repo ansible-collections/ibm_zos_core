@@ -33,7 +33,7 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-  - If user needs input like SYSIN, input parameter should be set true.
+  - If SYSIN DDs are needed, C(input) should be set to C(true).
 version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
@@ -64,7 +64,7 @@ options:
     required: false
   input:
     description:
-      - Input DD SYSIN (show only this DD on a found job).
+      - Whether to include SYSIN DDs as part of the output.
     type: bool
     default: false
     required: false
@@ -98,10 +98,10 @@ EXAMPLES = r"""
     owner: "IBMUSER"
     ddname: "?"
 
-- name: JES Job output with SYSIN
+- name: Query a job's output including SYSIN DDs
   zos_job_output:
     job_id: "JOB00548"
-    input: True
+    input: true
 """
 
 RETURN = r"""

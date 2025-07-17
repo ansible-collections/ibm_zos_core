@@ -1006,7 +1006,7 @@ def run_module():
                 if not present:
                     module.fail_json(
                         msg=(f"Unable to submit job {src_data.name} because the data set could "
-                            f"not be cataloged on the volume {volume}."), **result
+                             f"not be cataloged on the volume {volume}."), **result
                     )
             elif data_set.is_member(src_data.name):
                 if not DataSet.data_set_member_exists(src_data.name):

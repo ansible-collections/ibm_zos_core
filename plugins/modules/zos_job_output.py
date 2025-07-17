@@ -31,7 +31,7 @@ description:
     such as "TCP*" or "*".
   - The owner can be specific such as "IBMUSER", or one that uses a pattern
     like "*".
-  - If there is no ddname, or if ddname="?", output of all the ddnames under
+  - If there is no dd_name, or if dd_name="?", output of all the dds under
     the given job will be displayed.
 version_added: "1.0.0"
 author:
@@ -60,8 +60,8 @@ options:
       - Data definition name (show only this DD on a found job).
         (e.g "JESJCL", "?")
     type: str
-    aliases: [ ddname ]
     required: false
+    aliases: [ ddname ]
 
 attributes:
   action:
@@ -140,7 +140,7 @@ jobs:
       sample: "STL1"
     class:
       description:
-         Identifies the data set used in a system output data set, usually called a sysout data set.
+        Identifies the data set used in a system output data set, usually called a sysout data set.
       type: str
       sample:
     content_type:
@@ -172,13 +172,13 @@ jobs:
       sample: 00:00:10
     dds:
       description:
-         Data definition names.
+        Data definition names.
       type: list
       elements: dict
       contains:
         dd_name:
           description:
-             Data definition name.
+            Data definition name.
           type: str
           sample: JESMSGLG
         record_count:
@@ -188,7 +188,7 @@ jobs:
           sample: 17
         id:
           description:
-             The file ID.
+            The file ID.
           type: str
           sample: 2
         stepname:
@@ -199,8 +199,8 @@ jobs:
           sample: JES2
         procstep:
           description:
-             Identifies the set of statements inside JCL grouped together to
-             perform a particular function.
+            Identifies the set of statements inside JCL grouped together to
+            perform a particular function.
           type: str
           sample: PROC1
         byte_count:
@@ -210,7 +210,7 @@ jobs:
           sample: 574
         content:
           description:
-             The ddname content.
+            The dd content.
           type: list
           elements: str
           sample:
@@ -228,7 +228,7 @@ jobs:
                "         5 //SYSUT1   DD *                                                                 ",
                "         6 //SYSUT2   DD SYSOUT=*                                                          ",
                "         7 //                                                                              "
-             ]
+              ]
     job_class:
       description:
         Job class for this job.
@@ -262,7 +262,7 @@ jobs:
       sample: "IEBGENER"
     ret_code:
       description:
-         Return code output collected from job log.
+        Return code output collected from job log.
       type: dict
       contains:
         msg:
@@ -278,12 +278,12 @@ jobs:
           sample: S0C4
         msg_txt:
           description:
-             Returns additional information related to the job.
+            Returns additional information related to the job.
           type: str
           sample: "No job can be located with this job name: HELLO"
         code:
           description:
-             Return code converted to integer value (when possible).
+            Return code converted to integer value (when possible).
           type: int
           sample: 00
       sample:
@@ -309,13 +309,17 @@ jobs:
             The CC returned for this step in the DD section.
           type: int
           sample: 0
-      sample: [{ "step_name": "STEP0001", "step_cc": 0 }]
+      sample: [
+        { "step_name": "STEP0001",
+          "step_cc": 0
+        }
+      ]
   sample:
      [
       {
         "class": "R",
         "content_type": "JOB",
-        "ddnames": [
+        "dds": [
           {
             "byte_count": "775",
             "content": [
@@ -337,7 +341,7 @@ jobs:
               "-            6 SYSOUT SPOOL KBYTES",
               "-         0.00 MINUTES EXECUTION TIME"
             ],
-            "ddname": "JESMSGLG",
+            "dd_name": "JESMSGLG",
             "id": "2",
             "procstep": "",
             "record_count": "17",
@@ -361,7 +365,7 @@ jobs:
               "         6 //SYSUT2   DD SYSOUT=*                                                          ",
               "         7 //                                                                              "
             ],
-            "ddname": "JESJCL",
+            "dd_name": "JESJCL",
             "id": "3",
             "procstep": "",
             "record_count": "14",
@@ -390,7 +394,7 @@ jobs:
               " IEF033I  JOB/HELLO   /STOP  2020049.1025 ",
               "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
             ],
-            "ddname": "JESYSMSG",
+            "dd_name": "JESYSMSG",
             "id": "4",
             "procstep": "",
             "record_count": "19",
@@ -404,7 +408,7 @@ jobs:
               "                                                                                                                         ",
               " PROCESSING ENDED AT EOD                                                                                                 "
             ],
-            "ddname": "SYSPRINT",
+            "dd_name": "SYSPRINT",
             "id": "102",
             "procstep": "",
             "record_count": "4",
@@ -415,7 +419,7 @@ jobs:
             "content": [
               " HELLO, WORLD                                                                    "
             ],
-            "ddname": "SYSUT2",
+            "dd_name": "SYSUT2",
             "id": "103",
             "procstep": "",
             "record_count": "1",
@@ -437,7 +441,11 @@ jobs:
           "msg_code": "0000",
           "msg_txt": "",
         },
-        "steps": [{ "step_name": "STEP0001","step_cc": 0 }]
+        "steps": [
+          { "step_name": "STEP0001",
+            "step_cc": 0
+          }
+        ],
         "system": "STL1",
         "subsystem": "STL1",
         "cpu_time": 1414,

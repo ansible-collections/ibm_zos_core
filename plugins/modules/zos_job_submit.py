@@ -82,7 +82,7 @@ options:
     type: bool
     description:
       - Whether to print the DD output.
-      - If false, an empty list will be returned in the ddnames field.
+      - If false, an empty list will be returned in the dds field.
   volume:
     required: false
     type: str
@@ -230,7 +230,7 @@ jobs:
           sample: 574
         content:
           description:
-             The ddname content.
+             The dd content.
           type: list
           elements: str
           sample:
@@ -566,7 +566,11 @@ jobs:
                   "msg_code": "0000",
                   "msg_txt": ""
               },
-              "steps": [{ "step_name": "DLORD6", "step_cc": 0 }]
+              "steps": [
+                { "step_name": "DLORD6",
+                  "step_cc": 0
+                }
+              ],
               "job_class": "K",
               "execution_time": "00:00:10",
               "svc_class": "?",
@@ -1142,7 +1146,7 @@ def run_module():
 
                     if not return_output:
                         for job in result.get("jobs", []):
-                            job["ddnames"] = []
+                            job["dds"] = []
                 else:
                     _msg = "The 'ret_code' dictionary was unavailable in the job log."
                     result["ret_code"] = None

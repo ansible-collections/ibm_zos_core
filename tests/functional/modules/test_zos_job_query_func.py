@@ -111,41 +111,45 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
             cmd=f"cp {temp_path}/SAMPLE \"//'{jdata_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{jdata_set_name}(SAMPLE)", location="data_set", wait_time_s=10
+            src=f"{jdata_set_name}(SAMPLE)", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
-            # Default validation
             assert result.get("changed") is True
-            assert result.get("jobs") is not None
             assert result.get("msg", False) is False
+            assert result.get("jobs") is not None
 
             job = result.get("jobs")[0]
-            assert job.get("job_name") is not None
-            assert job.get("owner") is not None
             assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
             assert job.get("content_type") is not None
-            assert job.get("system") is not None
-            assert job.get("subsystem") is not None
-            assert job.get("origin_node") is not None
-            assert job.get("execution_node") is not None
-            assert job.get("cpu_time") is not None
+            assert job.get("duration") is not None
+            assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
+            assert job.get("svc_class") is None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
             assert job.get("creation_time") is not None
+            assert job.get("queue_position") is not None
             assert job.get("program_name") is not None
-            assert job.get("svc_class") is None
-            assert job.get("steps") is not None
+
+            dds = job.get("dds")[0]
+            assert dds.get("dd_name") is not None
+            assert dds.get("record_count") != 0
+            assert dds.get("id") is not None
+            assert dds.get("stepname") is not None
+            assert dds.get("procstep") is not None
+            assert dds.get("byte_count") != 0
+            assert dds.get("content") is not None
 
             step = job.get("steps")[0]
             assert step.get("step_name") is not None
             assert step.get("step_cc") is not None
 
             rc = job.get("ret_code")
-            assert rc.get("msg") is not None
-            assert rc.get("msg_code") == "0000"
+            assert rc.get("msg") == "CC"
             assert rc.get("code") == 0
+            assert rc.get("msg_code") == "0000"
             assert rc.get("msg_txt") == "CC"
 
             fulljobid = job.get("job_id")
@@ -204,40 +208,45 @@ def test_zos_job_name_query_multi_wildcards_func(ansible_zos_module):
             cmd=f"cp {temp_path}/SAMPLE \"//'{ndata_set_name}(SAMPLE)'\""
         )
         results = hosts.all.zos_job_submit(
-            src=f"{ndata_set_name}(SAMPLE)", location="data_set", wait_time_s=10
+            src=f"{ndata_set_name}(SAMPLE)", remote_src=True, wait_time=10
         )
         for result in results.contacted.values():
             assert result.get("changed") is True
-            assert result.get("jobs") is not None
             assert result.get("msg", False) is False
+            assert result.get("jobs") is not None
 
             job = result.get("jobs")[0]
-            assert job.get("job_name") is not None
-            assert job.get("owner") is not None
             assert job.get("job_id") is not None
+            assert job.get("job_name") is not None
             assert job.get("content_type") is not None
-            assert job.get("system") is not None
-            assert job.get("subsystem") is not None
-            assert job.get("origin_node") is not None
-            assert job.get("execution_node") is not None
-            assert job.get("cpu_time") is not None
+            assert job.get("duration") is not None
+            assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
+            assert job.get("svc_class") is None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
             assert job.get("creation_time") is not None
+            assert job.get("queue_position") is not None
             assert job.get("program_name") is not None
-            assert job.get("svc_class") is None
-            assert job.get("steps") is not None
+
+            dds = job.get("dds")[0]
+            assert dds.get("dd_name") is not None
+            assert dds.get("record_count") != 0
+            assert dds.get("id") is not None
+            assert dds.get("stepname") is not None
+            assert dds.get("procstep") is not None
+            assert dds.get("byte_count") != 0
+            assert dds.get("content") is not None
 
             step = job.get("steps")[0]
             assert step.get("step_name") is not None
             assert step.get("step_cc") is not None
 
             rc = job.get("ret_code")
-            assert rc.get("msg") is not None
-            assert rc.get("msg_code") == "0000"
+            assert rc.get("msg") == "CC"
             assert rc.get("code") == 0
+            assert rc.get("msg_code") == "0000"
             assert rc.get("msg_txt") == "CC"
 
             jobname = "HE*L*"

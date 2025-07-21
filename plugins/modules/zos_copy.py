@@ -3963,8 +3963,12 @@ def run_module(module, arg_def):
         # Copy to a GDG
         # ---------------------------------------------------------------------
         elif dest_ds_type == "GDG":
-            copy_handler.copy_to_gdg(src, dest)
-            res_args["changed"] = True
+            try:
+                copy_handler.copy_to_gdg(src, dest)
+                res_args["changed"] = True
+            except Exception as e:
+                res_args["msg"] = f"Failure to copy might be because of source GDG in open state {e}"
+
 
         # ------------------------------- o -----------------------------------
         # Copy to VSAM data set

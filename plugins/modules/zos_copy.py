@@ -1627,6 +1627,7 @@ class USSCopyHandler(CopyHandler):
                 if not os.path.isdir(dest):
                     logger.info("Setting mode to the file.")
                     self.module.set_mode_if_different(dest, mode, False)
+                    logger.info("Finished setting mode to the file.")
                 if changed_files:
                     logger.info("Setting modes to the files.")
                     self.module.set_mode_if_different(dest, mode, False)
@@ -1634,10 +1635,15 @@ class USSCopyHandler(CopyHandler):
                         self.module.set_mode_if_different(
                             os.path.join(validation.validate_safe_path(dest), validation.validate_safe_path(filepath)), mode, False
                         )
+                    logger.info("Finished setting mode to the file.")
             if group is not None:
+                logger.info("Changing group for the file.")
                 self.module.set_group_if_different(dest, group, False)
+                logger.info("Changed group for the file.")
             if owner is not None:
+                logger.info("Changing owner for the file.")
                 self.module.set_owner_if_different(dest, owner, False)
+                logger.info("Changed owner for the file.")
         return dest
 
     def _copy_to_file(self, src, dest, content_copy, conv_path):
@@ -3781,16 +3787,21 @@ def run_module(module, arg_def):
             )
             res_args['size'] = os.stat(dest).st_size
             remote_checksum = dest_checksum = None
+            logger.info("Finished copying file.")
 
             try:
+                logger.info("Computing checksums.")
                 remote_checksum = get_file_checksum(src)
                 dest_checksum = get_file_checksum(dest)
+                logger.info("Finished computing checksums.")
 
                 if validate:
+                    logger.info("Validating checksums.")
                     res_args["checksum"] = dest_checksum
 
                     if remote_checksum != dest_checksum:
                         raise CopyOperationError(msg="Validation failed for copied files")
+                    logger.info("Validated checksums.")
 
                 res_args["changed"] = (
                     res_args.get("changed") or dest_checksum != original_checksum or os.path.isdir(dest)
@@ -3862,6 +3873,7 @@ def run_module(module, arg_def):
     except CopyOperationError as err:
         raise err
 
+    logger.info("Finalizing module execution.")
     res_args["log_file"] = singleton_logger.get_log_file_path()
     res_args.update(
         dict(

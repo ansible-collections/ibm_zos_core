@@ -350,11 +350,15 @@ def test_uss_after(ansible_zos_module):
         params["target"] = full_path
         results = hosts.all.zos_replace(**params)
         for result in results.contacted.values():
+            print("result:")
+            print(result)
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
+            print("result:")
+            print(result)
             assert result.get("stdout") == TEST_AFTER
     finally:
         remove_uss_environment(ansible_zos_module, full_path)
@@ -373,11 +377,15 @@ def test_uss_after_replace(ansible_zos_module):
         params["target"] = full_path
         results = hosts.all.zos_replace(**params)
         for result in results.contacted.values():
+            print("result:")
+            print(result)
             assert result.get("changed") == True
             assert result.get("target") == full_path
             assert result.get("found") == 2
         results = hosts.all.shell(cmd="cat {0}".format(params["target"]))
         for result in results.contacted.values():
+            print("result::")
+            print(result)
             assert result.get("stdout") == TEST_AFTER_REPLACE
     finally:
         remove_uss_environment(ansible_zos_module, full_path)

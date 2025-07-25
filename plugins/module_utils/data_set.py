@@ -2950,6 +2950,7 @@ class GenerationDataGroup():
         self.gdg = None
         # Removed escaping since is not needed by the GDG python api.
         # self.name = DataSet.escape_data_set_name(self.name)
+
     @staticmethod
     def _validate_gdg_name(name):
         """Validates the length of a GDG name."""
@@ -2999,6 +3000,7 @@ class GenerationDataGroup():
 
         # Add this line to validate the name length before any operation
         GenerationDataGroup._validate_gdg_name(name)
+
         def _create_gdg(args):
             try:
                 return gdgs.create(**args)
@@ -3501,3 +3503,4 @@ class GenerationDataGroupCreateError(Exception):
         """Error during creation of a Generation Data Group."""
         self.msg = msg
         super().__init__(self.msg)
+        

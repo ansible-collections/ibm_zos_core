@@ -36,7 +36,7 @@ except ImportError:
 
 try:
     from zoautil_py import datasets, exceptions, gdgs, mvscmd, ztypes
-    from zoautil_py.exceptions import GenerationDataGroupCreateException, GenerationDataGroupFetchException
+    from zoautil_py.exceptions import GenerationDataGroupCreateException
 except ImportError:
     datasets = ZOAUImportError(traceback.format_exc())
     exceptions = ZOAUImportError(traceback.format_exc())
@@ -44,7 +44,6 @@ except ImportError:
     mvscmd = ZOAUImportError(traceback.format_exc())
     ztypes = ZOAUImportError(traceback.format_exc())
     GenerationDataGroupCreateException = ZOAUImportError(traceback.format_exc())
-    GenerationDataGroupFetchException = ZOAUImportError(traceback.format_exc())
 
 
 class DataSet(object):

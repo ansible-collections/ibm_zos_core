@@ -3503,4 +3503,3 @@ class GenerationDataGroupCreateError(Exception):
         """Error during creation of a Generation Data Group."""
         self.msg = msg
         super().__init__(self.msg)
-        

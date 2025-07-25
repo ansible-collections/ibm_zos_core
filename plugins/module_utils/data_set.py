@@ -3003,14 +3003,19 @@ class GenerationDataGroup():
         def _create_gdg(args):
             try:
                 return gdgs.create(**args)
-            except GenerationDataGroupCreateException as e:
-                stderr = getattr(e.response, 'stderr_response', '')
-                if "BGYSC5906E" in stderr :
-                    raise GenerationDataGroupCreateError(msg="FIFO creation failed: the system may not support FIFO datasets or is not configured for it.")
-                elif "BGYSC6104E" in stderr :
-                    raise GenerationDataGroupCreateError(msg="GDG creation failed: 'purge=true' requires 'scratch=true'.")
+            except exceptions._ZOAUExtendableException as e:
+                # Now, check if it's the specific exception we want to handle.
+                if isinstance(e, GenerationDataGroupCreateException):
+                    stderr = getattr(e.response, 'stderr_response', '')
+                    if "BGYSC5906E" in stderr :
+                        raise GenerationDataGroupCreateError(msg="FIFO creation failed: the system may not support FIFO datasets or is not configured for it.")
+                    elif "BGYSC6104E" in stderr :
+                        raise GenerationDataGroupCreateError(msg="GDG creation failed: 'purge=true' requires 'scratch=true'.")
+                    else:
+                        raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}")
                 else:
-                    raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}")
+                    # If it's a different ZOAU error, re-raise it.
+                    raise e
         if gdgs.exists(arguments.get("name")):
             present = True
 

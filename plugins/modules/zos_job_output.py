@@ -33,6 +33,7 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
+  - If SYSIN DDs are needed, C(input) should be set to C(true).
 version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
@@ -60,6 +61,12 @@ options:
       - Data definition name (show only this DD on a found job).
         (e.g "JESJCL", "?")
     type: str
+    required: false
+  input:
+    description:
+      - Whether to include SYSIN DDs as part of the output.
+    type: bool
+    default: false
     required: false
 
 attributes:
@@ -90,6 +97,11 @@ EXAMPLES = r"""
     job_name: "*"
     owner: "IBMUSER"
     ddname: "?"
+
+- name: Query a job's output including SYSIN DDs
+  zos_job_output:
+    job_id: "JOB00548"
+    input: true
 """
 
 RETURN = r"""
@@ -496,6 +508,7 @@ def run_module():
         job_name=dict(type="str", required=False),
         owner=dict(type="str", required=False),
         ddname=dict(type="str", required=False),
+        input=dict(type="bool", required=False, default=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -505,6 +518,7 @@ def run_module():
         job_name=dict(type="job_identifier", required=False),
         owner=dict(type="str", required=False),
         ddname=dict(type="str", required=False),
+        input=dict(type="bool", required=False, default=False),
     )
 
     try:
@@ -521,13 +535,14 @@ def run_module():
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
     ddname = module.params.get("ddname")
+    sysin = module.params.get("input")
 
     if not job_id and not job_name and not owner:
         module.fail_json(msg="Please provide a job_id or job_name or owner")
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname, sysin=sysin)
         results["changed"] = False
     except zoau_exceptions.JobFetchException as fetch_exception:
         module.fail_json(

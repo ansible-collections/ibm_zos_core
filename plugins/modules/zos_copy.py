@@ -45,7 +45,7 @@ options:
         format (FBA) or Variable Block with ANSI format (VBA), the module
         will fail.
       - This option is only valid for text files. If C(is_binary) is C(true)
-        or C(executable) is C(true) as well, the module will fail.
+        or C(is_executable) is C(true) as well, the module will fail.
     type: bool
     default: false
     required: false
@@ -116,7 +116,7 @@ options:
         C(src). If C(src) is a USS file, C(dest) will have a Fixed Block (FB) record format and the
         remaining attributes will be computed. If I(is_binary=true), C(dest) will have a Fixed Block
         (FB) record format with a record length of 80, block size of 32720, and the remaining
-        attributes will be computed. If I(executable=true),C(dest) will have an Undefined (U) record
+        attributes will be computed. If I(is_executable=true),C(dest) will have an Undefined (U) record
         format with a record length of 0, block size of 32760, and the remaining attributes will be
         computed.
       - If C(src) is a file and C(dest) a partitioned data set, C(dest) does not need to include
@@ -176,7 +176,7 @@ options:
         that is not available, then the value C(TMPHLQ) is used.
     required: false
     type: str
-  force:
+  replace:
     description:
       - If set to C(true) and the remote file or data set C(dest) is empty,
         the C(dest) will be reused.
@@ -193,14 +193,14 @@ options:
     type: bool
     default: false
     required: false
-  force_lock:
+  force:
     description:
       - By default, when C(dest) is a MVS data set and is being used by another
-        process with DISP=SHR or DISP=OLD the module will fail. Use C(force_lock)
+        process with DISP=SHR or DISP=OLD the module will fail. Use C(force)
         to bypass DISP=SHR and continue with the copy operation.
       - If set to C(true) and destination is a MVS data set opened by another
         process then zos_copy will try to copy using DISP=SHR.
-      - Using C(force_lock) uses operations that are subject to race conditions
+      - Using C(force) uses operations that are subject to race conditions
         and can lead to data loss, use with caution.
       - If a data set member has aliases, and is not a program
         object, copying that member to a dataset that is in use will result in
@@ -236,10 +236,10 @@ options:
     type: bool
     default: false
     required: false
-  executable:
+  is_executable:
     description:
       - If set to C(true), indicates that the file or library to be copied is an executable.
-      - If I(executable=true), and C(dest) is a data set, it must be a PDS or PDSE (library).
+      - If I(is_executable=true), and C(dest) is a data set, it must be a PDS or PDSE (library).
       - If C(dest) is a nonexistent data set, the library attributes assigned will be
         Undefined (U) record format with a record length of 0, block size of 32760 and the
         remaining attributes will be computed.
@@ -253,7 +253,7 @@ options:
       - If set to C(true), indicates that any aliases found in the source
         (USS file, USS dir, PDS/E library or member) are to be preserved during the copy operation.
       - Aliases are implicitly preserved when libraries are copied over to USS destinations.
-        That is, when C(executable=True) and C(dest) is a USS file or directory, this option will be ignored.
+        That is, when C(is_executable=True) and C(dest) is a USS file or directory, this option will be ignored.
       - Copying of aliases for text-based data sets from USS sources or to USS destinations is not currently supported.
       - If the C(dest) is Unix, the alias is not visible in Unix, even though the information is there and
         will be visible if copied to a library.
@@ -566,7 +566,7 @@ notes:
       transfers, if not available, the module will fail.
     - Beginning in version 1.8.x, zos_copy will no longer attempt to correct a copy of
       a data type member into a PDSE that contains program objects. You can control this
-      behavior using module option C(executable) that will signify an executable is being
+      behavior using module option C(is_executable) that will signify an executable is being
       copied into a PDSE with other executables. Mixing data type members with program
       objects will result in a (FSUM8976,./zos_copy.html) error.
     - It is the playbook author or user's responsibility to ensure they have
@@ -682,14 +682,14 @@ EXAMPLES = r"""
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
-    force: true
+    replace: true
 
 - name: Copy PDS member to a new PDS member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(SRCMEM)
     dest: HLQ.NEW.PDSE(DESTMEM)
     remote_src: true
-    force: true
+    replace: true
 
 - name: Copy a USS file to a PDSE member. If PDSE does not exist, allocate it
   zos_copy:
@@ -753,7 +753,7 @@ EXAMPLES = r"""
     src: HLQ.COBOLSRC.PDSE(TESTPGM)
     dest: HLQ.NEW.PDSE(MYCOBOL)
     remote_src: true
-    executable: true
+    is_executable: true
     aliases: true
 
 - name: Copy a Load Library from a USS directory /home/loadlib to a new PDSE
@@ -761,7 +761,7 @@ EXAMPLES = r"""
     src: '/home/loadlib/'
     dest: HLQ.LOADLIB.NEW
     remote_src: true
-    executable: true
+    is_executable: true
     aliases: true
 
 - name: Copy a file with ASA characters to a new sequential data set.
@@ -897,7 +897,7 @@ state:
     sample: file
 note:
     description: A note to the user after module terminates.
-    returned: When ``force=true`` and ``dest`` exists
+    returned: When ``replace=true`` and ``dest`` exists
     type: str
     sample: No data was copied
 msg:
@@ -987,11 +987,11 @@ class CopyHandler(object):
         self,
         module,
         is_binary=False,
-        executable=False,
+        is_executable=False,
         aliases=False,
         asa_text=False,
         backup_name=None,
-        force_lock=False,
+        force=False,
         identical_gdg_copy=False,
         tmphlq=None
     ):
@@ -1008,7 +1008,7 @@ class CopyHandler(object):
         is_binary : bool
             Whether the file or data set to be copied
             contains binary data.
-        executable : bool
+        is_executable : bool
             Whether the file or data set to be copied
             is executable.
         asa_text : bool
@@ -1018,7 +1018,7 @@ class CopyHandler(object):
         backup_name : str
             The USS path or data set name of destination
             backup.
-        force_lock : str
+        force : str
             Whether the dest data set should be copied into
             using disp=shr when is opened by another
             process.
@@ -1033,7 +1033,7 @@ class CopyHandler(object):
         is_binary : bool
             Whether the file or data set to be copied
             contains binary data.
-        executable : bool
+        is_executable : bool
             Whether the file or data set to be copied
             is executable.
         asa_text : bool
@@ -1043,7 +1043,7 @@ class CopyHandler(object):
         backup_name : str
             The USS path or data set name of destination
             backup.
-        force_lock : str
+        force : str
             Whether the dest data set should be copied into
             using disp=shr when is opened by another
             process.
@@ -1052,11 +1052,11 @@ class CopyHandler(object):
         """
         self.module = module
         self.is_binary = is_binary
-        self.executable = executable
+        self.is_executable = is_executable
         self.asa_text = asa_text
         self.aliases = aliases
         self.backup_name = backup_name
-        self.force_lock = force_lock
+        self.force = force
         self.identical_gdg_copy = identical_gdg_copy
         self.tmphlq = tmphlq
 
@@ -1110,7 +1110,7 @@ class CopyHandler(object):
         copy_args["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
+            response = copy.copy_asa_uss2mvs(new_src, dest, tmphlq=self.tmphlq, force=self.force)
 
             if response.rc != 0:
                 raise CopyOperationError(
@@ -1126,7 +1126,7 @@ class CopyHandler(object):
                 copy_args["options"] = "-B"
 
             try:
-                datasets.copy(new_src, dest, force=self.force_lock, **copy_args)
+                datasets.copy(new_src, dest, force=self.force, **copy_args)
             except zoau_exceptions.ZOAUException as copy_exception:
                 raise CopyOperationError(
                     msg="Unable to copy source {0} to {1}".format(new_src, dest),
@@ -1150,7 +1150,7 @@ class CopyHandler(object):
         CopyOperationError
             When REPRO fails to copy the data set.
         """
-        out_dsp = "shr" if self.force_lock else "old"
+        out_dsp = "shr" if self.force else "old"
         dds = {"OUT": "{0},{1}".format(dest.upper(), out_dsp)}
         repro_cmd = """  REPRO -
         INDATASET('{0}') -
@@ -1564,7 +1564,7 @@ class USSCopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
-        executable=False,
+        is_executable=False,
         asa_text=False,
         aliases=False,
         common_file_args=None,
@@ -1600,7 +1600,7 @@ class USSCopyHandler(CopyHandler):
         super().__init__(
             module,
             is_binary=is_binary,
-            executable=executable,
+            is_executable=is_executable,
             asa_text=asa_text,
             aliases=aliases,
             backup_name=backup_name,
@@ -1616,7 +1616,7 @@ class USSCopyHandler(CopyHandler):
         src_ds_type,
         src_member,
         member_name,
-        force,
+        replace,
         content_copy,
     ):
         """Copy a file or data set to a USS location.
@@ -1638,7 +1638,7 @@ class USSCopyHandler(CopyHandler):
             Whether src is a data set member.
         member_name : str
             The name of the source data set member.
-        force : bool
+        replace : bool
             Whether to copy files to an already existing directory.
         content_copy : bool
             Whether copy is using content option or not.
@@ -1655,7 +1655,7 @@ class USSCopyHandler(CopyHandler):
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
 
-            if self.executable:
+            if self.is_executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
         else:
@@ -1682,7 +1682,7 @@ class USSCopyHandler(CopyHandler):
                 dest = self._copy_to_file(src, dest, content_copy, conv_path)
                 changed_files = None
             else:
-                dest, changed_files = self._copy_to_dir(src, dest, conv_path, force)
+                dest, changed_files = self._copy_to_dir(src, dest, conv_path, replace)
 
         if self.common_file_args is not None:
             mode = self.common_file_args.get("mode")
@@ -1740,7 +1740,7 @@ class USSCopyHandler(CopyHandler):
                 datasets.copy(new_src, dest, **opts)
                 shutil.copystat(new_src, dest, follow_symlinks=True)
                 # shutil.copy(new_src, dest)
-            if self.executable:
+            if self.is_executable:
                 status = os.stat(dest)
                 os.chmod(dest, status.st_mode | stat.S_IEXEC)
         except zoau_exceptions.ZOAUException as err:
@@ -1765,7 +1765,7 @@ class USSCopyHandler(CopyHandler):
         src_dir,
         dest_dir,
         conv_path,
-        force
+        replace
     ):
         """Helper function to copy a USS directory to another USS directory.
         If the path for dest_dir does not end with a trailing slash ("/"),
@@ -1779,7 +1779,7 @@ class USSCopyHandler(CopyHandler):
             USS dest directory.
         conv_path : str
             Path to the converted source directory.
-        force :bool
+        replace :bool
             Whether to copy files to an already existing directory.
 
         Returns
@@ -1804,7 +1804,7 @@ class USSCopyHandler(CopyHandler):
             if copy_directory:
                 dest = os.path.join(validation.validate_safe_path(dest_dir), validation.validate_safe_path(os.path.basename(os.path.normpath(src_dir))))
             # dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
-            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=force)
+            dest = self.copy_tree(new_src_dir, dest, dirs_exist_ok=replace)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
@@ -1953,9 +1953,9 @@ class USSCopyHandler(CopyHandler):
                 if self.asa_text:
                     response = copy.copy_asa_mvs2uss(src, dest, tmphlq=self.tmphlq)
                     rc = response.rc
-                elif self.executable:
+                elif self.is_executable:
                     try:
-                        rc = datasets.copy(src, dest, alias=True, executable=True)
+                        rc = datasets.copy(src, dest, alias=True, is_executable=True)
                     except zoau_exceptions.ZOAUException as copy_exception:
                         response = copy_exception.response
                         rc = response.rc
@@ -1986,9 +1986,9 @@ class USSCopyHandler(CopyHandler):
                         raise CopyOperationError(
                             msg=f"Error while copying GDG {src} to {dest}"
                         )
-                elif self.executable:
+                elif self.is_executable:
                     try:
-                        datasets.copy(src, dest, alias=True, executable=True)
+                        datasets.copy(src, dest, alias=True, is_executable=True)
                     except zoau_exceptions.ZOAUException as copy_exception:
                         raise CopyOperationError(
                             msg="Error while copying source {0} to {1}".format(src, dest),
@@ -2023,11 +2023,11 @@ class PDSECopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
-        executable=False,
+        is_executable=False,
         aliases=False,
         asa_text=False,
         backup_name=None,
-        force_lock=False,
+        force=False,
         tmphlq=None
     ):
         """ Utility class to handle copying to partitioned data sets or
@@ -2052,11 +2052,11 @@ class PDSECopyHandler(CopyHandler):
         super().__init__(
             module,
             is_binary=is_binary,
-            executable=executable,
+            is_executable=is_executable,
             aliases=aliases,
             asa_text=asa_text,
             backup_name=backup_name,
-            force_lock=force_lock,
+            force=force,
             tmphlq=tmphlq
         )
 
@@ -2107,7 +2107,7 @@ class PDSECopyHandler(CopyHandler):
                 path, dirs, files = next(os.walk(new_src))
 
             src_members = [
-                os.path.normpath("{0}/{1}".format(path, file)) if (self.is_binary or self.executable)
+                os.path.normpath("{0}/{1}".format(path, file)) if (self.is_binary or self.is_executable)
                 else normalize_line_endings("{0}/{1}".format(path, file), encoding)
                 for file in files
             ]
@@ -2229,7 +2229,7 @@ class PDSECopyHandler(CopyHandler):
         opts["options"] = ""
 
         if src_type == 'USS' and self.asa_text:
-            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq, force_lock=self.force_lock)
+            response = copy.copy_asa_uss2mvs(src, dest, tmphlq=self.tmphlq, force=self.force)
             rc, out, err = response.rc, response.stdout_response, response.stderr_response
         else:
             # While ASA files are just text files, we do a binary copy
@@ -2238,7 +2238,7 @@ class PDSECopyHandler(CopyHandler):
                 opts["options"] = "-B"
 
             try:
-                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.executable, force=self.force_lock, **opts)
+                rc = datasets.copy(src, dest, alias=self.aliases, executable=self.is_executable, force=self.force, **opts)
                 out = ""
                 err = ""
             except zoau_exceptions.ZOAUException as copy_exception:
@@ -2419,7 +2419,7 @@ def get_data_set_attributes(
 def create_seq_dataset_from_file(
     file,
     dest,
-    force,
+    replace,
     is_binary,
     asa_text,
     record_length=None,
@@ -2435,7 +2435,7 @@ def create_seq_dataset_from_file(
         Path of the source file.
     dest : str
         Name of the data set.
-    force : bool
+    replace : bool
         Whether to replace an existing data set.
     is_binary : bool
         Whether the file has binary data.
@@ -2479,7 +2479,7 @@ def create_seq_dataset_from_file(
         volume=volume
     )
 
-    data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+    data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
 
 
 def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
@@ -2523,7 +2523,7 @@ def is_compatible(
     src_member,
     is_src_dir,
     is_src_inline,
-    executable,
+    is_executable,
     asa_text,
     src_has_asa_chars,
     dest_has_asa_chars,
@@ -2547,7 +2547,7 @@ def is_compatible(
         Whether the src is a USS directory.
     is_src_inline : bool
         Whether the src comes from inline content.
-    executable : bool
+    is_executable : bool
         Whether the src is a executable to be copied.
     asa_text : bool
         Whether the copy operation will handle ASA control characters.
@@ -2577,7 +2577,7 @@ def is_compatible(
     # If source or destination is a sequential data set and executable as true
     # is incompatible to execute the copy.
     # ********************************************************************
-    if executable:
+    if is_executable:
         if src_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_SEQ:
             return False
 
@@ -2692,7 +2692,7 @@ def does_destination_allow_copy(
     member_exists,
     dest_type,
     is_uss,
-    force,
+    replace,
     volume=None,
     tmphlq=None
 ):
@@ -2715,7 +2715,7 @@ def does_destination_allow_copy(
         Type of the destination (SEQ/PARTITIONED/VSAM/USS).
     is_uss : bool
         Whether or not the destination is inside USS.
-    force : bool
+    replace : bool
         Whether or not the module can replace existing destinations.
     volume : str, optional
         Volume where the destination should be.
@@ -2731,21 +2731,21 @@ def does_destination_allow_copy(
     # If the destination is inside USS and the module doesn't have permission to replace it,
     # it fails.
     if is_uss and dest_exists:
-        if src_type == "USS" and os.path.isdir(dest) and os.path.isdir(src) and not force:
+        if src_type == "USS" and os.path.isdir(dest) and os.path.isdir(src) and not replace:
             return False
-        elif os.path.isfile(dest) and not force:
+        elif os.path.isfile(dest) and not replace:
             return False
 
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
     if (dest_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_VSAM) and dest_exists:
         is_dest_empty = data_set.DataSet.is_empty(dest, volume, tmphlq=tmphlq)
-        if not (is_dest_empty or force):
+        if not (is_dest_empty or replace):
             return False
 
     # When the destination is a partitioned data set, the module will have to be able to replace
     # existing members inside of it, if needed.
-    if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not force:
+    if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not replace:
         return False
 
     # When the destination is an existing GDG, we'll check that we have enough free generations
@@ -2920,9 +2920,9 @@ def allocate_destination_data_set(
     src_ds_type,
     dest_ds_type,
     dest_exists,
-    force,
+    replace,
     is_binary,
-    executable,
+    is_executable,
     asa_text,
     is_gds,
     is_active_gds,
@@ -2946,11 +2946,11 @@ def allocate_destination_data_set(
         Type of the destination data set.
     dest_exists : bool
         Whether the destination data set already exists.
-    force : bool
+    replace : bool
         Whether to replace an existent data set.
     is_binary : bool
         Whether the data set will contain binary data.
-    executable : bool
+    is_executable : bool
         Whether the data to copy is an executable dataset or file.
     asa_text : bool
         Whether the data to copy has ASA control characters.
@@ -3018,14 +3018,14 @@ def allocate_destination_data_set(
             del dest_params["purge"]
             del dest_params["extended"]
             del dest_params["fifo"]
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
-            create_seq_dataset_from_file(src, dest, force, is_binary, asa_text, volume=volume, tmphlq=tmphlq)
+            create_seq_dataset_from_file(src, dest, replace, is_binary, asa_text, volume=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             # Only applying the GDS special case when we don't have an absolute name.
             if is_gds and not is_active_gds:
@@ -3043,7 +3043,7 @@ def allocate_destination_data_set(
                 create_seq_dataset_from_file(
                     temp_dump,
                     dest,
-                    force,
+                    replace,
                     is_binary,
                     asa_text,
                     record_length=record_length,
@@ -3060,7 +3060,7 @@ def allocate_destination_data_set(
             if is_gds and not is_active_gds:
                 data_set.DataSet.allocate_gds_model_data_set(ds_name=dest, model=src_name, asa_text=asa_text, vol=volume)
             else:
-                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
+                data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, executable=is_executable, asa_text=asa_text, vol=volume, tmphlq=tmphlq)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.list_datasets(src_name)[0]
             # The size returned by listing is in bytes.
@@ -3077,7 +3077,7 @@ def allocate_destination_data_set(
                 type="PDSE",
                 volume=volume
             )
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
                 # This is almost the same as allocating a sequential dataset.
@@ -3097,7 +3097,7 @@ def allocate_destination_data_set(
                     if asa_text:
                         record_length += 1
 
-                if executable:
+                if is_executable:
                     record_format = "U"
                     record_length = 0
                     type_ds = "LIBRARY"
@@ -3117,7 +3117,7 @@ def allocate_destination_data_set(
                 size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
                 # This PDSE will be created with record format VB and a record length of 1028.
 
-                if executable:
+                if is_executable:
                     dest_params = get_data_set_attributes(
                         dest, size, is_binary,
                         record_format='U',
@@ -3135,7 +3135,7 @@ def allocate_destination_data_set(
                         volume=volume
                     )
 
-            data_set.DataSet.ensure_present(replace=force, tmp_hlq=tmphlq, **dest_params)
+            data_set.DataSet.ensure_present(replace=replace, tmp_hlq=tmphlq, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
@@ -3353,7 +3353,7 @@ def run_module(module, arg_def):
     fail_json
         Cannot write a partitioned data set (PDS) to a USS file.
     fail_json
-        Destination already exists on the system, unable to overwrite unless force=True is specified.
+        Destination already exists on the system, unable to overwrite unless replace=True is specified.
     fail_json
         Unable to allocate destination data set.
     """
@@ -3387,7 +3387,7 @@ def run_module(module, arg_def):
     dest = module.params.get('dest')
     remote_src = module.params.get('remote_src')
     is_binary = module.params.get('is_binary')
-    executable = module.params.get('executable')
+    is_executable = module.params.get('is_executable')
     asa_text = module.params.get('asa_text')
     aliases = module.params.get('aliases')
     backup = module.params.get('backup')
@@ -3399,8 +3399,8 @@ def run_module(module, arg_def):
     encoding = module.params.get('encoding')
     volume = module.params.get('volume')
     tmphlq = module.params.get('tmp_hlq')
+    replace = module.params.get('replace')
     force = module.params.get('force')
-    force_lock = module.params.get('force_lock')
     content = module.params.get('content')
     identical_gdg_copy = module.params.get('identical_gdg_copy', False)
 
@@ -3512,7 +3512,7 @@ def run_module(module, arg_def):
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
-            if not is_binary and not is_uss and not executable:
+            if not is_binary and not is_uss and not is_executable:
                 new_src = src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).
@@ -3597,7 +3597,7 @@ def run_module(module, arg_def):
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type").upper()
-            elif executable:
+            elif is_executable:
                 # When executable is selected and dest_exists is false means an executable PDSE was copied to remote,
                 # so we need to provide the correct dest_ds_type that will later be transformed into LIBRARY.
                 # Not using LIBRARY at this step since there are many checks with dest_ds_type in data_set.DataSet.MVS_PARTITIONED
@@ -3664,7 +3664,7 @@ def run_module(module, arg_def):
         src_member,
         is_src_dir,
         (src_ds_type == "USS" and src is None),
-        executable,
+        is_executable,
         asa_text,
         src_has_asa_chars,
         dest_has_asa_chars,
@@ -3688,7 +3688,7 @@ def run_module(module, arg_def):
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
     if dest_exists and dest_ds_type != "USS":
-        if not force_lock:
+        if not force:
             is_dest_lock = data_set.DataSetUtils.verify_dataset_disposition(data_set=data_set.extract_dsname(dest_name), disposition="old")
             if is_dest_lock:
                 module.fail_json(
@@ -3701,11 +3701,11 @@ def run_module(module, arg_def):
     # Alias support is not avaiable to and from USS for text-based data sets.
     # ********************************************************************
     if aliases:
-        if (src_ds_type == 'USS' or dest_ds_type == 'USS') and not executable:
+        if (src_ds_type == 'USS' or dest_ds_type == 'USS') and not is_executable:
             module.fail_json(
                 msg="Alias support for text-based data sets is not available "
                     + "for USS sources (src) or targets (dest). "
-                    + "Try setting executable=True or aliases=False."
+                    + "Try setting is_executable=True or aliases=False."
             )
 
     # ********************************************************************
@@ -3786,12 +3786,12 @@ def run_module(module, arg_def):
         dest_member_exists,
         dest_ds_type,
         is_uss,
-        force,
+        replace,
         volume,
         tmphlq
     ):
         module.fail_json(
-            msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(raw_dest),
+            msg="{0} already exists on the system, unable to overwrite unless replace=True is specified.".format(raw_dest),
             changed=False,
             dest=dest
         )
@@ -3811,9 +3811,9 @@ def run_module(module, arg_def):
                 src_ds_type,
                 dest_ds_type,
                 dest_exists,
-                force,
+                replace,
                 is_binary,
-                executable,
+                is_executable,
                 asa_text,
                 is_dest_gds,
                 is_dest_gds_active,
@@ -3843,10 +3843,10 @@ def run_module(module, arg_def):
     copy_handler = CopyHandler(
         module,
         is_binary=is_binary,
-        executable=executable,
+        is_executable=is_executable,
         asa_text=asa_text,
         backup_name=backup_name,
-        force_lock=force_lock,
+        force=force,
         identical_gdg_copy=module.params.get('identical_gdg_copy', False),
         tmphlq=tmphlq
     )
@@ -3864,14 +3864,14 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         if is_uss:
             # Removing the carriage return characters
-            if src_ds_type == "USS" and not is_binary and not executable:
+            if src_ds_type == "USS" and not is_binary and not is_executable:
                 new_src = conv_path or src
                 if os.path.isfile(new_src):
                     conv_path = copy_handler.remove_cr_endings(new_src)
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,
-                executable=executable,
+                is_executable=is_executable,
                 asa_text=asa_text,
                 aliases=aliases,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
@@ -3890,7 +3890,7 @@ def run_module(module, arg_def):
                 src_ds_type,
                 src_member,
                 member_name,
-                force,
+                replace,
                 bool(content)
             )
             res_args['size'] = os.stat(dest).st_size
@@ -3939,11 +3939,11 @@ def run_module(module, arg_def):
             pdse_copy_handler = PDSECopyHandler(
                 module,
                 is_binary=is_binary,
-                executable=executable,
+                is_executable=is_executable,
                 asa_text=asa_text,
                 aliases=aliases,
                 backup_name=backup_name,
-                force_lock=force_lock,
+                force=force,
                 tmphlq=tmphlq
             )
 
@@ -4002,7 +4002,7 @@ def main():
             src=dict(type='str'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
-            executable=dict(type='bool', default=False),
+            is_executable=dict(type='bool', default=False),
             asa_text=dict(type='bool', default=False),
             aliases=dict(type='bool', default=False, required=False),
             identical_gdg_copy=dict(type='bool', default=False),
@@ -4094,8 +4094,8 @@ def main():
                     autoescape=dict(type='bool', default=True),
                 )
             ),
+            replace=dict(type='bool', default=False),
             force=dict(type='bool', default=False),
-            force_lock=dict(type='bool', default=False),
             mode=dict(type='str', required=False),
             owner=dict(type='str', required=False),
             group=dict(type='str', required=False),
@@ -4107,7 +4107,7 @@ def main():
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
-        executable=dict(arg_type='bool', required=False, default=False),
+        is_executable=dict(arg_type='bool', required=False, default=False),
         asa_text=dict(arg_type='bool', required=False, default=False),
         aliases=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
@@ -4118,7 +4118,8 @@ def main():
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
         volume=dict(arg_type='str', required=False),
-        force_lock=dict(type='bool', default=False),
+        replace=dict(type='bool', default=False),
+        force=dict(type='bool', default=False),
 
         dest_data_set=dict(
             arg_type='dict',
@@ -4174,7 +4175,7 @@ def main():
         not module.params.get("encoding").get("to")
         and not module.params.get("remote_src")
         and not module.params.get("is_binary")
-        and not module.params.get("executable")
+        and not module.params.get("is_executable")
     ):
         module.params["encoding"]["to"] = encode.Defaults.get_default_system_charset()
     elif (

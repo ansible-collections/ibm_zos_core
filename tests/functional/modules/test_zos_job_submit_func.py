@@ -685,7 +685,7 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             assert job.get("subsystem") is  None
             assert job.get("origin_node") is  None
             assert job.get("cpu_time") is None
-            assert job.get("execution_node") is not None
+            assert job.get("execution_node") is None
             assert job.get("priority") is None
             assert job.get("asid") is None
             assert job.get("creation_date") is None

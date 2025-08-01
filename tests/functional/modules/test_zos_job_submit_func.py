@@ -1658,10 +1658,10 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
         assert job.get("execution_time") is None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is not None
-        assert job.get("system") not None
-        assert job.get("subsystem") not None
-        assert job.get("origin_node") not None
-        assert job.get("cpu_time") is not None
+        assert job.get("system") is None
+        assert job.get("subsystem") is None
+        assert job.get("origin_node") is None
+        assert job.get("cpu_time") not None
         assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None

@@ -364,6 +364,31 @@ jobs:
         The name of the program found in the job's last completed step found in the PGM parameter.
       type: str
       sample: "IEBGENER"
+    system:
+      description:
+        The job entry system that MVS uses to do work.
+      type: str
+      sample: STL1
+    subsystem:
+      description:
+        The job entry subsystem that MVS uses to do work.
+      type: str
+      sample: STL1
+    cpu_time:
+      description:
+        Sum of the CPU time used by each job step, in microseconds.
+      type: int
+      sample: 5
+    execution_node:
+      description:
+        Execution node that picked the job and executed it.
+      type: str
+      sample: "STL1"
+    origin_node:
+      description:
+        Origin node that submitted the job.
+      type: str
+      sample: "STL1"
   sample:
      [
           {
@@ -584,6 +609,11 @@ jobs:
               "creation_date": "2023-05-03",
               "creation_time": "12:13:00",
               "queue_position": 3,
+              "subsystem": "STL1",
+              "system": "STL1",
+              "cpu_time": 1,
+              "execution_node": "STL1",
+              "origin_node": "STL1"
           }
      ]
 """
@@ -1268,6 +1298,11 @@ def parsing_job_response(jobs_raw, duration):
             "steps": job.get("steps"),
             "job_class": job.get("job_class"),
             "svc_class": job.get("svc_class"),
+            "system": job.get("system"),
+            "subsystem": job.get("subsystem"),
+            "origin_node": job.get("origin_node"),
+            "cpu_time": job.get("cpu_time"),
+            "execution_node": job.get("execution_node"),
             "priority": job.get("priority"),
             "asid": job.get("asid"),
             "creation_date": job.get("creation_date"),

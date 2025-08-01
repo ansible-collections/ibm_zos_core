@@ -51,7 +51,7 @@ options:
     default: true
     type: bool
     description:
-      - If set to C(false), the module searches for C(src) at the local machine.
+      - If set to C(false), the module searches for C(src) in the controller node.
       - If set to C(true), the module goes to the remote/target machine for C(src).
   wait_time:
     required: false

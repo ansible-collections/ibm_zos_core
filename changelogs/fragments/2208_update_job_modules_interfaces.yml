@@ -1,5 +1,5 @@
 breaking_changes:
-  - zos_job_output - Interface value ``ddname`` is substitute for ``dd_name``, but ``ddname`` is an alias. Return value ``changed`` is always retun, ``steps`` are no longer under `ret_code`
+  - zos_job_output - Option name ``ddname`` is substituted for ``dd_name``, but ``ddname`` is kept as an alias.. Return value ``changed`` is always returned and return value ``steps`` are no longer under ``ret_code``
     but is now included under `jobs`. Return value ``ddnames`` replaced by ``dds`` and value ``ddname`` under ``ddnames`` is replace by ``dd_name``.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2208).
   - zos_job_submit - Interface value ``location`` is replace for ``remote_src`` in a bool value and ``wait_time_s`` ir replace for ``wait_time``.

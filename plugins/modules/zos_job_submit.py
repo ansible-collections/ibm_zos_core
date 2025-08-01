@@ -52,7 +52,7 @@ options:
     type: bool
     description:
       - If set to C(false), the module searches for C(src) in the controller node.
-      - If set to C(true), the module goes to the remote/target machine for C(src).
+      - If set to C(true), the module searches for the file C(src) in the managed node.
   wait_time:
     required: false
     default: 10

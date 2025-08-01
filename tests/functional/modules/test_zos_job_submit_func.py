@@ -669,6 +669,7 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             src=f"{temp_path}/SAMPLE", remote_src=True, volume=None, wait_time=0,
         )
         for result in results.contacted.values():
+            print(result)
             assert result.get("changed") is True
             assert result.get("msg", False) is False
             assert result.get("jobs") is not None

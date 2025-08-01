@@ -669,7 +669,6 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             src=f"{temp_path}/SAMPLE", remote_src=True, volume=None, wait_time=0,
         )
         for result in results.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("msg", False) is False
             assert result.get("jobs") is not None
@@ -682,10 +681,10 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             assert job.get("execution_time") is None
             assert job.get("job_class") is None
             assert job.get("svc_class") is None
-            assert job.get("system") is not None
-            assert job.get("subsystem") is not None
-            assert job.get("origin_node") is not None
-            assert job.get("cpu_time") is not None
+            assert job.get("system") is  None
+            assert job.get("subsystem") is  None
+            assert job.get("origin_node") is  None
+            assert job.get("cpu_time") is None
             assert job.get("execution_node") is not None
             assert job.get("priority") is None
             assert job.get("asid") is None

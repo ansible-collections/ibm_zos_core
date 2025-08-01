@@ -3,7 +3,7 @@ breaking_changes:
     but is now included under `jobs`. Return value ``ddnames`` replaced by ``dds`` and value ``ddname`` under ``ddnames`` is replace by ``dd_name``.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2208).
   - zos_job_submit - Interface value ``location`` is replace for ``remote_src`` in a bool value and ``wait_time_s`` ir replace for ``wait_time``.
-    Return value ``ddnames`` replaced by ``dds`` and value ``ddname`` under ``ddnames`` is replace by ``dd_name``. Now all values are retuned under jobs exception for changed.
+    Return value ``ddnames`` replaced by ``dds`` and value ``ddname`` under ``ddnames`` is replace by ``dd_name``. Now all values are retuned under jobs excepting ``changed``.
     (https://github.com/ansible-collections/ibm_zos_core/pull/2208).
 
 trivial:

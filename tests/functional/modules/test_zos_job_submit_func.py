@@ -495,6 +495,11 @@ def test_job_submit_pds(ansible_zos_module, location):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -559,6 +564,11 @@ def test_job_submit_pds_special_characters(ansible_zos_module):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -613,6 +623,11 @@ def test_job_submit_uss(ansible_zos_module):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -666,6 +681,11 @@ def test_job_submit_and_forget_uss(ansible_zos_module):
             assert job.get("execution_time") is None
             assert job.get("job_class") is None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is None
             assert job.get("asid") is None
             assert job.get("creation_date") is None
@@ -705,6 +725,11 @@ def test_job_submit_local(ansible_zos_module):
         assert job.get("execution_time") is not None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -752,6 +777,11 @@ def test_job_submit_local_extra_r(ansible_zos_module):
         assert job.get("execution_time") is not None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -836,6 +866,11 @@ def test_job_submit_pds_volume(ansible_zos_module, volumes_on_systems):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -903,6 +938,11 @@ def test_job_submit_pds_5_sec_job_wait_15(ansible_zos_module):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -970,6 +1010,11 @@ def test_job_submit_pds_30_sec_job_wait_60(ansible_zos_module):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -1030,7 +1075,7 @@ def test_job_submit_pds_30_sec_job_wait_10_negative(ansible_zos_module):
             assert result.get("msg") is not None
             assert result.get("failed") is True
             assert re.search(r'exceeded', repr(result.get("msg")))
-            assert result.get("jobs") is not None 
+            assert result.get("jobs") is not None
             job = result.get("jobs")[0]
 
             assert job.get("job_id") is not None
@@ -1040,6 +1085,11 @@ def test_job_submit_pds_30_sec_job_wait_10_negative(ansible_zos_module):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is not None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -1145,6 +1195,11 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 assert job.get("execution_time") is not None
                 assert job.get("job_class") is not None
                 assert job.get("svc_class") is None
+                assert job.get("system") is not None
+                assert job.get("subsystem") is not None
+                assert job.get("origin_node") is not None
+                assert job.get("cpu_time") is not None
+                assert job.get("execution_node") is not None
                 assert job.get("priority") is not None
                 assert job.get("asid") is not None
                 assert job.get("creation_date") is not None
@@ -1257,6 +1312,11 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -1316,6 +1376,11 @@ def test_job_submit_full_input(ansible_zos_module):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -1356,7 +1421,7 @@ def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
         assert result.get("msg") is not None
         assert re.search(r'completion code', repr(result.get("msg")))
         assert result.get("failed") is True
-        assert result.get("jobs") is not None 
+        assert result.get("jobs") is not None
         job = result.get("jobs")[0]
 
         assert job.get("job_id") is not None
@@ -1366,6 +1431,11 @@ def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
         assert job.get("execution_time") is not None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -1402,9 +1472,9 @@ def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
         assert re.search(r'please review the error for further details', repr(result.get("msg")))
         assert re.search(r'please review the job log for status SEC', repr(result.get("msg")))
         assert result.get("failed") is True
-        assert result.get("jobs") is not None 
+        assert result.get("jobs") is not None
         job = result.get("jobs")[0]
-        
+
         assert job.get("job_id") is not None
         assert job.get("job_name") is not None
         assert job.get("content_type") is not None
@@ -1412,6 +1482,11 @@ def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
         assert job.get("execution_time") is None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -1454,9 +1529,9 @@ def test_job_submit_local_jcl_typrun_scan(ansible_zos_module):
                                         },)
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs") is not None 
+        assert result.get("jobs") is not None
         job = result.get("jobs")[0]
-        
+
         assert job.get("job_id") is not None
         assert job.get("job_name") is not None
         assert job.get("content_type") is not None
@@ -1464,6 +1539,11 @@ def test_job_submit_local_jcl_typrun_scan(ansible_zos_module):
         assert job.get("execution_time") is None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -1510,9 +1590,9 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         # When running a job with TYPRUN=COPY, a copy of the JCL will be kept in the JES spool, so
         # effectively, the system is changed even though the job didn't run.
         assert result.get("changed") is False
-        assert result.get("jobs") is not None 
+        assert result.get("jobs") is not None
         job = result.get("jobs")[0]
-        
+
         assert job.get("job_id") is not None
         assert job.get("job_name") is not None
         assert job.get("content_type") is not None
@@ -1520,6 +1600,11 @@ def test_job_submit_local_jcl_typrun_copy(ansible_zos_module):
         assert job.get("execution_time") is None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -1562,9 +1647,9 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
                                         },)
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs") is not None 
+        assert result.get("jobs") is not None
         job = result.get("jobs")[0]
-        
+
         assert job.get("job_id") is not None
         assert job.get("job_name") is not None
         assert job.get("content_type") is not None
@@ -1572,6 +1657,11 @@ def test_job_submit_local_jcl_typrun_hold(ansible_zos_module):
         assert job.get("execution_time") is None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is not None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -1605,9 +1695,9 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
                                         },)
     for result in results.contacted.values():
         assert result.get("changed") is False
-        assert result.get("jobs") is not None 
+        assert result.get("jobs") is not None
         job = result.get("jobs")[0]
-        
+
         assert job.get("job_id") is not None
         assert job.get("job_name") is not None
         assert job.get("content_type") is not None
@@ -1615,6 +1705,11 @@ def test_job_submit_local_jcl_typrun_jclhold(ansible_zos_module):
         assert job.get("execution_time") is None
         assert job.get("job_class") is not None
         assert job.get("svc_class") is None
+        assert job.get("system") is not None
+        assert job.get("subsystem") is not None
+        assert job.get("origin_node") is not None
+        assert job.get("cpu_time") is not None
+        assert job.get("execution_node") is not None
         assert job.get("priority") is not None
         assert job.get("asid") is not None
         assert job.get("creation_date") is not None
@@ -1670,6 +1765,11 @@ def test_job_from_gdg_source(ansible_zos_module, generation):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -1787,6 +1887,11 @@ def test_zoau_bugfix_invalid_utf8_chars(ansible_zos_module):
             assert job.get("execution_time") is not None
             assert job.get("job_class") is not None
             assert job.get("svc_class") is None
+            assert job.get("system") is not None
+            assert job.get("subsystem") is not None
+            assert job.get("origin_node") is not None
+            assert job.get("cpu_time") is not None
+            assert job.get("execution_node") is not None
             assert job.get("priority") is not None
             assert job.get("asid") is not None
             assert job.get("creation_date") is not None
@@ -1844,7 +1949,7 @@ def test_job_submit_async(get_config):
             cut_python_path,
             python_version,
             tmp_file.name
-        )), 
+        )),
         playbook.name
     ))
 
@@ -1854,7 +1959,7 @@ def test_job_submit_async(get_config):
             ssh_key,
             user,
             python_path
-        )), 
+        )),
         inventory.name
     ))
 

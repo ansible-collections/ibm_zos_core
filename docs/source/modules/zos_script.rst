@@ -220,8 +220,11 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: \\n
-    | **choices**: \\n, \\r, \\r\\n
+    | **default**: 
+
+    | **choices**: 
+, , 
+
 
 
   auto_reload

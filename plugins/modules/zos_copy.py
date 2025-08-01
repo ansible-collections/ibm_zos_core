@@ -3296,9 +3296,7 @@ def update_result(res_args, original_args):
                 size=res_args.get("size"),
             )
         )
-        checksum = res_args.get("checksum")
-        if checksum:
-            updated_result["checksum"] = checksum
+        updated_result["checksum"] = checksum
     if dest_data_set_attrs is not None:
         if len(dest_data_set_attrs) > 0:
             dest_data_set_attrs.pop("name")
@@ -4110,12 +4108,13 @@ def main():
         is_executable=dict(arg_type='bool', required=False, default=False),
         asa_text=dict(arg_type='bool', required=False, default=False),
         aliases=dict(arg_type='bool', required=False, default=False),
+        identical_gdg_copy=dict(type='bool', default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_path', required=False),
         local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
-        checksum=dict(arg_type='str', required=False),
+        ignore_sftp_stderr=dict(type='bool', default=True),
         validate=dict(arg_type='bool', required=False),
         volume=dict(arg_type='str', required=False),
         replace=dict(type='bool', default=False),

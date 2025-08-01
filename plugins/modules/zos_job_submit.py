@@ -69,7 +69,7 @@ options:
         Job details and contents can be retrieved later by using
         L(zos_job_query,./zos_job_query.html) or L(zos_job_output,./zos_job_output.html)
         if needed.
-      - If I(remote_src=False) and I(wait_time) is 0 the module not gonna clean the copy
+      - If I(remote_src=False) and I(wait_time=0), the module will not clean the copy
         of the file on the remote system, to avoid problems with job submission.
   max_rc:
     required: false

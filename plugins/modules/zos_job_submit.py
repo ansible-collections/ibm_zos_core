@@ -70,7 +70,7 @@ options:
         L(zos_job_query,./zos_job_query.html) or L(zos_job_output,./zos_job_output.html)
         if needed.
       - If I(remote_src=False) and I(wait_time) is 0 the module not gonna clean the copy
-        of the file on remote system, to avoid problems on the submission of the job.
+        of the file on the remote system, to avoid problems with job submission.
   max_rc:
     required: false
     type: int

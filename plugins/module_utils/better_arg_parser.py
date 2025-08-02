@@ -160,6 +160,8 @@ class BetterArgHandler(object):
             "data_set": self._data_set_type,
             "data_set_base": self._data_set_base_type,
             "data_set_member": self._data_set_member_type,
+            "member_name": self._member_name_type,
+            "identifier_name": self._identifier_name_type,
             "qualifier": self._qualifier_type,
             "qualifier_or_empty": self._qualifier_or_empty_type,
             "qualifier_pattern": self._qualifier_pattern_type,
@@ -328,6 +330,70 @@ class BetterArgHandler(object):
         if not isinstance(contents, bool):
             raise ValueError('Invalid argument "{0}" for type "bool".'.format(contents))
         return contents
+    
+    def _member_name_type(self, contents, resolve_dependencies):
+        """Resolver for data_set type arguments.
+
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
+        """
+        if not fullmatch(
+            r"^[A-Z$#@]{1}[A-Z0-9$#@]{0,7}$",
+            str(contents),
+            IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument "{0}" for type "data_set".'.format(contents)
+            )
+        return str(contents)
+    
+    def _identifier_name_type(self, contents, resolve_dependencies):
+        """Resolver for data_set type arguments.
+
+        Parameters
+        ----------
+        contents : bool
+            The contents of the argument.
+        resolved_dependencies : dict
+            Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Returns
+        -------
+        str
+            The arguments contents after any necessary operations.
+
+        Raises
+        ------
+        ValueError
+            When contents is invalid argument type.
+        """
+        if not fullmatch(
+            r"^[A-Z]{1}[A-Z0-9$#@]{0,7}$",
+            str(contents),
+            IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument "{0}" for type "data_set".'.format(contents)
+            )
+        return str(contents)
 
     def _path_type(self, contents, resolve_dependencies):
         """Resolver for path type arguments.

@@ -1205,9 +1205,20 @@ class CopyHandler(object):
                 # If identical_gdg_copy is False, use the default next generation
                 dest_gen_name = f"{dest}(+1)"
                 # Perform the copy operation
-            rc = datasets.copy(gds.name, dest_gen_name, **copy_args)
-            if rc != 0:
-                success = False
+
+            try:
+                result = datasets.copy(gds.name, dest_gen_name, **copy_args)
+                rc = result.rc if hasattr(result, 'rc') else result
+                if rc != 0:
+                    success = False
+            except zoau_exceptions.ZOAUException as e:
+                stderr = getattr(e.response, 'stderr_response', str(e))
+                if "BGYSC6003E" in stderr :
+                    raise GenerationDataGroupCreateError(
+                        msg="BGYSC6003E  Invalid generation relative name: This might be because the src GDG is in open state"
+                        ) from e
+                else:
+                    raise GenerationDataGroupCreateError(msg=f"GDG creation failed. Raw error: {stderr}") from e
         return success
 
     def _copy_tree(self, entries, src, dest, dirs_exist_ok=False):
@@ -3963,12 +3974,8 @@ def run_module(module, arg_def):
         # Copy to a GDG
         # ---------------------------------------------------------------------
         elif dest_ds_type == "GDG":
-            try:
-                copy_handler.copy_to_gdg(src, dest)
-                res_args["changed"] = True
-            except Exception as e:
-                res_args["msg"] = f"Failure to copy might be because of source GDG in open state {e}"
-
+            copy_handler.copy_to_gdg(src, dest)
+            res_args["changed"] = True
 
         # ------------------------------- o -----------------------------------
         # Copy to VSAM data set
@@ -4346,6 +4353,12 @@ class CopyOperationError(Exception):
         self.new_members = new_members
         super().__init__(msg)
 
+
+class GenerationDataGroupCreateError(Exception):
+    def __init__(self, msg):
+        """Error during copy of a Generation Data Group."""
+        self.msg = msg
+        super().__init__(self.msg)
 
 if __name__ == "__main__":
     main()

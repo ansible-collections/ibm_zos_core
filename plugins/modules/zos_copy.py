@@ -2977,14 +2977,15 @@ def allocate_destination_data_set(
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
 
-    # Replacing an existing dataset only when it's not empty. We don't know whether that
+    # Replace in datasets.
+    # Reuse epmty datasets when replace is not true. We don't know whether that
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
     # Create the dict that will contains the values created by the module if it's empty action module will
     # not display the content.
     dest_params = {}
-    if dest_exists and (is_dest_empty or dest_ds_type == "GDG"):
+    if dest_exists and (is_dest_empty or dest_ds_type == "GDG") and not replace:
         return False, dest_params, dest
 
     # Giving more priority to the parameters given by the user.

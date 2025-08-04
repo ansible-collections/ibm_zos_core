@@ -32,6 +32,8 @@ def test_zos_operator_action_query_no_options(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_option_msg_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -47,6 +49,8 @@ def test_zos_operator_action_query_option_msg_id(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_option_msg_id_invalid_abbreviation(
     ansible_zos_module
@@ -62,7 +66,9 @@ def test_zos_operator_action_query_option_msg_id_invalid_abbreviation(
     except Exception:
         pass
     for result in results.contacted.values():
-        assert not result.get("actions")
+        assert result.get("actions") is not None
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize("msg_id", ["IEE*", "*"])
 def test_zos_operator_action_query_option_msg_id_regex(
@@ -81,6 +87,8 @@ def test_zos_operator_action_query_option_msg_id_regex(
         pass
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_option_system(ansible_zos_module):
     hosts = ansible_zos_module
@@ -91,6 +99,8 @@ def test_zos_operator_action_query_option_system(ansible_zos_module):
     results = hosts.all.zos_operator_action_query(system=system_name)
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_option_system_invalid_abbreviation(
     ansible_zos_module
@@ -102,7 +112,9 @@ def test_zos_operator_action_query_option_system_invalid_abbreviation(
         system_name = result.get("stdout", "").strip()
     results = hosts.all.zos_operator_action_query(system=system_name[:-1])
     for result in results.contacted.values():
-        assert not result.get("actions")
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize("msg_id", ["IEE*", "IEE094D", "*"])
 def test_zos_operator_action_query_option_system_and_msg_id(
@@ -138,6 +150,8 @@ def test_zos_operator_action_query_option_system_regex(ansible_zos_module):
         pass
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize("msg_id", ["IEE*", "IEE094D", "*"])
 def test_zos_operator_action_query_option_system_regex_and_msg_id(
@@ -162,6 +176,8 @@ def test_zos_operator_action_query_option_system_regex_and_msg_id(
         pass
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize("system", ["", "OVER8CHARS", "--BADNM", "invalid-system"])
 def test_zos_operator_action_query_invalid_option_system(
@@ -171,7 +187,9 @@ def test_zos_operator_action_query_invalid_option_system(
     hosts = ansible_zos_module
     results = hosts.all.zos_operator_action_query(system=system)
     for result in results.contacted.values():
-        assert result.get("actions") is None
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize("msg_id", ["IEE*", "IEE094D", "*"])
 def test_zos_operator_action_query_valid_msg_id_invalid_option_system(
@@ -183,7 +201,9 @@ def test_zos_operator_action_query_valid_msg_id_invalid_option_system(
         system="invalid-system", msg_id=msg_id
     )
     for result in results.contacted.values():
-        assert result.get("actions") is None
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize("msg_id", ["", "--BADNM", "invalid-message"])
 def test_zos_operator_action_query_invalid_option_msg_id(
@@ -193,7 +213,9 @@ def test_zos_operator_action_query_invalid_option_msg_id(
     hosts = ansible_zos_module
     results = hosts.all.zos_operator_action_query(msg_id=msg_id)
     for result in results.contacted.values():
-        assert result.get("actions") is None
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_valid_option_system_invalid_option_msg_id(
     ansible_zos_module
@@ -207,14 +229,18 @@ def test_zos_operator_action_query_valid_option_system_invalid_option_msg_id(
         system=system_name, msg_id="invalid-message"
     )
     for result in results.contacted.values():
-        assert result.get("actions") is None
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_invalid_option_job_name(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator_action_query(
         job_name="invalid-job-name")
     for result in results.contacted.values():
-        assert result.get("actions") is None
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize(
     "msg_filter",
@@ -242,6 +268,8 @@ def test_zos_operator_action_query_option_msg_filter_one_match(
         pass
     for result in results.contacted.values():
         assert result.get("actions")
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize(
     "msg_filter",
@@ -271,6 +299,8 @@ def test_zos_operator_action_query_option_msg_filter_multiple_matches(
     for result in results.contacted.values():
         assert result.get("actions")
         assert len(result.get("actions")) > 1
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 @pytest.mark.parametrize(
     "msg_filter",
@@ -296,7 +326,9 @@ def test_zos_operator_action_query_option_msg_filter_no_match(
     except Exception:
         pass
     for result in results.contacted.values():
-        assert not result.get("actions")
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None
 
 def test_zos_operator_action_query_invalid_option_msg_filter(
     ansible_zos_module
@@ -305,4 +337,6 @@ def test_zos_operator_action_query_invalid_option_msg_filter(
     results = hosts.all.zos_operator_action_query(
         msg_filter={"filter": "*DUMP", "literal": False})
     for result in results.contacted.values():
-        assert result.get("actions") is None
+        assert result.get("actions") == []
+        assert result.get("count") is not None
+        assert result.get("changed") is not None

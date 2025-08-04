@@ -150,13 +150,13 @@ changed:
 count:
     description:
         The total number of outstanding messages.
-    returned: on success
+    returned: always
     type: int
     sample: 12
 actions:
     description:
         The list of the outstanding messages.
-    returned: success
+    returned: always
     type: list
     elements: dict
     contains:
@@ -276,7 +276,7 @@ def run_module():
         )
     )
 
-    result = dict(changed=False)
+    result = dict(changed=False, count=0, actions=[])
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     requests = []
     try:

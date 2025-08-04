@@ -496,6 +496,7 @@ def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
 
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
+            print(result)
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest_path

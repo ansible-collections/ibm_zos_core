@@ -268,7 +268,7 @@ def run_module():
         msg_filter=dict(
             type="dict",
             required=False,
-            aliases=['message_filter']
+            aliases=['message_filter'],
             options=dict(
                 filter=dict(type="str", required=True),
                 literal=dict(default=True, type="bool", required=False)

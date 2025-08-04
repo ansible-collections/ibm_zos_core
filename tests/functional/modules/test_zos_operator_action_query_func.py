@@ -24,7 +24,7 @@ def test_zos_operator_action_query_no_options(ansible_zos_module):
     results = hosts.all.zos_operator_action_query()
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -41,7 +41,7 @@ def test_zos_operator_action_query_option_msg_id(ansible_zos_module):
     results = hosts.all.zos_operator_action_query(msg_id="IEE094D")
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -60,7 +60,7 @@ def test_zos_operator_action_query_option_msg_id_invalid_abbreviation(
     results = hosts.all.zos_operator_action_query(msg_id="IEE")
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -80,7 +80,7 @@ def test_zos_operator_action_query_option_msg_id_regex(
     results = hosts.all.zos_operator_action_query(msg_id=msg_id)
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -143,7 +143,7 @@ def test_zos_operator_action_query_option_system_regex(ansible_zos_module):
         system=system_name[:3] + "*")
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -169,7 +169,7 @@ def test_zos_operator_action_query_option_system_regex_and_msg_id(
     )
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -261,7 +261,7 @@ def test_zos_operator_action_query_option_msg_filter_one_match(
         msg_filter=msg_filter)
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -291,7 +291,7 @@ def test_zos_operator_action_query_option_msg_filter_multiple_matches(
         msg_filter=msg_filter)
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:
@@ -320,7 +320,7 @@ def test_zos_operator_action_query_option_msg_filter_no_match(
         msg_filter=msg_filter)
     try:
         for action in results.get("actions"):
-            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_text", ""):
+            if "SPECIFY OPERAND(S) FOR DUMP" in action.get("msg_txt", ""):
                 hosts.all.zos_operator(
                     cmd="{0}cancel".format(action.get("number")))
     except Exception:

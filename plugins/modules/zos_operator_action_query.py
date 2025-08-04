@@ -186,11 +186,11 @@ actions:
             returned: on success
             type: str
             sample: STC01537
-        msg_text:
+        msg_txt:
             description:
                 Content of the outstanding message requiring operator
                 action awaiting a reply. If I(msg_filter) is set,
-                I(msg_text) will be filtered accordingly.
+                I(msg_txt) will be filtered accordingly.
             returned: success
             type: str
             sample: "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN"
@@ -215,7 +215,7 @@ actions:
                 "type": 'R',
                 "system": 'MV27',
                 "job_id": 'STC01537',
-                "msg_text": '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
+                "msg_txt": '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
                 "job_name": 'IM5HCONN',
                 "msg_id": 'HWSC0000I'
             },
@@ -224,7 +224,7 @@ actions:
                 "type": 'R',
                 "system": 'MV27',
                 "job_id": 'STC01533',
-                "msg_text": '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
+                "msg_txt": '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
                 "job_name": 'IM5HCTRL',
                 "msg_id": 'DFS3139I'
             }
@@ -683,7 +683,7 @@ def parse_result_a(result, msg_filter):
         if match.group(4) != "":
             dict_temp["job_id"] = match.group(4)
         if match.group(5) != "":
-            dict_temp["msg_text"] = match.group(5).strip()
+            dict_temp["msg_txt"] = match.group(5).strip()
         list.append(dict_temp)
 
     return list

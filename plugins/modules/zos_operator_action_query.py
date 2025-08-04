@@ -92,7 +92,7 @@ options:
             matches the I(filter) substring on the outstanding messages.
         required: False
         type: bool
-        default: False
+        default: True
 seealso:
 - module: zos_operator
 

@@ -30,6 +30,7 @@ author:
   - "Demetrios Dimatos (@ddimatos)"
   - "Ivan Moreno (@rexemin)"
   - "Rich Parker (@richp405)"
+  - "Fernando Flores (@fernandofloresg)"
 
 options:
   system:
@@ -71,7 +72,7 @@ options:
       filter:
         description:
           - Specifies the substring or regex to match to the outstanding messages,
-            see I(use_regex).
+            see I(literal).
           - All special characters in a filter string that are not a regex are escaped.
           - Valid Python regular expressions are supported. See L(the official
             documentation,https://docs.python.org/library/re.html) for more information.
@@ -80,13 +81,13 @@ options:
             newline."
         required: True
         type: str
-      use_regex:
+      literal:
         description:
           - Indicates that the value for I(filter) is a regex or a string to match.
-          - If False, the module assumes that I(filter) is not a regex and
-            matches the I(filter) substring on the outstanding messages.
-          - If True, the module creates a regex from the I(filter) string and
+          - If False, the module creates a regex from the I(filter) string and
             matches it to the outstanding messages.
+          - If True, the module assumes that I(filter) is not a regex and
+            matches the I(filter) substring on the outstanding messages.
         required: False
         type: bool
         default: False
@@ -132,7 +133,7 @@ EXAMPLES = r"""
       system: mv29
       message_filter:
           filter: ^.*IMS.*$
-          use_regex: true
+          literal: true
 """
 
 RETURN = r"""
@@ -267,7 +268,7 @@ def run_module():
             required=False,
             options=dict(
                 filter=dict(type="str", required=True),
-                use_regex=dict(default=False, type="bool", required=False)
+                literal=dict(default=False, type="bool", required=False)
             )
         )
     )
@@ -442,12 +443,12 @@ def message_filter_type(arg_val, params):
     """
     try:
         filter_text = arg_val.get("filter")
-        use_regex = arg_val.get("use_regex")
+        literal = arg_val.get("literal")
 
-        if use_regex:
-            raw_arg_val = r'{0}'.format(filter_text)
-        else:
+        if literal:
             raw_arg_val = r'^.*{0}.*$'.format(re.escape(filter_text))
+        else:
+            raw_arg_val = r'{0}'.format(filter_text)
 
         re.compile(raw_arg_val)
     except re.error:

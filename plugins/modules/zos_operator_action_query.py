@@ -268,7 +268,7 @@ def run_module():
             required=False,
             options=dict(
                 filter=dict(type="str", required=True),
-                literal=dict(default=False, type="bool", required=False)
+                literal=dict(default=True, type="bool", required=False)
             )
         )
     )

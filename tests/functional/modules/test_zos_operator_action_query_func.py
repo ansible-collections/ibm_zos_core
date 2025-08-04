@@ -220,9 +220,9 @@ def test_zos_operator_action_query_invalid_option_job_name(ansible_zos_module):
     "message_filter",
     [
         {"filter": "DUMP"},
-        {"filter": "DUMP", "use_regex": False},
-        {"filter": "^.*DUMP.*$", "use_regex": True},
-        {"filter": "^.*OPERAND\\(S\\).*$", "use_regex": True}
+        {"filter": "DUMP", "literal": True},
+        {"filter": "^.*DUMP.*$", "literal": False},
+        {"filter": "^.*OPERAND\\(S\\).*$", "literal": False}
     ]
 )
 def test_zos_operator_action_query_option_message_filter_one_match(
@@ -247,9 +247,9 @@ def test_zos_operator_action_query_option_message_filter_one_match(
     "message_filter",
     [
         {"filter": "DUMP"},
-        {"filter": "DUMP", "use_regex": False},
-        {"filter": "^.*DUMP.*$", "use_regex": True},
-        {"filter": "^.*OPERAND\\(S\\).*$", "use_regex": True}
+        {"filter": "DUMP", "literal": True},
+        {"filter": "^.*DUMP.*$", "literal": False},
+        {"filter": "^.*OPERAND\\(S\\).*$", "literal": False}
     ]
 )
 def test_zos_operator_action_query_option_message_filter_multiple_matches(
@@ -276,8 +276,8 @@ def test_zos_operator_action_query_option_message_filter_multiple_matches(
     "message_filter",
     [
         {"filter": "IMS"},
-        {"filter": "IMS", "use_regex": False},
-        {"filter": "^.*IMS.*$", "use_regex": True},
+        {"filter": "IMS", "literal": True},
+        {"filter": "^.*IMS.*$", "literal": False},
     ]
 )
 def test_zos_operator_action_query_option_message_filter_no_match(
@@ -303,6 +303,6 @@ def test_zos_operator_action_query_invalid_option_message_filter(
 ):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator_action_query(
-        message_filter={"filter": "*DUMP", "use_regex": True})
+        message_filter={"filter": "*DUMP", "literal": False})
     for result in results.contacted.values():
         assert result.get("actions") is None

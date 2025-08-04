@@ -51,6 +51,7 @@ options:
         - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
+    aliases: [ message_id ]
   job_name:
     description:
       - Return outstanding messages requiring operator action awaiting a reply
@@ -68,6 +69,7 @@ options:
         are returned regardless of their content.
     type: dict
     required: false
+    aliases: [ message_filter ]
     suboptions:
       filter:
         description:
@@ -261,11 +263,12 @@ def run_module():
     """
     module_args = dict(
         system=dict(type="str", required=False),
-        msg_id=dict(type="str", required=False),
+        msg_id=dict(type="str", required=False, aliases=['message_id']),
         job_name=dict(type="str", required=False),
         msg_filter=dict(
             type="dict",
             required=False,
+            aliases=['message_filter']
             options=dict(
                 filter=dict(type="str", required=True),
                 literal=dict(default=True, type="bool", required=False)

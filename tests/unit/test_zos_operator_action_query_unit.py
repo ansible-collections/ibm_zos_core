@@ -32,18 +32,18 @@ dummy_dict1 = {}
 dummy_dict2 = {"system": "mv2c"}
 
 
-dummy_dict3 = {"message_id": "DFH*"}
+dummy_dict3 = {"msg_id": "DFH*"}
 
-dummy_dict4_uppercase = {"message_id": "DFH*", "system": "MV28"}
+dummy_dict4_uppercase = {"msg_id": "DFH*", "system": "MV28"}
 
-dummy_dict4_lowercase = {"message_id": "DFH*", "system": "mv28"}
+dummy_dict4_lowercase = {"msg_id": "DFH*", "system": "mv28"}
 
-dummy_dict5 = {"message_filter": {"filter": "^.*IMS.*$", "use_regex": True}}
+dummy_dict5 = {"msg_filter": {"filter": "^.*IMS.*$", "use_regex": True}}
 
-dummy_dict6 = {"system": "mv27", "message_id": "DFS*", "job_name": "IM5H*", "message_filter": {"filter": "IMS"}}
+dummy_dict6 = {"system": "mv27", "msg_id": "DFS*", "job_name": "IM5H*", "msg_filter": {"filter": "IMS"}}
 
-dummy_dict_invalid_message = {"message_id": "$$#$%#"}
-dummy_dict_invalid_filter = {"message_filter": {"filter": "*IMS", "use_regex": True}}
+dummy_dict_invalid_message = {"msg_id": "$$#$%#"}
+dummy_dict_invalid_filter = {"msg_filter": {"filter": "*IMS", "use_regex": True}}
 dummy_dict_invalid_job_name = {"job_name": "IM5H123456"}
 dummy_dict_invalid_system = {"system": "mv2712345"}
 

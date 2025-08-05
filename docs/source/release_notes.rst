@@ -7,12 +7,13 @@ Releases
 ========
 
 Version 1.15.0-beta.1
-==============
+=====================
 
 Minor Changes
 -------------
 
 - ``zos_archive``
+
    - Adds support for encoding before archiving files.
    - Adds support for skipping encoding in archive module. This allows users to skip encoding for certain files before archiving them.
    - Adds support for reverting the encoding of a source's files after archiving them.
@@ -81,10 +82,10 @@ Version 1.14.1
 Bugfixes
 --------
 
-- zos_copy - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
-- zos_job_submit - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
-- zos_script - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
-- zos_unarchive - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- ``zos_copy`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- ``zos_job_submit`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- ``zos_script`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- ``zos_unarchive`` - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
 
 Availability
 ------------

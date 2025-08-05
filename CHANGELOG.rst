@@ -54,11 +54,6 @@ New Modules
 - ibm.ibm_zos_core.zos_replace - Replace all instances of a pattern within a file or data set.
 
 v1.14.1
-=======
-
-Release Summary
----------------
-
 Release Date: '2025-07-03'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.

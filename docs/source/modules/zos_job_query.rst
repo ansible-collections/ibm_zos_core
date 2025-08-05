@@ -153,27 +153,35 @@ jobs
             {
                 "asid": 0,
                 "content_type": "JOB",
+                "cpu_time": 1414,
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
+                "execution_node": "STL1",
                 "execution_time": "00:00:02",
                 "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
+                "origin_node": "STL1",
                 "owner": "ADMIN",
                 "priority": 1,
                 "queue_position": 3,
                 "ret_code": "null",
-                "svc_class": "?"
+                "subsystem": "STL1",
+                "svc_class": "?",
+                "system": "STL1"
             },
             {
                 "asid": 4,
                 "content_type": "JOB",
+                "cpu_time": 1414,
                 "creation_date": "2023-05-03",
                 "creation_time": "12:14:00",
+                "execution_node": "STL1",
                 "execution_time": "00:00:03",
                 "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
+                "origin_node": "STL1",
                 "owner": "ADMIN",
                 "priority": 0,
                 "queue_position": 0,
@@ -181,7 +189,9 @@ jobs
                     "code": "null",
                     "msg": "CANCELED"
                 },
-                "svc_class": "E"
+                "subsystem": "STL1",
+                "svc_class": "E",
+                "system": "STL1"
             }
         ]
 
@@ -229,6 +239,24 @@ jobs
 
   subsystem
     The job entry subsystem that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
+  cpu_time
+    Sum of the CPU time used by each job step, in microseconds.
+
+    | **type**: int
+    | **sample**: 5
+
+  execution_node
+    Execution node that picked the job and executed it.
+
+    | **type**: str
+    | **sample**: STL1
+
+  origin_node
+    Origin node that submitted the job.
 
     | **type**: str
     | **sample**: STL1

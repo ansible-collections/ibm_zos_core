@@ -3297,7 +3297,7 @@ def update_result(res_args, original_args):
                 size=res_args.get("size"),
             )
         )
-        updated_result["checksum"] = checksum
+        updated_result["checksum"] = res_args.get("checksum") if checksum = res_args.get("checksum") is not None else None
     if dest_data_set_attrs is not None:
         if len(dest_data_set_attrs) > 0:
             dest_data_set_attrs.pop("name")

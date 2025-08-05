@@ -253,7 +253,6 @@ template_parameters
     | **default**: \\n
     | **choices**: \\n, \\r, \\r\\n
 
-
   auto_reload
     Whether to reload a template file when it has changed after the task has started.
 
@@ -383,6 +382,7 @@ jobs
                 "asid": 0,
                 "class": "K",
                 "content_type": "JOB",
+                "cpu_time": 1,
                 "creation_date": "2023-05-03",
                 "creation_time": "12:13:00",
                 "ddnames": [
@@ -579,10 +579,12 @@ jobs
                         "stepname": "DLORD6"
                     }
                 ],
+                "execution_node": "STL1",
                 "execution_time": "00:00:10",
                 "job_class": "K",
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
+                "origin_node": "STL1",
                 "owner": "OMVSADM",
                 "priority": 1,
                 "program_name": "IEBGENER",
@@ -857,5 +859,35 @@ jobs
 
     | **type**: str
     | **sample**: IEBGENER
+
+  system
+    The job entry system that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
+  subsystem
+    The job entry subsystem that MVS uses to do work.
+
+    | **type**: str
+    | **sample**: STL1
+
+  cpu_time
+    Sum of the CPU time used by each job step, in microseconds.
+
+    | **type**: int
+    | **sample**: 5
+
+  execution_node
+    Execution node that picked the job and executed it.
+
+    | **type**: str
+    | **sample**: STL1
+
+  origin_node
+    Origin node that submitted the job.
+
+    | **type**: str
+    | **sample**: STL1
 
 

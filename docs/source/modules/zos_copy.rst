@@ -44,6 +44,16 @@ asa_text
   | **default**: False
 
 
+identical_gdg_copy
+  If set to ``true``, and the destination GDG does not exist, the module will copy the source GDG to the destination GDG with identical GDS absolute names.
+
+  If set to ``false``, the copy will be done as a normal copy, without preserving the source GDG absolute names.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: False
+
+
 backup
   Specifies whether a backup of the destination should be created before copying data.
 
@@ -88,6 +98,8 @@ dest
   The remote absolute path or data set where the content should be copied to.
 
   ``dest`` can be a USS file, directory or MVS data set name.
+
+  ``dest`` can be a alias name of a PS, PDS or PDSE data set.
 
   If ``dest`` has missing parent directories, they will be created.
 
@@ -293,6 +305,8 @@ remote_src
 
 src
   Path to a file/directory or name of a data set to copy to remote z/OS system.
+
+  ``src`` can be a alias name of a PS, PDS or PDSE data set.
 
   If ``remote_src`` is true, then ``src`` must be the path to a Unix System Services (USS) file, name of a data set, or data set member.
 

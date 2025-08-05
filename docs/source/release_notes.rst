@@ -104,9 +104,31 @@ Bugfixes
 
 Availability
 ------------
+* `Galaxy`_
+* `GitHub`_
+
+Version 1.14.1
+==============
+
+Bugfixes
+--------
+
+- zos_copy - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- zos_job_submit - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- zos_script - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+- zos_unarchive - Previously, if the Ansible user was not a superuser copying a file into the managed node resulted in a permission denied error. Fix now sets the correct permissions for the Ansible user for copying to the remote.
+
+Availability
+------------
 
 * `Ansible Automation Platform`_
+* `Galaxy`_
 * `GitHub`_
+
+Known Issues
+------------
+- ``zos_copy`` - Copying from a sequential data set that is in use will result in a false positive and destination data set will be empty. The same is true when ``type=gdg`` and source GDS is a sequential data set in use.
+
 
 Version 1.14.0
 ==============
